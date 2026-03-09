@@ -58,16 +58,17 @@ function App() {
     setAuthError(null);
 
     if (nextSession) {
-      authClient.setStoredToken(nextSession.token);
+      void authClient.setStoredToken(nextSession.token);
       return;
     }
 
-    authClient.clearStoredToken();
+    void authClient.clearStoredToken();
     setOnboardingStep(null);
     hasCompletedPostOnboardingInit.current = false;
   }, []);
 
   const refreshSession = useCallback(async () => {
+    await authClient.hydrateStoredToken();
     const token = authClient.getStoredToken();
 
     if (!token) {

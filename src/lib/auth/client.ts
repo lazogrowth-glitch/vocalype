@@ -3,8 +3,36 @@ import type {
   AuthSession,
   BillingLinkResponse,
 } from "./types";
+import { load } from "@tauri-apps/plugin-store";
 
 const AUTH_TOKEN_KEY = "vocaltype.auth.token";
+const AUTH_STORE_FILE = "auth.store.json";
+
+let cachedToken: string | null = null;
+let hasHydratedToken = false;
+let storePromise: ReturnType<typeof load> | null = null;
+
+const getAuthStore = () => {
+  if (!storePromise) {
+    storePromise = load(AUTH_STORE_FILE, {
+      autoSave: false,
+      defaults: {},
+    });
+  }
+
+  return storePromise;
+};
+
+const readLocalToken = () => localStorage.getItem(AUTH_TOKEN_KEY);
+
+const writeLocalToken = (token: string | null) => {
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+    return;
+  }
+
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+};
 
 const getApiBaseUrl = () => {
   const baseUrl = import.meta.env.VITE_AUTH_API_URL?.trim();
@@ -57,14 +85,64 @@ async function request<T>(
 
 export const authClient = {
   tokenKey: AUTH_TOKEN_KEY,
+  async hydrateStoredToken() {
+    if (hasHydratedToken) {
+      return cachedToken;
+    }
+
+    const localToken = readLocalToken();
+
+    try {
+      const store = await getAuthStore();
+      const storedToken = await store.get<string>(AUTH_TOKEN_KEY);
+      const resolvedToken =
+        typeof storedToken === "string" && storedToken.trim()
+          ? storedToken
+          : localToken;
+
+      cachedToken = resolvedToken ?? null;
+      writeLocalToken(cachedToken);
+
+      if (!storedToken && localToken) {
+        await store.set(AUTH_TOKEN_KEY, localToken);
+        await store.save();
+      }
+    } catch (error) {
+      console.warn("Failed to hydrate auth token from persistent store:", error);
+      cachedToken = localToken;
+    }
+
+    hasHydratedToken = true;
+    return cachedToken;
+  },
   getStoredToken() {
-    return localStorage.getItem(AUTH_TOKEN_KEY);
+    return cachedToken ?? readLocalToken();
   },
-  setStoredToken(token: string) {
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  async setStoredToken(token: string) {
+    cachedToken = token;
+    hasHydratedToken = true;
+    writeLocalToken(token);
+
+    try {
+      const store = await getAuthStore();
+      await store.set(AUTH_TOKEN_KEY, token);
+      await store.save();
+    } catch (error) {
+      console.warn("Failed to persist auth token:", error);
+    }
   },
-  clearStoredToken() {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+  async clearStoredToken() {
+    cachedToken = null;
+    hasHydratedToken = true;
+    writeLocalToken(null);
+
+    try {
+      const store = await getAuthStore();
+      await store.delete(AUTH_TOKEN_KEY);
+      await store.save();
+    } catch (error) {
+      console.warn("Failed to clear persisted auth token:", error);
+    }
   },
   async login(payload: AuthPayload) {
     return request<AuthSession>(

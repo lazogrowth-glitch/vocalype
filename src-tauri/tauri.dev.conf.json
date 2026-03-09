@@ -6,6 +6,7 @@
     "windows": [
       {
         "label": "main",
+        "url": "desktop/index.html",
         "title": "VocalType Dev",
         "width": 680,
         "height": 570,

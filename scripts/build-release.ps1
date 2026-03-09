@@ -1,6 +1,7 @@
 param(
-    [string]$PrivateKeyPath = "$env:USERPROFILE\.tauri\vocaltype.key",
+    [string]$PrivateKeyPath = "$env:USERPROFILE\.tauri\vocaltype-new.key",
     [string]$PrivateKeyPassword = "",
+    [string]$ReleaseRepo = "lazogrowth-glitch/vocaltype",
     [switch]$SkipSigning,
     [switch]$Clean
 )
@@ -21,6 +22,40 @@ function Get-Artifact {
     Get-ChildItem -Path $PathPattern -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1
+}
+
+function New-LatestJson {
+    param(
+        [string]$Version,
+        [string]$ReleaseRepo,
+        [System.IO.FileInfo]$Installer,
+        [System.IO.FileInfo]$InstallerSignature,
+        [string]$OutputPath
+    )
+
+    $signature = (Get-Content $InstallerSignature.FullName -Raw).Trim()
+    $pubDate = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+    $tag = "v$Version"
+    $downloadUrl = "https://github.com/$ReleaseRepo/releases/download/$tag/$($Installer.Name)"
+
+    $latest = [ordered]@{
+        version = $Version
+        notes = "VocalType $Version"
+        pub_date = $pubDate
+        platforms = [ordered]@{
+            "windows-x86_64" = [ordered]@{
+                signature = $signature
+                url = $downloadUrl
+            }
+        }
+    }
+
+    $outputDir = Split-Path -Parent $OutputPath
+    if (-not (Test-Path $outputDir)) {
+        New-Item -ItemType Directory -Path $outputDir | Out-Null
+    }
+
+    $latest | ConvertTo-Json -Depth 5 | Set-Content -Path $OutputPath -Encoding utf8
 }
 
 Write-Step "Preparing release build"
@@ -55,10 +90,18 @@ bun run tauri build
 Write-Step "Collecting build artifacts"
 $msi = Get-Artifact "src-tauri\target\release\bundle\msi\*.msi"
 $nsis = Get-Artifact "src-tauri\target\release\bundle\nsis\*.exe"
+$nsisSig = Get-Artifact "src-tauri\target\release\bundle\nsis\*.exe.sig"
 $exe = Get-Artifact "src-tauri\target\release\*.exe"
+$tauriConfig = Get-Content "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json
+$version = $tauriConfig.version
+$latestJsonPath = Join-Path $repoRoot "release\latest.json"
 
 if (-not $msi -and -not $nsis -and -not $exe) {
     throw "Build finished but no release artifacts were found."
+}
+
+if ($nsis -and $nsisSig) {
+    New-LatestJson -Version $version -ReleaseRepo $ReleaseRepo -Installer $nsis -InstallerSignature $nsisSig -OutputPath $latestJsonPath
 }
 
 Write-Host ""
@@ -72,4 +115,7 @@ if ($msi) {
 }
 if ($nsis) {
     Write-Host "  NSIS    : $($nsis.FullName)"
+}
+if (Test-Path $latestJsonPath) {
+    Write-Host "  latest  : $latestJsonPath"
 }

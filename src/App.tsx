@@ -58,17 +58,21 @@ function App() {
     setAuthError(null);
 
     if (nextSession) {
-      void authClient.setStoredToken(nextSession.token);
+      void authClient.setStoredSession(nextSession);
       return;
     }
 
-    void authClient.clearStoredToken();
+    void authClient.clearStoredSession();
     setOnboardingStep(null);
     hasCompletedPostOnboardingInit.current = false;
   }, []);
 
   const refreshSession = useCallback(async () => {
-    await authClient.hydrateStoredToken();
+    const persistedSession = await authClient.hydrateStoredSession();
+    if (persistedSession) {
+      setSession(persistedSession);
+    }
+
     const token = authClient.getStoredToken();
 
     if (!token) {
@@ -82,10 +86,20 @@ function App() {
       applySession(nextSession);
     } catch (error) {
       console.error("Failed to refresh auth session:", error);
-      applySession(null);
-      setAuthError(
-        error instanceof Error ? error.message : "Failed to verify account",
-      );
+      const status = authClient.getErrorStatus(error);
+
+      if (status === 401 || status === 403) {
+        applySession(null);
+        setAuthError(
+          error instanceof Error ? error.message : "Failed to verify account",
+        );
+      } else {
+        setAuthError(
+          error instanceof Error
+            ? error.message
+            : "Failed to refresh account state",
+        );
+      }
     } finally {
       setAuthLoading(false);
     }

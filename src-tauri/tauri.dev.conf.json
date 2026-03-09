@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "vocaltypeDev",
-  "identifier": "com.melvynx.parler.dev",
+  "productName": "VocalType Dev",
+  "identifier": "com.vocaltype.app.dev",
   "app": {
     "windows": [
       {
         "label": "main",
-        "title": "vocaltypeDev",
+        "title": "VocalType Dev",
         "width": 680,
         "height": 570,
         "minWidth": 680,

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Loader2, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
-import ParlerTextLogo from "../icons/ParlerTextLogo";
+import VocalTypeLogo from "../icons/VocalTypeLogo";
 import { Button } from "../ui/Button";
 
 interface AuthPortalProps {
@@ -113,7 +113,7 @@ export const AuthPortal = ({
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-[28px] border border-logo-primary/20 bg-background-ui/70 p-8 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur">
             <div className="mb-10 flex items-center justify-between gap-4">
-              <ParlerTextLogo width={180} />
+              <VocalTypeLogo width={180} />
               <div className="rounded-full border border-logo-primary/20 bg-logo-primary/10 px-4 py-2 text-xs font-semibold text-logo-primary">
                 7-day free trial, no card required
               </div>

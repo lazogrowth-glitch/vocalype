@@ -3,7 +3,7 @@ const WORDMARK = {
   second: "Type",
 };
 
-const ParlerTextLogo = ({
+const VocalTypeLogo = ({
   width,
   className,
 }: {
@@ -31,4 +31,4 @@ const ParlerTextLogo = ({
   );
 };
 
-export default ParlerTextLogo;
+export default VocalTypeLogo;

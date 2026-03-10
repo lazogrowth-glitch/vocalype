@@ -33,7 +33,7 @@ struct ChunkingSharedState {
     next_chunk_idx: usize,
 }
 
-struct ChunkingHandle {
+pub(crate) struct ChunkingHandle {
     sampler_handle: std::thread::JoinHandle<()>,
     worker_handle: std::thread::JoinHandle<()>,
     chunk_tx: std::sync::mpsc::Sender<Option<(Vec<f32>, usize)>>,
@@ -805,6 +805,7 @@ impl ShortcutAction for TranscribeAction {
             struct TranscriptionResult {
                 samples: Vec<f32>,
                 transcription: String,
+                #[allow(dead_code)]
                 chunk_count: usize,
             }
 

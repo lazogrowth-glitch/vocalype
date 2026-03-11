@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": "Rapide et assez précis."
+        "description": "Bon modèle hors ligne léger. Large prise en charge des langues, mais nettement derrière Turbo et Large en précision."
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": "Bonne précision, vitesse moyenne"
+        "description": "Modèle multilingue solide, plus précis que Small, sans être le meilleur en vitesse ni en qualité."
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": "Équilibre entre précision et vitesse."
+        "description": "Meilleur choix par défaut pour la plupart des utilisateurs. Très bon en multilingue avec une vitesse bien meilleure que Whisper Large."
       },
       "large": {
         "name": "Whisper Large",
-        "description": "Bonne précision, mais lent."
+        "description": "Meilleure qualité hors ligne de l'application pour les accents difficiles, le bruit et la dictée multilingue. Le plus lent."
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": "Anglais uniquement. Le meilleur modèle pour les anglophones."
+        "description": "Option rapide en anglais uniquement. Utile si tu veux surtout de la faible latence et rester en anglais."
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": "Rapide et précis"
+        "description": "Chemin ONNX multilingue expérimental. Rapide, mais actuellement moins fiable que Whisper pour le français critique et les usages multilingues."
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Très rapide, anglais uniquement. Gère bien les accents."
+        "description": "Modèle anglais uniquement très rapide. Utile pour une transcription locale légère, mais pas au niveau des meilleurs en précision."
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "Ultra-rapide, anglais uniquement"
+        "description": "Option anglais la plus rapide de style streaming. À choisir quand la latence compte plus que la précision."
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "Rapide, anglais uniquement. Bon équilibre entre vitesse et précision."
+        "description": "Modèle anglais rapide de style streaming, mieux équilibré que Tiny, mais toujours en dessous de Whisper en qualité."
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "Anglais uniquement. Haute qualité."
+        "description": "Meilleure variante Moonshine de style streaming pour l'anglais, mais reste une option de niche orientée vitesse."
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "Optimisé pour le mandarin taïwanais. Prise en charge de l'alternance codique."
+        "description": "Choix spécialisé pour le mandarin taïwanais et le code-switching centré sur le mandarin. Pas un défaut généraliste."
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "Très rapide. Chinois, anglais, japonais, coréen, cantonais."
+        "description": "Modèle rapide pour le chinois, l'anglais, le japonais, le coréen et le cantonais. Bon choix de niche, pas une couverture universelle."
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "Transcription cloud via Google Gemini. Très flexible, mais nécessite internet, une clé API et envoie l'audio hors de l'appareil."
       }
     },
     "errors": {
@@ -104,6 +108,12 @@
     }
   },
   "modelSelector": {
+    "badges": {
+      "bestDefault": "Meilleur défaut",
+      "bestQuality": "Meilleure qualité",
+      "fastEnglish": "Anglais rapide",
+      "experimental": "Expérimental"
+    },
     "custom": "Personnalisé",
     "active": "Actif",
     "switching": "Changement...",
@@ -638,4 +648,3 @@
     }
   }
 }
-

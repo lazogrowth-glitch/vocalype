@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": "Szybki i dość dokładny."
+        "description": "Dobry lekki model offline. Szerokie wsparcie języków, ale pod względem dokładności wyraźnie ustępuje Turbo i Large."
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": "Dobra dokładność, średnia szybkość"
+        "description": "Solidny model wielojęzyczny z lepszą dokładnością niż Small, ale nie jest najlepszy ani pod względem szybkości, ani jakości."
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": "Zrównoważona dokładność i szybkość."
+        "description": "Najlepszy domyślny wybór dla większości użytkowników. Mocna jakość wielojęzyczna przy dużo większej szybkości niż Whisper Large."
       },
       "large": {
         "name": "Whisper Large",
-        "description": "Dobra dokładność, ale wolny."
+        "description": "Najwyższa jakość offline w aplikacji dla trudnych akcentów, głośnego tła i wielojęzycznego dyktowania. Najwolniejsza opcja."
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": "Tylko angielski. Najlepszy model dla osób mówiących po angielsku."
+        "description": "Szybka opcja tylko po angielsku. Dobra, gdy zależy Ci na niskim opóźnieniu i możesz pozostać przy angielskim."
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": "Szybki i dokładny"
+        "description": "Eksperymentalna wielojęzyczna ścieżka ONNX. Szybka, ale obecnie mniej niezawodna niż Whisper przy wymagającym francuskim i mieszanym dyktowaniu."
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Bardzo szybki, tylko angielski. Dobrze radzi sobie z akcentami."
+        "description": "Bardzo szybki model tylko po angielsku. Przydatny do lekkiej lokalnej transkrypcji, ale nie jest topowy pod względem dokładności."
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "Ultraszybki, tylko angielski"
+        "description": "Najszybsza angielska opcja w stylu streamingu. Używaj, gdy opóźnienie jest ważniejsze niż dokładność."
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "Szybki, tylko angielski. Dobra równowaga między szybkością a dokładnością."
+        "description": "Szybki angielski model streamingowy z lepszym balansem niż Tiny, ale nadal słabszy jakościowo od Whisper."
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "Tylko angielski. Wysoka jakość."
+        "description": "Najlepsza angielska wariacja Moonshine w stylu streamingu, ale nadal jest to niszowa opcja nastawiona na szybkość."
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "Zoptymalizowany dla tajwańskiego mandaryńskiego. Obsługa przełączania języków."
+        "description": "Wyspecjalizowany wybór do tajwańskiego mandaryńskiego i silnego code-switchingu z mandaryńskim. To nie jest uniwersalny domyślny model."
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "Bardzo szybki. Chiński, angielski, japoński, koreański, kantoński."
+        "description": "Szybki model wielojęzyczny dla chińskiego, angielskiego, japońskiego, koreańskiego i kantońskiego. Dobra opcja niszowa, ale nie uniwersalna."
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "Transkrypcja w chmurze przez Google Gemini. Największa elastyczność, ale wymaga internetu, klucza API i wysyła audio poza urządzenie."
       }
     },
     "errors": {
@@ -130,7 +134,13 @@
       "languageOnly": "Tylko {{language}}"
     },
     "cancel": "Anuluj",
-    "cancelDownload": "Anuluj pobieranie"
+    "cancelDownload": "Anuluj pobieranie",
+    "badges": {
+      "bestDefault": "Najlepszy domyślny",
+      "bestQuality": "Najlepsza jakość",
+      "fastEnglish": "Szybki angielski",
+      "experimental": "Eksperymentalny"
+    }
   },
   "settings": {
     "modelSettings": {
@@ -548,4 +558,3 @@
     "processing": "Przetwarzanie..."
   }
 }
-

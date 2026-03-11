@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": "高速でそこそこ正確。"
+        "description": "軽量なオフラインモデルとしては優秀です。対応言語は広いですが、精度はTurboやLargeより明確に下です。"
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": "良好な精度、中程度の速度"
+        "description": "安定した多言語モデルで、Smallより精度は高めですが、速度も品質も最上位ではありません。"
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": "精度と速度のバランスが良い。"
+        "description": "多くのユーザーに最適な標準モデルです。Whisper Largeよりかなり高速で、多言語品質も高いです。"
       },
       "large": {
         "name": "Whisper Large",
-        "description": "良好な精度、ただし低速。"
+        "description": "難しいアクセント、ノイズの多い音声、多言語ディクテーションでアプリ内最高のオフライン品質です。最も遅い選択肢です。"
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": "英語のみ。英語話者に最適なモデル。"
+        "description": "英語専用の高速オプションです。低遅延を重視し、英語だけで使う場合に向いています。"
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": "高速で正確"
+        "description": "実験的な多言語ONNX経路です。高速ですが、重要なフランス語や混在言語のディクテーションでは現在Whisperより信頼性が低いです。"
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "非常に高速、英語のみ。アクセントにも対応。"
+        "description": "英語専用で非常に高速なモデルです。軽いローカル文字起こしには便利ですが、精度重視ではありません。"
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "超高速、英語のみ"
+        "description": "最も高速な英語ストリーミング系オプションです。精度より遅延を優先するときに使います。"
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "高速、英語のみ。速度と精度のバランスが良い。"
+        "description": "Tinyよりバランスの良い高速英語ストリーミング系モデルですが、品質はまだWhisperより下です。"
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "英語のみ。高品質。"
+        "description": "英語向けMoonshineストリーミング系では最良ですが、依然として速度優先のニッチな選択肢です。"
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "台湾華語に最適化。コードスイッチングに対応。"
+        "description": "台湾華語と華語中心のコードスイッチング向けの特化モデルです。汎用の標準モデルではありません。"
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "非常に高速。中国語、英語、日本語、韓国語、広東語。"
+        "description": "中国語、英語、日本語、韓国語、広東語向けの高速多言語モデルです。特定用途には有効ですが、万能ではありません。"
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "Google Geminiを使うクラウド文字起こしです。柔軟性は最も高いですが、インターネットとAPIキーが必要で、音声は端末外に送信されます。"
       }
     },
     "errors": {
@@ -130,7 +134,13 @@
       "languageOnly": "{{language}}のみ"
     },
     "cancel": "キャンセル",
-    "cancelDownload": "ダウンロードをキャンセル"
+    "cancelDownload": "ダウンロードをキャンセル",
+    "badges": {
+      "bestDefault": "標準に最適",
+      "bestQuality": "最高品質",
+      "fastEnglish": "高速英語",
+      "experimental": "実験的"
+    }
   },
   "settings": {
     "modelSettings": {
@@ -548,4 +558,3 @@
     "processing": "処理中..."
   }
 }
-

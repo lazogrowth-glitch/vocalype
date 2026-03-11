@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": "快速且相当准确。"
+        "description": "不错的轻量离线模型。语言支持很广，但准确率明显落后于Turbo和Large。"
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": "准确度高，速度适中"
+        "description": "稳定的多语言模型，准确率比Small更好，但在速度和质量上都不是最高档。"
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": "准确度和速度均衡。"
+        "description": "适合大多数用户的最佳默认选择。多语言质量很强，速度又明显快于Whisper Large。"
       },
       "large": {
         "name": "Whisper Large",
-        "description": "准确度高，但速度较慢。"
+        "description": "应用内离线质量最高的模型，适合复杂口音、嘈杂音频和多语言口述。也是最慢的选项。"
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": "仅支持英语。英语用户的最佳模型。"
+        "description": "仅支持英语的快速选项。适合追求低延迟并且可以始终使用英语的场景。"
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": "快速且准确"
+        "description": "实验性的多语言ONNX路径。速度快，但目前在关键法语和混合语言口述上不如Whisper可靠。"
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "非常快速，仅支持英语。口音处理良好。"
+        "description": "仅支持英语且非常快。适合轻量本地转写，但准确率不属第一梯队。"
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "超快速，仅支持英语"
+        "description": "最快的英语流式风格选项。适合延迟比准确率更重要的场景。"
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "快速，仅支持英语。速度与准确度的良好平衡。"
+        "description": "比Tiny更平衡的英语流式风格模型，但质量仍低于Whisper。"
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "仅支持英语。高质量。"
+        "description": "Moonshine英语流式风格中最好的版本，但仍然是偏重速度的小众选项。"
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "针对台湾国语优化。支持语码转换。"
+        "description": "面向台湾普通话和重度普通话混说场景的专用选择，不适合作为通用默认模型。"
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "非常快速。支持中文、英语、日语、韩语、粤语。"
+        "description": "面向中文、英语、日语、韩语和粤语的快速多语言模型。适合特定场景，但不是通用覆盖。"
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "通过Google Gemini进行云端转写。灵活性最高，但需要网络、API密钥，并会将音频发送到设备外部。"
       }
     },
     "errors": {
@@ -130,7 +134,13 @@
       "languageOnly": "仅 {{language}}"
     },
     "cancel": "取消",
-    "cancelDownload": "取消下载"
+    "cancelDownload": "取消下载",
+    "badges": {
+      "bestDefault": "最佳默认",
+      "bestQuality": "最佳质量",
+      "fastEnglish": "高速英语",
+      "experimental": "实验性"
+    }
   },
   "settings": {
     "modelSettings": {
@@ -548,4 +558,3 @@
     "processing": "处理中..."
   }
 }
-

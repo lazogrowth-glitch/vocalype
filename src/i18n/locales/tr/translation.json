@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": "Hızlı ve oldukça doğru."
+        "description": "Iyi ve hafif bir cevrimdisi model. Genis dil destegi var, ancak dogrulukta Turbo ve Large'in belirgin sekilde gerisinde."
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": "İyi doğruluk, orta hız."
+        "description": "Small'dan daha dogru saglam bir cok dilli model, ancak hiz ya da kalite tarafinda en ust seviye degil."
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": "Dengeli doğruluk ve hız."
+        "description": "Cogu kullanici icin en iyi varsayilan secim. Whisper Large'a gore cok daha hizli ve cok dilli kalitesi guclu."
       },
       "large": {
         "name": "Whisper Large",
-        "description": "İyi doğruluk, ancak yavaş."
+        "description": "Zor aksanlar, gurultulu ses ve cok dilli dikte icin uygulamadaki en yuksek cevrimdisi kalite. En yavas secenek."
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": "Yalnızca İngilizce. İngilizce konuşanlar için en iyi model."
+        "description": "Sadece Ingilizce icin hizli secenek. Dusuk gecikme istiyorsan ve Ingilizce kalabiliyorsan iyi bir tercih."
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": "Hızlı ve doğru."
+        "description": "Deneysel cok dilli ONNX yolu. Hizli, ancak su anda kritik Fransizca ve karisik dilli dikte icin Whisper'dan daha az guvenilir."
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Çok hızlı, yalnızca İngilizce. Aksanları iyi işler."
+        "description": "Sadece Ingilizce icin cok hizli model. Hafif yerel transkripsiyon icin kullanisli, ancak dogrulukta ust seviye degil."
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "Ultra hızlı, yalnızca İngilizce"
+        "description": "En hizli Ingilizce akis tarzi secenek. Dogruluktan cok gecikme onemliyse kullan."
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "Hızlı, yalnızca İngilizce. Hız ve doğruluk arasında iyi denge."
+        "description": "Tiny'den daha dengeli hizli Ingilizce akis tarzi model, ancak kalite olarak hala Whisper'in altinda."
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "Yalnızca İngilizce. Yüksek kalite."
+        "description": "Ingilizce icin en iyi Moonshine akis tarzi varyanti, ama hala hiz odakli nis bir secenek."
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "Tayvan Mandarin Çincesi için optimize edilmiş. Dil değiştirme desteği."
+        "description": "Tayvan Mandarincesi ve Mandarin agirlikli code-switching icin uzmanlasmis secenek. Genel varsayilan model degil."
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "Çok hızlı. Çince, İngilizce, Japonca, Korece, Kantonca."
+        "description": "Cince, Ingilizce, Japonca, Korece ve Kantonca icin hizli cok dilli model. Iyi bir nis secenek, ancak evrensel kapsam degil."
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "Google Gemini ile bulut transkripsiyonu. En yuksek esneklik, ancak internet, API anahtari ve sesin cihaz disina gonderilmesini gerektirir."
       }
     },
     "errors": {
@@ -130,7 +134,13 @@
       "languageOnly": "Yalnızca {{language}}"
     },
     "cancel": "İptal",
-    "cancelDownload": "İndirmeyi iptal et"
+    "cancelDownload": "İndirmeyi iptal et",
+    "badges": {
+      "bestDefault": "En iyi varsayilan",
+      "bestQuality": "En iyi kalite",
+      "fastEnglish": "Hizli Ingilizce",
+      "experimental": "Deneysel"
+    }
   },
   "settings": {
     "modelSettings": {
@@ -548,4 +558,3 @@
     "processing": "İşleniyor..."
   }
 }
-

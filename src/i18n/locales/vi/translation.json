@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": "Nhanh và khá chính xác."
+        "description": "Mo hinh offline nhe va kha tot. Ho tro nhieu ngon ngu, nhung do chinh xac kem hon ro ret so voi Turbo va Large."
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": "Độ chính xác tốt, tốc độ trung bình"
+        "description": "Mo hinh da ngon ngu on dinh voi do chinh xac tot hon Small, nhung khong dung dau ve toc do hay chat luong."
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": "Cân bằng giữa độ chính xác và tốc độ."
+        "description": "Lua chon mac dinh tot nhat cho phan lon nguoi dung. Chat luong da ngon ngu manh va nhanh hon Whisper Large rat nhieu."
       },
       "large": {
         "name": "Whisper Large",
-        "description": "Độ chính xác tốt, nhưng chậm."
+        "description": "Chat luong offline cao nhat trong ung dung cho giong kho, audio nhieu nhieu va doc da ngon ngu. Day la lua chon cham nhat."
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": "Chỉ tiếng Anh. Mô hình tốt nhất cho người nói tiếng Anh."
+        "description": "Lua chon nhanh chi cho tieng Anh. Phu hop khi ban muon do tre thap va chi dung tieng Anh."
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": "Nhanh và chính xác"
+        "description": "Duong ONNX da ngon ngu dang thu nghiem. Nhanh, nhung hien tai kem on dinh hon Whisper cho tieng Phap quan trong va dictation tron ngon ngu."
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Rất nhanh, chỉ tiếng Anh. Xử lý tốt các giọng nói."
+        "description": "Mo hinh rat nhanh chi cho tieng Anh. Huu ich cho chuyen am cuc bo nhe, nhung khong thuoc nhom do chinh xac cao nhat."
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "Cực nhanh, chỉ tiếng Anh"
+        "description": "Lua chon tieng Anh kieu streaming nhanh nhat. Dung khi do tre quan trong hon do chinh xac."
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "Nhanh, chỉ tiếng Anh. Cân bằng tốt giữa tốc độ và độ chính xác."
+        "description": "Mo hinh streaming tieng Anh nhanh, can bang hon Tiny, nhung chat luong van thap hon Whisper."
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "Chỉ tiếng Anh. Chất lượng cao."
+        "description": "Bien the Moonshine kieu streaming tot nhat cho tieng Anh, nhung van la lua chon ngach uu tien toc do."
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "Tối ưu hóa cho tiếng Quan Thoại Đài Loan. Hỗ trợ chuyển đổi ngôn ngữ."
+        "description": "Lua chon chuyen biet cho Quan Thoai Dai Loan va code-switching nang ve Quan Thoai. Khong phai lua chon mac dinh chung."
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "Rất nhanh. Tiếng Trung, tiếng Anh, tiếng Nhật, tiếng Hàn, tiếng Quảng Đông."
+        "description": "Mo hinh da ngon ngu nhanh cho tieng Trung, Anh, Nhat, Han va Quang Dong. Tot cho truong hop ngach, khong phai bao phu toan dien."
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "Chuyen am dam may qua Google Gemini. Linh hoat nhat, nhung can internet, khoa API va gui audio ra khoi thiet bi."
       }
     },
     "errors": {
@@ -130,7 +134,13 @@
       "languageOnly": "Chỉ {{language}}"
     },
     "cancel": "Hủy",
-    "cancelDownload": "Hủy tải xuống"
+    "cancelDownload": "Hủy tải xuống",
+    "badges": {
+      "bestDefault": "Mac dinh tot nhat",
+      "bestQuality": "Chat luong tot nhat",
+      "fastEnglish": "Tieng Anh nhanh",
+      "experimental": "Thu nghiem"
+    }
   },
   "settings": {
     "modelSettings": {
@@ -558,4 +568,3 @@
     "cancelConfirm": "Esc de huy"
   }
 }
-

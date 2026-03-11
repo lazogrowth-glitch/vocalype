@@ -20,7 +20,13 @@ import { Button } from "../ui/Button";
 
 type ProductBadge = {
   label: string;
-  variant: "primary" | "success" | "secondary";
+  variant:
+    | "primary"
+    | "success"
+    | "secondary"
+    | "quality"
+    | "speed"
+    | "experimental";
 };
 
 // Get display text for model's language support
@@ -58,7 +64,7 @@ const getProductBadges = (
         label: t("modelSelector.badges.bestQuality", {
           defaultValue: "Best Quality",
         }),
-        variant: "success",
+        variant: "quality",
       },
     ];
   }
@@ -69,7 +75,7 @@ const getProductBadges = (
         label: t("modelSelector.badges.fastEnglish", {
           defaultValue: "Fast English",
         }),
-        variant: "secondary",
+        variant: "speed",
       },
     ];
   }
@@ -80,7 +86,7 @@ const getProductBadges = (
         label: t("modelSelector.badges.experimental", {
           defaultValue: "Experimental",
         }),
-        variant: "secondary",
+        variant: "experimental",
       },
     ];
   }

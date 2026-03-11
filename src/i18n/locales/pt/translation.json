@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": "Rápido e razoavelmente preciso."
+        "description": "Bom modelo leve offline. Suporte amplo de idiomas, mas fica claramente atras de Turbo e Large em precisao."
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": "Boa precisão, velocidade média"
+        "description": "Modelo multilingue solido com precisao melhor que Small, mas nao lidera nem em velocidade nem em qualidade."
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": "Precisão e velocidade balanceadas."
+        "description": "Melhor escolha padrao para a maioria. Qualidade multilingue forte com muito mais velocidade que Whisper Large."
       },
       "large": {
         "name": "Whisper Large",
-        "description": "Boa precisão, mas lento."
+        "description": "Maior qualidade offline no app para sotaques dificeis, audio com ruido e ditado multilingue. E a opcao mais lenta."
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": "Apenas inglês. O melhor modelo para falantes de inglês."
+        "description": "Opcao rapida so para ingles. Boa quando voce quer menor latencia e pode ficar em ingles."
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": "Rápido e preciso"
+        "description": "Caminho ONNX multilingue experimental. E rapido, mas hoje e menos confiavel que Whisper para frances critico e ditado com idiomas mistos."
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Muito rápido, apenas inglês. Lida bem com sotaques."
+        "description": "Modelo muito rapido so para ingles. Util para transcricao local leve, mas nao e topo de linha em precisao."
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "Ultrarrápido, apenas inglês"
+        "description": "Opcao de ingles em estilo streaming mais rapida. Use quando latencia importa mais que precisao."
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "Rápido, apenas inglês. Bom equilíbrio entre velocidade e precisão."
+        "description": "Modelo rapido de ingles em estilo streaming com equilibrio melhor que Tiny, mas ainda abaixo de Whisper em qualidade."
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "Apenas inglês. Alta qualidade."
+        "description": "Melhor variante Moonshine em estilo streaming para ingles, mas ainda e uma opcao de nicho focada em velocidade."
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "Otimizado para mandarim taiwanês. Suporte para alternância de código."
+        "description": "Escolha especializada para mandarim taiwanes e code-switching forte com mandarim. Nao e uma opcao padrao geral."
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "Muito rápido. Chinês, inglês, japonês, coreano, cantonês."
+        "description": "Modelo multilingue rapido para chines, ingles, japones, coreano e cantones. Boa opcao de nicho, nao cobertura universal."
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "Transcricao em nuvem via Google Gemini. Maior flexibilidade, mas requer internet, chave de API e envia o audio para fora do dispositivo."
       }
     },
     "errors": {
@@ -130,7 +134,13 @@
       "languageOnly": "Apenas {{language}}"
     },
     "cancel": "Cancelar",
-    "cancelDownload": "Cancelar download"
+    "cancelDownload": "Cancelar download",
+    "badges": {
+      "bestDefault": "Melhor padrao",
+      "bestQuality": "Melhor qualidade",
+      "fastEnglish": "Ingles rapido",
+      "experimental": "Experimental"
+    }
   },
   "settings": {
     "modelSettings": {
@@ -548,4 +558,3 @@
     "processing": "Processando..."
   }
 }
-

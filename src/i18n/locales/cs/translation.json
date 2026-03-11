@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": "Rychlý a poměrně přesný."
+        "description": "Dobry lehky offline model. Siroka podpora jazyku, ale presnosti zretelne zaostava za Turbo a Large."
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": "Dobrá přesnost, střední rychlost"
+        "description": "Solidni vicejazycny model s lepsi presnosti nez Small, ale neni na spicce ani ve rychlosti, ani v kvalite."
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": "Vyvážená přesnost a rychlost."
+        "description": "Nejlepsi vychozi volba pro vetsinu uzivatelu. Silna vicejazycna kvalita pri mnohem lepsi rychlosti nez Whisper Large."
       },
       "large": {
         "name": "Whisper Large",
-        "description": "Dobrá přesnost, ale pomalý."
+        "description": "Nejvyssi offline kvalita v aplikaci pro tezke prizvuky, sum a vicejazycne diktovani. Nejpomalejsi moznost."
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": "Pouze angličtina. Nejlepší model pro anglicky mluvící."
+        "description": "Rychla volba pouze pro anglictinu. Hodi se, kdyz chces nizsi latenci a zustanes u anglictiny."
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": "Rychlý a přesný"
+        "description": "Experimentalni vicjeazycna ONNX cesta. Je rychla, ale zatim mene spolehliva nez Whisper pro narocnou francouzstinu a smisenou diktaci."
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Velmi rychlý, pouze angličtina. Dobře zvládá přízvuky."
+        "description": "Velmi rychly model pouze pro anglictinu. Hodi se pro lehky lokalni prepis, ale nepatri ke spicce v presnosti."
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "Ultrarychlý, pouze angličtina"
+        "description": "Nejrychlejsi anglicka varianta ve stylu streamingu. Pouzij, kdyz je latence dulezitejsi nez presnost."
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "Rychlý, pouze angličtina. Dobrý poměr rychlosti a přesnosti."
+        "description": "Rychly anglicky streamingovy model s lepsi rovnovahou nez Tiny, ale stale zaostava za Whisperem v kvalite."
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "Pouze angličtina. Vysoká kvalita."
+        "description": "Nejlepsi streamingova varianta Moonshine pro anglictinu, porad je to ale spise specialita orientovana na rychlost."
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "Optimalizováno pro tchajwanskou mandarínštinu. Podpora přepínání jazyků."
+        "description": "Specializovana volba pro taiwanskou mandarinstinu a silny code-switching s mandarinstinou. Neni to univerzalni vychozi model."
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "Velmi rychlý. Čínština, angličtina, japonština, korejština, kantonština."
+        "description": "Rychly vicejazycny model pro cinstinu, anglictinu, japonstinu, korejstinu a kantonstinu. Dobra specializovana volba, ne univerzalni pokryti."
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "Cloudovy prepis pres Google Gemini. Nejvetsi flexibilita, ale vyzaduje internet, API klic a odesila zvuk mimo zarizeni."
       }
     },
     "errors": {
@@ -130,7 +134,13 @@
       "languageOnly": "Pouze {{language}}"
     },
     "cancel": "Zrušit",
-    "cancelDownload": "Zrušit stahování"
+    "cancelDownload": "Zrušit stahování",
+    "badges": {
+      "bestDefault": "Nejlepší výchozí",
+      "bestQuality": "Nejvyšší kvalita",
+      "fastEnglish": "Rychlá angličtina",
+      "experimental": "Experimentální"
+    }
   },
   "settings": {
     "modelSettings": {
@@ -548,4 +558,3 @@
     "processing": "Zpracovávám..."
   }
 }
-

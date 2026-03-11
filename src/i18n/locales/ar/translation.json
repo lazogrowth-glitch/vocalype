@@ -30,51 +30,55 @@
     "models": {
       "small": {
         "name": "Whisper Small",
-        "description": ".سريع ودقيق إلى حد ما"
+        "description": "نموذج خفيف جيد يعمل دون اتصال. يدعم لغات كثيرة، لكنه أقل دقة بوضوح من Turbo وLarge."
       },
       "medium": {
         "name": "Whisper Medium",
-        "description": ".دقة جيدة، سرعة متوسطة"
+        "description": "نموذج متعدد اللغات متوازن مع دقة أفضل من Small، لكنه ليس الأفضل من حيث السرعة أو الجودة القصوى."
       },
       "turbo": {
         "name": "Whisper Turbo",
-        "description": ".توازن بين الدقة والسرعة"
+        "description": "أفضل خيار افتراضي لمعظم المستخدمين. جودة قوية متعددة اللغات مع سرعة أعلى بكثير من Whisper Large."
       },
       "large": {
         "name": "Whisper Large",
-        "description": ".دقة جيدة، لكنه بطيء"
+        "description": "أعلى جودة دون اتصال داخل التطبيق للهجات الصعبة والصوت المزعج والإملاء متعدد اللغات. وهو الأبطأ."
       },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
-        "description": ".الإنجليزية فقط. أفضل نموذج للمتحدثين بالإنجليزية"
+        "description": "خيار سريع للإنجليزية فقط. مناسب عندما تريد زمناً أقل ويمكنك البقاء باللغة الإنجليزية."
       },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
-        "description": ".سريع ودقيق"
+        "description": "مسار ONNX متعدد اللغات تجريبي. سريع، لكنه حالياً أقل موثوقية من Whisper في الفرنسية الحساسة والإملاء المختلط اللغات."
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": ".سريع جداً، الإنجليزية فقط. يتعامل جيداً مع اللهجات"
+        "description": "نموذج إنجليزي فقط سريع جداً. مفيد للتفريغ المحلي الخفيف، لكنه ليس من أعلى مستويات الدقة."
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "سريع للغاية، الإنجليزية فقط"
+        "description": "أسرع خيار إنجليزي بأسلوب البث. استخدمه عندما تكون الاستجابة أهم من الدقة."
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "سريع، الإنجليزية فقط. توازن جيد بين السرعة والدقة."
+        "description": "نموذج إنجليزي سريع بأسلوب البث مع توازن أفضل من Tiny، لكنه ما يزال أقل جودة من Whisper."
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "الإنجليزية فقط. جودة عالية."
+        "description": "أفضل نسخة Moonshine بأسلوب البث للإنجليزية، لكنها تبقى خياراً متخصصاً يركز على السرعة."
       },
       "breeze-asr": {
         "name": "Breeze ASR",
-        "description": "محسّن للماندرين التايوانية. دعم التبديل بين اللغات."
+        "description": "خيار متخصص للماندرين التايواني والتبديل المكثف مع الماندرين. ليس الخيار الافتراضي العام."
       },
       "sense-voice-int8": {
         "name": "SenseVoice",
-        "description": "سريع جداً. الصينية، الإنجليزية، اليابانية، الكورية، الكانتونية."
+        "description": "نموذج متعدد اللغات سريع للصينية والإنجليزية واليابانية والكورية والكانتونية. مناسب لحالات محددة وليس تغطية عامة."
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "تفريغ سحابي عبر Google Gemini. أعلى مرونة، لكنه يتطلب إنترنت ومفتاح API ويرسل الصوت خارج الجهاز."
       }
     },
     "errors": {
@@ -130,6 +134,12 @@
       "languageOnly": "{{language}} فقط",
       "translation": "يدعم الترجمة",
       "translate": "ترجمة"
+    },
+    "badges": {
+      "bestDefault": "الخيار الافتراضي الأفضل",
+      "bestQuality": "أفضل جودة",
+      "fastEnglish": "إنجليزي سريع",
+      "experimental": "تجريبي"
     }
   },
   "settings": {
@@ -548,4 +558,3 @@
     "processing": "...جاري المعالجة"
   }
 }
-

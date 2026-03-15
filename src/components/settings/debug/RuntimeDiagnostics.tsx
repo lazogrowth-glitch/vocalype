@@ -305,6 +305,65 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                 : ""}
             </p>
           )}
+          {snapshot.adaptive_voice_profile_enabled &&
+            snapshot.adaptive_voice_profile && (
+              <>
+                <p>
+                  {t("settings.debug.runtimeDiagnostics.voiceProfile", {
+                    defaultValue: "Voice profile",
+                  })}
+                  :{" "}
+                  <span className="font-semibold">
+                    {snapshot.adaptive_voice_profile.sessions_count} sessions
+                  </span>
+                  {" · "}
+                  <span className="text-text/60">
+                    {snapshot.adaptive_voice_profile.avg_words_per_minute.toFixed(
+                      0,
+                    )}{" "}
+                    wpm
+                  </span>
+                  {" · "}
+                  <span className="text-text/60">
+                    {snapshot.adaptive_voice_profile.avg_pause_ms.toFixed(0)} ms
+                    pauses
+                  </span>
+                </p>
+                {snapshot.active_voice_runtime_adjustment && (
+                  <p>
+                    {t("settings.debug.runtimeDiagnostics.voiceAdjustment", {
+                      defaultValue: "Voice adjustment",
+                    })}
+                    :{" "}
+                    <span className="font-semibold">
+                      {snapshot.active_voice_runtime_adjustment.adjusted_chunk_seconds}
+                      s /{" "}
+                      {
+                        snapshot.active_voice_runtime_adjustment
+                          .adjusted_overlap_ms
+                      }
+                      ms
+                    </span>
+                    {snapshot.active_voice_runtime_adjustment.reason
+                      ? ` · ${snapshot.active_voice_runtime_adjustment.reason}`
+                      : ""}
+                  </p>
+                )}
+                {snapshot.adaptive_voice_profile.preferred_terms.length > 0 && (
+                  <p className="truncate">
+                    {t("settings.debug.runtimeDiagnostics.voiceTerms", {
+                      defaultValue: "Preferred terms",
+                    })}
+                    :{" "}
+                    <span className="text-text/60">
+                      {snapshot.adaptive_voice_profile.preferred_terms
+                        .slice(0, 8)
+                        .join(", ")}
+                    </span>
+                  </p>
+                )}
+              </>
+            )}
           {recentErrors.length > 0 && (
             <div className="pt-1">
               <p className="font-semibold mb-1">

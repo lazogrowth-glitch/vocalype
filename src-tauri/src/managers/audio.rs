@@ -2,6 +2,7 @@ use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, 
 use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
+use crate::voice_profile::current_runtime_adjustment;
 use log::{debug, error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -11,6 +12,7 @@ use tauri::Manager;
 const PARAKEET_V3_LEGACY_ID: &str = "parakeet-tdt-0.6b-v3";
 const PARAKEET_V3_ENGLISH_ID: &str = "parakeet-tdt-0.6b-v3-english";
 const PARAKEET_V3_MULTILINGUAL_ID: &str = "parakeet-tdt-0.6b-v3-multilingual";
+const WHISPER_MODEL_IDS: &[&str] = &["small", "medium", "turbo", "large"];
 
 fn is_parakeet_v3_model_id(model_id: &str) -> bool {
     matches!(
@@ -195,13 +197,27 @@ fn create_audio_recorder(
     selected_model_id: &str,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let is_parakeet_v3 = is_parakeet_v3_model_id(selected_model_id);
-    let (vad_threshold, prefill_frames, hangover_frames, onset_frames) = if is_parakeet_v3 {
+    let (vad_threshold, prefill_frames, mut hangover_frames, onset_frames) = if is_parakeet_v3 {
         // Parakeet V3 is sensitive to clipped speech on short dictation.
         // Use a less aggressive profile to reduce dropped words.
         (0.24, 20, 20, 1)
     } else {
         (0.30, 15, 15, 2)
     };
+
+    if !is_parakeet_v3 && WHISPER_MODEL_IDS.contains(&selected_model_id) {
+        if let Some(adjustment) =
+            current_runtime_adjustment(app_handle, selected_model_id, 10, 500)
+        {
+            hangover_frames = ((hangover_frames as i16)
+                + i16::from(adjustment.vad_hangover_frames_delta))
+            .clamp(8, 28) as usize;
+            debug!(
+                "Voice profile adjusted VAD hangover for model {} to {} frames ({:?})",
+                selected_model_id, hangover_frames, adjustment.reason
+            );
+        }
+    }
 
     let silero = SileroVad::new(vad_path, vad_threshold)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;

@@ -155,6 +155,21 @@ export interface CalibrationStatusSnapshot {
   updated_at_ms: number;
 }
 
+export interface VoiceProfileSnapshot {
+  sessions_count: number;
+  avg_words_per_minute: number;
+  avg_pause_ms: number;
+  preferred_terms: string[];
+  last_updated_ms?: number | null;
+}
+
+export interface VoiceRuntimeAdjustmentSnapshot {
+  adjusted_chunk_seconds: number;
+  adjusted_overlap_ms: number;
+  vad_hangover_frames_delta: number;
+  reason?: string | null;
+}
+
 export interface RuntimeDiagnosticsSnapshot {
   captured_at_ms: number;
   app_version: string;
@@ -174,6 +189,9 @@ export interface RuntimeDiagnosticsSnapshot {
   is_paused: boolean;
   current_app_context?: AppTranscriptionContext | null;
   last_transcription_app_context?: AppTranscriptionContext | null;
+  adaptive_voice_profile_enabled: boolean;
+  adaptive_voice_profile?: VoiceProfileSnapshot | null;
+  active_voice_runtime_adjustment?: VoiceRuntimeAdjustmentSnapshot | null;
   adaptive_machine_profile?: AdaptiveMachineProfileSnapshot | null;
   adaptive_calibration_state?: CalibrationStatusSnapshot[];
 }

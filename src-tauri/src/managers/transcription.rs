@@ -7,6 +7,7 @@ use crate::settings::{
     set_active_whisper_backend, ModelUnloadTimeout, NpuKind, WhisperBackendPreference,
 };
 use crate::vocabulary_store::VocabularyStoreState;
+use crate::voice_profile::{current_voice_profile, VoiceProfile};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use parakeet_rs::{
@@ -804,15 +805,36 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
         let active_model_id = self.get_current_model();
-        let initial_prompt = if settings.adaptive_vocabulary_enabled {
+        let voice_profile = if settings.adaptive_voice_profile_enabled {
+            current_voice_profile(&self.app_handle)
+        } else {
+            None
+        };
+        let voice_terms: Vec<String> = voice_profile
+            .as_ref()
+            .map(|profile: &VoiceProfile| profile.preferred_terms.clone())
+            .unwrap_or_default();
+        let initial_prompt = if settings.adaptive_vocabulary_enabled
+            || (settings.adaptive_voice_profile_enabled && !voice_terms.is_empty())
+        {
             if let Some(state) = self.app_handle.try_state::<VocabularyStoreState>() {
                 if let Ok(store) = state.0.lock() {
-                    build_whisper_initial_prompt(&settings, app_context.as_ref(), &store)
+                    build_whisper_initial_prompt(
+                        &settings,
+                        app_context.as_ref(),
+                        &store,
+                        &voice_terms,
+                    )
                 } else {
                     None
                 }
             } else {
-                None
+                build_whisper_initial_prompt(
+                    &settings,
+                    app_context.as_ref(),
+                    &crate::vocabulary_store::VocabularyStore::default(),
+                    &voice_terms,
+                )
             }
         } else {
             None

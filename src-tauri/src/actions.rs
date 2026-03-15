@@ -18,6 +18,7 @@ use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
+use crate::voice_profile::{current_runtime_adjustment, VoiceProfileState};
 use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, info, warn};
@@ -211,15 +212,28 @@ fn is_parakeet_v3_model_id(model_id: &str) -> bool {
 }
 
 fn chunking_profile_for_model(
+    app: &AppHandle,
     model_info: Option<&ModelInfo>,
     settings: &AppSettings,
 ) -> Option<ChunkingProfile> {
     match model_info {
         Some(info) if matches!(info.id.as_str(), "small" | "medium" | "turbo" | "large") => {
             if let Some(config) = settings.adaptive_whisper_config(&info.id) {
+                let adjusted = current_runtime_adjustment(
+                    app,
+                    &info.id,
+                    config.chunk_seconds,
+                    config.overlap_ms,
+                )
+                .unwrap_or_else(|| crate::voice_profile::VoiceRuntimeAdjustment {
+                    adjusted_chunk_seconds: config.chunk_seconds,
+                    adjusted_overlap_ms: config.overlap_ms,
+                    vad_hangover_frames_delta: 0,
+                    reason: None,
+                });
                 return Some(ChunkingProfile {
-                    interval_samples: usize::from(config.chunk_seconds) * 16_000,
-                    overlap_samples: (usize::from(config.overlap_ms) * 16_000) / 1000,
+                    interval_samples: usize::from(adjusted.adjusted_chunk_seconds) * 16_000,
+                    overlap_samples: (usize::from(adjusted.adjusted_overlap_ms) * 16_000) / 1000,
                 });
             }
 
@@ -1028,7 +1042,7 @@ impl ShortcutAction for TranscribeAction {
                 mm.get_model_info(&model_id)
             });
             let chunking_profile =
-                chunking_profile_for_model(current_model_info.as_ref(), &settings);
+                chunking_profile_for_model(app, current_model_info.as_ref(), &settings);
 
             // ── Spawn background streaming transcription ──────────────────────────
             // The sampler wakes every 500 ms and sends a chunk once enough new
@@ -1732,6 +1746,30 @@ impl ShortcutAction for TranscribeAction {
                         }
                     } else if final_text != transcription {
                         post_processed_text = Some(final_text.clone());
+                    }
+
+                    if settings.adaptive_voice_profile_enabled {
+                        let voice_profile_started = Instant::now();
+                        if let Some(state) = ah.try_state::<VoiceProfileState>() {
+                            if let Ok(mut profile) = state.0.lock() {
+                                profile.update_from_session(
+                                    &samples,
+                                    &final_text,
+                                    &settings.custom_words,
+                                );
+                                profile.save(&ah);
+                            }
+                        }
+                        if let Ok(mut p) = profiler.lock() {
+                            p.push_step_since(
+                                "voice_profile_update",
+                                voice_profile_started,
+                                Some(format!(
+                                    "enabled=true chars={}",
+                                    final_text.chars().count()
+                                )),
+                            );
+                        }
                     }
 
                     let ah_clone = ah.clone();

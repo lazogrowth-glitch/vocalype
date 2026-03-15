@@ -111,6 +111,8 @@ const settingUpdaters: {
   custom_words: (value) => commands.updateCustomWords(value as string[]),
   adaptive_vocabulary_enabled: (value) =>
     commands.changeAdaptiveVocabularyEnabledSetting(value as boolean),
+  adaptive_voice_profile_enabled: (value) =>
+    commands.changeAdaptiveVoiceProfileEnabledSetting(value as boolean),
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),

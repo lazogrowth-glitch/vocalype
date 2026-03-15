@@ -599,6 +599,8 @@ pub struct AppSettings {
     #[serde(default)]
     pub adaptive_vocabulary_enabled: bool,
     #[serde(default)]
+    pub adaptive_voice_profile_enabled: bool,
+    #[serde(default)]
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
@@ -1967,6 +1969,7 @@ pub fn get_default_settings() -> AppSettings {
         log_level: default_log_level(),
         custom_words: Vec::new(),
         adaptive_vocabulary_enabled: false,
+        adaptive_voice_profile_enabled: false,
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),

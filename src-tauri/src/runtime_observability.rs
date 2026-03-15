@@ -3,6 +3,7 @@ use crate::context_detector::{detect_current_app_context, ActiveAppContextState,
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AdaptiveMachineProfile};
+use crate::voice_profile::{current_runtime_adjustment, current_voice_profile, VoiceProfile, VoiceRuntimeAdjustment};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::VecDeque;
@@ -97,6 +98,9 @@ pub struct RuntimeDiagnostics {
     pub is_paused: bool,
     pub current_app_context: Option<AppTranscriptionContext>,
     pub last_transcription_app_context: Option<AppTranscriptionContext>,
+    pub adaptive_voice_profile_enabled: bool,
+    pub adaptive_voice_profile: Option<VoiceProfile>,
+    pub active_voice_runtime_adjustment: Option<VoiceRuntimeAdjustment>,
     pub recent_pipeline_profiles: Vec<PipelineProfileEvent>,
     pub adaptive_machine_profile: Option<AdaptiveMachineProfile>,
     pub adaptive_calibration_state: Vec<CalibrationStatusSnapshot>,
@@ -248,6 +252,29 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
     let tm = app.state::<std::sync::Arc<TranscriptionManager>>();
     let am = app.state::<std::sync::Arc<AudioRecordingManager>>();
     let active_context_state = app.try_state::<ActiveAppContextState>();
+    let selected_model = settings.selected_model.clone();
+    let selected_language = settings.selected_language.clone();
+    let selected_microphone = settings.selected_microphone.clone();
+    let selected_output_device = settings.selected_output_device.clone();
+    let adaptive_voice_profile_enabled = settings.adaptive_voice_profile_enabled;
+    let current_model_id = tm.get_current_model();
+    let active_voice_runtime_adjustment = if adaptive_voice_profile_enabled {
+        let model_id = current_model_id
+            .clone()
+            .unwrap_or_else(|| selected_model.clone());
+        settings
+            .adaptive_whisper_config(&model_id)
+            .and_then(|config| {
+                current_runtime_adjustment(app, &model_id, config.chunk_seconds, config.overlap_ms)
+            })
+    } else {
+        None
+    };
+    let adaptive_voice_profile = if adaptive_voice_profile_enabled {
+        current_voice_profile(app)
+    } else {
+        None
+    };
 
     let (lifecycle_state, last_lifecycle_event, recent_errors, recent_pipeline_profiles) =
         if let Some(obs) = app.try_state::<RuntimeObservabilityState>() {
@@ -273,15 +300,15 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         lifecycle_state,
         last_lifecycle_event,
         recent_errors,
-        selected_model: settings.selected_model.clone(),
-        loaded_model_id: tm.get_current_model(),
+        selected_model,
+        loaded_model_id: current_model_id,
         loaded_model_name: tm.get_current_model_name(),
         model_loaded: tm.is_model_loaded(),
         paste_method: format!("{:?}", settings.paste_method),
         clipboard_handling: format!("{:?}", settings.clipboard_handling),
-        selected_language: settings.selected_language,
-        selected_microphone: settings.selected_microphone,
-        selected_output_device: settings.selected_output_device,
+        selected_language,
+        selected_microphone,
+        selected_output_device,
         is_recording: am.is_recording(),
         is_paused: am.is_paused(),
         current_app_context: Some(detect_current_app_context()),
@@ -289,6 +316,9 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
             .as_ref()
             .and_then(|state| state.0.lock().ok())
             .and_then(|snapshot| snapshot.last_transcription_context()),
+        adaptive_voice_profile_enabled,
+        adaptive_voice_profile,
+        active_voice_runtime_adjustment,
         recent_pipeline_profiles,
         adaptive_machine_profile: settings.adaptive_machine_profile,
         adaptive_calibration_state: get_calibration_states(),

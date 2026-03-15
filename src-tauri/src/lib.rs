@@ -24,6 +24,7 @@ mod tray;
 mod tray_i18n;
 mod utils;
 mod vocabulary_store;
+mod voice_profile;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
@@ -390,6 +391,7 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_debug_mode_setting,
         shortcut::change_word_correction_threshold_setting,
         shortcut::change_adaptive_vocabulary_enabled_setting,
+        shortcut::change_adaptive_voice_profile_enabled_setting,
         shortcut::change_paste_method_setting,
         shortcut::get_available_typing_tools,
         shortcut::change_typing_tool_setting,
@@ -578,6 +580,9 @@ pub fn run(cli_args: CliArgs) {
             )));
             app.manage(vocabulary_store::VocabularyStoreState(std::sync::Mutex::new(
                 vocabulary_store::VocabularyStore::load(&app_handle),
+            )));
+            app.manage(voice_profile::VoiceProfileState(std::sync::Mutex::new(
+                voice_profile::VoiceProfile::load(&app_handle),
             )));
             app.manage(runtime_observability::RuntimeObservabilityState::new());
 

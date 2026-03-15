@@ -798,6 +798,18 @@ pub fn change_adaptive_vocabulary_enabled_setting(
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_adaptive_voice_profile_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.adaptive_voice_profile_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_word_correction_threshold_setting(
     app: AppHandle,
     threshold: f64,

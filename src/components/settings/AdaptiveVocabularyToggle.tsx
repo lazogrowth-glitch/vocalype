@@ -21,11 +21,11 @@ export const AdaptiveVocabularyToggle: React.FC<AdaptiveVocabularyToggleProps> =
         onChange={(value) => updateSetting("adaptive_vocabulary_enabled", value)}
         isUpdating={isUpdating("adaptive_vocabulary_enabled")}
         label={t("settings.advanced.adaptiveVocabulary.label", {
-          defaultValue: "Adaptive vocabulary",
+          defaultValue: "Vocabulaire adaptatif",
         })}
         description={t("settings.advanced.adaptiveVocabulary.description", {
           defaultValue:
-            "Learn custom spellings per app context on this device and feed them into Whisper prompts.",
+            "Apprend des orthographes et termes par application sur cet appareil pour mieux guider Whisper.",
         })}
         descriptionMode={descriptionMode}
         grouped={grouped}

@@ -23,11 +23,11 @@ export const AdaptiveVoiceProfileToggle: React.FC<AdaptiveVoiceProfileToggleProp
         }
         isUpdating={isUpdating("adaptive_voice_profile_enabled")}
         label={t("settings.advanced.adaptiveVoiceProfile.label", {
-          defaultValue: "Adaptive voice profile",
+          defaultValue: "Profil vocal adaptatif",
         })}
         description={t("settings.advanced.adaptiveVoiceProfile.description", {
           defaultValue:
-            "Learn your speaking pace and pauses on this device to tune Whisper chunking and pause handling over time.",
+            "Apprend ton rythme de parole et tes pauses sur cet appareil pour ajuster Whisper progressivement.",
         })}
         descriptionMode={descriptionMode}
         grouped={grouped}

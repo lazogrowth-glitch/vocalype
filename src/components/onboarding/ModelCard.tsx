@@ -2,9 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import {
   Check,
-  Download,
   Globe,
-  Languages,
   Loader2,
   Trash2,
 } from "lucide-react";
@@ -171,22 +169,22 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const productBadges = getProductBadges(model, t, copilotOptimized);
 
   const baseClasses =
-    "flex flex-col rounded-xl px-4 py-3 gap-2 text-left transition-all duration-200";
+    "flex flex-wrap items-center gap-[14px] rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-[14px] text-left transition-all duration-150";
 
   const getVariantClasses = () => {
     if (status === "active") {
-      return "border-2 border-logo-primary/50 bg-logo-primary/10";
+      return "border-logo-primary/30 bg-logo-primary/[0.08]";
     }
     if (isFeatured) {
-      return "border-2 border-logo-primary/25 bg-logo-primary/5";
+      return "border-logo-primary/22 bg-logo-primary/[0.05]";
     }
-    return "border-2 border-mid-gray/20";
+    return "border-white/8";
   };
 
   const getInteractiveClasses = () => {
     if (!isClickable) return "";
     if (disabled) return "opacity-50 cursor-not-allowed";
-    return "cursor-pointer hover:border-logo-primary/50 hover:bg-logo-primary/5 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] group";
+    return "cursor-pointer hover:border-white/12 hover:bg-white/[0.05] group";
   };
 
   const handleClick = () => {
@@ -220,12 +218,15 @@ const ModelCard: React.FC<ModelCardProps> = ({
         .filter(Boolean)
         .join(" ")}
     >
-      {/* Top section: name/description + score bars */}
-      <div className="flex justify-between items-center w-full">
-        <div className="flex flex-col items-start flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex min-w-0 flex-1 items-center gap-[14px]">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-logo-primary/12 text-logo-primary">
+          <Globe className="h-4 w-4" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
             <h3
-              className={`text-base font-semibold text-text ${isClickable ? "group-hover:text-logo-primary" : ""} transition-colors`}
+              className={`text-[13.5px] font-medium text-white ${isClickable ? "group-hover:text-logo-primary" : ""} transition-colors`}
             >
               {displayName}
             </h3>
@@ -251,31 +252,43 @@ const ModelCard: React.FC<ModelCardProps> = ({
               </Badge>
             )}
           </div>
-          <p className="text-text/60 text-sm leading-relaxed">
+          <p className="mt-0.5 text-[11.5px] leading-5 text-white/40">
             {displayDescription}
           </p>
+          <div className="mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-white/28">
+            {model.supported_languages.length > 0 && (
+              <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
+            )}
+            {status === "downloadable" && (
+              <span>{formatModelSize(Number(model.size_mb))}</span>
+            )}
+            {model.supports_translation && (
+              <span>{t("modelSelector.capabilities.translate")}</span>
+            )}
+          </div>
         </div>
+
         {(model.accuracy_score > 0 || model.speed_score > 0) && (
-          <div className="hidden sm:flex items-center ml-4">
+          <div className="ml-auto hidden items-center min-[900px]:flex">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <p className="text-xs text-text/60 w-14 text-right">
+                <p className="w-12 text-right text-[10px] text-white/30">
                   {t("onboarding.modelCard.accuracy")}
                 </p>
-                <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+                <div className="h-[3px] w-[60px] overflow-hidden rounded-full bg-white/8">
                   <div
-                    className="h-full bg-emerald-400 rounded-full"
+                    className="h-full rounded-full bg-logo-primary"
                     style={{ width: `${model.accuracy_score * 100}%` }}
                   />
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <p className="text-xs text-text/60 w-14 text-right">
+                <p className="w-12 text-right text-[10px] text-white/30">
                   {t("onboarding.modelCard.speed")}
                 </p>
-                <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+                <div className="h-[3px] w-[60px] overflow-hidden rounded-full bg-white/8">
                   <div
-                    className="h-full bg-sky-400 rounded-full"
+                    className="h-full rounded-full bg-logo-primary"
                     style={{ width: `${model.speed_score * 100}%` }}
                   />
                 </div>
@@ -285,55 +298,21 @@ const ModelCard: React.FC<ModelCardProps> = ({
         )}
       </div>
 
-      <hr className="w-full border-mid-gray/20" />
-
-      {/* Bottom row: tags + action buttons (full width) */}
-      <div className="flex items-center gap-3 w-full -mb-0.5 mt-0.5 h-5">
-        {model.supported_languages.length > 0 && (
-          <div
-            className="flex items-center gap-1 text-xs text-text/50"
-            title={
-              model.supported_languages.length === 1
-                ? t("modelSelector.capabilities.singleLanguage")
-                : t("modelSelector.capabilities.languageSelection")
-            }
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
-          </div>
-        )}
-        {model.supports_translation && (
-          <div
-            className="flex items-center gap-1 text-xs text-text/50"
-            title={t("modelSelector.capabilities.translation")}
-          >
-            <Languages className="w-3.5 h-3.5" />
-            <span>{t("modelSelector.capabilities.translate")}</span>
-          </div>
-        )}
-        {status === "downloadable" && (
-          <span className="flex items-center gap-1.5 ml-auto text-xs text-text/50">
-            <Download className="w-3.5 h-3.5" />
-            <span>{formatModelSize(Number(model.size_mb))}</span>
-          </span>
-        )}
-        {onDelete && (status === "available" || status === "active") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            title={t("modelSelector.deleteModel", { modelName: displayName })}
-            className="flex items-center gap-1.5 ml-auto text-logo-primary/85 hover:text-logo-primary hover:bg-logo-primary/10"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{t("common.delete")}</span>
-          </Button>
-        )}
-      </div>
+      {onDelete && (status === "available" || status === "active") && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          title={t("modelSelector.deleteModel", { modelName: displayName })}
+          className="ml-auto shrink-0 text-white/35 hover:text-logo-primary"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      )}
 
       {/* Download/extract progress */}
       {status === "downloading" && downloadProgress !== undefined && (
-        <div className="w-full mt-3">
+        <div className="mt-3 w-full basis-full">
           <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
             <div
               className="h-full bg-logo-primary rounded-full transition-all duration-300"
@@ -373,7 +352,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
         </div>
       )}
       {status === "extracting" && (
-        <div className="w-full mt-3">
+        <div className="mt-3 w-full basis-full">
           <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
             <div className="h-full bg-logo-primary rounded-full animate-pulse w-full" />
           </div>

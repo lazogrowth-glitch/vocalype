@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
+import { Sparkles } from "lucide-react";
 
 import {
   Dropdown,
@@ -159,19 +160,19 @@ const PostProcessingActionsComponent: React.FC = () => {
     <SettingContainer
       title={t("settings.postProcessing.actions.title")}
       description={t("settings.postProcessing.actions.description")}
-      descriptionMode="tooltip"
+      descriptionMode="inline"
       layout="stacked"
       grouped={true}
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
         {actions.length > 0 && (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {[...actions]
               .sort((a, b) => a.key - b.key)
               .map((action) => (
                 <div
                   key={action.key}
-                  className="flex items-center gap-3 p-2 rounded-md hover:bg-mid-gray/5 cursor-pointer group"
+                  className="group flex cursor-pointer items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04]"
                   onClick={() => handleStartEdit(action)}
                 >
                   <span className="flex items-center justify-center w-6 h-6 rounded bg-blue-500/15 text-blue-400 text-xs font-bold font-mono flex-shrink-0">
@@ -203,15 +204,28 @@ const PostProcessingActionsComponent: React.FC = () => {
         )}
 
         {actions.length === 0 && !editingAction && (
-          <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/20">
-            <p className="text-sm text-mid-gray">
-              {t("settings.postProcessing.actions.createFirst")}
-            </p>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-6">
+            <div className="flex flex-col items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-logo-primary/20 bg-logo-primary/10 text-logo-primary">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-text">
+                  {t("settings.postProcessing.actions.noActions")}
+                </p>
+                <p className="text-sm leading-6 text-text/60">
+                  {t("settings.postProcessing.actions.createFirst")}
+                </p>
+              </div>
+              <Button onClick={handleStartCreate} variant="primary-soft" size="md">
+                {t("settings.postProcessing.actions.addAction")}
+              </Button>
+            </div>
           </div>
         )}
 
         {editingAction && (
-          <div className="space-y-3 p-3 rounded-md border border-mid-gray/20 bg-mid-gray/5">
+          <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex gap-3">
               <div className="space-y-1 flex flex-col">
                 <label className="text-sm font-semibold">
@@ -328,7 +342,7 @@ const PostProcessingActionsComponent: React.FC = () => {
           </div>
         )}
 
-        {!editingAction && actions.length < 9 && (
+        {!editingAction && actions.length > 0 && actions.length < 9 && (
           <Button onClick={handleStartCreate} variant="primary" size="md">
             {t("settings.postProcessing.actions.addAction")}
           </Button>
@@ -348,11 +362,9 @@ const PostProcessingActions = React.memo(PostProcessingActionsComponent);
 PostProcessingActions.displayName = "PostProcessingActions";
 
 export const PostProcessingSettings: React.FC = () => {
-  const { t } = useTranslation();
-
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.postProcessing.actions.title")}>
+    <div className="w-full space-y-8">
+      <SettingsGroup>
         <PostProcessingActions />
       </SettingsGroup>
     </div>

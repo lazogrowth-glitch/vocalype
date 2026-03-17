@@ -24,6 +24,7 @@
   font-size: 15px;
   line-height: 24px;
   font-weight: 400;
+  font-family: "Segoe UI", system-ui, sans-serif;
 
   /* Typography settings */
   font-synthesis: none;
@@ -73,7 +74,14 @@
 
 html,
 body {
+  min-height: 100%;
   overflow-x: hidden;
+  background: #0f0f0f;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+#root {
+  min-height: 100vh;
 }
 
 ::-webkit-scrollbar {

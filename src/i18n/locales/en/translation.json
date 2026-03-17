@@ -186,12 +186,16 @@
         "clickToSet": "Click to set",
         "bindings": {
           "transcribe": {
-            "name": "Transcribe Shortcut",
+            "name": "Transcription",
             "description": "The keyboard shortcut to record and transcribe your voice."
           },
           "cancel": {
-            "name": "Cancel Shortcut",
+            "name": "Cancel",
             "description": "The keyboard shortcut to cancel the current recording."
+          },
+          "pause": {
+            "name": "Pause / Resume",
+            "description": "The keyboard shortcut to pause or resume the current recording."
           },
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
@@ -202,7 +206,7 @@
             "description": "Opens the app window and navigates to the History tab."
           },
           "copy_latest_history": {
-            "name": "Copy Latest History",
+            "name": "Copy Latest",
             "description": "Copies the latest transcription entry to your clipboard."
           }
         },
@@ -231,6 +235,16 @@
       "tabs": {
         "transcription": "Transcription",
         "processing": "Processing"
+      },
+      "modes": {
+        "auto": "Auto",
+        "autoDescription": "Recommended choice based on this machine and the adaptive profile.",
+        "fast": "Fast",
+        "fastDescription": "Lowest latency for short dictation and quick capture.",
+        "balanced": "Balanced",
+        "balancedDescription": "A steady tradeoff between quality, stability, and speed.",
+        "quality": "Quality",
+        "qualityDescription": "Prioritizes text quality when the machine can handle it."
       },
       "yourModels": "Enabled",
       "availableModels": "Available",
@@ -391,6 +405,14 @@
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
+      },
+      "adaptiveVocabulary": {
+        "label": "Adaptive vocabulary",
+        "description": "Learns spellings and terms by app context on this device to better guide Whisper."
+      },
+      "adaptiveVoiceProfile": {
+        "label": "Adaptive voice profile",
+        "description": "Learns your speaking pace and pauses on this device to gradually tune Whisper."
       }
     },
     "postProcessing": {

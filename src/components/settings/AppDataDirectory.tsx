@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import { SettingContainer } from "../ui/SettingContainer";
-import { PathDisplay } from "../ui/PathDisplay";
+import { Button } from "../ui/Button";
 
 interface AppDataDirectoryProps {
   descriptionMode?: "tooltip" | "inline";
@@ -48,6 +48,11 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
     }
   };
 
+  const truncateMiddle = (value: string) => {
+    if (value.length <= 58) return value;
+    return `${value.slice(0, 20)}...${value.slice(-24)}`;
+  };
+
   if (loading) {
     return (
       <div className="animate-pulse">
@@ -70,16 +75,13 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
   return (
     <SettingContainer
       title={t("settings.about.appDataDirectory.title")}
-      description={t("settings.about.appDataDirectory.description")}
-      descriptionMode={descriptionMode}
+      description={appDirPath ? truncateMiddle(appDirPath) : t("settings.about.appDataDirectory.description")}
+      descriptionMode="inline"
       grouped={grouped}
-      layout="stacked"
     >
-      <PathDisplay
-        path={appDirPath}
-        onOpen={handleOpen}
-        disabled={!appDirPath}
-      />
+      <Button onClick={handleOpen} variant="secondary" size="sm" disabled={!appDirPath}>
+        {t("common.open")}
+      </Button>
     </SettingContainer>
   );
 };

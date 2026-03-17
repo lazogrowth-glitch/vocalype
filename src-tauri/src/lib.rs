@@ -114,6 +114,11 @@ fn build_console_filter() -> env_filter::Filter {
 
 pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
+        // Force the window to the correct size regardless of any cached state
+        let _ = main_window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: 800.0,
+            height: 560.0,
+        }));
         // First, ensure the window is visible
         if let Err(e) = main_window.show() {
             log::error!("Failed to show window: {}", e);
@@ -750,32 +755,16 @@ pub fn run(cli_args: CliArgs) {
             }
             if !should_hide || !tray_available {
                 SHOULD_SHOW_MAIN_WINDOW_ON_READY.store(true, Ordering::Relaxed);
-
-                log::info!(
-                    "Showing the main window immediately at startup so the WebView can paint"
-                );
                 show_main_window(&app_handle);
 
                 #[cfg(target_os = "windows")]
-                if force_show_native_main_window() {
-                    log::info!("Native Windows startup show confirmed the main window is visible");
-                }
+                let _ = force_show_native_main_window();
 
                 let fallback_app_handle = app_handle.clone();
                 thread::spawn(move || {
-                    thread::sleep(Duration::from_secs(6));
+                    thread::sleep(Duration::from_secs(5));
                     if SHOULD_SHOW_MAIN_WINDOW_ON_READY.swap(false, Ordering::Relaxed) {
-                        log::warn!(
-                            "Frontend-ready signal did not arrive in time; using delayed startup fallback for the main window"
-                        );
                         show_main_window(&fallback_app_handle);
-
-                        #[cfg(target_os = "windows")]
-                        if force_show_native_main_window() {
-                            log::warn!(
-                                "Delayed startup fallback recovered the main window using native Windows APIs"
-                            );
-                        }
                     }
                 });
             }

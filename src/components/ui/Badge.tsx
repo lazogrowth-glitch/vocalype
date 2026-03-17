@@ -18,18 +18,18 @@ const Badge: React.FC<BadgeProps> = ({
   className = "",
 }) => {
   const variantClasses = {
-    primary: "bg-logo-primary/15 text-logo-primary border border-logo-primary/30",
-    success: "bg-green-500/15 text-green-300 border border-green-500/30",
-    secondary: "bg-mid-gray/15 text-text/70 border border-mid-gray/25",
-    quality: "bg-amber-400/15 text-amber-200 border border-amber-400/35",
-    speed: "bg-sky-400/15 text-sky-200 border border-sky-400/35",
+    primary: "border border-logo-primary/25 bg-logo-primary/15 text-logo-primary",
+    success: "border border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+    secondary: "border border-white/10 bg-white/[0.06] text-white/42",
+    quality: "border border-white/10 bg-white/[0.06] text-white/42",
+    speed: "border border-sky-400/18 bg-sky-400/10 text-sky-200",
     experimental:
       "bg-rose-400/15 text-rose-200 border border-rose-400/35",
   };
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${variantClasses[variant]} ${className}`}
+      className={`inline-flex items-center rounded-[4px] px-[8px] py-[2px] text-[10px] font-medium leading-none ${variantClasses[variant]} ${className}`}
     >
       {children}
     </span>

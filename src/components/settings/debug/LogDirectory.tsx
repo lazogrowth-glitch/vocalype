@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import { SettingContainer } from "../../ui/SettingContainer";
-import { PathDisplay } from "../../ui/PathDisplay";
+import { Button } from "../../ui/Button";
 
 interface LogDirectoryProps {
   descriptionMode?: "tooltip" | "inline";
@@ -50,25 +50,26 @@ export const LogDirectory: React.FC<LogDirectoryProps> = ({
     }
   };
 
+  const truncateMiddle = (value: string) => {
+    if (value.length <= 58) return value;
+    return `${value.slice(0, 20)}...${value.slice(-24)}`;
+  };
+
   return (
     <SettingContainer
       title={t("settings.debug.logDirectory.title")}
-      description={t("settings.debug.logDirectory.description")}
-      descriptionMode={descriptionMode}
+      description={logDir ? truncateMiddle(logDir) : t("settings.debug.logDirectory.description")}
+      descriptionMode="inline"
       grouped={grouped}
-      layout="stacked"
     >
-      {loading ? (
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-100 rounded" />
-        </div>
-      ) : error ? (
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-600">
-          {t("errors.loadDirectory", { error })}
-        </div>
-      ) : (
-        <PathDisplay path={logDir} onOpen={handleOpen} disabled={!logDir} />
-      )}
+      <Button
+        onClick={handleOpen}
+        variant="secondary"
+        size="sm"
+        disabled={loading || !!error || !logDir}
+      >
+        {t("common.open")}
+      </Button>
     </SettingContainer>
   );
 };

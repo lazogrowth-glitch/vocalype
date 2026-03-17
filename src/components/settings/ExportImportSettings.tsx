@@ -64,8 +64,8 @@ export const ExportImportSettings: React.FC<ExportImportSettingsProps> = ({
     <SettingContainer
       title={t("settings.about.exportImport.title")}
       description={t("settings.about.exportImport.description")}
+      descriptionMode="inline"
       grouped={grouped}
-      layout="stacked"
     >
       <div className="flex items-center gap-2">
         <Button variant="secondary" size="md" onClick={handleExport}>
@@ -74,9 +74,9 @@ export const ExportImportSettings: React.FC<ExportImportSettingsProps> = ({
         <Button variant="secondary" size="md" onClick={handleImport}>
           {t("settings.about.exportImport.import")}
         </Button>
-        {status && (
-          <span className="text-xs text-mid-gray">{status}</span>
-        )}
+        {status ? (
+          <span className="text-[11px] text-white/32">{status}</span>
+        ) : null}
       </div>
     </SettingContainer>
   );

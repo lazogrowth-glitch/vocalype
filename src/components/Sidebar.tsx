@@ -1,8 +1,16 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
+import {
+  AlignLeft,
+  Clock3,
+  FlaskConical,
+  History,
+  Info,
+  LayoutGrid,
+  Settings2,
+} from "lucide-react";
 import VocalTypeLogo from "./icons/VocalTypeLogo";
-import MicrophoneIcon from "./icons/MicrophoneIcon";
+import { MachineStatusBar } from "./MachineStatusBar";
 import { useSettings } from "../hooks/useSettings";
 import {
   GeneralSettings,
@@ -34,25 +42,25 @@ interface SectionConfig {
 export const SECTIONS_CONFIG = {
   general: {
     labelKey: "sidebar.general",
-    icon: MicrophoneIcon,
+    icon: LayoutGrid,
     component: GeneralSettings,
     enabled: () => true,
   },
   models: {
     labelKey: "sidebar.models",
-    icon: Cpu,
+    icon: Clock3,
     component: ModelsSettings,
     enabled: () => true,
   },
   advanced: {
     labelKey: "sidebar.advanced",
-    icon: Cog,
+    icon: Settings2,
     component: AdvancedSettings,
     enabled: () => true,
   },
   postprocessing: {
     labelKey: "sidebar.postProcessing",
-    icon: Sparkles,
+    icon: AlignLeft,
     component: PostProcessingSettings,
     enabled: () => true,
   },
@@ -93,9 +101,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
   return (
-    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
-      <VocalTypeLogo width={120} className="m-4" />
-      <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
+    <aside style={{ width: 210, flexShrink: 0, height: "100%", overflow: "hidden", background: "#141414", borderRight: "0.5px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column" }}>
+      <div className="border-b border-white/6 px-[18px] pb-4 pt-5">
+        <div className="min-w-0">
+          <VocalTypeLogo width={104} />
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col py-2.5">
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
@@ -104,25 +117,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={section.id}
               type="button"
-              className={`flex gap-2 items-center p-2 w-full rounded-lg transition-colors text-start ${
-                isActive
-                  ? "bg-logo-primary/80"
-                  : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
-              }`}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 18px", fontSize: 13, width: "100%",
+                cursor: "pointer", transition: "all 0.15s",
+                borderRight: isActive ? "2px solid #c9a84c" : "2px solid transparent",
+                background: isActive ? "rgba(201,168,76,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.45)",
+              }}
               onClick={() => onSectionChange(section.id)}
               aria-current={isActive ? "page" : undefined}
+              aria-label={t(section.labelKey)}
+              title={t(section.labelKey)}
             >
-              <Icon width={24} height={24} className="shrink-0" />
-              <p
-                className="text-sm font-medium truncate"
+              <span
+                className={`flex h-4 w-4 shrink-0 items-center justify-center transition-colors ${
+                  isActive
+                    ? "text-white"
+                    : "text-current"
+                }`}
+              >
+                <Icon
+                  width={16}
+                  height={16}
+                  className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+                />
+              </span>
+              <span
+                className="truncate text-[13px] font-normal leading-5"
                 title={t(section.labelKey)}
               >
                 {t(section.labelKey)}
-              </p>
+              </span>
             </button>
           );
         })}
       </div>
-    </div>
+
+      <div className="border-t border-white/6 px-[18px] py-3">
+        <MachineStatusBar variant="sidebar" />
+      </div>
+    </aside>
   );
 };

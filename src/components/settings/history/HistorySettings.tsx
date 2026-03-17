@@ -2,13 +2,11 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AudioPlayer } from "../../ui/AudioPlayer";
-import { Button } from "../../ui/Button";
 import {
   Copy,
   Star,
   Check,
   Trash2,
-  FolderOpen,
   RefreshCw,
   Loader2,
 } from "lucide-react";
@@ -30,16 +28,14 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   onClick,
   label,
 }) => (
-  <Button
+  <button
+    type="button"
     onClick={onClick}
-    variant="secondary"
-    size="sm"
-    className="flex items-center gap-2"
+    className="text-[12px] text-white/30 transition-colors hover:text-white/55"
     title={label}
   >
-    <FolderOpen className="w-4 h-4" />
-    <span>{label}</span>
-  </Button>
+    {label}
+  </button>
 );
 
 export const HistorySettings: React.FC = () => {
@@ -152,11 +148,11 @@ export const HistorySettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-3xl w-full mx-auto space-y-6">
-        <div className="space-y-2">
-          <div className="px-4 flex items-center justify-between">
+      <div className="w-full space-y-4">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
                 {t("settings.history.title")}
               </h2>
             </div>
@@ -165,7 +161,7 @@ export const HistorySettings: React.FC = () => {
               label={t("settings.history.openFolder")}
             />
           </div>
-          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
+          <div className="overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
               {t("settings.history.loading")}
             </div>
@@ -177,11 +173,11 @@ export const HistorySettings: React.FC = () => {
 
   if (historyEntries.length === 0) {
     return (
-      <div className="max-w-3xl w-full mx-auto space-y-6">
-        <div className="space-y-2">
-          <div className="px-4 flex items-center justify-between">
+      <div className="w-full space-y-4">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
                 {t("settings.history.title")}
               </h2>
             </div>
@@ -190,7 +186,7 @@ export const HistorySettings: React.FC = () => {
               label={t("settings.history.openFolder")}
             />
           </div>
-          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
+          <div className="overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
               {t("settings.history.empty")}
             </div>
@@ -201,11 +197,11 @@ export const HistorySettings: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-6">
-      <div className="space-y-2">
-        <div className="px-4 flex items-center justify-between">
+    <div className="w-full space-y-4">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
               {t("settings.history.title")}
             </h2>
           </div>
@@ -214,8 +210,8 @@ export const HistorySettings: React.FC = () => {
             label={t("settings.history.openFolder")}
           />
         </div>
-        <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-          <div className="divide-y divide-mid-gray/20">
+        <div className="overflow-visible">
+          <div className="divide-y divide-white/8">
             {historyEntries.map((entry) => (
               <HistoryEntryComponent
                 key={entry.id}
@@ -310,12 +306,12 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
   return (
-    <div className="px-4 py-2 pb-5 flex flex-col gap-3">
+      <div className="flex flex-col gap-3 py-[14px]">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium">{formattedDate}</p>
+          <p className="text-[11.5px] text-white/32">{formattedDate}</p>
           {entry.model_name && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-mid-gray/10 text-text/50 font-medium">
+            <span className="rounded-md bg-logo-primary/8 px-2 py-0.5 text-[10px] font-medium text-logo-primary/70">
               {entry.model_name}
             </span>
           )}
@@ -327,7 +323,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 !reprocessing && setShowModelPicker(!showModelPicker)
               }
               disabled={reprocessing}
-              className="p-2 rounded-md text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
               title={
                 reprocessing
                   ? t("settings.history.reprocessing")
@@ -359,7 +355,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </div>
           <button
             onClick={handleCopyText}
-            className="text-text/50 hover:text-logo-primary  hover:border-logo-primary transition-colors cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70"
             title={t("settings.history.copyToClipboard")}
           >
             {showCopied ? (
@@ -370,10 +366,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </button>
           <button
             onClick={onToggleSaved}
-            className={`p-2 rounded-md transition-colors cursor-pointer ${
+            className={`flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] transition-colors cursor-pointer ${
               entry.saved
                 ? "text-logo-primary hover:text-logo-primary/80"
-                : "text-text/50 hover:text-logo-primary"
+                : "text-white/40 hover:bg-white/[0.08] hover:text-white/70"
             }`}
             title={
               entry.saved
@@ -389,7 +385,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </button>
           <button
             onClick={handleDeleteEntry}
-            className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-red-300"
             title={t("settings.history.delete")}
           >
             <Trash2 width={16} height={16} />
@@ -400,7 +396,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         <div className="space-y-2 pb-2">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-xs font-medium text-text/50">
+              <span className="text-xs font-medium text-white/40">
                 {t("settings.history.postProcessed")}
               </span>
               {entry.post_process_action_key != null && (
@@ -411,18 +407,18 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 </span>
               )}
             </div>
-            <p className="italic text-text/90 text-sm select-text cursor-text">
+            <p className="text-[13.5px] italic text-white/82 select-text cursor-text">
               {entry.post_processed_text}
             </p>
           </div>
           <div>
-            <span className="text-xs font-medium text-text/50 mb-0.5 block">
+            <span className="mb-0.5 block text-xs font-medium text-white/40">
               {t("settings.history.originalTranscript")}
             </span>
             <ConfidenceText
               text={entry.transcription_text}
               confidencePayload={entry.confidence_payload}
-              className="italic text-text/50 text-sm select-text cursor-text"
+              className="text-[13px] italic text-white/48 select-text cursor-text"
             />
           </div>
         </div>
@@ -430,10 +426,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         <ConfidenceText
           text={entry.transcription_text}
           confidencePayload={entry.confidence_payload}
-          className="italic text-text/90 text-sm pb-2 select-text cursor-text"
+          className="pb-2 text-[13.5px] italic text-white/82 select-text cursor-text"
         />
       )}
-      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
+      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full max-w-[320px]" />
     </div>
   );
 };

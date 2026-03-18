@@ -11,8 +11,6 @@ import { listen } from "@tauri-apps/api/event";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
-import Footer from "./components/footer";
-import { MachineStatusBar } from "./components/MachineStatusBar";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
@@ -114,20 +112,22 @@ function App() {
     refreshSession();
   }, [refreshSession]);
 
-  // Refresh session every 30 minutes while the app is open to keep the token alive.
-  // If the backend issues a new token on each getSession call, this extends the lifetime.
+  // Refresh the short-lived access token periodically while the app stays open.
   useEffect(() => {
-    const THIRTY_MINUTES = 30 * 60 * 1000;
+    const FIVE_MINUTES = 5 * 60 * 1000;
     const interval = setInterval(() => {
       const token = authClient.getStoredToken();
       if (!token) return;
       authClient
         .getSession(token)
         .then((nextSession) => applySession(nextSession))
-        .catch(() => {
-          // Silently ignore refresh errors — the next app start will handle it
+        .catch((error) => {
+          const status = authClient.getErrorStatus(error);
+          if (status === 401 || status === 403) {
+            applySession(null);
+          }
         });
-    }, THIRTY_MINUTES);
+    }, FIVE_MINUTES);
     return () => clearInterval(interval);
   }, [applySession]);
 
@@ -435,7 +435,7 @@ function App() {
   }
 
   return (
-    <div dir={direction} className="h-screen flex flex-col">
+    <div dir={direction} style={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden", background: "#0f0f0f", fontFamily: "'Segoe UI', system-ui, sans-serif", color: "inherit" }}>
       <Toaster
         theme="system"
         toastOptions={{
@@ -448,25 +448,19 @@ function App() {
           },
         }}
       />
-      {/* Main content area that takes remaining space */}
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          activeSection={currentSection}
-          onSectionChange={setCurrentSection}
-        />
-        {/* Scrollable content area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <MachineStatusBar />
-          <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col items-center p-4 gap-4">
-              <AccessibilityPermissions />
-              {renderSettingsContent(currentSection)}
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Fixed footer at bottom */}
-      <Footer />
+      <Sidebar
+        activeSection={currentSection}
+        onSectionChange={setCurrentSection}
+      />
+
+      <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "24px 28px", minWidth: 0, background: "#0f0f0f" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 600, lineHeight: 1, letterSpacing: "-0.3px", color: "#fff", marginBottom: 20 }}>
+          {SECTIONS_CONFIG[currentSection]
+            ? t(SECTIONS_CONFIG[currentSection].labelKey)
+            : t(SECTIONS_CONFIG.general.labelKey)}
+        </h1>
+        {renderSettingsContent(currentSection)}
+      </main>
     </div>
   );
 }

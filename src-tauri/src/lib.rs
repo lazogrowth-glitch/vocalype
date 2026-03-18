@@ -20,8 +20,8 @@ mod secret_store;
 mod settings;
 mod shortcut;
 mod signal_handle;
-mod transcription_coordinator;
 mod transcription_confidence;
+mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
@@ -58,6 +58,8 @@ use crate::settings::{get_settings_fast, refresh_adaptive_profile_if_needed};
 use adaptive_runtime::maybe_schedule_whisper_calibration;
 
 #[cfg(target_os = "windows")]
+use std::ptr::NonNull;
+#[cfg(target_os = "windows")]
 use windows::core::BOOL;
 #[cfg(target_os = "windows")]
 use windows::Win32::Foundation::{HWND, LPARAM};
@@ -65,14 +67,14 @@ use windows::Win32::Foundation::{HWND, LPARAM};
 use windows::Win32::System::Threading::GetCurrentProcessId;
 #[cfg(target_os = "windows")]
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, EnumWindows, GetWindowTextLengthW, GetWindowTextW,
-    GetWindowThreadProcessId, IsWindowVisible, SetForegroundWindow, SetWindowPos, ShowWindow,
-    SW_RESTORE, SW_SHOW, SWP_NOZORDER,
+    BringWindowToTop, EnumWindows, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
+    IsWindowVisible, SetForegroundWindow, SetWindowPos, ShowWindow, SWP_NOZORDER, SW_RESTORE,
+    SW_SHOW,
 };
 
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
-pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
+pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Info as u8);
 
 // Cached tray visibility flag to avoid store access in on_window_event (which can deadlock)
 pub static TRAY_ICON_ENABLED: AtomicBool = AtomicBool::new(true);
@@ -115,6 +117,11 @@ fn build_console_filter() -> env_filter::Filter {
 
 pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
+        // Force the window to the correct size regardless of any cached state
+        let _ = main_window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: 800.0,
+            height: 560.0,
+        }));
         // First, ensure the window is visible
         if let Err(e) = main_window.show() {
             log::error!("Failed to show window: {}", e);
@@ -137,26 +144,48 @@ pub(crate) fn show_main_window(app: &AppHandle) {
 
 #[cfg(target_os = "windows")]
 fn force_show_native_main_window() -> bool {
-    unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
-        let current_process_id = GetCurrentProcessId();
-        let mut process_id = 0u32;
-        let _ = GetWindowThreadProcessId(hwnd, Some(&mut process_id));
-        if process_id != current_process_id {
-            return true.into();
-        }
+    const MAX_WINDOW_TITLE_LEN: i32 = 512;
 
+    struct NativeWindowShowState {
+        expected_process_id: u32,
+        shown: bool,
+    }
+
+    unsafe fn read_window_title(hwnd: HWND) -> Option<String> {
         let len = GetWindowTextLengthW(hwnd);
-        if len <= 0 {
-            return true.into();
+        if len <= 0 || len > MAX_WINDOW_TITLE_LEN {
+            return None;
         }
 
         let mut buffer = vec![0u16; len as usize + 1];
         let copied = GetWindowTextW(hwnd, &mut buffer);
-        if copied <= 0 {
+        if copied <= 0 || copied > len {
+            return None;
+        }
+
+        Some(String::from_utf16_lossy(&buffer[..copied as usize]))
+    }
+
+    unsafe fn state_from_lparam(lparam: LPARAM) -> Option<NonNull<NativeWindowShowState>> {
+        NonNull::new(lparam.0 as *mut NativeWindowShowState)
+    }
+
+    unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        let Some(mut state_ptr) = state_from_lparam(lparam) else {
+            return false.into();
+        };
+        let state = state_ptr.as_mut();
+
+        let mut process_id = 0u32;
+        let _ = GetWindowThreadProcessId(hwnd, Some(&mut process_id));
+        if process_id != state.expected_process_id {
             return true.into();
         }
 
-        let title = String::from_utf16_lossy(&buffer[..copied as usize]);
+        let Some(title) = read_window_title(hwnd) else {
+            return true.into();
+        };
+
         if title != "VocalType" {
             return true.into();
         }
@@ -166,19 +195,39 @@ fn force_show_native_main_window() -> bool {
         let _ = SetWindowPos(hwnd, None, 120, 120, 694, 608, SWP_NOZORDER);
         let _ = BringWindowToTop(hwnd);
         let _ = SetForegroundWindow(hwnd);
-        let shown = IsWindowVisible(hwnd).as_bool();
-        let target = lparam.0 as *mut bool;
-        if !target.is_null() {
-            *target = shown;
-        }
+        state.shown = IsWindowVisible(hwnd).as_bool();
         false.into()
     }
 
-    let mut shown = false;
+    let mut state = NativeWindowShowState {
+        expected_process_id: unsafe { GetCurrentProcessId() },
+        shown: false,
+    };
     unsafe {
-        let _ = EnumWindows(Some(enum_windows_proc), LPARAM((&mut shown as *mut bool) as isize));
+        let _ = EnumWindows(
+            Some(enum_windows_proc),
+            LPARAM((&mut state as *mut NativeWindowShowState) as isize),
+        );
     }
-    shown
+    state.shown
+}
+
+#[cfg(target_os = "windows")]
+fn main_window_needs_native_recovery(app: &AppHandle) -> bool {
+    let Some(main_window) = app.get_webview_window("main") else {
+        return false;
+    };
+
+    match main_window.is_visible() {
+        Ok(is_visible) => !is_visible,
+        Err(err) => {
+            log::warn!(
+                "Failed to read main window visibility on Windows: {}. Falling back to native recovery.",
+                err
+            );
+            true
+        }
+    }
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
@@ -236,9 +285,7 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
                 .and_then(|p| p.on_battery)
                 .unwrap_or(false);
             if on_battery {
-                log::info!(
-                    "Skipping model preload on battery (will load on first use)"
-                );
+                log::info!("Skipping model preload on battery (will load on first use)");
                 return;
             }
 
@@ -525,6 +572,10 @@ pub fn run(cli_args: CliArgs) {
         commands::open_app_data_dir,
         commands::export_settings,
         commands::import_settings,
+        commands::get_machine_device_id,
+        commands::load_secure_auth_token,
+        commands::store_secure_auth_token,
+        commands::clear_secure_auth_token,
         commands::check_apple_intelligence_available,
         commands::initialize_enigo,
         commands::initialize_shortcuts,
@@ -757,32 +808,19 @@ pub fn run(cli_args: CliArgs) {
             }
             if !should_hide || !tray_available {
                 SHOULD_SHOW_MAIN_WINDOW_ON_READY.store(true, Ordering::Relaxed);
-
-                log::info!(
-                    "Showing the main window immediately at startup so the WebView can paint"
-                );
                 show_main_window(&app_handle);
 
                 #[cfg(target_os = "windows")]
-                if force_show_native_main_window() {
-                    log::info!("Native Windows startup show confirmed the main window is visible");
+                if main_window_needs_native_recovery(&app_handle) {
+                    log::info!("Using native Windows window recovery fallback");
+                    let _ = force_show_native_main_window();
                 }
 
                 let fallback_app_handle = app_handle.clone();
                 thread::spawn(move || {
-                    thread::sleep(Duration::from_secs(6));
+                    thread::sleep(Duration::from_secs(5));
                     if SHOULD_SHOW_MAIN_WINDOW_ON_READY.swap(false, Ordering::Relaxed) {
-                        log::warn!(
-                            "Frontend-ready signal did not arrive in time; using delayed startup fallback for the main window"
-                        );
                         show_main_window(&fallback_app_handle);
-
-                        #[cfg(target_os = "windows")]
-                        if force_show_native_main_window() {
-                            log::warn!(
-                                "Delayed startup fallback recovered the main window using native Windows APIs"
-                            );
-                        }
                     }
                 });
             }

@@ -48,7 +48,7 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="flex items-center space-x-1">
+        <div className="flex w-full items-center justify-between gap-2 min-[760px]:w-auto min-[760px]:justify-start">
           <Dropdown
             options={microphoneOptions}
             selectedValue={selectedMicrophone}

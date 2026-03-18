@@ -289,17 +289,17 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
       disabled={disabled}
       layout="horizontal"
     >
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center gap-2">
         {editingShortcutId === shortcutId ? (
           <div
             ref={(ref) => setShortcutRef(shortcutId, ref)}
-            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded-md"
+            className="rounded-[5px] border border-logo-primary/30 bg-logo-primary/15 px-[10px] py-[4px] font-mono text-[12px] text-logo-primary"
           >
             {formatCurrentKeys()}
           </div>
         ) : (
           <div
-            className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
+            className="cursor-pointer rounded-[5px] border border-white/12 bg-white/[0.07] px-[10px] py-[4px] font-mono text-[12px] text-white/70 hover:bg-white/[0.09]"
             onClick={() => startRecording(shortcutId)}
           >
             {binding.current_binding.trim()
@@ -307,10 +307,12 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
               : t("settings.general.shortcut.clickToSet")}
           </div>
         )}
-        <ResetButton
-          onClick={() => resetBinding(shortcutId)}
-          disabled={isUpdating(`binding_${shortcutId}`)}
-        />
+        <div className="opacity-0 transition-opacity group-hover:opacity-100">
+          <ResetButton
+            onClick={() => resetBinding(shortcutId)}
+            disabled={isUpdating(`binding_${shortcutId}`)}
+          />
+        </div>
       </div>
     </SettingContainer>
   );

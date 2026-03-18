@@ -78,7 +78,11 @@ strsim = "0.11.0"
 natural = "0.5.0"
 regex = "1"
 chrono = "0.4"
+<<<<<<< HEAD
 keyring = { version = "3", default-features = false, features = ["apple-native", "windows-native", "sync-secret-service"] }
+=======
+sha2 = "0.10"
+>>>>>>> 0534e59183f4ea978e19543039d8174b0c58c2e3
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
@@ -114,13 +118,16 @@ windows = { version = "0.61.3", features = [
 ] }
 wmi = "0.14"
 parakeet-rs = { version = "0.2.0", features = ["directml", "openvino", "qnn"] }
+keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
+keyring = { version = "3.6.3", default-features = false, features = ["apple-native"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
+keyring = { version = "3.6.3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
 
 [dev-dependencies]
 tempfile = "3"

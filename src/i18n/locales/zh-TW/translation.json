@@ -256,6 +256,16 @@
         "copilotPlusDescription": "VocalType now keeps that capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
         "npuTitle": "NPU detected",
         "npuDescription": "This machine exposes a neural processor. VocalType now shows it in diagnostics and hardware profiling."
+      },
+      "modes": {
+        "auto": "Auto",
+        "autoDescription": "Recommended choice based on this machine and the adaptive profile.",
+        "fast": "Fast",
+        "fastDescription": "Lowest latency for short dictation and quick capture.",
+        "balanced": "Balanced",
+        "balancedDescription": "A steady tradeoff between quality, stability, and speed.",
+        "quality": "Quality",
+        "qualityDescription": "Prioritizes text quality when the machine can handle it."
       }
     },
     "sound": {
@@ -381,6 +391,14 @@
         "add": "新增",
         "remove": "刪除 {{word}}",
         "duplicate": "「{{word}}」已存在"
+      },
+      "adaptiveVocabulary": {
+        "label": "Adaptive vocabulary",
+        "description": "Learns spellings and terms by app context on this device to better guide Whisper."
+      },
+      "adaptiveVoiceProfile": {
+        "label": "Adaptive voice profile",
+        "description": "Learns your speaking pace and pauses on this device to gradually tune Whisper."
       }
     },
     "postProcessing": {
@@ -710,7 +728,7 @@
       "email": "Email",
       "emailPlaceholder": "you@example.com",
       "password": "Password",
-      "passwordPlaceholder": "Minimum 6 characters"
+      "passwordPlaceholder": "Minimum 12 characters"
     },
     "access": {
       "active": "Subscription active",

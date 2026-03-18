@@ -5,6 +5,7 @@ import { LanguageSelector } from "../LanguageSelector";
 import { TranslateToEnglish } from "../TranslateToEnglish";
 import { useModelStore } from "../../../stores/modelStore";
 import type { ModelInfo } from "@/bindings";
+import { getTranslatedModelName } from "../../../lib/utils/modelTranslation";
 
 export const ModelSettingsCard: React.FC = () => {
   const { t } = useTranslation();
@@ -26,7 +27,7 @@ export const ModelSettingsCard: React.FC = () => {
   return (
     <SettingsGroup
       title={t("settings.modelSettings.title", {
-        model: currentModelInfo.name,
+        model: getTranslatedModelName(currentModelInfo, t),
       })}
     >
       {supportsLanguageSelection && (

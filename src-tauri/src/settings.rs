@@ -4,12 +4,14 @@ use serde::{Deserialize, Deserializer, Serialize};
 use specta::Type;
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const CONFIGURED_SECRET_SENTINEL: &str = "__configured__";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -113,7 +115,7 @@ pub struct SavedProcessingModel {
     pub label: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Type)]
 pub struct PostProcessProvider {
     pub id: String,
     pub label: String,
@@ -1804,35 +1806,81 @@ fn default_gemini_model() -> String {
     "gemini-2.5-flash".to_string()
 }
 
+pub fn sanitize_custom_provider_base_url(value: &str) -> Result<String, String> {
+    let trimmed = value.trim().trim_end_matches('/');
+    if trimmed.is_empty() {
+        return Err("Custom provider URL cannot be empty".to_string());
+    }
+
+    if trimmed.starts_with("https://")
+        || trimmed.starts_with("http://localhost")
+        || trimmed.starts_with("http://127.0.0.1")
+    {
+        return Ok(trimmed.to_string());
+    }
+
+    Err("Custom provider URLs must use https:// or point to localhost/127.0.0.1".to_string())
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
-    for provider in default_post_process_providers() {
-        // Use match to do a single lookup - either sync existing or add new
-        match settings
-            .post_process_providers
-            .iter_mut()
-            .find(|p| p.id == provider.id)
-        {
-            Some(existing) => {
-                // Sync supports_structured_output field for existing providers (migration)
-                if existing.supports_structured_output != provider.supports_structured_output {
-                    debug!(
-                        "Updating supports_structured_output for provider '{}' from {} to {}",
-                        provider.id,
-                        existing.supports_structured_output,
-                        provider.supports_structured_output
-                    );
-                    existing.supports_structured_output = provider.supports_structured_output;
-                    changed = true;
-                }
-            }
-            None => {
-                // Provider doesn't exist, add it
-                settings.post_process_providers.push(provider.clone());
-                changed = true;
-            }
-        }
+    let default_providers = default_post_process_providers();
+    let existing_custom_provider = settings
+        .post_process_providers
+        .iter()
+        .find(|provider| provider.id == "custom")
+        .cloned();
 
+    let rebuilt_providers: Vec<PostProcessProvider> = default_providers
+        .iter()
+        .cloned()
+        .map(|provider| {
+            if provider.id == "custom" {
+                if let Some(existing) = existing_custom_provider.clone() {
+                    if let Ok(base_url) = sanitize_custom_provider_base_url(&existing.base_url) {
+                        PostProcessProvider {
+                            base_url,
+                            ..provider
+                        }
+                    } else {
+                        provider
+                    }
+                } else {
+                    provider
+                }
+            } else {
+                provider
+            }
+        })
+        .collect();
+
+    if settings.post_process_providers != rebuilt_providers {
+        settings.post_process_providers = rebuilt_providers;
+        changed = true;
+    }
+
+    let allowed_provider_ids: Vec<String> = default_providers
+        .iter()
+        .map(|provider| provider.id.clone())
+        .collect();
+
+    let original_key_count = settings.post_process_api_keys.len();
+    settings
+        .post_process_api_keys
+        .retain(|provider_id, _| allowed_provider_ids.iter().any(|id| id == provider_id));
+    if settings.post_process_api_keys.len() != original_key_count {
+        changed = true;
+    }
+
+    let original_model_count = settings.post_process_models.len();
+    settings
+        .post_process_models
+        .retain(|provider_id, _| allowed_provider_ids.iter().any(|id| id == provider_id));
+    if settings.post_process_models.len() != original_model_count {
+        changed = true;
+    }
+
+    for provider in &default_providers {
         if !settings.post_process_api_keys.contains_key(&provider.id) {
             settings
                 .post_process_api_keys
@@ -1857,6 +1905,11 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
         }
     }
 
+    if !allowed_provider_ids.contains(&settings.post_process_provider_id) {
+        settings.post_process_provider_id = default_post_process_provider_id();
+        changed = true;
+    }
+
     changed
 }
 
@@ -1875,6 +1928,262 @@ fn ensure_selected_language_default(settings: &mut AppSettings) -> bool {
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
+
+fn sanitize_persisted_secrets(settings: &mut AppSettings) {
+    settings.gemini_api_key = None;
+    for api_key in settings.post_process_api_keys.values_mut() {
+        api_key.clear();
+    }
+}
+
+fn is_redacted_secret_placeholder(value: &str) -> bool {
+    value.trim() == CONFIGURED_SECRET_SENTINEL
+}
+
+fn migrate_plaintext_secrets_to_secure_store(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+
+    if let Some(api_key) = settings
+        .gemini_api_key
+        .clone()
+        .filter(|value| !value.trim().is_empty() && !is_redacted_secret_placeholder(value))
+    {
+        match crate::secrets::store_gemini_api_key(&api_key) {
+            Ok(()) => {
+                settings.gemini_api_key = None;
+                changed = true;
+            }
+            Err(err) => warn!(
+                "Failed to migrate Gemini API key to secure storage: {}",
+                err
+            ),
+        }
+    }
+
+    for (provider_id, api_key) in settings.post_process_api_keys.clone() {
+        if api_key.trim().is_empty() || is_redacted_secret_placeholder(&api_key) {
+            continue;
+        }
+
+        match crate::secrets::store_post_process_api_key(&provider_id, &api_key) {
+            Ok(()) => {
+                if let Some(stored_value) = settings.post_process_api_keys.get_mut(&provider_id) {
+                    stored_value.clear();
+                }
+                changed = true;
+            }
+            Err(err) => warn!(
+                "Failed to migrate secure API key for provider '{}' to OS credential storage: {}",
+                provider_id, err
+            ),
+        }
+    }
+
+    changed
+}
+
+fn hydrate_secure_secrets(settings: &mut AppSettings) {
+    let persisted_gemini_api_key = settings.gemini_api_key.take();
+    settings.gemini_api_key = crate::secrets::load_gemini_api_key().or_else(|| {
+        persisted_gemini_api_key
+            .filter(|value| !value.trim().is_empty() && !is_redacted_secret_placeholder(value))
+    });
+
+    let provider_ids: Vec<String> = settings
+        .post_process_providers
+        .iter()
+        .map(|provider| provider.id.clone())
+        .collect();
+
+    for provider_id in provider_ids {
+        let persisted_value = settings
+            .post_process_api_keys
+            .get(&provider_id)
+            .cloned()
+            .unwrap_or_default();
+        let persisted_value = if is_redacted_secret_placeholder(&persisted_value) {
+            String::new()
+        } else {
+            persisted_value
+        };
+        let secure_value =
+            crate::secrets::load_post_process_api_key(&provider_id).unwrap_or(persisted_value);
+        settings
+            .post_process_api_keys
+            .insert(provider_id, secure_value);
+    }
+}
+
+fn exportable_settings(mut settings: AppSettings) -> AppSettings {
+    sanitize_persisted_secrets(&mut settings);
+    settings
+}
+
+pub fn get_public_settings(app: &AppHandle) -> AppSettings {
+    let mut settings = get_settings(app);
+    let gemini_is_configured = settings
+        .gemini_api_key
+        .as_ref()
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+
+    sanitize_persisted_secrets(&mut settings);
+    if gemini_is_configured {
+        settings.gemini_api_key = Some(CONFIGURED_SECRET_SENTINEL.to_string());
+    }
+
+    settings
+}
+
+pub fn get_exportable_settings(app: &AppHandle) -> AppSettings {
+    exportable_settings(get_settings(app))
+}
+
+fn prepare_settings_for_runtime(app: &AppHandle, settings: &mut AppSettings) -> bool {
+    let secrets_changed = migrate_plaintext_secrets_to_secure_store(settings);
+    let post_process_changed = ensure_post_process_defaults(settings);
+    let language_changed = ensure_selected_language_default(settings);
+    let adaptive_profile_changed = ensure_adaptive_profile(app, settings);
+    let external_script_changed = sanitize_external_script_path(app, settings);
+
+    hydrate_secure_secrets(settings);
+
+    secrets_changed
+        || post_process_changed
+        || language_changed
+        || adaptive_profile_changed
+        || external_script_changed
+}
+
+fn prepare_settings_for_fast_runtime(app: &AppHandle, settings: &mut AppSettings) -> bool {
+    let secrets_changed = migrate_plaintext_secrets_to_secure_store(settings);
+    let post_process_changed = ensure_post_process_defaults(settings);
+    let language_changed = ensure_selected_language_default(settings);
+    let external_script_changed = sanitize_external_script_path(app, settings);
+
+    hydrate_secure_secrets(settings);
+
+    secrets_changed || post_process_changed || language_changed || external_script_changed
+}
+
+pub fn external_scripts_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let directory = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| format!("Failed to resolve app data directory: {}", err))?
+        .join("external-scripts");
+
+    std::fs::create_dir_all(&directory).map_err(|err| {
+        format!(
+            "Failed to initialize the external scripts directory '{}': {}",
+            directory.display(),
+            err
+        )
+    })?;
+
+    Ok(directory)
+}
+
+pub fn validate_external_script_path(app: &AppHandle, path: &str) -> Result<String, String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err("External script path is empty".to_string());
+    }
+
+    let allowed_root = external_scripts_dir(app)?;
+    let candidate = PathBuf::from(trimmed);
+    if !candidate.is_absolute() {
+        return Err(format!(
+            "External scripts must use an absolute path inside '{}'",
+            allowed_root.display()
+        ));
+    }
+
+    let canonical_root = allowed_root
+        .canonicalize()
+        .unwrap_or_else(|_| allowed_root.clone());
+    let canonical_candidate = candidate.canonicalize().map_err(|err| {
+        format!(
+            "Failed to resolve external script path '{}': {}",
+            candidate.display(),
+            err
+        )
+    })?;
+
+    if !canonical_candidate.is_file() {
+        return Err(format!(
+            "External script '{}' must point to a file",
+            canonical_candidate.display()
+        ));
+    }
+
+    if !path_is_within_root(&canonical_candidate, &canonical_root) {
+        return Err(format!(
+            "External scripts must live inside '{}'",
+            canonical_root.display()
+        ));
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        let permissions = canonical_candidate
+            .metadata()
+            .map_err(|err| {
+                format!(
+                    "Failed to read permissions for external script '{}': {}",
+                    canonical_candidate.display(),
+                    err
+                )
+            })?
+            .permissions();
+
+        if permissions.mode() & 0o111 == 0 {
+            return Err(format!(
+                "External script '{}' must be executable",
+                canonical_candidate.display()
+            ));
+        }
+    }
+
+    Ok(canonical_candidate.to_string_lossy().to_string())
+}
+
+fn sanitize_external_script_path(app: &AppHandle, settings: &mut AppSettings) -> bool {
+    let Some(path) = settings.external_script_path.clone() else {
+        return false;
+    };
+
+    if path.trim().is_empty() {
+        if settings.external_script_path.take().is_some() {
+            return true;
+        }
+        return false;
+    }
+
+    match validate_external_script_path(app, &path) {
+        Ok(validated_path) => {
+            if settings.external_script_path.as_deref() != Some(validated_path.as_str()) {
+                settings.external_script_path = Some(validated_path);
+                return true;
+            }
+            false
+        }
+        Err(err) => {
+            warn!(
+                "Discarding invalid external script path '{}': {}",
+                path, err
+            );
+            settings.external_script_path = None;
+            true
+        }
+    }
+}
+
+fn path_is_within_root(path: &Path, root: &Path) -> bool {
+    path == root || path.starts_with(root)
+}
 
 pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "windows")]
@@ -2188,7 +2497,6 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(mut settings) => {
-                debug!("Found existing settings: {:?}", settings);
                 let default_settings = get_default_settings();
                 let mut updated = false;
 
@@ -2222,12 +2530,12 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    let post_process_changed = ensure_post_process_defaults(&mut settings);
-    let language_changed = ensure_selected_language_default(&mut settings);
-    let adaptive_profile_changed = ensure_adaptive_profile(app, &mut settings);
-    hydrate_settings_secrets(app, &mut settings);
-    if post_process_changed || language_changed || adaptive_profile_changed {
-        persist_settings_payload(&store, &settings);
+    if prepare_settings_for_runtime(app, &mut settings) {
+        store.set(
+            "settings",
+            serde_json::to_value(exportable_settings(settings.clone())).unwrap(),
+        );
+        persist_store(&store);
     }
 
     settings
@@ -2250,12 +2558,12 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    let post_process_changed = ensure_post_process_defaults(&mut settings);
-    let language_changed = ensure_selected_language_default(&mut settings);
-    let adaptive_profile_changed = ensure_adaptive_profile(app, &mut settings);
-    hydrate_settings_secrets(app, &mut settings);
-    if post_process_changed || language_changed || adaptive_profile_changed {
-        persist_settings_payload(&store, &settings);
+    if prepare_settings_for_runtime(app, &mut settings) {
+        store.set(
+            "settings",
+            serde_json::to_value(exportable_settings(settings.clone())).unwrap(),
+        );
+        persist_store(&store);
     }
 
     settings
@@ -2281,11 +2589,12 @@ pub fn get_settings_fast(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    let post_process_changed = ensure_post_process_defaults(&mut settings);
-    let language_changed = ensure_selected_language_default(&mut settings);
-    hydrate_settings_secrets(app, &mut settings);
-    if post_process_changed || language_changed {
-        persist_settings_payload(&store, &settings);
+    if prepare_settings_for_fast_runtime(app, &mut settings) {
+        store.set(
+            "settings",
+            serde_json::to_value(exportable_settings(settings.clone())).unwrap(),
+        );
+        persist_store(&store);
     }
 
     settings
@@ -2308,7 +2617,11 @@ pub fn refresh_adaptive_profile_if_needed(app: &AppHandle) {
     let changed = ensure_adaptive_profile(app, &mut settings);
     hydrate_settings_secrets(app, &mut settings);
     if changed {
-        persist_settings_payload(&store, &settings);
+        store.set(
+            "settings",
+            serde_json::to_value(exportable_settings(settings)).unwrap(),
+        );
+        persist_store(&store);
         log::info!("Adaptive machine profile refreshed in background");
     }
 }
@@ -2318,36 +2631,11 @@ pub fn write_settings(app: &AppHandle, settings: AppSettings) {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    match settings.gemini_api_key.as_deref().map(str::trim) {
-        Some(value) if !value.is_empty() => {
-            if let Err(err) = crate::secret_store::set_gemini_api_key(value) {
-                warn!("Failed to persist Gemini API key in secure store: {}", err);
-            }
-        }
-        _ => {
-            if let Err(err) = crate::secret_store::clear_gemini_api_key() {
-                warn!("Failed to clear Gemini API key from secure store: {}", err);
-            }
-        }
-    }
-
-    for (provider_id, api_key) in &settings.post_process_api_keys {
-        let trimmed = api_key.trim();
-        let result = if trimmed.is_empty() {
-            crate::secret_store::clear_post_process_api_key(provider_id)
-        } else {
-            crate::secret_store::set_post_process_api_key(provider_id, trimmed)
-        };
-
-        if let Err(err) = result {
-            warn!(
-                "Failed to persist secure post-process API key for provider '{}': {}",
-                provider_id, err
-            );
-        }
-    }
-
-    persist_settings_payload(&store, &settings);
+    store.set(
+        "settings",
+        serde_json::to_value(exportable_settings(settings)).unwrap(),
+    );
+    persist_store(&store);
 }
 
 fn whisper_config_mut<'a>(

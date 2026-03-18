@@ -15,14 +15,15 @@ const VocalTypeLogo = ({
     <div
       className={className}
       style={{
-        fontFamily: "'Cabinet Grotesk', 'Geist Pixel Circle', monospace",
-        fontSize: width ? width / 4.2 : 28,
-        fontWeight: "900",
+        fontFamily: "'Segoe UI', system-ui, sans-serif",
+        fontSize: width ? width / 5.2 : 20,
+        fontWeight: "600",
         letterSpacing: "-0.5px",
         width,
         display: "flex",
         alignItems: "center",
-        gap: "2px",
+        gap: "0px",
+        lineHeight: 1,
       }}
     >
       <span style={{ color: "#f5f2ed" }}>{WORDMARK.first}</span>

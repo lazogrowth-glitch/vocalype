@@ -6,6 +6,7 @@ import { Dropdown } from "../../ui/Dropdown";
 import { useSettings } from "../../../hooks/useSettings";
 import { useModelStore } from "../../../stores/modelStore";
 import type { ModelInfo } from "@/bindings";
+import { getTranslatedModelName } from "../../../lib/utils/modelTranslation";
 
 const THRESHOLD_OPTIONS = [5, 10, 15, 20, 30, 60];
 
@@ -22,7 +23,7 @@ export const LongAudioModelSettings: React.FC = () => {
     { value: "", label: t("settings.longAudioModel.disabled") },
     ...downloadedModels.map((m: ModelInfo) => ({
       value: m.id,
-      label: m.name,
+      label: getTranslatedModelName(m, t),
     })),
   ];
 

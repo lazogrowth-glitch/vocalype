@@ -297,6 +297,9 @@ export const AuthPortal = ({
       setNewPwd("");
       setConfirmPwd("");
       setShowChangePassword(false);
+      window.setTimeout(() => {
+        onLogout();
+      }, 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (

@@ -228,24 +228,24 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const progressPercent = getProgressPercent();
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`flex items-center gap-2 ${className}`}>
       <audio ref={audioRef} src={src ?? undefined} preload="metadata" />
 
       <button
         onClick={togglePlay}
         disabled={isLoading}
-        className="transition-colors cursor-pointer text-text hover:text-logo-primary disabled:opacity-50"
+        className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-50"
         aria-label={isPlaying ? "Pause" : "Play"}
       >
         {isPlaying ? (
-          <Pause width={20} height={20} fill="currentColor" />
+          <Pause width={17} height={17} fill="currentColor" />
         ) : (
-          <Play width={20} height={20} fill="currentColor" />
+          <Play width={17} height={17} fill="currentColor" />
         )}
       </button>
 
-      <div className="flex-1 flex items-center gap-2">
-        <span className="text-xs text-text/60 min-w-[30px] tabular-nums">
+      <div className="flex flex-1 items-center gap-2">
+        <span className="min-w-[30px] text-[11px] text-text/60 tabular-nums">
           {formatTime(currentTime)}
         </span>
 
@@ -258,13 +258,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           onChange={handleSeek}
           onMouseDown={handleSliderMouseDown}
           onTouchStart={handleSliderTouchStart}
-          className={`flex-1 h-1 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-logo-primary ${progressPercent >= 99.5 ? "[&::-webkit-slider-thumb]:translate-x-0.5 [&::-moz-range-thumb]:translate-x-0.5" : ""}`}
+          className={`h-[3px] flex-1 cursor-pointer appearance-none rounded-full focus:outline-none focus:ring-1 focus:ring-logo-primary ${progressPercent >= 99.5 ? "[&::-webkit-slider-thumb]:translate-x-0.5 [&::-moz-range-thumb]:translate-x-0.5" : ""}`}
           style={{
             background: `linear-gradient(to right, var(--color-logo-primary) 0%, var(--color-logo-primary) ${progressPercent}%, rgba(128, 128, 128, 0.2) ${progressPercent}%, rgba(128, 128, 128, 0.2) 100%)`,
           }}
         />
 
-        <span className="text-xs text-text/60 min-w-[30px] tabular-nums">
+        <span className="min-w-[30px] text-[11px] text-text/60 tabular-nums">
           {formatTime(duration)}
         </span>
       </div>

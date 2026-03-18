@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
+import { ResetButton } from "../ui/ResetButton";
 import { SUPPORTED_LANGUAGES, type SupportedLanguageCode } from "../../i18n";
 import { useSettings } from "@/hooks/useSettings";
 
@@ -13,7 +14,7 @@ interface AppLanguageSelectorProps {
 export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
   React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
     const { t, i18n } = useTranslation();
-    const { settings, updateSetting } = useSettings();
+    const { settings, updateSetting, resetSetting, isUpdating } = useSettings();
 
     const currentLanguage = (settings?.app_language ||
       i18n.language) as SupportedLanguageCode;
@@ -35,11 +36,18 @@ export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <Dropdown
-          options={languageOptions}
-          selectedValue={currentLanguage}
-          onSelect={handleLanguageChange}
-        />
+        <div className="flex items-center gap-2">
+          <Dropdown
+            options={languageOptions}
+            selectedValue={currentLanguage}
+            onSelect={handleLanguageChange}
+            disabled={isUpdating("app_language")}
+          />
+          <ResetButton
+            onClick={() => resetSetting("app_language")}
+            disabled={isUpdating("app_language")}
+          />
+        </div>
       </SettingContainer>
     );
   });

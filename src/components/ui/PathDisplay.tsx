@@ -15,17 +15,30 @@ export const PathDisplay: React.FC<PathDisplayProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  const truncateMiddle = (value: string) => {
+    if (value.length <= 58) {
+      return value;
+    }
+
+    return `${value.slice(0, 24)}...${value.slice(-20)}`;
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 min-w-0 px-2 py-2 bg-mid-gray/10 border border-mid-gray/80 rounded-lg text-xs font-mono break-all select-text cursor-text">
-        {path}
+    <div className="flex min-w-0 items-center gap-3">
+      <div
+        className="min-w-0 flex-1 overflow-hidden rounded-[7px] border border-white/10 bg-white/[0.06] px-3 py-[5px] text-[11px] font-mono text-white/55"
+        title={path}
+      >
+        <div className="truncate select-text cursor-text">
+          {truncateMiddle(path)}
+        </div>
       </div>
       <Button
         onClick={onOpen}
         variant="secondary"
         size="sm"
         disabled={disabled}
-        className="px-3 py-2"
+        className="shrink-0 whitespace-nowrap"
       >
         {t("common.open")}
       </Button>

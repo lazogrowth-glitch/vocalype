@@ -2,36 +2,71 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VocalType</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: #0a0a0a; color: #f5f2ed; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; height: 100vh; }
+      #startup-splash { position: fixed; inset: 0; display: flex; flex-direction: column; z-index: 9999; background: #0a0a0a; }
+      .sk-layout { display: flex; height: 100%; }
+      .sk-sidebar { width: 208px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; padding: 0 8px; flex-shrink: 0; }
+      .sk-logo { margin: 16px auto; width: 140px; height: 28px; background: rgba(255,255,255,0.06); border-radius: 6px; }
+      .sk-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 0 0 8px 0; }
+      .sk-nav-item { height: 36px; border-radius: 8px; margin-bottom: 4px; display: flex; align-items: center; padding: 0 8px; gap: 8px; }
+      .sk-nav-item.active { background: rgba(184,142,60,0.5); }
+      .sk-nav-icon { width: 24px; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
+      .sk-nav-label { height: 12px; border-radius: 4px; background: rgba(255,255,255,0.1); flex: 1; }
+      .sk-nav-item.active .sk-nav-icon, .sk-nav-item.active .sk-nav-label { background: rgba(255,255,255,0.25); }
+      .sk-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+      .sk-status-bar { height: 52px; margin: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+      .sk-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 16px; }
+      .sk-section { border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
+      .sk-section-title { height: 10px; width: 60px; background: rgba(255,255,255,0.08); border-radius: 4px; margin: 12px 16px 8px; }
+      .sk-row { height: 40px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; padding: 0 16px; gap: 8px; }
+      .sk-row-label { height: 11px; border-radius: 4px; background: rgba(255,255,255,0.08); flex: 1; max-width: 180px; }
+      .sk-row-control { height: 28px; width: 110px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); flex-shrink: 0; }
+      .sk-footer { height: 36px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; padding: 0 16px; margin-top: auto; }
+      .sk-footer-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; margin-right: 8px; }
+      .sk-footer-label { height: 10px; width: 120px; border-radius: 4px; background: rgba(255,255,255,0.08); }
+      .sk-footer-right { margin-left: auto; height: 10px; width: 80px; border-radius: 4px; background: rgba(255,255,255,0.06); }
+      @keyframes shimmer { 0%{opacity:0.5} 50%{opacity:1} 100%{opacity:0.5} }
+      .sk-logo, .sk-nav-label, .sk-status-bar, .sk-section-title, .sk-row-label, .sk-row-control, .sk-footer-label, .sk-footer-right { animation: shimmer 1.8s ease-in-out infinite; }
+    </style>
   </head>
   <body>
-    <div
-      id="startup-splash"
-      style="
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #0a0a0a;
-        color: #f5f2ed;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        z-index: 9999;
-      "
-    >
-      <div style="max-width: 420px; padding: 24px; text-align: center;">
-        <div style="font-size: 20px; font-weight: 700; margin-bottom: 10px;">
-          VocalType
+    <div id="startup-splash">
+      <div class="sk-layout">
+        <div class="sk-sidebar">
+          <div class="sk-logo"></div>
+          <div class="sk-divider"></div>
+          <div class="sk-nav-item active"><div class="sk-nav-icon"></div><div class="sk-nav-label"></div></div>
+          <div class="sk-nav-item"><div class="sk-nav-icon"></div><div class="sk-nav-label"></div></div>
+          <div class="sk-nav-item"><div class="sk-nav-icon"></div><div class="sk-nav-label"></div></div>
+          <div class="sk-nav-item"><div class="sk-nav-icon"></div><div class="sk-nav-label"></div></div>
+          <div class="sk-nav-item"><div class="sk-nav-icon"></div><div class="sk-nav-label"></div></div>
+          <div class="sk-nav-item"><div class="sk-nav-icon"></div><div class="sk-nav-label"></div></div>
         </div>
-        <div
-          id="startup-splash-message"
-          style="font-size: 14px; line-height: 1.6; color: #b7b1a7;"
-        >
-          Starting desktop UI...
+        <div class="sk-content">
+          <div class="sk-status-bar"></div>
+          <div class="sk-body">
+            <div class="sk-section">
+              <div class="sk-section-title"></div>
+              <div class="sk-row"><div class="sk-row-label"></div><div class="sk-row-control"></div></div>
+              <div class="sk-row"><div class="sk-row-label"></div><div class="sk-row-control"></div></div>
+              <div class="sk-row"><div class="sk-row-label"></div><div class="sk-row-control"></div></div>
+              <div class="sk-row"><div class="sk-row-label"></div><div class="sk-row-control"></div></div>
+            </div>
+            <div class="sk-section">
+              <div class="sk-section-title"></div>
+              <div class="sk-row"><div class="sk-row-label"></div><div class="sk-row-control"></div></div>
+              <div class="sk-row"><div class="sk-row-label"></div><div class="sk-row-control"></div></div>
+            </div>
+          </div>
+          <div class="sk-footer">
+            <div class="sk-footer-dot"></div>
+            <div class="sk-footer-label"></div>
+            <div class="sk-footer-right"></div>
+          </div>
         </div>
       </div>
     </div>

@@ -509,6 +509,7 @@ fn send_key_combo_via_xdotool(paste_method: &PasteMethod) -> Result<(), String> 
 
 /// Pastes text by invoking an external script.
 /// The script receives the text to paste as a single argument.
+<<<<<<< HEAD
 pub(crate) fn validate_external_script_path(script_path: &str) -> Result<PathBuf, String> {
     let candidate = Path::new(script_path);
     if !candidate.is_absolute() {
@@ -541,13 +542,29 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
     info!("Pasting via external script: {}", canonical.display());
 
     let output = Command::new(&canonical)
+=======
+fn paste_via_external_script(
+    text: &str,
+    script_path: &str,
+    app_handle: &AppHandle,
+) -> Result<(), String> {
+    let validated_script_path =
+        crate::settings::validate_external_script_path(app_handle, script_path)?;
+    info!("Pasting via external script: {}", script_path);
+
+    let output = Command::new(&validated_script_path)
+>>>>>>> 0534e59183f4ea978e19543039d8174b0c58c2e3
         .arg(text)
         .output()
         .map_err(|e| {
             format!(
                 "Failed to execute external script '{}': {}",
+<<<<<<< HEAD
                 canonical.display(),
                 e
+=======
+                validated_script_path, e
+>>>>>>> 0534e59183f4ea978e19543039d8174b0c58c2e3
             )
         })?;
 
@@ -556,7 +573,11 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
         let stdout = String::from_utf8_lossy(&output.stdout);
         return Err(format!(
             "External script '{}' failed with exit code {:?}. stderr: {}, stdout: {}",
+<<<<<<< HEAD
             canonical.display(),
+=======
+            validated_script_path,
+>>>>>>> 0534e59183f4ea978e19543039d8174b0c58c2e3
             output.status.code(),
             stderr.trim(),
             stdout.trim()
@@ -691,7 +712,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 .as_ref()
                 .filter(|p| !p.is_empty())
                 .ok_or("External script path is not configured")?;
-            paste_via_external_script(&text, script_path)?;
+            paste_via_external_script(&text, script_path, &app_handle)?;
         }
     }
 

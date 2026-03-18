@@ -5,6 +5,10 @@ import os
 import secrets
 import smtplib
 import sqlite3
+import re
+import time
+import uuid
+from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from functools import wraps
@@ -17,13 +21,64 @@ from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+
+DEFAULT_ALLOWED_ORIGINS = (
+    "https://vocaltypeai.com",
+    "https://www.vocaltypeai.com",
+    "tauri://localhost",
+    "https://tauri.localhost",
+    "http://tauri.localhost",
+    "http://localhost:1420",
+    "http://127.0.0.1:1420",
+)
+EMAIL_REGEX = re.compile(
+    r"^(?=.{1,254}$)(?=.{1,64}@)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$",
+    re.IGNORECASE,
+)
+
+
+def env_int(name: str, default: int, minimum: int) -> int:
+    try:
+        return max(minimum, int(os.environ.get(name, str(default))))
+    except (TypeError, ValueError):
+        return default
+
+
+def parse_allowed_origins() -> list[str]:
+    raw = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+    if raw.strip():
+        origins = [item.strip() for item in raw.split(",") if item.strip()]
+        if origins:
+            return origins
+    return list(DEFAULT_ALLOWED_ORIGINS)
+
+
+CORS_ALLOWED_ORIGINS = parse_allowed_origins()
+ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 15, 5)
+PASSWORD_MIN_LENGTH = env_int("MIN_PASSWORD_LENGTH", 12, 12)
+RATE_LIMIT_BUCKETS: defaultdict[str, deque[float]] = defaultdict(deque)
+RATE_LIMIT_LOCK = Lock()
+
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": CORS_ALLOWED_ORIGINS,
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Authorization", "Content-Type"],
+            "max_age": 600,
+        }
+    },
+)
 
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
+ADMIN_TOKEN_SECRET = os.environ.get("ADMIN_TOKEN_SECRET", "")
+ADMIN_TOKEN_AUDIENCE = os.environ.get("ADMIN_TOKEN_AUDIENCE", "vocaltype-admin")
+ADMIN_TOKEN_MAX_AGE_SECONDS = env_int("ADMIN_TOKEN_MAX_AGE_SECONDS", 300, 60)
 APP_RETURN_URL = os.environ.get(
     "APP_RETURN_URL",
     os.environ.get("FRONTEND_URL", "https://vocaltypeai.com"),
@@ -50,6 +105,109 @@ MAX_RESET_TOKEN_ATTEMPTS = 5
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def client_ip() -> str:
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+
+def log_security_event(event: str, **fields) -> None:
+    rendered_fields = " ".join(
+        f"{key}={value}" for key, value in fields.items() if value not in (None, "")
+    )
+    if rendered_fields:
+        app.logger.warning("security_event=%s %s", event, rendered_fields)
+    else:
+        app.logger.warning("security_event=%s", event)
+
+
+def normalize_email(value: str) -> str:
+    return value.strip().lower()
+
+
+def email_is_valid(email: str) -> bool:
+    return bool(EMAIL_REGEX.fullmatch(email))
+
+
+def password_validation_error(password: str) -> str | None:
+    if len(password) < PASSWORD_MIN_LENGTH:
+        return (
+            f"Mot de passe trop court (minimum {PASSWORD_MIN_LENGTH} caractères)"
+        )
+
+    classes = sum(
+        (
+            bool(re.search(r"[a-z]", password)),
+            bool(re.search(r"[A-Z]", password)),
+            bool(re.search(r"[0-9]", password)),
+            bool(re.search(r"[^A-Za-z0-9]", password)),
+        )
+    )
+    if classes < 3:
+        return (
+            "Mot de passe trop faible "
+            "(utilisez au moins trois types de caractères : minuscules, "
+            "majuscules, chiffres, symboles)"
+        )
+
+    return None
+
+
+def device_id_is_valid(device_id: str | None) -> bool:
+    if not device_id:
+        return True
+    normalized = device_id.strip().lower()
+    if re.fullmatch(r"[a-f0-9]{64}", normalized):
+        return True
+    try:
+        uuid.UUID(device_id)
+        return True
+    except ValueError:
+        return False
+
+
+def consume_rate_limit(bucket: str, limit: int, window_seconds: int) -> int | None:
+    now = time.time()
+    oldest_allowed = now - window_seconds
+
+    with RATE_LIMIT_LOCK:
+        attempts = RATE_LIMIT_BUCKETS[bucket]
+        while attempts and attempts[0] <= oldest_allowed:
+            attempts.popleft()
+
+        if len(attempts) >= limit:
+            retry_after = max(1, int(window_seconds - (now - attempts[0])))
+            return retry_after
+
+        attempts.append(now)
+
+    return None
+
+
+def rate_limit_response(
+    bucket: str,
+    *,
+    limit: int,
+    window_seconds: int,
+    message: str,
+):
+    retry_after = consume_rate_limit(bucket, limit, window_seconds)
+    if retry_after is None:
+        return None
+
+    log_security_event(
+        "rate_limit_triggered",
+        bucket=bucket,
+        ip=client_ip(),
+        retry_after=retry_after,
+    )
+    response = jsonify({"error": message})
+    response.status_code = 429
+    response.headers["Retry-After"] = str(retry_after)
+    return response
 
 
 def to_iso(value: int | None) -> str | None:
@@ -137,10 +295,11 @@ def init_db():
 init_db()
 
 
-def make_token(user_id: int) -> str:
+def make_token(user) -> str:
     payload = {
-        "user_id": user_id,
-        "exp": utc_now() + timedelta(days=90),
+        "user_id": user["id"],
+        "ver": int(user["token_version"] or 0),
+        "exp": utc_now() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
@@ -199,7 +358,20 @@ def get_current_user():
     except Exception:
         return None
 
-    return load_user_by_id(payload["user_id"])
+    user = load_user_by_id(payload.get("user_id"))
+    if not user:
+        return None
+
+    try:
+        token_version = int(user["token_version"] or 0)
+        claimed_version = int(payload.get("ver", 0))
+    except (TypeError, ValueError):
+        return None
+
+    if claimed_version != token_version:
+        return None
+
+    return user
 
 
 def parse_iso(value: str | None):
@@ -372,9 +544,105 @@ def auth_required(handler):
     return wrapper
 
 
+def origin_is_allowed(origin: str) -> bool:
+    normalized = origin.strip().rstrip("/")
+    if not normalized:
+        return False
+    return normalized in {item.rstrip("/") for item in CORS_ALLOWED_ORIGINS}
+
+
+@app.before_request
+def enforce_trusted_origins():
+    if request.method in {"GET", "HEAD", "OPTIONS"}:
+        return None
+
+    # Stripe and other server-to-server clients generally do not send Origin.
+    # We only enforce the allowlist when the request declares a browser origin.
+    if request.path == "/webhook":
+        return None
+
+    origin = request.headers.get("Origin", "").strip()
+    if not origin:
+        return None
+
+    if origin_is_allowed(origin):
+        return None
+
+    log_security_event(
+        "origin_rejected",
+        origin=origin,
+        path=request.path,
+        ip=client_ip(),
+    )
+    return jsonify({"error": "Origine non autorisée"}), 403
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("Cache-Control", "no-store")
+    response.headers.setdefault("Pragma", "no-cache")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Cross-Origin-Resource-Policy", "same-site")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=()",
+    )
+    return response
+
+
 def require_secret_configured():
     if not JWT_SECRET:
         raise RuntimeError("JWT_SECRET is required")
+    if len(JWT_SECRET) < 32:
+        raise RuntimeError("JWT_SECRET must be at least 32 characters long")
+    if ADMIN_SECRET:
+        app.logger.warning(
+            "ADMIN_SECRET is deprecated; use short-lived admin JWTs signed with ADMIN_TOKEN_SECRET instead"
+        )
+
+
+def extract_bearer_token() -> str:
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return ""
+    return auth_header[7:].strip()
+
+
+def get_current_admin_subject(required_scope: str) -> str | None:
+    token = extract_bearer_token()
+    if not token or not ADMIN_TOKEN_SECRET:
+        return None
+
+    try:
+        payload = jwt.decode(
+            token,
+            ADMIN_TOKEN_SECRET,
+            algorithms=["HS256"],
+            audience=ADMIN_TOKEN_AUDIENCE,
+            options={"require": ["exp", "iat", "sub", "scope"]},
+        )
+    except Exception:
+        return None
+
+    issued_at = payload.get("iat")
+    if not isinstance(issued_at, int):
+        return None
+
+    now = int(time.time())
+    if issued_at > now + 30:
+        return None
+    if now - issued_at > ADMIN_TOKEN_MAX_AGE_SECONDS:
+        return None
+
+    scope = payload.get("scope", "")
+    scopes = {item.strip() for item in str(scope).split() if item.strip()}
+    if required_scope not in scopes:
+        return None
+
+    subject = str(payload.get("sub", "")).strip()
+    return subject or None
 
 
 def require_billing_configured():
@@ -491,21 +759,46 @@ def health():
 @app.route("/auth/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True) or {}
-    email = data.get("email", "").strip().lower()
+    email = normalize_email(data.get("email", ""))
     password = data.get("password", "")
     name = data.get("name", "").strip() or None
     device_id = data.get("device_id", "").strip() or None
+    ip_address = client_ip()
 
-    if not email or "@" not in email:
+    response = rate_limit_response(
+        f"register:ip:{ip_address}",
+        limit=5,
+        window_seconds=3600,
+        message="Trop de tentatives d'inscription. Réessayez plus tard.",
+    )
+    if response:
+        return response
+
+    if not email_is_valid(email):
         return jsonify({"error": "Email invalide"}), 400
 
-    if len(password) < 6:
-        return jsonify({"error": "Mot de passe trop court (minimum 6 caractères)"}), 400
+    if not device_id_is_valid(device_id):
+        return jsonify({"error": "Identifiant appareil invalide"}), 400
+
+    password_error = password_validation_error(password)
+    if password_error:
+        return jsonify({"error": password_error}), 400
 
     if device_id and device_is_registered(device_id):
+        log_security_event(
+            "register_blocked_existing_device",
+            email=email,
+            ip=ip_address,
+            device_id=device_id,
+        )
         return jsonify({"error": "Un compte existe déjà sur cet appareil"}), 409
 
     if load_user_by_email(email):
+        log_security_event(
+            "register_blocked_existing_email",
+            email=email,
+            ip=ip_address,
+        )
         return jsonify({"error": "Cet email est déjà utilisé"}), 409
 
     try:
@@ -540,23 +833,62 @@ def register():
 
         register_device(device_id, user["id"])
 
-        token = make_token(user["id"])
+        token = make_token(user)
+        log_security_event("register_success", user_id=user["id"], email=email, ip=ip_address)
         return jsonify(build_user_response(user, token)), 201
     except Exception as exc:
+        app.logger.exception("register_failed email=%s ip=%s", email, ip_address)
         return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/auth/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
-    email = data.get("email", "").strip().lower()
+    email = normalize_email(data.get("email", ""))
     password = data.get("password", "")
+    device_id = data.get("device_id", "").strip() or None
+    ip_address = client_ip()
+
+    response = rate_limit_response(
+        f"login:ip:{ip_address}",
+        limit=20,
+        window_seconds=600,
+        message="Trop de tentatives de connexion. Réessayez plus tard.",
+    )
+    if response:
+        return response
+
+    response = rate_limit_response(
+        f"login:email:{email}:{ip_address}",
+        limit=8,
+        window_seconds=600,
+        message="Trop de tentatives de connexion. Réessayez plus tard.",
+    )
+    if response:
+        return response
+
+    response = rate_limit_response(
+        f"login:email:{email}",
+        limit=12,
+        window_seconds=1800,
+        message="Trop de tentatives de connexion. Réessayez plus tard.",
+    )
+    if response:
+        return response
 
     user = load_user_by_email(email)
     if not user or not check_password_hash(user["password_hash"], password):
+        log_security_event("login_failed", email=email, ip=ip_address)
         return jsonify({"error": "Email ou mot de passe incorrect"}), 401
 
-    token = make_token(user["id"])
+    if device_id and not device_id_is_valid(device_id):
+        return jsonify({"error": "Identifiant appareil invalide"}), 400
+
+    if device_id:
+        register_device(device_id, user["id"])
+
+    token = make_token(user)
+    log_security_event("login_success", user_id=user["id"], email=email, ip=ip_address)
     return jsonify(build_user_response(user, token))
 
 
@@ -667,11 +999,22 @@ def webhook():
 
 @app.route("/admin/activate", methods=["POST"])
 def admin_activate():
-    secret = request.headers.get("X-Admin-Secret", "")
     data = request.get_json(silent=True) or {}
-    email = data.get("email", "").strip().lower()
+    email = normalize_email(data.get("email", ""))
+    ip_address = client_ip()
+    admin_subject = get_current_admin_subject("admin:activate")
 
-    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+    response = rate_limit_response(
+        f"admin_activate:ip:{ip_address}",
+        limit=10,
+        window_seconds=3600,
+        message="Trop de tentatives administrateur. Réessayez plus tard.",
+    )
+    if response:
+        return response
+
+    if not admin_subject:
+        log_security_event("admin_activate_denied", email=email, ip=ip_address)
         return jsonify({"error": "Non autorisé"}), 401
 
     if not email:
@@ -696,7 +1039,20 @@ def admin_activate():
     finally:
         db.close()
 
-    return jsonify({"ok": True, "email": email, "status": "active"})
+    log_security_event(
+        "admin_activate_success",
+        email=email,
+        ip=ip_address,
+        admin_subject=admin_subject,
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "email": email,
+            "status": "active",
+            "admin_subject": admin_subject,
+        }
+    )
 
 
 @app.route("/auth/forgot-password", methods=["POST"])
@@ -749,13 +1105,19 @@ def forgot_password():
         except Exception:
             pass
 
+    log_security_event(
+        "forgot_password_requested",
+        email=email,
+        ip=ip_address,
+        user_found=bool(user),
+    )
     return jsonify({"ok": True})
 
 
 @app.route("/auth/verify-reset-code", methods=["POST"])
 def verify_reset_code():
     data = request.get_json(silent=True) or {}
-    email = data.get("email", "").strip().lower()
+    email = normalize_email(data.get("email", ""))
     code = data.get("code", "").strip()
     client_ip = get_client_ip()
 
@@ -812,13 +1174,32 @@ def verify_reset_code():
 @app.route("/auth/reset-password", methods=["POST"])
 def reset_password():
     data = request.get_json(silent=True) or {}
-    email = data.get("email", "").strip().lower()
+    email = normalize_email(data.get("email", ""))
     code = data.get("code", "").strip()
     new_password = data.get("new_password", "")
     client_ip = get_client_ip()
 
-    if len(new_password) < 6:
-        return jsonify({"error": "Mot de passe trop court (minimum 6 caractères)"}), 400
+    response = rate_limit_response(
+        f"reset_password:ip:{ip_address}",
+        limit=8,
+        window_seconds=900,
+        message="Trop de tentatives de réinitialisation. Réessayez plus tard.",
+    )
+    if response:
+        return response
+
+    response = rate_limit_response(
+        f"reset_password:email:{email}",
+        limit=5,
+        window_seconds=900,
+        message="Trop de tentatives de réinitialisation. Réessayez plus tard.",
+    )
+    if response:
+        return response
+
+    password_error = password_validation_error(new_password)
+    if password_error:
+        return jsonify({"error": password_error}), 400
 
     retry_after = enforce_rate_limits(
         *(
@@ -867,9 +1248,10 @@ def reset_password():
             "UPDATE password_reset_tokens SET used = 1 WHERE user_id = ?",
             (user["id"],),
         )
+        next_token_version = int(user["token_version"] or 0) + 1
         db.execute(
-            "UPDATE users SET password_hash = ? WHERE id = ?",
-            (generate_password_hash(new_password), user["id"]),
+            "UPDATE users SET password_hash = ?, token_version = ? WHERE id = ?",
+            (generate_password_hash(new_password), next_token_version, user["id"]),
         )
         db.commit()
         user = db.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()
@@ -891,23 +1273,28 @@ def change_password(user):
     data = request.get_json(silent=True) or {}
     old_password = data.get("old_password", "")
     new_password = data.get("new_password", "")
+    ip_address = client_ip()
 
     if not check_password_hash(user["password_hash"], old_password):
+        log_security_event("change_password_failed", user_id=user["id"], ip=ip_address)
         return jsonify({"error": "Mot de passe actuel incorrect"}), 400
 
-    if len(new_password) < 6:
-        return jsonify({"error": "Mot de passe trop court (minimum 6 caractères)"}), 400
+    password_error = password_validation_error(new_password)
+    if password_error:
+        return jsonify({"error": password_error}), 400
 
     db = get_db()
     try:
+        next_token_version = int(user["token_version"] or 0) + 1
         db.execute(
-            "UPDATE users SET password_hash = ? WHERE id = ?",
-            (generate_password_hash(new_password), user["id"]),
+            "UPDATE users SET password_hash = ?, token_version = ? WHERE id = ?",
+            (generate_password_hash(new_password), next_token_version, user["id"]),
         )
         db.commit()
     finally:
         db.close()
 
+    log_security_event("change_password_success", user_id=user["id"], ip=ip_address)
     return jsonify({"ok": True})
 
 

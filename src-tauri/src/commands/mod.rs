@@ -11,6 +11,8 @@ use crate::context_detector::{detect_current_app_context, AppTranscriptionContex
 use crate::runtime_observability::{collect_runtime_diagnostics, RuntimeDiagnostics};
 use crate::settings::{get_settings, write_settings, AppSettings, CalibrationPhase, LogLevel};
 use crate::utils::cancel_current_operation;
+use sha2::{Digest, Sha256};
+use std::process::Command;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
@@ -47,7 +49,7 @@ pub fn get_app_dir_path(app: AppHandle) -> Result<String, String> {
 #[tauri::command]
 #[specta::specta]
 pub fn get_app_settings(app: AppHandle) -> Result<AppSettings, String> {
-    Ok(get_settings(&app))
+    Ok(crate::settings::get_public_settings(&app))
 }
 
 #[tauri::command]
@@ -159,8 +161,140 @@ pub fn import_settings(app: AppHandle, path: String) -> Result<(), String> {
     settings.external_script_path = None;
     settings.post_process_api_keys.values_mut().for_each(String::clear);
     write_settings(&app, settings);
+    let normalized_settings = get_settings(&app);
+    write_settings(&app, normalized_settings);
     log::info!("Settings imported from {}", path);
     Ok(())
+}
+
+fn hex_encode_lower(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut output = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        output.push(HEX[(byte >> 4) as usize] as char);
+        output.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    output
+}
+
+fn machine_identifier_seed() -> Result<String, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("reg")
+            .args([
+                "query",
+                r"HKLM\SOFTWARE\Microsoft\Cryptography",
+                "/v",
+                "MachineGuid",
+            ])
+            .output()
+            .map_err(|err| format!("Failed to query Windows machine identifier: {}", err))?;
+
+        if !output.status.success() {
+            return Err("Windows machine identifier query failed".to_string());
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        for line in stdout.lines() {
+            if line.contains("MachineGuid") {
+                let value = line
+                    .split_whitespace()
+                    .last()
+                    .unwrap_or_default()
+                    .trim()
+                    .to_string();
+                if !value.is_empty() {
+                    return Ok(value);
+                }
+            }
+        }
+
+        return Err("Windows machine identifier was empty".to_string());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let output = Command::new("ioreg")
+            .args(["-rd1", "-c", "IOPlatformExpertDevice"])
+            .output()
+            .map_err(|err| format!("Failed to query macOS machine identifier: {}", err))?;
+
+        if !output.status.success() {
+            return Err("macOS machine identifier query failed".to_string());
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        for line in stdout.lines() {
+            if let Some((_, raw_value)) = line.split_once("IOPlatformUUID") {
+                let value = raw_value
+                    .trim()
+                    .trim_start_matches('=')
+                    .trim()
+                    .trim_matches('"')
+                    .to_string();
+                if !value.is_empty() {
+                    return Ok(value);
+                }
+            }
+        }
+
+        return Err("macOS machine identifier was empty".to_string());
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        for path in ["/etc/machine-id", "/var/lib/dbus/machine-id"] {
+            if let Ok(value) = std::fs::read_to_string(path) {
+                let trimmed = value.trim();
+                if !trimmed.is_empty() {
+                    return Ok(trimmed.to_string());
+                }
+            }
+        }
+
+        return Err("Linux machine identifier was empty".to_string());
+    }
+
+    #[allow(unreachable_code)]
+    Err("Unsupported platform for machine identifier".to_string())
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn get_machine_device_id(app: AppHandle) -> Result<String, String> {
+    let seed = machine_identifier_seed()?;
+    let app_id = app
+        .config()
+        .identifier
+        .trim()
+        .to_string();
+
+    let mut hasher = Sha256::new();
+    hasher.update("vocaltype-device-id:v1:");
+    hasher.update(app_id.as_bytes());
+    hasher.update(b":");
+    hasher.update(seed.trim().as_bytes());
+    let digest = hasher.finalize();
+
+    Ok(hex_encode_lower(&digest))
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn load_secure_auth_token() -> Result<Option<String>, String> {
+    Ok(crate::secrets::load_auth_token())
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn store_secure_auth_token(token: String) -> Result<(), String> {
+    crate::secrets::store_auth_token(&token)
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn clear_secure_auth_token() -> Result<(), String> {
+    crate::secrets::store_auth_token("")
 }
 
 /// Check if Apple Intelligence is available on this device.

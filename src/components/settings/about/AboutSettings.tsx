@@ -9,6 +9,7 @@ import { AppDataDirectory } from "../AppDataDirectory";
 import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ExportImportSettings } from "../ExportImportSettings";
 import { LogDirectory } from "../debug";
+import VocalTypeLogo from "../../icons/VocalTypeLogo";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -29,7 +30,20 @@ export const AboutSettings: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-6">
+    <div className="w-full space-y-6">
+      <section className="space-y-3">
+        <VocalTypeLogo width={112} />
+        <p className="text-[12px] text-white/30">Version v{version}</p>
+        <Button
+          variant="secondary"
+          size="md"
+          className="inline-flex w-auto"
+          onClick={() => openUrl("https://github.com/lazogrowth-glitch/lazox")}
+        >
+          {t("settings.about.sourceCode.button")}
+        </Button>
+      </section>
+
       <SettingsGroup title={t("settings.about.title")}>
         <AppLanguageSelector descriptionMode="tooltip" grouped={true} />
         <SettingContainer
@@ -38,39 +52,12 @@ export const AboutSettings: React.FC = () => {
           grouped={true}
         >
           {/* eslint-disable-next-line i18next/no-literal-string */}
-          <span className="text-sm font-mono">v{version}</span>
-        </SettingContainer>
-
-        <SettingContainer
-          title={t("settings.about.sourceCode.title")}
-          description={t("settings.about.sourceCode.description")}
-          grouped={true}
-        >
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => openUrl("https://github.com/lazogrowth-glitch/lazox")}
-          >
-            {t("settings.about.sourceCode.button")}
-          </Button>
+          <span className="text-[13px] text-white/40">v{version}</span>
         </SettingContainer>
 
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />
         <ExportImportSettings grouped={true} />
         <LogDirectory grouped={true} />
-      </SettingsGroup>
-
-      <SettingsGroup title={t("settings.about.acknowledgments.title")}>
-        <SettingContainer
-          title={t("settings.about.acknowledgments.whisper.title")}
-          description={t("settings.about.acknowledgments.whisper.description")}
-          grouped={true}
-          layout="stacked"
-        >
-          <div className="text-sm text-mid-gray">
-            {t("settings.about.acknowledgments.whisper.details")}
-          </div>
-        </SettingContainer>
       </SettingsGroup>
     </div>
   );

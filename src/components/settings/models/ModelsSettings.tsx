@@ -8,7 +8,16 @@ import React, {
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { ChevronDown, Globe, RefreshCcw, X } from "lucide-react";
+import {
+  ChevronDown,
+  Globe,
+  RefreshCcw,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  TimerReset,
+  X,
+} from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
@@ -19,6 +28,7 @@ import { commands } from "@/bindings";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dropdown } from "@/components/ui";
+import { getTranslatedModelName } from "@/lib/utils/modelTranslation";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -164,19 +174,26 @@ const ProcessingModelsSection: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-text/60">
-        {t("settings.models.processingModels.description")}
-      </p>
+    <div className="space-y-4">
+      <div className="rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
+        <p className="text-[13.5px] font-medium text-white">
+          {t("settings.models.processingModels.title")}
+        </p>
+        <p className="mt-1 text-[11.5px] leading-5 text-white/40">
+          {t("settings.models.processingModels.description")}
+        </p>
+      </div>
 
       {savedModels.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-2">
           {savedModels.map((model) => (
             <div
               key={model.id}
-              className="flex items-center justify-between p-2.5 rounded-lg bg-mid-gray/5 border border-mid-gray/10"
+              className="flex items-center justify-between rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3"
             >
-              <span className="text-sm text-text">{model.label}</span>
+              <span className="truncate pr-3 text-[13px] text-text">
+                {model.label}
+              </span>
               <button
                 onClick={() => handleDelete(model.id)}
                 className="p-1 text-mid-gray/40 hover:text-red-400 transition-colors"
@@ -189,15 +206,15 @@ const ProcessingModelsSection: React.FC = () => {
       )}
 
       {savedModels.length === 0 && !isAdding && (
-        <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/10">
-          <p className="text-sm text-mid-gray">
+        <div className="rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
+          <p className="text-[12.5px] text-mid-gray">
             {t("settings.models.processingModels.noModels")}
           </p>
         </div>
       )}
 
       {isAdding && (
-        <div className="space-y-3 p-3 rounded-lg border border-mid-gray/20 bg-mid-gray/5">
+        <div className="space-y-3 rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
           <div className="space-y-1">
             <label className="text-sm font-semibold">
               {t("settings.models.processingModels.provider")}
@@ -269,7 +286,7 @@ const ProcessingModelsSection: React.FC = () => {
             </>
           )}
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-wrap gap-2 pt-1">
             <Button
               onClick={handleSave}
               variant="primary"
@@ -299,6 +316,25 @@ const ProcessingModelsSection: React.FC = () => {
 };
 
 type ModelsTab = "transcription" | "processing";
+
+const PRODUCT_MODE_META = {
+  auto: {
+    icon: Sparkles,
+    tone: "border-logo-primary/20 bg-logo-primary/8 text-logo-primary",
+  },
+  fast: {
+    icon: Rocket,
+    tone: "border-sky-400/20 bg-sky-400/8 text-sky-200",
+  },
+  balanced: {
+    icon: TimerReset,
+    tone: "border-white/10 bg-white/[0.04] text-text/72",
+  },
+  quality: {
+    icon: ShieldCheck,
+    tone: "border-emerald-400/20 bg-emerald-400/8 text-emerald-200",
+  },
+} as const;
 
 interface AdaptiveProfileSnapshot {
   machine_tier: "low" | "medium" | "high";
@@ -571,7 +607,7 @@ export const ModelsSettings: React.FC = () => {
         id: "auto",
         label: t("settings.models.modes.auto", { defaultValue: "Auto" }),
         description: t("settings.models.modes.autoDescription", {
-          defaultValue: "Uses the best fit for this machine",
+          defaultValue: "Meilleur choix selon cette machine",
         }),
         modelId: adaptiveProfile?.recommended_model_id ?? rapidId,
       },
@@ -581,8 +617,8 @@ export const ModelsSettings: React.FC = () => {
         description: t("settings.models.modes.fastDescription", {
           defaultValue:
             isCopilotOptimizedParakeet(adaptiveProfile, rapidId)
-              ? "Lowest latency with the NPU path on this PC"
-              : "Lowest latency for quick dictation",
+              ? "Latence minimale avec le chemin NPU sur ce PC"
+              : "Latence minimale pour la dictée courte",
         }),
         modelId: rapidId,
       },
@@ -592,7 +628,7 @@ export const ModelsSettings: React.FC = () => {
           defaultValue: "Équilibré",
         }),
         description: t("settings.models.modes.balancedDescription", {
-          defaultValue: "Good quality without getting too heavy",
+          defaultValue: "Bon compromis qualité et réactivité",
         }),
         modelId: balancedId,
       },
@@ -600,7 +636,7 @@ export const ModelsSettings: React.FC = () => {
         id: "quality",
         label: t("settings.models.modes.quality", { defaultValue: "Qualité" }),
         description: t("settings.models.modes.qualityDescription", {
-          defaultValue: "Highest text quality on stronger machines",
+          defaultValue: "Meilleure précision sur machines puissantes",
         }),
         modelId: "large",
       },
@@ -621,121 +657,125 @@ export const ModelsSettings: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-4">
-      <div className="mb-4">
-        <h1 className="text-xl font-semibold mb-2">
-          {t("settings.models.title")}
-        </h1>
-        {(adaptiveProfile?.copilot_plus_detected ||
-          adaptiveProfile?.npu_detected) && (
-          <div className="rounded-xl border border-logo-primary/25 bg-logo-primary/5 px-4 py-3 mt-4">
-            <p className="text-sm font-semibold text-text">
-              {adaptiveProfile?.copilot_plus_detected
-                ? t("settings.models.hardware.copilotPlusTitle", {
-                    defaultValue: "Copilot+ PC detected",
-                  })
-                : t("settings.models.hardware.npuTitle", {
-                    defaultValue: "NPU detected",
-                  })}
-            </p>
-            <p className="text-xs text-text/60 mt-1">
-              {adaptiveProfile?.copilot_plus_detected
-                ? t("settings.models.hardware.copilotPlusDescription", {
-                    defaultValue:
-                      "VocalType will keep this capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
-                  })
-                : t("settings.models.hardware.npuDescription", {
-                    defaultValue:
-                      "This machine exposes a neural processor. VocalType now shows it in diagnostics and hardware profiling.",
-                  })}
-            </p>
-          </div>
-        )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+    <div className="w-full space-y-6">
+      <div className="flex gap-1 border-b border-white/8">
+        {(["transcription", "processing"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`border-b-2 px-[14px] pb-[9px] pt-[7px] text-[13px] transition-colors ${
+              activeTab === tab
+                ? "border-logo-primary text-logo-primary"
+                : "border-transparent text-white/40 hover:text-white/65"
+            }`}
+          >
+            {t(`settings.models.tabs.${tab}`)}
+          </button>
+        ))}
+      </div>
+
+      {(adaptiveProfile?.copilot_plus_detected || adaptiveProfile?.npu_detected) && (
+        <div className="rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
+          <p className="text-[13px] font-medium text-white/85">
+            {adaptiveProfile?.copilot_plus_detected
+              ? t("settings.models.hardware.copilotPlusTitle", {
+                  defaultValue: "Copilot+ PC detected",
+                })
+              : t("settings.models.hardware.npuTitle", {
+                  defaultValue: "NPU detected",
+                })}
+          </p>
+          <p className="mt-1 text-[11.5px] leading-5 text-white/40">
+            {adaptiveProfile?.copilot_plus_detected
+              ? t("settings.models.hardware.copilotPlusDescription", {
+                  defaultValue:
+                    "VocalType will keep this capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
+                })
+              : t("settings.models.hardware.npuDescription", {
+                  defaultValue:
+                    "This machine exposes a neural processor. VocalType now shows it in diagnostics and hardware profiling.",
+                })}
+          </p>
+        </div>
+      )}
+
+      {activeTab === "transcription" && (
+        <div className="space-y-2">
           {productModes.map(({ id, label, description, modelId, model }) => {
             const isActiveMode =
               (adaptiveProfile?.active_runtime_model_id || currentModel) === modelId;
+            const meta = PRODUCT_MODE_META[id as keyof typeof PRODUCT_MODE_META];
+            const Icon = meta.icon;
             return (
               <button
                 key={id}
                 type="button"
                 onClick={() => handleProductModeSelect(modelId)}
-                className={`rounded-xl border p-4 text-left transition-all ${
+                className={`flex w-full items-center gap-4 rounded-[10px] border px-4 py-3.5 text-left transition-all ${
                   isActiveMode
-                    ? "border-logo-primary/50 bg-logo-primary/10"
-                    : "border-mid-gray/20 bg-mid-gray/5 hover:border-logo-primary/35 hover:bg-logo-primary/5"
+                    ? "border-logo-primary/30 bg-logo-primary/[0.08]"
+                    : "border-white/8 bg-white/[0.03] hover:bg-white/[0.05]"
                 }`}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-text">{label}</p>
-                    <p className="text-xs text-text/60 mt-1">{description}</p>
-                  </div>
-                  {id === "auto" && (
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-logo-primary">
-                      {t("onboarding.recommended")}
-                    </span>
-                  )}
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}>
+                  <Icon className="h-4 w-4" />
                 </div>
-                <p className="text-xs text-text/50 mt-3">
-                  {model?.name ?? modelId}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13.5px] font-medium text-white">{label}</p>
+                    {id === "auto" && (
+                      <span className="rounded-md border border-logo-primary/25 bg-logo-primary/15 px-2 py-0.5 text-[10px] font-medium text-logo-primary">
+                        {t("onboarding.recommended")}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-[11.5px] leading-5 text-white/40">
+                    {description}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-white/28">
+                    {model ? getTranslatedModelName(model, t) : modelId}
+                  </p>
+                </div>
               </button>
             );
           })}
         </div>
-        <div className="flex gap-1 mt-3 p-0.5 bg-mid-gray/10 rounded-lg w-fit">
-          {(["transcription", "processing"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeTab === tab
-                  ? "bg-background text-text shadow-sm"
-                  : "text-text/50 hover:text-text/70"
-              }`}
-            >
-              {t(`settings.models.tabs.${tab}`)}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       {activeTab === "processing" && <ProcessingModelsSection />}
 
       {activeTab === "transcription" && filteredModels.length > 0 ? (
         <div className="space-y-6">
-          {/* Downloaded Models Section — header always visible so filter stays accessible */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-text/60">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
                 {t("settings.models.yourModels")}
               </h2>
-              {/* Language filter dropdown */}
+
               <div className="relative" ref={languageDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex items-center gap-1.5 rounded-[7px] border px-3 py-1.5 text-[12.5px] ${
                     languageFilter !== "all"
-                      ? "bg-logo-primary/20 text-logo-primary"
-                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                      ? "border-logo-primary/25 bg-logo-primary/12 text-logo-primary"
+                      : "border-white/10 bg-white/[0.06] text-white/55 hover:text-white/75"
                   }`}
                 >
-                  <Globe className="w-3.5 h-3.5" />
+                  <Globe className="h-3.5 w-3.5" />
                   <span className="max-w-[120px] truncate">
                     {selectedLanguageLabel}
                   </span>
                   <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform ${
+                    className={`h-3.5 w-3.5 transition-transform ${
                       languageDropdownOpen ? "rotate-180" : ""
                     }`}
                   />
                 </button>
 
                 {languageDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
-                    <div className="p-2 border-b border-mid-gray/40">
+                  <div className="absolute right-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-lg border border-mid-gray/80 bg-background shadow-lg">
+                    <div className="border-b border-mid-gray/40 p-2">
                       <input
                         ref={languageSearchInputRef}
                         type="text"
@@ -757,7 +797,7 @@ export const ModelsSettings: React.FC = () => {
                         placeholder={t(
                           "settings.general.language.searchPlaceholder",
                         )}
-                        className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
+                        className="w-full rounded-md border border-mid-gray/40 bg-mid-gray/10 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-logo-primary"
                       />
                     </div>
                     <div className="max-h-48 overflow-y-auto">
@@ -768,9 +808,9 @@ export const ModelsSettings: React.FC = () => {
                           setLanguageDropdownOpen(false);
                           setLanguageSearch("");
                         }}
-                        className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                        className={`w-full px-3 py-1.5 text-left text-sm transition-colors ${
                           languageFilter === "all"
-                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                            ? "bg-logo-primary/20 font-semibold text-logo-primary"
                             : "hover:bg-mid-gray/10"
                         }`}
                       >
@@ -785,9 +825,9 @@ export const ModelsSettings: React.FC = () => {
                             setLanguageDropdownOpen(false);
                             setLanguageSearch("");
                           }}
-                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                          className={`w-full px-3 py-1.5 text-left text-sm transition-colors ${
                             languageFilter === lang.value
-                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                              ? "bg-logo-primary/20 font-semibold text-logo-primary"
                               : "hover:bg-mid-gray/10"
                           }`}
                         >
@@ -795,7 +835,7 @@ export const ModelsSettings: React.FC = () => {
                         </button>
                       ))}
                       {filteredLanguages.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-text/50 text-center">
+                        <div className="px-3 py-2 text-center text-sm text-text/50">
                           {t("settings.general.language.noResults")}
                         </div>
                       )}
@@ -804,6 +844,7 @@ export const ModelsSettings: React.FC = () => {
                 )}
               </div>
             </div>
+
             {downloadedModels.map((model: ModelInfo) => (
               <ModelCard
                 key={model.id}
@@ -824,10 +865,9 @@ export const ModelsSettings: React.FC = () => {
             ))}
           </div>
 
-          {/* Available Models Section */}
           {availableModels.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-medium text-text/60">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
                 {t("settings.models.availableModels")}
               </h2>
               {availableModels.map((model: ModelInfo) => (
@@ -852,7 +892,7 @@ export const ModelsSettings: React.FC = () => {
           )}
         </div>
       ) : activeTab === "transcription" ? (
-        <div className="text-center py-8 text-text/50">
+        <div className="py-8 text-center text-text/50">
           {t("settings.models.noModelsMatch")}
         </div>
       ) : null}

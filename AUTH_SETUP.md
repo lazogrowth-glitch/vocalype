@@ -16,7 +16,9 @@ Flow:
 Set these variables on your Railway service:
 
 ```bash
-ADMIN_SECRET=
+ADMIN_TOKEN_SECRET=
+ADMIN_TOKEN_AUDIENCE=vocaltype-admin
+ADMIN_TOKEN_MAX_AGE_SECONDS=300
 JWT_SECRET=
 OPENAI_API_KEY=
 STRIPE_PRICE_ID=
@@ -25,11 +27,40 @@ STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 ```
 
+`ADMIN_SECRET` is deprecated. Admin endpoints now expect a short-lived JWT in
+`Authorization: Bearer ...`, signed with `ADMIN_TOKEN_SECRET`, scoped with
+`admin:activate`, and addressed to the `ADMIN_TOKEN_AUDIENCE` value.
+
 ## Backend files
 
 ```text
 backend/app.py
 backend/requirements.txt
+scripts/admin-activate-user.py
+scripts/generate-admin-token.py
+```
+
+## Generate an admin token locally
+
+From the repo root:
+
+```bash
+export ADMIN_TOKEN_SECRET="replace-me"
+python scripts/generate-admin-token.py --subject your-name
+```
+
+Raw token only:
+
+```bash
+python scripts/generate-admin-token.py --raw
+```
+
+Activate a user directly:
+
+```bash
+export ADMIN_TOKEN_SECRET="replace-me"
+export VOCALTYPE_API_URL="https://your-railway-api.up.railway.app"
+python scripts/admin-activate-user.py --email user@example.com
 ```
 
 ## Frontend variable

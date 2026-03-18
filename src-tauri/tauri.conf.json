@@ -16,21 +16,21 @@
         "label": "main",
         "url": "desktop/index.html",
         "title": "VocalType",
-        "width": 680,
-        "height": 570,
-        "minWidth": 680,
-        "minHeight": 570,
+        "width": 800,
+        "height": 560,
+        "minWidth": 800,
+        "minHeight": 560,
         "resizable": true,
         "maximizable": false,
         "visible": false
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; connect-src 'self' https:; font-src 'self' data:; media-src 'self' asset: https://asset.localhost blob:",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; connect-src 'self' tauri://localhost https://tauri.localhost http://tauri.localhost http://localhost:1420 http://127.0.0.1:1420 https://vocaltypeai.com https://www.vocaltypeai.com https://*.up.railway.app https://api.stripe.com https://checkout.stripe.com https://github.com https://objects.githubusercontent.com; font-src 'self' data:; media-src 'self' asset: https://asset.localhost blob:",
       "assetProtocol": {
         "enable": true,
         "scope": {
-          "allow": ["$RESOURCE/**", "$APP/**", "$APPDATA/**", "$APPCONFIG/**", "$TEMP/**"],
+          "allow": ["$RESOURCE/**", "$APP/**", "$APPDATA/**", "$APPCONFIG/**"],
           "requireLiteralLeadingDot": false
         }
       }

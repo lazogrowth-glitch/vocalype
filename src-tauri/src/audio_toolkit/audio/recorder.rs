@@ -33,6 +33,9 @@ pub struct AudioRecorder {
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     pause_flag: Option<Arc<AtomicBool>>,
+    /// Linear gain multiplier applied to every audio sample before VAD / accumulation.
+    /// `1.0` = unity (no change); `4.0` ≈ +12 dB boost for whisper mode.
+    gain: f32,
 }
 
 impl AudioRecorder {
@@ -44,7 +47,15 @@ impl AudioRecorder {
             vad: None,
             level_cb: None,
             pause_flag: None,
+            gain: 1.0,
         })
+    }
+
+    /// Set a linear gain multiplier applied to every sample before VAD / accumulation.
+    /// Use `1.0` for normal recording, `4.0` (≈ +12 dB) for whisper mode.
+    pub fn with_gain(mut self, gain: f32) -> Self {
+        self.gain = gain.max(0.0);
+        self
     }
 
     pub fn with_vad(mut self, vad: Box<dyn VoiceActivityDetector>) -> Self {
@@ -87,6 +98,7 @@ impl AudioRecorder {
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
         let pause_flag = self.pause_flag.clone();
+        let gain = self.gain;
 
         let worker = std::thread::spawn(move || {
             let config = match AudioRecorder::get_preferred_config(&thread_device) {
@@ -152,7 +164,7 @@ Format: {:?}",
             }
 
             // keep the stream alive while we process samples
-            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, pause_flag);
+            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, pause_flag, gain);
             // stream is dropped here, after run_consumer returns
         });
 
@@ -305,6 +317,7 @@ fn run_consumer(
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     pause_flag: Option<Arc<AtomicBool>>,
+    gain: f32,
 ) {
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
@@ -366,7 +379,14 @@ fn run_consumer(
             .map_or(false, |f| f.load(Ordering::Relaxed));
         if !is_paused {
             frame_resampler.push(&raw, &mut |frame: &[f32]| {
-                handle_frame(frame, recording, &vad, &mut processed_samples)
+                if gain != 1.0 {
+                    // Apply gain boost and clamp to [-1.0, 1.0] to avoid clipping.
+                    let boosted: Vec<f32> =
+                        frame.iter().map(|&s| (s * gain).clamp(-1.0, 1.0)).collect();
+                    handle_frame(&boosted, recording, &vad, &mut processed_samples);
+                } else {
+                    handle_frame(frame, recording, &vad, &mut processed_samples);
+                }
             });
         }
 

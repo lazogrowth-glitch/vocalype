@@ -826,5 +826,11 @@
     "recording": "Parle maintenant… ({{count}}s)",
     "processing": "Traitement en cours…",
     "errorTitle": "Command Mode — erreur"
+  },
+  "whisperMode": {
+    "label": "Mode Chuchotement",
+    "enabled": "Mode Chuchotement activé",
+    "disabled": "Mode Chuchotement désactivé",
+    "errorTitle": "Mode Chuchotement — erreur"
   }
 }

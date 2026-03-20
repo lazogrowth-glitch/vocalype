@@ -174,6 +174,11 @@ fn is_system_already_muted() -> bool {
 
 const WHISPER_SAMPLE_RATE: usize = 16000;
 
+/// Linear gain applied to every audio sample when whisper mode is active.
+/// ×4.0 ≈ +12 dB — enough to bring a whispered voice to near-normal levels
+/// while still leaving headroom before the [-1, 1] clamp fires.
+const WHISPER_MODE_GAIN: f32 = 4.0;
+
 /* ──────────────────────────────────────────────────────────────── */
 
 #[derive(Clone, Debug)]
@@ -195,6 +200,7 @@ fn create_audio_recorder(
     app_handle: &tauri::AppHandle,
     is_paused: Arc<AtomicBool>,
     selected_model_id: &str,
+    gain: f32,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let is_parakeet_v3 = is_parakeet_v3_model_id(selected_model_id);
     let (vad_threshold, prefill_frames, mut hangover_frames, onset_frames) = if is_parakeet_v3 {
@@ -233,6 +239,7 @@ fn create_audio_recorder(
     let recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(Box::new(smoothed_vad))
+        .with_gain(gain)
         .with_pause_flag(is_paused.clone())
         .with_level_callback({
             let app_handle = app_handle.clone();
@@ -263,6 +270,8 @@ pub struct AudioRecordingManager {
     is_recording: Arc<Mutex<bool>>,
     is_paused: Arc<AtomicBool>,
     did_mute: Arc<Mutex<bool>>,
+    /// When true the recorder is opened with `WHISPER_MODE_GAIN` instead of 1.0.
+    whisper_mode: Arc<AtomicBool>,
 }
 
 impl AudioRecordingManager {
@@ -286,6 +295,7 @@ impl AudioRecordingManager {
             is_recording: Arc::new(Mutex::new(false)),
             is_paused: Arc::new(AtomicBool::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
+            whisper_mode: Arc::new(AtomicBool::new(settings.whisper_mode)),
         };
 
         // Always-on?  Open immediately.
@@ -380,11 +390,17 @@ impl AudioRecordingManager {
 
         // Recreate the recorder every time we (re)open the stream so model-dependent
         // VAD tuning follows the currently selected model.
+        let gain = if self.whisper_mode.load(Ordering::Relaxed) {
+            WHISPER_MODE_GAIN
+        } else {
+            1.0
+        };
         *recorder_opt = Some(create_audio_recorder(
             vad_path.to_str().unwrap(),
             &self.app_handle,
             Arc::clone(&self.is_paused),
             &settings.selected_model,
+            gain,
         )?);
 
         // Get the selected device from settings, considering clamshell mode
@@ -558,6 +574,32 @@ impl AudioRecordingManager {
 
     pub fn is_paused(&self) -> bool {
         self.is_paused.load(Ordering::Relaxed)
+    }
+
+    /// Returns `true` when whisper mode (gain boost) is currently active.
+    pub fn is_whisper_mode(&self) -> bool {
+        self.whisper_mode.load(Ordering::Relaxed)
+    }
+
+    /// Toggle whisper mode on or off.
+    ///
+    /// In **AlwaysOn** mode the microphone stream is restarted immediately so
+    /// the new gain takes effect without waiting for the next recording.
+    /// In **OnDemand** mode the change is picked up the next time the stream
+    /// is opened (i.e. on the next recording).
+    pub fn set_whisper_mode(&self, enabled: bool) -> Result<(), anyhow::Error> {
+        self.whisper_mode.store(enabled, Ordering::Relaxed);
+        info!("Whisper mode {}", if enabled { "enabled" } else { "disabled" });
+
+        // In AlwaysOn mode restart the stream so the gain applies immediately.
+        if matches!(*self.mode.lock().unwrap(), MicrophoneMode::AlwaysOn)
+            && *self.is_open.lock().unwrap()
+        {
+            self.stop_microphone_stream();
+            self.start_microphone_stream()?;
+        }
+
+        Ok(())
     }
 
     /// Returns a copy of all samples recorded so far without stopping the recording.

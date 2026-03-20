@@ -555,6 +555,42 @@ function App() {
 
   // ── End Command Mode listeners ─────────────────────────────────────────────
 
+  // ── Whisper Mode event listeners ──────────────────────────────────────────
+
+  // whisper-mode-changed → brief success toast with current state
+  useEffect(() => {
+    const unlisten = listen<boolean>("whisper-mode-changed", (event) => {
+      const enabled = event.payload;
+      if (enabled) {
+        toast.success(t("whisperMode.enabled", { defaultValue: "Whisper Mode on" }), {
+          duration: 2500,
+        });
+      } else {
+        toast(t("whisperMode.disabled", { defaultValue: "Whisper Mode off" }), {
+          duration: 2500,
+        });
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  // whisper-mode-error → error toast
+  useEffect(() => {
+    const unlisten = listen<string>("whisper-mode-error", (event) => {
+      toast.error(t("whisperMode.errorTitle", { defaultValue: "Whisper Mode — error" }), {
+        duration: 6000,
+        description: event.payload,
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  // ── End Whisper Mode listeners ─────────────────────────────────────────────
+
   useEffect(() => {
     let cancelled = false;
 

@@ -668,6 +668,9 @@ pub struct AppSettings {
     /// Whether the automatic app-context feature is enabled globally.
     #[serde(default = "default_app_context_enabled")]
     pub app_context_enabled: bool,
+    /// Boost microphone gain for whisper / low-volume recording.
+    #[serde(default)]
+    pub whisper_mode: bool,
 }
 
 fn default_model() -> String {
@@ -2288,6 +2291,16 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "ctrl+alt+c".to_string(),
         },
     );
+    bindings.insert(
+        "whisper_mode".to_string(),
+        ShortcutBinding {
+            id: "whisper_mode".to_string(),
+            name: "Whisper Mode".to_string(),
+            description: "Toggle microphone gain boost for low-volume or whispered dictation.".to_string(),
+            default_binding: "ctrl+alt+w".to_string(),
+            current_binding: "ctrl+alt+w".to_string(),
+        },
+    );
 
     AppSettings {
         bindings,
@@ -2343,6 +2356,8 @@ pub fn get_default_settings() -> AppSettings {
         saved_processing_models: Vec::new(),
         adaptive_profile_applied: default_adaptive_profile_applied(),
         adaptive_machine_profile: None,
+        app_context_enabled: default_app_context_enabled(),
+        whisper_mode: false,
     }
 }
 

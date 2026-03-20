@@ -108,6 +108,16 @@ pub fn handle_shortcut_event(
         return;
     }
 
+    // Whisper Mode: press-only toggle — no push-to-talk, no release handling.
+    if binding_id == "whisper_mode" {
+        if is_pressed {
+            if let Some(action) = ACTION_MAP.get(binding_id) {
+                action.start(app, binding_id, hotkey_string);
+            }
+        }
+        return;
+    }
+
     let Some(action) = ACTION_MAP.get(binding_id) else {
         warn!(
             "No action defined in ACTION_MAP for shortcut ID '{}'. Shortcut: '{}', Pressed: {}",

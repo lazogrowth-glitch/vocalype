@@ -87,6 +87,13 @@ export const GeneralSettings: React.FC = () => {
             </span>
           </div>
           <ShortcutInput shortcutId="command_mode" grouped={true} disabled={isBasicTier} />
+          {/* ── Whisper Mode ─────────────────────────────────────────── */}
+          <div className="flex items-center gap-1.5 border-t border-white/6 px-4 pb-0.5 pt-2">
+            <span className="text-[10.5px] text-white/40">
+              {t("whisperMode.label", { defaultValue: "Whisper Mode" })}
+            </span>
+          </div>
+          <ShortcutInput shortcutId="whisper_mode" grouped={true} />
         </SettingsGroup>
       )}
 

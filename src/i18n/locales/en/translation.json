@@ -826,5 +826,11 @@
     "recording": "Speak now… ({{count}}s)",
     "processing": "Processing…",
     "errorTitle": "Command Mode — error"
+  },
+  "whisperMode": {
+    "label": "Whisper Mode",
+    "enabled": "Whisper Mode on",
+    "disabled": "Whisper Mode off",
+    "errorTitle": "Whisper Mode — error"
   }
 }

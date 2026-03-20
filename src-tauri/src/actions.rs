@@ -2148,6 +2148,36 @@ impl ShortcutAction for TestAction {
     }
 }
 
+// Whisper Mode Action
+struct WhisperModeAction;
+
+impl ShortcutAction for WhisperModeAction {
+    /// Toggle whisper mode (gain boost) on or off.
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        let rm = app.state::<Arc<AudioRecordingManager>>();
+        let currently_active = rm.is_whisper_mode();
+        let new_state = !currently_active;
+
+        if let Err(e) = rm.set_whisper_mode(new_state) {
+            log::error!("Failed to set whisper mode: {}", e);
+            let _ = app.emit("whisper-mode-error", e.to_string());
+            return;
+        }
+
+        // Persist to settings so the toggle survives app restarts.
+        let mut settings = crate::settings::get_settings(app);
+        settings.whisper_mode = new_state;
+        crate::settings::write_settings(app, settings);
+
+        let _ = app.emit("whisper-mode-changed", new_state);
+        log::info!("Whisper mode toggled to {}", new_state);
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        // Press-only shortcut — nothing to do on release.
+    }
+}
+
 // Static Action Map
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
@@ -2172,6 +2202,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "command_mode".to_string(),
         Arc::new(crate::command_mode::CommandModeAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "whisper_mode".to_string(),
+        Arc::new(WhisperModeAction) as Arc<dyn ShortcutAction>,
     );
     map
 });

@@ -11,8 +11,11 @@ mod context_detector;
 pub mod gemini_client;
 mod helpers;
 mod input;
+mod integrity;
+mod license;
 mod llm_client;
 mod managers;
+mod model_crypto;
 mod overlay;
 mod prompt_builder;
 mod runtime_observability;
@@ -573,6 +576,8 @@ pub fn run(cli_args: CliArgs) {
         commands::export_settings,
         commands::import_settings,
         commands::get_machine_device_id,
+        integrity::get_integrity_snapshot,
+        license::get_license_runtime_state,
         commands::load_secure_auth_token,
         commands::store_secure_auth_token,
         commands::check_apple_intelligence_available,
@@ -626,6 +631,9 @@ pub fn run(cli_args: CliArgs) {
         secret_store::get_secure_auth_session,
         secret_store::set_secure_auth_session,
         secret_store::clear_secure_auth_session,
+        secret_store::get_secure_license_bundle,
+        secret_store::set_secure_license_bundle,
+        secret_store::clear_secure_license_bundle,
         helpers::clamshell::is_laptop,
     ]);
 

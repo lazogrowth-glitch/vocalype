@@ -8,6 +8,7 @@ import sqlite3
 import re
 import time
 import uuid
+import hashlib
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
@@ -45,6 +46,13 @@ def env_int(name: str, default: int, minimum: int) -> int:
         return default
 
 
+def env_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def parse_allowed_origins() -> list[str]:
     raw = os.environ.get("CORS_ALLOWED_ORIGINS", "")
     if raw.strip():
@@ -80,11 +88,37 @@ ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
 ADMIN_TOKEN_SECRET = os.environ.get("ADMIN_TOKEN_SECRET", "")
 ADMIN_TOKEN_AUDIENCE = os.environ.get("ADMIN_TOKEN_AUDIENCE", "vocaltype-admin")
 ADMIN_TOKEN_MAX_AGE_SECONDS = env_int("ADMIN_TOKEN_MAX_AGE_SECONDS", 300, 60)
+LICENSE_GRANT_TTL_SECONDS = env_int("LICENSE_GRANT_TTL_SECONDS", 3600, 300)
+LICENSE_OFFLINE_TTL_SECONDS = env_int("LICENSE_OFFLINE_TTL_SECONDS", 72 * 3600, 3600)
+LICENSE_REFRESH_INTERVAL_SECONDS = env_int("LICENSE_REFRESH_INTERVAL_SECONDS", 20 * 60, 300)
+LICENSE_REVOCATION_GRACE_SECONDS = env_int(
+    "LICENSE_REVOCATION_GRACE_SECONDS", 24 * 3600, 3600
+)
+LICENSE_AUDIENCE = os.environ.get("LICENSE_AUDIENCE", "vocaltype-license")
+LICENSE_ISSUER = os.environ.get("LICENSE_ISSUER", "vocaltype-backend")
+LICENSE_STRICT_BUILD_APPROVAL = env_bool("LICENSE_STRICT_BUILD_APPROVAL", False)
+LICENSE_ALLOW_DEBUG_BUILDS = env_bool("LICENSE_ALLOW_DEBUG_BUILDS", True)
+LICENSE_ALLOWED_CHANNELS = {
+    item.strip()
+    for item in os.environ.get("LICENSE_ALLOWED_CHANNELS", "stable,dev").split(",")
+    if item.strip()
+}
+LICENSE_APPROVED_BUILD_HASHES = {
+    item.strip().lower()
+    for item in os.environ.get("LICENSE_APPROVED_BUILD_HASHES", "").split(",")
+    if item.strip()
+}
 APP_RETURN_URL = os.environ.get(
     "APP_RETURN_URL",
     os.environ.get("FRONTEND_URL", "https://vocaltypeai.com"),
 )
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "vocaltype.db")
+TRUST_X_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 
 stripe.api_key = STRIPE_SECRET_KEY
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
@@ -102,17 +136,27 @@ RESET_PASSWORD_LIMITS = (
     ("reset_password:email", 5, 900, 1800),
 )
 MAX_RESET_TOKEN_ATTEMPTS = 5
+ENTITLEMENT_STATUS_ACTIVE = "active"
+ENTITLEMENT_STATUS_REVOCATION_PENDING = "revocation_pending"
+ENTITLEMENT_STATUS_REVOKED = "revoked"
 
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def client_ip() -> str:
-    forwarded_for = request.headers.get("X-Forwarded-For", "")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
+def resolved_client_ip() -> str:
+    if TRUST_X_FORWARDED_FOR:
+        forwarded_for = request.headers.get("X-Forwarded-For", "")
+        if forwarded_for:
+            forwarded_ip = forwarded_for.split(",")[0].strip()
+            if forwarded_ip:
+                return forwarded_ip
     return request.remote_addr or "unknown"
+
+
+def client_ip() -> str:
+    return resolved_client_ip()
 
 
 def log_security_event(event: str, **fields) -> None:
@@ -224,6 +268,12 @@ def to_iso(value: int | None) -> str | None:
     return datetime.fromtimestamp(value, timezone.utc).isoformat()
 
 
+def dt_to_iso(value: datetime | None) -> str | None:
+    if not value:
+        return None
+    return value.astimezone(timezone.utc).isoformat()
+
+
 def get_db():
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
@@ -297,6 +347,38 @@ def init_db():
     )
     ensure_column(db, "password_reset_tokens", "attempt_count", "INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "users", "token_version", "INTEGER NOT NULL DEFAULT 0")
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS premium_device_entitlements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            device_id TEXT NOT NULL,
+            plan TEXT NOT NULL DEFAULT 'premium',
+            entitlement_status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            last_seen_at TEXT,
+            last_grant_issued_at TEXT,
+            revoked_at TEXT,
+            grace_until TEXT,
+            app_version TEXT,
+            app_channel TEXT,
+            UNIQUE(user_id, device_id),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS license_integrity_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            device_id TEXT,
+            event_type TEXT NOT NULL,
+            details TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
     db.commit()
     db.close()
 
@@ -327,6 +409,463 @@ def load_user_by_email(email: str):
         return db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     finally:
         db.close()
+
+
+def record_license_integrity_event(
+    *,
+    event_type: str,
+    user_id: int | None,
+    device_id: str | None,
+    details: dict | None = None,
+) -> None:
+    db = get_db()
+    try:
+        db.execute(
+            """
+            INSERT INTO license_integrity_events (user_id, device_id, event_type, details)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                device_id,
+                event_type,
+                None if details is None else str(details),
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
+def issue_signed_token(payload: dict, expires_at: datetime) -> str:
+    token_payload = {
+        **payload,
+        "iss": LICENSE_ISSUER,
+        "aud": LICENSE_AUDIENCE,
+        "iat": int(time.time()),
+        "exp": expires_at,
+    }
+    return jwt.encode(token_payload, JWT_SECRET, algorithm="HS256")
+
+
+def load_device_entitlement(user_id: int, device_id: str):
+    db = get_db()
+    try:
+        return db.execute(
+            """
+            SELECT * FROM premium_device_entitlements
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (user_id, device_id),
+        ).fetchone()
+    finally:
+        db.close()
+
+
+def bootstrap_device_entitlement(
+    user,
+    device_id: str,
+    app_version: str | None = None,
+    app_channel: str | None = None,
+):
+    if not device_id or not has_access(user):
+        return load_device_entitlement(user["id"], device_id)
+
+    now_iso = dt_to_iso(utc_now())
+    db = get_db()
+    try:
+        db.execute(
+            """
+            INSERT OR IGNORE INTO premium_device_entitlements (
+                user_id,
+                device_id,
+                plan,
+                entitlement_status,
+                created_at,
+                last_seen_at,
+                last_grant_issued_at,
+                app_version,
+                app_channel
+            ) VALUES (?, ?, 'premium', ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user["id"],
+                device_id,
+                ENTITLEMENT_STATUS_ACTIVE,
+                now_iso,
+                now_iso,
+                now_iso,
+                app_version,
+                app_channel,
+            ),
+        )
+        db.execute(
+            """
+            UPDATE premium_device_entitlements
+            SET plan = 'premium',
+                entitlement_status = ?,
+                last_seen_at = ?,
+                last_grant_issued_at = ?,
+                revoked_at = NULL,
+                grace_until = NULL,
+                app_version = COALESCE(?, app_version),
+                app_channel = COALESCE(?, app_channel)
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (
+                ENTITLEMENT_STATUS_ACTIVE,
+                now_iso,
+                now_iso,
+                app_version,
+                app_channel,
+                user["id"],
+                device_id,
+            ),
+        )
+        db.commit()
+        return db.execute(
+            """
+            SELECT * FROM premium_device_entitlements
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (user["id"], device_id),
+        ).fetchone()
+    finally:
+        db.close()
+
+
+def sync_device_entitlement_state(
+    user,
+    device_id: str,
+    *,
+    app_version: str | None = None,
+    app_channel: str | None = None,
+):
+    if not device_id:
+        return None
+
+    db = get_db()
+    try:
+        now = utc_now()
+        now_iso = dt_to_iso(now)
+        row = db.execute(
+            """
+            SELECT * FROM premium_device_entitlements
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (user["id"], device_id),
+        ).fetchone()
+
+        if has_access(user):
+            if row is None:
+                db.execute(
+                    """
+                    INSERT INTO premium_device_entitlements (
+                        user_id,
+                        device_id,
+                        plan,
+                        entitlement_status,
+                        created_at,
+                        last_seen_at,
+                        last_grant_issued_at,
+                        app_version,
+                        app_channel
+                    ) VALUES (?, ?, 'premium', ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        user["id"],
+                        device_id,
+                        ENTITLEMENT_STATUS_ACTIVE,
+                        now_iso,
+                        now_iso,
+                        now_iso,
+                        app_version,
+                        app_channel,
+                    ),
+                )
+            else:
+                db.execute(
+                    """
+                    UPDATE premium_device_entitlements
+                    SET plan = 'premium',
+                        entitlement_status = ?,
+                        last_seen_at = ?,
+                        last_grant_issued_at = ?,
+                        revoked_at = NULL,
+                        grace_until = NULL,
+                        app_version = COALESCE(?, app_version),
+                        app_channel = COALESCE(?, app_channel)
+                    WHERE id = ?
+                    """,
+                    (
+                        ENTITLEMENT_STATUS_ACTIVE,
+                        now_iso,
+                        now_iso,
+                        app_version,
+                        app_channel,
+                        row["id"],
+                    ),
+                )
+        elif row is not None:
+            current_status = row["entitlement_status"] or ENTITLEMENT_STATUS_ACTIVE
+            current_grace_until = parse_iso(row["grace_until"])
+            if current_status == ENTITLEMENT_STATUS_REVOKED:
+                db.execute(
+                    """
+                    UPDATE premium_device_entitlements
+                    SET last_seen_at = ?, app_version = COALESCE(?, app_version), app_channel = COALESCE(?, app_channel)
+                    WHERE id = ?
+                    """,
+                    (now_iso, app_version, app_channel, row["id"]),
+                )
+            elif current_grace_until and current_grace_until <= now:
+                db.execute(
+                    """
+                    UPDATE premium_device_entitlements
+                    SET entitlement_status = ?,
+                        last_seen_at = ?,
+                        revoked_at = COALESCE(revoked_at, ?),
+                        grace_until = ?,
+                        app_version = COALESCE(?, app_version),
+                        app_channel = COALESCE(?, app_channel)
+                    WHERE id = ?
+                    """,
+                    (
+                        ENTITLEMENT_STATUS_REVOKED,
+                        now_iso,
+                        now_iso,
+                        dt_to_iso(current_grace_until),
+                        app_version,
+                        app_channel,
+                        row["id"],
+                    ),
+                )
+            else:
+                grace_until = current_grace_until or (
+                    now + timedelta(seconds=LICENSE_REVOCATION_GRACE_SECONDS)
+                )
+                revoked_at = parse_iso(row["revoked_at"]) or now
+                db.execute(
+                    """
+                    UPDATE premium_device_entitlements
+                    SET entitlement_status = ?,
+                        last_seen_at = ?,
+                        revoked_at = ?,
+                        grace_until = ?,
+                        app_version = COALESCE(?, app_version),
+                        app_channel = COALESCE(?, app_channel)
+                    WHERE id = ?
+                    """,
+                    (
+                        ENTITLEMENT_STATUS_REVOCATION_PENDING,
+                        now_iso,
+                        dt_to_iso(revoked_at),
+                        dt_to_iso(grace_until),
+                        app_version,
+                        app_channel,
+                        row["id"],
+                    ),
+                )
+
+        db.commit()
+        return db.execute(
+            """
+            SELECT * FROM premium_device_entitlements
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (user["id"], device_id),
+        ).fetchone()
+    finally:
+        db.close()
+
+
+def sync_all_entitlements_for_user(user_id: int) -> None:
+    user = load_user_by_id(user_id)
+    if not user:
+        return
+
+    db = get_db()
+    try:
+        device_rows = db.execute(
+            "SELECT device_id FROM premium_device_entitlements WHERE user_id = ?",
+            (user_id,),
+        ).fetchall()
+    finally:
+        db.close()
+
+    for row in device_rows:
+        sync_device_entitlement_state(user, row["device_id"])
+
+
+def entitlement_allows_access(entitlement) -> bool:
+    if entitlement is None:
+        return False
+    status = entitlement["entitlement_status"] or ENTITLEMENT_STATUS_ACTIVE
+    if status == ENTITLEMENT_STATUS_ACTIVE:
+        return True
+    if status == ENTITLEMENT_STATUS_REVOCATION_PENDING:
+        grace_until = parse_iso(entitlement["grace_until"])
+        return bool(grace_until and grace_until > utc_now())
+    return False
+
+
+def evaluate_build_integrity(
+    *,
+    user,
+    device_id: str,
+    app_channel: str | None,
+    integrity: dict | None,
+):
+    integrity = integrity or {}
+    anomalies: list[str] = []
+    binary_sha256 = str(integrity.get("binary_sha256", "")).strip().lower() or None
+    release_build = bool(integrity.get("release_build", False))
+    tamper_flags = integrity.get("tamper_flags") or []
+
+    if app_channel and LICENSE_ALLOWED_CHANNELS and app_channel not in LICENSE_ALLOWED_CHANNELS:
+        anomalies.append(f"channel_not_allowed:{app_channel}")
+
+    if not release_build and not LICENSE_ALLOW_DEBUG_BUILDS:
+        anomalies.append("debug_build_disallowed")
+
+    for item in tamper_flags:
+        value = str(item).strip()
+        if value:
+            anomalies.append(f"tamper_flag:{value}")
+
+    if LICENSE_APPROVED_BUILD_HASHES and binary_sha256 not in LICENSE_APPROVED_BUILD_HASHES:
+        anomalies.append("unapproved_binary_hash")
+
+    if anomalies:
+        log_security_event(
+            "license_integrity_anomaly",
+            user_id=user["id"],
+            device_id=device_id,
+            anomalies=",".join(anomalies),
+            app_channel=app_channel,
+            binary_sha256=binary_sha256,
+        )
+        record_license_integrity_event(
+            event_type="license_integrity_anomaly",
+            user_id=user["id"],
+            device_id=device_id,
+            details={
+                "anomalies": anomalies,
+                "app_channel": app_channel,
+                "binary_sha256": binary_sha256,
+                "release_build": release_build,
+            },
+        )
+
+    blocked = LICENSE_STRICT_BUILD_APPROVAL and bool(anomalies)
+    return {
+        "binary_sha256": binary_sha256,
+        "release_build": release_build,
+        "anomalies": anomalies,
+        "blocked": blocked,
+    }
+
+
+def build_license_payloads(user, entitlement, *, device_id: str, integrity_evaluation: dict | None = None):
+    now = utc_now()
+    grant_expires_at = now + timedelta(seconds=LICENSE_GRANT_TTL_SECONDS)
+    offline_expires_at = now + timedelta(seconds=LICENSE_OFFLINE_TTL_SECONDS)
+    grace_until = parse_iso(entitlement["grace_until"]) if entitlement else None
+
+    if grace_until:
+        if grace_until < grant_expires_at:
+            grant_expires_at = grace_until
+        if grace_until < offline_expires_at:
+            offline_expires_at = grace_until
+
+    status = entitlement["entitlement_status"] if entitlement else ENTITLEMENT_STATUS_REVOKED
+    plan = entitlement["plan"] if entitlement else "premium"
+    entitlements = ["premium"] if entitlement_allows_access(entitlement) else []
+    app_version = entitlement["app_version"] if entitlement else None
+    app_channel = entitlement["app_channel"] if entitlement else None
+
+    issued_at_iso = dt_to_iso(now)
+    grant_expires_at_iso = dt_to_iso(grant_expires_at)
+    offline_expires_at_iso = dt_to_iso(offline_expires_at)
+    grace_until_iso = dt_to_iso(grace_until)
+    model_unlock_key = hashlib.sha256(
+        "|".join(
+            [
+                "vocaltype-model-unlock-v1",
+                JWT_SECRET,
+                str(user["id"]),
+                device_id,
+                plan,
+                status,
+                offline_expires_at_iso or "",
+            ]
+        ).encode("utf-8")
+    ).hexdigest()
+
+    grant_payload = {
+        "type": "license_grant",
+        "sub": str(user["id"]),
+        "user_id": str(user["id"]),
+        "device_id": device_id,
+        "plan": plan,
+        "entitlements": entitlements,
+        "entitlement_status": status,
+        "app_version": app_version,
+        "app_channel": app_channel,
+        "grace_until": grace_until_iso,
+        "model_unlock_key": model_unlock_key,
+    }
+    offline_payload = {
+        "type": "offline_cache",
+        "sub": str(user["id"]),
+        "user_id": str(user["id"]),
+        "device_id": device_id,
+        "plan": plan,
+        "entitlements": entitlements,
+        "entitlement_status": status,
+        "app_version": app_version,
+        "app_channel": app_channel,
+        "grace_until": grace_until_iso,
+        "last_validated_at": issued_at_iso,
+        "model_unlock_key": model_unlock_key,
+    }
+
+    return {
+        "state": "online_valid" if entitlements else "expired",
+        "issued_at": issued_at_iso,
+        "grant_token": issue_signed_token(grant_payload, grant_expires_at),
+        "grant_expires_at": grant_expires_at_iso,
+        "offline_token": issue_signed_token(offline_payload, offline_expires_at),
+        "offline_expires_at": offline_expires_at_iso,
+        "refresh_after_seconds": LICENSE_REFRESH_INTERVAL_SECONDS,
+        "device_id": device_id,
+        "plan": plan,
+        "entitlements": entitlements,
+        "entitlement_status": status,
+        "grace_until": grace_until_iso,
+        "model_unlock_key": model_unlock_key,
+        "build_binding_sha256": (integrity_evaluation or {}).get("binary_sha256"),
+        "integrity_anomalies": (integrity_evaluation or {}).get("anomalies", []),
+    }
+
+
+def build_license_status_response(user, entitlement, *, device_id: str):
+    access_allowed = entitlement_allows_access(entitlement)
+    return {
+        "state": "online_valid" if access_allowed else "expired",
+        "device_id": device_id,
+        "user_id": str(user["id"]),
+        "subscription_status": user["subscription_status"],
+        "subscription_has_access": has_access(user),
+        "entitlement_status": (
+            entitlement["entitlement_status"] if entitlement else ENTITLEMENT_STATUS_REVOKED
+        ),
+        "plan": entitlement["plan"] if entitlement else "premium",
+        "grace_until": dt_to_iso(parse_iso(entitlement["grace_until"])) if entitlement else None,
+        "grant_expires_at": None,
+        "offline_expires_at": None,
+        "entitlements": ["premium"] if access_allowed else [],
+    }
 
 
 def device_is_registered(device_id: str) -> bool:
@@ -395,10 +934,7 @@ def parse_iso(value: str | None):
 
 
 def get_client_ip() -> str:
-    forwarded_for = request.headers.get("X-Forwarded-For", "")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip() or "unknown"
-    return request.remote_addr or "unknown"
+    return resolved_client_ip()
 
 
 def normalize_rate_limit_key(scope: str, identifier: str) -> str:
@@ -606,10 +1142,27 @@ def require_secret_configured():
         raise RuntimeError("JWT_SECRET is required")
     if len(JWT_SECRET) < 32:
         raise RuntimeError("JWT_SECRET must be at least 32 characters long")
+    if ADMIN_TOKEN_SECRET and len(ADMIN_TOKEN_SECRET) < 32:
+        raise RuntimeError("ADMIN_TOKEN_SECRET must be at least 32 characters long")
     if ADMIN_SECRET:
         app.logger.warning(
             "ADMIN_SECRET is deprecated; use short-lived admin JWTs signed with ADMIN_TOKEN_SECRET instead"
         )
+    if TRUST_X_FORWARDED_FOR:
+        app.logger.warning(
+            "TRUST_X_FORWARDED_FOR is enabled. Only use this behind a trusted reverse proxy that rewrites X-Forwarded-For."
+        )
+    if not STRIPE_WEBHOOK_SECRET and STRIPE_SECRET_KEY:
+        app.logger.warning(
+            "STRIPE_SECRET_KEY is configured without STRIPE_WEBHOOK_SECRET; webhook verification will fail until both are set."
+        )
+    if not ADMIN_TOKEN_SECRET:
+        app.logger.warning(
+            "ADMIN_TOKEN_SECRET is not configured; admin JWT flows are disabled until it is set."
+        )
+
+
+require_secret_configured()
 
 
 def extract_bearer_token() -> str:
@@ -916,6 +1469,169 @@ def session(user):
     return jsonify(build_user_response(user, token))
 
 
+def parse_license_request_data():
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get("device_id", "")).strip().lower()
+    app_version = str(data.get("app_version", "")).strip() or None
+    app_channel = str(data.get("app_channel", "")).strip() or None
+    integrity = data.get("integrity")
+    return data, device_id, app_version, app_channel, integrity
+
+
+def validate_license_device(device_id: str):
+    if not device_id:
+        return jsonify({"error": "Identifiant appareil requis"}), 400
+    if not device_id_is_valid(device_id):
+        return jsonify({"error": "Identifiant appareil invalide"}), 400
+    if not device_id_is_stable(device_id):
+        return jsonify({"error": "Identifiant appareil non supporté"}), 400
+    return None
+
+
+def prepare_license_response(
+    user,
+    device_id: str,
+    app_version: str | None,
+    app_channel: str | None,
+    integrity: dict | None,
+):
+    register_device(device_id, user["id"])
+    bootstrap_device_entitlement(user, device_id, app_version, app_channel)
+    entitlement = sync_device_entitlement_state(
+        user,
+        device_id,
+        app_version=app_version,
+        app_channel=app_channel,
+    )
+    integrity_evaluation = evaluate_build_integrity(
+        user=user,
+        device_id=device_id,
+        app_channel=app_channel,
+        integrity=integrity,
+    )
+    if not entitlement_allows_access(entitlement) or integrity_evaluation["blocked"]:
+        return None, entitlement, integrity_evaluation
+    return (
+        build_license_payloads(
+            user,
+            entitlement,
+            device_id=device_id,
+            integrity_evaluation=integrity_evaluation,
+        ),
+        entitlement,
+        integrity_evaluation,
+    )
+
+
+@app.route("/license/issue", methods=["POST"])
+@auth_required
+def issue_license(user):
+    _, device_id, app_version, app_channel, integrity = parse_license_request_data()
+    validation = validate_license_device(device_id)
+    if validation:
+        return validation
+
+    license_payload, entitlement, integrity_evaluation = prepare_license_response(
+        user, device_id, app_version, app_channel, integrity
+    )
+    if not license_payload:
+        status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+        status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+        status_payload["integrity_anomalies"] = integrity_evaluation["anomalies"]
+        return jsonify({"error": "Accès premium inactif", "license": status_payload}), 403
+
+    log_security_event(
+        "license_issue_success",
+        user_id=user["id"],
+        device_id=device_id,
+        status=entitlement["entitlement_status"] if entitlement else None,
+    )
+    return jsonify({"license": license_payload})
+
+
+@app.route("/license/refresh", methods=["POST"])
+@auth_required
+def refresh_license(user):
+    _, device_id, app_version, app_channel, integrity = parse_license_request_data()
+    validation = validate_license_device(device_id)
+    if validation:
+        return validation
+
+    license_payload, entitlement, integrity_evaluation = prepare_license_response(
+        user, device_id, app_version, app_channel, integrity
+    )
+    if not license_payload:
+        status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+        status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+        status_payload["integrity_anomalies"] = integrity_evaluation["anomalies"]
+        return jsonify({"error": "Accès premium expiré", "license": status_payload}), 403
+
+    return jsonify({"license": license_payload})
+
+
+@app.route("/license/heartbeat", methods=["POST"])
+@auth_required
+def license_heartbeat(user):
+    _, device_id, app_version, app_channel, integrity = parse_license_request_data()
+    validation = validate_license_device(device_id)
+    if validation:
+        return validation
+
+    integrity_evaluation = evaluate_build_integrity(
+        user=user,
+        device_id=device_id,
+        app_channel=app_channel,
+        integrity=integrity,
+    )
+    entitlement = sync_device_entitlement_state(
+        user,
+        device_id,
+        app_version=app_version,
+        app_channel=app_channel,
+    )
+    status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+    status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+    status_payload["integrity_anomalies"] = integrity_evaluation["anomalies"]
+    return jsonify({"license": status_payload})
+
+
+@app.route("/license/status", methods=["GET"])
+@auth_required
+def license_status(user):
+    device_id = request.args.get("device_id", "").strip().lower()
+    validation = validate_license_device(device_id)
+    if validation:
+        return validation
+
+    entitlement = sync_device_entitlement_state(user, device_id)
+    status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+    status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+    return jsonify({"license": status_payload})
+
+
+@app.route("/license/report-anomaly", methods=["POST"])
+@auth_required
+def report_license_anomaly(user):
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get("device_id", "")).strip().lower() or None
+    anomaly_type = str(data.get("anomaly_type", "")).strip() or "unknown"
+    details = data.get("details")
+
+    record_license_integrity_event(
+        event_type=anomaly_type,
+        user_id=user["id"],
+        device_id=device_id,
+        details=details if isinstance(details, dict) else {"details": details},
+    )
+    log_security_event(
+        "license_anomaly_reported",
+        user_id=user["id"],
+        device_id=device_id,
+        anomaly_type=anomaly_type,
+    )
+    return jsonify({"ok": True})
+
+
 @app.route("/billing/checkout", methods=["POST"])
 @auth_required
 def billing_checkout(user):
@@ -990,8 +1706,15 @@ def webhook():
                 (status, to_iso(trial_end), to_iso(period_end), customer_id),
             )
             db.commit()
+            row = db.execute(
+                "SELECT id FROM users WHERE stripe_customer_id = ?",
+                (customer_id,),
+            ).fetchone()
         finally:
             db.close()
+
+        if row:
+            sync_all_entitlements_for_user(row["id"])
 
     event_type = event["type"]
     data = event["data"]["object"]
@@ -1059,6 +1782,8 @@ def admin_activate():
     finally:
         db.close()
 
+    sync_all_entitlements_for_user(user["id"])
+
     log_security_event(
         "admin_activate_success",
         email=email,
@@ -1070,6 +1795,95 @@ def admin_activate():
             "ok": True,
             "email": email,
             "status": "active",
+            "admin_subject": admin_subject,
+        }
+    )
+
+
+@app.route("/license/revoke-device", methods=["POST"])
+def revoke_device():
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get("device_id", "")).strip().lower()
+    user_id = data.get("user_id")
+    admin_subject = get_current_admin_subject("admin:license")
+    ip_address = client_ip()
+
+    response = rate_limit_response(
+        f"license_revoke:ip:{ip_address}",
+        limit=20,
+        window_seconds=3600,
+        message="Trop de tentatives administrateur. Réessayez plus tard.",
+    )
+    if response:
+        return response
+
+    if not admin_subject:
+        log_security_event("license_revoke_denied", ip=ip_address, device_id=device_id)
+        return jsonify({"error": "Non autorisé"}), 401
+
+    if not device_id or not device_id_is_valid(device_id):
+        return jsonify({"error": "Identifiant appareil invalide"}), 400
+
+    db = get_db()
+    try:
+        entitlement = None
+        if user_id:
+            entitlement = db.execute(
+                """
+                SELECT * FROM premium_device_entitlements
+                WHERE user_id = ? AND device_id = ?
+                """,
+                (user_id, device_id),
+            ).fetchone()
+        else:
+            entitlement = db.execute(
+                """
+                SELECT * FROM premium_device_entitlements
+                WHERE device_id = ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (device_id,),
+            ).fetchone()
+
+        if not entitlement:
+            return jsonify({"error": "Entitlement appareil introuvable"}), 404
+
+        now = utc_now()
+        db.execute(
+            """
+            UPDATE premium_device_entitlements
+            SET entitlement_status = ?,
+                revoked_at = ?,
+                grace_until = ?,
+                last_seen_at = ?
+            WHERE id = ?
+            """,
+            (
+                ENTITLEMENT_STATUS_REVOKED,
+                dt_to_iso(now),
+                dt_to_iso(now),
+                dt_to_iso(now),
+                entitlement["id"],
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    log_security_event(
+        "license_revoke_success",
+        admin_subject=admin_subject,
+        device_id=device_id,
+        user_id=user_id or entitlement["user_id"],
+        ip=ip_address,
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "device_id": device_id,
+            "user_id": str(user_id or entitlement["user_id"]),
+            "status": ENTITLEMENT_STATUS_REVOKED,
             "admin_subject": admin_subject,
         }
     )

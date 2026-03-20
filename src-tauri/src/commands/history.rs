@@ -77,12 +77,14 @@ pub async fn update_history_limit(
 #[tauri::command]
 #[specta::specta]
 pub async fn reprocess_history_entry(
-    _app: AppHandle,
+    app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
     id: i64,
     model_id: String,
 ) -> Result<String, String> {
+    crate::license::enforce_premium_access(&app, "history reprocessing")?;
+
     let entry = history_manager
         .get_entry_by_id(id)
         .await

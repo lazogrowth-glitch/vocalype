@@ -17,6 +17,8 @@ use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
 
 const MODEL_ASSET_BASE_URL: &str = "https://blob.handy.computer";
+const SEALED_MODEL_EXTENSION: &str = ".vtenc";
+const SEALED_ARCHIVE_EXTENSION: &str = ".vtbundle";
 const PARAKEET_V3_LEGACY_ID: &str = "parakeet-tdt-0.6b-v3";
 const PARAKEET_V3_ENGLISH_ID: &str = "parakeet-tdt-0.6b-v3-english";
 const PARAKEET_V3_MULTILINGUAL_ID: &str = "parakeet-tdt-0.6b-v3-multilingual";
@@ -65,6 +67,7 @@ pub struct ModelInfo {
     pub is_recommended: bool,       // Whether this is the recommended model for new users
     pub supported_languages: Vec<String>, // Languages this model can transcribe
     pub is_custom: bool,            // Whether this is a user-provided custom model
+    pub requires_license_key: bool, // Whether model bytes are sealed at rest behind premium license
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -78,12 +81,33 @@ pub struct DownloadProgress {
 pub struct ModelManager {
     app_handle: AppHandle,
     models_dir: PathBuf,
+    runtime_cache_dir: PathBuf,
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
     extracting_models: Arc<Mutex<HashSet<String>>>,
 }
 
 impl ModelManager {
+    fn sealed_path_for_model(&self, model_info: &ModelInfo) -> PathBuf {
+        let suffix = if model_info.is_directory {
+            SEALED_ARCHIVE_EXTENSION
+        } else {
+            SEALED_MODEL_EXTENSION
+        };
+        self.models_dir
+            .join(format!("{}{}", &model_info.filename, suffix))
+    }
+
+    fn runtime_cache_path_for_model(&self, model_info: &ModelInfo) -> PathBuf {
+        self.runtime_cache_dir.join(&model_info.filename)
+    }
+
+    fn model_requires_sealing(model_info: &ModelInfo) -> bool {
+        model_info.requires_license_key
+            && !model_info.is_custom
+            && !matches!(model_info.engine_type, EngineType::GeminiApi)
+    }
+
     fn verify_response_etag(model_info: &ModelInfo, response: &reqwest::Response) -> Result<()> {
         let Some(expected_etag) = model_info.expected_etag.as_deref() else {
             return Ok(());
@@ -219,10 +243,19 @@ impl ModelManager {
             .app_data_dir()
             .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?
             .join("models");
+        let runtime_cache_dir = app_handle
+            .path()
+            .app_data_dir()
+            .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?
+            .join("model-runtime-cache");
 
         if !models_dir.exists() {
             fs::create_dir_all(&models_dir)?;
         }
+        if runtime_cache_dir.exists() {
+            let _ = fs::remove_dir_all(&runtime_cache_dir);
+        }
+        fs::create_dir_all(&runtime_cache_dir)?;
 
         let mut available_models = HashMap::new();
 
@@ -265,6 +298,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -291,6 +325,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -317,6 +352,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -343,6 +379,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -369,6 +406,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -396,6 +434,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -432,6 +471,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -458,6 +498,7 @@ impl ModelManager {
                 is_recommended: true,
                 supported_languages: parakeet_v3_languages.clone(),
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -486,6 +527,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: parakeet_v3_languages,
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -512,6 +554,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -541,6 +584,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -570,6 +614,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -599,6 +644,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -632,6 +678,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 
@@ -658,6 +705,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 is_custom: false,
+                requires_license_key: false,
             },
         );
 
@@ -669,6 +717,7 @@ impl ModelManager {
         let manager = Self {
             app_handle: app_handle.clone(),
             models_dir,
+            runtime_cache_dir,
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
             extracting_models: Arc::new(Mutex::new(HashSet::new())),
@@ -740,6 +789,7 @@ impl ModelManager {
             if matches!(model.engine_type, EngineType::GeminiApi) {
                 continue;
             }
+            let sealed_path = self.sealed_path_for_model(model);
             if model.is_directory {
                 // For directory-based models, check if the directory exists
                 let model_path = self.models_dir.join(&model.filename);
@@ -759,11 +809,20 @@ impl ModelManager {
                     let _ = fs::remove_dir_all(&extracting_path);
                 }
 
-                model.is_downloaded = model_path.exists()
-                    && model_path.is_dir()
-                    && self
-                        .validate_directory_model_contents(&model.id, &model_path)
-                        .is_ok();
+                model.is_downloaded = if Self::model_requires_sealing(model) {
+                    sealed_path.exists()
+                        || (model_path.exists()
+                            && model_path.is_dir()
+                            && self
+                                .validate_directory_model_contents(&model.id, &model_path)
+                                .is_ok())
+                } else {
+                    model_path.exists()
+                        && model_path.is_dir()
+                        && self
+                            .validate_directory_model_contents(&model.id, &model_path)
+                            .is_ok()
+                };
                 model.is_downloading = false;
 
                 // Get partial file size if it exists (for the .tar.gz being downloaded)
@@ -777,7 +836,11 @@ impl ModelManager {
                 let model_path = self.models_dir.join(&model.filename);
                 let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
 
-                model.is_downloaded = model_path.exists();
+                model.is_downloaded = if Self::model_requires_sealing(model) {
+                    sealed_path.exists() || model_path.exists()
+                } else {
+                    model_path.exists()
+                };
                 model.is_downloading = false;
 
                 // Get partial file size if it exists
@@ -789,6 +852,134 @@ impl ModelManager {
             }
         }
 
+        Ok(())
+    }
+
+    fn write_directory_archive(&self, src_dir: &Path, archive_path: &Path) -> Result<()> {
+        let archive_file = File::create(archive_path)?;
+        let encoder = flate2::write::GzEncoder::new(archive_file, flate2::Compression::default());
+        let mut builder = tar::Builder::new(encoder);
+        builder.append_dir_all("payload", src_dir)?;
+        let encoder = builder.into_inner()?;
+        encoder.finish()?;
+        Ok(())
+    }
+
+    fn seal_model_if_needed(&self, model_id: &str, model_info: &ModelInfo) -> Result<()> {
+        if !Self::model_requires_sealing(model_info) {
+            return Ok(());
+        }
+
+        let plain_path = self.models_dir.join(&model_info.filename);
+        let sealed_path = self.sealed_path_for_model(model_info);
+        if !plain_path.exists() || sealed_path.exists() {
+            return Ok(());
+        }
+
+        let unlock_key = crate::license::current_model_unlock_key(&self.app_handle)
+            .map_err(|err| anyhow::anyhow!("Cannot seal model without valid license key: {}", err))?;
+        let temp_sealed_path = sealed_path.with_extension("tmpseal");
+
+        if model_info.is_directory {
+            self.validate_directory_model_contents(model_id, &plain_path)?;
+            let temp_archive_path = self.models_dir.join(format!("{}.seal.tar.gz", &model_info.filename));
+            self.write_directory_archive(&plain_path, &temp_archive_path)?;
+            crate::model_crypto::encrypt_file(&unlock_key, &temp_archive_path, &temp_sealed_path)?;
+            let _ = fs::remove_file(&temp_archive_path);
+            fs::rename(&temp_sealed_path, &sealed_path)?;
+            fs::remove_dir_all(&plain_path)?;
+        } else {
+            crate::model_crypto::encrypt_file(&unlock_key, &plain_path, &temp_sealed_path)?;
+            fs::rename(&temp_sealed_path, &sealed_path)?;
+            fs::remove_file(&plain_path)?;
+        }
+
+        Ok(())
+    }
+
+    fn prepare_runtime_model_path(&self, model_id: &str, model_info: &ModelInfo) -> Result<PathBuf> {
+        if !Self::model_requires_sealing(model_info) {
+            let model_path = self.models_dir.join(&model_info.filename);
+            if model_info.is_directory {
+                self.validate_directory_model_contents(model_id, &model_path)?;
+            }
+            return Ok(model_path);
+        }
+
+        let plain_path = self.models_dir.join(&model_info.filename);
+        if plain_path.exists() {
+            self.seal_model_if_needed(model_id, model_info)?;
+        }
+
+        let sealed_path = self.sealed_path_for_model(model_info);
+        if !sealed_path.exists() {
+            anyhow::bail!("Protected model artifact not found for {}", model_id);
+        }
+
+        let unlock_key = crate::license::current_model_unlock_key(&self.app_handle)
+            .map_err(|err| anyhow::anyhow!("Premium license required to unlock model: {}", err))?;
+        let runtime_path = self.runtime_cache_path_for_model(model_info);
+
+        if runtime_path.exists() {
+            if model_info.is_directory {
+                if self.validate_directory_model_contents(model_id, &runtime_path).is_ok() {
+                    return Ok(runtime_path);
+                }
+                let _ = fs::remove_dir_all(&runtime_path);
+            } else {
+                return Ok(runtime_path);
+            }
+        }
+
+        if let Some(parent) = runtime_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        if model_info.is_directory {
+            let temp_archive_path = self.runtime_cache_dir.join(format!("{}.runtime.tar.gz", &model_info.filename));
+            crate::model_crypto::decrypt_file(&unlock_key, &sealed_path, &temp_archive_path)?;
+            let temp_extract_root = self
+                .runtime_cache_dir
+                .join(format!("{}.runtime_extracting", &model_info.filename));
+            if temp_extract_root.exists() {
+                let _ = fs::remove_dir_all(&temp_extract_root);
+            }
+            fs::create_dir_all(&temp_extract_root)?;
+            let tar_gz = File::open(&temp_archive_path)?;
+            let tar = GzDecoder::new(tar_gz);
+            let mut archive = Archive::new(tar);
+            Self::extract_archive_safely(&mut archive, &temp_extract_root)?;
+            let _ = fs::remove_file(&temp_archive_path);
+            let extracted_dirs: Vec<_> = fs::read_dir(&temp_extract_root)?
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
+                .collect();
+            if extracted_dirs.len() == 1 {
+                fs::rename(extracted_dirs[0].path(), &runtime_path)?;
+                let _ = fs::remove_dir_all(&temp_extract_root);
+            } else {
+                fs::rename(&temp_extract_root, &runtime_path)?;
+            }
+            self.validate_directory_model_contents(model_id, &runtime_path)?;
+        } else {
+            crate::model_crypto::decrypt_file(&unlock_key, &sealed_path, &runtime_path)?;
+        }
+
+        Ok(runtime_path)
+    }
+
+    pub fn clear_runtime_cache_for_model(&self, model_id: &str) -> Result<()> {
+        let Some(model_info) = self.get_model_info(model_id) else {
+            return Ok(());
+        };
+        let runtime_path = self.runtime_cache_path_for_model(&model_info);
+        if runtime_path.exists() {
+            if model_info.is_directory {
+                fs::remove_dir_all(&runtime_path)?;
+            } else {
+                fs::remove_file(&runtime_path)?;
+            }
+        }
         Ok(())
     }
 
@@ -975,6 +1166,7 @@ impl ModelManager {
                     is_recommended: false,
                     supported_languages: vec![],
                     is_custom: true,
+                    requires_license_key: false,
                 },
             );
         }
@@ -1000,11 +1192,20 @@ impl ModelManager {
             .clone()
             .ok_or_else(|| anyhow::anyhow!("No download URL for model"))?;
         let model_path = self.models_dir.join(&model_info.filename);
+        let sealed_path = self.sealed_path_for_model(&model_info);
         let partial_path = self
             .models_dir
             .join(format!("{}.partial", &model_info.filename));
 
         // Don't download if a complete and valid version already exists
+        if sealed_path.exists() {
+            if partial_path.exists() {
+                let _ = fs::remove_file(&partial_path);
+            }
+            self.update_download_status()?;
+            return Ok(());
+        }
+
         if model_path.exists() {
             let existing_is_valid = if model_info.is_directory {
                 self.validate_directory_model_contents(model_id, &model_path)
@@ -1345,6 +1546,10 @@ impl ModelManager {
             fs::rename(&partial_path, &model_path)?;
         }
 
+        if Self::model_requires_sealing(&model_info) {
+            self.seal_model_if_needed(model_id, &model_info)?;
+        }
+
         // Refresh status for all models so profile aliases sharing the same
         // underlying files (e.g. Parakeet V3 English/Multilingual) stay in sync.
         self.update_download_status()?;
@@ -1384,6 +1589,7 @@ impl ModelManager {
         debug!("ModelManager: Found model info: {:?}", model_info);
 
         let model_path = self.models_dir.join(&model_info.filename);
+        let sealed_path = self.sealed_path_for_model(&model_info);
         let partial_path = self
             .models_dir
             .join(format!("{}.partial", &model_info.filename));
@@ -1410,6 +1616,12 @@ impl ModelManager {
             }
         }
 
+        if sealed_path.exists() {
+            info!("Deleting sealed model artifact at: {:?}", sealed_path);
+            fs::remove_file(&sealed_path)?;
+            deleted_something = true;
+        }
+
         // Delete partial file if it exists (same for both types)
         if partial_path.exists() {
             info!("Deleting partial file at: {:?}", partial_path);
@@ -1421,6 +1633,8 @@ impl ModelManager {
         if !deleted_something {
             return Err(anyhow::anyhow!("No model files found to delete"));
         }
+
+        let _ = self.clear_runtime_cache_for_model(model_id);
 
         // Custom models should be removed from the list entirely since they
         // have no download URL and can't be re-downloaded
@@ -1465,9 +1679,16 @@ impl ModelManager {
         }
 
         let model_path = self.models_dir.join(&model_info.filename);
+        let sealed_path = self.sealed_path_for_model(&model_info);
         let partial_path = self
             .models_dir
             .join(format!("{}.partial", &model_info.filename));
+
+        if Self::model_requires_sealing(&model_info) {
+            if sealed_path.exists() || model_path.exists() {
+                return self.prepare_runtime_model_path(model_id, &model_info);
+            }
+        }
 
         if model_info.is_directory {
             // For directory-based models, ensure the directory exists and is complete
@@ -1584,6 +1805,7 @@ mod tests {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 is_custom: false,
+                requires_license_key: true,
             },
         );
 

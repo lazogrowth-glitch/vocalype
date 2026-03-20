@@ -5,6 +5,7 @@ const SERVICE_NAME: &str = "com.vocaltype.desktop";
 
 const AUTH_TOKEN_ACCOUNT: &str = "auth.token";
 const AUTH_SESSION_ACCOUNT: &str = "auth.session";
+const LICENSE_BUNDLE_ACCOUNT: &str = "license.bundle";
 const GEMINI_API_KEY_ACCOUNT: &str = "settings.gemini_api_key";
 const POST_PROCESS_PREFIX: &str = "settings.post_process_api_key.";
 
@@ -58,6 +59,18 @@ pub fn set_auth_session(session_json: &str) -> Result<(), String> {
 
 pub fn clear_auth_session() -> Result<(), String> {
     delete_secret_value(AUTH_SESSION_ACCOUNT)
+}
+
+pub fn get_license_bundle() -> Result<Option<String>, String> {
+    get_secret_value(LICENSE_BUNDLE_ACCOUNT)
+}
+
+pub fn set_license_bundle(bundle_json: &str) -> Result<(), String> {
+    set_secret_value(LICENSE_BUNDLE_ACCOUNT, bundle_json)
+}
+
+pub fn clear_license_bundle() -> Result<(), String> {
+    delete_secret_value(LICENSE_BUNDLE_ACCOUNT)
 }
 
 pub fn get_gemini_api_key() -> Result<Option<String>, String> {
@@ -130,4 +143,26 @@ pub fn set_secure_auth_session(_app: AppHandle, session_json: String) -> Result<
 #[specta::specta]
 pub fn clear_secure_auth_session(_app: AppHandle) -> Result<(), String> {
     clear_auth_session()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_secure_license_bundle(_app: AppHandle) -> Result<Option<String>, String> {
+    get_license_bundle()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_secure_license_bundle(_app: AppHandle, bundle_json: String) -> Result<(), String> {
+    if bundle_json.trim().is_empty() {
+        clear_license_bundle()
+    } else {
+        set_license_bundle(&bundle_json)
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clear_secure_license_bundle(_app: AppHandle) -> Result<(), String> {
+    clear_license_bundle()
 }

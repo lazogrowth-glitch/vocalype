@@ -27,6 +27,17 @@ STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 ```
 
+Recommended production additions:
+
+```bash
+TRUST_X_FORWARDED_FOR=0
+DATABASE_PATH=/secure/path/vocaltype.db
+CORS_ALLOWED_ORIGINS=https://vocaltypeai.com,https://www.vocaltypeai.com
+```
+
+If you enable `TRUST_X_FORWARDED_FOR=1`, only do it behind a trusted reverse
+proxy that overwrites `X-Forwarded-For`.
+
 `ADMIN_SECRET` is deprecated. Admin endpoints now expect a short-lived JWT in
 `Authorization: Bearer ...`, signed with `ADMIN_TOKEN_SECRET`, scoped with
 `admin:activate`, and addressed to the `ADMIN_TOKEN_AUDIENCE` value.
@@ -70,6 +81,13 @@ Set this variable for the Vite/Tauri app:
 ```bash
 VITE_AUTH_API_URL=https://your-railway-api.up.railway.app
 ```
+
+## Windows production notes
+
+- Do not run the Flask development server in production.
+- Restrict filesystem access to the backend directory and SQLite database.
+- Keep secrets outside the repo and outside synced desktop folders.
+- Review [SECURITY_CHECKLIST.md](/c:/developer/sas/vocaltype/SECURITY_CHECKLIST.md) before release.
 
 ## Required API endpoints
 

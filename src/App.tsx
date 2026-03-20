@@ -18,6 +18,8 @@ import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { authClient } from "@/lib/auth/client";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
+import { licenseClient } from "@/lib/license/client";
+import type { LicenseRuntimeState } from "@/lib/license/types";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 import type { RuntimeErrorEvent } from "@/types/runtimeObservability";
 
@@ -35,6 +37,9 @@ function App() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [licenseState, setLicenseState] = useState<LicenseRuntimeState | null>(
+    null,
+  );
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
     null,
   );
@@ -53,6 +58,9 @@ function App() {
   );
   const hasCompletedPostOnboardingInit = useRef(false);
   const lastRuntimeErrorRef = useRef<{ key: string; at: number } | null>(null);
+  const hasPremiumAccess =
+    licenseState?.state === "online_valid" ||
+    licenseState?.state === "offline_valid";
 
   const applySession = useCallback((nextSession: AuthSession | null) => {
     setSession(nextSession);
@@ -64,9 +72,73 @@ function App() {
     }
 
     void authClient.clearStoredSession();
+    void licenseClient.clearStoredBundle();
+    setLicenseState({ state: "expired", reason: "Logged out" });
     setOnboardingStep(null);
     hasCompletedPostOnboardingInit.current = false;
   }, []);
+
+  const syncLicenseForSession = useCallback(
+    async (
+      nextSession: AuthSession | null,
+      options?: { mode?: "issue" | "refresh"; allowOfflineFallback?: boolean },
+    ) => {
+      if (!nextSession) {
+        await licenseClient.clearStoredBundle();
+        setLicenseState({ state: "expired", reason: "No session" });
+        return;
+      }
+
+      if (!nextSession.subscription.has_access) {
+        await licenseClient.clearStoredBundle();
+        setLicenseState({
+          state: "expired",
+          reason: "Subscription access inactive",
+        });
+        return;
+      }
+
+      const token = nextSession.token;
+      const mode = options?.mode ?? "refresh";
+
+      try {
+        if (mode === "issue") {
+          await licenseClient.issue(token);
+        } else {
+          await licenseClient.refresh(token);
+        }
+      } catch (error) {
+        const status = authClient.getErrorStatus(error);
+        if (
+          options?.allowOfflineFallback &&
+          status !== 401 &&
+          status !== 403
+        ) {
+          const runtime = await licenseClient.getRuntimeState();
+          setLicenseState(runtime);
+          return;
+        }
+
+        if (status === 403) {
+          await licenseClient.clearStoredBundle();
+          setLicenseState({
+            state: "expired",
+            reason:
+              error instanceof Error
+                ? error.message
+                : "Premium access expired",
+          });
+          return;
+        }
+
+        throw error;
+      }
+
+      const runtime = await licenseClient.getRuntimeState();
+      setLicenseState(runtime);
+    },
+    [],
+  );
 
   const refreshSession = useCallback(async () => {
     const persistedSession = await authClient.hydrateStoredSession();
@@ -85,6 +157,10 @@ function App() {
     try {
       const nextSession = await authClient.getSession(token);
       applySession(nextSession);
+      await syncLicenseForSession(nextSession, {
+        mode: "refresh",
+        allowOfflineFallback: true,
+      });
     } catch (error) {
       console.error("Failed to refresh auth session:", error);
       const status = authClient.getErrorStatus(error);
@@ -101,12 +177,15 @@ function App() {
               ? error.message
               : t("auth.errors.networkError"),
           );
+          setLicenseState(await licenseClient.getRuntimeState());
+        } else {
+          setLicenseState(await licenseClient.getRuntimeState());
         }
       }
     } finally {
       setAuthLoading(false);
     }
-  }, [applySession, t]);
+  }, [applySession, syncLicenseForSession, t]);
 
   useEffect(() => {
     refreshSession();
@@ -114,22 +193,28 @@ function App() {
 
   // Refresh the short-lived access token periodically while the app stays open.
   useEffect(() => {
-    const FIVE_MINUTES = 5 * 60 * 1000;
+    const SEVENTEEN_MINUTES = 17 * 60 * 1000;
     const interval = setInterval(() => {
       const token = authClient.getStoredToken();
       if (!token) return;
       authClient
         .getSession(token)
-        .then((nextSession) => applySession(nextSession))
+        .then(async (nextSession) => {
+          applySession(nextSession);
+          await syncLicenseForSession(nextSession, {
+            mode: "refresh",
+            allowOfflineFallback: true,
+          });
+        })
         .catch((error) => {
           const status = authClient.getErrorStatus(error);
           if (status === 401 || status === 403) {
             applySession(null);
           }
         });
-    }, FIVE_MINUTES);
+    }, SEVENTEEN_MINUTES);
     return () => clearInterval(interval);
-  }, [applySession]);
+  }, [applySession, syncLicenseForSession]);
 
   // Initialize RTL direction when language changes
   useEffect(() => {
@@ -137,12 +222,12 @@ function App() {
   }, [i18n.language]);
 
   useEffect(() => {
-    if (authLoading || !session?.subscription.has_access) {
+    if (authLoading || !hasPremiumAccess) {
       return;
     }
 
     checkOnboardingStatus();
-  }, [authLoading, session?.subscription.has_access]);
+  }, [authLoading, hasPremiumAccess]);
 
   // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {
@@ -273,6 +358,61 @@ function App() {
     };
   }, [t]);
 
+  useEffect(() => {
+    const unlisten = listen<string>("premium-access-denied", async (event) => {
+      const runtime = await licenseClient.getRuntimeState();
+      setLicenseState(runtime);
+      toast.error(
+        t("auth.locked", { defaultValue: "Premium access required" }),
+        {
+          duration: 8000,
+          description:
+            event.payload ||
+            t("auth.errors.networkError", {
+              defaultValue: "Reconnect to validate your subscription.",
+            }),
+        },
+      );
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const reportIfNeeded = async () => {
+      const token = authClient.getStoredToken();
+      if (!token) return;
+
+      const runtime = await licenseClient.getRuntimeState();
+      if (cancelled) return;
+
+      if (
+        runtime.reason?.includes("Binary integrity changed") ||
+        (runtime.integrity_anomalies?.length ?? 0) > 0
+      ) {
+        try {
+          const integrity = await licenseClient.getIntegritySnapshot();
+          await licenseClient.reportAnomaly(token, "desktop_integrity_runtime", {
+            runtime,
+            integrity,
+          });
+        } catch (error) {
+          console.warn("Failed to report integrity anomaly:", error);
+        }
+      }
+    };
+
+    void reportIfNeeded();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [licenseState]);
+
   const checkOnboardingStatus = async () => {
     try {
       const appIdentifier = await getIdentifier();
@@ -334,6 +474,7 @@ function App() {
 
       try {
         const nextSession = await handler(payload);
+        await syncLicenseForSession(nextSession, { mode: "issue" });
         applySession(nextSession);
       } catch (error) {
         console.error("Authentication failed:", error);
@@ -344,7 +485,7 @@ function App() {
         setAuthSubmitting(false);
       }
     },
-    [applySession],
+    [applySession, syncLicenseForSession],
   );
 
   const handleLogin = useCallback(
@@ -398,7 +539,7 @@ function App() {
     );
   }
 
-  if (!session?.subscription.has_access) {
+  if (!session || !hasPremiumAccess) {
     return (
       <AuthPortal
         error={authError}

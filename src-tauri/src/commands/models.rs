@@ -31,6 +31,8 @@ pub async fn download_model(
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    crate::license::enforce_premium_access(&app_handle, "model download")?;
+
     model_manager
         .download_model(&model_id)
         .await
@@ -88,6 +90,8 @@ pub async fn set_active_model(
     audio_manager: State<'_, Arc<AudioRecordingManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    crate::license::enforce_premium_access(&app_handle, "model activation")?;
+
     // Check if model exists and is available
     let model_info = model_manager
         .get_model_info(&model_id)

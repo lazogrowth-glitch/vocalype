@@ -968,6 +968,13 @@ impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
+
+        if let Err(err) = crate::license::enforce_premium_access(app, "dictation") {
+            warn!("Premium gate denied transcription start: {}", err);
+            let _ = app.emit("premium-access-denied", err.clone());
+            return;
+        }
+
         let captured_app_context = detect_current_app_context();
 
         // Load model in the background

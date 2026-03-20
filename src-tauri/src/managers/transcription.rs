@@ -337,6 +337,7 @@ impl TranscriptionManager {
     pub fn unload_model(&self) -> Result<()> {
         let unload_start = std::time::Instant::now();
         debug!("Starting to unload model");
+        let previous_model_id = self.get_current_model();
 
         {
             let mut engine = self.lock_engine();
@@ -357,6 +358,11 @@ impl TranscriptionManager {
         {
             let mut current_model = self.current_model_id.lock().unwrap();
             *current_model = None;
+        }
+        if let Some(model_id) = previous_model_id.as_deref() {
+            if let Err(err) = self.model_manager.clear_runtime_cache_for_model(model_id) {
+                warn!("Failed to clear runtime cache for model '{}': {}", model_id, err);
+            }
         }
         set_active_runtime_model(&self.app_handle, None);
 

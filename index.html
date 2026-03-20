@@ -82,7 +82,8 @@ h1 .ul{text-decoration:underline;text-decoration-color:var(--gold);text-underlin
 .hero-stats{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:linear-gradient(180deg,#efe7d6 0%,#e8dfcd 100%);border:1px solid rgba(201,168,76,.22);border-radius:18px;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.04)}
 .hero-stat{padding:24px 28px;text-align:center}
 .hero-stat + .hero-stat{border-left:1px solid rgba(201,168,76,.2)}
-.hero-stat strong{display:block;font-family:'Cabinet Grotesk',sans-serif;font-size:clamp(2.5rem,5vw,3.5rem);line-height:1;color:var(--gold);letter-spacing:-1.9px;margin-bottom:8px;text-shadow:0 12px 24px rgba(201,168,76,.18);animation:statGlow 4.2s ease-in-out infinite}
+.hero-stat strong{display:block;font-family:'Cabinet Grotesk',sans-serif;font-size:clamp(2.7rem,4.4vw,3.4rem);line-height:1;color:var(--gold);letter-spacing:-1.8px;margin-bottom:4px;text-shadow:0 12px 24px rgba(201,168,76,.18);animation:statGlow 4.2s ease-in-out infinite}
+.hero-stat-title{display:block;font-family:'Cabinet Grotesk',sans-serif;font-size:clamp(1.2rem,2.2vw,1.7rem);font-weight:800;line-height:1.06;letter-spacing:-.03em;color:var(--gold);margin-bottom:12px}
 .hero-stat span{display:block;font-size:.92rem;line-height:1.55;color:var(--ink2)}
 @keyframes statGlow{0%,100%{transform:translateY(0);text-shadow:0 10px 20px rgba(201,168,76,.12)}50%{transform:translateY(-1px);text-shadow:0 14px 24px rgba(201,168,76,.22)}}
 .hero-stats-human{max-width:1100px;margin:14px auto 0;text-align:center;font-size:.92rem;font-weight:700;letter-spacing:.01em;color:#6f5a25}
@@ -159,6 +160,7 @@ h1 .ul{text-decoration:underline;text-decoration-color:var(--gold);text-underlin
 @keyframes st{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .app-item{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.04em;white-space:nowrap;flex-shrink:0}
 .app-item svg,.app-item img{width:17px;height:17px;object-fit:contain;flex-shrink:0}
+.apps-strip .app-item img{filter:invert(1) brightness(1.08) opacity(.84) !important}
 .asep{color:rgba(255,255,255,.12);flex-shrink:0}
 
 /* ── HOW ── */
@@ -211,9 +213,9 @@ h2{font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:clamp(1.8r
 }
 
 /* ── WORKS WITH ── */
-.works{padding:92px 40px;background:#12110f;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.works{padding:102px 40px;background:#12110f;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
 .works-inner{max-width:1100px;margin:0 auto}
-.works-header{display:flex;justify-content:space-between;align-items:flex-end;gap:28px;margin-bottom:44px}
+.works-header{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;margin-bottom:52px}
 .works-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .wcard{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;align-items:center;gap:12px;transition:all .2s}
 .wcard:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.08)}
@@ -246,13 +248,13 @@ h2{font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:clamp(1.8r
 .why-card h3{font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;font-weight:800;color:var(--ink);margin-bottom:8px}
 .why-card p{font-size:.84rem;color:var(--ink3);line-height:1.65}
 .feature-grid,.models-grid,.compare-wrap{margin-top:48px}
-.feature-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:34px;align-items:stretch}
+.feature-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:42px;align-items:stretch}
 .models-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:stretch}
 .feature-card,.model-card{border-radius:18px;transition:all .2s ease}
-.feature-card{grid-column:span 4;height:100%;display:flex;flex-direction:column;justify-content:flex-start;padding:38px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);box-shadow:0 14px 34px rgba(0,0,0,.18)}
-.feature-card.feature-lg{grid-column:span 8;padding:46px;background:linear-gradient(135deg,#2a2417 0%,#19130b 55%,#120f0a 100%);border:1px solid rgba(201,168,76,.28);box-shadow:0 20px 48px rgba(0,0,0,.3)}
-.feature-card.feature-soft{background:linear-gradient(135deg,rgba(201,168,76,.14) 0%,rgba(255,255,255,.04) 100%);border-color:rgba(201,168,76,.18)}
-.feature-card.feature-highlight{background:linear-gradient(135deg,rgba(201,168,76,.16) 0%,rgba(17,17,17,.68) 100%);border-color:rgba(201,168,76,.26)}
+.feature-card{grid-column:span 4;height:100%;display:flex;flex-direction:column;justify-content:flex-start;padding:46px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);box-shadow:0 18px 38px rgba(0,0,0,.22)}
+.feature-card.feature-lg{grid-column:span 8;padding:54px;background:linear-gradient(135deg,#2f281b 0%,#1d150c 55%,#120f0a 100%);border:1px solid rgba(201,168,76,.32);box-shadow:0 24px 52px rgba(0,0,0,.32)}
+.feature-card.feature-soft{background:linear-gradient(135deg,rgba(201,168,76,.18) 0%,rgba(255,255,255,.08) 100%);border-color:rgba(201,168,76,.22)}
+.feature-card.feature-highlight{background:linear-gradient(135deg,rgba(201,168,76,.2) 0%,rgba(17,17,17,.74) 100%);border-color:rgba(201,168,76,.3)}
 .feature-card.feature-center{grid-column:4/span 6}
 .model-card{position:relative;cursor:default;height:100%;display:flex;flex-direction:column;padding:32px;background:#fff;border:1px solid var(--border);box-shadow:0 10px 24px rgba(0,0,0,.04)}
 .model-card.featured{background:linear-gradient(180deg,#fffdf7 0%,#faf3df 100%);border:1px solid rgba(201,168,76,.52);box-shadow:0 18px 34px rgba(201,168,76,.14),0 0 0 1px rgba(201,168,76,.14) inset}
@@ -263,10 +265,10 @@ h2{font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:clamp(1.8r
 .feature-icon,.model-icon{width:64px;height:64px;border-radius:16px;background:rgba(201,168,76,.12);display:flex;align-items:center;justify-content:center;font-size:1.95rem;flex-shrink:0}
 .model-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .feature-card h3{font-family:'Cabinet Grotesk',sans-serif;font-size:1.16rem;font-weight:800;color:#fff;margin-bottom:18px}
-.feature-card p{font-size:1rem;color:rgba(255,255,255,.76);line-height:1.65;max-width:26ch}
+.feature-card p{font-size:1rem;color:rgba(255,255,255,.86);line-height:1.76;max-width:26ch}
 .feature-card.feature-lg .feature-icon{width:72px;height:72px;font-size:2.15rem}
 .feature-card.feature-lg h3{font-size:1.58rem}
-.feature-card.feature-lg p{font-size:1.08rem;color:rgba(255,255,255,.82);max-width:34ch}
+.feature-card.feature-lg p{font-size:1.08rem;color:rgba(255,255,255,.9);max-width:34ch}
 .model-card h3{font-family:'Cabinet Grotesk',sans-serif;font-size:1.08rem;font-weight:800;color:#111827;margin-bottom:12px}
 .model-card p{font-size:.95rem;color:#4b5563;line-height:1.65;max-width:none}
 .model-card .mini{background:#f4efe6;border-color:#ddd3bf;color:#5d5136}
@@ -276,7 +278,7 @@ h2{font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:clamp(1.8r
 .model-start{margin-top:16px;font-size:.78rem;font-weight:700;color:#7b6327}
 .works .stag{color:var(--gold-lt)}
 .works h2{color:#fff}
-.works .works-header p{color:rgba(255,255,255,.58) !important}
+.works .works-header p{color:rgba(255,255,255,.74) !important}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.11);font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
 .pill.new{background:rgba(26,122,74,.08);border-color:rgba(26,122,74,.24);color:var(--green)}
 .feature-meta,.model-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
@@ -402,10 +404,10 @@ footer{border-top:1px solid var(--border);padding:36px 40px 28px;display:block}
   .inline-cta{padding:0 20px 40px}
   .demo-video-wrap{padding:0 20px 40px}
   .works-grid{grid-template-columns:repeat(2,1fr);padding:0 20px}
-  .works{padding:64px 20px}
+  .works{padding:76px 20px}
   .works-header{flex-direction:column;align-items:flex-start;gap:8px}
   .feature-grid{grid-template-columns:1fr}
-  .feature-card,.feature-card.feature-lg,.feature-card.feature-center{grid-column:span 1;padding:32px}
+  .feature-card,.feature-card.feature-lg,.feature-card.feature-center{grid-column:span 1;padding:40px}
   .models-grid{grid-template-columns:1fr}
   .uc-grid{grid-template-columns:1fr;padding:0}
   .usecases{padding:48px 20px}
@@ -509,15 +511,18 @@ footer{border-top:1px solid var(--border);padding:36px 40px 28px;display:block}
 <section class="hero-stats-wrap">
  <div class="hero-stats">
   <div class="hero-stat rv">
-   <strong data-count="3" data-suffix="x" data-t="hs1_n">3x faster</strong>
+   <strong data-t="hs1_n">3x</strong>
+   <div class="hero-stat-title" data-t="hs1_t">plus rapide</div>
    <span data-t="hs1_p">than typing on a keyboard</span>
   </div>
   <div class="hero-stat rv d1">
-   <strong data-count="0" data-suffix="" data-t="hs2_n">0 data sent</strong>
+   <strong data-t="hs2_n">0</strong>
+   <div class="hero-stat-title" data-t="hs2_t">donnée envoyée</div>
    <span data-t="hs2_p">everything stays on your machine</span>
   </div>
   <div class="hero-stat rv d2">
-   <strong data-count="30" data-suffix="" data-t="hs3_n">30 seconds</strong>
+   <strong data-t="hs3_n">30</strong>
+   <div class="hero-stat-title" data-t="hs3_t">secondes</div>
    <span data-t="hs3_p">to start dictating</span>
   </div>
  </div>
@@ -526,27 +531,27 @@ footer{border-top:1px solid var(--border);padding:36px 40px 28px;display:block}
 <div class="apps-strip">
  <div class="apps-label" data-t="strip_label">Works in ChatGPT, Claude, Slack, VS Code, Notion, email and any text field</div>
  <div class="apps-track" id="atrack">
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" style="filter:invert(1) opacity:.78" alt="">ChatGPT</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/anthropic.svg" style="filter:invert(1) opacity:.78" alt="">Claude</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlegemini.svg" style="filter:brightness(1.15)" alt="">Gemini</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" alt="">ChatGPT</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/anthropic.svg" alt="">Claude</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlegemini.svg" alt="">Gemini</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftcopilot.svg" alt="">Copilot</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/notion.svg" style="filter:invert(1) opacity:.78" alt="">Notion</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/notion.svg" alt="">Notion</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/discord.svg" alt="">Discord</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/gmail.svg" alt="">Gmail</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftword.svg" alt="">Word</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/perplexity.svg" style="filter:invert(1) opacity:.78" alt="">Perplexity</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/perplexity.svg" alt="">Perplexity</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/deepseek.svg" alt="">DeepSeek</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftoutlook.svg" alt="">Outlook</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftteams.svg" alt="">Teams</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" style="filter:invert(1) opacity:.78" alt="">ChatGPT</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/anthropic.svg" style="filter:invert(1) opacity:.78" alt="">Claude</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlegemini.svg" style="filter:brightness(1.15)" alt="">Gemini</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" alt="">ChatGPT</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/anthropic.svg" alt="">Claude</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/googlegemini.svg" alt="">Gemini</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftcopilot.svg" alt="">Copilot</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/notion.svg" style="filter:invert(1) opacity:.78" alt="">Notion</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/notion.svg" alt="">Notion</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/discord.svg" alt="">Discord</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/gmail.svg" alt="">Gmail</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftword.svg" alt="">Word</span><span class="asep">·</span>
-  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/perplexity.svg" style="filter:invert(1) opacity:.78" alt="">Perplexity</span><span class="asep">·</span>
+  <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/perplexity.svg" alt="">Perplexity</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/deepseek.svg" alt="">DeepSeek</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftoutlook.svg" alt="">Outlook</span><span class="asep">·</span>
   <span class="app-item"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoftteams.svg" alt="">Teams</span><span class="asep">·</span>
@@ -951,9 +956,9 @@ en:{
   hsub:"Save 2 hours a day. Your data stays on your machine.<br>Works in all your apps in 30 seconds.",
   h_btn:"Download for free — 14 days of Premium included",h_sec:"See how it works",
   h_proof:"Built for developers, founders and power users across Mac, Windows and Linux",
-  hs1_n:"3x",hs1_p:"than typing on a keyboard",
-  hs2_n:"0",hs2_p:"everything stays on your machine",
-  hs3_n:"30",hs3_p:"to start dictating",
+  hs1_n:"3x",hs1_t:"faster",hs1_p:"than typing on a keyboard",
+  hs2_n:"0",hs2_t:"data sent",hs2_p:"everything stays on your machine",
+  hs3_n:"30",hs3_t:"seconds",hs3_p:"to start dictating",
   hs_human:"Thousands of hours already saved.",
   hero_user_1:"Write a professional email to postpone our Monday meeting.",
   hero_ai_1:"Of course. Here's a professional email you can send...",
@@ -1049,9 +1054,9 @@ fr:{
   hsub:"Gagnez 2h par jour. Vos données restent sur votre machine.<br>Fonctionne dans toutes vos apps en 30 secondes.",
   h_btn:"Télécharger gratuitement — 14 jours Premium offerts",h_sec:"Voir comment ça marche",
   h_proof:"Pensé pour les développeurs, fondateurs et power users sur Mac, Windows et Linux",
-  hs1_n:"3x",hs1_p:"que taper au clavier",
-  hs2_n:"0",hs2_p:"tout reste sur votre machine",
-  hs3_n:"30",hs3_p:"pour commencer à dicter",
+  hs1_n:"3x",hs1_t:"plus rapide",hs1_p:"que taper au clavier",
+  hs2_n:"0",hs2_t:"donnée envoyée",hs2_p:"tout reste sur votre machine",
+  hs3_n:"30",hs3_t:"secondes",hs3_p:"pour commencer à dicter",
   hs_human:"Des milliers d'heures déjà économisées.",
   hero_user_1:"Rédige un email pro pour reporter notre réunion de lundi.",
   hero_ai_1:"Bien sûr ! Voici un email professionnel que vous pouvez envoyer...",
@@ -1180,7 +1185,6 @@ function setLang(l){
   if(desc) desc.setAttribute('content', meta.description);
   if(ogTitle) ogTitle.setAttribute('content', meta.title);
   if(ogDesc) ogDesc.setAttribute('content', meta.description);
-  runStatCounters();
 }
 
 function isPlainLeftClick(event){
@@ -1213,31 +1217,6 @@ function attachDownloadHandlers(){
       const downloadUrl = await resolveLatestWindowsDownloadUrl(fallbackUrl);
       window.location.href = downloadUrl;
     });
-  });
-}
-
-function runStatCounters(){
-  document.querySelectorAll('.hero-stat strong[data-count]').forEach(el => {
-    const target = Number(el.getAttribute('data-count'));
-    if(Number.isNaN(target)) return;
-    const suffix = el.getAttribute('data-suffix') || '';
-    const original = el.textContent;
-    el.textContent = `0${suffix}`;
-    const duration = 900;
-    const start = performance.now();
-
-    function tick(now){
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const value = Math.round(target * eased);
-      el.textContent = `${value}${suffix}`;
-      if(progress < 1) requestAnimationFrame(tick);
-      else el.textContent = `${target}${suffix}`;
-    }
-
-    requestAnimationFrame(tick);
-
-    if(!original) el.textContent = `${target}${suffix}`;
   });
 }
 
@@ -1291,7 +1270,6 @@ const bl = (navigator.language||'en').slice(0,2).toLowerCase();
 if(bl==='fr') setLang('fr');
 else setLang('en');
 type();
-runStatCounters();
 attachDownloadHandlers();
 setupRevealOnScroll();
 </script>

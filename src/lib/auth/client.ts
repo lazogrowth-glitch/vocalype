@@ -14,6 +14,7 @@ const DEVICE_ID_KEY = "vocaltype.device.id";
 const DEVICE_REGISTERED_KEY = "vocaltype.device.registered";
 // Stores the set of emails that have already been registered on this device.
 const REGISTERED_EMAILS_KEY = "vocaltype.device.registered_emails";
+const TRIAL_WELCOME_SHOWN_KEY = "vocaltype.onboarding.trial_shown";
 const AUTH_STORE_FILE = "auth.store.json";
 
 type PersistedAuthSession = Omit<AuthSession, "token"> & {
@@ -499,6 +500,25 @@ export const authClient = {
 
   getErrorStatus(error: unknown) {
     return error instanceof AuthApiError ? error.status : null;
+  },
+
+  async hasSeenTrialWelcome(): Promise<boolean> {
+    try {
+      const store = await getAuthStore();
+      return (await store.get<boolean>(TRIAL_WELCOME_SHOWN_KEY)) === true;
+    } catch {
+      return false;
+    }
+  },
+
+  async markTrialWelcomeSeen(): Promise<void> {
+    try {
+      const store = await getAuthStore();
+      await store.set(TRIAL_WELCOME_SHOWN_KEY, true);
+      await store.save();
+    } catch (error) {
+      console.warn("Failed to persist trial welcome flag:", error);
+    }
   },
 
   // ─── API Calls ──────────────────────────────────────────────────────────────

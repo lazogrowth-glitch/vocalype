@@ -84,6 +84,7 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
     let offline_expires_at = parse_utc(&bundle.offline_expires_at);
     let grace_until = bundle.grace_until.as_deref().and_then(parse_utc);
     let has_premium = bundle.entitlements.iter().any(|item| item == "premium");
+    let has_basic = bundle.entitlements.iter().any(|item| item == "basic");
 
     let base = LicenseRuntimeState {
         state: LicenseState::Expired,
@@ -104,29 +105,35 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
         });
     }
 
-    if let Some(bound_hash) = bundle.build_binding_sha256.as_deref() {
-        let current_hash = integrity_snapshot.binary_sha256.as_deref();
-        if current_hash != Some(bound_hash) {
-            return Ok(LicenseRuntimeState {
-                reason: Some("Binary integrity changed since premium license was issued".to_string()),
-                ..base
-            });
+    // Basic-tier users skip integrity binding (no model unlock needed)
+    if has_premium {
+        if let Some(bound_hash) = bundle.build_binding_sha256.as_deref() {
+            let current_hash = integrity_snapshot.binary_sha256.as_deref();
+            if current_hash != Some(bound_hash) {
+                return Ok(LicenseRuntimeState {
+                    reason: Some("Binary integrity changed since premium license was issued".to_string()),
+                    ..base
+                });
+            }
         }
     }
 
-    if !has_premium {
+    if !has_premium && !has_basic {
         return Ok(LicenseRuntimeState {
-            reason: Some("Stored license does not include premium entitlement".to_string()),
+            reason: Some("Stored license does not include a valid entitlement".to_string()),
             ..base
         });
     }
 
-    if let Some(grace_until) = grace_until {
-        if grace_until <= now {
-            return Ok(LicenseRuntimeState {
-                reason: Some("Premium grace period expired".to_string()),
-                ..base
-            });
+    // Grace period only applies to premium (basic never enters revocation)
+    if has_premium {
+        if let Some(grace_until) = grace_until {
+            if grace_until <= now {
+                return Ok(LicenseRuntimeState {
+                    reason: Some("Premium grace period expired".to_string()),
+                    ..base
+                });
+            }
         }
     }
 
@@ -151,15 +158,45 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
     }
 
     Ok(LicenseRuntimeState {
-        reason: Some("Stored premium license expired".to_string()),
+        reason: Some("Stored license expired".to_string()),
         ..base
     })
+}
+
+/// Returns the plan from the stored license bundle ("premium", "basic", or None).
+pub fn current_plan(app: &AppHandle) -> Option<String> {
+    load_license_bundle().ok()?.map(|b| b.plan)
+}
+
+/// Allows any authenticated user with a valid license (premium or basic).
+pub fn enforce_any_access(app: &AppHandle, action_name: &str) -> Result<(), String> {
+    let state = current_license_state(app)?;
+    match state.state {
+        LicenseState::OnlineValid | LicenseState::OfflineValid => Ok(()),
+        LicenseState::Expired => Err(format!(
+            "Access required for {}. {}",
+            action_name,
+            state
+                .reason
+                .as_deref()
+                .unwrap_or("Reconnect to validate your account.")
+        )),
+    }
 }
 
 pub fn enforce_premium_access(app: &AppHandle, action_name: &str) -> Result<(), String> {
     let state = current_license_state(app)?;
     match state.state {
-        LicenseState::OnlineValid | LicenseState::OfflineValid => Ok(()),
+        LicenseState::OnlineValid | LicenseState::OfflineValid => {
+            // State is valid — now check the plan
+            if current_plan(app).as_deref() != Some("premium") {
+                return Err(format!(
+                    "Premium subscription required for {}.",
+                    action_name
+                ));
+            }
+            Ok(())
+        }
         LicenseState::Expired => Err(format!(
             "Premium access required for {}. {}",
             action_name,

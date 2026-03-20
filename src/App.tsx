@@ -12,6 +12,7 @@ import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
+import { TrialWelcomeModal } from "./components/onboarding/TrialWelcomeModal";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
@@ -22,6 +23,7 @@ import { licenseClient } from "@/lib/license/client";
 import type { LicenseRuntimeState } from "@/lib/license/types";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 import type { RuntimeErrorEvent } from "@/types/runtimeObservability";
+import { PlanContext } from "@/lib/plan/context";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
@@ -57,10 +59,18 @@ function App() {
     (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
+  const [showTrialWelcome, setShowTrialWelcome] = useState(false);
   const lastRuntimeErrorRef = useRef<{ key: string; at: number } | null>(null);
-  const hasPremiumAccess =
+  const hasAnyAccess =
     licenseState?.state === "online_valid" ||
     licenseState?.state === "offline_valid";
+
+  // Plan comes from the session (authoritative) or falls back to license bundle plan field
+  const currentTier = session?.subscription?.tier ?? null;
+  const isBasicTier = hasAnyAccess && currentTier === "basic";
+  const hasPremiumAccess = hasAnyAccess && currentTier === "premium";
+  const isTrialing = session?.subscription?.status === "trialing" && hasPremiumAccess;
+  const trialEndsAt = isTrialing ? (session?.subscription?.trial_ends_at ?? null) : null;
 
   const applySession = useCallback((nextSession: AuthSession | null) => {
     setSession(nextSession);
@@ -222,12 +232,12 @@ function App() {
   }, [i18n.language]);
 
   useEffect(() => {
-    if (authLoading || !hasPremiumAccess) {
+    if (authLoading || !hasAnyAccess) {
       return;
     }
 
     checkOnboardingStatus();
-  }, [authLoading, hasPremiumAccess]);
+  }, [authLoading, hasAnyAccess]);
 
   // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {
@@ -353,6 +363,82 @@ function App() {
       );
     });
 
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  // J12 trial reminder — shown once when the backend flags show_trial_reminder.
+  const trialReminderShownRef = useRef(false);
+  useEffect(() => {
+    if (session?.show_trial_reminder && !trialReminderShownRef.current) {
+      trialReminderShownRef.current = true;
+      toast.warning(
+        t("trial.reminder.title", { defaultValue: "Ton trial expire bientôt" }),
+        {
+          duration: Infinity,
+          description: t("trial.reminder.desc", {
+            defaultValue: "Passe à Premium pour garder l'injection native, tes raccourcis et tes transcriptions illimitées.",
+          }),
+          action: {
+            label: t("trial.reminder.cta", { defaultValue: "Passer à Premium →" }),
+            onClick: () => {
+              handleStartCheckout()
+                .then((url) => { if (url) window.open(url, "_blank"); })
+                .catch(() => {});
+            },
+          },
+        },
+      );
+    }
+  }, [session?.show_trial_reminder, t, handleStartCheckout]);
+
+  useEffect(() => {
+    const unlisten = listen("basic-copied-to-clipboard", () => {
+      toast.info(t("basic.copiedToClipboard", { defaultValue: "Texte copié dans le presse-papier" }), {
+        duration: 5000,
+        description: t("basic.copiedToClipboardDesc", {
+          defaultValue: "L'injection directe est réservée au plan Premium.",
+        }),
+        action: {
+          label: t("basic.seePremium", { defaultValue: "Voir Premium →" }),
+          onClick: () => {
+            handleStartCheckout()
+              .then((url) => { if (url) window.open(url, "_blank"); })
+              .catch(() => {});
+          },
+        },
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t, handleStartCheckout]);
+
+  useEffect(() => {
+    const unlisten = listen<{ count: number; limit: number }>(
+      "transcription-quota-exceeded",
+      (event) => {
+        const { count, limit } = event.payload;
+        toast.error(
+          t("basic.quotaExceeded", { defaultValue: "Limite atteinte pour cette semaine" }),
+          {
+            duration: Infinity,
+            description: t("basic.quotaExceededDesc", {
+              defaultValue: "Passe à Premium pour dicter sans limite.",
+            }),
+            action: {
+              label: t("basic.upgradeCta", { defaultValue: "Passer à Premium →" }),
+              onClick: () => {
+                handleStartCheckout()
+                  .then((url) => { if (url) window.open(url, "_blank"); })
+                  .catch(() => {});
+              },
+            },
+          },
+        );
+      },
+    );
     return () => {
       unlisten.then((fn) => fn());
     };
@@ -498,9 +584,20 @@ function App() {
   const handleRegister = useCallback(
     async (payload: AuthPayload) => {
       await authenticate(authClient.register, payload);
+      // Show the trial welcome modal on first registration if user is trialing
+      const newSession = authClient.getStoredSession();
+      if (newSession?.subscription.status === "trialing") {
+        const seen = await authClient.hasSeenTrialWelcome();
+        if (!seen) setShowTrialWelcome(true);
+      }
     },
     [authenticate],
   );
+
+  const handleDismissTrialWelcome = useCallback(async () => {
+    setShowTrialWelcome(false);
+    await authClient.markTrialWelcomeSeen();
+  }, []);
 
   const handleStartCheckout = useCallback(async () => {
     const token = authClient.getStoredToken();
@@ -539,7 +636,7 @@ function App() {
     );
   }
 
-  if (!session || !hasPremiumAccess) {
+  if (!session || !hasAnyAccess) {
     return (
       <AuthPortal
         error={authError}
@@ -572,10 +669,26 @@ function App() {
   }
 
   if (onboardingStep === "model") {
-    return <Onboarding onModelSelected={handleModelSelected} />;
+    return (
+      <>
+        <Onboarding onModelSelected={handleModelSelected} />
+        {showTrialWelcome && (
+          <TrialWelcomeModal onDismiss={handleDismissTrialWelcome} />
+        )}
+      </>
+    );
   }
 
   return (
+    <PlanContext.Provider
+      value={{
+        isBasicTier,
+        isTrialing,
+        trialEndsAt,
+        quota: session?.subscription?.quota ?? null,
+        onStartCheckout: handleStartCheckout,
+      }}
+    >
     <div dir={direction} style={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden", background: "#0f0f0f", fontFamily: "'Segoe UI', system-ui, sans-serif", color: "inherit" }}>
       <Toaster
         theme="system"
@@ -603,6 +716,7 @@ function App() {
         {renderSettingsContent(currentSection)}
       </main>
     </div>
+    </PlanContext.Provider>
   );
 }
 

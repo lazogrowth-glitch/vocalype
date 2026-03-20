@@ -11,6 +11,7 @@ import uuid
 import hashlib
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import wraps
 from threading import Lock
@@ -347,6 +348,9 @@ def init_db():
     )
     ensure_column(db, "password_reset_tokens", "attempt_count", "INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "users", "token_version", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column(db, "users", "weekly_transcription_count", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column(db, "users", "weekly_transcription_reset_at", "TEXT")
+    ensure_column(db, "users", "trial_reminder_sent", "INTEGER NOT NULL DEFAULT 0")
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS premium_device_entitlements (
@@ -556,117 +560,58 @@ def sync_device_entitlement_state(
             (user["id"], device_id),
         ).fetchone()
 
-        if has_access(user):
-            if row is None:
-                db.execute(
-                    """
-                    INSERT INTO premium_device_entitlements (
-                        user_id,
-                        device_id,
-                        plan,
-                        entitlement_status,
-                        created_at,
-                        last_seen_at,
-                        last_grant_issued_at,
-                        app_version,
-                        app_channel
-                    ) VALUES (?, ?, 'premium', ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        user["id"],
-                        device_id,
-                        ENTITLEMENT_STATUS_ACTIVE,
-                        now_iso,
-                        now_iso,
-                        now_iso,
-                        app_version,
-                        app_channel,
-                    ),
-                )
-            else:
-                db.execute(
-                    """
-                    UPDATE premium_device_entitlements
-                    SET plan = 'premium',
-                        entitlement_status = ?,
-                        last_seen_at = ?,
-                        last_grant_issued_at = ?,
-                        revoked_at = NULL,
-                        grace_until = NULL,
-                        app_version = COALESCE(?, app_version),
-                        app_channel = COALESCE(?, app_channel)
-                    WHERE id = ?
-                    """,
-                    (
-                        ENTITLEMENT_STATUS_ACTIVE,
-                        now_iso,
-                        now_iso,
-                        app_version,
-                        app_channel,
-                        row["id"],
-                    ),
-                )
-        elif row is not None:
-            current_status = row["entitlement_status"] or ENTITLEMENT_STATUS_ACTIVE
-            current_grace_until = parse_iso(row["grace_until"])
-            if current_status == ENTITLEMENT_STATUS_REVOKED:
-                db.execute(
-                    """
-                    UPDATE premium_device_entitlements
-                    SET last_seen_at = ?, app_version = COALESCE(?, app_version), app_channel = COALESCE(?, app_channel)
-                    WHERE id = ?
-                    """,
-                    (now_iso, app_version, app_channel, row["id"]),
-                )
-            elif current_grace_until and current_grace_until <= now:
-                db.execute(
-                    """
-                    UPDATE premium_device_entitlements
-                    SET entitlement_status = ?,
-                        last_seen_at = ?,
-                        revoked_at = COALESCE(revoked_at, ?),
-                        grace_until = ?,
-                        app_version = COALESCE(?, app_version),
-                        app_channel = COALESCE(?, app_channel)
-                    WHERE id = ?
-                    """,
-                    (
-                        ENTITLEMENT_STATUS_REVOKED,
-                        now_iso,
-                        now_iso,
-                        dt_to_iso(current_grace_until),
-                        app_version,
-                        app_channel,
-                        row["id"],
-                    ),
-                )
-            else:
-                grace_until = current_grace_until or (
-                    now + timedelta(seconds=LICENSE_REVOCATION_GRACE_SECONDS)
-                )
-                revoked_at = parse_iso(row["revoked_at"]) or now
-                db.execute(
-                    """
-                    UPDATE premium_device_entitlements
-                    SET entitlement_status = ?,
-                        last_seen_at = ?,
-                        revoked_at = ?,
-                        grace_until = ?,
-                        app_version = COALESCE(?, app_version),
-                        app_channel = COALESCE(?, app_channel)
-                    WHERE id = ?
-                    """,
-                    (
-                        ENTITLEMENT_STATUS_REVOCATION_PENDING,
-                        now_iso,
-                        dt_to_iso(revoked_at),
-                        dt_to_iso(grace_until),
-                        app_version,
-                        app_channel,
-                        row["id"],
-                    ),
-                )
-
+        tier = get_user_tier(user)
+        if row is None:
+            db.execute(
+                """
+                INSERT INTO premium_device_entitlements (
+                    user_id,
+                    device_id,
+                    plan,
+                    entitlement_status,
+                    created_at,
+                    last_seen_at,
+                    last_grant_issued_at,
+                    app_version,
+                    app_channel
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    user["id"],
+                    device_id,
+                    tier,
+                    ENTITLEMENT_STATUS_ACTIVE,
+                    now_iso,
+                    now_iso,
+                    now_iso,
+                    app_version,
+                    app_channel,
+                ),
+            )
+        else:
+            db.execute(
+                """
+                UPDATE premium_device_entitlements
+                SET plan = ?,
+                    entitlement_status = ?,
+                    last_seen_at = ?,
+                    last_grant_issued_at = ?,
+                    revoked_at = NULL,
+                    grace_until = NULL,
+                    app_version = COALESCE(?, app_version),
+                    app_channel = COALESCE(?, app_channel)
+                WHERE id = ?
+                """,
+                (
+                    tier,
+                    ENTITLEMENT_STATUS_ACTIVE,
+                    now_iso,
+                    now_iso,
+                    app_version,
+                    app_channel,
+                    row["id"],
+                ),
+            )
         db.commit()
         return db.execute(
             """
@@ -850,21 +795,26 @@ def build_license_payloads(user, entitlement, *, device_id: str, integrity_evalu
 
 
 def build_license_status_response(user, entitlement, *, device_id: str):
-    access_allowed = entitlement_allows_access(entitlement)
+    tier = get_user_tier(user)
+    entitlement_ok = entitlement_allows_access(entitlement)
+    # Both tiers are valid — basic users still get an online_valid license
+    state = "online_valid" if entitlement_ok else "expired"
+    plan = tier  # "premium" or "basic"
+    entitlements = [plan] if entitlement_ok else []
     return {
-        "state": "online_valid" if access_allowed else "expired",
+        "state": state,
         "device_id": device_id,
         "user_id": str(user["id"]),
         "subscription_status": user["subscription_status"],
-        "subscription_has_access": has_access(user),
+        "subscription_has_access": True,
         "entitlement_status": (
             entitlement["entitlement_status"] if entitlement else ENTITLEMENT_STATUS_REVOKED
         ),
-        "plan": entitlement["plan"] if entitlement else "premium",
+        "plan": plan,
         "grace_until": dt_to_iso(parse_iso(entitlement["grace_until"])) if entitlement else None,
         "grant_expires_at": None,
         "offline_expires_at": None,
-        "entitlements": ["premium"] if access_allowed else [],
+        "entitlements": entitlements,
     }
 
 
@@ -1047,22 +997,51 @@ def scoped_limits(base_identifier: str, limits: tuple[tuple[str, int, int, int],
     )
 
 
-def has_access(user) -> bool:
+BASIC_WEEKLY_TRANSCRIPTION_LIMIT = 30
+
+
+def get_user_tier(user) -> str:
+    """Returns 'premium' or 'basic'. Never returns a hard-blocked state."""
     status = user["subscription_status"]
     if status == "active":
-        return True
-
+        return "premium"
     if status == "trialing":
         trial_end = parse_iso(user["trial_end"])
-        if not trial_end:
-            return False
-        return utc_now() < trial_end
-
-    return False
+        if trial_end and utc_now() < trial_end:
+            return "premium"
+    return "basic"
 
 
-def build_user_response(user, token: str):
+def has_access(user) -> bool:
+    """True for all registered users — both premium and basic."""
+    return True
+
+
+def has_premium_access(user) -> bool:
+    return get_user_tier(user) == "premium"
+
+
+def get_weekly_quota(user) -> dict:
+    """Returns current week's transcription usage for basic users."""
+    now = utc_now()
+    reset_at = parse_iso(user.get("weekly_transcription_reset_at"))
+    count = int(user.get("weekly_transcription_count") or 0)
+
+    # Reset counter if the window has passed (rolling 7-day window)
+    if reset_at is None or now >= reset_at:
+        count = 0
+
     return {
+        "count": count,
+        "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
+        "remaining": max(0, BASIC_WEEKLY_TRANSCRIPTION_LIMIT - count),
+        "reset_at": dt_to_iso(reset_at) if reset_at and now < reset_at else None,
+    }
+
+
+def build_user_response(user, token: str, *, show_trial_reminder: bool = False):
+    tier = get_user_tier(user)
+    response = {
         "token": token,
         "user": {
             "id": str(user["id"]),
@@ -1073,9 +1052,15 @@ def build_user_response(user, token: str):
             "status": user["subscription_status"],
             "trial_ends_at": user["trial_end"],
             "current_period_ends_at": user["period_end"],
-            "has_access": has_access(user),
+            "has_access": True,
+            "tier": tier,
         },
     }
+    if tier == "basic":
+        response["subscription"]["quota"] = get_weekly_quota(user)
+    if show_trial_reminder:
+        response["show_trial_reminder"] = True
+    return response
 
 
 def auth_required(handler):
@@ -1266,6 +1251,248 @@ def send_reset_email(to_email: str, code: str) -> None:
         server.sendmail(smtp_from, [to_email], msg.as_string())
 
 
+def send_trial_start_email(to_email: str, name: str) -> None:
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    smtp_from = os.environ.get("SMTP_FROM", smtp_user)
+
+    if not smtp_host:
+        return
+
+    site_url = APP_RETURN_URL
+    first_name = name.split()[0] if name else "là"
+
+    plain = (
+        f"Bonjour {first_name},\n\n"
+        "Ton accès Premium VocalType est actif. 14 jours complets, sans carte.\n\n"
+        "Ce que tu as maintenant :\n"
+        "  • Injection native dans toutes tes apps\n"
+        "  • Raccourci clavier personnalisable\n"
+        "  • Transcriptions illimitées\n"
+        "  • Historique complet\n\n"
+        "Aucune action requise — ton trial a démarré automatiquement.\n\n"
+        f"Ouvre VocalType et commence à dicter : {site_url}\n\n"
+        "— L'équipe VocalType"
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f0f0f;font-family:'Segoe UI',system-ui,sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#181818;border-radius:12px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+
+        <!-- Header -->
+        <tr><td style="padding:32px 36px 24px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="display:inline-block;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#c9a84c;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;">Premium · 14 jours</span>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:28px 36px;">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:600;color:#fff;line-height:1.3;">
+            Bonjour {first_name},
+          </p>
+          <p style="margin:0 0 24px;font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">
+            Ton accès Premium VocalType est actif.<br>
+            14 jours complets, sans carte de crédit.
+          </p>
+
+          <!-- Features -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+            {"".join(
+              f'<tr><td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
+              f'<span style="color:#c9a84c;margin-right:10px;">✓</span>'
+              f'<span style="font-size:13px;color:rgba(255,255,255,0.75);">{feat}</span></td></tr>'
+              for feat in [
+                "Injection native dans toutes tes apps",
+                "Raccourci clavier personnalisable",
+                "Transcriptions illimitées",
+                "Historique complet",
+              ]
+            )}
+          </table>
+
+          <!-- CTA -->
+          <a href="{site_url}" style="display:inline-block;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#c9a84c;font-size:13px;font-weight:600;padding:11px 24px;border-radius:8px;text-decoration:none;">
+            Ouvrir VocalType →
+          </a>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:16px 36px;border-top:1px solid rgba(255,255,255,0.06);">
+          <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2);line-height:1.6;">
+            Aucune carte requise pendant le trial. Tu peux annuler à tout moment.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Ton accès Premium VocalType est actif — 14 jours complets"
+    msg["From"] = smtp_from
+    msg["To"] = to_email
+    msg.attach(MIMEText(plain, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            if smtp_user and smtp_pass:
+                server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_from, [to_email], msg.as_string())
+    except Exception:
+        app.logger.warning("send_trial_start_email failed to=%s", to_email)
+
+
+def send_trial_reminder_email(to_email: str, name: str, days_left: int) -> None:
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    smtp_from = os.environ.get("SMTP_FROM", smtp_user)
+
+    if not smtp_host:
+        return
+
+    site_url = APP_RETURN_URL
+    first_name = name.split()[0] if name else "là"
+    days_str = "demain" if days_left <= 1 else f"dans {days_left} jours"
+
+    plain = (
+        f"Bonjour {first_name},\n\n"
+        f"Ton trial Premium VocalType expire {days_str}.\n\n"
+        "Ce que tu perdras sans abonnement :\n"
+        "  • Injection native dans tes apps (retour au presse-papier)\n"
+        "  • Raccourcis clavier personnalisés (désactivés)\n"
+        "  • Transcriptions illimitées (limité à 30/semaine)\n"
+        "  • Historique complet (limité à 5 entrées)\n\n"
+        "Passe à Premium maintenant pour continuer sans interruption.\n\n"
+        f"Voir les offres : {site_url}\n\n"
+        "— L'équipe VocalType"
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f0f0f;font-family:'Segoe UI',system-ui,sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#181818;border-radius:12px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+
+        <!-- Header -->
+        <tr><td style="padding:32px 36px 24px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="display:inline-block;background:rgba(234,88,12,0.12);border:1px solid rgba(234,88,12,0.25);color:#fb923c;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;">⚠ Trial expire {days_str}</span>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:28px 36px;">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:600;color:#fff;line-height:1.3;">
+            Bonjour {first_name},
+          </p>
+          <p style="margin:0 0 24px;font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">
+            Ton accès Premium expire {days_str}.<br>
+            Voici ce que tu perdras si tu ne passes pas à Premium :
+          </p>
+
+          <!-- What you'll lose -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+            {"".join(
+              f'<tr><td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
+              f'<span style="color:#fb923c;margin-right:10px;">✕</span>'
+              f'<span style="font-size:13px;color:rgba(255,255,255,0.75);">{feat}</span></td></tr>'
+              for feat in [
+                "Injection native dans tes apps (retour au presse-papier)",
+                "Raccourcis clavier personnalisés (désactivés)",
+                "Transcriptions illimitées (limité à 30/semaine)",
+                "Historique complet (limité à 5 entrées)",
+              ]
+            )}
+          </table>
+
+          <!-- CTA -->
+          <a href="{site_url}" style="display:inline-block;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#c9a84c;font-size:13px;font-weight:600;padding:11px 24px;border-radius:8px;text-decoration:none;">
+            Passer à Premium →
+          </a>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:16px 36px;border-top:1px solid rgba(255,255,255,0.06);">
+          <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2);line-height:1.6;">
+            Tu peux continuer à utiliser VocalType en mode Basic après l'expiration.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"Ton trial VocalType expire {days_str} — passe à Premium"
+    msg["From"] = smtp_from
+    msg["To"] = to_email
+    msg.attach(MIMEText(plain, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            if smtp_user and smtp_pass:
+                server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_from, [to_email], msg.as_string())
+    except Exception:
+        app.logger.warning("send_trial_reminder_email failed to=%s", to_email)
+
+
+def maybe_send_trial_reminder(user) -> bool:
+    """
+    Returns True (and triggers reminder) if the user is trialing and their trial
+    ends in 2 days or fewer, and the reminder hasn't been sent yet.
+    """
+    if user.get("subscription_status") != "trialing":
+        return False
+    if user.get("trial_reminder_sent"):
+        return False
+
+    trial_end = parse_iso(user.get("trial_end"))
+    if trial_end is None:
+        return False
+
+    now = utc_now()
+    days_left = (trial_end - now).days  # floor division
+
+    if days_left > 2:
+        return False
+
+    # Mark sent immediately to prevent duplicate sends under concurrent requests
+    db = get_db()
+    db.execute(
+        "UPDATE users SET trial_reminder_sent = 1 WHERE id = ?",
+        (user["id"],),
+    )
+    db.commit()
+
+    days_left_clamped = max(0, days_left)
+    import threading
+    threading.Thread(
+        target=send_trial_reminder_email,
+        args=(user["email"], user.get("name") or "", days_left_clamped),
+        daemon=True,
+    ).start()
+
+    return True
+
+
 def increment_latest_reset_attempt(db: sqlite3.Connection, user_id: int) -> None:
     latest_row = db.execute(
         """
@@ -1366,7 +1593,7 @@ def register():
         return jsonify({"error": "Cet email est déjà utilisé"}), 409
 
     try:
-        trial_end = (utc_now() + timedelta(days=7)).isoformat()
+        trial_end = (utc_now() + timedelta(days=14)).isoformat()
         db = get_db()
         try:
             db.execute(
@@ -1399,6 +1626,15 @@ def register():
 
         token = make_token(user)
         log_security_event("register_success", user_id=user["id"], email=email, ip=ip_address)
+
+        # Send trial welcome email in background — never blocks the registration response
+        import threading
+        threading.Thread(
+            target=send_trial_start_email,
+            args=(email, name or ""),
+            daemon=True,
+        ).start()
+
         return jsonify(build_user_response(user, token)), 201
     except Exception:
         app.logger.exception("register_failed email=%s ip=%s", email, ip_address)
@@ -1466,7 +1702,8 @@ def login():
 @auth_required
 def session(user):
     token = make_token(user)
-    return jsonify(build_user_response(user, token))
+    show_reminder = maybe_send_trial_reminder(user)
+    return jsonify(build_user_response(user, token, show_trial_reminder=show_reminder))
 
 
 def parse_license_request_data():
@@ -1632,13 +1869,76 @@ def report_license_anomaly(user):
     return jsonify({"ok": True})
 
 
+@app.route("/transcription/quota", methods=["GET"])
+@auth_required
+def transcription_quota(user):
+    """Returns the current week's transcription quota for basic-tier users."""
+    tier = get_user_tier(user)
+    quota = get_weekly_quota(user)
+    return jsonify({"tier": tier, "quota": quota})
+
+
+@app.route("/transcription/record", methods=["POST"])
+@auth_required
+def transcription_record(user):
+    """Records a completed transcription and enforces the weekly quota for basic users.
+    Returns 200 with remaining quota, or 429 when the limit is reached.
+    Premium users always get 200 with no quota info.
+    """
+    tier = get_user_tier(user)
+    if tier == "premium":
+        return jsonify({"tier": "premium", "ok": True})
+
+    now = utc_now()
+    reset_at = parse_iso(user.get("weekly_transcription_reset_at"))
+    count = int(user.get("weekly_transcription_count") or 0)
+
+    # Reset counter if the week window has passed
+    if reset_at is None or now >= reset_at:
+        count = 0
+        reset_at = now + timedelta(days=7)
+
+    if count >= BASIC_WEEKLY_TRANSCRIPTION_LIMIT:
+        quota = {
+            "count": count,
+            "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
+            "remaining": 0,
+            "reset_at": dt_to_iso(reset_at),
+        }
+        return jsonify({"error": "Quota hebdomadaire atteint", "tier": "basic", "quota": quota}), 429
+
+    count += 1
+    db = get_db()
+    try:
+        db.execute(
+            """
+            UPDATE users
+            SET weekly_transcription_count = ?,
+                weekly_transcription_reset_at = ?
+            WHERE id = ?
+            """,
+            (count, dt_to_iso(reset_at), user["id"]),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    quota = {
+        "count": count,
+        "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
+        "remaining": BASIC_WEEKLY_TRANSCRIPTION_LIMIT - count,
+        "reset_at": dt_to_iso(reset_at),
+    }
+    return jsonify({"tier": "basic", "ok": True, "quota": quota})
+
+
 @app.route("/billing/checkout", methods=["POST"])
 @auth_required
 def billing_checkout(user):
     try:
         require_billing_configured()
-        if has_access(user):
-            return jsonify({"error": "Accès déjà actif"}), 400
+        if has_premium_access(user):
+            return jsonify({"error": "Abonnement premium déjà actif"}), 400
 
         customer_id = ensure_customer(user)
         checkout = stripe.checkout.Session.create(

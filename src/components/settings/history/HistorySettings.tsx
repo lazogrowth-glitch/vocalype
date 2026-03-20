@@ -18,6 +18,7 @@ import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
 import { useModelStore } from "@/stores/modelStore";
 import { ConfidenceText } from "./ConfidenceText";
+import { usePlan } from "@/lib/plan/context";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -38,9 +39,12 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   </button>
 );
 
+const BASIC_HISTORY_LIMIT = 5;
+
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
+  const { isBasicTier, onStartCheckout } = usePlan();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -211,8 +215,25 @@ export const HistorySettings: React.FC = () => {
           />
         </div>
         <div className="overflow-visible">
+          {isBasicTier && historyEntries.length > BASIC_HISTORY_LIMIT && (
+            <div className="mb-3 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-[12px]">
+              <span className="text-amber-300/80">
+                {t("basic.historyLimited", {
+                  defaultValue: `Historique limité à ${BASIC_HISTORY_LIMIT} entrées en Basic`,
+                  limit: BASIC_HISTORY_LIMIT,
+                })}
+              </span>
+              <button
+                type="button"
+                onClick={() => onStartCheckout().then((url) => url && window.open(url, "_blank"))}
+                className="ml-3 shrink-0 rounded bg-amber-500/20 px-2.5 py-1 text-amber-300 transition-colors hover:bg-amber-500/30"
+              >
+                {t("basic.upgrade", { defaultValue: "Passer à Premium" })}
+              </button>
+            </div>
+          )}
           <div className="divide-y divide-white/8">
-            {historyEntries.map((entry) => (
+            {(isBasicTier ? historyEntries.slice(0, BASIC_HISTORY_LIMIT) : historyEntries).map((entry) => (
               <HistoryEntryComponent
                 key={entry.id}
                 entry={entry}

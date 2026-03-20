@@ -12,17 +12,29 @@ export interface AuthUser {
   name?: string | null;
 }
 
+export type SubscriptionTier = "premium" | "basic";
+
+export interface WeeklyQuota {
+  count: number;
+  limit: number;
+  remaining: number;
+  reset_at: string | null;
+}
+
 export interface SubscriptionAccess {
   status: SubscriptionStatus;
   trial_ends_at?: string | null;
   current_period_ends_at?: string | null;
   has_access: boolean;
+  tier: SubscriptionTier;
+  quota?: WeeklyQuota | null;
 }
 
 export interface AuthSession {
   token: string;
   user: AuthUser;
   subscription: SubscriptionAccess;
+  show_trial_reminder?: boolean;
 }
 
 export interface AuthPayload {

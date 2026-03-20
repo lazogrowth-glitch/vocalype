@@ -185,6 +185,17 @@ impl HistoryManager {
         Ok(Connection::open(&self.db_path)?)
     }
 
+    /// Count transcriptions recorded after `since_timestamp` (Unix seconds).
+    pub fn count_recent_transcriptions(&self, since_timestamp: i64) -> Result<i64> {
+        let conn = self.get_connection()?;
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM transcription_history WHERE timestamp >= ?1",
+            params![since_timestamp],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
     /// Save a transcription to history (both database and WAV file)
     pub async fn save_transcription(
         &self,

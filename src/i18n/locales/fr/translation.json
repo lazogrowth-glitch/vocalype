@@ -770,5 +770,40 @@
     "pasteFailed": "Échec du collage automatique",
     "pasteFailedCopied": "Échec du collage automatique — texte copié dans le presse-papiers",
     "pasteFailedDesc": "Raison : {{reason}}"
+  },
+  "trial": {
+    "welcome": {
+      "badge": "Premium · 14 jours",
+      "title": "14 jours de VocalType Premium. Gratuit, sans carte.",
+      "subtitle": "Ton accès complet démarre maintenant. Aucune carte requise.",
+      "cta": "C'est parti →"
+    },
+    "feature1": "Injection native dans toutes tes apps",
+    "feature2": "Raccourci clavier personnalisable",
+    "feature3": "Transcriptions illimitées",
+    "feature4": "Historique complet",
+    "badge": {
+      "neutral": "Trial Premium · {{count}}j restants",
+      "warning": "Plus que {{count}} jours de Premium",
+      "urgent": "⚠ Expire dans {{count}} jours",
+      "today": "⚠ Expire aujourd'hui",
+      "cta": "Passer à Premium →"
+    },
+    "reminder": {
+      "title": "Ton trial expire bientôt",
+      "desc": "Passe à Premium pour garder l'injection native, tes raccourcis et tes transcriptions illimitées.",
+      "cta": "Passer à Premium →"
+    }
+  },
+  "basic": {
+    "copiedToClipboard": "Texte copié dans le presse-papier",
+    "copiedToClipboardDesc": "L'injection directe est réservée au plan Premium.",
+    "seePremium": "Voir Premium →",
+    "quotaExceeded": "Limite atteinte pour cette semaine",
+    "quotaExceededDesc": "Passe à Premium pour dicter sans limite.",
+    "upgradeCta": "Passer à Premium →",
+    "upgrade": "Passer à Premium",
+    "historyLimited": "Historique limité à {{limit}} entrées en Basic",
+    "shortcutsLocked": "Raccourcis personnalisés réservés à Premium"
   }
 }

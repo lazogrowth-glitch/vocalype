@@ -12,6 +12,7 @@ import {
 import VocalTypeLogo from "./icons/VocalTypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
 import { useSettings } from "../hooks/useSettings";
+import { usePlan } from "@/lib/plan/context";
 import {
   GeneralSettings,
   AdvancedSettings,
@@ -89,12 +90,25 @@ interface SidebarProps {
   onSectionChange: (section: SidebarSection) => void;
 }
 
+function useTrialBadge(trialEndsAt: string | null) {
+  if (!trialEndsAt) return null;
+  const days = Math.max(
+    0,
+    Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000),
+  );
+  if (days >= 8) return { days, urgency: "neutral" as const };
+  if (days >= 3) return { days, urgency: "warning" as const };
+  return { days, urgency: "urgent" as const };
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { isTrialing, trialEndsAt, onStartCheckout } = usePlan();
+  const trialBadge = useTrialBadge(isTrialing ? trialEndsAt : null);
 
   const availableSections = Object.entries(SECTIONS_CONFIG)
     .filter(([_, config]) => config.enabled(settings))
@@ -107,6 +121,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <VocalTypeLogo width={104} />
         </div>
       </div>
+
+      {trialBadge && (
+        <button
+          type="button"
+          onClick={() =>
+            onStartCheckout()
+              .then((url) => url && window.open(url, "_blank"))
+              .catch(() => {})
+          }
+          className={`w-full border-b px-[18px] py-2.5 text-left transition-opacity hover:opacity-80 ${
+            trialBadge.urgency === "neutral"
+              ? "border-logo-primary/15 bg-logo-primary/8"
+              : trialBadge.urgency === "warning"
+                ? "border-orange-500/20 bg-orange-500/10"
+                : "border-red-500/20 bg-red-500/10"
+          }`}
+        >
+          <p
+            className={`text-[11px] font-medium leading-tight ${
+              trialBadge.urgency === "neutral"
+                ? "text-logo-primary"
+                : trialBadge.urgency === "warning"
+                  ? "text-orange-400"
+                  : "text-red-400"
+            }`}
+          >
+            {trialBadge.urgency === "neutral" &&
+              t("trial.badge.neutral", {
+                count: trialBadge.days,
+                defaultValue: `Trial Premium · {{count}}j restants`,
+              })}
+            {trialBadge.urgency === "warning" &&
+              t("trial.badge.warning", {
+                count: trialBadge.days,
+                defaultValue: `Plus que {{count}} jours de Premium`,
+              })}
+            {trialBadge.urgency === "urgent" &&
+              (trialBadge.days === 0
+                ? t("trial.badge.today", { defaultValue: "⚠ Expire aujourd'hui" })
+                : t("trial.badge.urgent", {
+                    count: trialBadge.days,
+                    defaultValue: `⚠ Expire dans {{count}} jours`,
+                  }))}
+          </p>
+          <p className="mt-0.5 text-[10px] text-white/30">
+            {t("trial.badge.cta", { defaultValue: "Passer à Premium →" })}
+          </p>
+        </button>
+      )}
 
       <div className="flex flex-1 flex-col py-2.5">
         {availableSections.map((section) => {

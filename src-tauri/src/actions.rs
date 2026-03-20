@@ -969,10 +969,30 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
-        if let Err(err) = crate::license::enforce_premium_access(app, "dictation") {
-            warn!("Premium gate denied transcription start: {}", err);
+        if let Err(err) = crate::license::enforce_any_access(app, "dictation") {
+            warn!("Access gate denied transcription start: {}", err);
             let _ = app.emit("premium-access-denied", err.clone());
             return;
+        }
+
+        // Basic-tier quota check: 30 transcriptions per rolling 7-day window
+        if crate::license::current_plan(app).as_deref() == Some("basic") {
+            let since = (chrono::Utc::now() - chrono::Duration::days(7)).timestamp();
+            let hm = app.state::<Arc<HistoryManager>>();
+            match hm.count_recent_transcriptions(since) {
+                Ok(count) if count >= 30 => {
+                    warn!("Basic quota exceeded ({}/30), blocking transcription start", count);
+                    let _ = app.emit(
+                        "transcription-quota-exceeded",
+                        serde_json::json!({ "count": count, "limit": 30 }),
+                    );
+                    return;
+                }
+                Err(e) => {
+                    warn!("Failed to check transcription quota: {}", e);
+                }
+                _ => {}
+            }
         }
 
         let captured_app_context = detect_current_app_context();
@@ -1196,6 +1216,7 @@ impl ShortcutAction for TranscribeAction {
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+        let is_basic_plan = crate::license::current_plan(app).as_deref() == Some("basic");
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
@@ -1809,6 +1830,29 @@ impl ShortcutAction for TranscribeAction {
                         }
                         let text_for_fallback = fallback_text.clone();
                         let paste_exec_started = Instant::now();
+
+                        // Basic-tier: clipboard-only, no native injection
+                        if is_basic_plan {
+                            match ah_clone.clipboard().write_text(&final_text) {
+                                Ok(()) => {
+                                    debug!("Basic tier: copied transcription to clipboard");
+                                    let _ = ah_clone.emit("basic-copied-to-clipboard", ());
+                                    if let Ok(mut p) = profiler_for_paste.lock() {
+                                        p.push_step_since(
+                                            "paste_execute",
+                                            paste_exec_started,
+                                            Some("basic_clipboard".to_string()),
+                                        );
+                                        p.mark_completed();
+                                        p.emit(&ah_clone);
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Basic tier clipboard write failed: {}", e);
+                                    emit_paste_failed_event(&ah_clone, e.to_string(), false);
+                                }
+                            }
+                        } else {
                         match utils::paste(final_text, ah_clone.clone()) {
                             Ok(()) => {
                                 debug!("Text pasted in {:?}", paste_time.elapsed());
@@ -1867,6 +1911,7 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
                         }
+                        } // end else (premium paste)
                         utils::hide_recording_overlay(&ah_clone);
                         change_tray_icon(&ah_clone, TrayIconState::Idle);
                     })

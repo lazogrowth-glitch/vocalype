@@ -11,10 +11,12 @@ import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 import { LongAudioModelSettings } from "./LongAudioModelSettings";
+import { usePlan } from "@/lib/plan/context";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
   const { audioFeedbackEnabled } = useSettings();
+  const { isBasicTier, onStartCheckout } = usePlan();
   const [activeTab, setActiveTab] = useState<"shortcuts" | "audio" | "dictation">(
     "shortcuts",
   );
@@ -46,11 +48,27 @@ export const GeneralSettings: React.FC = () => {
 
       {activeTab === "shortcuts" && (
         <SettingsGroup title="Raccourcis clavier">
-          <ShortcutInput shortcutId="transcribe" grouped={true} />
-          <ShortcutInput shortcutId="cancel" grouped={true} />
-          <ShortcutInput shortcutId="pause" grouped={true} />
-          <ShortcutInput shortcutId="show_history" grouped={true} />
-          <ShortcutInput shortcutId="copy_latest_history" grouped={true} />
+          {isBasicTier && (
+            <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-[12px]">
+              <span className="text-amber-300/80">
+                {t("basic.shortcutsLocked", {
+                  defaultValue: "Raccourcis personnalisés réservés à Premium",
+                })}
+              </span>
+              <button
+                type="button"
+                onClick={() => onStartCheckout().then((url) => url && window.open(url, "_blank"))}
+                className="ml-3 shrink-0 rounded bg-amber-500/20 px-2.5 py-1 text-amber-300 transition-colors hover:bg-amber-500/30"
+              >
+                {t("basic.upgrade", { defaultValue: "Passer à Premium" })}
+              </button>
+            </div>
+          )}
+          <ShortcutInput shortcutId="transcribe" grouped={true} disabled={isBasicTier} />
+          <ShortcutInput shortcutId="cancel" grouped={true} disabled={isBasicTier} />
+          <ShortcutInput shortcutId="pause" grouped={true} disabled={isBasicTier} />
+          <ShortcutInput shortcutId="show_history" grouped={true} disabled={isBasicTier} />
+          <ShortcutInput shortcutId="copy_latest_history" grouped={true} disabled={isBasicTier} />
           <PushToTalk descriptionMode="tooltip" grouped={true} />
         </SettingsGroup>
       )}

@@ -706,13 +706,13 @@
     "cancelRecording": "Cancel recording"
   },
   "auth": {
-    "trialBadge": "7-day free trial, no card required",
+    "trialBadge": "14-day free trial, no card required",
     "paidAccess": "Paid access",
     "headline": "Create your account and unlock VocalType instantly.",
-    "subheadline": "Every account starts with a 7-day free trial without requiring a card. After the trial ends, users can subscribe for $4.99 per month to keep unlimited dictation across ChatGPT, Claude, Gemini and Windows apps.",
+    "subheadline": "Every account starts with a 14-day free trial without requiring a card. After the trial ends, users can subscribe for $4.99 per month to keep unlimited dictation across ChatGPT, Claude, Gemini and Windows apps.",
     "features": {
       "trial": {
-        "title": "7-day free trial",
+        "title": "14-day free trial",
         "description": "Create an account and test the full product immediately, with no card required upfront."
       },
       "subscription": {
@@ -734,7 +734,7 @@
     "manageSubscription": "Manage subscription",
     "refreshAccess": "Refresh access",
     "logout": "Logout",
-    "trialNote": "Your 7-day free trial starts when you create your account. No card is required until the trial ends.",
+    "trialNote": "Your 14-day free trial starts when you create your account. No card is required until the trial ends.",
     "sessionExpired": "Your session has expired. Please log in again.",
     "fields": {
       "name": "Name",

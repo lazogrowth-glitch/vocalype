@@ -706,13 +706,13 @@
     "cancelRecording": "Annuler l'enregistrement"
   },
   "auth": {
-    "trialBadge": "7 jours d'essai gratuit, sans carte",
+    "trialBadge": "14 jours d'essai gratuit, sans carte",
     "paidAccess": "Accès payant",
     "headline": "Créez votre compte et débloquez VocalType instantanément.",
-    "subheadline": "Chaque compte démarre avec un essai gratuit de 7 jours sans carte requise. Après l'essai, abonnez-vous à 4,99 $/mois pour une dictée illimitée dans ChatGPT, Claude, Gemini et les applications Windows.",
+    "subheadline": "Chaque compte démarre avec un essai gratuit de 14 jours sans carte requise. Après l'essai, abonnez-vous à 4,99 $/mois pour une dictée illimitée dans ChatGPT, Claude, Gemini et les applications Windows.",
     "features": {
       "trial": {
-        "title": "7 jours d'essai gratuit",
+        "title": "14 jours d'essai gratuit",
         "description": "Créez un compte et testez le produit complet immédiatement, sans carte requise à l'avance."
       },
       "subscription": {
@@ -734,7 +734,7 @@
     "manageSubscription": "Gérer l'abonnement",
     "refreshAccess": "Rafraîchir l'accès",
     "logout": "Se déconnecter",
-    "trialNote": "Votre essai gratuit de 7 jours commence à la création du compte. Aucune carte requise avant la fin de l'essai.",
+    "trialNote": "Votre essai gratuit de 14 jours commence à la création du compte. Aucune carte requise avant la fin de l'essai.",
     "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
     "fields": {
       "name": "Nom",

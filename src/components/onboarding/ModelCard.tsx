@@ -11,6 +11,14 @@ import { LANGUAGES } from "../../lib/constants/languages";
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 
+function formatEta(remainingBytes: number, speedMbps: number): string | null {
+  if (speedMbps <= 0 || remainingBytes <= 0) return null;
+  const seconds = remainingBytes / (1024 * 1024) / speedMbps;
+  if (seconds < 5) return null;
+  if (seconds < 60) return `~${Math.ceil(seconds)}s`;
+  return `~${Math.ceil(seconds / 60)}min`;
+}
+
 type ProductBadge = {
   label: string;
   variant:
@@ -349,6 +357,21 @@ const ModelCard: React.FC<ModelCardProps> = ({
                   })}
                 </span>
               )}
+              {(() => {
+                if (!downloadSpeed || !model.size_mb || !downloadProgress)
+                  return null;
+                const remainingBytes =
+                  ((100 - downloadProgress) / 100) *
+                  Number(model.size_mb) *
+                  1024 *
+                  1024;
+                const eta = formatEta(remainingBytes, downloadSpeed);
+                return eta ? (
+                  <span className="text-xs text-text/40 tabular-nums">
+                    {t("modelSelector.downloadEta", { eta })}
+                  </span>
+                ) : null;
+              })()}
               {onCancel && (
                 <Button
                   variant="danger-ghost"

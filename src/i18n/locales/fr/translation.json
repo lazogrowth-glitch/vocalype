@@ -165,6 +165,7 @@
     "noModelDownloadRequired": "Aucun Modèle - Téléchargement Requis",
     "deleteModel": "Supprimer {{modelName}}",
     "downloadSpeed": "{{speed}} Mo/s",
+    "downloadEta": "{{eta}} restant",
     "capabilities": {
       "languageSelection": "Prend en charge plusieurs langues d'entrée",
       "multiLanguage": "Multilingue",
@@ -561,6 +562,8 @@
       "unsave": "Retirer des favoris",
       "delete": "Supprimer l'entrée",
       "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer.",
+      "deletedUndo": "Entrée supprimée",
+      "undo": "Annuler",
       "originalTranscript": "Original",
       "postProcessed": "Post-traitement",
       "action": "Action {{key}}",
@@ -966,5 +969,13 @@
   },
   "hints": {
     "firstLaunch": "Appuyez sur {{shortcut}} depuis n'importe quelle app pour dicter — le texte apparaîtra automatiquement."
+  },
+  "tooltips": {
+    "vad": "Détection d'activité vocale — détecte automatiquement quand vous commencez et arrêtez de parler.",
+    "postProcessing": "Lance une IA sur votre transcription après la capture pour corriger la grammaire ou appliquer un prompt personnalisé.",
+    "pasteMethod": "Comment le texte est inséré : Presse-papiers utilise Cmd+V (plus compatible), Direct simule des frappes clavier.",
+    "typingTool": "Backend de saisie Linux pour injecter du texte. Auto choisit le meilleur outil pour votre session.",
+    "adaptiveVocabulary": "Apprend les mots peu courants que vous utilisez dans l'application active pour améliorer la reconnaissance.",
+    "adaptiveVoiceProfile": "Apprend votre rythme d'élocution au fil du temps pour améliorer la détection des silences."
   }
 }

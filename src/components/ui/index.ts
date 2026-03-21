@@ -1,9 +1,11 @@
 export { Dropdown } from "./Dropdown";
 export { FeatureGateHint } from "./FeatureGateHint";
+export { InfoTooltip } from "./InfoTooltip";
 export { Slider } from "./Slider";
 export { ToggleSwitch } from "./ToggleSwitch";
 export { SettingContainer } from "./SettingContainer";
 export { SettingsGroup } from "./SettingsGroup";
+export { StatePanel } from "./StatePanel";
 export { TextDisplay } from "./TextDisplay";
 export { Textarea } from "./Textarea";
 export { Tooltip } from "./Tooltip";

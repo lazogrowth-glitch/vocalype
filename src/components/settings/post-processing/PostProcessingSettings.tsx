@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 
 import {
   Dropdown,
+  InfoTooltip,
   SettingContainer,
   SettingsGroup,
   Textarea,
@@ -158,7 +159,12 @@ const PostProcessingActionsComponent: React.FC = () => {
 
   return (
     <SettingContainer
-      title={t("settings.postProcessing.actions.title")}
+      title={
+        <span className="flex items-center">
+          {t("settings.postProcessing.actions.title")}
+          <InfoTooltip content={t("tooltips.postProcessing")} />
+        </span>
+      }
       description={t("settings.postProcessing.actions.description")}
       descriptionMode="inline"
       layout="stacked"

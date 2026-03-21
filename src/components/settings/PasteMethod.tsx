@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Input } from "../ui/Input";
-import { FeatureGateHint } from "../ui";
+import { FeatureGateHint, InfoTooltip } from "../ui";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
@@ -88,7 +88,12 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
 
     return (
       <SettingContainer
-        title={t("settings.advanced.pasteMethod.title")}
+        title={
+          <span className="flex items-center">
+            {t("settings.advanced.pasteMethod.title")}
+            <InfoTooltip content={t("tooltips.pasteMethod")} />
+          </span>
+        }
         description={t("settings.advanced.pasteMethod.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}

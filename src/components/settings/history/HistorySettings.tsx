@@ -281,7 +281,6 @@ export const HistorySettings: React.FC = () => {
     // Listen for history update events
     const setupListener = async () => {
       const unlisten = await listen("history-updated", () => {
-        console.log("History updated, reloading entries...");
         loadHistoryEntries();
       });
 
@@ -289,7 +288,7 @@ export const HistorySettings: React.FC = () => {
       return unlisten;
     };
 
-    let unlistenPromise = setupListener();
+    const unlistenPromise = setupListener();
 
     return () => {
       unlistenPromise.then((unlisten) => {
@@ -347,6 +346,13 @@ export const HistorySettings: React.FC = () => {
     [osType],
   );
 
+  const pendingDeletesRef = useRef<
+    Map<
+      number,
+      { entry: HistoryEntry; timeoutId: ReturnType<typeof setTimeout> }
+    >
+  >(new Map());
+
   const deleteAudioEntry = async (id: number) => {
     try {
       await commands.deleteHistoryEntry(id);
@@ -355,6 +361,59 @@ export const HistorySettings: React.FC = () => {
       throw error;
     }
   };
+
+  const handleDeleteWithUndo = useCallback(
+    (entry: HistoryEntry) => {
+      // Optimistically remove from UI
+      setHistoryEntries((prev) => prev.filter((e) => e.id !== entry.id));
+
+      const timeoutId = setTimeout(async () => {
+        pendingDeletesRef.current.delete(entry.id);
+        try {
+          await invoke("delete_history_entry", { id: entry.id });
+        } catch {
+          // Restore if backend fails
+          setHistoryEntries((prev) =>
+            [entry, ...prev].sort(
+              (a, b) => Number(b.timestamp) - Number(a.timestamp),
+            ),
+          );
+          toast.error(t("settings.history.deleteError"));
+        }
+      }, 5000);
+
+      pendingDeletesRef.current.set(entry.id, { entry, timeoutId });
+
+      toast(t("settings.history.deletedUndo"), {
+        duration: 5000,
+        action: {
+          label: t("settings.history.undo"),
+          onClick: () => {
+            const pending = pendingDeletesRef.current.get(entry.id);
+            if (pending) {
+              clearTimeout(pending.timeoutId);
+              pendingDeletesRef.current.delete(entry.id);
+              setHistoryEntries((prev) =>
+                [entry, ...prev].sort(
+                  (a, b) => Number(b.timestamp) - Number(a.timestamp),
+                ),
+              );
+            }
+          },
+        },
+      });
+    },
+    [t],
+  );
+
+  useEffect(() => {
+    return () => {
+      pendingDeletesRef.current.forEach(({ timeoutId, entry }) => {
+        clearTimeout(timeoutId);
+        invoke("delete_history_entry", { id: entry.id }).catch(console.error);
+      });
+    };
+  }, []);
 
   const openRecordingsFolder = async () => {
     try {
@@ -478,6 +537,7 @@ export const HistorySettings: React.FC = () => {
                 }
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
+                onDeleteWithUndo={handleDeleteWithUndo}
               />
             ))}
           </div>
@@ -511,6 +571,7 @@ interface HistoryEntryProps {
   onCopyText: () => Promise<boolean>;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
+  onDeleteWithUndo?: (entry: HistoryEntry) => void;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -519,6 +580,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onCopyText,
   getAudioUrl,
   deleteAudio,
+  onDeleteWithUndo,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
@@ -544,6 +606,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   };
 
   const handleDeleteEntry = async () => {
+    if (onDeleteWithUndo) {
+      onDeleteWithUndo(entry);
+      return;
+    }
     try {
       await deleteAudio(entry.id);
     } catch (error) {

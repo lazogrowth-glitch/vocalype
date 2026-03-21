@@ -165,6 +165,7 @@
     "noModelDownloadRequired": "No Model - Download Required",
     "deleteModel": "Delete {{modelName}}",
     "downloadSpeed": "{{speed}} MB/s",
+    "downloadEta": "{{eta}} remaining",
     "cancel": "Cancel",
     "cancelDownload": "Cancel download",
     "capabilities": {
@@ -549,6 +550,8 @@
       "unsave": "Remove from saved",
       "delete": "Delete entry",
       "deleteError": "Failed to delete entry. Please try again.",
+      "deletedUndo": "Entry deleted",
+      "undo": "Undo",
       "reprocess": "Reprocess with different model",
       "reprocessing": "Reprocessing...",
       "selectModel": "Select model",
@@ -966,5 +969,13 @@
   },
   "hints": {
     "firstLaunch": "Press {{shortcut}} anywhere to start dictating — your text will appear automatically."
+  },
+  "tooltips": {
+    "vad": "Voice Activity Detection — automatically detects when you start and stop speaking.",
+    "postProcessing": "Runs AI on your transcription after capture to fix grammar or apply a custom prompt.",
+    "pasteMethod": "How text is inserted: Clipboard uses Cmd+V (most compatible), Direct simulates keystrokes.",
+    "typingTool": "Linux input backend to inject text. Auto picks the best tool for your session.",
+    "adaptiveVocabulary": "Learns uncommon words you use from the active app to improve recognition.",
+    "adaptiveVoiceProfile": "Learns your speaking rhythm over time to improve silence detection."
   }
 }

@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
+import { InfoTooltip } from "../ui/InfoTooltip";
 import { useSettings } from "../../hooks/useSettings";
 
 interface AdaptiveVoiceProfileToggleProps {
@@ -22,9 +23,14 @@ export const AdaptiveVoiceProfileToggle: React.FC<AdaptiveVoiceProfileToggleProp
           updateSetting("adaptive_voice_profile_enabled", value)
         }
         isUpdating={isUpdating("adaptive_voice_profile_enabled")}
-        label={t("settings.advanced.adaptiveVoiceProfile.label", {
-          defaultValue: "Profil vocal adaptatif",
-        })}
+        label={
+          <span className="flex items-center">
+            {t("settings.advanced.adaptiveVoiceProfile.label", {
+              defaultValue: "Profil vocal adaptatif",
+            })}
+            <InfoTooltip content={t("tooltips.adaptiveVoiceProfile")} />
+          </span>
+        }
         description={t("settings.advanced.adaptiveVoiceProfile.description", {
           defaultValue:
             "Apprend ton rythme de parole et tes pauses sur cet appareil pour ajuster Whisper progressivement.",

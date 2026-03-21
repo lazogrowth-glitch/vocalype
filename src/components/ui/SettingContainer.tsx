@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Tooltip } from "./Tooltip";
 
 interface SettingContainerProps {
-  title: string;
+  title: React.ReactNode;
   description: string;
   children: React.ReactNode;
   descriptionMode?: "inline" | "tooltip";

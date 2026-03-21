@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
+import { InfoTooltip } from "../ui/InfoTooltip";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import { commands } from "@/bindings";
@@ -62,7 +63,12 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
 
     return (
       <SettingContainer
-        title={t("settings.advanced.typingTool.title")}
+        title={
+          <span className="flex items-center">
+            {t("settings.advanced.typingTool.title")}
+            <InfoTooltip content={t("tooltips.typingTool")} />
+          </span>
+        }
         description={t("settings.advanced.typingTool.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}

@@ -27,6 +27,7 @@ mod secret_store;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod startup_warmup;
 mod transcription_confidence;
 mod transcription_coordinator;
 mod tray;
@@ -274,45 +275,6 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
     {
         let app_handle = app_handle.clone();
         let model_manager = model_manager.clone();
-        let transcription_manager = transcription_manager.clone();
-        thread::spawn(move || {
-            // Wait for the UI to fully paint before loading the ONNX model into RAM.
-            // 4 s gives even slower machines time to render before the memory spike.
-            thread::sleep(Duration::from_secs(4));
-
-            let settings = settings::get_settings(&app_handle);
-            if settings.selected_model.is_empty()
-                || settings.model_unload_timeout == settings::ModelUnloadTimeout::Immediately
-            {
-                return;
-            }
-
-            // Skip preload on battery to avoid hurting perceived startup speed.
-            let on_battery = settings
-                .adaptive_machine_profile
-                .as_ref()
-                .and_then(|p| p.on_battery)
-                .unwrap_or(false);
-            if on_battery {
-                log::info!("Skipping model preload on battery (will load on first use)");
-                return;
-            }
-
-            let is_downloaded = model_manager
-                .get_model_info(&settings.selected_model)
-                .map(|model| model.is_downloaded)
-                .unwrap_or(false);
-
-            if is_downloaded {
-                log::info!("Preloading selected model {}", settings.selected_model);
-                transcription_manager.initiate_model_load();
-            }
-        });
-    }
-
-    {
-        let app_handle = app_handle.clone();
-        let model_manager = model_manager.clone();
         thread::spawn(move || {
             thread::sleep(Duration::from_secs(3));
             maybe_schedule_whisper_calibration(&app_handle, model_manager, "small");
@@ -466,9 +428,7 @@ fn sync_autostart_state(app_handle: &AppHandle) {
             settings::write_settings(app_handle, settings);
         }
 
-        if let Err(err) = autostart_manager.disable() {
-            log::warn!("Failed to disable autostart for debug build: {}", err);
-        }
+        let _ = autostart_manager.disable();
 
         return;
     }
@@ -491,9 +451,9 @@ fn sync_autostart_state(app_handle: &AppHandle) {
 
 #[cfg(debug_assertions)]
 fn should_export_typescript_bindings() -> bool {
-    matches!(
+    !matches!(
         std::env::var("VOCALTYPE_EXPORT_BINDINGS").as_deref(),
-        Ok("1") | Ok("true") | Ok("TRUE") | Ok("yes") | Ok("YES")
+        Ok("0") | Ok("false") | Ok("FALSE") | Ok("no") | Ok("NO")
     )
 }
 
@@ -574,6 +534,7 @@ pub fn run(cli_args: CliArgs) {
         commands::get_app_dir_path,
         commands::get_app_settings,
         commands::get_default_settings,
+        commands::get_startup_warmup_status,
         commands::get_log_dir_path,
         commands::set_log_level,
         commands::open_recordings_folder,
@@ -777,7 +738,6 @@ pub fn run(cli_args: CliArgs) {
             app.manage(context_detector::ActiveAppContextState(std::sync::Mutex::new(
                 context_detector::ActiveAppContextSnapshot::default(),
             )));
-            app.manage(command_mode::CommandModeState(std::sync::Mutex::new(None)));
             app.manage(vocabulary_store::VocabularyStoreState(std::sync::Mutex::new(
                 vocabulary_store::VocabularyStore::load(&app_handle),
             )));
@@ -792,9 +752,14 @@ pub fn run(cli_args: CliArgs) {
                     log::info!("Frontend reported ready; showing main window");
                     show_main_window(&app_handle_for_ready);
                 }
+
+                startup_warmup::ensure_startup_warmup(&app_handle_for_ready, "desktop-ui-ready");
             });
 
             initialize_core_logic(&app_handle)?;
+            app.manage(startup_warmup::StartupWarmupState::new(
+                startup_warmup::initial_status(&app_handle),
+            ));
 
             // Run WMI GPU/NPU hardware detection in background so it never
             // blocks startup. The result is persisted to the settings store

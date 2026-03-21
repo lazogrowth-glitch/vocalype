@@ -164,7 +164,7 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
 }
 
 /// Returns the plan from the stored license bundle ("premium", "basic", or None).
-pub fn current_plan(app: &AppHandle) -> Option<String> {
+pub fn current_plan(_app: &AppHandle) -> Option<String> {
     load_license_bundle().ok()?.map(|b| b.plan)
 }
 

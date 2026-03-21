@@ -298,11 +298,6 @@ impl AudioRecordingManager {
             whisper_mode: Arc::new(AtomicBool::new(settings.whisper_mode)),
         };
 
-        // Always-on?  Open immediately.
-        if matches!(mode, MicrophoneMode::AlwaysOn) {
-            manager.start_microphone_stream()?;
-        }
-
         Ok(manager)
     }
 
@@ -516,8 +511,14 @@ impl AudioRecordingManager {
         if *self.is_open.lock().unwrap() {
             self.stop_microphone_stream();
             self.start_microphone_stream()?;
+        } else if matches!(*self.mode.lock().unwrap(), MicrophoneMode::AlwaysOn) {
+            self.start_microphone_stream()?;
         }
         Ok(())
+    }
+
+    pub fn is_microphone_stream_open(&self) -> bool {
+        *self.is_open.lock().unwrap()
     }
 
     pub fn stop_recording(&self, binding_id: &str) -> Option<Vec<f32>> {

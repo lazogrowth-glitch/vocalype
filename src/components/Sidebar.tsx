@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import VocalTypeLogo from "./icons/VocalTypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
+import { TranscriptionWarmupBadge } from "./TranscriptionWarmupBadge";
 import { useSettings } from "../hooks/useSettings";
 import { usePlan } from "@/lib/plan/context";
 import {
@@ -186,6 +187,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </p>
         </button>
       )}
+
+      <TranscriptionWarmupBadge />
 
       <div className="flex flex-1 flex-col py-2.5">
         {availableSections.map((section) => {

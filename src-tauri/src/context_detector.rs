@@ -30,19 +30,6 @@ impl AppContextCategory {
     pub fn skip_post_processing(self) -> bool {
         matches!(self, AppContextCategory::Code)
     }
-
-    /// Short human-readable label used in the settings UI.
-    pub fn label(self) -> &'static str {
-        match self {
-            AppContextCategory::Code => "Code",
-            AppContextCategory::Email => "Email",
-            AppContextCategory::Chat => "Chat",
-            AppContextCategory::Document => "Document",
-            AppContextCategory::Notes => "Notes",
-            AppContextCategory::Browser => "Browser",
-            AppContextCategory::Unknown => "Unknown",
-        }
-    }
 }
 
 // ── Core context ──────────────────────────────────────────────────────────────

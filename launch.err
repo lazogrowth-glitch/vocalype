@@ -1,0 +1,58 @@
+$ tauri dev --no-watch
+     Running BeforeDevCommand (`bun run dev:frontend`)
+$ powershell -ExecutionPolicy Bypass -File scripts/dev-tauri.ps1
+$ vite --strictPort
+     Running DevCommand (`cargo  run --no-default-features --color always --`)
+[1m[92m   Compiling[0m vocaltype v0.7.17 (C:\developer\sas\vocaltype\src-tauri)
+[1m[96m    Building[0m [=======================> ] 813/815: vocalty…                                                            [1m[93mwarning[0m[1m[97m: field `selected_text` is never read[0m
+  [1m[96m--> [0msrc\command_mode.rs:48:5
+   [1m[96m|[0m
+[1m[96m47[0m [1m[96m|[0m pub(crate) struct CommandModeSession {
+   [1m[96m|[0m                   [1m[96m------------------[0m [1m[96mfield in this struct[0m
+[1m[96m48[0m [1m[96m|[0m     selected_text: String,
+   [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[93mwarning[0m[1m[97m: field `0` is never read[0m
+  [1m[96m--> [0msrc\command_mode.rs:52:29
+   [1m[96m|[0m
+[1m[96m52[0m [1m[96m|[0m pub struct CommandModeState(pub Mutex<Option<CommandModeSession>>);
+   [1m[96m|[0m            [1m[96m----------------[0m [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[96m|[0m            [1m[96m|[0m
+   [1m[96m|[0m            [1m[96mfield in this struct[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mhelp[0m: consider removing this field
+
+[1m[93mwarning[0m[1m[97m: method `label` is never used[0m
+  [1m[96m--> [0msrc\context_detector.rs:35:12
+   [1m[96m|[0m
+[1m[96m28[0m [1m[96m|[0m impl AppContextCategory {
+   [1m[96m|[0m [1m[96m-----------------------[0m [1m[96mmethod in this implementation[0m
+[1m[96m...[0m
+[1m[96m35[0m [1m[96m|[0m     pub fn label(self) -> &'static str {
+   [1m[96m|[0m            [1m[93m^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 813/815: vocalty…                                                            [1m[93mwarning[0m[1m[97m: function `clear_gemini_api_key` is never used[0m
+  [1m[96m--> [0msrc\secret_store.rs:84:8
+   [1m[96m|[0m
+[1m[96m84[0m [1m[96m|[0m pub fn clear_gemini_api_key() -> Result<(), String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 813/815: vocalty…                                                            [1m[93mwarning[0m[1m[97m: function `clear_post_process_api_key` is never used[0m
+   [1m[96m--> [0msrc\secret_store.rs:100:8
+    [1m[96m|[0m
+[1m[96m100[0m [1m[96m|[0m pub fn clear_post_process_api_key(provider_id: &str) -> Result<(), String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 813/815: vocalty…                                                            [1m[93mwarning[0m[1m[97m: function `get_exportable_settings` is never used[0m
+    [1m[96m--> [0msrc\settings.rs:2078:8
+     [1m[96m|[0m
+[1m[96m2078[0m [1m[96m|[0m pub fn get_exportable_settings(app: &AppHandle) -> AppSettings {
+     [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 813/815: vocalty…                                                            [1m[93mwarning[0m: `vocaltype` (lib) generated 6 warnings
+[1m[96m    Building[0m [=======================> ] 814/815: vocalty…                                                            [1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 1m 40s
+[1m[92m     Running[0m `target\debug\vocaltype.exe`
+[0320/210055.786:ERROR:ui\gfx\win\window_impl.cc:134] Failed to unregister class Chrome_WidgetWin_0. Error = 1411
+^C

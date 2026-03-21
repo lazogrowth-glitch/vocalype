@@ -1004,6 +1004,14 @@ impl ShortcutAction for TranscribeAction {
             return;
         }
 
+        if !crate::startup_warmup::can_start_recording(app) {
+            let message = crate::startup_warmup::block_message(app);
+            warn!("Blocking transcription start until warmup completes: {}", message);
+            let _ = app.emit("transcription-warmup-blocked", message);
+            crate::startup_warmup::ensure_startup_warmup(app, "transcription-blocked");
+            return;
+        }
+
         // Basic-tier quota check: 30 transcriptions per rolling 7-day window
         if crate::license::current_plan(app).as_deref() == Some("basic") {
             let since = (chrono::Utc::now() - chrono::Duration::days(7)).timestamp();

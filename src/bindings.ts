@@ -471,6 +471,14 @@ async getDefaultSettings() : Promise<Result<AppSettings, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getStartupWarmupStatus() : Promise<Result<StartupWarmupStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_startup_warmup_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getLogDirPath() : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_log_dir_path") };
@@ -527,6 +535,41 @@ async importSettings(path: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getMachineDeviceId() : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_machine_device_id") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getIntegritySnapshot() : Promise<IntegritySnapshot> {
+    return await TAURI_INVOKE("get_integrity_snapshot");
+},
+async getLicenseRuntimeState() : Promise<Result<LicenseRuntimeState, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_license_runtime_state") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async loadSecureAuthToken() : Promise<Result<string | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("load_secure_auth_token") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async storeSecureAuthToken(token: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("store_secure_auth_token", { token }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
  * Check if Apple Intelligence is available on this device.
  * Called by the frontend when the user selects Apple Intelligence provider.
@@ -578,6 +621,30 @@ async exportRuntimeDiagnostics(path: string) : Promise<Result<null, string>> {
 async getCurrentAppContext() : Promise<Result<AppTranscriptionContext, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_current_app_context") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getAdaptiveRuntimeProfile() : Promise<Result<AdaptiveMachineProfile | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_adaptive_runtime_profile") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getAdaptiveCalibrationState() : Promise<Result<CalibrationStatusSnapshot[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_adaptive_calibration_state") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async recalibrateWhisperModelCommand(modelId: string, phase: CalibrationPhase | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("recalibrate_whisper_model_command", { modelId, phase }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -835,34 +902,6 @@ async reprocessHistoryEntry(id: number, modelId: string) : Promise<Result<string
     else return { status: "error", error: e  as any };
 }
 },
-async changeGeminiApiKeySetting(apiKey: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_gemini_api_key_setting", { apiKey }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async changeGeminiModelSetting(model: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_gemini_model_setting", { model }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Stub implementation for non-macOS platforms
- * Always returns false since laptop detection is macOS-specific
- */
-async isLaptop() : Promise<Result<boolean, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("is_laptop") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async getHistoryStats() : Promise<Result<HistoryStats, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_history_stats") };
@@ -890,6 +929,38 @@ async transcribeAudioFile(path: string) : Promise<Result<string, string>> {
 async getDictionary() : Promise<Result<DictionaryEntry[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_dictionary") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async addDictionaryEntry(from: string, to: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("add_dictionary_entry", { from, to }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async removeDictionaryEntry(from: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("remove_dictionary_entry", { from }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateDictionaryEntry(from: string, to: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_dictionary_entry", { from, to }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearDictionary() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_dictionary") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -937,6 +1008,152 @@ async updateVoiceSnippet(id: string, trigger: string, expansion: string) : Promi
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Return the list of apps detected during the last N dictation sessions.
+ */
+async getRecentApps() : Promise<RecentAppEntry[]> {
+    return await TAURI_INVOKE("get_recent_apps");
+},
+/**
+ * Return all user-defined app-category overrides.
+ */
+async listAppContextOverrides() : Promise<AppContextOverride[]> {
+    return await TAURI_INVOKE("list_app_context_overrides");
+},
+/**
+ * Force a specific category for a given process name.
+ * `process_name` is the `.exe` filename (e.g. `"notion.exe"`).
+ */
+async setAppContextOverride(processName: string, category: AppContextCategory) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_app_context_override", { processName, category }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Remove a previously set category override for a process.
+ */
+async removeAppContextOverride(processName: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("remove_app_context_override", { processName }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Enable or disable the automatic app-context feature globally.
+ */
+async setAppContextEnabled(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_app_context_enabled", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeGeminiApiKeySetting(apiKey: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_gemini_api_key_setting", { apiKey }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeGeminiModelSetting(model: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_gemini_model_setting", { model }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getSecureAuthToken() : Promise<Result<string | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_secure_auth_token") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setSecureAuthToken(token: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_secure_auth_token", { token }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearSecureAuthToken() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_secure_auth_token") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getSecureAuthSession() : Promise<Result<string | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_secure_auth_session") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setSecureAuthSession(sessionJson: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_secure_auth_session", { sessionJson }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearSecureAuthSession() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_secure_auth_session") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getSecureLicenseBundle() : Promise<Result<string | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_secure_license_bundle") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setSecureLicenseBundle(bundleJson: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_secure_license_bundle", { bundleJson }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearSecureLicenseBundle() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_secure_license_bundle") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Stub implementation for non-macOS platforms
+ * Always returns false since laptop detection is macOS-specific
+ */
+async isLaptop() : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("is_laptop") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -950,20 +1167,81 @@ async updateVoiceSnippet(id: string, trigger: string, expansion: string) : Promi
 
 /** user-defined types **/
 
-export type DictionaryEntry = { from: string; to: string }
-export type HistoryStats = { total_entries: number; total_words: number; entries_today: number; entries_this_week: number; most_used_model: string | null }
-export type VoiceSnippet = { id: string; trigger: string; expansion: string }
-export type AppContextCategory = "code" | "email" | "chat" | "document" | "browser" | "unknown"
-export type AppTranscriptionContext = { process_name: string | null; window_title: string | null; category: AppContextCategory; detected_at_ms: number }
-export type AppSettings = { bindings: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk: boolean; audio_feedback: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; selected_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; long_audio_model?: string | null; long_audio_threshold_seconds?: number; gemini_api_key?: string | null; gemini_model?: string; post_process_actions?: PostProcessAction[]; saved_processing_models?: SavedProcessingModel[]; voice_snippets?: VoiceSnippet[] }
+export type AdaptiveCalibrationState = "idle" | "queued" | "running" | "completed" | "failed" | "fallback_applied"
+export type AdaptiveMachineProfile = { profile_schema_version?: number; app_version?: string; backend_version?: string; machine_score_details?: MachineScoreDetails; machine_tier: MachineTier; cpu_brand: string; logical_cores: number; total_memory_gb: number; low_power_cpu: boolean; gpu_detected?: boolean; gpu_kind?: GpuKind; gpu_name?: string | null; npu_detected?: boolean; npu_kind?: NpuKind; npu_name?: string | null; copilot_plus_detected?: boolean; on_battery?: boolean | null; power_mode?: PowerMode; thermal_degraded?: boolean; runtime_power_snapshot_at?: number | null; recommended_model_id: string; secondary_model_id: string | null; active_runtime_model_id?: string | null; recommended_backend?: WhisperBackendPreference | null; active_backend?: WhisperBackendPreference | null; calibrated_models?: string[]; bench_phase?: BenchPhase; bench_completed_at?: number | null; last_quick_bench_at?: number | null; last_full_bench_at?: number | null; calibration_state?: AdaptiveCalibrationState; calibration_reason?: string | null; large_skip_reason?: string | null; whisper: WhisperAdaptiveProfile }
+export type AppContextCategory = 
+/**
+ * Code editors, IDEs, terminals
+ */
+"code" | 
+/**
+ * Email clients and webmail
+ */
+"email" | 
+/**
+ * Chat / messaging apps
+ */
+"chat" | 
+/**
+ * Traditional document editors (Word, LibreOffice)
+ */
+"document" | 
+/**
+ * Notes and PKM apps (Notion, Obsidian, Logseq…)
+ */
+"notes" | 
+/**
+ * Web browsers (category refined further via window title)
+ */
+"browser" | 
+/**
+ * App not recognised — neutral behaviour
+ */
+"unknown"
+/**
+ * User-defined category override for a specific process.
+ */
+export type AppContextOverride = { 
+/**
+ * Same key format as `AppTranscriptionContext::process_name`.
+ */
+process_name: string; category: AppContextCategory }
+export type AppSettings = { bindings: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk: boolean; audio_feedback: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; selected_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; long_audio_model?: string | null; long_audio_threshold_seconds?: number; gemini_api_key?: string | null; gemini_model?: string; post_process_actions?: PostProcessAction[]; saved_processing_models?: SavedProcessingModel[]; adaptive_profile_applied?: boolean; adaptive_machine_profile?: AdaptiveMachineProfile | null; 
+/**
+ * Whether the automatic app-context feature is enabled globally.
+ */
+app_context_enabled?: boolean; 
+/**
+ * Boost microphone gain for whisper / low-volume recording.
+ */
+whisper_mode?: boolean; 
+/**
+ * Voice snippets: short trigger phrases → long expansions.
+ */
+voice_snippets?: VoiceSnippet[] }
+export type AppTranscriptionContext = { 
+/**
+ * Stable process identifier: `.exe` filename on Windows (e.g. `"code.exe"`).
+ */
+process_name: string | null; 
+/**
+ * Window title at capture time.
+ */
+window_title: string | null; category: AppContextCategory; detected_at_ms: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
+export type BenchPhase = "none" | "quick_done" | "full_done"
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
+export type CalibrationPhase = "none" | "quick" | "full"
+export type CalibrationStatusSnapshot = { model_id: string; phase: CalibrationPhase; state: AdaptiveCalibrationState; detail: string | null; updated_at_ms: number }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type ConfidenceWord = { text: string; confidence: number }
 export type CustomSounds = { start: boolean; stop: boolean }
+export type DictionaryEntry = { from: string; to: string }
 export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GeminiApi"
+export type GpuKind = "none" | "integrated" | "dedicated" | "unknown"
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_action_key: number | null; model_name: string | null; confidence_payload: TranscriptionConfidencePayload | null }
+export type HistoryStats = { total_entries: number; total_words: number; entries_today: number; entries_this_week: number; most_used_model: string | null }
 /**
  * Result of changing keyboard implementation
  */
@@ -972,33 +1250,56 @@ export type ImplementationChangeResult = { success: boolean;
  * List of binding IDs that were reset to defaults due to incompatibility
  */
 reset_bindings: string[] }
+export type IntegritySnapshot = { release_build: boolean; binary_sha256: string | null; tamper_flags: string[]; executable_path: string | null }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
+export type LicenseRuntimeState = { state: LicenseState; reason: string | null; device_id: string | null; grant_expires_at: string | null; offline_expires_at: string | null; grace_until: string | null; entitlement_status: string | null; last_refreshed_at: string | null; integrity_anomalies: string[] }
+export type LicenseState = "online_valid" | "offline_valid" | "expired"
 export type LifecycleStateEvent = { state: TranscriptionLifecycleState; binding_id: string | null; detail: string | null; timestamp_ms: number }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
-export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; is_custom: boolean }
+export type MachineScoreDetails = { ram_score?: number; cpu_threads_score?: number; cpu_family_score?: number; gpu_prebench_bonus?: number; npu_prebench_bonus?: number; low_power_penalty?: number; power_penalty?: number; thermal_penalty?: number; final_score?: number; tier_reason?: string }
+export type MachineStatusMode = "optimal" | "battery" | "saver" | "thermal" | "memory_limited" | "fallback" | "calibrating"
+export type MachineStatusSnapshot = { mode: MachineStatusMode; degraded: boolean; headline: string; detail: string; active_model_id: string | null; active_backend: WhisperBackendPreference | null }
+export type MachineTier = "low" | "medium" | "high"
+export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; expected_etag: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; is_custom: boolean; requires_license_key: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"
+export type NpuKind = "none" | "qualcomm" | "intel" | "amd" | "unknown"
 export type OverlayPosition = "none" | "top" | "bottom"
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PipelineProfileEvent = { binding_id: string; created_at_ms: number; path: string; model_id: string | null; model_name: string | null; audio_duration_ms: number | null; transcription_chars: number; total_duration_ms: number; completed: boolean; error_code: string | null; steps: PipelineStepTiming[] }
 export type PipelineStepTiming = { step: string; duration_ms: number; detail: string | null }
 export type PostProcessAction = { key: number; name: string; prompt: string; model?: string | null; provider_id?: string | null }
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
+export type PowerMode = "normal" | "saver" | "unknown"
+/**
+ * Entry in the "recently detected apps" list (last N dictation sessions).
+ */
+export type RecentAppEntry = { process_name: string; window_title: string | null; category: AppContextCategory; detected_at_ms: number }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
-export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; lifecycle_state: TranscriptionLifecycleState; last_lifecycle_event: LifecycleStateEvent; recent_errors: RuntimeErrorEvent[]; selected_model: string; loaded_model_id: string | null; loaded_model_name: string | null; model_loaded: boolean; paste_method: string; clipboard_handling: string; selected_language: string; selected_microphone: string | null; selected_output_device: string | null; is_recording: boolean; is_paused: boolean; current_app_context: AppTranscriptionContext | null; last_transcription_app_context: AppTranscriptionContext | null; adaptive_voice_profile_enabled: boolean; adaptive_voice_profile: VoiceProfile | null; active_voice_runtime_adjustment: VoiceRuntimeAdjustment | null; machine_status: MachineStatusSnapshot | null; recent_pipeline_profiles: PipelineProfileEvent[] }
+export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; lifecycle_state: TranscriptionLifecycleState; last_lifecycle_event: LifecycleStateEvent; recent_errors: RuntimeErrorEvent[]; selected_model: string; loaded_model_id: string | null; loaded_model_name: string | null; model_loaded: boolean; paste_method: string; clipboard_handling: string; selected_language: string; selected_microphone: string | null; selected_output_device: string | null; is_recording: boolean; is_paused: boolean; current_app_context: AppTranscriptionContext | null; last_transcription_app_context: AppTranscriptionContext | null; adaptive_voice_profile_enabled: boolean; adaptive_voice_profile: VoiceProfile | null; active_voice_runtime_adjustment: VoiceRuntimeAdjustment | null; machine_status: MachineStatusSnapshot | null; recent_pipeline_profiles: PipelineProfileEvent[]; adaptive_machine_profile: AdaptiveMachineProfile | null; adaptive_calibration_state: CalibrationStatusSnapshot[] }
 export type RuntimeErrorEvent = { code: string; stage: RuntimeErrorStage; message: string; recoverable: boolean; timestamp_ms: number }
 export type RuntimeErrorStage = "capture" | "vad" | "transcription" | "post_process" | "paste" | "shortcut" | "model" | "system" | "unknown"
 export type SavedProcessingModel = { id: string; provider_id: string; model_id: string; label: string }
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
+export type StartupWarmupPhase = "idle" | "preparing" | "ready" | "failed"
+export type StartupWarmupReason = "no_model_selected" | "model_not_downloaded" | "preparing_microphone" | "preparing_model" | "ready" | "microphone_error" | "model_error"
+export type StartupWarmupStatus = { phase: StartupWarmupPhase; reason: StartupWarmupReason; can_record: boolean; microphone_ready: boolean; model_ready: boolean; message: string; detail: string | null; updated_at_ms: number }
 export type TranscriptionConfidencePayload = { engine: string; overall_confidence: number; mapping_stable: boolean; words: ConfidenceWord[] }
 export type TranscriptionLifecycleState = "idle" | "recording" | "transcribing" | "processing" | "pasting" | "error"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
-export type VoiceProfile = { sessions_count: number; avg_words_per_minute: number; avg_pause_ms: number; preferred_terms: string[]; last_updated_ms?: number | null }
-export type VoiceRuntimeAdjustment = { adjusted_chunk_seconds: number; adjusted_overlap_ms: number; vad_hangover_frames_delta: number; reason?: string | null }
-export type MachineStatusMode = "optimal" | "battery" | "saver" | "thermal" | "memory_limited" | "fallback" | "calibrating"
-export type MachineStatusSnapshot = { mode: MachineStatusMode; degraded: boolean; headline: string; detail: string; active_model_id?: string | null; active_backend?: string | null }
+export type UnsafeBackendRecord = { backend: WhisperBackendPreference; unsafe_until_ms: number; reason: string; failed_at_ms: number }
+export type VoiceProfile = { sessions_count?: number; avg_words_per_minute?: number; avg_pause_ms?: number; preferred_terms?: string[]; last_updated_ms?: number | null }
+export type VoiceRuntimeAdjustment = { adjusted_chunk_seconds: number; adjusted_overlap_ms: number; vad_hangover_frames_delta: number; reason: string | null }
+/**
+ * A voice snippet: if the entire transcription matches `trigger` (case-insensitive,
+ * trimmed), it is replaced by `expansion` before being pasted.
+ */
+export type VoiceSnippet = { id: string; trigger: string; expansion: string }
+export type WhisperAdaptiveProfile = { small: WhisperModelAdaptiveConfig; medium: WhisperModelAdaptiveConfig; turbo: WhisperModelAdaptiveConfig; large: WhisperModelAdaptiveConfig }
+export type WhisperBackendPreference = "auto" | "cpu" | "gpu"
+export type WhisperModelAdaptiveConfig = { backend: WhisperBackendPreference; threads: number; chunk_seconds: number; overlap_ms: number; active_backend?: WhisperBackendPreference; active_threads?: number; active_chunk_seconds?: number; active_overlap_ms?: number; short_latency_ms?: number; medium_latency_ms?: number; long_latency_ms?: number; stability_score?: number; overall_score?: number; failure_count?: number; calibrated_phase?: CalibrationPhase; unsafe_backends?: UnsafeBackendRecord[]; unsafe_until?: number | null; last_failure_reason?: string | null; last_failure_at?: number | null; last_quick_bench_at?: number | null; last_full_bench_at?: number | null; backend_decision_reason?: string | null; config_decision_reason?: string | null }
 
 /** tauri-specta globals **/
 

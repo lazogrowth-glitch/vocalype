@@ -56,7 +56,10 @@ pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), Str
     };
 
     rm.update_mode(new_mode)
-        .map_err(|e| format!("Failed to update microphone mode: {}", e))
+        .map_err(|e| format!("Failed to update microphone mode: {}", e))?;
+
+    crate::startup_warmup::ensure_startup_warmup(&app, "microphone-mode-changed");
+    Ok(())
 }
 
 #[tauri::command]
@@ -102,6 +105,8 @@ pub fn set_selected_microphone(app: AppHandle, device_name: String) -> Result<()
     let rm = app.state::<Arc<AudioRecordingManager>>();
     rm.update_selected_device()
         .map_err(|e| format!("Failed to update selected device: {}", e))?;
+
+    crate::startup_warmup::ensure_startup_warmup(&app, "selected-microphone-changed");
 
     Ok(())
 }
@@ -182,6 +187,13 @@ pub fn set_clamshell_microphone(app: AppHandle, device_name: String) -> Result<(
         Some(device_name)
     };
     write_settings(&app, settings);
+
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.update_selected_device()
+        .map_err(|e| format!("Failed to update clamshell microphone: {}", e))?;
+
+    crate::startup_warmup::ensure_startup_warmup(&app, "clamshell-microphone-changed");
+
     Ok(())
 }
 

@@ -22,7 +22,7 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings::get_settings;
 use enigo::{Direction, Key, Keyboard};
 use log::{debug, error, info, warn};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -39,17 +39,6 @@ const PRE_COPY_DELAY_MS: u64 = 250;
 
 /// How long to wait after sending Ctrl+C for the clipboard to be updated.
 const CLIPBOARD_SETTLE_MS: u64 = 150;
-
-// ── Internal state ────────────────────────────────────────────────────────────
-
-/// Session created during `start()` and consumed in the background task.
-/// There can be at most one active command-mode session at a time.
-pub(crate) struct CommandModeSession {
-    selected_text: String,
-}
-
-/// Tauri managed state — holds an in-progress session (if any).
-pub struct CommandModeState(pub Mutex<Option<CommandModeSession>>);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

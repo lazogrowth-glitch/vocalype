@@ -2075,10 +2075,6 @@ pub fn get_public_settings(app: &AppHandle) -> AppSettings {
     settings
 }
 
-pub fn get_exportable_settings(app: &AppHandle) -> AppSettings {
-    exportable_settings(get_settings(app))
-}
-
 fn prepare_settings_for_runtime(app: &AppHandle, settings: &mut AppSettings) -> bool {
     let secrets_changed = migrate_plaintext_secrets_to_secure_store(settings);
     let post_process_changed = ensure_post_process_defaults(settings);

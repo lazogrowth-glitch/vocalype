@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { MicrophoneSelector } from "../MicrophoneSelector";
 import { ShortcutInput } from "../ShortcutInput";
 import { SettingsGroup } from "../../ui/SettingsGroup";
@@ -11,6 +12,8 @@ import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 import { LongAudioModelSettings } from "./LongAudioModelSettings";
+import { useStartupWarmupStatus } from "../../../hooks/useStartupWarmupStatus";
+import { getStartupWarmupFallbackDetail } from "../../../types/startupWarmup";
 import { usePlan } from "@/lib/plan/context";
 import { DictionarySettings } from "../dictionary/DictionarySettings";
 import { AppContextSettings } from "../app-context/AppContextSettings";
@@ -19,9 +22,15 @@ export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
   const { audioFeedbackEnabled } = useSettings();
   const { isBasicTier, onStartCheckout } = usePlan();
+  const warmupStatus = useStartupWarmupStatus();
   const [activeTab, setActiveTab] = useState<
     "shortcuts" | "audio" | "dictation" | "dictionary" | "context"
   >("shortcuts");
+
+  const shouldShowWarmupNotice =
+    warmupStatus &&
+    warmupStatus.phase !== "idle" &&
+    warmupStatus.phase !== "ready";
 
   const tabs = [
     { id: "shortcuts" as const, label: "Raccourcis" },
@@ -55,6 +64,37 @@ export const GeneralSettings: React.FC = () => {
 
       {activeTab === "shortcuts" && (
         <SettingsGroup title="Raccourcis clavier">
+          {shouldShowWarmupNotice && (
+            <div
+              className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-[12px] ${
+                warmupStatus.phase === "failed"
+                  ? "border-red-400/30 bg-red-400/10 text-red-100"
+                  : "border-logo-primary/25 bg-logo-primary/10 text-white/80"
+              }`}
+            >
+              <div
+                className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                  warmupStatus.phase === "failed"
+                    ? "bg-red-400/15 text-red-300"
+                    : "bg-logo-primary/15 text-logo-primary"
+                }`}
+              >
+                {warmupStatus.phase === "failed" ? (
+                  <TriangleAlert className="h-4 w-4" />
+                ) : (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium leading-5">
+                  {warmupStatus.message}
+                </p>
+                <p className="mt-1 leading-5 text-white/55">
+                  {warmupStatus.detail || getStartupWarmupFallbackDetail(warmupStatus)}
+                </p>
+              </div>
+            </div>
+          )}
           {isBasicTier && (
             <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-[12px]">
               <span className="text-amber-300/80">

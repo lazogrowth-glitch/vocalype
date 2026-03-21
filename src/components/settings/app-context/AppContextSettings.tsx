@@ -182,6 +182,10 @@ export const AppContextSettings: React.FC = () => {
           label={t("appContext.enableToggle", {
             defaultValue: "Adapter la dictée selon l'app active",
           })}
+          description={t("appContext.enableToggleDescription", {
+            defaultValue:
+              "Utilise le contexte de l'application active pour adapter le style de dictée et le post-traitement.",
+          })}
           checked={enabled}
           onChange={handleToggle}
           grouped={false}

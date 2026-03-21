@@ -4,7 +4,7 @@
   "version": "0.7.17",
   "identifier": "com.vocaltype.desktop",
   "build": {
-    "beforeDevCommand": "bun run dev:tauri",
+    "beforeDevCommand": "bun run dev:frontend",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"

@@ -78,7 +78,11 @@ pub fn get_gemini_api_key() -> Result<Option<String>, String> {
 }
 
 pub fn set_gemini_api_key(value: &str) -> Result<(), String> {
-    set_secret_value(GEMINI_API_KEY_ACCOUNT, value)
+    if value.trim().is_empty() {
+        clear_gemini_api_key()
+    } else {
+        set_secret_value(GEMINI_API_KEY_ACCOUNT, value)
+    }
 }
 
 pub fn clear_gemini_api_key() -> Result<(), String> {
@@ -94,7 +98,11 @@ pub fn get_post_process_api_key(provider_id: &str) -> Result<Option<String>, Str
 }
 
 pub fn set_post_process_api_key(provider_id: &str, value: &str) -> Result<(), String> {
-    set_secret_value(&post_process_api_key_account(provider_id), value)
+    if value.trim().is_empty() {
+        clear_post_process_api_key(provider_id)
+    } else {
+        set_secret_value(&post_process_api_key_account(provider_id), value)
+    }
 }
 
 pub fn clear_post_process_api_key(provider_id: &str) -> Result<(), String> {

@@ -12,6 +12,7 @@ use crate::adaptive_runtime::{
 };
 use crate::context_detector::{detect_current_app_context, AppTranscriptionContext};
 use crate::runtime_observability::{collect_runtime_diagnostics, RuntimeDiagnostics};
+use crate::startup_warmup::StartupWarmupStatus;
 use crate::settings::{get_settings, write_settings, AppSettings, CalibrationPhase, LogLevel};
 use crate::utils::cancel_current_operation;
 use sha2::{Digest, Sha256};
@@ -59,6 +60,12 @@ pub fn get_app_settings(app: AppHandle) -> Result<AppSettings, String> {
 #[specta::specta]
 pub fn get_default_settings() -> Result<AppSettings, String> {
     Ok(crate::settings::get_default_settings())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_startup_warmup_status(app: AppHandle) -> Result<StartupWarmupStatus, String> {
+    Ok(crate::startup_warmup::current_status(&app))
 }
 
 #[tauri::command]

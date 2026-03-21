@@ -334,6 +334,33 @@ impl TranscriptionManager {
         engine.is_some()
     }
 
+    pub fn is_loading_model(&self) -> bool {
+        *self.is_loading.lock().unwrap()
+    }
+
+    pub fn ensure_model_loaded(&self, model_id: &str) -> Result<()> {
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+
+            if self.get_current_model().as_deref() == Some(model_id) && self.is_model_loaded() {
+                return Ok(());
+            }
+
+            *is_loading = true;
+        }
+
+        let result = self.load_model(model_id);
+
+        let mut is_loading = self.is_loading.lock().unwrap();
+        *is_loading = false;
+        self.loading_condvar.notify_all();
+
+        result
+    }
+
     pub fn unload_model(&self) -> Result<()> {
         let unload_start = std::time::Instant::now();
         debug!("Starting to unload model");
@@ -754,24 +781,33 @@ impl TranscriptionManager {
         Ok(())
     }
 
-    /// Kicks off the model loading in a background thread if it's not already loaded
-    pub fn initiate_model_load(&self) {
+    pub fn initiate_model_load_for(&self, model_id: String) {
         let mut is_loading = self.is_loading.lock().unwrap();
-        if *is_loading || self.is_model_loaded() {
+        if *is_loading {
+            return;
+        }
+
+        if self.get_current_model().as_deref() == Some(model_id.as_str()) && self.is_model_loaded()
+        {
             return;
         }
 
         *is_loading = true;
         let self_clone = self.clone();
         thread::spawn(move || {
-            let settings = get_settings(&self_clone.app_handle);
-            if let Err(e) = self_clone.load_model(&settings.selected_model) {
+            if let Err(e) = self_clone.load_model(&model_id) {
                 error!("Failed to load model: {}", e);
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
             *is_loading = false;
             self_clone.loading_condvar.notify_all();
         });
+    }
+
+    /// Kicks off the model loading in a background thread if it's not already loaded
+    pub fn initiate_model_load(&self) {
+        let settings = get_settings(&self.app_handle);
+        self.initiate_model_load_for(settings.selected_model.clone());
     }
 
     pub fn get_current_model(&self) -> Option<String> {

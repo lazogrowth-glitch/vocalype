@@ -23,6 +23,7 @@ import { licenseClient } from "@/lib/license/client";
 import type { LicenseRuntimeState } from "@/lib/license/types";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 import type { RuntimeErrorEvent } from "@/types/runtimeObservability";
+import type { StartupWarmupStatusSnapshot } from "@/types/startupWarmup";
 import { PlanContext } from "@/lib/plan/context";
 
 type OnboardingStep = "accessibility" | "model" | "done";
@@ -198,6 +199,26 @@ function App() {
     }
   }, [applySession, syncLicenseForSession, t]);
 
+  const handleStartCheckout = useCallback(async () => {
+    const token = authClient.getStoredToken();
+    if (!token) {
+      throw new Error("You must be logged in first");
+    }
+
+    const result = await authClient.createCheckout(token);
+    return result.url;
+  }, []);
+
+  const handleOpenBillingPortal = useCallback(async () => {
+    const token = authClient.getStoredToken();
+    if (!token) {
+      throw new Error("You must be logged in first");
+    }
+
+    const result = await authClient.createPortal(token);
+    return result.url;
+  }, []);
+
   useEffect(() => {
     refreshSession();
   }, [refreshSession]);
@@ -368,6 +389,28 @@ function App() {
       unlisten.then((fn) => fn());
     };
   }, [t]);
+
+  useEffect(() => {
+    const unlisten = listen<string | StartupWarmupStatusSnapshot>(
+      "transcription-warmup-blocked",
+      (event) => {
+        const message =
+          typeof event.payload === "string"
+            ? event.payload
+            : event.payload?.message || "Preparation du micro...";
+
+        toast(message, {
+          duration: 3000,
+          description:
+            "La dictee sera disponible automatiquement des que le moteur est pret.",
+        });
+      },
+    );
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   // J12 trial reminder — shown once when the backend flags show_trial_reminder.
   const trialReminderShownRef = useRef(false);
@@ -722,26 +765,6 @@ function App() {
   const handleDismissTrialWelcome = useCallback(async () => {
     setShowTrialWelcome(false);
     await authClient.markTrialWelcomeSeen();
-  }, []);
-
-  const handleStartCheckout = useCallback(async () => {
-    const token = authClient.getStoredToken();
-    if (!token) {
-      throw new Error("You must be logged in first");
-    }
-
-    const result = await authClient.createCheckout(token);
-    return result.url;
-  }, []);
-
-  const handleOpenBillingPortal = useCallback(async () => {
-    const token = authClient.getStoredToken();
-    if (!token) {
-      throw new Error("You must be logged in first");
-    }
-
-    const result = await authClient.createPortal(token);
-    return result.url;
   }, []);
 
   const handleLogout = useCallback(() => {

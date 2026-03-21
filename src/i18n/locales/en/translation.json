@@ -744,7 +744,15 @@
     "dismiss": "Dismiss"
   },
   "errors": {
-    "loadDirectory": "Error loading directory: {{error}}"
+    "loadDirectory": "Error loading directory: {{error}}",
+    "actionable": {
+      "noModelLoaded": "No model is loaded. Go to Models and select one.",
+      "microphoneUnavailable": "Microphone could not be accessed. Check your system audio settings.",
+      "outOfMemory": "Not enough memory. Close other applications and try again.",
+      "audioCaptureFailed": "Audio capture failed. Try a different microphone in Settings.",
+      "generic": "{{detail}}",
+      "unknownPasteReason": "An unexpected error occurred."
+    }
   },
   "error": {
     "boundary": {
@@ -778,7 +786,8 @@
     "cancelConfirm": "Esc again to cancel",
     "pauseRecording": "Pause recording",
     "resumeRecording": "Resume recording",
-    "cancelRecording": "Cancel recording"
+    "cancelRecording": "Cancel recording",
+    "pasteSuccess": "Text pasted ✓"
   },
   "auth": {
     "trialBadge": "14-day free trial, no card required",
@@ -854,7 +863,7 @@
     "whisperGpuUnavailableDesc": "Transcription may be slow. Switch to Parakeet V3 for fast CPU performance.",
     "pasteFailed": "Automatic paste failed",
     "pasteFailedCopied": "Automatic paste failed — text copied to clipboard",
-    "pasteFailedDesc": "Reason: {{reason}}"
+    "pasteFailedDesc": "{{reason}} — text was copied to your clipboard instead."
   },
   "trial": {
     "welcome": {

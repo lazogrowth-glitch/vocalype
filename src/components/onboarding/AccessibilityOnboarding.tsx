@@ -15,6 +15,7 @@ import { Keyboard, Mic, Check, Loader2 } from "lucide-react";
 
 interface AccessibilityOnboardingProps {
   onComplete: () => void;
+  onBack?: () => void;
 }
 
 type PermissionStatus = "checking" | "needed" | "waiting" | "granted";
@@ -26,6 +27,7 @@ interface PermissionsState {
 
 const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
   onComplete,
+  onBack,
 }) => {
   const { t } = useTranslation();
   const refreshAudioDevices = useSettingsStore(
@@ -229,7 +231,16 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
 
   // Show permissions request screen
   return (
-    <div className="h-screen w-screen flex flex-col p-6 gap-6 items-center justify-center">
+    <div className="relative h-screen w-screen flex flex-col p-6 gap-6 items-center justify-center">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="absolute top-4 left-4 flex items-center gap-1.5 text-sm text-text/50 hover:text-text/80 transition-colors"
+        >
+          ← {t("common.back")}
+        </button>
+      )}
       <div className="flex flex-col items-center gap-2">
         <VocalTypeLogo width={200} />
       </div>
@@ -316,7 +327,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
 
         <button
           onClick={onComplete}
-          className="text-sm text-text/40 hover:text-text/60 transition-colors mt-2"
+          className="text-sm text-text/70 hover:text-text underline underline-offset-2 transition-colors mt-2 px-3 py-1.5 rounded-lg border border-mid-gray/30 hover:border-mid-gray/50"
         >
           {t("onboarding.permissions.skip")}
         </button>

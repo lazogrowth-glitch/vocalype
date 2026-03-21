@@ -744,7 +744,15 @@
     "dismiss": "Ignorer"
   },
   "errors": {
-    "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}"
+    "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}",
+    "actionable": {
+      "noModelLoaded": "Aucun modèle chargé. Allez dans Modèles et sélectionnez-en un.",
+      "microphoneUnavailable": "Le microphone est inaccessible. Vérifiez les paramètres audio système.",
+      "outOfMemory": "Mémoire insuffisante. Fermez d'autres applications et réessayez.",
+      "audioCaptureFailed": "La capture audio a échoué. Essayez un autre microphone dans les paramètres.",
+      "generic": "{{detail}}",
+      "unknownPasteReason": "Une erreur inattendue s'est produite."
+    }
   },
   "error": {
     "boundary": {
@@ -778,7 +786,8 @@
     "cancelConfirm": "Appuyer à nouveau sur Esc pour annuler",
     "pauseRecording": "Mettre en pause l'enregistrement",
     "resumeRecording": "Reprendre l'enregistrement",
-    "cancelRecording": "Annuler l'enregistrement"
+    "cancelRecording": "Annuler l'enregistrement",
+    "pasteSuccess": "Texte collé ✓"
   },
   "auth": {
     "trialBadge": "14 jours d'essai gratuit, sans carte",
@@ -854,7 +863,7 @@
     "whisperGpuUnavailableDesc": "La transcription risque d'être lente. Passe à Parakeet V3 pour de meilleures performances.",
     "pasteFailed": "Échec du collage automatique",
     "pasteFailedCopied": "Échec du collage automatique — texte copié dans le presse-papiers",
-    "pasteFailedDesc": "Raison : {{reason}}"
+    "pasteFailedDesc": "{{reason}} — le texte a été copié dans le presse-papiers."
   },
   "trial": {
     "welcome": {

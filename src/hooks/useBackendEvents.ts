@@ -94,7 +94,9 @@ export function useBackendEvents({
         {
           duration: 8000,
           description: t("warnings.pasteFailedDesc", {
-            reason: event.payload?.reason ?? "unknown error",
+            reason:
+              event.payload?.reason ??
+              t("errors.actionable.unknownPasteReason"),
           }),
         },
       );
@@ -110,7 +112,6 @@ export function useBackendEvents({
       const payload = event.payload;
       if (!payload) return;
 
-      const reason = `[${payload.stage}] ${payload.code}: ${payload.message}`;
       const dedupeKey = `${payload.code}:${payload.message}`;
       const now = Date.now();
       const last = lastRuntimeErrorRef.current;
@@ -121,21 +122,51 @@ export function useBackendEvents({
 
       lastRuntimeErrorRef.current = { key: dedupeKey, at: now };
 
+      const ACTION_MAP: Record<string, string> = {
+        no_model_loaded: t("errors.actionable.noModelLoaded"),
+        microphone_unavailable: t("errors.actionable.microphoneUnavailable"),
+        out_of_memory: t("errors.actionable.outOfMemory"),
+        audio_capture_failed: t("errors.actionable.audioCaptureFailed"),
+      };
+      const actionableMessage =
+        ACTION_MAP[payload.code] ??
+        t("errors.actionable.generic", { detail: payload.message ?? "" });
+
       if (payload.recoverable) {
         toast.warning(
           t("warnings.runtimeIssue", { defaultValue: "Transcription issue" }),
-          { duration: 8000, description: reason },
+          { duration: 8000, description: actionableMessage },
         );
         return;
       }
 
       toast.error(
         t("warnings.runtimeFailure", { defaultValue: "Transcription failed" }),
-        { duration: 8000, description: reason },
+        { duration: 8000, description: actionableMessage },
       );
     });
     return () => {
       unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  // Transcription lifecycle — show "Text pasted ✓" on completion
+  useEffect(() => {
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+
+    listen<{ state?: string }>("transcription-lifecycle", (event) => {
+      if (cancelled) return;
+      if (event.payload?.state === "completed") {
+        toast.success(t("overlay.pasteSuccess"), { duration: 2000 });
+      }
+    }).then((fn) => {
+      cleanup = fn;
+    });
+
+    return () => {
+      cancelled = true;
+      cleanup?.();
     };
   }, [t]);
 

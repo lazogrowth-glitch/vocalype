@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Input } from "../ui/Input";
+import { FeatureGateHint } from "../ui";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
+import { usePlan } from "@/lib/plan/context";
 
 interface PasteMethodProps {
   descriptionMode?: "inline" | "tooltip";
@@ -17,6 +19,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const osType = useOsType();
+    const { isBasicTier, onStartCheckout } = usePlan();
     const [draftScriptPath, setDraftScriptPath] = useState("");
 
     const getPasteMethodOptions = (osType: string) => {
@@ -124,6 +127,25 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
                 })}
               </p>
             </>
+          )}
+          {isBasicTier && selectedMethod === "direct" && (
+            <FeatureGateHint
+              tone="premium"
+              title={t("settings.advanced.pasteMethod.premiumDirectTitle", {
+                defaultValue: "Direct insertion is reserved for Premium",
+              })}
+              description={t("settings.advanced.pasteMethod.premiumDirectDescription", {
+                defaultValue:
+                  "On Basic, VocalType will still keep the result recoverable, but dictation falls back to clipboard handling instead of native direct injection.",
+              })}
+              actionLabel={t("basic.upgrade", {
+                defaultValue: "Upgrade to Premium",
+              })}
+              onAction={async () => {
+                const url = await onStartCheckout();
+                if (url) window.open(url, "_blank");
+              }}
+            />
           )}
         </div>
       </SettingContainer>

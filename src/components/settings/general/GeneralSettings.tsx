@@ -17,6 +17,7 @@ import { getStartupWarmupFallbackDetail } from "../../../types/startupWarmup";
 import { usePlan } from "@/lib/plan/context";
 import { DictionarySettings } from "../dictionary/DictionarySettings";
 import { AppContextSettings } from "../app-context/AppContextSettings";
+import { FeatureGateHint } from "../../ui";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -96,20 +97,23 @@ export const GeneralSettings: React.FC = () => {
             </div>
           )}
           {isBasicTier && (
-            <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-[12px]">
-              <span className="text-amber-300/80">
-                {t("basic.shortcutsLocked", {
-                  defaultValue: "Raccourcis personnalisés réservés à Premium",
-                })}
-              </span>
-              <button
-                type="button"
-                onClick={() => onStartCheckout().then((url) => url && window.open(url, "_blank"))}
-                className="ml-3 shrink-0 rounded bg-amber-500/20 px-2.5 py-1 text-amber-300 transition-colors hover:bg-amber-500/30"
-              >
-                {t("basic.upgrade", { defaultValue: "Passer à Premium" })}
-              </button>
-            </div>
+            <FeatureGateHint
+              tone="premium"
+              title={t("basic.shortcutsLocked", {
+                defaultValue: "Custom shortcuts are a Premium feature",
+              })}
+              description={t("basic.shortcutsLockedDescription", {
+                defaultValue:
+                  "On Basic, the default dictation flow still works, but editing shortcuts, extra history shortcuts, and Command Mode stays locked until you upgrade.",
+              })}
+              actionLabel={t("basic.upgrade", {
+                defaultValue: "Upgrade to Premium",
+              })}
+              onAction={async () => {
+                const url = await onStartCheckout();
+                if (url) window.open(url, "_blank");
+              }}
+            />
           )}
           <ShortcutInput shortcutId="transcribe" grouped={true} disabled={isBasicTier} />
           <ShortcutInput shortcutId="cancel" grouped={true} disabled={isBasicTier} />

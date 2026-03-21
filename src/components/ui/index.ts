@@ -1,4 +1,5 @@
 export { Dropdown } from "./Dropdown";
+export { FeatureGateHint } from "./FeatureGateHint";
 export { Slider } from "./Slider";
 export { ToggleSwitch } from "./ToggleSwitch";
 export { SettingContainer } from "./SettingContainer";

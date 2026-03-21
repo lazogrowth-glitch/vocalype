@@ -2,7 +2,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
@@ -17,7 +16,7 @@ import type { ModelInfo } from "@/bindings";
 import { commands } from "@/bindings";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Dropdown } from "@/components/ui";
+import { Dropdown, FeatureGateHint } from "@/components/ui";
 import { GeminiKeyModal } from "./GeminiKeyModal";
 import { ProductModesGrid } from "./ProductModesGrid";
 import { LanguageFilterDropdown } from "./LanguageFilterDropdown";
@@ -83,9 +82,16 @@ const ProcessingModelsSection: React.FC = () => {
   const [apiKey, setApiKey] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [isFetching, setIsFetching] = useState(false);
+  const [appleIntelligenceAvailable, setAppleIntelligenceAvailable] = useState<
+    boolean | null
+  >(null);
 
   const savedModels = getSetting("saved_processing_models") || [];
   const providers = settings?.post_process_providers || [];
+  const selectedProvider = providers.find((provider) => provider.id === selectedProviderId);
+  const isAppleIntelligenceProvider = selectedProviderId === "apple_intelligence";
+  const isGeminiProvider = selectedProviderId === "gemini";
+  const providerRequiresApiKey = !!selectedProviderId && !isAppleIntelligenceProvider;
 
   const providerOptions = useMemo(
     () => providers.map((p) => ({ value: p.id, label: p.label })),
@@ -101,16 +107,48 @@ const ProcessingModelsSection: React.FC = () => {
   const handleProviderChange = useCallback(
     (providerId: string) => {
       setSelectedProviderId(providerId);
-      setSelectedModel("");
+      setSelectedModel(
+        providerId === "apple_intelligence"
+          ? t("settings.postProcessing.api.model.placeholderApple", {
+              defaultValue: "Apple Intelligence",
+            })
+          : "",
+      );
       const existingKey = settings?.post_process_api_keys?.[providerId] ?? "";
-      setApiKey(existingKey);
+      setApiKey(providerId === "apple_intelligence" ? "" : existingKey);
     },
-    [settings],
+    [settings, t],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isAppleIntelligenceProvider) {
+      setAppleIntelligenceAvailable(null);
+      return;
+    }
+
+    commands
+      .checkAppleIntelligenceAvailable()
+      .then((available) => {
+        if (!cancelled) {
+          setAppleIntelligenceAvailable(available);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAppleIntelligenceAvailable(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAppleIntelligenceProvider]);
 
   const handleFetchModels = useCallback(async () => {
     if (!selectedProviderId) return;
-    if (apiKey.trim()) {
+    if (providerRequiresApiKey && apiKey.trim()) {
       await updatePostProcessApiKey(selectedProviderId, apiKey.trim());
     }
     setIsFetching(true);
@@ -124,6 +162,7 @@ const ProcessingModelsSection: React.FC = () => {
     apiKey,
     fetchPostProcessModels,
     updatePostProcessApiKey,
+    providerRequiresApiKey,
   ]);
 
   const handleSave = useCallback(async () => {
@@ -221,21 +260,51 @@ const ProcessingModelsSection: React.FC = () => {
 
           {selectedProviderId && (
             <>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold">
-                  {t("settings.models.processingModels.apiKey")}
-                </label>
-                <Input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={t(
-                    "settings.models.processingModels.apiKeyPlaceholder",
-                  )}
-                  aria-label={t("settings.models.processingModels.apiKey")}
-                  variant="compact"
+              {isAppleIntelligenceProvider ? (
+                <FeatureGateHint
+                  tone={appleIntelligenceAvailable === false ? "warning" : "info"}
+                  title={t("settings.postProcessing.api.appleIntelligence.title")}
+                  description={
+                    appleIntelligenceAvailable === false
+                      ? t("settings.postProcessing.api.appleIntelligence.unavailable")
+                      : t("settings.postProcessing.api.appleIntelligence.description", {
+                          defaultValue:
+                            "Runs fully on-device. No API key or network access is required.",
+                        })
+                  }
                 />
-              </div>
+              ) : null}
+
+              {providerRequiresApiKey ? (
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold">
+                    {t("settings.models.processingModels.apiKey")}
+                  </label>
+                  <Input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder={t(
+                      "settings.models.processingModels.apiKeyPlaceholder",
+                    )}
+                    aria-label={t("settings.models.processingModels.apiKey")}
+                    variant="compact"
+                  />
+                </div>
+              ) : null}
+
+              {isGeminiProvider && !apiKey.trim() ? (
+                <FeatureGateHint
+                  tone="info"
+                  title={t("settings.gemini.apiKeyRequired", {
+                    defaultValue: "API Key Required",
+                  })}
+                  description={t("settings.gemini.apiKeyRequiredDescription", {
+                    defaultValue:
+                      "Enter your Google Gemini API key below, then refresh the model list to unlock cloud processing models.",
+                  })}
+                />
+              ) : null}
 
               <div className="space-y-1">
                 <label className="text-sm font-semibold">
@@ -263,20 +332,37 @@ const ProcessingModelsSection: React.FC = () => {
                       aria-label={t("settings.models.processingModels.model")}
                       variant="compact"
                       className="flex-1"
+                      disabled={isAppleIntelligenceProvider}
                     />
                   )}
-                  <button
-                    onClick={handleFetchModels}
-                    disabled={isFetching || !apiKey.trim()}
-                    className="flex items-center justify-center h-8 w-8 rounded-md bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-40"
-                    title={t("settings.models.processingModels.fetchModels")}
-                    aria-label={t("settings.models.processingModels.fetchModels")}
-                  >
-                    <RefreshCcw
-                      className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
-                    />
-                  </button>
+                  {providerRequiresApiKey ? (
+                    <button
+                      onClick={handleFetchModels}
+                      disabled={isFetching || !apiKey.trim()}
+                      className="flex items-center justify-center h-8 w-8 rounded-md bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-40"
+                      title={t("settings.models.processingModels.fetchModels")}
+                      aria-label={t("settings.models.processingModels.fetchModels")}
+                    >
+                      <RefreshCcw
+                        className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
+                      />
+                    </button>
+                  ) : null}
                 </div>
+                {selectedProvider ? (
+                  <p className="text-[11px] leading-5 text-white/45">
+                    {isAppleIntelligenceProvider
+                      ? t("settings.postProcessing.api.appleIntelligence.requirements", {
+                          defaultValue:
+                            "Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later with Apple Intelligence enabled in System Settings.",
+                        })
+                      : t("settings.models.processingModels.providerHelp", {
+                          defaultValue:
+                            "The saved label will use {{provider}} and the selected model name.",
+                          provider: selectedProvider.label,
+                        })}
+                  </p>
+                ) : null}
               </div>
             </>
           )}
@@ -349,7 +435,7 @@ export const ModelsSettings: React.FC = () => {
   const [cancellingModelId, setCancellingModelId] = useState<string | null>(null);
   const [adaptiveProfile, setAdaptiveProfile] =
     useState<AdaptiveProfileSnapshot | null>(null);
-const { getSetting, updateSetting } = useSettings();
+  const { getSetting, updateSetting } = useSettings();
   const {
     models,
     currentModel,
@@ -371,8 +457,9 @@ const { getSetting, updateSetting } = useSettings();
   }, []);
 
 
-const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
+  const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
   const hasGeminiKey = !!geminiApiKey && geminiApiKey.length > 0;
+  const geminiModel = models.find((model) => model.id === "gemini-api") ?? null;
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in extractingModels) {
@@ -641,12 +728,33 @@ const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
       )}
 
       {activeTab === "transcription" && (
-        <ProductModesGrid
-          productModes={productModes}
-          currentModel={currentModel}
-          adaptiveProfile={adaptiveProfile}
-          onSelect={handleProductModeSelect}
-        />
+        <div className="space-y-4">
+          {!hasGeminiKey && geminiModel ? (
+            <FeatureGateHint
+              tone="info"
+              title={t("settings.gemini.apiKeyRequired", {
+                defaultValue: "API Key Required",
+              })}
+              description={t("settings.models.geminiUnlockDescription", {
+                defaultValue:
+                  "Gemini cloud transcription is available, but it stays locked until you add a Gemini API key. Once saved, you can select Gemini like any other transcription model.",
+              })}
+              actionLabel={t("settings.models.addGeminiKey", {
+                defaultValue: "Add Gemini API key",
+              })}
+              onAction={() => {
+                setGeminiKeyInput("");
+                setShowGeminiKeyDialog(true);
+              }}
+            />
+          ) : null}
+          <ProductModesGrid
+            productModes={productModes}
+            currentModel={currentModel}
+            adaptiveProfile={adaptiveProfile}
+            onSelect={handleProductModeSelect}
+          />
+        </div>
       )}
 
       {activeTab === "processing" && <ProcessingModelsSection />}

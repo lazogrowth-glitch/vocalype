@@ -152,10 +152,7 @@ pub async fn get_history_stats(
     _app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
 ) -> Result<HistoryStats, String> {
-    history_manager
-        .get_stats()
-        .await
-        .map_err(|e| e.to_string())
+    history_manager.get_stats().await.map_err(|e| e.to_string())
 }
 
 // ── Export History ────────────────────────────────────────────────────────────
@@ -173,9 +170,7 @@ pub async fn export_history_entries(
         .map_err(|e| e.to_string())?;
 
     match format.as_str() {
-        "json" => {
-            serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())
-        }
+        "json" => serde_json::to_string_pretty(&entries).map_err(|e| e.to_string()),
         "csv" => {
             let mut out = String::from("id,timestamp,model,transcription,post_processed\n");
             for e in &entries {
@@ -252,17 +247,14 @@ pub async fn transcribe_audio_file(
         return Err(format!("Fichier introuvable : {}", path));
     }
 
-    let samples =
-        crate::audio_toolkit::load_wav_file(&audio_path).map_err(|e| e.to_string())?;
+    let samples = crate::audio_toolkit::load_wav_file(&audio_path).map_err(|e| e.to_string())?;
 
     let tm = Arc::clone(&*transcription_manager);
     let output = tokio::task::spawn_blocking(move || {
-        tm.transcribe_detailed_request(
-            crate::managers::transcription::TranscriptionRequest {
-                audio: samples,
-                app_context: None,
-            },
-        )
+        tm.transcribe_detailed_request(crate::managers::transcription::TranscriptionRequest {
+            audio: samples,
+            app_context: None,
+        })
     })
     .await
     .map_err(|e| format!("Tâche annulée : {}", e))?

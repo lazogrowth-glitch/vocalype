@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import type { TranscriptionConfidencePayload } from "@/bindings";
 
 interface ConfidenceTextProps {
@@ -29,6 +30,8 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
   confidencePayload,
   className = "",
 }) => {
+  const { t } = useTranslation();
+
   if (!confidencePayload) {
     return <p className={className}>{text}</p>;
   }
@@ -39,7 +42,12 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
     return (
       <div className="space-y-1">
         <p className={className}>{text}</p>
-        <div className="text-[11px] text-text/45">Whisper confidence: {overall}</div>
+        <div className="text-[11px] text-text/45">
+          {t("settings.history.whisperConfidence", {
+            defaultValue: "Whisper confidence: {{overall}}",
+            overall,
+          })}
+        </div>
       </div>
     );
   }
@@ -52,14 +60,22 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
             {index > 0 ? " " : null}
             <span
               className={confidenceClass(word.confidence)}
-              title={`Confidence ${percent(word.confidence)}`}
+              title={t("settings.history.wordConfidenceTitle", {
+                defaultValue: "Confidence {{confidence}}",
+                confidence: percent(word.confidence),
+              })}
             >
               {word.text}
             </span>
           </React.Fragment>
         ))}
       </p>
-      <div className="text-[11px] text-text/45">Whisper confidence: {overall}</div>
+      <div className="text-[11px] text-text/45">
+        {t("settings.history.whisperConfidence", {
+          defaultValue: "Whisper confidence: {{overall}}",
+          overall,
+        })}
+      </div>
     </div>
   );
 };

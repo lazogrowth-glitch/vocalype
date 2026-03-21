@@ -355,7 +355,8 @@
           "none": "Aucun",
           "externalScript": "Script externe"
         },
-        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh"
+        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh",
+        "externalScriptHelp": "Les scripts externes doivent utiliser un chemin absolu vers un fichier exécutable local. Les changements sont enregistrés au blur ou avec Entrée."
       },
       "typingTool": {
         "title": "Outil de frappe",
@@ -536,7 +537,9 @@
       "exportError": "Échec de l'export.",
       "transcribeFile": "Transcrire un fichier",
       "transcribeFileSuccess": "Fichier transcrit et copié dans le presse-papiers.",
-      "transcribeFileError": "Échec de la transcription."
+      "transcribeFileError": "Échec de la transcription.",
+      "whisperConfidence": "Confiance Whisper : {{overall}}",
+      "wordConfidenceTitle": "Confiance {{confidence}}"
     },
     "debug": {
       "title": "Débogage",
@@ -600,6 +603,12 @@
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
+      "runtimeDiagnostics": {
+        "voiceProfileSessions": "{{count}} sessions",
+        "voiceProfileWpm": "{{value}} mpm",
+        "voiceProfilePauses": "{{value}} ms de pauses",
+        "voiceAdjustmentValue": "{{chunkSeconds}}s / {{overlapMs}}ms"
+      },
       "paths": {
         "appData": "Données de l'application :",
         "models": "Modèles :",
@@ -616,6 +625,7 @@
         "title": "Version",
         "description": "Version actuelle de VocalType"
       },
+      "versionLabel": "Version v{{version}}",
       "appDataDirectory": {
         "title": "Emplacement des données de l'application",
         "description": "Emplacement où VocalType stocke ses données"
@@ -649,6 +659,7 @@
     }
   },
   "footer": {
+    "version": "v{{version}}",
     "downloadingModel": "Téléchargement de {{model}}...",
     "checkingUpdates": "Recherche de mises à jour...",
     "updateAvailable": "Mise à jour disponible : {{version}}",
@@ -682,7 +693,9 @@
     "off": "Désactivé",
     "yes": "Oui",
     "no": "Non",
-    "noOptionsFound": "Aucune option trouvée"
+    "noOptionsFound": "Aucune option trouvée",
+    "moreInformation": "Plus d'informations",
+    "infoGlyph": "i"
   },
   "accessibility": {
     "permissionsRequired": "Autorisations d'accessibilité requises",
@@ -693,9 +706,31 @@
   "errors": {
     "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}"
   },
+  "error": {
+    "boundary": {
+      "sectionMessage": "Une erreur est survenue dans cette section.",
+      "retry": "Réessayer"
+    }
+  },
   "appLanguage": {
     "title": "Langue de l'application",
     "description": "Changer la langue de l'interface de VocalType"
+  },
+  "appContext": {
+    "categories": {
+      "autoDetected": "Auto (détecté)",
+      "code": "Code",
+      "email": "E-mail",
+      "chat": "Chat",
+      "document": "Document",
+      "notes": "Notes",
+      "browser": "Navigateur",
+      "unknown": "Inconnu"
+    }
+  },
+  "bootstrap": {
+    "desktopRuntimeUnavailable": "VocalType n'a pas réussi à se connecter au runtime desktop. Redémarre l'application.",
+    "criticalFallback": "VocalType a rencontré une erreur critique. Redémarre l'application."
   },
   "overlay": {
     "transcribing": "Transcription...",
@@ -865,6 +900,10 @@
     "recording": "Parle maintenant… ({{count}}s)",
     "processing": "Traitement en cours…",
     "errorTitle": "Command Mode — erreur"
+  },
+  "transcription": {
+    "warmup_preparing": "Préparation du micro…",
+    "warmup_ready": "La dictée sera disponible automatiquement dès que le moteur est prêt."
   },
   "whisperMode": {
     "label": "Mode Chuchotement",

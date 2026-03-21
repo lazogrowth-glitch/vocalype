@@ -10,7 +10,8 @@ const GEMINI_API_KEY_ACCOUNT: &str = "settings.gemini_api_key";
 const POST_PROCESS_PREFIX: &str = "settings.post_process_api_key.";
 
 fn entry(account: &str) -> Result<Entry, String> {
-    Entry::new(SERVICE_NAME, account).map_err(|err| format!("Failed to access secure store: {}", err))
+    Entry::new(SERVICE_NAME, account)
+        .map_err(|err| format!("Failed to access secure store: {}", err))
 }
 
 fn get_secret_value(account: &str) -> Result<Option<String>, String> {
@@ -18,7 +19,10 @@ fn get_secret_value(account: &str) -> Result<Option<String>, String> {
     match entry.get_password() {
         Ok(value) => Ok(Some(value)),
         Err(keyring::Error::NoEntry) => Ok(None),
-        Err(err) => Err(format!("Failed to read secure value '{}': {}", account, err)),
+        Err(err) => Err(format!(
+            "Failed to read secure value '{}': {}",
+            account, err
+        )),
     }
 }
 
@@ -33,7 +37,10 @@ fn delete_secret_value(account: &str) -> Result<(), String> {
     let entry = entry(account)?;
     match entry.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(err) => Err(format!("Failed to delete secure value '{}': {}", account, err)),
+        Err(err) => Err(format!(
+            "Failed to delete secure value '{}': {}",
+            account, err
+        )),
     }
 }
 

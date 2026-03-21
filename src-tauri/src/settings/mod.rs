@@ -1,6 +1,5 @@
 use log::{debug, warn};
-use serde::de::{self, Visitor};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -9,85 +8,23 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_store::StoreExt;
 
+pub mod audio;
+pub mod logging;
+pub mod recording;
+pub mod shortcuts;
+pub mod ui;
+
+pub use audio::{apply_voice_snippets, SoundTheme, TypingTool, VoiceSnippet};
+pub use logging::LogLevel;
+pub use recording::RecordingRetentionPeriod;
+pub use shortcuts::ShortcutBinding;
+pub use ui::{
+    AutoSubmitKey, ClipboardHandling, KeyboardImplementation, OverlayPosition, PasteMethod,
+};
+
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
 pub const CONFIGURED_SECRET_SENTINEL: &str = "__configured__";
-
-#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "lowercase")]
-pub enum LogLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-}
-
-// Custom deserializer to handle both old numeric format (1-5) and new string format ("trace", "debug", etc.)
-impl<'de> Deserialize<'de> for LogLevel {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct LogLevelVisitor;
-
-        impl<'de> Visitor<'de> for LogLevelVisitor {
-            type Value = LogLevel;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a string or integer representing log level")
-            }
-
-            fn visit_str<E: de::Error>(self, value: &str) -> Result<LogLevel, E> {
-                match value.to_lowercase().as_str() {
-                    "trace" => Ok(LogLevel::Trace),
-                    "debug" => Ok(LogLevel::Debug),
-                    "info" => Ok(LogLevel::Info),
-                    "warn" => Ok(LogLevel::Warn),
-                    "error" => Ok(LogLevel::Error),
-                    _ => Err(E::unknown_variant(
-                        value,
-                        &["trace", "debug", "info", "warn", "error"],
-                    )),
-                }
-            }
-
-            fn visit_u64<E: de::Error>(self, value: u64) -> Result<LogLevel, E> {
-                match value {
-                    1 => Ok(LogLevel::Trace),
-                    2 => Ok(LogLevel::Debug),
-                    3 => Ok(LogLevel::Info),
-                    4 => Ok(LogLevel::Warn),
-                    5 => Ok(LogLevel::Error),
-                    _ => Err(E::invalid_value(de::Unexpected::Unsigned(value), &"1-5")),
-                }
-            }
-        }
-
-        deserializer.deserialize_any(LogLevelVisitor)
-    }
-}
-
-impl From<LogLevel> for tauri_plugin_log::LogLevel {
-    fn from(level: LogLevel) -> Self {
-        match level {
-            LogLevel::Trace => tauri_plugin_log::LogLevel::Trace,
-            LogLevel::Debug => tauri_plugin_log::LogLevel::Debug,
-            LogLevel::Info => tauri_plugin_log::LogLevel::Info,
-            LogLevel::Warn => tauri_plugin_log::LogLevel::Warn,
-            LogLevel::Error => tauri_plugin_log::LogLevel::Error,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct ShortcutBinding {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub default_binding: String,
-    pub current_binding: String,
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct LLMPrompt {
@@ -129,14 +66,6 @@ pub struct PostProcessProvider {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "lowercase")]
-pub enum OverlayPosition {
-    None,
-    Top,
-    Bottom,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
     Never,
@@ -147,49 +76,6 @@ pub enum ModelUnloadTimeout {
     Min15,
     Hour1,
     Sec5, // Debug mode only
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum PasteMethod {
-    CtrlV,
-    Direct,
-    None,
-    ShiftInsert,
-    CtrlShiftV,
-    ExternalScript,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum ClipboardHandling {
-    DontModify,
-    CopyToClipboard,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum AutoSubmitKey {
-    Enter,
-    CtrlEnter,
-    CmdEnter,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum RecordingRetentionPeriod {
-    Never,
-    PreserveLimit,
-    Days3,
-    Weeks2,
-    Months3,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum KeyboardImplementation {
-    Tauri,
-    HandyKeys,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -456,10 +342,10 @@ pub struct AdaptiveMachineProfile {
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
-        // Default to HandyKeys only on macOS where it's well-tested.
-        // Windows and Linux use Tauri by default (handy-keys not sufficiently tested yet).
+        // Default to the native shortcut capture backend only on macOS where it's well-tested.
+        // Windows and Linux use Tauri by default.
         #[cfg(target_os = "macos")]
-        return KeyboardImplementation::HandyKeys;
+        return KeyboardImplementation::NativeShortcutCapture;
         #[cfg(not(target_os = "macos"))]
         return KeyboardImplementation::Tauri;
     }
@@ -515,71 +401,6 @@ impl ModelUnloadTimeout {
             _ => self.to_minutes().map(|m| m * 60),
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum SoundTheme {
-    Marimba,
-    Pop,
-    Custom,
-}
-
-impl SoundTheme {
-    fn as_str(&self) -> &'static str {
-        match self {
-            SoundTheme::Marimba => "marimba",
-            SoundTheme::Pop => "pop",
-            SoundTheme::Custom => "custom",
-        }
-    }
-
-    pub fn to_start_path(&self) -> String {
-        format!("resources/{}_start.wav", self.as_str())
-    }
-
-    pub fn to_stop_path(&self) -> String {
-        format!("resources/{}_stop.wav", self.as_str())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum TypingTool {
-    Auto,
-    Wtype,
-    Kwtype,
-    Dotool,
-    Ydotool,
-    Xdotool,
-}
-
-impl Default for TypingTool {
-    fn default() -> Self {
-        TypingTool::Auto
-    }
-}
-
-/// A voice snippet: if the entire transcription matches `trigger` (case-insensitive,
-/// trimmed), it is replaced by `expansion` before being pasted.
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct VoiceSnippet {
-    pub id: String,
-    pub trigger: String,
-    pub expansion: String,
-}
-
-/// Apply voice snippets: if `text` (trimmed, lowercase) exactly matches a trigger,
-/// return the corresponding expansion.  Otherwise return `None`.
-pub fn apply_voice_snippets(text: &str, snippets: &[VoiceSnippet]) -> Option<String> {
-    let normalized = text.trim().to_lowercase();
-    if normalized.is_empty() {
-        return None;
-    }
-    snippets
-        .iter()
-        .find(|s| s.trigger.trim().to_lowercase() == normalized)
-        .map(|s| s.expansion.clone())
 }
 
 /* still handy for composing the initial JSON in the store ------------- */
@@ -2023,9 +1844,9 @@ fn hydrate_secure_secrets(settings: &mut AppSettings) {
         .ok()
         .flatten()
         .or_else(|| {
-        persisted_gemini_api_key
-            .filter(|value| !value.trim().is_empty() && !is_redacted_secret_placeholder(value))
-    });
+            persisted_gemini_api_key
+                .filter(|value| !value.trim().is_empty() && !is_redacted_secret_placeholder(value))
+        });
 
     let provider_ids: Vec<String> = settings
         .post_process_providers
@@ -2317,7 +2138,8 @@ pub fn get_default_settings() -> AppSettings {
         ShortcutBinding {
             id: "whisper_mode".to_string(),
             name: "Whisper Mode".to_string(),
-            description: "Toggle microphone gain boost for low-volume or whispered dictation.".to_string(),
+            description: "Toggle microphone gain boost for low-volume or whispered dictation."
+                .to_string(),
             default_binding: "ctrl+alt+w".to_string(),
             current_binding: "ctrl+alt+w".to_string(),
         },
@@ -2539,11 +2361,15 @@ fn persist_settings_payload(
     store: &impl Deref<Target = tauri_plugin_store::Store<tauri::Wry>>,
     settings: &AppSettings,
 ) {
-    store.set(
-        "settings",
-        serde_json::to_value(strip_secrets_for_persistence(settings.clone())).unwrap(),
-    );
-    persist_store(store);
+    match serde_json::to_value(strip_secrets_for_persistence(settings.clone())) {
+        Ok(value) => {
+            store.set("settings", value);
+            persist_store(store);
+        }
+        Err(e) => {
+            log::error!("Failed to serialize settings for persistence: {e}");
+        }
+    }
 }
 
 pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
@@ -2590,11 +2416,15 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     };
 
     if prepare_settings_for_runtime(app, &mut settings) {
-        store.set(
-            "settings",
-            serde_json::to_value(exportable_settings(settings.clone())).unwrap(),
-        );
-        persist_store(&store);
+        match serde_json::to_value(exportable_settings(settings.clone())) {
+            Ok(value) => {
+                store.set("settings", value);
+                persist_store(&store);
+            }
+            Err(e) => {
+                log::error!("Failed to serialize settings: {e}");
+            }
+        }
     }
 
     settings
@@ -2618,11 +2448,15 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     };
 
     if prepare_settings_for_runtime(app, &mut settings) {
-        store.set(
-            "settings",
-            serde_json::to_value(exportable_settings(settings.clone())).unwrap(),
-        );
-        persist_store(&store);
+        match serde_json::to_value(exportable_settings(settings.clone())) {
+            Ok(value) => {
+                store.set("settings", value);
+                persist_store(&store);
+            }
+            Err(e) => {
+                log::error!("Failed to serialize settings: {e}");
+            }
+        }
     }
 
     settings
@@ -2649,11 +2483,15 @@ pub fn get_settings_fast(app: &AppHandle) -> AppSettings {
     };
 
     if prepare_settings_for_fast_runtime(app, &mut settings) {
-        store.set(
-            "settings",
-            serde_json::to_value(exportable_settings(settings.clone())).unwrap(),
-        );
-        persist_store(&store);
+        match serde_json::to_value(exportable_settings(settings.clone())) {
+            Ok(value) => {
+                store.set("settings", value);
+                persist_store(&store);
+            }
+            Err(e) => {
+                log::error!("Failed to serialize settings: {e}");
+            }
+        }
     }
 
     settings
@@ -2676,12 +2514,16 @@ pub fn refresh_adaptive_profile_if_needed(app: &AppHandle) {
     let changed = ensure_adaptive_profile(app, &mut settings);
     hydrate_settings_secrets(app, &mut settings);
     if changed {
-        store.set(
-            "settings",
-            serde_json::to_value(exportable_settings(settings)).unwrap(),
-        );
-        persist_store(&store);
-        log::info!("Adaptive machine profile refreshed in background");
+        match serde_json::to_value(exportable_settings(settings)) {
+            Ok(value) => {
+                store.set("settings", value);
+                persist_store(&store);
+                log::info!("Adaptive machine profile refreshed in background");
+            }
+            Err(e) => {
+                log::error!("Failed to serialize settings: {e}");
+            }
+        }
     }
 }
 
@@ -2690,11 +2532,15 @@ pub fn write_settings(app: &AppHandle, settings: AppSettings) {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    store.set(
-        "settings",
-        serde_json::to_value(exportable_settings(settings)).unwrap(),
-    );
-    persist_store(&store);
+    match serde_json::to_value(exportable_settings(settings)) {
+        Ok(value) => {
+            store.set("settings", value);
+            persist_store(&store);
+        }
+        Err(e) => {
+            log::error!("Failed to serialize settings for write: {e}");
+        }
+    }
 }
 
 fn whisper_config_mut<'a>(
@@ -2821,5 +2667,34 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_settings_serialize_to_json() {
+        let settings = get_default_settings();
+        let result = serde_json::to_value(exportable_settings(settings));
+        assert!(result.is_ok(), "Default settings must be JSON-serializable");
+    }
+
+    #[test]
+    fn default_settings_strip_secrets_serialize_to_json() {
+        let settings = get_default_settings();
+        let result = serde_json::to_value(strip_secrets_for_persistence(settings));
+        assert!(
+            result.is_ok(),
+            "Settings stripped of secrets must be JSON-serializable"
+        );
+    }
+
+    #[test]
+    fn settings_roundtrip() {
+        let original = get_default_settings();
+        let serialized = serde_json::to_value(exportable_settings(original.clone()))
+            .expect("Serialization must succeed");
+        let deserialized: AppSettings =
+            serde_json::from_value(serialized).expect("Deserialization must succeed");
+        assert_eq!(original.push_to_talk, deserialized.push_to_talk);
+        assert_eq!(original.selected_model, deserialized.selected_model);
+        assert_eq!(original.auto_submit, deserialized.auto_submit);
     }
 }

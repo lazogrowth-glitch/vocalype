@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
+import { useTranslation } from "react-i18next";
 
 import ModelSelector from "../model-selector";
 import UpdateChecker from "../update-checker";
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation();
   const [version, setVersion] = useState("");
 
   useEffect(() => {
@@ -34,7 +36,10 @@ const Footer: React.FC = () => {
           </div>
           <span className="text-text/25">•</span>
           <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-1 text-[10px] font-medium text-text/62">
-            v{version}
+            {t("footer.version", {
+              defaultValue: "v{{version}}",
+              version,
+            })}
           </span>
         </div>
       </div>

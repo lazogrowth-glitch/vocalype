@@ -38,7 +38,10 @@ pub fn add_voice_snippet(
         .iter()
         .any(|s| s.trigger.trim().to_lowercase() == trigger.to_lowercase())
     {
-        return Err(format!("Un snippet avec le déclencheur « {} » existe déjà", trigger));
+        return Err(format!(
+            "Un snippet avec le déclencheur « {} » existe déjà",
+            trigger
+        ));
     }
 
     let snippet = VoiceSnippet {
@@ -92,7 +95,10 @@ pub fn update_voice_snippet(
         .iter()
         .any(|s| s.id != id && s.trigger.trim().to_lowercase() == trigger.to_lowercase())
     {
-        return Err(format!("Un snippet avec le déclencheur « {} » existe déjà", trigger));
+        return Err(format!(
+            "Un snippet avec le déclencheur « {} » existe déjà",
+            trigger
+        ));
     }
 
     let snippet = settings

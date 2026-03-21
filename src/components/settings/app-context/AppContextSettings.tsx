@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { RefreshCw, X } from "lucide-react";
 import { commands } from "@/bindings";
 import type { AppContextCategory, AppContextOverride, RecentAppEntry } from "@/bindings";
@@ -20,15 +21,22 @@ const CATEGORY_OPTIONS: AppContextCategory[] = [
   "unknown",
 ];
 
-function categoryLabel(category: AppContextCategory): string {
+function categoryLabel(category: AppContextCategory, t: TFunction): string {
   switch (category) {
-    case "code":     return "Code";
-    case "email":    return "E-mail";
-    case "chat":     return "Chat";
-    case "document": return "Document";
-    case "notes":    return "Notes";
-    case "browser":  return "Navigateur";
-    case "unknown":  return "Inconnu";
+    case "code":
+      return t("appContext.categories.code", { defaultValue: "Code" });
+    case "email":
+      return t("appContext.categories.email", { defaultValue: "E-mail" });
+    case "chat":
+      return t("appContext.categories.chat", { defaultValue: "Chat" });
+    case "document":
+      return t("appContext.categories.document", { defaultValue: "Document" });
+    case "notes":
+      return t("appContext.categories.notes", { defaultValue: "Notes" });
+    case "browser":
+      return t("appContext.categories.browser", { defaultValue: "Navigateur" });
+    case "unknown":
+      return t("appContext.categories.unknown", { defaultValue: "Inconnu" });
   }
 }
 
@@ -59,6 +67,8 @@ interface CategorySelectProps {
 }
 
 const CategorySelect: React.FC<CategorySelectProps> = ({ value, onChange, disabled }) => {
+  const { t } = useTranslation();
+
   return (
     <select
       value={value}
@@ -66,10 +76,14 @@ const CategorySelect: React.FC<CategorySelectProps> = ({ value, onChange, disabl
       disabled={disabled}
       className="rounded-[6px] border border-white/10 bg-white/[0.05] px-2 py-1 text-[11.5px] text-white/70 outline-none transition-colors hover:border-white/20 focus:border-logo-primary/50 disabled:cursor-not-allowed disabled:opacity-40"
     >
-      <option value="auto">Auto (détecté)</option>
+      <option value="auto">
+        {t("appContext.categories.autoDetected", {
+          defaultValue: "Auto (détecté)",
+        })}
+      </option>
       {CATEGORY_OPTIONS.map((cat) => (
         <option key={cat} value={cat}>
-          {categoryLabel(cat)}
+          {categoryLabel(cat, t)}
         </option>
       ))}
     </select>
@@ -244,7 +258,7 @@ export const AppContextSettings: React.FC = () => {
 
                   {/* Detected category badge */}
                   <Badge variant={categoryBadgeVariant(displayCategory)}>
-                    {categoryLabel(displayCategory)}
+                    {categoryLabel(displayCategory, t)}
                     {currentOverride && (
                       <span className="ml-1 opacity-60">
                         {t("appContext.overrideIndicator", { defaultValue: "(forcé)" })}
@@ -282,7 +296,7 @@ export const AppContextSettings: React.FC = () => {
                   {displayProcessName(ov.process_name)}
                 </p>
                 <Badge variant={categoryBadgeVariant(ov.category)}>
-                  {categoryLabel(ov.category)}
+                  {categoryLabel(ov.category, t)}
                 </Badge>
                 <Button
                   variant="ghost"
@@ -306,28 +320,36 @@ export const AppContextSettings: React.FC = () => {
         </p>
         <ul className="space-y-1 text-[11px] text-white/30">
           <li>
-            <span className="text-white/50">Code</span>
+            <span className="text-white/50">
+              {t("appContext.categories.code", { defaultValue: "Code" })}
+            </span>
             {" — "}
             {t("appContext.codeHint", {
               defaultValue: "Post-processing désactivé, texte injecté tel quel",
             })}
           </li>
           <li>
-            <span className="text-white/50">E-mail</span>
+            <span className="text-white/50">
+              {t("appContext.categories.email", { defaultValue: "E-mail" })}
+            </span>
             {" — "}
             {t("appContext.emailHint", {
               defaultValue: "Ton formel, ponctuation complète",
             })}
           </li>
           <li>
-            <span className="text-white/50">Chat</span>
+            <span className="text-white/50">
+              {t("appContext.categories.chat", { defaultValue: "Chat" })}
+            </span>
             {" — "}
             {t("appContext.chatHint", {
               defaultValue: "Style conversationnel, ponctuation légère",
             })}
           </li>
           <li>
-            <span className="text-white/50">Notes</span>
+            <span className="text-white/50">
+              {t("appContext.categories.notes", { defaultValue: "Notes" })}
+            </span>
             {" — "}
             {t("appContext.notesHint", {
               defaultValue: "Structure markdown préservée",

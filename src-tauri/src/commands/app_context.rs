@@ -7,14 +7,8 @@ use tauri::{AppHandle, State};
 /// Return the list of apps detected during the last N dictation sessions.
 #[tauri::command]
 #[specta::specta]
-pub fn get_recent_apps(
-    state: State<'_, ActiveAppContextState>,
-) -> Vec<RecentAppEntry> {
-    state
-        .0
-        .lock()
-        .map(|s| s.recent_apps())
-        .unwrap_or_default()
+pub fn get_recent_apps(state: State<'_, ActiveAppContextState>) -> Vec<RecentAppEntry> {
+    state.0.lock().map(|s| s.recent_apps()).unwrap_or_default()
 }
 
 /// Return all user-defined app-category overrides.

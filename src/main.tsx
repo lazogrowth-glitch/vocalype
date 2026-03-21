@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { emit } from "@tauri-apps/api/event";
 import { waitForTauriRuntime } from "./lib/tauri/runtime";
+import i18n from "./i18n";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./App.css";
 
 const rootElement = document.getElementById("root") as HTMLElement | null;
@@ -62,7 +64,10 @@ const renderBootstrapMessage = (message: string) => {
 
 const renderFatalStartupError = () => {
   renderBootstrapMessage(
-    "VocalType failed to connect to the desktop runtime. Please restart the app.",
+    i18n.t("bootstrap.desktopRuntimeUnavailable", {
+      defaultValue:
+        "VocalType failed to connect to the desktop runtime. Please restart the app.",
+    }),
   );
 };
 
@@ -87,7 +92,30 @@ const bootstrap = async () => {
     setSplashMessage("Rendering interface...");
     root.render(
       <React.StrictMode>
-        <App />
+        <ErrorBoundary
+          fallback={
+            <div
+              style={{
+                minHeight: "100vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "24px",
+                textAlign: "center",
+                fontSize: "14px",
+                color: "#f5f2ed",
+                background: "#0a0a0a",
+              }}
+            >
+              {i18n.t("bootstrap.criticalFallback", {
+                defaultValue:
+                  "VocalType encountered a critical error. Please restart the app.",
+              })}
+            </div>
+          }
+        >
+          <App />
+        </ErrorBoundary>
       </React.StrictMode>,
     );
 

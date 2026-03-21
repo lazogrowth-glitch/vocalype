@@ -8,27 +8,19 @@ import React, {
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import {
-  ChevronDown,
-  Globe,
-  RefreshCcw,
-  Rocket,
-  ShieldCheck,
-  Sparkles,
-  TimerReset,
-  X,
-} from "lucide-react";
+import { RefreshCcw, X } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { useSettings } from "@/hooks/useSettings";
-import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
 import { commands } from "@/bindings";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dropdown } from "@/components/ui";
-import { getTranslatedModelName } from "@/lib/utils/modelTranslation";
+import { GeminiKeyModal } from "./GeminiKeyModal";
+import { ProductModesGrid } from "./ProductModesGrid";
+import { LanguageFilterDropdown } from "./LanguageFilterDropdown";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -240,6 +232,7 @@ const ProcessingModelsSection: React.FC = () => {
                   placeholder={t(
                     "settings.models.processingModels.apiKeyPlaceholder",
                   )}
+                  aria-label={t("settings.models.processingModels.apiKey")}
                   variant="compact"
                 />
               </div>
@@ -267,6 +260,7 @@ const ProcessingModelsSection: React.FC = () => {
                       placeholder={t(
                         "settings.models.processingModels.modelPlaceholder",
                       )}
+                      aria-label={t("settings.models.processingModels.model")}
                       variant="compact"
                       className="flex-1"
                     />
@@ -276,6 +270,7 @@ const ProcessingModelsSection: React.FC = () => {
                     disabled={isFetching || !apiKey.trim()}
                     className="flex items-center justify-center h-8 w-8 rounded-md bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-40"
                     title={t("settings.models.processingModels.fetchModels")}
+                    aria-label={t("settings.models.processingModels.fetchModels")}
                   >
                     <RefreshCcw
                       className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
@@ -317,24 +312,6 @@ const ProcessingModelsSection: React.FC = () => {
 
 type ModelsTab = "transcription" | "processing";
 
-const PRODUCT_MODE_META = {
-  auto: {
-    icon: Sparkles,
-    tone: "border-logo-primary/20 bg-logo-primary/8 text-logo-primary",
-  },
-  fast: {
-    icon: Rocket,
-    tone: "border-sky-400/20 bg-sky-400/8 text-sky-200",
-  },
-  balanced: {
-    icon: TimerReset,
-    tone: "border-white/10 bg-white/[0.04] text-text/72",
-  },
-  quality: {
-    icon: ShieldCheck,
-    tone: "border-emerald-400/20 bg-emerald-400/8 text-emerald-200",
-  },
-} as const;
 
 interface AdaptiveProfileSnapshot {
   machine_tier: "low" | "medium" | "high";
@@ -367,15 +344,12 @@ export const ModelsSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ModelsTab>("transcription");
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState("all");
-  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-  const [languageSearch, setLanguageSearch] = useState("");
   const [showGeminiKeyDialog, setShowGeminiKeyDialog] = useState(false);
   const [geminiKeyInput, setGeminiKeyInput] = useState("");
+  const [cancellingModelId, setCancellingModelId] = useState<string | null>(null);
   const [adaptiveProfile, setAdaptiveProfile] =
     useState<AdaptiveProfileSnapshot | null>(null);
-  const languageDropdownRef = useRef<HTMLDivElement>(null);
-  const languageSearchInputRef = useRef<HTMLInputElement>(null);
-  const { getSetting, updateSetting } = useSettings();
+const { getSetting, updateSetting } = useSettings();
   const {
     models,
     currentModel,
@@ -396,46 +370,8 @@ export const ModelsSettings: React.FC = () => {
       .catch(() => setAdaptiveProfile(null));
   }, []);
 
-  // click outside handler for language dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        languageDropdownRef.current &&
-        !languageDropdownRef.current.contains(event.target as Node)
-      ) {
-        setLanguageDropdownOpen(false);
-        setLanguageSearch("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
-  // focus search input when dropdown opens
-  useEffect(() => {
-    if (languageDropdownOpen && languageSearchInputRef.current) {
-      languageSearchInputRef.current.focus();
-    }
-  }, [languageDropdownOpen]);
-
-  // filtered languages for dropdown (exclude "auto")
-  const filteredLanguages = useMemo(() => {
-    return LANGUAGES.filter(
-      (lang) =>
-        lang.value !== "auto" &&
-        lang.label.toLowerCase().includes(languageSearch.toLowerCase()),
-    );
-  }, [languageSearch]);
-
-  // Get selected language label
-  const selectedLanguageLabel = useMemo(() => {
-    if (languageFilter === "all") {
-      return t("settings.models.filters.allLanguages");
-    }
-    return LANGUAGES.find((lang) => lang.value === languageFilter)?.label || "";
-  }, [languageFilter, t]);
-
-  const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
+const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
   const hasGeminiKey = !!geminiApiKey && geminiApiKey.length > 0;
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
@@ -499,6 +435,7 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const handleModelDownload = async (modelId: string) => {
+    if (modelId in downloadingModels) return;
     await downloadModel(modelId);
   };
 
@@ -537,10 +474,14 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const handleModelCancel = async (modelId: string) => {
+    if (cancellingModelId === modelId) return;
+    setCancellingModelId(modelId);
     try {
       await cancelDownload(modelId);
     } catch (err) {
       console.error(`Failed to cancel download for ${modelId}:`, err);
+    } finally {
+      setCancellingModelId(null);
     }
   };
 
@@ -700,46 +641,12 @@ export const ModelsSettings: React.FC = () => {
       )}
 
       {activeTab === "transcription" && (
-        <div className="space-y-2">
-          {productModes.map(({ id, label, description, modelId, model }) => {
-            const isActiveMode =
-              (adaptiveProfile?.active_runtime_model_id || currentModel) === modelId;
-            const meta = PRODUCT_MODE_META[id as keyof typeof PRODUCT_MODE_META];
-            const Icon = meta.icon;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => handleProductModeSelect(modelId)}
-                className={`flex w-full items-center gap-4 rounded-[10px] border px-4 py-3.5 text-left transition-all ${
-                  isActiveMode
-                    ? "border-logo-primary/30 bg-logo-primary/[0.08]"
-                    : "border-white/8 bg-white/[0.03] hover:bg-white/[0.05]"
-                }`}
-              >
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[13.5px] font-medium text-white">{label}</p>
-                    {id === "auto" && (
-                      <span className="rounded-md border border-logo-primary/25 bg-logo-primary/15 px-2 py-0.5 text-[10px] font-medium text-logo-primary">
-                        {t("onboarding.recommended")}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-0.5 text-[11.5px] leading-5 text-white/40">
-                    {description}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-white/28">
-                    {model ? getTranslatedModelName(model, t) : modelId}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <ProductModesGrid
+          productModes={productModes}
+          currentModel={currentModel}
+          adaptiveProfile={adaptiveProfile}
+          onSelect={handleProductModeSelect}
+        />
       )}
 
       {activeTab === "processing" && <ProcessingModelsSection />}
@@ -752,97 +659,10 @@ export const ModelsSettings: React.FC = () => {
                 {t("settings.models.yourModels")}
               </h2>
 
-              <div className="relative" ref={languageDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
-                  className={`flex items-center gap-1.5 rounded-[7px] border px-3 py-1.5 text-[12.5px] ${
-                    languageFilter !== "all"
-                      ? "border-logo-primary/25 bg-logo-primary/12 text-logo-primary"
-                      : "border-white/10 bg-white/[0.06] text-white/55 hover:text-white/75"
-                  }`}
-                >
-                  <Globe className="h-3.5 w-3.5" />
-                  <span className="max-w-[120px] truncate">
-                    {selectedLanguageLabel}
-                  </span>
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform ${
-                      languageDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {languageDropdownOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-lg border border-mid-gray/80 bg-background shadow-lg">
-                    <div className="border-b border-mid-gray/40 p-2">
-                      <input
-                        ref={languageSearchInputRef}
-                        type="text"
-                        value={languageSearch}
-                        onChange={(e) => setLanguageSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            filteredLanguages.length > 0
-                          ) {
-                            setLanguageFilter(filteredLanguages[0].value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          } else if (e.key === "Escape") {
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }
-                        }}
-                        placeholder={t(
-                          "settings.general.language.searchPlaceholder",
-                        )}
-                        className="w-full rounded-md border border-mid-gray/40 bg-mid-gray/10 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-logo-primary"
-                      />
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLanguageFilter("all");
-                          setLanguageDropdownOpen(false);
-                          setLanguageSearch("");
-                        }}
-                        className={`w-full px-3 py-1.5 text-left text-sm transition-colors ${
-                          languageFilter === "all"
-                            ? "bg-logo-primary/20 font-semibold text-logo-primary"
-                            : "hover:bg-mid-gray/10"
-                        }`}
-                      >
-                        {t("settings.models.filters.allLanguages")}
-                      </button>
-                      {filteredLanguages.map((lang) => (
-                        <button
-                          key={lang.value}
-                          type="button"
-                          onClick={() => {
-                            setLanguageFilter(lang.value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }}
-                          className={`w-full px-3 py-1.5 text-left text-sm transition-colors ${
-                            languageFilter === lang.value
-                              ? "bg-logo-primary/20 font-semibold text-logo-primary"
-                              : "hover:bg-mid-gray/10"
-                          }`}
-                        >
-                          {lang.label}
-                        </button>
-                      ))}
-                      {filteredLanguages.length === 0 && (
-                        <div className="px-3 py-2 text-center text-sm text-text/50">
-                          {t("settings.general.language.noResults")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <LanguageFilterDropdown
+                value={languageFilter}
+                onChange={setLanguageFilter}
+              />
             </div>
 
             {downloadedModels.map((model: ModelInfo) => (
@@ -897,57 +717,13 @@ export const ModelsSettings: React.FC = () => {
         </div>
       ) : null}
 
-      {showGeminiKeyDialog && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={() => setShowGeminiKeyDialog(false)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setShowGeminiKeyDialog(false);
-          }}
-        >
-          <div
-            className="bg-background border border-mid-gray/40 rounded-xl p-5 w-96 shadow-2xl space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <h3 className="text-base font-semibold">
-                {t("settings.gemini.apiKeyRequired")}
-              </h3>
-              <p className="text-sm text-text/60 mt-1">
-                {t("settings.gemini.apiKeyRequiredDescription")}
-              </p>
-            </div>
-            <Input
-              autoFocus
-              type="password"
-              value={geminiKeyInput}
-              onChange={(e) => setGeminiKeyInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleGeminiKeySave();
-              }}
-              placeholder={t("settings.gemini.apiKeyPlaceholder")}
-              className="w-full"
-            />
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowGeminiKeyDialog(false)}
-              >
-                {t("settings.gemini.cancel")}
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleGeminiKeySave}
-                disabled={!geminiKeyInput.trim()}
-              >
-                {t("settings.gemini.save")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <GeminiKeyModal
+        show={showGeminiKeyDialog}
+        value={geminiKeyInput}
+        onChange={setGeminiKeyInput}
+        onSave={handleGeminiKeySave}
+        onClose={() => setShowGeminiKeyDialog(false)}
+      />
     </div>
   );
 };

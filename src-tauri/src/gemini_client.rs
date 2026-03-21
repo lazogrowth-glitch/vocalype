@@ -159,7 +159,11 @@ pub async fn transcribe_audio(api_key: &str, model: &str, audio_samples: &[f32])
         .and_then(|c| c.parts)
         .and_then(|p| p.into_iter().next())
         .and_then(|p| p.text)
-        .unwrap_or_default();
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "Gemini transcription response missing text content (empty candidates or parts)"
+            )
+        })?;
 
     debug!("Gemini transcription result: {}", text);
     Ok(text.trim().to_string())
@@ -236,7 +240,11 @@ pub async fn generate_text(
         .and_then(|c| c.parts)
         .and_then(|p| p.into_iter().next())
         .and_then(|p| p.text)
-        .unwrap_or_default();
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "Gemini text generation response missing text content (empty candidates or parts)"
+            )
+        })?;
 
     debug!("Gemini text generation result length: {}", text.len());
     Ok(text.trim().to_string())

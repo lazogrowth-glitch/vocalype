@@ -25,6 +25,32 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
     [snapshot],
   );
   const adaptiveProfile = snapshot?.adaptive_machine_profile ?? null;
+  const voiceProfileSessions = snapshot?.adaptive_voice_profile
+    ? t("settings.debug.runtimeDiagnostics.voiceProfileSessions", {
+        defaultValue: "{{count}} sessions",
+        count: snapshot.adaptive_voice_profile.sessions_count,
+      })
+    : null;
+  const voiceProfileWpm = snapshot?.adaptive_voice_profile
+    ? t("settings.debug.runtimeDiagnostics.voiceProfileWpm", {
+        defaultValue: "{{value}} wpm",
+        value: snapshot.adaptive_voice_profile.avg_words_per_minute.toFixed(0),
+      })
+    : null;
+  const voiceProfilePauses = snapshot?.adaptive_voice_profile
+    ? t("settings.debug.runtimeDiagnostics.voiceProfilePauses", {
+        defaultValue: "{{value}} ms pauses",
+        value: snapshot.adaptive_voice_profile.avg_pause_ms.toFixed(0),
+      })
+    : null;
+  const voiceAdjustmentValue = snapshot?.active_voice_runtime_adjustment
+    ? t("settings.debug.runtimeDiagnostics.voiceAdjustmentValue", {
+        defaultValue: "{{chunkSeconds}}s / {{overlapMs}}ms",
+        chunkSeconds:
+          snapshot.active_voice_runtime_adjustment.adjusted_chunk_seconds,
+        overlapMs: snapshot.active_voice_runtime_adjustment.adjusted_overlap_ms,
+      })
+    : null;
 
   const handleCapture = async () => {
     setBusy(true);
@@ -325,21 +351,11 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                     defaultValue: "Voice profile",
                   })}
                   :{" "}
-                  <span className="font-semibold">
-                    {snapshot.adaptive_voice_profile.sessions_count} sessions
-                  </span>
+                  <span className="font-semibold">{voiceProfileSessions}</span>
                   {" · "}
-                  <span className="text-text/60">
-                    {snapshot.adaptive_voice_profile.avg_words_per_minute.toFixed(
-                      0,
-                    )}{" "}
-                    wpm
-                  </span>
+                  <span className="text-text/60">{voiceProfileWpm}</span>
                   {" · "}
-                  <span className="text-text/60">
-                    {snapshot.adaptive_voice_profile.avg_pause_ms.toFixed(0)} ms
-                    pauses
-                  </span>
+                  <span className="text-text/60">{voiceProfilePauses}</span>
                 </p>
                 {snapshot.active_voice_runtime_adjustment && (
                   <p>
@@ -347,15 +363,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                       defaultValue: "Voice adjustment",
                     })}
                     :{" "}
-                    <span className="font-semibold">
-                      {snapshot.active_voice_runtime_adjustment.adjusted_chunk_seconds}
-                      s /{" "}
-                      {
-                        snapshot.active_voice_runtime_adjustment
-                          .adjusted_overlap_ms
-                      }
-                      ms
-                    </span>
+                    <span className="font-semibold">{voiceAdjustmentValue}</span>
                     {snapshot.active_voice_runtime_adjustment.reason
                       ? ` · ${snapshot.active_voice_runtime_adjustment.reason}`
                       : ""}

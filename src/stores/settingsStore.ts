@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { AppSettings as Settings, AudioDevice } from "@/bindings";
 import { commands } from "@/bindings";
+import { toast } from "sonner";
 
 interface SettingsStore {
   settings: Settings | null;
@@ -287,6 +288,7 @@ export const useSettingsStore = create<SettingsStore>()(
         if (settings) {
           set({ settings: { ...settings, [key]: originalValue } });
         }
+        toast.error("Échec de la mise à jour du paramètre.");
       } finally {
         setUpdating(updateKey, false);
       }
@@ -390,9 +392,11 @@ export const useSettingsStore = create<SettingsStore>()(
         setUpdating,
         refreshSettings,
         setPostProcessModelOptions,
+        postProcessModelOptions,
       } = get();
       const updateKey = "post_process_provider_id";
       const previousId = settings?.post_process_provider_id ?? null;
+      const previousOptions = postProcessModelOptions[providerId] ?? [];
 
       setUpdating(updateKey, true);
 
@@ -420,6 +424,7 @@ export const useSettingsStore = create<SettingsStore>()(
               : null,
           }));
         }
+        setPostProcessModelOptions(providerId, previousOptions);
       } finally {
         setUpdating(updateKey, false);
       }

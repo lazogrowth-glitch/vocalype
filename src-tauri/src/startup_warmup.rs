@@ -182,7 +182,11 @@ fn microphone_error_status(detail: String) -> StartupWarmupStatus {
     }
 }
 
-fn model_error_status(model_name: &str, detail: String, microphone_ready: bool) -> StartupWarmupStatus {
+fn model_error_status(
+    model_name: &str,
+    detail: String,
+    microphone_ready: bool,
+) -> StartupWarmupStatus {
     StartupWarmupStatus {
         phase: StartupWarmupPhase::Failed,
         reason: StartupWarmupReason::ModelError,
@@ -204,11 +208,7 @@ fn is_generation_current(app: &AppHandle, generation: u64) -> bool {
     current_generation(app) == generation
 }
 
-fn set_status_if_current(
-    app: &AppHandle,
-    generation: u64,
-    mut next: StartupWarmupStatus,
-) -> bool {
+fn set_status_if_current(app: &AppHandle, generation: u64, mut next: StartupWarmupStatus) -> bool {
     let state = app.state::<StartupWarmupState>();
     if state.requested_generation.load(Ordering::SeqCst) != generation {
         return false;
@@ -230,7 +230,10 @@ fn set_status_if_current(
     true
 }
 
-fn resolve_model_info(app: &AppHandle, snapshot: &WarmupSnapshot) -> Result<ModelInfo, StartupWarmupStatus> {
+fn resolve_model_info(
+    app: &AppHandle,
+    snapshot: &WarmupSnapshot,
+) -> Result<ModelInfo, StartupWarmupStatus> {
     if snapshot.selected_model.trim().is_empty() {
         return Err(no_model_status(snapshot));
     }
@@ -346,8 +349,11 @@ fn run_generation(app: &AppHandle, generation: u64) {
                 microphone_ready = true;
             }
             Err(err) => {
-                let _ =
-                    set_status_if_current(app, generation, microphone_error_status(err.to_string()));
+                let _ = set_status_if_current(
+                    app,
+                    generation,
+                    microphone_error_status(err.to_string()),
+                );
                 return;
             }
         }
@@ -408,31 +414,29 @@ fn run_generation(app: &AppHandle, generation: u64) {
 
 fn spawn_runner(app: &AppHandle) {
     let app_handle = app.clone();
-    thread::spawn(move || {
-        loop {
-            let generation = current_generation(&app_handle);
-            debug!("Running startup warmup generation {}", generation);
-            run_generation(&app_handle, generation);
+    thread::spawn(move || loop {
+        let generation = current_generation(&app_handle);
+        debug!("Running startup warmup generation {}", generation);
+        run_generation(&app_handle, generation);
 
-            let state = app_handle.state::<StartupWarmupState>();
-            let latest_generation = state.requested_generation.load(Ordering::SeqCst);
-            if latest_generation != generation {
-                continue;
-            }
+        let state = app_handle.state::<StartupWarmupState>();
+        let latest_generation = state.requested_generation.load(Ordering::SeqCst);
+        if latest_generation != generation {
+            continue;
+        }
 
-            state.running.store(false, Ordering::SeqCst);
+        state.running.store(false, Ordering::SeqCst);
 
-            if state.requested_generation.load(Ordering::SeqCst) == generation {
-                break;
-            }
+        if state.requested_generation.load(Ordering::SeqCst) == generation {
+            break;
+        }
 
-            if state
-                .running
-                .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-                .is_err()
-            {
-                break;
-            }
+        if state
+            .running
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            break;
         }
     });
 }
@@ -455,7 +459,10 @@ pub fn ensure_startup_warmup(app: &AppHandle, trigger: &'static str) {
     let status = immediate_status(app, &snapshot);
     let _ = set_status_if_current(app, generation, status.clone());
 
-    if matches!(status.phase, StartupWarmupPhase::Idle | StartupWarmupPhase::Ready) {
+    if matches!(
+        status.phase,
+        StartupWarmupPhase::Idle | StartupWarmupPhase::Ready
+    ) {
         return;
     }
 

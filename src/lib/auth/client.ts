@@ -470,6 +470,8 @@ export const authClient = {
 
   async clearStoredSession() {
     cachedSession = null;
+    cachedDeviceId = null;
+    cachedRegisteredEmails = null;
     clearLegacyLocalAuth();
     await this.clearStoredToken();
 

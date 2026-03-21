@@ -600,16 +600,13 @@ impl HistoryManager {
     }
 
     /// Aggregate stats for the dashboard.
-    pub async fn get_stats(
-        &self,
-    ) -> Result<crate::commands::history::HistoryStats> {
+    pub async fn get_stats(&self) -> Result<crate::commands::history::HistoryStats> {
         let conn = self.get_connection()?;
 
-        let total_entries: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM transcription_history",
-            [],
-            |r| r.get(0),
-        )?;
+        let total_entries: i64 =
+            conn.query_row("SELECT COUNT(*) FROM transcription_history", [], |r| {
+                r.get(0)
+            })?;
 
         // Rough word count: sum of word counts over all transcription_text rows.
         let total_words: i64 = {
@@ -662,7 +659,9 @@ impl HistoryManager {
         &self,
         original_file_name: &str,
         transcription_text: &str,
-        confidence_payload: Option<&crate::transcription_confidence::TranscriptionConfidencePayload>,
+        confidence_payload: Option<
+            &crate::transcription_confidence::TranscriptionConfidencePayload,
+        >,
     ) -> Result<()> {
         let timestamp = Utc::now().timestamp();
         let title = format!("Fichier : {}", original_file_name);
@@ -767,9 +766,7 @@ mod tests {
     #[test]
     fn sanitize_recording_file_name_rejects_parent_traversal() {
         let err = HistoryManager::sanitize_recording_file_name("../secrets.wav").unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("contains invalid path components"));
+        assert!(err.to_string().contains("contains invalid path components"));
     }
 
     #[test]

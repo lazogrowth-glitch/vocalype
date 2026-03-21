@@ -515,10 +515,18 @@ pub(crate) fn validate_external_script_path(script_path: &str) -> Result<PathBuf
         return Err("External script path must be absolute".to_string());
     }
 
-    let canonical = std::fs::canonicalize(candidate)
-        .map_err(|e| format!("Failed to resolve external script path '{}': {}", script_path, e))?;
-    let metadata = std::fs::metadata(&canonical)
-        .map_err(|e| format!("Failed to read external script metadata '{}': {}", script_path, e))?;
+    let canonical = std::fs::canonicalize(candidate).map_err(|e| {
+        format!(
+            "Failed to resolve external script path '{}': {}",
+            script_path, e
+        )
+    })?;
+    let metadata = std::fs::metadata(&canonical).map_err(|e| {
+        format!(
+            "Failed to read external script metadata '{}': {}",
+            script_path, e
+        )
+    })?;
 
     if !metadata.is_file() {
         return Err("External script path must point to a file".to_string());
@@ -540,16 +548,13 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
 
     info!("Pasting via external script: {}", canonical.display());
 
-    let output = Command::new(&canonical)
-        .arg(text)
-        .output()
-        .map_err(|e| {
-            format!(
-                "Failed to execute external script '{}': {}",
-                canonical.display(),
-                e
-            )
-        })?;
+    let output = Command::new(&canonical).arg(text).output().map_err(|e| {
+        format!(
+            "Failed to execute external script '{}': {}",
+            canonical.display(),
+            e
+        )
+    })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);

@@ -164,7 +164,15 @@ Format: {:?}",
             }
 
             // keep the stream alive while we process samples
-            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, pause_flag, gain);
+            run_consumer(
+                sample_rate,
+                vad,
+                sample_rx,
+                cmd_rx,
+                level_cb,
+                pause_flag,
+                gain,
+            );
             // stream is dropped here, after run_consumer returns
         });
 

@@ -102,8 +102,7 @@ impl DictionaryManager {
         if from.is_empty() {
             return Err("Le champ 'de' ne peut pas être vide".to_string());
         }
-        let re = build_pattern(&from)
-            .ok_or_else(|| format!("Pattern invalide pour '{}'", from))?;
+        let re = build_pattern(&from).ok_or_else(|| format!("Pattern invalide pour '{}'", from))?;
         let mut compiled = self.compiled.lock().unwrap();
         if compiled
             .iter()
@@ -163,7 +162,10 @@ fn build_pattern(from: &str) -> Option<Regex> {
     // are only asserted at the outermost edges of the phrase.
     Regex::new(&format!(r"(?i)(?<!\w){}(?!\w)", escaped))
         .map_err(|e| {
-            warn!("dictionary: failed to compile pattern for '{}': {}", from, e);
+            warn!(
+                "dictionary: failed to compile pattern for '{}': {}",
+                from, e
+            );
         })
         .ok()
 }
@@ -203,8 +205,8 @@ fn load_from_file(path: &PathBuf) -> Option<Vec<DictionaryEntry>> {
 }
 
 fn save_to_file(path: &PathBuf, entries: &[DictionaryEntry]) -> Result<(), String> {
-    let content = serde_json::to_string_pretty(entries)
-        .map_err(|e| format!("Serialization error: {}", e))?;
+    let content =
+        serde_json::to_string_pretty(entries).map_err(|e| format!("Serialization error: {}", e))?;
     std::fs::write(path, content).map_err(|e| format!("Failed to write dictionary: {}", e))
 }
 
@@ -246,7 +248,10 @@ mod tests {
     #[test]
     fn basic_replacement() {
         assert_eq!(
-            apply_dictionary("vocal type is great", &[compiled("vocal type", "VocalType")]),
+            apply_dictionary(
+                "vocal type is great",
+                &[compiled("vocal type", "VocalType")]
+            ),
             "VocalType is great"
         );
     }
@@ -294,7 +299,10 @@ mod tests {
 
     #[test]
     fn empty_patterns() {
-        assert_eq!(apply_dictionary("vocal type is great", &[]), "vocal type is great");
+        assert_eq!(
+            apply_dictionary("vocal type is great", &[]),
+            "vocal type is great"
+        );
     }
 
     #[test]

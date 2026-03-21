@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from "./Tooltip";
 
 interface SettingContainerProps {
@@ -22,6 +23,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   disabled = false,
   tooltipPosition = "top",
 }) => {
+  const { t } = useTranslation();
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -59,9 +61,11 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
       <button
         type="button"
         className="flex h-[14px] w-[14px] items-center justify-center rounded-full border border-white/20 text-[9px] font-medium text-white/30 transition-colors hover:border-white/28 hover:text-white/45"
-        aria-label="More information"
+        aria-label={t("common.moreInformation", {
+          defaultValue: "More information",
+        })}
       >
-        i
+        {t("common.infoGlyph", { defaultValue: "i" })}
       </button>
       {showTooltip && (
         <Tooltip targetRef={tooltipRef} position={tooltipPosition}>

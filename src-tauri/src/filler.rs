@@ -13,15 +13,12 @@ use regex::Regex;
 
 /// Pure fillers — stripped whenever they appear as an isolated word.
 /// These are unambiguous hesitation sounds with no semantic value.
-static PURE_FILLER_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\b(euh|heu|um|uh|erm|ben|bah|hein|nan)\b").unwrap()
-});
+static PURE_FILLER_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\b(euh|heu|um|uh|erm|ben|bah|hein|nan)\b").unwrap());
 
 /// When the same word opens a sentence twice ("non non …") both instances
 /// are removed, leaving the rest. Handles false-start self-corrections.
-static DOUBLE_START_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)^(\w+)\s+\1\s+").unwrap()
-});
+static DOUBLE_START_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^(\w+)\s+\1\s+").unwrap());
 
 /// Self-correction phrases — everything before *and including* the phrase
 /// is dropped; what follows becomes the new text.
@@ -199,17 +196,11 @@ mod tests {
 
     #[test]
     fn no_cross_language_false_positive() {
-        assert_eq!(
-            clean_transcript("le the message"),
-            "le the message"
-        );
+        assert_eq!(clean_transcript("le the message"), "le the message");
     }
 
     #[test]
     fn fr_double_non_false_start() {
-        assert_eq!(
-            clean_transcript("non non c'est pas ça"),
-            "c'est pas ça"
-        );
+        assert_eq!(clean_transcript("non non c'est pas ça"), "c'est pas ça");
     }
 }

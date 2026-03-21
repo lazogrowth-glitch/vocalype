@@ -414,9 +414,9 @@ async changeLongAudioThresholdSetting(threshold: number) : Promise<Result<null, 
 /**
  * Start key recording mode
  */
-async startHandyKeysRecording(bindingId: string) : Promise<Result<null, string>> {
+async startNativeShortcutCaptureRecording(bindingId: string) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("start_handy_keys_recording", { bindingId }) };
+    return { status: "ok", data: await TAURI_INVOKE("start_native_shortcut_capture_recording", { bindingId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -425,9 +425,9 @@ async startHandyKeysRecording(bindingId: string) : Promise<Result<null, string>>
 /**
  * Stop key recording mode
  */
-async stopHandyKeysRecording() : Promise<Result<null, string>> {
+async stopNativeShortcutCaptureRecording() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("stop_handy_keys_recording") };
+    return { status: "ok", data: await TAURI_INVOKE("stop_native_shortcut_capture_recording") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -1251,7 +1251,7 @@ export type ImplementationChangeResult = { success: boolean;
  */
 reset_bindings: string[] }
 export type IntegritySnapshot = { release_build: boolean; binary_sha256: string | null; tamper_flags: string[]; executable_path: string | null }
-export type KeyboardImplementation = "tauri" | "handy_keys"
+export type KeyboardImplementation = "tauri" | "native_shortcut_capture"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LicenseRuntimeState = { state: LicenseState; reason: string | null; device_id: string | null; grant_expires_at: string | null; offline_expires_at: string | null; grace_until: string | null; entitlement_status: string | null; last_refreshed_at: string | null; integrity_anomalies: string[] }
 export type LicenseState = "online_valid" | "offline_valid" | "expired"

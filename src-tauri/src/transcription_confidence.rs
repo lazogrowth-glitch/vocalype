@@ -71,7 +71,8 @@ pub fn build_whisper_confidence_payload(
     }
 
     let overall_confidence = average_confidence(
-        words.iter()
+        words
+            .iter()
             .map(|word| word.confidence)
             .chain(segments.iter().filter_map(|segment| segment.confidence)),
     )?;

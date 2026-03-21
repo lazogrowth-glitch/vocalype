@@ -22,8 +22,7 @@ use regex::Regex;
 // ── Pre-compiled regexes ──────────────────────────────────────────────────────
 
 /// One or more spaces immediately before a punctuation character.
-static SPACE_BEFORE_PUNCT: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r" +([.!?,;:…])").unwrap());
+static SPACE_BEFORE_PUNCT: Lazy<Regex> = Lazy::new(|| Regex::new(r" +([.!?,;:…])").unwrap());
 
 /// Two or more consecutive space characters.
 static MULTI_SPACE: Lazy<Regex> = Lazy::new(|| Regex::new(r" {2,}").unwrap());
@@ -147,44 +146,29 @@ mod tests {
 
     #[test]
     fn ellipsis_char_no_extra_period() {
-        assert_eq!(
-            fix_punctuation("je sais pas…", DEFAULT),
-            "Je sais pas…"
-        );
+        assert_eq!(fix_punctuation("je sais pas…", DEFAULT), "Je sais pas…");
     }
 
     #[test]
     fn three_dot_ellipsis_no_extra_period() {
-        assert_eq!(
-            fix_punctuation("hmm...", DEFAULT),
-            "Hmm..."
-        );
+        assert_eq!(fix_punctuation("hmm...", DEFAULT), "Hmm...");
     }
 
     // ── Rule 2: remove spaces before punctuation ──────────────────────────────
 
     #[test]
     fn removes_space_before_period() {
-        assert_eq!(
-            fix_punctuation("bonjour .", DEFAULT),
-            "Bonjour."
-        );
+        assert_eq!(fix_punctuation("bonjour .", DEFAULT), "Bonjour.");
     }
 
     #[test]
     fn removes_space_before_exclamation() {
-        assert_eq!(
-            fix_punctuation("merci !", DEFAULT),
-            "Merci!"
-        );
+        assert_eq!(fix_punctuation("merci !", DEFAULT), "Merci!");
     }
 
     #[test]
     fn removes_multiple_spaces_before_comma() {
-        assert_eq!(
-            fix_punctuation("oui , bien sûr", DEFAULT),
-            "Oui, bien sûr."
-        );
+        assert_eq!(fix_punctuation("oui , bien sûr", DEFAULT), "Oui, bien sûr.");
     }
 
     // ── Chat context: no rule 3 or 4, rule 2 still fires ──────────────────────
@@ -192,28 +176,19 @@ mod tests {
     #[test]
     fn chat_no_period_no_capitalize() {
         // User spec: "ouais c'est bon" → "ouais c'est bon"
-        assert_eq!(
-            fix_punctuation("ouais c'est bon", CHAT),
-            "ouais c'est bon"
-        );
+        assert_eq!(fix_punctuation("ouais c'est bon", CHAT), "ouais c'est bon");
     }
 
     #[test]
     fn chat_cleans_space_before_punct() {
         // Rule 2 still applies in Chat.
-        assert_eq!(
-            fix_punctuation("ok !", CHAT),
-            "ok!"
-        );
+        assert_eq!(fix_punctuation("ok !", CHAT), "ok!");
     }
 
     #[test]
     fn chat_no_period_even_without_terminal_punct() {
         // No period forced in Chat.
-        assert_eq!(
-            fix_punctuation("salut c'est moi", CHAT),
-            "salut c'est moi"
-        );
+        assert_eq!(fix_punctuation("salut c'est moi", CHAT), "salut c'est moi");
     }
 
     // ── Code context: full bypass ──────────────────────────────────────────────
@@ -230,10 +205,7 @@ mod tests {
     #[test]
     fn code_bypass_preserves_leading_spaces() {
         // Indented code — spaces must not be trimmed.
-        assert_eq!(
-            fix_punctuation("    return nil", CODE),
-            "    return nil"
-        );
+        assert_eq!(fix_punctuation("    return nil", CODE), "    return nil");
     }
 
     // ── Rule 1: collapse double spaces + trim ─────────────────────────────────
@@ -260,19 +232,13 @@ mod tests {
 
     #[test]
     fn already_capitalized_stays_capitalized() {
-        assert_eq!(
-            fix_punctuation("Bonjour.", DEFAULT),
-            "Bonjour."
-        );
+        assert_eq!(fix_punctuation("Bonjour.", DEFAULT), "Bonjour.");
     }
 
     #[test]
     fn capitalizes_accented_start() {
         // é → É
-        assert_eq!(
-            fix_punctuation("écoutez bien", DEFAULT),
-            "Écoutez bien."
-        );
+        assert_eq!(fix_punctuation("écoutez bien", DEFAULT), "Écoutez bien.");
     }
 
     // ── Email context (same rules as DEFAULT) ─────────────────────────────────
@@ -307,9 +273,6 @@ mod tests {
     fn number_ending_gets_period() {
         // "version 3.0" already ends with '0', no terminal punct → period added.
         // Note: the '.' in "3.0" is mid-word, not terminal.
-        assert_eq!(
-            fix_punctuation("version 3.0", DEFAULT),
-            "Version 3.0."
-        );
+        assert_eq!(fix_punctuation("version 3.0", DEFAULT), "Version 3.0.");
     }
 }

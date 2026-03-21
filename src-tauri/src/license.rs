@@ -55,9 +55,11 @@ fn parse_utc(value: &str) -> Option<DateTime<Utc>> {
 fn load_license_bundle() -> Result<Option<StoredLicenseBundle>, String> {
     let raw = crate::secret_store::get_license_bundle()?;
     match raw {
-        Some(value) if !value.trim().is_empty() => serde_json::from_str::<StoredLicenseBundle>(&value)
-            .map(Some)
-            .map_err(|err| format!("Failed to parse stored license bundle: {}", err)),
+        Some(value) if !value.trim().is_empty() => {
+            serde_json::from_str::<StoredLicenseBundle>(&value)
+                .map(Some)
+                .map_err(|err| format!("Failed to parse stored license bundle: {}", err))
+        }
         _ => Ok(None),
     }
 }
@@ -111,7 +113,9 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
             let current_hash = integrity_snapshot.binary_sha256.as_deref();
             if current_hash != Some(bound_hash) {
                 return Ok(LicenseRuntimeState {
-                    reason: Some("Binary integrity changed since premium license was issued".to_string()),
+                    reason: Some(
+                        "Binary integrity changed since premium license was issued".to_string(),
+                    ),
                     ..base
                 });
             }
@@ -213,11 +217,9 @@ pub fn current_model_unlock_key(app: &AppHandle) -> Result<String, String> {
     match state.state {
         LicenseState::OnlineValid | LicenseState::OfflineValid => {}
         LicenseState::Expired => {
-            return Err(
-                state
-                    .reason
-                    .unwrap_or_else(|| "No valid premium license".to_string()),
-            )
+            return Err(state
+                .reason
+                .unwrap_or_else(|| "No valid premium license".to_string()))
         }
     }
 

@@ -41,17 +41,13 @@ pub fn update_dictionary_entry(
 
 #[tauri::command]
 #[specta::specta]
-pub fn clear_dictionary(
-    dictionary: State<'_, Arc<DictionaryManager>>,
-) -> Result<(), String> {
+pub fn clear_dictionary(dictionary: State<'_, Arc<DictionaryManager>>) -> Result<(), String> {
     dictionary.clear()
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn export_dictionary(
-    dictionary: State<'_, Arc<DictionaryManager>>,
-) -> Result<String, String> {
+pub fn export_dictionary(dictionary: State<'_, Arc<DictionaryManager>>) -> Result<String, String> {
     let entries = dictionary.entries();
     serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())
 }

@@ -2,7 +2,7 @@
 
 A Rust library for audio transcription supporting multiple engines including Whisper, Parakeet, Moonshine, SenseVoice, and GigaAM.
 
-This library was extracted from the [Handy](https://github.com/cjpais/handy) project to help other developers integrate transcription capabilities into their applications. We hope to support additional ASR models in the future and may expand to include features like microphone input and real-time transcription.
+This library was extracted from the [VocalType](https://github.com/lazogrowth-glitch/vocaltype) project to help other developers integrate transcription capabilities into their applications. We hope to support additional ASR models in the future and may expand to include features like microphone input and real-time transcription.
 
 ## Features
 
@@ -116,13 +116,13 @@ SenseVoice models are available from [sherpa-onnx](https://github.com/k2-fsa/she
 ## Model Downloads
 
 - **Parakeet**:
-  - Pre-packaged int8 quantized model: https://blob.handy.computer/parakeet-v3-int8.tar.gz
+  - Pre-packaged int8 quantized model: https://<model-asset-host>/parakeet-v3-int8.tar.gz
   - Original model files: https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/tree/main
 - **Whisper**: https://huggingface.co/ggerganov/whisper.cpp/tree/main
 - **Whisperfile Binary**: https://github.com/mozilla-ai/llamafile/releases/download/0.9.3/whisperfile-0.9.3
 - **Moonshine**: https://huggingface.co/UsefulSensors/moonshine/tree/main/onnx/merged
 - **SenseVoice**:
-  - Pre-packaged int8 quantized model: https://blob.handy.computer/sense-voice-int8.tar.gz
+  - Pre-packaged int8 quantized model: https://<model-asset-host>/sense-voice-int8.tar.gz
   - Additional models: https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models
 - **GigaAM**: https://huggingface.co/istupakov/gigaam-v3-onnx/tree/main
 
@@ -207,7 +207,7 @@ println!("{}", result.text);
    **For Parakeet:**
    ```bash
    cd models
-   wget https://blob.handy.computer/parakeet-v3-int8.tar.gz
+   wget https://<model-asset-host>/parakeet-v3-int8.tar.gz
    tar -xzf parakeet-v3-int8.tar.gz
    rm parakeet-v3-int8.tar.gz
    cd ..
@@ -216,7 +216,7 @@ println!("{}", result.text);
    **For Whisper:**
    ```bash
    cd models
-   wget https://blob.handy.computer/whisper-medium-q4_1.bin
+   wget https://<model-asset-host>/whisper-medium-q4_1.bin
    cd ..
    ```
 
@@ -231,7 +231,7 @@ println!("{}", result.text);
    Then download a Whisper GGML model:
    ```bash
    cd models
-   wget https://blob.handy.computer/ggml-small.bin
+   wget https://<model-asset-host>/ggml-small.bin
    cd ..
    ```
 
@@ -254,7 +254,7 @@ println!("{}", result.text);
    **For SenseVoice:**
    ```bash
    cd models
-   wget https://blob.handy.computer/sense-voice-int8.tar.gz
+   wget https://<model-asset-host>/sense-voice-int8.tar.gz
    tar -xzf sense-voice-int8.tar.gz
    rm sense-voice-int8.tar.gz
    cd ..
@@ -354,7 +354,7 @@ chmod +x models/whisperfile-0.9.3
 
 # Download a model
 cd models
-wget https://blob.handy.computer/ggml-small.bin
+wget https://<model-asset-host>/ggml-small.bin
 cd ..
 
 # Run tests
@@ -381,7 +381,7 @@ cargo test --features moonshine
 Download the int8 quantized Parakeet model:
 ```bash
 cd models
-wget https://blob.handy.computer/parakeet-v3-int8.tar.gz
+wget https://<model-asset-host>/parakeet-v3-int8.tar.gz
 tar -xzf parakeet-v3-int8.tar.gz
 rm parakeet-v3-int8.tar.gz
 cd ..
@@ -395,7 +395,7 @@ cargo test --features parakeet
 Download the SenseVoice int8 model:
 ```bash
 cd models
-wget https://blob.handy.computer/sense-voice-int8.tar.gz
+wget https://<model-asset-host>/sense-voice-int8.tar.gz
 tar -xzf sense-voice-int8.tar.gz
 rm sense-voice-int8.tar.gz
 cd ..

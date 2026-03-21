@@ -118,9 +118,9 @@ fn normalized_words(text: &str) -> Vec<String> {
 fn stop_words() -> &'static [&'static str] {
     &[
         "the", "and", "for", "that", "this", "with", "have", "from", "vous", "pour", "avec",
-        "dans", "mais", "plus", "cela", "comme", "est", "une", "des", "les", "que", "qui",
-        "sur", "pas", "par", "and", "you", "your", "are", "was", "were", "they", "them",
-        "then", "than", "just", "what", "when", "where",
+        "dans", "mais", "plus", "cela", "comme", "est", "une", "des", "les", "que", "qui", "sur",
+        "pas", "par", "and", "you", "your", "are", "was", "were", "they", "them", "then", "than",
+        "just", "what", "when", "where",
     ]
 }
 
@@ -168,7 +168,11 @@ fn extract_preferred_terms(text: &str, custom_words: &[String]) -> Vec<String> {
         .collect()
 }
 
-fn model_bounds(model_id: &str, base_chunk_seconds: u8, base_overlap_ms: u16) -> (u8, u8, u16, u16) {
+fn model_bounds(
+    model_id: &str,
+    base_chunk_seconds: u8,
+    base_overlap_ms: u16,
+) -> (u8, u8, u16, u16) {
     match model_id {
         "small" => (8, 14, 400, 900),
         "medium" => (6, 10, 400, 900),

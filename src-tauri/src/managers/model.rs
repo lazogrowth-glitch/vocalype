@@ -1,3 +1,7 @@
+use crate::managers::model_catalog;
+use crate::model_ids::{
+    PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
+};
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
@@ -16,12 +20,8 @@ use std::time::{Duration, Instant};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
 
-const MODEL_ASSET_BASE_URL: &str = "https://blob.handy.computer";
 const SEALED_MODEL_EXTENSION: &str = ".vtenc";
 const SEALED_ARCHIVE_EXTENSION: &str = ".vtbundle";
-const PARAKEET_V3_LEGACY_ID: &str = "parakeet-tdt-0.6b-v3";
-const PARAKEET_V3_ENGLISH_ID: &str = "parakeet-tdt-0.6b-v3-english";
-const PARAKEET_V3_MULTILINGUAL_ID: &str = "parakeet-tdt-0.6b-v3-multilingual";
 const PARAKEET_V3_REQUIRED_FILES: &[(&str, u64)] = &[
     ("encoder-model.int8.onnx", 100_000_000),
     ("decoder_joint-model.int8.onnx", 1_000_000),
@@ -131,7 +131,10 @@ impl ModelManager {
         Ok(())
     }
 
-    fn extract_archive_safely(archive: &mut Archive<GzDecoder<File>>, destination: &Path) -> Result<()> {
+    fn extract_archive_safely(
+        archive: &mut Archive<GzDecoder<File>>,
+        destination: &Path,
+    ) -> Result<()> {
         for entry_result in archive.entries()? {
             let mut entry = entry_result?;
             let entry_path = entry.path()?.into_owned();
@@ -144,10 +147,7 @@ impl ModelManager {
                 .components()
                 .all(|component| matches!(component, Component::Normal(_)))
             {
-                anyhow::bail!(
-                    "archive contains an unsafe path '{}'",
-                    entry_path.display()
-                );
+                anyhow::bail!("archive contains an unsafe path '{}'", entry_path.display());
             }
 
             let entry_type = entry.header().entry_type();
@@ -257,457 +257,7 @@ impl ModelManager {
         }
         fs::create_dir_all(&runtime_cache_dir)?;
 
-        let mut available_models = HashMap::new();
-
-        // Whisper supported languages (99 languages from tokenizer)
-        // Including zh-Hans and zh-Hant variants to match frontend language codes
-        let whisper_languages: Vec<String> = vec![
-            "en", "zh", "zh-Hans", "zh-Hant", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl",
-            "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs",
-            "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy",
-            "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is",
-            "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo",
-            "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht",
-            "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln",
-            "ha", "ba", "jw", "su", "yue",
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
-
-        // TODO this should be read from a JSON file or something..
-        available_models.insert(
-            "small".to_string(),
-            ModelInfo {
-                id: "small".to_string(),
-                name: "Whisper Small".to_string(),
-                description: "Fastest Whisper option for weaker machines. Broad language support with a lighter footprint than the larger Whisper builds."
-                    .to_string(),
-                filename: "ggml-small.bin".to_string(),
-                url: Some(format!("{}/ggml-small.bin", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"2d0c354f4c52214378fd483d072e31f7-47\"".to_string()),
-                size_mb: 487,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::Whisper,
-                accuracy_score: 0.79,
-                speed_score: 0.83,
-                supports_translation: true,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        // Add downloadable models
-        available_models.insert(
-            "medium".to_string(),
-            ModelInfo {
-                id: "medium".to_string(),
-                name: "Whisper Medium".to_string(),
-                description: "Balanced multilingual Whisper choice. Usually a better quality-speed tradeoff than Turbo on weaker PCs."
-                    .to_string(),
-                filename: "whisper-medium-q4_1.bin".to_string(),
-                url: Some(format!("{}/whisper-medium-q4_1.bin", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"f3487c328e59a6682ca2d62a73bfdc93-47\"".to_string()),
-                size_mb: 492,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::Whisper,
-                accuracy_score: 0.85,
-                speed_score: 0.67,
-                supports_translation: true,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            "turbo".to_string(),
-            ModelInfo {
-                id: "turbo".to_string(),
-                name: "Whisper Turbo".to_string(),
-                description:
-                    "Heavy Whisper v3 Turbo build. Strong quality, but real speed depends heavily on the machine and can feel slow on weaker PCs."
-                        .to_string(),
-                filename: "ggml-large-v3-turbo.bin".to_string(),
-                url: Some(format!("{}/ggml-large-v3-turbo.bin", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"9b323017f695306d9b3ae14c81ae9f53-155\"".to_string()),
-                size_mb: 1600,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::Whisper,
-                accuracy_score: 0.90,
-                speed_score: 0.46,
-                supports_translation: false, // Turbo doesn't support translation
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            "large".to_string(),
-            ModelInfo {
-                id: "large".to_string(),
-                name: "Whisper Large v3".to_string(),
-                description:
-                    "Maximum offline accuracy. Heavy model best reserved for difficult audio, accents, or quality-first multilingual dictation."
-                        .to_string(),
-                filename: "ggml-large-v3-q5_0.bin".to_string(),
-                url: Some(format!("{}/ggml-large-v3-q5_0.bin", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"801554aa60d64311c5cce767324e1ccf-104\"".to_string()),
-                size_mb: 1100,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::Whisper,
-                accuracy_score: 0.95,
-                speed_score: 0.34,
-                supports_translation: true,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            "breeze-asr".to_string(),
-            ModelInfo {
-                id: "breeze-asr".to_string(),
-                name: "Breeze ASR".to_string(),
-                description:
-                    "Specialized choice for Taiwanese Mandarin and Mandarin-heavy code-switching. Not a general-purpose default."
-                        .to_string(),
-                filename: "breeze-asr-q5_k.bin".to_string(),
-                url: Some(format!("{}/breeze-asr-q5_k.bin", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"8f6ecacc11a66c526f45ba053718f32f-104\"".to_string()),
-                size_mb: 1080,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::Whisper,
-                accuracy_score: 0.89,
-                speed_score: 0.45,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        // Add NVIDIA Parakeet models (directory-based)
-        available_models.insert(
-            "parakeet-tdt-0.6b-v2".to_string(),
-            ModelInfo {
-                id: "parakeet-tdt-0.6b-v2".to_string(),
-                name: "Parakeet V2".to_string(),
-                description:
-                    "Top English-only speed. NVIDIA NeMo model with near-instant transcription. Best pick for English-only dictation."
-                        .to_string(),
-                filename: "parakeet-tdt-0.6b-v2-int8".to_string(),
-                url: Some(format!("{}/parakeet-v2-int8.tar.gz", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"75e6c93ded6e4ad29ea5259a3ec33a26-46\"".to_string()),
-                size_mb: 473,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::Parakeet,
-                accuracy_score: 0.85,
-                speed_score: 0.95,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        // Parakeet V3 supported languages (25 EU languages + Russian/Ukrainian):
-        // bg, hr, cs, da, nl, en, et, fi, fr, de, el, hu, it, lv, lt, mt, pl, pt, ro, sk, sl, es, sv, ru, uk
-        let parakeet_v3_languages: Vec<String> = vec![
-            "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv",
-            "lt", "mt", "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk",
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
-
-        available_models.insert(
-            PARAKEET_V3_ENGLISH_ID.to_string(),
-            ModelInfo {
-                id: PARAKEET_V3_ENGLISH_ID.to_string(),
-                name: "Parakeet V3 English".to_string(),
-                description:
-                    "Fastest English-first profile in the app. Tuned for very high speed, with an NPU-friendly path on supported Copilot+ style PCs."
-                        .to_string(),
-                filename: "parakeet-tdt-0.6b-v3-int8".to_string(),
-                url: Some(format!("{}/parakeet-v3-int8.tar.gz", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"d7a7b2d3f0780d1e0df427e64cff1b32-46\"".to_string()),
-                size_mb: 478,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::Parakeet,
-                accuracy_score: 0.88,
-                speed_score: 0.99,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            PARAKEET_V3_MULTILINGUAL_ID.to_string(),
-            ModelInfo {
-                id: PARAKEET_V3_MULTILINGUAL_ID.to_string(),
-                name: "Parakeet V3 Multilingual".to_string(),
-                description:
-                    "Fast multilingual Parakeet profile tuned for French and other non-English dictation, with an NPU-friendly path on supported Copilot+ style PCs."
-                        .to_string(),
-                filename: "parakeet-tdt-0.6b-v3-int8".to_string(),
-                url: Some(format!("{}/parakeet-v3-int8.tar.gz", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"d7a7b2d3f0780d1e0df427e64cff1b32-46\"".to_string()),
-                size_mb: 478,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::Parakeet,
-                accuracy_score: 0.89,
-                speed_score: 0.97,
-                supports_translation: false,
-                is_recommended: true,
-                supported_languages: parakeet_v3_languages.clone(),
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        // Legacy alias retained for settings/backward-compatibility only.
-        // It is intentionally hidden from get_available_models().
-        available_models.insert(
-            PARAKEET_V3_LEGACY_ID.to_string(),
-            ModelInfo {
-                id: PARAKEET_V3_LEGACY_ID.to_string(),
-                name: "Parakeet V3".to_string(),
-                description:
-                    "Legacy alias for Parakeet V3. Use Parakeet V3 English or Parakeet V3 Multilingual."
-                        .to_string(),
-                filename: "parakeet-tdt-0.6b-v3-int8".to_string(),
-                url: Some(format!("{}/parakeet-v3-int8.tar.gz", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"d7a7b2d3f0780d1e0df427e64cff1b32-46\"".to_string()),
-                size_mb: 478,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::Parakeet,
-                accuracy_score: 0.0,
-                speed_score: 0.0,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: parakeet_v3_languages,
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            "moonshine-base".to_string(),
-            ModelInfo {
-                id: "moonshine-base".to_string(),
-                name: "Moonshine Base".to_string(),
-                description:
-                    "Ultra-lightweight English model at 58MB. Near-instant transcription with solid accuracy. Great for quick notes."
-                        .to_string(),
-                filename: "moonshine-base".to_string(),
-                url: Some(format!("{}/moonshine-base.tar.gz", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"eab43e82c3091b5876b06e524d1d699c\"".to_string()),
-                size_mb: 58,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::Moonshine,
-                accuracy_score: 0.72,
-                speed_score: 0.90,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            "moonshine-tiny-streaming-en".to_string(),
-            ModelInfo {
-                id: "moonshine-tiny-streaming-en".to_string(),
-                name: "Moonshine V2 Tiny".to_string(),
-                description:
-                    "Fastest English model available at only 31MB. Sub-100ms transcription. Accuracy is reduced — best for short commands and quick notes."
-                        .to_string(),
-                filename: "moonshine-tiny-streaming-en".to_string(),
-                url: Some(format!(
-                    "{}/moonshine-tiny-streaming-en.tar.gz",
-                    MODEL_ASSET_BASE_URL
-                )),
-                expected_etag: Some("\"f39cd7754edc9565623c362b96046b4e\"".to_string()),
-                size_mb: 31,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::MoonshineStreaming,
-                accuracy_score: 0.66,
-                speed_score: 0.99,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            "moonshine-small-streaming-en".to_string(),
-            ModelInfo {
-                id: "moonshine-small-streaming-en".to_string(),
-                name: "Moonshine V2 Small".to_string(),
-                description:
-                    "Fast English streaming model with a good accuracy/speed balance. Recommended for English-first users who want instant results."
-                        .to_string(),
-                filename: "moonshine-small-streaming-en".to_string(),
-                url: Some(format!(
-                    "{}/moonshine-small-streaming-en.tar.gz",
-                    MODEL_ASSET_BASE_URL
-                )),
-                expected_etag: Some("\"6c7847d0051f9e8d5aca42b7d40ea564\"".to_string()),
-                size_mb: 100,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::MoonshineStreaming,
-                accuracy_score: 0.74,
-                speed_score: 0.95,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            "moonshine-medium-streaming-en".to_string(),
-            ModelInfo {
-                id: "moonshine-medium-streaming-en".to_string(),
-                name: "Moonshine V2 Medium".to_string(),
-                description:
-                    "Best accuracy in the Moonshine family for English. Fast streaming with near-Parakeet quality. Great for longer dictation in English."
-                        .to_string(),
-                filename: "moonshine-medium-streaming-en".to_string(),
-                url: Some(format!(
-                    "{}/moonshine-medium-streaming-en.tar.gz",
-                    MODEL_ASSET_BASE_URL
-                )),
-                expected_etag: Some("\"e9978755cccaa013155922c157587a16-20\"".to_string()),
-                size_mb: 192,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::MoonshineStreaming,
-                accuracy_score: 0.80,
-                speed_score: 0.90,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        // SenseVoice supported languages
-        let sense_voice_languages: Vec<String> =
-            vec!["zh", "zh-Hans", "zh-Hant", "en", "yue", "ja", "ko"]
-                .into_iter()
-                .map(String::from)
-                .collect();
-
-        available_models.insert(
-            "sense-voice-int8".to_string(),
-            ModelInfo {
-                id: "sense-voice-int8".to_string(),
-                name: "SenseVoice".to_string(),
-                description:
-                    "Best-in-class for Chinese, Japanese, Korean and Cantonese at only 160MB. State-of-the-art accuracy for Asian languages with very fast inference."
-                        .to_string(),
-                filename: "sense-voice-int8".to_string(),
-                url: Some(format!("{}/sense-voice-int8.tar.gz", MODEL_ASSET_BASE_URL)),
-                expected_etag: Some("\"910e819ffba40d39f515112d174452b6-16\"".to_string()),
-                size_mb: 160,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::SenseVoice,
-                accuracy_score: 0.88,
-                speed_score: 0.86,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: sense_voice_languages,
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        available_models.insert(
-            "gemini-api".to_string(),
-            ModelInfo {
-                id: "gemini-api".to_string(),
-                name: "Gemini API".to_string(),
-                description:
-                    "Cloud transcription via Google Gemini. Highest accuracy available, supports all languages. Requires internet connection and API key."
-                        .to_string(),
-                filename: "".to_string(),
-                url: None,
-                expected_etag: None,
-                size_mb: 0,
-                is_downloaded: true,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::GeminiApi,
-                accuracy_score: 0.97,
-                speed_score: 0.75,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                is_custom: false,
-                requires_license_key: false,
-            },
-        );
+        let mut available_models = model_catalog::load_catalog(app_handle)?;
 
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
@@ -876,13 +426,17 @@ impl ModelManager {
             return Ok(());
         }
 
-        let unlock_key = crate::license::current_model_unlock_key(&self.app_handle)
-            .map_err(|err| anyhow::anyhow!("Cannot seal model without valid license key: {}", err))?;
+        let unlock_key =
+            crate::license::current_model_unlock_key(&self.app_handle).map_err(|err| {
+                anyhow::anyhow!("Cannot seal model without valid license key: {}", err)
+            })?;
         let temp_sealed_path = sealed_path.with_extension("tmpseal");
 
         if model_info.is_directory {
             self.validate_directory_model_contents(model_id, &plain_path)?;
-            let temp_archive_path = self.models_dir.join(format!("{}.seal.tar.gz", &model_info.filename));
+            let temp_archive_path = self
+                .models_dir
+                .join(format!("{}.seal.tar.gz", &model_info.filename));
             self.write_directory_archive(&plain_path, &temp_archive_path)?;
             crate::model_crypto::encrypt_file(&unlock_key, &temp_archive_path, &temp_sealed_path)?;
             let _ = fs::remove_file(&temp_archive_path);
@@ -897,7 +451,11 @@ impl ModelManager {
         Ok(())
     }
 
-    fn prepare_runtime_model_path(&self, model_id: &str, model_info: &ModelInfo) -> Result<PathBuf> {
+    fn prepare_runtime_model_path(
+        &self,
+        model_id: &str,
+        model_info: &ModelInfo,
+    ) -> Result<PathBuf> {
         if !Self::model_requires_sealing(model_info) {
             let model_path = self.models_dir.join(&model_info.filename);
             if model_info.is_directory {
@@ -922,7 +480,10 @@ impl ModelManager {
 
         if runtime_path.exists() {
             if model_info.is_directory {
-                if self.validate_directory_model_contents(model_id, &runtime_path).is_ok() {
+                if self
+                    .validate_directory_model_contents(model_id, &runtime_path)
+                    .is_ok()
+                {
                     return Ok(runtime_path);
                 }
                 let _ = fs::remove_dir_all(&runtime_path);
@@ -936,7 +497,9 @@ impl ModelManager {
         }
 
         if model_info.is_directory {
-            let temp_archive_path = self.runtime_cache_dir.join(format!("{}.runtime.tar.gz", &model_info.filename));
+            let temp_archive_path = self
+                .runtime_cache_dir
+                .join(format!("{}.runtime.tar.gz", &model_info.filename));
             crate::model_crypto::decrypt_file(&unlock_key, &sealed_path, &temp_archive_path)?;
             let temp_extract_root = self
                 .runtime_cache_dir

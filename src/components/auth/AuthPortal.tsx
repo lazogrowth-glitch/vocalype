@@ -486,10 +486,11 @@ export const AuthPortal = ({
                       onSubmit={handleChangePassword}
                     >
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                        <label htmlFor="change-old-pwd" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                           {t("auth.oldPassword")}
                         </label>
                         <input
+                          id="change-old-pwd"
                           autoComplete="current-password"
                           className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                           onChange={(e) => setOldPwd(e.target.value)}
@@ -500,10 +501,11 @@ export const AuthPortal = ({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                        <label htmlFor="change-new-pwd" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                           {t("auth.newPassword")}
                         </label>
                         <input
+                          id="change-new-pwd"
                           autoComplete="new-password"
                           className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                           onChange={(e) => setNewPwd(e.target.value)}
@@ -514,10 +516,11 @@ export const AuthPortal = ({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                        <label htmlFor="change-confirm-pwd" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                           {t("auth.confirmPassword")}
                         </label>
                         <input
+                          id="change-confirm-pwd"
                           autoComplete="new-password"
                           className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                           onChange={(e) => setConfirmPwd(e.target.value)}
@@ -580,10 +583,11 @@ export const AuthPortal = ({
                 ) : forgotStep === "email" ? (
                   <form className="space-y-4" onSubmit={handleForgotSendCode}>
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                      <label htmlFor="forgot-email" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                         {t("auth.fields.email")}
                       </label>
                       <input
+                        id="forgot-email"
                         autoComplete="email"
                         className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                         onChange={(e) => setEmail(e.target.value)}
@@ -627,10 +631,11 @@ export const AuthPortal = ({
                     </p>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                      <label htmlFor="forgot-code" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                         {t("auth.verificationCode")}
                       </label>
                       <input
+                        id="forgot-code"
                         className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                         inputMode="numeric"
                         maxLength={6}
@@ -642,10 +647,11 @@ export const AuthPortal = ({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                      <label htmlFor="forgot-new-pwd" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                         {t("auth.newPassword")}
                       </label>
                       <input
+                        id="forgot-new-pwd"
                         autoComplete="new-password"
                         className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                         onChange={(e) => setForgotNewPwd(e.target.value)}
@@ -657,10 +663,11 @@ export const AuthPortal = ({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                      <label htmlFor="forgot-confirm-pwd" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                         {t("auth.confirmPassword")}
                       </label>
                       <input
+                        id="forgot-confirm-pwd"
                         autoComplete="new-password"
                         className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                         onChange={(e) => setForgotConfirmPwd(e.target.value)}
@@ -703,10 +710,11 @@ export const AuthPortal = ({
               <form className="space-y-4" onSubmit={handleSubmit}>
                 {mode === "register" ? (
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                    <label htmlFor="auth-name" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                       {t("auth.fields.name")}
                     </label>
                     <input
+                      id="auth-name"
                       className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                       onChange={(event) => setName(event.target.value)}
                       placeholder={t("auth.fields.namePlaceholder")}
@@ -716,10 +724,11 @@ export const AuthPortal = ({
                 ) : null}
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                  <label htmlFor="auth-email" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                     {t("auth.fields.email")}
                   </label>
                   <input
+                    id="auth-email"
                     autoComplete="email"
                     className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-text outline-none transition placeholder:text-text/30 focus:border-logo-primary/60"
                     onChange={(event) => setEmail(event.target.value)}
@@ -731,10 +740,11 @@ export const AuthPortal = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
+                  <label htmlFor="auth-password" className="text-xs font-semibold uppercase tracking-[0.22em] text-text/55">
                     {t("auth.fields.password")}
                   </label>
                   <input
+                    id="auth-password"
                     autoComplete={
                       mode === "register" ? "new-password" : "current-password"
                     }

@@ -88,7 +88,7 @@ flate2 = "1.0"
 sysinfo = "0.37"
 transcribe-rs = { version = "0.2.5", features = ["whisper", "parakeet", "moonshine", "sense_voice"] }
 parakeet-rs = "0.2.0"
-handy-keys = "0.2.1"
+native-shortcut-capture-backend = { package = "handy-keys", version = "0.2.1" }
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"

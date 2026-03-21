@@ -1,12 +1,15 @@
 use crate::adaptive_runtime::{
-    derive_machine_status, get_calibration_states, CalibrationStatusSnapshot,
-    MachineStatusSnapshot,
+    derive_machine_status, get_calibration_states, CalibrationStatusSnapshot, MachineStatusSnapshot,
 };
-use crate::context_detector::{detect_current_app_context, ActiveAppContextState, AppTranscriptionContext};
+use crate::context_detector::{
+    detect_current_app_context, ActiveAppContextState, AppTranscriptionContext,
+};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AdaptiveMachineProfile};
-use crate::voice_profile::{current_runtime_adjustment, current_voice_profile, VoiceProfile, VoiceRuntimeAdjustment};
+use crate::voice_profile::{
+    current_runtime_adjustment, current_voice_profile, VoiceProfile, VoiceRuntimeAdjustment,
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::VecDeque;

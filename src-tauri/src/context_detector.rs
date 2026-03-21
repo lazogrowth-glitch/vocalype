@@ -95,7 +95,8 @@ impl ActiveAppContextSnapshot {
 
     pub fn set_active_context(&mut self, binding_id: &str, mut context: AppTranscriptionContext) {
         self.apply_overrides(&mut context);
-        self.active_by_binding.insert(binding_id.to_string(), context);
+        self.active_by_binding
+            .insert(binding_id.to_string(), context);
     }
 
     pub fn clear_active_context(&mut self, binding_id: &str) {
@@ -314,7 +315,8 @@ pub fn refine_browser_category(window_title: &str) -> Option<AppContextCategory>
         || t.ends_with(":3000")
         || t.ends_with(":8080")
         || t.ends_with(":5173") // vite
-        || t.ends_with(":4321") // astro
+        || t.ends_with(":4321")
+    // astro
     {
         return Some(AppContextCategory::Code);
     }
@@ -368,11 +370,8 @@ pub fn detect_current_app_context() -> AppTranscriptionContext {
             return AppTranscriptionContext::unknown(None, window_title);
         }
 
-        let process_handle = match OpenProcess(
-            PROCESS_QUERY_LIMITED_INFORMATION,
-            false,
-            process_id,
-        ) {
+        let process_handle = match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process_id)
+        {
             Ok(handle) => handle,
             Err(_) => return AppTranscriptionContext::unknown(None, window_title),
         };
@@ -434,14 +433,32 @@ mod tests {
     #[test]
     fn classifies_known_windows_process_names() {
         assert_eq!(classify_process_name("code.exe"), AppContextCategory::Code);
-        assert_eq!(classify_process_name("cursor.exe"), AppContextCategory::Code);
+        assert_eq!(
+            classify_process_name("cursor.exe"),
+            AppContextCategory::Code
+        );
         assert_eq!(classify_process_name("wt.exe"), AppContextCategory::Code);
-        assert_eq!(classify_process_name("outlook.exe"), AppContextCategory::Email);
+        assert_eq!(
+            classify_process_name("outlook.exe"),
+            AppContextCategory::Email
+        );
         assert_eq!(classify_process_name("slack.exe"), AppContextCategory::Chat);
-        assert_eq!(classify_process_name("obsidian.exe"), AppContextCategory::Notes);
-        assert_eq!(classify_process_name("notion.exe"), AppContextCategory::Notes);
-        assert_eq!(classify_process_name("winword.exe"), AppContextCategory::Document);
-        assert_eq!(classify_process_name("firefox.exe"), AppContextCategory::Browser);
+        assert_eq!(
+            classify_process_name("obsidian.exe"),
+            AppContextCategory::Notes
+        );
+        assert_eq!(
+            classify_process_name("notion.exe"),
+            AppContextCategory::Notes
+        );
+        assert_eq!(
+            classify_process_name("winword.exe"),
+            AppContextCategory::Document
+        );
+        assert_eq!(
+            classify_process_name("firefox.exe"),
+            AppContextCategory::Browser
+        );
     }
 
     #[test]

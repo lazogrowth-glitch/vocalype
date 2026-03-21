@@ -55,11 +55,11 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert(
         REFERER,
-        HeaderValue::from_static("https://github.com/lazogrowth-glitch/lazox"),
+        HeaderValue::from_static("https://github.com/lazogrowth-glitch/vocaltype"),
     );
     headers.insert(
         USER_AGENT,
-        HeaderValue::from_static("VocalType/1.0 (+https://github.com/lazogrowth-glitch/lazox)"),
+        HeaderValue::from_static("VocalType/1.0 (+https://github.com/lazogrowth-glitch/vocaltype)"),
     );
     headers.insert("X-Title", HeaderValue::from_static("VocalType"));
 

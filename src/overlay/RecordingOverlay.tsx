@@ -280,7 +280,9 @@ const RecordingOverlay: React.FC = () => {
       };
     };
 
-    setupEventListeners();
+    setupEventListeners().catch((error) => {
+      console.error("[RecordingOverlay] Failed to set up event listeners:", error);
+    });
     return () => {
       isMounted = false;
       cleanupListeners?.();

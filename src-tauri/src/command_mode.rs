@@ -335,10 +335,7 @@ async fn run_command_mode(app: AppHandle) {
         }
     };
 
-    info!(
-        "Command mode: LLM returned {} chars",
-        transformed.len()
-    );
+    info!("Command mode: LLM returned {} chars", transformed.len());
 
     // ── Step 8: Paste result ──────────────────────────────────────────────────
     match crate::clipboard::paste(transformed, app.clone()) {

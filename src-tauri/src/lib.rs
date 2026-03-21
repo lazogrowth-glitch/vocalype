@@ -4,14 +4,15 @@ mod adaptive_runtime;
 mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
+pub mod chunking;
 pub mod cli;
 mod clipboard;
 mod command_mode;
 mod commands;
 mod context_detector;
-pub mod gemini_client;
 mod dictionary;
 mod filler;
+pub mod gemini_client;
 mod helpers;
 mod input;
 mod integrity;
@@ -19,7 +20,9 @@ mod license;
 mod llm_client;
 mod managers;
 mod model_crypto;
+pub mod model_ids;
 mod overlay;
+mod post_processing;
 mod prompt_builder;
 mod punctuation;
 mod runtime_observability;
@@ -526,8 +529,8 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_show_tray_icon_setting,
         shortcut::change_long_audio_model_setting,
         shortcut::change_long_audio_threshold_setting,
-        shortcut::handy_keys::start_handy_keys_recording,
-        shortcut::handy_keys::stop_handy_keys_recording,
+        shortcut::native_shortcut_capture::start_native_shortcut_capture_recording,
+        shortcut::native_shortcut_capture::stop_native_shortcut_capture_recording,
         trigger_update_check,
         commands::cancel_operation,
         commands::toggle_pause,
@@ -734,7 +737,7 @@ pub fn run(cli_args: CliArgs) {
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
             app.manage(actions::ActiveActionState(std::sync::Mutex::new(None)));
-            app.manage(actions::ActiveChunkingHandle(std::sync::Mutex::new(None)));
+            app.manage(chunking::ActiveChunkingHandle(std::sync::Mutex::new(None)));
             app.manage(context_detector::ActiveAppContextState(std::sync::Mutex::new(
                 context_detector::ActiveAppContextSnapshot::default(),
             )));

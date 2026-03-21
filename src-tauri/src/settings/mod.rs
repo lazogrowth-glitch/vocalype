@@ -16,7 +16,7 @@ pub mod ui;
 
 pub use audio::{apply_voice_snippets, SoundTheme, TypingTool, VoiceSnippet};
 pub use logging::LogLevel;
-pub use recording::RecordingRetentionPeriod;
+pub use recording::{RecordingMode, RecordingRetentionPeriod};
 pub use shortcuts::ShortcutBinding;
 pub use ui::{
     AutoSubmitKey, ClipboardHandling, KeyboardImplementation, OverlayPosition, PasteMethod,
@@ -403,9 +403,18 @@ impl ModelUnloadTimeout {
     }
 }
 
+/// Increment this constant every time a migration step is added below.
+/// Old installs see `settings_version = 0` (the serde default) and are migrated
+/// forward automatically on the next launch.
+pub const CURRENT_SETTINGS_VERSION: u32 = 1;
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
+    /// Schema version used to drive forward migrations.
+    /// Never set this manually — it is managed by `migrate_settings`.
+    #[serde(default)]
+    pub settings_version: u32,
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
     pub audio_feedback: bool,
@@ -423,6 +432,12 @@ pub struct AppSettings {
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
+    /// Canonical recording mode — supersedes the `push_to_talk` and
+    /// `always_on_microphone` boolean pair. Populated from those booleans
+    /// on first load via settings migration (T11). New code should read this
+    /// field; old code continues to use the booleans until migration is done.
+    #[serde(default)]
+    pub recording_mode: RecordingMode,
     #[serde(default)]
     pub selected_microphone: Option<String>,
     #[serde(default)]
@@ -2206,6 +2221,19 @@ pub fn get_default_settings() -> AppSettings {
 }
 
 impl AppSettings {
+    /// Returns the canonical recording mode, resolving the legacy boolean pair
+    /// when `recording_mode` is still at its default value (not yet migrated).
+    ///
+    /// Use this in new code instead of reading `push_to_talk` / `always_on_microphone` directly.
+    pub fn effective_recording_mode(&self) -> RecordingMode {
+        if self.recording_mode != RecordingMode::Toggle {
+            // Already set explicitly — trust it.
+            return self.recording_mode;
+        }
+        // Derive from legacy booleans for settings that haven't been migrated yet.
+        RecordingMode::from_legacy(self.push_to_talk, self.always_on_microphone)
+    }
+
     pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
         self.post_process_providers
             .iter()
@@ -2372,6 +2400,43 @@ fn persist_settings_payload(
     }
 }
 
+// ── Settings migrations ───────────────────────────────────────────────────────
+
+impl AppSettings {
+    /// Canonical recording mode, resolved from the legacy boolean pair when
+    /// `settings_version < 1` (i.e. before migration T11 has run).
+    pub fn effective_recording_mode(&self) -> RecordingMode {
+        if self.settings_version < 1 {
+            RecordingMode::from_legacy(self.push_to_talk, self.always_on_microphone)
+        } else {
+            self.recording_mode
+        }
+    }
+}
+
+/// Apply all pending forward migrations to `settings` and bump `settings_version`.
+///
+/// Migrations are idempotent: each step only runs when
+/// `settings.settings_version < N` for the relevant version N.
+pub fn migrate_settings(settings: &mut AppSettings) {
+    // ── v0 → v1: RecordingMode canonical field ──────────────────────────────
+    // The old store had `push_to_talk: bool` and `always_on_microphone: bool`.
+    // Derive `recording_mode` from those booleans so existing user preferences
+    // are preserved, then mark the migration done.
+    if settings.settings_version < 1 {
+        settings.recording_mode =
+            RecordingMode::from_legacy(settings.push_to_talk, settings.always_on_microphone);
+        settings.settings_version = 1;
+        debug!(
+            "Settings migrated v0→v1: recording_mode = {:?}",
+            settings.recording_mode
+        );
+    }
+
+    // Add future migrations here:
+    // if settings.settings_version < 2 { ... settings.settings_version = 2; }
+}
+
 pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     // Initialize store
     let store = app
@@ -2414,6 +2479,13 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         persist_settings_payload(&store, &default_settings);
         default_settings
     };
+
+    // Run any pending schema migrations before runtime preparation.
+    let pre_migration_version = settings.settings_version;
+    migrate_settings(&mut settings);
+    if settings.settings_version != pre_migration_version {
+        persist_settings_payload(&store, &settings);
+    }
 
     if prepare_settings_for_runtime(app, &mut settings) {
         match serde_json::to_value(exportable_settings(settings.clone())) {

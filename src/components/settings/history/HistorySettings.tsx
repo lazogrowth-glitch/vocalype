@@ -21,7 +21,7 @@ import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
 import { useModelStore } from "@/stores/modelStore";
 import { ConfidenceText } from "./ConfidenceText";
-import { usePlan } from "@/lib/plan/context";
+import { usePlan } from "@/lib/subscription/context";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;

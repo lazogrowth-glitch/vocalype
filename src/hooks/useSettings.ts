@@ -2,6 +2,21 @@ import { useEffect } from "react";
 import { useSettingsStore } from "../stores/settingsStore";
 import type { AppSettings as Settings, AudioDevice } from "@/bindings";
 
+/**
+ * Granular single-setting selector hook.
+ *
+ * Subscribes **only** to the specified key — the component re-renders only
+ * when that specific setting value changes, not on every settings write.
+ *
+ * @example
+ * const pushToTalk = useSettingValue("push_to_talk") ?? false;
+ */
+export function useSettingValue<K extends keyof Settings>(
+  key: K,
+): Settings[K] | undefined {
+  return useSettingsStore((state) => state.settings?.[key]);
+}
+
 interface UseSettingsReturn {
   // State
   settings: Settings | null;

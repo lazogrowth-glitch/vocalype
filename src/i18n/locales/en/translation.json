@@ -231,6 +231,22 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "recordingMode": {
+        "label": "Recording Mode",
+        "description": "Choose how you start and stop recording.",
+        "toggle": {
+          "label": "Toggle",
+          "description": "Press once to start, press again to stop"
+        },
+        "pushToTalk": {
+          "label": "Push to Talk",
+          "description": "Hold the shortcut to record, release to stop"
+        },
+        "alwaysOn": {
+          "label": "Always-On Microphone",
+          "description": "Microphone stays open; VAD detects speech automatically"
+        }
       }
     },
     "models": {

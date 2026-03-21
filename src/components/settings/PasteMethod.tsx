@@ -7,7 +7,7 @@ import { FeatureGateHint } from "../ui";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
-import { usePlan } from "@/lib/plan/context";
+import { usePlan } from "@/lib/subscription/context";
 
 interface PasteMethodProps {
   descriptionMode?: "inline" | "tooltip";

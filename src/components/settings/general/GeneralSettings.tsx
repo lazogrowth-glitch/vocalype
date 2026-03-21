@@ -5,7 +5,7 @@ import { MicrophoneSelector } from "../MicrophoneSelector";
 import { ShortcutInput } from "../ShortcutInput";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { OutputDeviceSelector } from "../OutputDeviceSelector";
-import { PushToTalk } from "../PushToTalk";
+import { RecordingModeSelector } from "../RecordingModeSelector";
 import { AudioFeedback } from "../AudioFeedback";
 import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
@@ -14,7 +14,7 @@ import { ModelSettingsCard } from "./ModelSettingsCard";
 import { LongAudioModelSettings } from "./LongAudioModelSettings";
 import { useStartupWarmupStatus } from "../../../hooks/useStartupWarmupStatus";
 import { getStartupWarmupFallbackDetail } from "../../../types/startupWarmup";
-import { usePlan } from "@/lib/plan/context";
+import { usePlan } from "@/lib/subscription/context";
 import { DictionarySettings } from "../dictionary/DictionarySettings";
 import { AppContextSettings } from "../app-context/AppContextSettings";
 import { FeatureGateHint } from "../../ui";
@@ -120,7 +120,7 @@ export const GeneralSettings: React.FC = () => {
           <ShortcutInput shortcutId="pause" grouped={true} disabled={isBasicTier} />
           <ShortcutInput shortcutId="show_history" grouped={true} disabled={isBasicTier} />
           <ShortcutInput shortcutId="copy_latest_history" grouped={true} disabled={isBasicTier} />
-          <PushToTalk descriptionMode="tooltip" grouped={true} />
+          <RecordingModeSelector grouped={true} />
           {/* ── Command Mode ─────────────────────────────────────────── */}
           <div className="flex items-center gap-1.5 border-t border-white/6 px-4 pb-0.5 pt-2">
             <span className="text-[10.5px] text-white/40">

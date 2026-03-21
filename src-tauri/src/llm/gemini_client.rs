@@ -5,8 +5,11 @@ use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
+use std::time::Duration;
 
 const GEMINI_API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models";
+/// Gemini audio uploads can be larger than typical text prompts; allow up to 60 s.
+const GEMINI_REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[derive(Serialize)]
 struct InlineData {
@@ -125,7 +128,10 @@ pub async fn transcribe_audio(api_key: &str, model: &str, audio_samples: &[f32])
         HeaderValue::from_str(api_key).map_err(|e| anyhow::anyhow!("Invalid API key: {}", e))?,
     );
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(GEMINI_REQUEST_TIMEOUT)
+        .build()
+        .unwrap_or_default();
     let response = client
         .post(&url)
         .headers(headers)
@@ -206,7 +212,10 @@ pub async fn generate_text(
         HeaderValue::from_str(api_key).map_err(|e| anyhow::anyhow!("Invalid API key: {}", e))?,
     );
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(GEMINI_REQUEST_TIMEOUT)
+        .build()
+        .unwrap_or_default();
     let response = client
         .post(&url)
         .headers(headers)

@@ -15,18 +15,36 @@ import VocalTypeLogo from "./icons/VocalTypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
 import { TranscriptionWarmupBadge } from "./TranscriptionWarmupBadge";
 import { useSettings } from "../hooks/useSettings";
-import { usePlan } from "@/lib/plan/context";
-import {
-  GeneralSettings,
-  AdvancedSettings,
-  HistorySettings,
-  DebugSettings,
-  AboutSettings,
-  PostProcessingSettings,
-  ModelsSettings,
-  SnippetsSettings,
-  StatsSettings,
-} from "./settings";
+import { usePlan } from "@/lib/subscription/context";
+// GeneralSettings is the default view — keep it eager so there's no flash on startup.
+import { GeneralSettings } from "./settings/general/GeneralSettings";
+
+// All other panels are lazily loaded; they are only rendered when the user
+// navigates to them, reducing the initial JS parse/eval cost.
+const AdvancedSettings = React.lazy(
+  () => import("./settings/advanced/AdvancedSettings").then(m => ({ default: m.AdvancedSettings })),
+);
+const HistorySettings = React.lazy(
+  () => import("./settings/history/HistorySettings").then(m => ({ default: m.HistorySettings })),
+);
+const DebugSettings = React.lazy(
+  () => import("./settings/debug/DebugSettings").then(m => ({ default: m.DebugSettings })),
+);
+const AboutSettings = React.lazy(
+  () => import("./settings/about/AboutSettings").then(m => ({ default: m.AboutSettings })),
+);
+const PostProcessingSettings = React.lazy(
+  () => import("./settings/post-processing/PostProcessingSettings").then(m => ({ default: m.PostProcessingSettings })),
+);
+const ModelsSettings = React.lazy(
+  () => import("./settings/models/ModelsSettings").then(m => ({ default: m.ModelsSettings })),
+);
+const SnippetsSettings = React.lazy(
+  () => import("./settings/snippets/SnippetsSettings").then(m => ({ default: m.SnippetsSettings })),
+);
+const StatsSettings = React.lazy(
+  () => import("./settings/stats/StatsSettings").then(m => ({ default: m.StatsSettings })),
+);
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
 

@@ -1,3 +1,20 @@
+/**
+ * modelStore — transcription model lifecycle.
+ *
+ * ## Owns
+ * - Available model list (`ModelInfo[]`) and currently loaded model
+ * - Download / extraction progress and per-model speed stats
+ * - First-run detection (no models present)
+ *
+ * ## Does NOT own
+ * - Which model the user has *selected* in settings → see `settingsStore.ts`
+ *   (`settings.selected_model`)
+ * - Auth / subscription state → see `src/lib/auth/client.ts`
+ *
+ * ## Persistence
+ * Model metadata is ephemeral (fetched from the Rust backend each session).
+ * Download progress is in-memory only and resets on app restart.
+ */
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";

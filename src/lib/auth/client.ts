@@ -1,3 +1,28 @@
+/**
+ * auth/client — authentication and session persistence.
+ *
+ * ## Owns
+ * - Auth token (stored in OS keyring via Rust `get/set/clear_secure_auth_token`)
+ * - `AuthSession` (user info, subscription tier, expiry) — serialized to OS keyring
+ * - Device UUID (`vocaltype.device.id`) — generated once, persisted to `auth.store.json`
+ * - Device registration flag (`vocaltype.device.registered`) — UX-only hint
+ * - Registered emails set (`vocaltype.device.registered_emails`) — UX-only hint
+ * - Trial welcome flag (`vocaltype.onboarding.trial_shown`)
+ *
+ * ## Does NOT own
+ * - App configuration / shortcuts → see `settingsStore.ts`
+ * - Model downloads → see `modelStore.ts`
+ *
+ * ## Persistence layers
+ * | Data | Where |
+ * |------|-------|
+ * | Token + session | OS keyring (Tauri `keyring` crate) |
+ * | Device ID + flags | `auth.store.json` (Tauri store plugin) |
+ *
+ * The `isDeviceRegistered()` flag is a **UX hint only**. The backend enforces
+ * uniqueness via the `device_registrations` table and returns HTTP 409 on
+ * duplicate registration attempts.
+ */
 import type {
   AuthPayload,
   AuthSession,
@@ -265,6 +290,16 @@ export const authClient = {
     return newId;
   },
 
+  /**
+   * Returns whether this device has previously registered an account.
+   *
+   * UX HINT ONLY — not a security gate.
+   * The backend is the real authority: it enforces device uniqueness via the
+   * device_registrations table and returns HTTP 409 if a second account is attempted.
+   * This local flag just avoids showing the register form to users who already have
+   * an account, improving UX. It can be bypassed by clearing the store, but the
+   * backend 409 will still block the actual registration attempt.
+   */
   async isDeviceRegistered(): Promise<boolean> {
     try {
       const store = await getAuthStore();

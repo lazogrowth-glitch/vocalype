@@ -40,9 +40,26 @@ const EMAIL_EXISTS_PATTERNS = [
   "existe déjà",
 ];
 
+/**
+ * Keywords in server error messages that indicate this device already has an account.
+ * The backend is the authority for device registration enforcement (via device_registrations table).
+ * The frontend deviceAlreadyRegistered flag is a UX hint only — not a security gate.
+ */
+const DEVICE_EXISTS_PATTERNS = [
+  "existe déjà sur cet appareil",
+  "device already registered",
+  "account already exists on this device",
+  "un compte existe",
+];
+
 const looksLikeEmailExists = (message: string) => {
   const lower = message.toLowerCase();
   return EMAIL_EXISTS_PATTERNS.some((p) => lower.includes(p));
+};
+
+const looksLikeDeviceExists = (message: string) => {
+  const lower = message.toLowerCase();
+  return DEVICE_EXISTS_PATTERNS.some((p) => lower.includes(p));
 };
 
 const formatAccessLabel = (
@@ -131,6 +148,15 @@ export const AuthPortal = ({
     }
   }, [error, mode]);
 
+  // If the backend rejects because this device already has an account, switch to login
+  // This is the authoritative check — the backend enforces device uniqueness server-side
+  useEffect(() => {
+    if (error && mode === "register" && looksLikeDeviceExists(error)) {
+      setDeviceAlreadyRegistered(true);
+      setMode("login");
+    }
+  }, [error, mode]);
+
   const accessLabel = useMemo(
     () =>
       session
@@ -198,6 +224,8 @@ export const AuthPortal = ({
     if (mode === "login" && looksLikeEmailExists(error)) {
       return t("auth.errors.emailExistsSwitchedToLogin");
     }
+    // Device-duplicate errors are handled by switching to login + showing the banner
+    if (looksLikeDeviceExists(error)) return null;
     return error;
   }, [localError, error, mode, t]);
 

@@ -257,6 +257,35 @@ In your PR description, please include:
 - Keep functions small and single-purpose
 - Prioritize readability over cleverness
 
+### Quality Checklist
+
+Every PR must pass all CI gates. Run these locally before pushing:
+
+```bash
+# 1. Frontend formatting
+bun run format:frontend
+
+# 2. Rust formatting
+cd src-tauri && cargo fmt && cd ..
+
+# 3. Translation consistency (all locales in sync)
+bun run check:translations
+
+# 4. ESLint + TypeScript type-check
+bun run lint
+bunx tsc --noEmit
+
+# 5. Frontend unit tests + coverage thresholds
+bun run test:coverage
+
+# 6. Rust tests + Clippy
+cd src-tauri && cargo test && cargo clippy -- -D warnings && cd ..
+```
+
+If you added user-visible text, add i18n keys to **all 17 locale files** under
+`src/i18n/locales/*/translation.json`.  Use `bun run check:translations` to
+verify completeness.
+
 ### Testing Your Changes
 
 **Manual Testing:**

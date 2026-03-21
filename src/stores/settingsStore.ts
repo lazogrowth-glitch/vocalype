@@ -1,3 +1,20 @@
+/**
+ * settingsStore — user-configurable app settings.
+ *
+ * ## Owns
+ * - All fields of `AppSettings` (shortcuts, model, language, recording mode, …)
+ * - Audio device lists (microphone, output)
+ * - Post-process provider / model options (ephemeral, fetched at runtime)
+ *
+ * ## Does NOT own
+ * - Auth state (token, session, subscription) → see `src/lib/auth/client.ts`
+ * - Model download / extraction progress → see `modelStore.ts`
+ *
+ * ## Persistence
+ * Settings are persisted to `settings_store.json` by the Rust backend via
+ * Tauri commands (`get_settings`, `update_setting`, …). This store is purely a
+ * frontend cache — the backend is the source of truth.
+ */
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { AppSettings as Settings, AudioDevice } from "@/bindings";

@@ -3,6 +3,13 @@ use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::time::Duration;
+
+/// Maximum time to wait for any LLM HTTP response.
+/// Long-form audio prompts can be large, but 30 s is enough for typical
+/// dictation post-processing payloads (~2 KB).  Increase if you see
+/// spurious timeouts with very long recordings.
+const LLM_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -55,11 +62,11 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert(
         REFERER,
-        HeaderValue::from_static("https://github.com/lazogrowth-glitch/vocaltype"),
+        HeaderValue::from_static("https://vocaltypeai.com"),
     );
     headers.insert(
         USER_AGENT,
-        HeaderValue::from_static("VocalType/1.0 (+https://github.com/lazogrowth-glitch/vocaltype)"),
+        HeaderValue::from_static("VocalType/1.0 (+https://vocaltypeai.com)"),
     );
     headers.insert("X-Title", HeaderValue::from_static("VocalType"));
 
@@ -84,11 +91,12 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     Ok(headers)
 }
 
-/// Create an HTTP client with provider-specific headers
+/// Create an HTTP client with provider-specific headers and a request timeout.
 fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwest::Client, String> {
     let headers = build_headers(provider, api_key)?;
     reqwest::Client::builder()
         .default_headers(headers)
+        .timeout(LLM_REQUEST_TIMEOUT)
         .build()
         .map_err(|e| format!("Failed to build HTTP client: {}", e))
 }
@@ -116,10 +124,10 @@ pub async fn send_chat_completion_with_schema(
     system_prompt: Option<String>,
     json_schema: Option<Value>,
 ) -> Result<Option<String>, String> {
-    // Route Gemini requests to the dedicated Gemini client
+    // Route Gemini requests to the sibling gemini_client module
     if provider.id == "gemini" {
         let sys = system_prompt.unwrap_or_default();
-        match crate::gemini_client::generate_text(&api_key, model, &sys, &user_content).await {
+        match super::gemini_client::generate_text(&api_key, model, &sys, &user_content).await {
             Ok(text) if !text.is_empty() => return Ok(Some(text)),
             Ok(_) => return Ok(None),
             Err(e) => return Err(format!("Gemini API error: {}", e)),
@@ -202,7 +210,7 @@ pub async fn fetch_models(
     provider: &PostProcessProvider,
     api_key: String,
 ) -> Result<Vec<String>, String> {
-    // Gemini uses a different API format for listing models
+    // Gemini uses a different models API — handled in the sibling module
     if provider.id == "gemini" {
         return fetch_gemini_models(&api_key).await;
     }

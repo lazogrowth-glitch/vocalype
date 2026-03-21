@@ -36,6 +36,26 @@ export default defineConfig(async () => ({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov", "html"],
+      // Exclude generated bindings, test helpers, and entry points.
+      exclude: [
+        "src/bindings.ts",
+        "src/test/**",
+        "src/**/*.d.ts",
+        "src/main.tsx",
+        "src/overlay/main.tsx",
+        "src/overlay/index.html",
+      ],
+      // Minimum thresholds enforced in CI via `bun run test:coverage`.
+      thresholds: {
+        statements: 40,
+        branches: 35,
+        functions: 40,
+        lines: 40,
+      },
+    },
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`

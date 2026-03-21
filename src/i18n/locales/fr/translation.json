@@ -284,6 +284,22 @@
       "pushToTalk": {
         "label": "Appuyer pour parler",
         "description": "Maintenez pour enregistrer, relâchez pour arrêter"
+      },
+      "recordingMode": {
+        "label": "Mode d'enregistrement",
+        "description": "Choisissez comment démarrer et arrêter l'enregistrement.",
+        "toggle": {
+          "label": "Bascule",
+          "description": "Appuyez une fois pour démarrer, réappuyez pour arrêter"
+        },
+        "pushToTalk": {
+          "label": "Appuyer pour parler",
+          "description": "Maintenez le raccourci pour enregistrer, relâchez pour arrêter"
+        },
+        "alwaysOn": {
+          "label": "Microphone toujours actif",
+          "description": "Le microphone reste ouvert ; la VAD détecte la parole automatiquement"
+        }
       }
     },
     "sound": {

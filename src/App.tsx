@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useTranslation } from "react-i18next";
@@ -11,7 +11,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
-import { PlanContext } from "@/lib/plan/context";
+import { PlanContext } from "@/lib/subscription/context";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -19,7 +19,17 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
-  return <ActiveComponent />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center opacity-40">
+          <span className="text-sm">…</span>
+        </div>
+      }
+    >
+      <ActiveComponent />
+    </Suspense>
+  );
 };
 
 function App() {

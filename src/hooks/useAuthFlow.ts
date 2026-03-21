@@ -5,6 +5,7 @@ import { authClient } from "@/lib/auth/client";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
 import { licenseClient } from "@/lib/license/client";
 import type { LicenseRuntimeState } from "@/lib/license/types";
+import { useSessionRefresh } from "./useSessionRefresh";
 
 export function useAuthFlow(t: (key: string, options?: Record<string, unknown>) => string) {
   const [authLoading, setAuthLoading] = useState(true);
@@ -208,36 +209,8 @@ export function useAuthFlow(t: (key: string, options?: Record<string, unknown>) 
     refreshSession();
   }, [refreshSession]);
 
-  // Refresh short-lived token every 17 minutes
-  useEffect(() => {
-    const SEVENTEEN_MINUTES = 17 * 60 * 1000;
-    let isRefreshing = false;
-    const interval = setInterval(() => {
-      if (isRefreshing) return;
-      const token = authClient.getStoredToken();
-      if (!token) return;
-      isRefreshing = true;
-      authClient
-        .getSession(token)
-        .then(async (nextSession) => {
-          applySession(nextSession);
-          await syncLicenseForSession(nextSession, {
-            mode: "refresh",
-            allowOfflineFallback: true,
-          });
-        })
-        .catch((error) => {
-          const status = authClient.getErrorStatus(error);
-          if (status === 401 || status === 403) {
-            applySession(null);
-          }
-        })
-        .finally(() => {
-          isRefreshing = false;
-        });
-    }, SEVENTEEN_MINUTES);
-    return () => clearInterval(interval);
-  }, [applySession, syncLicenseForSession]);
+  // Keep the session alive: refreshes every 17 min and on visibility change.
+  useSessionRefresh({ applySession, syncLicenseForSession });
 
   // J12 trial reminder
   useEffect(() => {

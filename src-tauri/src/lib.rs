@@ -1,43 +1,49 @@
 mod actions;
-mod adaptive_runtime;
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-mod apple_intelligence;
-mod audio_feedback;
 pub mod audio_toolkit;
-pub mod chunking;
 pub mod cli;
-mod clipboard;
-mod command_mode;
 mod commands;
-mod context_detector;
-mod dictionary;
-mod filler;
-pub mod gemini_client;
+pub mod error;
 mod helpers;
-mod input;
-mod integrity;
-mod license;
-mod llm_client;
 mod managers;
-mod model_crypto;
-pub mod model_ids;
-mod overlay;
-mod post_processing;
-mod prompt_builder;
-mod punctuation;
-mod runtime_observability;
-mod secret_store;
 mod settings;
 mod shortcut;
-mod signal_handle;
-mod startup_warmup;
-mod transcription_confidence;
-mod transcription_coordinator;
 mod tray;
-mod tray_i18n;
-mod utils;
-mod vocabulary_store;
-mod voice_profile;
+
+// ── Organised sub-modules ────────────────────────────────────────────────────
+
+/// Text processing pipeline (filler, dictionary, punctuation, LLM cleanup).
+mod processing;
+/// Security subsystem (license, integrity, crypto, keyring).
+mod security;
+/// LLM provider clients (Gemini, OpenAI-compatible, prompt builder).
+mod llm;
+/// Application runtime core (adaptive engine, transcription lifecycle, VAD).
+mod runtime;
+/// Platform abstraction (keyboard, clipboard, overlay, audio feedback, signals).
+mod platform;
+
+// ── Backward-compatible re-exports ───────────────────────────────────────────
+// `pub use` ensures existing `use crate::X::SomeType` imports in sub-modules
+// continue to resolve without changes.
+
+// processing
+pub use processing::{dictionary, filler, post_processing, punctuation};
+// security
+pub use security::{integrity, license, model_crypto, secret_store};
+// llm
+pub use llm::{gemini_client, llm_client, prompt_builder};
+// runtime
+pub use runtime::{
+    adaptive_runtime, chunking, command_mode, context_detector, model_ids,
+    runtime_observability, startup_warmup, transcription_confidence,
+    transcription_coordinator, vocabulary_store, voice_profile,
+};
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+pub use runtime::apple_intelligence;
+// platform
+pub use platform::{audio_feedback, clipboard, input, overlay, utils};
+#[cfg(unix)]
+pub use platform::signal_handle;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]

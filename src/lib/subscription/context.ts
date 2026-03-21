@@ -1,0 +1,22 @@
+import { createContext, useContext } from "react";
+import type { WeeklyQuota } from "@/lib/auth/types";
+
+export interface PlanContextValue {
+  isBasicTier: boolean;
+  isTrialing: boolean;
+  trialEndsAt: string | null;
+  quota: WeeklyQuota | null;
+  onStartCheckout: () => Promise<string>;
+}
+
+export const PlanContext = createContext<PlanContextValue>({
+  isBasicTier: false,
+  isTrialing: false,
+  trialEndsAt: null,
+  quota: null,
+  onStartCheckout: async () => "",
+});
+
+export function usePlan(): PlanContextValue {
+  return useContext(PlanContext);
+}

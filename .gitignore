@@ -40,3 +40,8 @@ blob-report/
 
 # Secrets
 secrets.env
+backend/.env.production
+
+# Python backend artifacts
+backend/__pycache__/
+backend/*.db

@@ -9,15 +9,19 @@ import {
   Trash2,
   RefreshCw,
   Loader2,
+  Download,
+  FileAudio,
 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { readFile } from "@tauri-apps/plugin-fs";
+import { readFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { commands, type HistoryEntry } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
 import { useModelStore } from "@/stores/modelStore";
 import { ConfidenceText } from "./ConfidenceText";
+import { usePlan } from "@/lib/subscription/context";
 
 const PAGE_SIZE = 30;
 
@@ -40,9 +44,128 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   </button>
 );
 
+// ── Export button ─────────────────────────────────────────────────────────────
+
+const ExportHistoryButton: React.FC = () => {
+  const { t } = useTranslation();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      const filePath = await save({
+        defaultPath: `vocaltype-history-${new Date().toISOString().slice(0, 10)}.txt`,
+        filters: [
+          { name: "Texte", extensions: ["txt"] },
+          { name: "CSV", extensions: ["csv"] },
+          { name: "Markdown", extensions: ["md"] },
+          { name: "JSON", extensions: ["json"] },
+        ],
+      });
+      if (!filePath) return;
+
+      setExporting(true);
+      const ext = filePath.split(".").pop()?.toLowerCase() ?? "txt";
+      const format = ["csv", "md", "json"].includes(ext) ? ext : "txt";
+
+      const result = await commands.exportHistoryEntries(format);
+      if (result.status === "ok") {
+        await writeTextFile(filePath, result.data);
+        toast.success(
+          t("settings.history.exportSuccess", { defaultValue: "Historique exporté." }),
+        );
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        t("settings.history.exportError", { defaultValue: "Échec de l'export." }),
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleExport}
+      disabled={exporting}
+      className="flex items-center gap-1 text-[12px] text-white/30 transition-colors hover:text-white/55 disabled:opacity-40"
+      title={t("settings.history.export", { defaultValue: "Exporter" })}
+    >
+      {exporting ? (
+        <Loader2 size={11} className="animate-spin" />
+      ) : (
+        <Download size={11} />
+      )}
+      {t("settings.history.export", { defaultValue: "Exporter" })}
+    </button>
+  );
+};
+
+// ── Transcribe from file button ───────────────────────────────────────────────
+
+const TranscribeFileButton: React.FC = () => {
+  const { t } = useTranslation();
+  const [transcribing, setTranscribing] = useState(false);
+
+  const handleTranscribeFile = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: "Audio", extensions: ["wav", "flac"] }],
+      });
+      if (!selected || typeof selected !== "string") return;
+
+      setTranscribing(true);
+      const result = await commands.transcribeAudioFile(selected);
+      if (result.status === "ok") {
+        await navigator.clipboard.writeText(result.data);
+        toast.success(
+          t("settings.history.transcribeFileSuccess", {
+            defaultValue: "Transcription copiée dans le presse-papier.",
+          }),
+        );
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        t("settings.history.transcribeFileError", {
+          defaultValue: "Échec de la transcription du fichier.",
+        }),
+      );
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleTranscribeFile}
+      disabled={transcribing}
+      className="flex items-center gap-1 text-[12px] text-white/30 transition-colors hover:text-white/55 disabled:opacity-40"
+      title={t("settings.history.transcribeFile", { defaultValue: "Transcrire un fichier" })}
+    >
+      {transcribing ? (
+        <Loader2 size={11} className="animate-spin" />
+      ) : (
+        <FileAudio size={11} />
+      )}
+      {t("settings.history.transcribeFile", { defaultValue: "Transcrire un fichier" })}
+    </button>
+  );
+};
+
+const BASIC_HISTORY_LIMIT = 5;
+
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
+  const { isBasicTier, onStartCheckout } = usePlan();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -182,10 +305,14 @@ export const HistorySettings: React.FC = () => {
                 {t("settings.history.title")}
               </h2>
             </div>
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
+            <div className="flex items-center gap-3">
+              <TranscribeFileButton />
+              <ExportHistoryButton />
+              <OpenRecordingsButton
+                onClick={openRecordingsFolder}
+                label={t("settings.history.openFolder")}
+              />
+            </div>
           </div>
           <div className="overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
@@ -207,10 +334,13 @@ export const HistorySettings: React.FC = () => {
                 {t("settings.history.title")}
               </h2>
             </div>
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
+            <div className="flex items-center gap-3">
+              <TranscribeFileButton />
+              <OpenRecordingsButton
+                onClick={openRecordingsFolder}
+                label={t("settings.history.openFolder")}
+              />
+            </div>
           </div>
           <div className="overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
@@ -231,14 +361,35 @@ export const HistorySettings: React.FC = () => {
               {t("settings.history.title")}
             </h2>
           </div>
-          <OpenRecordingsButton
-            onClick={openRecordingsFolder}
-            label={t("settings.history.openFolder")}
-          />
+          <div className="flex items-center gap-3">
+            <TranscribeFileButton />
+            <ExportHistoryButton />
+            <OpenRecordingsButton
+              onClick={openRecordingsFolder}
+              label={t("settings.history.openFolder")}
+            />
+          </div>
         </div>
         <div className="overflow-visible">
+          {isBasicTier && historyEntries.length > BASIC_HISTORY_LIMIT && (
+            <div className="mb-3 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-[12px]">
+              <span className="text-amber-300/80">
+                {t("basic.historyLimited", {
+                  defaultValue: `Historique limité à ${BASIC_HISTORY_LIMIT} entrées en Basic`,
+                  limit: BASIC_HISTORY_LIMIT,
+                })}
+              </span>
+              <button
+                type="button"
+                onClick={() => onStartCheckout().then((url) => url && window.open(url, "_blank"))}
+                className="ml-3 shrink-0 rounded bg-amber-500/20 px-2.5 py-1 text-amber-300 transition-colors hover:bg-amber-500/30"
+              >
+                {t("basic.upgrade", { defaultValue: "Passer à Premium" })}
+              </button>
+            </div>
+          )}
           <div className="divide-y divide-white/8">
-            {historyEntries.map((entry) => (
+            {(isBasicTier ? historyEntries.slice(0, BASIC_HISTORY_LIMIT) : historyEntries).map((entry) => (
               <HistoryEntryComponent
                 key={entry.id}
                 entry={entry}

@@ -33,12 +33,17 @@ export const AboutSettings: React.FC = () => {
     <div className="w-full space-y-6">
       <section className="space-y-3">
         <VocalTypeLogo width={112} />
-        <p className="text-[12px] text-white/30">Version v{version}</p>
+        <p className="text-[12px] text-white/30">
+          {t("settings.about.versionLabel", {
+            defaultValue: "Version v{{version}}",
+            version,
+          })}
+        </p>
         <Button
           variant="secondary"
           size="md"
           className="inline-flex w-auto"
-          onClick={() => openUrl("https://github.com/lazogrowth-glitch/lazox")}
+          onClick={() => openUrl("https://github.com/lazogrowth-glitch/vocaltype")}
         >
           {t("settings.about.sourceCode.button")}
         </Button>
@@ -51,8 +56,12 @@ export const AboutSettings: React.FC = () => {
           description={t("settings.about.version.description")}
           grouped={true}
         >
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <span className="text-[13px] text-white/40">v{version}</span>
+          <span className="text-[13px] text-white/40">
+            {t("footer.version", {
+              defaultValue: "v{{version}}",
+              version,
+            })}
+          </span>
         </SettingContainer>
 
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />

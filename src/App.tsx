@@ -1,148 +1,89 @@
-import React, { useCallback, useEffect, useState, useRef } from "react";
-import { toast, Toaster } from "sonner";
+import { Suspense, useEffect, useState } from "react";
+import { Toaster } from "sonner";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useTranslation } from "react-i18next";
-import { platform } from "@tauri-apps/plugin-os";
-import { getIdentifier } from "@tauri-apps/api/app";
-import {
-  checkAccessibilityPermission,
-  checkMicrophonePermission,
-} from "tauri-plugin-macos-permissions-api";
-import { listen } from "@tauri-apps/api/event";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
-import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
+import { TrialWelcomeModal } from "./components/onboarding/TrialWelcomeModal";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
-import { authClient } from "@/lib/auth/client";
-import type { AuthPayload, AuthSession } from "@/lib/auth/types";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
-import type { RuntimeErrorEvent } from "@/types/runtimeObservability";
-
-type OnboardingStep = "accessibility" | "model" | "done";
+import { PlanContext } from "@/lib/subscription/context";
+import { useAuthFlow } from "@/hooks/useAuthFlow";
+import { useBackendEvents } from "@/hooks/useBackendEvents";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
-  return <ActiveComponent />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center opacity-40">
+          <span className="text-sm">…</span>
+        </div>
+      }
+    >
+      <ActiveComponent />
+    </Suspense>
+  );
 };
 
 function App() {
   const { i18n, t } = useTranslation();
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authSubmitting, setAuthSubmitting] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
-    null,
-  );
-  // Track if this is a returning user who just needs to grant permissions
-  // (vs a new user who needs full onboarding including model selection)
-  const [isReturningUser, setIsReturningUser] = useState(false);
-  const [currentSection, setCurrentSection] =
-    useState<SidebarSection>("general");
+  const [currentSection, setCurrentSection] = useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
-  const refreshAudioDevices = useSettingsStore(
-    (state) => state.refreshAudioDevices,
-  );
-  const refreshOutputDevices = useSettingsStore(
-    (state) => state.refreshOutputDevices,
-  );
-  const hasCompletedPostOnboardingInit = useRef(false);
-  const lastRuntimeErrorRef = useRef<{ key: string; at: number } | null>(null);
+  const refreshAudioDevices = useSettingsStore((state) => state.refreshAudioDevices);
+  const refreshOutputDevices = useSettingsStore((state) => state.refreshOutputDevices);
 
-  const applySession = useCallback((nextSession: AuthSession | null) => {
-    setSession(nextSession);
-    setAuthError(null);
+  const {
+    session,
+    authLoading,
+    authSubmitting,
+    authError,
+    licenseState,
+    showTrialWelcome,
+    hasCompletedPostOnboardingInit,
+    refreshSession,
+    handleLogin,
+    handleRegister,
+    handleLogout,
+    handleDismissTrialWelcome,
+    handleStartCheckout,
+    handleOpenBillingPortal,
+  } = useAuthFlow(t);
 
-    if (nextSession) {
-      void authClient.setStoredSession(nextSession);
-      return;
-    }
+  const hasAnyAccess =
+    licenseState?.state === "online_valid" ||
+    licenseState?.state === "offline_valid";
 
-    void authClient.clearStoredSession();
-    setOnboardingStep(null);
-    hasCompletedPostOnboardingInit.current = false;
-  }, []);
+  const currentTier = session?.subscription?.tier ?? null;
+  const isBasicTier = hasAnyAccess && currentTier === "basic";
+  const hasPremiumAccess = hasAnyAccess && currentTier === "premium";
+  const isTrialing = session?.subscription?.status === "trialing" && hasPremiumAccess;
+  const trialEndsAt = isTrialing ? (session?.subscription?.trial_ends_at ?? null) : null;
 
-  const refreshSession = useCallback(async () => {
-    const persistedSession = await authClient.hydrateStoredSession();
-    if (persistedSession) {
-      setSession(persistedSession);
-    }
+  const { onboardingStep, handleAccessibilityComplete, handleModelSelected } = useOnboarding({
+    authLoading,
+    hasAnyAccess,
+  });
 
-    const token = authClient.getStoredToken();
-
-    if (!token) {
-      applySession(null);
-      setAuthLoading(false);
-      return;
-    }
-
-    try {
-      const nextSession = await authClient.getSession(token);
-      applySession(nextSession);
-    } catch (error) {
-      console.error("Failed to refresh auth session:", error);
-      const status = authClient.getErrorStatus(error);
-
-      if (status === 401 || status === 403) {
-        applySession(null);
-        setAuthError(t("auth.sessionExpired"));
-      } else {
-        // Network error or server unavailable — keep cached session silently
-        // so the user can still use the app if they were previously authenticated.
-        if (!persistedSession) {
-          setAuthError(
-            error instanceof Error
-              ? error.message
-              : t("auth.errors.networkError"),
-          );
-        }
-      }
-    } finally {
-      setAuthLoading(false);
-    }
-  }, [applySession, t]);
-
-  useEffect(() => {
-    refreshSession();
-  }, [refreshSession]);
-
-  // Refresh the short-lived access token periodically while the app stays open.
-  useEffect(() => {
-    const FIVE_MINUTES = 5 * 60 * 1000;
-    const interval = setInterval(() => {
-      const token = authClient.getStoredToken();
-      if (!token) return;
-      authClient
-        .getSession(token)
-        .then((nextSession) => applySession(nextSession))
-        .catch((error) => {
-          const status = authClient.getErrorStatus(error);
-          if (status === 401 || status === 403) {
-            applySession(null);
-          }
-        });
-    }, FIVE_MINUTES);
-    return () => clearInterval(interval);
-  }, [applySession]);
+  useBackendEvents({
+    t,
+    currentSection,
+    setCurrentSection,
+    settings,
+    updateSetting,
+  });
 
   // Initialize RTL direction when language changes
   useEffect(() => {
     initializeRTL(i18n.language);
   }, [i18n.language]);
-
-  useEffect(() => {
-    if (authLoading || !session?.subscription.has_access) {
-      return;
-    }
-
-    checkOnboardingStatus();
-  }, [authLoading, session?.subscription.has_access]);
 
   // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {
@@ -157,263 +98,8 @@ function App() {
       refreshAudioDevices();
       refreshOutputDevices();
     }
-  }, [onboardingStep, refreshAudioDevices, refreshOutputDevices]);
+  }, [onboardingStep, refreshAudioDevices, refreshOutputDevices, hasCompletedPostOnboardingInit]);
 
-  // Handle keyboard shortcuts for debug mode toggle
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Check for Ctrl+Shift+D (Windows/Linux) or Cmd+Shift+D (macOS)
-      const isDebugShortcut =
-        event.shiftKey &&
-        event.key.toLowerCase() === "d" &&
-        (event.ctrlKey || event.metaKey);
-
-      if (isDebugShortcut) {
-        event.preventDefault();
-        const currentDebugMode = settings?.debug_mode ?? false;
-        updateSetting("debug_mode", !currentDebugMode);
-      }
-    };
-
-    // Add event listener when component mounts
-    document.addEventListener("keydown", handleKeyDown);
-
-    // Cleanup event listener when component unmounts
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [settings?.debug_mode, updateSetting]);
-
-  // Listen for backend navigation events (e.g., "Show History" shortcut)
-  useEffect(() => {
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-
-    listen<string>("navigate-to-section", (event) => {
-      const section = event.payload as SidebarSection;
-      if (section in SECTIONS_CONFIG) {
-        setCurrentSection(section);
-      }
-    }).then((fn) => {
-      if (cancelled) { fn(); } else { cleanup = fn; }
-    });
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-
-    listen<string>("whisper-gpu-unavailable", () => {
-      toast.warning(t("warnings.whisperGpuUnavailable"), {
-        duration: 8000,
-        description: t("warnings.whisperGpuUnavailableDesc"),
-      });
-    }).then((fn) => {
-      if (cancelled) { fn(); } else { cleanup = fn; }
-    });
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, [t]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-
-    listen<{
-      reason?: string;
-      copied_to_clipboard?: boolean;
-    }>("paste-failed", (event) => {
-      const copiedToClipboard = event.payload?.copied_to_clipboard ?? false;
-      toast.error(
-        copiedToClipboard
-          ? t("warnings.pasteFailedCopied")
-          : t("warnings.pasteFailed"),
-        {
-          duration: 8000,
-          description: t("warnings.pasteFailedDesc", {
-            reason: event.payload?.reason ?? "unknown error",
-          }),
-        },
-      );
-    }).then((fn) => {
-      if (cancelled) { fn(); } else { cleanup = fn; }
-    });
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, [t]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-
-    listen<RuntimeErrorEvent>("runtime-error", (event) => {
-      const payload = event.payload;
-      if (!payload) return;
-
-      const reason = `[${payload.stage}] ${payload.code}: ${payload.message}`;
-      const dedupeKey = `${payload.code}:${payload.message}`;
-      const now = Date.now();
-      const last = lastRuntimeErrorRef.current;
-
-      if (last && last.key === dedupeKey && now - last.at < 1500) {
-        return;
-      }
-
-      lastRuntimeErrorRef.current = { key: dedupeKey, at: now };
-
-      if (payload.recoverable) {
-        toast.warning(
-          t("warnings.runtimeIssue", { defaultValue: "Transcription issue" }),
-          {
-            duration: 8000,
-            description: reason,
-          },
-        );
-        return;
-      }
-
-      toast.error(
-        t("warnings.runtimeFailure", { defaultValue: "Transcription failed" }),
-        {
-          duration: 8000,
-          description: reason,
-        },
-      );
-    }).then((fn) => {
-      if (cancelled) { fn(); } else { cleanup = fn; }
-    });
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, [t]);
-
-  const checkOnboardingStatus = async () => {
-    try {
-      const appIdentifier = await getIdentifier();
-      const isDevFlavor = appIdentifier.endsWith(".dev");
-
-      // Check if they have any models available
-      const result = await commands.hasAnyModelsAvailable();
-      const hasModels = result.status === "ok" && result.data;
-
-      if (hasModels) {
-        // Returning user - but check if they need to grant permissions on macOS
-        setIsReturningUser(true);
-        if (platform() === "macos" && !isDevFlavor) {
-          try {
-            const [hasAccessibility, hasMicrophone] = await Promise.all([
-              checkAccessibilityPermission(),
-              checkMicrophonePermission(),
-            ]);
-            if (!hasAccessibility || !hasMicrophone) {
-              // Missing permissions - show accessibility onboarding
-              setOnboardingStep("accessibility");
-              return;
-            }
-          } catch (e) {
-            console.warn("Failed to check permissions:", e);
-            // If we can't check, proceed to main app and let them fix it there
-          }
-        }
-        setOnboardingStep("done");
-      } else {
-        // New user - dev flavor skips permissions (can't grant to debug binary)
-        setIsReturningUser(false);
-        setOnboardingStep(isDevFlavor ? "model" : "accessibility");
-      }
-    } catch (error) {
-      console.error("Failed to check onboarding status:", error);
-      setOnboardingStep("accessibility");
-    }
-  };
-
-  const handleAccessibilityComplete = () => {
-    // Returning users already have models, skip to main app
-    // New users need to select a model
-    setOnboardingStep(isReturningUser ? "done" : "model");
-  };
-
-  const handleModelSelected = () => {
-    // Transition to main app - user has started a download
-    setOnboardingStep("done");
-  };
-
-  const authenticate = useCallback(
-    async (
-      handler: (payload: AuthPayload) => Promise<AuthSession>,
-      payload: AuthPayload,
-    ) => {
-      setAuthSubmitting(true);
-      setAuthError(null);
-
-      try {
-        const nextSession = await handler(payload);
-        applySession(nextSession);
-      } catch (error) {
-        console.error("Authentication failed:", error);
-        setAuthError(
-          error instanceof Error ? error.message : "Authentication failed",
-        );
-      } finally {
-        setAuthSubmitting(false);
-      }
-    },
-    [applySession],
-  );
-
-  const handleLogin = useCallback(
-    async (payload: AuthPayload) => {
-      await authenticate(authClient.login, payload);
-    },
-    [authenticate],
-  );
-
-  const handleRegister = useCallback(
-    async (payload: AuthPayload) => {
-      await authenticate(authClient.register, payload);
-    },
-    [authenticate],
-  );
-
-  const handleStartCheckout = useCallback(async () => {
-    const token = authClient.getStoredToken();
-    if (!token) {
-      throw new Error("You must be logged in first");
-    }
-
-    const result = await authClient.createCheckout(token);
-    return result.url;
-  }, []);
-
-  const handleOpenBillingPortal = useCallback(async () => {
-    const token = authClient.getStoredToken();
-    if (!token) {
-      throw new Error("You must be logged in first");
-    }
-
-    const result = await authClient.createPortal(token);
-    return result.url;
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    applySession(null);
-    setAuthLoading(false);
-  }, [applySession]);
-
-  // Still checking onboarding status
   if (authLoading) {
     return (
       <div
@@ -425,7 +111,7 @@ function App() {
     );
   }
 
-  if (!session?.subscription.has_access) {
+  if (!session || !hasAnyAccess) {
     return (
       <AuthPortal
         error={authError}
@@ -458,10 +144,26 @@ function App() {
   }
 
   if (onboardingStep === "model") {
-    return <Onboarding onModelSelected={handleModelSelected} />;
+    return (
+      <>
+        <Onboarding onModelSelected={handleModelSelected} />
+        {showTrialWelcome && (
+          <TrialWelcomeModal onDismiss={handleDismissTrialWelcome} />
+        )}
+      </>
+    );
   }
 
   return (
+    <PlanContext.Provider
+      value={{
+        isBasicTier,
+        isTrialing,
+        trialEndsAt,
+        quota: session?.subscription?.quota ?? null,
+        onStartCheckout: handleStartCheckout,
+      }}
+    >
     <div dir={direction} style={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden", background: "#0f0f0f", fontFamily: "'Segoe UI', system-ui, sans-serif", color: "inherit" }}>
       <Toaster
         theme="system"
@@ -486,15 +188,12 @@ function App() {
             ? t(SECTIONS_CONFIG[currentSection].labelKey)
             : t(SECTIONS_CONFIG.general.labelKey)}
         </h1>
-        <React.Suspense fallback={
-          <div className="flex items-center justify-center h-32 text-sm text-gray-400 animate-pulse">
-            Loading...
-          </div>
-        }>
+        <ErrorBoundary>
           {renderSettingsContent(currentSection)}
-        </React.Suspense>
+        </ErrorBoundary>
       </main>
     </div>
+    </PlanContext.Provider>
   );
 }
 

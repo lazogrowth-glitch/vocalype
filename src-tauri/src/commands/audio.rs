@@ -39,15 +39,47 @@ pub struct AudioDevice {
     pub is_default: bool,
 }
 
+fn transcription_session_active(app: &AppHandle) -> bool {
+    app.try_state::<crate::TranscriptionCoordinator>()
+        .and_then(|coordinator| coordinator.active_operation_id())
+        .is_some()
+}
+
+fn resolve_input_device_selector(device_selector: &str) -> Result<(String, String), String> {
+    let devices =
+        list_input_devices().map_err(|e| format!("Failed to list audio devices: {}", e))?;
+
+    if let Some(device) = devices
+        .iter()
+        .find(|device| device.index == device_selector)
+    {
+        return Ok((device.name.clone(), device.index.clone()));
+    }
+
+    let matching_by_name: Vec<_> = devices
+        .iter()
+        .filter(|device| device.name == device_selector)
+        .collect();
+
+    match matching_by_name.len() {
+        1 => Ok((
+            matching_by_name[0].name.clone(),
+            matching_by_name[0].index.clone(),
+        )),
+        0 => Err(format!(
+            "Microphone selector '{}' did not match any available device",
+            device_selector
+        )),
+        count => Err(format!(
+            "Microphone selector '{}' is ambiguous ({} matching devices)",
+            device_selector, count
+        )),
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), String> {
-    // Update settings
-    let mut settings = get_settings(&app);
-    settings.always_on_microphone = always_on;
-    write_settings(&app, settings);
-
-    // Update the audio manager mode
     let rm = app.state::<Arc<AudioRecordingManager>>();
     let new_mode = if always_on {
         MicrophoneMode::AlwaysOn
@@ -55,8 +87,18 @@ pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), Str
         MicrophoneMode::OnDemand
     };
 
-    rm.update_mode(new_mode)
-        .map_err(|e| format!("Failed to update microphone mode: {}", e))
+    let session_active = transcription_session_active(&app);
+    if !session_active {
+        rm.update_mode(new_mode.clone())
+            .map_err(|e| format!("Failed to update microphone mode: {}", e))?;
+    }
+
+    let mut settings = get_settings(&app);
+    settings.always_on_microphone = always_on;
+    write_settings(&app, settings);
+
+    crate::startup_warmup::ensure_startup_warmup(&app, "microphone-mode-changed");
+    Ok(())
 }
 
 #[tauri::command]
@@ -90,18 +132,33 @@ pub fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
 #[tauri::command]
 #[specta::specta]
 pub fn set_selected_microphone(app: AppHandle, device_name: String) -> Result<(), String> {
-    let mut settings = get_settings(&app);
-    settings.selected_microphone = if device_name == "default" {
-        None
+    let (selected_microphone, selected_microphone_index) = if device_name == "default" {
+        (None, None)
     } else {
-        Some(device_name)
+        let (resolved_name, resolved_index) = resolve_input_device_selector(&device_name)?;
+        (Some(resolved_name), Some(resolved_index))
     };
-    write_settings(&app, settings);
 
-    // Update the audio manager to use the new device
+    let session_active = transcription_session_active(&app);
     let rm = app.state::<Arc<AudioRecordingManager>>();
-    rm.update_selected_device()
-        .map_err(|e| format!("Failed to update selected device: {}", e))?;
+    if !session_active {
+        let previous_settings = get_settings(&app);
+        let mut next_settings = previous_settings.clone();
+        next_settings.selected_microphone = selected_microphone.clone();
+        next_settings.selected_microphone_index = selected_microphone_index.clone();
+        write_settings(&app, next_settings);
+        if let Err(err) = rm.update_selected_device() {
+            write_settings(&app, previous_settings);
+            return Err(format!("Failed to update selected device: {}", err));
+        }
+    } else {
+        let mut settings = get_settings(&app);
+        settings.selected_microphone = selected_microphone.clone();
+        settings.selected_microphone_index = selected_microphone_index.clone();
+        write_settings(&app, settings);
+    }
+
+    crate::startup_warmup::ensure_startup_warmup(&app, "selected-microphone-changed");
 
     Ok(())
 }
@@ -110,9 +167,15 @@ pub fn set_selected_microphone(app: AppHandle, device_name: String) -> Result<()
 #[specta::specta]
 pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
     let settings = get_settings(&app);
-    Ok(settings
-        .selected_microphone
-        .unwrap_or_else(|| "default".to_string()))
+    if let Some(index) = settings.selected_microphone_index {
+        return Ok(index);
+    }
+    if let Some(name) = settings.selected_microphone {
+        if let Ok((_, index)) = resolve_input_device_selector(&name) {
+            return Ok(index);
+        }
+    }
+    Ok("default".to_string())
 }
 
 #[tauri::command]
@@ -175,13 +238,34 @@ pub async fn play_test_sound(app: AppHandle, sound_type: String) {
 #[tauri::command]
 #[specta::specta]
 pub fn set_clamshell_microphone(app: AppHandle, device_name: String) -> Result<(), String> {
-    let mut settings = get_settings(&app);
-    settings.clamshell_microphone = if device_name == "default" {
-        None
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    let (clamshell_microphone, clamshell_microphone_index) = if device_name == "default" {
+        (None, None)
     } else {
-        Some(device_name)
+        let (resolved_name, resolved_index) = resolve_input_device_selector(&device_name)?;
+        (Some(resolved_name), Some(resolved_index))
     };
-    write_settings(&app, settings);
+    let session_active = transcription_session_active(&app);
+
+    if !session_active {
+        let previous_settings = get_settings(&app);
+        let mut next_settings = previous_settings.clone();
+        next_settings.clamshell_microphone = clamshell_microphone.clone();
+        next_settings.clamshell_microphone_index = clamshell_microphone_index.clone();
+        write_settings(&app, next_settings);
+        if let Err(err) = rm.update_selected_device() {
+            write_settings(&app, previous_settings);
+            return Err(format!("Failed to update clamshell microphone: {}", err));
+        }
+    } else {
+        let mut settings = get_settings(&app);
+        settings.clamshell_microphone = clamshell_microphone.clone();
+        settings.clamshell_microphone_index = clamshell_microphone_index.clone();
+        write_settings(&app, settings);
+    }
+
+    crate::startup_warmup::ensure_startup_warmup(&app, "clamshell-microphone-changed");
+
     Ok(())
 }
 
@@ -189,9 +273,15 @@ pub fn set_clamshell_microphone(app: AppHandle, device_name: String) -> Result<(
 #[specta::specta]
 pub fn get_clamshell_microphone(app: AppHandle) -> Result<String, String> {
     let settings = get_settings(&app);
-    Ok(settings
-        .clamshell_microphone
-        .unwrap_or_else(|| "default".to_string()))
+    if let Some(index) = settings.clamshell_microphone_index {
+        return Ok(index);
+    }
+    if let Some(name) = settings.clamshell_microphone {
+        if let Ok((_, index)) = resolve_input_device_selector(&name) {
+            return Ok(index);
+        }
+    }
+    Ok("default".to_string())
 }
 
 #[tauri::command]

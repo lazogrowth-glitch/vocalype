@@ -5,12 +5,13 @@ import os
 import secrets
 import smtplib
 import sqlite3
-import ipaddress
 import re
 import time
 import uuid
+import hashlib
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import wraps
 from threading import Lock
@@ -46,6 +47,13 @@ def env_int(name: str, default: int, minimum: int) -> int:
         return default
 
 
+def env_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def parse_allowed_origins() -> list[str]:
     raw = os.environ.get("CORS_ALLOWED_ORIGINS", "")
     if raw.strip():
@@ -58,8 +66,6 @@ def parse_allowed_origins() -> list[str]:
 CORS_ALLOWED_ORIGINS = parse_allowed_origins()
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 15, 5)
 PASSWORD_MIN_LENGTH = env_int("MIN_PASSWORD_LENGTH", 12, 12)
-TRUST_PROXY_COUNT = env_int("TRUST_PROXY_COUNT", 0, 0)
-HSTS_MAX_AGE_SECONDS = env_int("HSTS_MAX_AGE_SECONDS", 31536000, 0)
 RATE_LIMIT_BUCKETS: defaultdict[str, deque[float]] = defaultdict(deque)
 RATE_LIMIT_LOCK = Lock()
 
@@ -83,11 +89,37 @@ ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
 ADMIN_TOKEN_SECRET = os.environ.get("ADMIN_TOKEN_SECRET", "")
 ADMIN_TOKEN_AUDIENCE = os.environ.get("ADMIN_TOKEN_AUDIENCE", "vocaltype-admin")
 ADMIN_TOKEN_MAX_AGE_SECONDS = env_int("ADMIN_TOKEN_MAX_AGE_SECONDS", 300, 60)
+LICENSE_GRANT_TTL_SECONDS = env_int("LICENSE_GRANT_TTL_SECONDS", 3600, 300)
+LICENSE_OFFLINE_TTL_SECONDS = env_int("LICENSE_OFFLINE_TTL_SECONDS", 72 * 3600, 3600)
+LICENSE_REFRESH_INTERVAL_SECONDS = env_int("LICENSE_REFRESH_INTERVAL_SECONDS", 20 * 60, 300)
+LICENSE_REVOCATION_GRACE_SECONDS = env_int(
+    "LICENSE_REVOCATION_GRACE_SECONDS", 24 * 3600, 3600
+)
+LICENSE_AUDIENCE = os.environ.get("LICENSE_AUDIENCE", "vocaltype-license")
+LICENSE_ISSUER = os.environ.get("LICENSE_ISSUER", "vocaltype-backend")
+LICENSE_STRICT_BUILD_APPROVAL = env_bool("LICENSE_STRICT_BUILD_APPROVAL", False)
+LICENSE_ALLOW_DEBUG_BUILDS = env_bool("LICENSE_ALLOW_DEBUG_BUILDS", True)
+LICENSE_ALLOWED_CHANNELS = {
+    item.strip()
+    for item in os.environ.get("LICENSE_ALLOWED_CHANNELS", "stable,dev").split(",")
+    if item.strip()
+}
+LICENSE_APPROVED_BUILD_HASHES = {
+    item.strip().lower()
+    for item in os.environ.get("LICENSE_APPROVED_BUILD_HASHES", "").split(",")
+    if item.strip()
+}
 APP_RETURN_URL = os.environ.get(
     "APP_RETURN_URL",
     os.environ.get("FRONTEND_URL", "https://vocaltypeai.com"),
 )
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "vocaltype.db")
+TRUST_X_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 
 stripe.api_key = STRIPE_SECRET_KEY
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
@@ -105,56 +137,27 @@ RESET_PASSWORD_LIMITS = (
     ("reset_password:email", 5, 900, 1800),
 )
 MAX_RESET_TOKEN_ATTEMPTS = 5
+ENTITLEMENT_STATUS_ACTIVE = "active"
+ENTITLEMENT_STATUS_REVOCATION_PENDING = "revocation_pending"
+ENTITLEMENT_STATUS_REVOKED = "revoked"
 
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class ValidationError(ValueError):
-    pass
-
-
-def normalize_ip(value: str | None) -> str | None:
-    if not value:
-        return None
-    candidate = value.strip()
-    if not candidate:
-        return None
-    try:
-        return str(ipaddress.ip_address(candidate))
-    except ValueError:
-        return None
-
-
-def forwarded_ip_chain() -> list[str]:
-    header = request.headers.get("X-Forwarded-For", "")
-    ips: list[str] = []
-    for part in header.split(","):
-        normalized = normalize_ip(part)
-        if normalized:
-            ips.append(normalized)
-    return ips
-
-
-def request_client_ip() -> str:
-    remote_ip = normalize_ip(request.remote_addr)
-    if TRUST_PROXY_COUNT <= 0:
-        return remote_ip or "unknown"
-
-    chain = forwarded_ip_chain()
-    if remote_ip and (not chain or chain[-1] != remote_ip):
-        chain.append(remote_ip)
-
-    if not chain:
-        return remote_ip or "unknown"
-
-    client_index = max(0, len(chain) - TRUST_PROXY_COUNT - 1)
-    return chain[client_index]
+def resolved_client_ip() -> str:
+    if TRUST_X_FORWARDED_FOR:
+        forwarded_for = request.headers.get("X-Forwarded-For", "")
+        if forwarded_for:
+            forwarded_ip = forwarded_for.split(",")[0].strip()
+            if forwarded_ip:
+                return forwarded_ip
+    return request.remote_addr or "unknown"
 
 
 def client_ip() -> str:
-    return request_client_ip()
+    return resolved_client_ip()
 
 
 def log_security_event(event: str, **fields) -> None:
@@ -169,35 +172,6 @@ def log_security_event(event: str, **fields) -> None:
 
 def normalize_email(value: str) -> str:
     return value.strip().lower()
-
-
-def expect_json_object() -> dict:
-    data = request.get_json(silent=True)
-    if not isinstance(data, dict):
-        raise ValidationError("Corps JSON invalide")
-    return data
-
-
-def read_string(
-    data: dict,
-    field_name: str,
-    *,
-    required: bool = False,
-    trim: bool = True,
-    max_length: int | None = None,
-) -> str:
-    value = data.get(field_name, "")
-    if value is None:
-        value = ""
-    if not isinstance(value, str):
-        raise ValidationError(f"Champ invalide: {field_name}")
-    if trim:
-        value = value.strip()
-    if max_length is not None and len(value) > max_length:
-        raise ValidationError(f"Champ trop long: {field_name}")
-    if required and not value:
-        raise ValidationError(f"Champ requis: {field_name}")
-    return value
 
 
 def email_is_valid(email: str) -> bool:
@@ -295,6 +269,12 @@ def to_iso(value: int | None) -> str | None:
     return datetime.fromtimestamp(value, timezone.utc).isoformat()
 
 
+def dt_to_iso(value: datetime | None) -> str | None:
+    if not value:
+        return None
+    return value.astimezone(timezone.utc).isoformat()
+
+
 def get_db():
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
@@ -368,6 +348,41 @@ def init_db():
     )
     ensure_column(db, "password_reset_tokens", "attempt_count", "INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "users", "token_version", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column(db, "users", "weekly_transcription_count", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column(db, "users", "weekly_transcription_reset_at", "TEXT")
+    ensure_column(db, "users", "trial_reminder_sent", "INTEGER NOT NULL DEFAULT 0")
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS premium_device_entitlements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            device_id TEXT NOT NULL,
+            plan TEXT NOT NULL DEFAULT 'premium',
+            entitlement_status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            last_seen_at TEXT,
+            last_grant_issued_at TEXT,
+            revoked_at TEXT,
+            grace_until TEXT,
+            app_version TEXT,
+            app_channel TEXT,
+            UNIQUE(user_id, device_id),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS license_integrity_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            device_id TEXT,
+            event_type TEXT NOT NULL,
+            details TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
     db.commit()
     db.close()
 
@@ -398,6 +413,409 @@ def load_user_by_email(email: str):
         return db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     finally:
         db.close()
+
+
+def record_license_integrity_event(
+    *,
+    event_type: str,
+    user_id: int | None,
+    device_id: str | None,
+    details: dict | None = None,
+) -> None:
+    db = get_db()
+    try:
+        db.execute(
+            """
+            INSERT INTO license_integrity_events (user_id, device_id, event_type, details)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                device_id,
+                event_type,
+                None if details is None else str(details),
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
+def issue_signed_token(payload: dict, expires_at: datetime) -> str:
+    token_payload = {
+        **payload,
+        "iss": LICENSE_ISSUER,
+        "aud": LICENSE_AUDIENCE,
+        "iat": int(time.time()),
+        "exp": expires_at,
+    }
+    return jwt.encode(token_payload, JWT_SECRET, algorithm="HS256")
+
+
+def load_device_entitlement(user_id: int, device_id: str):
+    db = get_db()
+    try:
+        return db.execute(
+            """
+            SELECT * FROM premium_device_entitlements
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (user_id, device_id),
+        ).fetchone()
+    finally:
+        db.close()
+
+
+def bootstrap_device_entitlement(
+    user,
+    device_id: str,
+    app_version: str | None = None,
+    app_channel: str | None = None,
+):
+    if not device_id or not has_access(user):
+        return load_device_entitlement(user["id"], device_id)
+
+    now_iso = dt_to_iso(utc_now())
+    db = get_db()
+    try:
+        db.execute(
+            """
+            INSERT OR IGNORE INTO premium_device_entitlements (
+                user_id,
+                device_id,
+                plan,
+                entitlement_status,
+                created_at,
+                last_seen_at,
+                last_grant_issued_at,
+                app_version,
+                app_channel
+            ) VALUES (?, ?, 'premium', ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user["id"],
+                device_id,
+                ENTITLEMENT_STATUS_ACTIVE,
+                now_iso,
+                now_iso,
+                now_iso,
+                app_version,
+                app_channel,
+            ),
+        )
+        db.execute(
+            """
+            UPDATE premium_device_entitlements
+            SET plan = 'premium',
+                entitlement_status = ?,
+                last_seen_at = ?,
+                last_grant_issued_at = ?,
+                revoked_at = NULL,
+                grace_until = NULL,
+                app_version = COALESCE(?, app_version),
+                app_channel = COALESCE(?, app_channel)
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (
+                ENTITLEMENT_STATUS_ACTIVE,
+                now_iso,
+                now_iso,
+                app_version,
+                app_channel,
+                user["id"],
+                device_id,
+            ),
+        )
+        db.commit()
+        return db.execute(
+            """
+            SELECT * FROM premium_device_entitlements
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (user["id"], device_id),
+        ).fetchone()
+    finally:
+        db.close()
+
+
+def sync_device_entitlement_state(
+    user,
+    device_id: str,
+    *,
+    app_version: str | None = None,
+    app_channel: str | None = None,
+):
+    if not device_id:
+        return None
+
+    db = get_db()
+    try:
+        now = utc_now()
+        now_iso = dt_to_iso(now)
+        row = db.execute(
+            """
+            SELECT * FROM premium_device_entitlements
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (user["id"], device_id),
+        ).fetchone()
+
+        tier = get_user_tier(user)
+        if row is None:
+            db.execute(
+                """
+                INSERT INTO premium_device_entitlements (
+                    user_id,
+                    device_id,
+                    plan,
+                    entitlement_status,
+                    created_at,
+                    last_seen_at,
+                    last_grant_issued_at,
+                    app_version,
+                    app_channel
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    user["id"],
+                    device_id,
+                    tier,
+                    ENTITLEMENT_STATUS_ACTIVE,
+                    now_iso,
+                    now_iso,
+                    now_iso,
+                    app_version,
+                    app_channel,
+                ),
+            )
+        else:
+            db.execute(
+                """
+                UPDATE premium_device_entitlements
+                SET plan = ?,
+                    entitlement_status = ?,
+                    last_seen_at = ?,
+                    last_grant_issued_at = ?,
+                    revoked_at = NULL,
+                    grace_until = NULL,
+                    app_version = COALESCE(?, app_version),
+                    app_channel = COALESCE(?, app_channel)
+                WHERE id = ?
+                """,
+                (
+                    tier,
+                    ENTITLEMENT_STATUS_ACTIVE,
+                    now_iso,
+                    now_iso,
+                    app_version,
+                    app_channel,
+                    row["id"],
+                ),
+            )
+        db.commit()
+        return db.execute(
+            """
+            SELECT * FROM premium_device_entitlements
+            WHERE user_id = ? AND device_id = ?
+            """,
+            (user["id"], device_id),
+        ).fetchone()
+    finally:
+        db.close()
+
+
+def sync_all_entitlements_for_user(user_id: int) -> None:
+    user = load_user_by_id(user_id)
+    if not user:
+        return
+
+    db = get_db()
+    try:
+        device_rows = db.execute(
+            "SELECT device_id FROM premium_device_entitlements WHERE user_id = ?",
+            (user_id,),
+        ).fetchall()
+    finally:
+        db.close()
+
+    for row in device_rows:
+        sync_device_entitlement_state(user, row["device_id"])
+
+
+def entitlement_allows_access(entitlement) -> bool:
+    if entitlement is None:
+        return False
+    status = entitlement["entitlement_status"] or ENTITLEMENT_STATUS_ACTIVE
+    if status == ENTITLEMENT_STATUS_ACTIVE:
+        return True
+    if status == ENTITLEMENT_STATUS_REVOCATION_PENDING:
+        grace_until = parse_iso(entitlement["grace_until"])
+        return bool(grace_until and grace_until > utc_now())
+    return False
+
+
+def evaluate_build_integrity(
+    *,
+    user,
+    device_id: str,
+    app_channel: str | None,
+    integrity: dict | None,
+):
+    integrity = integrity or {}
+    anomalies: list[str] = []
+    binary_sha256 = str(integrity.get("binary_sha256", "")).strip().lower() or None
+    release_build = bool(integrity.get("release_build", False))
+    tamper_flags = integrity.get("tamper_flags") or []
+
+    if app_channel and LICENSE_ALLOWED_CHANNELS and app_channel not in LICENSE_ALLOWED_CHANNELS:
+        anomalies.append(f"channel_not_allowed:{app_channel}")
+
+    if not release_build and not LICENSE_ALLOW_DEBUG_BUILDS:
+        anomalies.append("debug_build_disallowed")
+
+    for item in tamper_flags:
+        value = str(item).strip()
+        if value:
+            anomalies.append(f"tamper_flag:{value}")
+
+    if LICENSE_APPROVED_BUILD_HASHES and binary_sha256 not in LICENSE_APPROVED_BUILD_HASHES:
+        anomalies.append("unapproved_binary_hash")
+
+    if anomalies:
+        log_security_event(
+            "license_integrity_anomaly",
+            user_id=user["id"],
+            device_id=device_id,
+            anomalies=",".join(anomalies),
+            app_channel=app_channel,
+            binary_sha256=binary_sha256,
+        )
+        record_license_integrity_event(
+            event_type="license_integrity_anomaly",
+            user_id=user["id"],
+            device_id=device_id,
+            details={
+                "anomalies": anomalies,
+                "app_channel": app_channel,
+                "binary_sha256": binary_sha256,
+                "release_build": release_build,
+            },
+        )
+
+    blocked = LICENSE_STRICT_BUILD_APPROVAL and bool(anomalies)
+    return {
+        "binary_sha256": binary_sha256,
+        "release_build": release_build,
+        "anomalies": anomalies,
+        "blocked": blocked,
+    }
+
+
+def build_license_payloads(user, entitlement, *, device_id: str, integrity_evaluation: dict | None = None):
+    now = utc_now()
+    grant_expires_at = now + timedelta(seconds=LICENSE_GRANT_TTL_SECONDS)
+    offline_expires_at = now + timedelta(seconds=LICENSE_OFFLINE_TTL_SECONDS)
+    grace_until = parse_iso(entitlement["grace_until"]) if entitlement else None
+
+    if grace_until:
+        if grace_until < grant_expires_at:
+            grant_expires_at = grace_until
+        if grace_until < offline_expires_at:
+            offline_expires_at = grace_until
+
+    status = entitlement["entitlement_status"] if entitlement else ENTITLEMENT_STATUS_REVOKED
+    plan = entitlement["plan"] if entitlement else "premium"
+    entitlements = ["premium"] if entitlement_allows_access(entitlement) else []
+    app_version = entitlement["app_version"] if entitlement else None
+    app_channel = entitlement["app_channel"] if entitlement else None
+
+    issued_at_iso = dt_to_iso(now)
+    grant_expires_at_iso = dt_to_iso(grant_expires_at)
+    offline_expires_at_iso = dt_to_iso(offline_expires_at)
+    grace_until_iso = dt_to_iso(grace_until)
+    model_unlock_key = hashlib.sha256(
+        "|".join(
+            [
+                "vocaltype-model-unlock-v1",
+                JWT_SECRET,
+                str(user["id"]),
+                device_id,
+                plan,
+                status,
+                offline_expires_at_iso or "",
+            ]
+        ).encode("utf-8")
+    ).hexdigest()
+
+    grant_payload = {
+        "type": "license_grant",
+        "sub": str(user["id"]),
+        "user_id": str(user["id"]),
+        "device_id": device_id,
+        "plan": plan,
+        "entitlements": entitlements,
+        "entitlement_status": status,
+        "app_version": app_version,
+        "app_channel": app_channel,
+        "grace_until": grace_until_iso,
+        "model_unlock_key": model_unlock_key,
+    }
+    offline_payload = {
+        "type": "offline_cache",
+        "sub": str(user["id"]),
+        "user_id": str(user["id"]),
+        "device_id": device_id,
+        "plan": plan,
+        "entitlements": entitlements,
+        "entitlement_status": status,
+        "app_version": app_version,
+        "app_channel": app_channel,
+        "grace_until": grace_until_iso,
+        "last_validated_at": issued_at_iso,
+        "model_unlock_key": model_unlock_key,
+    }
+
+    return {
+        "state": "online_valid" if entitlements else "expired",
+        "issued_at": issued_at_iso,
+        "grant_token": issue_signed_token(grant_payload, grant_expires_at),
+        "grant_expires_at": grant_expires_at_iso,
+        "offline_token": issue_signed_token(offline_payload, offline_expires_at),
+        "offline_expires_at": offline_expires_at_iso,
+        "refresh_after_seconds": LICENSE_REFRESH_INTERVAL_SECONDS,
+        "device_id": device_id,
+        "plan": plan,
+        "entitlements": entitlements,
+        "entitlement_status": status,
+        "grace_until": grace_until_iso,
+        "model_unlock_key": model_unlock_key,
+        "build_binding_sha256": (integrity_evaluation or {}).get("binary_sha256"),
+        "integrity_anomalies": (integrity_evaluation or {}).get("anomalies", []),
+    }
+
+
+def build_license_status_response(user, entitlement, *, device_id: str):
+    tier = get_user_tier(user)
+    entitlement_ok = entitlement_allows_access(entitlement)
+    # Both tiers are valid — basic users still get an online_valid license
+    state = "online_valid" if entitlement_ok else "expired"
+    plan = tier  # "premium" or "basic"
+    entitlements = [plan] if entitlement_ok else []
+    return {
+        "state": state,
+        "device_id": device_id,
+        "user_id": str(user["id"]),
+        "subscription_status": user["subscription_status"],
+        "subscription_has_access": True,
+        "entitlement_status": (
+            entitlement["entitlement_status"] if entitlement else ENTITLEMENT_STATUS_REVOKED
+        ),
+        "plan": plan,
+        "grace_until": dt_to_iso(parse_iso(entitlement["grace_until"])) if entitlement else None,
+        "grant_expires_at": None,
+        "offline_expires_at": None,
+        "entitlements": entitlements,
+    }
 
 
 def device_is_registered(device_id: str) -> bool:
@@ -466,7 +884,7 @@ def parse_iso(value: str | None):
 
 
 def get_client_ip() -> str:
-    return request_client_ip()
+    return resolved_client_ip()
 
 
 def normalize_rate_limit_key(scope: str, identifier: str) -> str:
@@ -579,22 +997,51 @@ def scoped_limits(base_identifier: str, limits: tuple[tuple[str, int, int, int],
     )
 
 
-def has_access(user) -> bool:
+BASIC_WEEKLY_TRANSCRIPTION_LIMIT = 30
+
+
+def get_user_tier(user) -> str:
+    """Returns 'premium' or 'basic'. Never returns a hard-blocked state."""
     status = user["subscription_status"]
     if status == "active":
-        return True
-
+        return "premium"
     if status == "trialing":
         trial_end = parse_iso(user["trial_end"])
-        if not trial_end:
-            return False
-        return utc_now() < trial_end
-
-    return False
+        if trial_end and utc_now() < trial_end:
+            return "premium"
+    return "basic"
 
 
-def build_user_response(user, token: str):
+def has_access(user) -> bool:
+    """True for all registered users — both premium and basic."""
+    return True
+
+
+def has_premium_access(user) -> bool:
+    return get_user_tier(user) == "premium"
+
+
+def get_weekly_quota(user) -> dict:
+    """Returns current week's transcription usage for basic users."""
+    now = utc_now()
+    reset_at = parse_iso(user.get("weekly_transcription_reset_at"))
+    count = int(user.get("weekly_transcription_count") or 0)
+
+    # Reset counter if the window has passed (rolling 7-day window)
+    if reset_at is None or now >= reset_at:
+        count = 0
+
     return {
+        "count": count,
+        "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
+        "remaining": max(0, BASIC_WEEKLY_TRANSCRIPTION_LIMIT - count),
+        "reset_at": dt_to_iso(reset_at) if reset_at and now < reset_at else None,
+    }
+
+
+def build_user_response(user, token: str, *, show_trial_reminder: bool = False):
+    tier = get_user_tier(user)
+    response = {
         "token": token,
         "user": {
             "id": str(user["id"]),
@@ -605,9 +1052,15 @@ def build_user_response(user, token: str):
             "status": user["subscription_status"],
             "trial_ends_at": user["trial_end"],
             "current_period_ends_at": user["period_end"],
-            "has_access": has_access(user),
+            "has_access": True,
+            "tier": tier,
         },
     }
+    if tier == "basic":
+        response["subscription"]["quota"] = get_weekly_quota(user)
+    if show_trial_reminder:
+        response["show_trial_reminder"] = True
+    return response
 
 
 def auth_required(handler):
@@ -666,18 +1119,7 @@ def add_security_headers(response):
         "Permissions-Policy",
         "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=()",
     )
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
-    if HSTS_MAX_AGE_SECONDS > 0 and (request.is_secure or forwarded_proto == "https"):
-        response.headers.setdefault(
-            "Strict-Transport-Security",
-            f"max-age={HSTS_MAX_AGE_SECONDS}; includeSubDomains",
-        )
     return response
-
-
-@app.errorhandler(ValidationError)
-def handle_validation_error(error: ValidationError):
-    return jsonify({"error": str(error)}), 400
 
 
 def require_secret_configured():
@@ -685,10 +1127,27 @@ def require_secret_configured():
         raise RuntimeError("JWT_SECRET is required")
     if len(JWT_SECRET) < 32:
         raise RuntimeError("JWT_SECRET must be at least 32 characters long")
+    if ADMIN_TOKEN_SECRET and len(ADMIN_TOKEN_SECRET) < 32:
+        raise RuntimeError("ADMIN_TOKEN_SECRET must be at least 32 characters long")
     if ADMIN_SECRET:
         app.logger.warning(
             "ADMIN_SECRET is deprecated; use short-lived admin JWTs signed with ADMIN_TOKEN_SECRET instead"
         )
+    if TRUST_X_FORWARDED_FOR:
+        app.logger.warning(
+            "TRUST_X_FORWARDED_FOR is enabled. Only use this behind a trusted reverse proxy that rewrites X-Forwarded-For."
+        )
+    if not STRIPE_WEBHOOK_SECRET and STRIPE_SECRET_KEY:
+        app.logger.warning(
+            "STRIPE_SECRET_KEY is configured without STRIPE_WEBHOOK_SECRET; webhook verification will fail until both are set."
+        )
+    if not ADMIN_TOKEN_SECRET:
+        app.logger.warning(
+            "ADMIN_TOKEN_SECRET is not configured; admin JWT flows are disabled until it is set."
+        )
+
+
+require_secret_configured()
 
 
 def extract_bearer_token() -> str:
@@ -792,6 +1251,248 @@ def send_reset_email(to_email: str, code: str) -> None:
         server.sendmail(smtp_from, [to_email], msg.as_string())
 
 
+def send_trial_start_email(to_email: str, name: str) -> None:
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    smtp_from = os.environ.get("SMTP_FROM", smtp_user)
+
+    if not smtp_host:
+        return
+
+    site_url = APP_RETURN_URL
+    first_name = name.split()[0] if name else "là"
+
+    plain = (
+        f"Bonjour {first_name},\n\n"
+        "Ton accès Premium VocalType est actif. 14 jours complets, sans carte.\n\n"
+        "Ce que tu as maintenant :\n"
+        "  • Injection native dans toutes tes apps\n"
+        "  • Raccourci clavier personnalisable\n"
+        "  • Transcriptions illimitées\n"
+        "  • Historique complet\n\n"
+        "Aucune action requise — ton trial a démarré automatiquement.\n\n"
+        f"Ouvre VocalType et commence à dicter : {site_url}\n\n"
+        "— L'équipe VocalType"
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f0f0f;font-family:'Segoe UI',system-ui,sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#181818;border-radius:12px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+
+        <!-- Header -->
+        <tr><td style="padding:32px 36px 24px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="display:inline-block;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#c9a84c;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;">Premium · 14 jours</span>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:28px 36px;">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:600;color:#fff;line-height:1.3;">
+            Bonjour {first_name},
+          </p>
+          <p style="margin:0 0 24px;font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">
+            Ton accès Premium VocalType est actif.<br>
+            14 jours complets, sans carte de crédit.
+          </p>
+
+          <!-- Features -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+            {"".join(
+              f'<tr><td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
+              f'<span style="color:#c9a84c;margin-right:10px;">✓</span>'
+              f'<span style="font-size:13px;color:rgba(255,255,255,0.75);">{feat}</span></td></tr>'
+              for feat in [
+                "Injection native dans toutes tes apps",
+                "Raccourci clavier personnalisable",
+                "Transcriptions illimitées",
+                "Historique complet",
+              ]
+            )}
+          </table>
+
+          <!-- CTA -->
+          <a href="{site_url}" style="display:inline-block;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#c9a84c;font-size:13px;font-weight:600;padding:11px 24px;border-radius:8px;text-decoration:none;">
+            Ouvrir VocalType →
+          </a>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:16px 36px;border-top:1px solid rgba(255,255,255,0.06);">
+          <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2);line-height:1.6;">
+            Aucune carte requise pendant le trial. Tu peux annuler à tout moment.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Ton accès Premium VocalType est actif — 14 jours complets"
+    msg["From"] = smtp_from
+    msg["To"] = to_email
+    msg.attach(MIMEText(plain, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            if smtp_user and smtp_pass:
+                server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_from, [to_email], msg.as_string())
+    except Exception:
+        app.logger.warning("send_trial_start_email failed to=%s", to_email)
+
+
+def send_trial_reminder_email(to_email: str, name: str, days_left: int) -> None:
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    smtp_from = os.environ.get("SMTP_FROM", smtp_user)
+
+    if not smtp_host:
+        return
+
+    site_url = APP_RETURN_URL
+    first_name = name.split()[0] if name else "là"
+    days_str = "demain" if days_left <= 1 else f"dans {days_left} jours"
+
+    plain = (
+        f"Bonjour {first_name},\n\n"
+        f"Ton trial Premium VocalType expire {days_str}.\n\n"
+        "Ce que tu perdras sans abonnement :\n"
+        "  • Injection native dans tes apps (retour au presse-papier)\n"
+        "  • Raccourcis clavier personnalisés (désactivés)\n"
+        "  • Transcriptions illimitées (limité à 30/semaine)\n"
+        "  • Historique complet (limité à 5 entrées)\n\n"
+        "Passe à Premium maintenant pour continuer sans interruption.\n\n"
+        f"Voir les offres : {site_url}\n\n"
+        "— L'équipe VocalType"
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f0f0f;font-family:'Segoe UI',system-ui,sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#181818;border-radius:12px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;">
+
+        <!-- Header -->
+        <tr><td style="padding:32px 36px 24px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="display:inline-block;background:rgba(234,88,12,0.12);border:1px solid rgba(234,88,12,0.25);color:#fb923c;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:100px;">⚠ Trial expire {days_str}</span>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:28px 36px;">
+          <p style="margin:0 0 8px;font-size:22px;font-weight:600;color:#fff;line-height:1.3;">
+            Bonjour {first_name},
+          </p>
+          <p style="margin:0 0 24px;font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">
+            Ton accès Premium expire {days_str}.<br>
+            Voici ce que tu perdras si tu ne passes pas à Premium :
+          </p>
+
+          <!-- What you'll lose -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+            {"".join(
+              f'<tr><td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
+              f'<span style="color:#fb923c;margin-right:10px;">✕</span>'
+              f'<span style="font-size:13px;color:rgba(255,255,255,0.75);">{feat}</span></td></tr>'
+              for feat in [
+                "Injection native dans tes apps (retour au presse-papier)",
+                "Raccourcis clavier personnalisés (désactivés)",
+                "Transcriptions illimitées (limité à 30/semaine)",
+                "Historique complet (limité à 5 entrées)",
+              ]
+            )}
+          </table>
+
+          <!-- CTA -->
+          <a href="{site_url}" style="display:inline-block;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#c9a84c;font-size:13px;font-weight:600;padding:11px 24px;border-radius:8px;text-decoration:none;">
+            Passer à Premium →
+          </a>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:16px 36px;border-top:1px solid rgba(255,255,255,0.06);">
+          <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2);line-height:1.6;">
+            Tu peux continuer à utiliser VocalType en mode Basic après l'expiration.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"Ton trial VocalType expire {days_str} — passe à Premium"
+    msg["From"] = smtp_from
+    msg["To"] = to_email
+    msg.attach(MIMEText(plain, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            if smtp_user and smtp_pass:
+                server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_from, [to_email], msg.as_string())
+    except Exception:
+        app.logger.warning("send_trial_reminder_email failed to=%s", to_email)
+
+
+def maybe_send_trial_reminder(user) -> bool:
+    """
+    Returns True (and triggers reminder) if the user is trialing and their trial
+    ends in 2 days or fewer, and the reminder hasn't been sent yet.
+    """
+    if user.get("subscription_status") != "trialing":
+        return False
+    if user.get("trial_reminder_sent"):
+        return False
+
+    trial_end = parse_iso(user.get("trial_end"))
+    if trial_end is None:
+        return False
+
+    now = utc_now()
+    days_left = (trial_end - now).days  # floor division
+
+    if days_left > 2:
+        return False
+
+    # Mark sent immediately to prevent duplicate sends under concurrent requests
+    db = get_db()
+    db.execute(
+        "UPDATE users SET trial_reminder_sent = 1 WHERE id = ?",
+        (user["id"],),
+    )
+    db.commit()
+
+    days_left_clamped = max(0, days_left)
+    import threading
+    threading.Thread(
+        target=send_trial_reminder_email,
+        args=(user["email"], user.get("name") or "", days_left_clamped),
+        daemon=True,
+    ).start()
+
+    return True
+
+
 def increment_latest_reset_attempt(db: sqlite3.Connection, user_id: int) -> None:
     latest_row = db.execute(
         """
@@ -846,11 +1547,11 @@ def health():
 
 @app.route("/auth/register", methods=["POST"])
 def register():
-    data = expect_json_object()
-    email = normalize_email(read_string(data, "email", required=True, max_length=254))
-    password = read_string(data, "password", required=True, trim=False, max_length=1024)
-    name = read_string(data, "name", max_length=120) or None
-    device_id = read_string(data, "device_id", max_length=128) or None
+    data = request.get_json(silent=True) or {}
+    email = normalize_email(data.get("email", ""))
+    password = data.get("password", "")
+    name = data.get("name", "").strip() or None
+    device_id = data.get("device_id", "").strip() or None
     ip_address = client_ip()
 
     response = rate_limit_response(
@@ -892,7 +1593,7 @@ def register():
         return jsonify({"error": "Cet email est déjà utilisé"}), 409
 
     try:
-        trial_end = (utc_now() + timedelta(days=7)).isoformat()
+        trial_end = (utc_now() + timedelta(days=14)).isoformat()
         db = get_db()
         try:
             db.execute(
@@ -925,6 +1626,15 @@ def register():
 
         token = make_token(user)
         log_security_event("register_success", user_id=user["id"], email=email, ip=ip_address)
+
+        # Send trial welcome email in background — never blocks the registration response
+        import threading
+        threading.Thread(
+            target=send_trial_start_email,
+            args=(email, name or ""),
+            daemon=True,
+        ).start()
+
         return jsonify(build_user_response(user, token)), 201
     except Exception:
         app.logger.exception("register_failed email=%s ip=%s", email, ip_address)
@@ -933,10 +1643,10 @@ def register():
 
 @app.route("/auth/login", methods=["POST"])
 def login():
-    data = expect_json_object()
-    email = normalize_email(read_string(data, "email", required=True, max_length=254))
-    password = read_string(data, "password", required=True, trim=False, max_length=1024)
-    device_id = read_string(data, "device_id", max_length=128) or None
+    data = request.get_json(silent=True) or {}
+    email = normalize_email(data.get("email", ""))
+    password = data.get("password", "")
+    device_id = data.get("device_id", "").strip() or None
     ip_address = client_ip()
 
     response = rate_limit_response(
@@ -992,7 +1702,234 @@ def login():
 @auth_required
 def session(user):
     token = make_token(user)
-    return jsonify(build_user_response(user, token))
+    show_reminder = maybe_send_trial_reminder(user)
+    return jsonify(build_user_response(user, token, show_trial_reminder=show_reminder))
+
+
+def parse_license_request_data():
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get("device_id", "")).strip().lower()
+    app_version = str(data.get("app_version", "")).strip() or None
+    app_channel = str(data.get("app_channel", "")).strip() or None
+    integrity = data.get("integrity")
+    return data, device_id, app_version, app_channel, integrity
+
+
+def validate_license_device(device_id: str):
+    if not device_id:
+        return jsonify({"error": "Identifiant appareil requis"}), 400
+    if not device_id_is_valid(device_id):
+        return jsonify({"error": "Identifiant appareil invalide"}), 400
+    if not device_id_is_stable(device_id):
+        return jsonify({"error": "Identifiant appareil non supporté"}), 400
+    return None
+
+
+def prepare_license_response(
+    user,
+    device_id: str,
+    app_version: str | None,
+    app_channel: str | None,
+    integrity: dict | None,
+):
+    register_device(device_id, user["id"])
+    bootstrap_device_entitlement(user, device_id, app_version, app_channel)
+    entitlement = sync_device_entitlement_state(
+        user,
+        device_id,
+        app_version=app_version,
+        app_channel=app_channel,
+    )
+    integrity_evaluation = evaluate_build_integrity(
+        user=user,
+        device_id=device_id,
+        app_channel=app_channel,
+        integrity=integrity,
+    )
+    if not entitlement_allows_access(entitlement) or integrity_evaluation["blocked"]:
+        return None, entitlement, integrity_evaluation
+    return (
+        build_license_payloads(
+            user,
+            entitlement,
+            device_id=device_id,
+            integrity_evaluation=integrity_evaluation,
+        ),
+        entitlement,
+        integrity_evaluation,
+    )
+
+
+@app.route("/license/issue", methods=["POST"])
+@auth_required
+def issue_license(user):
+    _, device_id, app_version, app_channel, integrity = parse_license_request_data()
+    validation = validate_license_device(device_id)
+    if validation:
+        return validation
+
+    license_payload, entitlement, integrity_evaluation = prepare_license_response(
+        user, device_id, app_version, app_channel, integrity
+    )
+    if not license_payload:
+        status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+        status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+        status_payload["integrity_anomalies"] = integrity_evaluation["anomalies"]
+        return jsonify({"error": "Accès premium inactif", "license": status_payload}), 403
+
+    log_security_event(
+        "license_issue_success",
+        user_id=user["id"],
+        device_id=device_id,
+        status=entitlement["entitlement_status"] if entitlement else None,
+    )
+    return jsonify({"license": license_payload})
+
+
+@app.route("/license/refresh", methods=["POST"])
+@auth_required
+def refresh_license(user):
+    _, device_id, app_version, app_channel, integrity = parse_license_request_data()
+    validation = validate_license_device(device_id)
+    if validation:
+        return validation
+
+    license_payload, entitlement, integrity_evaluation = prepare_license_response(
+        user, device_id, app_version, app_channel, integrity
+    )
+    if not license_payload:
+        status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+        status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+        status_payload["integrity_anomalies"] = integrity_evaluation["anomalies"]
+        return jsonify({"error": "Accès premium expiré", "license": status_payload}), 403
+
+    return jsonify({"license": license_payload})
+
+
+@app.route("/license/heartbeat", methods=["POST"])
+@auth_required
+def license_heartbeat(user):
+    _, device_id, app_version, app_channel, integrity = parse_license_request_data()
+    validation = validate_license_device(device_id)
+    if validation:
+        return validation
+
+    integrity_evaluation = evaluate_build_integrity(
+        user=user,
+        device_id=device_id,
+        app_channel=app_channel,
+        integrity=integrity,
+    )
+    entitlement = sync_device_entitlement_state(
+        user,
+        device_id,
+        app_version=app_version,
+        app_channel=app_channel,
+    )
+    status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+    status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+    status_payload["integrity_anomalies"] = integrity_evaluation["anomalies"]
+    return jsonify({"license": status_payload})
+
+
+@app.route("/license/status", methods=["GET"])
+@auth_required
+def license_status(user):
+    device_id = request.args.get("device_id", "").strip().lower()
+    validation = validate_license_device(device_id)
+    if validation:
+        return validation
+
+    entitlement = sync_device_entitlement_state(user, device_id)
+    status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+    status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+    return jsonify({"license": status_payload})
+
+
+@app.route("/license/report-anomaly", methods=["POST"])
+@auth_required
+def report_license_anomaly(user):
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get("device_id", "")).strip().lower() or None
+    anomaly_type = str(data.get("anomaly_type", "")).strip() or "unknown"
+    details = data.get("details")
+
+    record_license_integrity_event(
+        event_type=anomaly_type,
+        user_id=user["id"],
+        device_id=device_id,
+        details=details if isinstance(details, dict) else {"details": details},
+    )
+    log_security_event(
+        "license_anomaly_reported",
+        user_id=user["id"],
+        device_id=device_id,
+        anomaly_type=anomaly_type,
+    )
+    return jsonify({"ok": True})
+
+
+@app.route("/transcription/quota", methods=["GET"])
+@auth_required
+def transcription_quota(user):
+    """Returns the current week's transcription quota for basic-tier users."""
+    tier = get_user_tier(user)
+    quota = get_weekly_quota(user)
+    return jsonify({"tier": tier, "quota": quota})
+
+
+@app.route("/transcription/record", methods=["POST"])
+@auth_required
+def transcription_record(user):
+    """Records a completed transcription and enforces the weekly quota for basic users.
+    Returns 200 with remaining quota, or 429 when the limit is reached.
+    Premium users always get 200 with no quota info.
+    """
+    tier = get_user_tier(user)
+    if tier == "premium":
+        return jsonify({"tier": "premium", "ok": True})
+
+    now = utc_now()
+    reset_at = parse_iso(user.get("weekly_transcription_reset_at"))
+    count = int(user.get("weekly_transcription_count") or 0)
+
+    # Reset counter if the week window has passed
+    if reset_at is None or now >= reset_at:
+        count = 0
+        reset_at = now + timedelta(days=7)
+
+    if count >= BASIC_WEEKLY_TRANSCRIPTION_LIMIT:
+        quota = {
+            "count": count,
+            "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
+            "remaining": 0,
+            "reset_at": dt_to_iso(reset_at),
+        }
+        return jsonify({"error": "Quota hebdomadaire atteint", "tier": "basic", "quota": quota}), 429
+
+    count += 1
+    db = get_db()
+    try:
+        db.execute(
+            """
+            UPDATE users
+            SET weekly_transcription_count = ?,
+                weekly_transcription_reset_at = ?
+            WHERE id = ?
+            """,
+            (count, dt_to_iso(reset_at), user["id"]),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    quota = {
+        "count": count,
+        "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
+        "remaining": BASIC_WEEKLY_TRANSCRIPTION_LIMIT - count,
+        "reset_at": dt_to_iso(reset_at),
+    }
+    return jsonify({"tier": "basic", "ok": True, "quota": quota})
 
 
 @app.route("/billing/checkout", methods=["POST"])
@@ -1000,8 +1937,8 @@ def session(user):
 def billing_checkout(user):
     try:
         require_billing_configured()
-        if has_access(user):
-            return jsonify({"error": "Accès déjà actif"}), 400
+        if has_premium_access(user):
+            return jsonify({"error": "Abonnement premium déjà actif"}), 400
 
         customer_id = ensure_customer(user)
         checkout = stripe.checkout.Session.create(
@@ -1069,8 +2006,15 @@ def webhook():
                 (status, to_iso(trial_end), to_iso(period_end), customer_id),
             )
             db.commit()
+            row = db.execute(
+                "SELECT id FROM users WHERE stripe_customer_id = ?",
+                (customer_id,),
+            ).fetchone()
         finally:
             db.close()
+
+        if row:
+            sync_all_entitlements_for_user(row["id"])
 
     event_type = event["type"]
     data = event["data"]["object"]
@@ -1098,8 +2042,8 @@ def webhook():
 
 @app.route("/admin/activate", methods=["POST"])
 def admin_activate():
-    data = expect_json_object()
-    email = normalize_email(read_string(data, "email", required=True, max_length=254))
+    data = request.get_json(silent=True) or {}
+    email = normalize_email(data.get("email", ""))
     ip_address = client_ip()
     admin_subject = get_current_admin_subject("admin:activate")
 
@@ -1115,6 +2059,9 @@ def admin_activate():
     if not admin_subject:
         log_security_event("admin_activate_denied", email=email, ip=ip_address)
         return jsonify({"error": "Non autorisé"}), 401
+
+    if not email:
+        return jsonify({"error": "Email requis"}), 400
 
     db = get_db()
     try:
@@ -1135,6 +2082,8 @@ def admin_activate():
     finally:
         db.close()
 
+    sync_all_entitlements_for_user(user["id"])
+
     log_security_event(
         "admin_activate_success",
         email=email,
@@ -1151,10 +2100,99 @@ def admin_activate():
     )
 
 
+@app.route("/license/revoke-device", methods=["POST"])
+def revoke_device():
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get("device_id", "")).strip().lower()
+    user_id = data.get("user_id")
+    admin_subject = get_current_admin_subject("admin:license")
+    ip_address = client_ip()
+
+    response = rate_limit_response(
+        f"license_revoke:ip:{ip_address}",
+        limit=20,
+        window_seconds=3600,
+        message="Trop de tentatives administrateur. Réessayez plus tard.",
+    )
+    if response:
+        return response
+
+    if not admin_subject:
+        log_security_event("license_revoke_denied", ip=ip_address, device_id=device_id)
+        return jsonify({"error": "Non autorisé"}), 401
+
+    if not device_id or not device_id_is_valid(device_id):
+        return jsonify({"error": "Identifiant appareil invalide"}), 400
+
+    db = get_db()
+    try:
+        entitlement = None
+        if user_id:
+            entitlement = db.execute(
+                """
+                SELECT * FROM premium_device_entitlements
+                WHERE user_id = ? AND device_id = ?
+                """,
+                (user_id, device_id),
+            ).fetchone()
+        else:
+            entitlement = db.execute(
+                """
+                SELECT * FROM premium_device_entitlements
+                WHERE device_id = ?
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (device_id,),
+            ).fetchone()
+
+        if not entitlement:
+            return jsonify({"error": "Entitlement appareil introuvable"}), 404
+
+        now = utc_now()
+        db.execute(
+            """
+            UPDATE premium_device_entitlements
+            SET entitlement_status = ?,
+                revoked_at = ?,
+                grace_until = ?,
+                last_seen_at = ?
+            WHERE id = ?
+            """,
+            (
+                ENTITLEMENT_STATUS_REVOKED,
+                dt_to_iso(now),
+                dt_to_iso(now),
+                dt_to_iso(now),
+                entitlement["id"],
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    log_security_event(
+        "license_revoke_success",
+        admin_subject=admin_subject,
+        device_id=device_id,
+        user_id=user_id or entitlement["user_id"],
+        ip=ip_address,
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "device_id": device_id,
+            "user_id": str(user_id or entitlement["user_id"]),
+            "status": ENTITLEMENT_STATUS_REVOKED,
+            "admin_subject": admin_subject,
+        }
+    )
+
+
 @app.route("/auth/forgot-password", methods=["POST"])
 def forgot_password():
-    data = expect_json_object()
-    email = normalize_email(read_string(data, "email", required=True, max_length=254))
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "").strip().lower()
     client_ip = get_client_ip()
 
     retry_after = enforce_rate_limits(
@@ -1212,9 +2250,9 @@ def forgot_password():
 
 @app.route("/auth/verify-reset-code", methods=["POST"])
 def verify_reset_code():
-    data = expect_json_object()
-    email = normalize_email(read_string(data, "email", required=True, max_length=254))
-    code = read_string(data, "code", required=True, max_length=6)
+    data = request.get_json(silent=True) or {}
+    email = normalize_email(data.get("email", ""))
+    code = data.get("code", "").strip()
     client_ip = get_client_ip()
 
     retry_after = enforce_rate_limits(
@@ -1269,12 +2307,10 @@ def verify_reset_code():
 
 @app.route("/auth/reset-password", methods=["POST"])
 def reset_password():
-    data = expect_json_object()
-    email = normalize_email(read_string(data, "email", required=True, max_length=254))
-    code = read_string(data, "code", required=True, max_length=6)
-    new_password = read_string(
-        data, "new_password", required=True, trim=False, max_length=1024
-    )
+    data = request.get_json(silent=True) or {}
+    email = normalize_email(data.get("email", ""))
+    code = data.get("code", "").strip()
+    new_password = data.get("new_password", "")
     client_ip = get_client_ip()
 
     response = rate_limit_response(
@@ -1368,13 +2404,9 @@ def reset_password():
 @app.route("/auth/change-password", methods=["POST"])
 @auth_required
 def change_password(user):
-    data = expect_json_object()
-    old_password = read_string(
-        data, "old_password", required=True, trim=False, max_length=1024
-    )
-    new_password = read_string(
-        data, "new_password", required=True, trim=False, max_length=1024
-    )
+    data = request.get_json(silent=True) or {}
+    old_password = data.get("old_password", "")
+    new_password = data.get("new_password", "")
     ip_address = client_ip()
 
     if not check_password_hash(user["password_hash"], old_password):

@@ -1,7 +1,10 @@
+pub mod app_context;
 pub mod audio;
+pub mod dictionary;
 pub mod gemini;
 pub mod history;
 pub mod models;
+pub mod snippets;
 pub mod transcription;
 
 use crate::adaptive_runtime::{
@@ -10,6 +13,7 @@ use crate::adaptive_runtime::{
 use crate::context_detector::{detect_current_app_context, AppTranscriptionContext};
 use crate::runtime_observability::{collect_runtime_diagnostics, RuntimeDiagnostics};
 use crate::settings::{get_settings, write_settings, AppSettings, CalibrationPhase, LogLevel};
+use crate::startup_warmup::StartupWarmupStatus;
 use crate::utils::cancel_current_operation;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -149,6 +153,11 @@ pub fn toggle_pause(app: AppHandle) -> bool {
         return false;
     }
     let paused = audio_manager.toggle_pause();
+    if let Some(coordinator) = app.try_state::<crate::TranscriptionCoordinator>() {
+        if let Some(operation_id) = coordinator.active_operation_id() {
+            let _ = coordinator.set_paused(&app, operation_id, paused);
+        }
+    }
     crate::overlay::emit_recording_paused(&app, paused);
     paused
 }
@@ -174,6 +183,12 @@ pub fn get_app_settings(app: AppHandle) -> Result<AppSettings, String> {
 #[specta::specta]
 pub fn get_default_settings() -> Result<AppSettings, String> {
     Ok(crate::settings::get_default_settings())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_startup_warmup_status(app: AppHandle) -> Result<StartupWarmupStatus, String> {
+    Ok(crate::startup_warmup::current_status(&app))
 }
 
 #[tauri::command]
@@ -262,7 +277,10 @@ pub fn export_settings(app: AppHandle, path: String) -> Result<(), String> {
     let mut settings = get_settings(&app);
     settings.gemini_api_key = None;
     settings.external_script_path = None;
-    settings.post_process_api_keys.values_mut().for_each(String::clear);
+    settings
+        .post_process_api_keys
+        .values_mut()
+        .for_each(String::clear);
     let json = serde_json::to_string_pretty(&settings)
         .map_err(|e| format!("Failed to serialize settings: {}", e))?;
     std::fs::write(&output_path, json).map_err(|e| format!("Failed to write file: {}", e))?;
@@ -280,7 +298,10 @@ pub fn import_settings(app: AppHandle, path: String) -> Result<(), String> {
         serde_json::from_str(&json).map_err(|e| format!("Invalid settings file: {}", e))?;
     settings.gemini_api_key = None;
     settings.external_script_path = None;
-    settings.post_process_api_keys.values_mut().for_each(String::clear);
+    settings
+        .post_process_api_keys
+        .values_mut()
+        .for_each(String::clear);
     write_settings(&app, settings);
     let normalized_settings = get_settings(&app);
     write_settings(&app, normalized_settings);
@@ -384,11 +405,7 @@ fn machine_identifier_seed() -> Result<String, String> {
 #[tauri::command]
 pub fn get_machine_device_id(app: AppHandle) -> Result<String, String> {
     let seed = machine_identifier_seed()?;
-    let app_id = app
-        .config()
-        .identifier
-        .trim()
-        .to_string();
+    let app_id = app.config().identifier.trim().to_string();
 
     let mut hasher = Sha256::new();
     hasher.update("vocaltype-device-id:v1:");

@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "path";
+/// <reference types="vitest" />
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -25,6 +26,34 @@ export default defineConfig(async () => ({
         site: "index.html",
         desktop: "desktop/index.html",
         overlay: "src/overlay/index.html",
+      },
+    },
+  },
+
+  // Vitest configuration
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov", "html"],
+      // Exclude generated bindings, test helpers, and entry points.
+      exclude: [
+        "src/bindings.ts",
+        "src/test/**",
+        "src/**/*.d.ts",
+        "src/main.tsx",
+        "src/overlay/main.tsx",
+        "src/overlay/index.html",
+      ],
+      // Minimum thresholds enforced in CI via `bun run test:coverage`.
+      thresholds: {
+        statements: 40,
+        branches: 35,
+        functions: 40,
+        lines: 40,
       },
     },
   },

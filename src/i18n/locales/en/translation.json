@@ -13,6 +13,8 @@
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
+    "snippets": "Snippets",
+    "stats": "Stats",
     "debug": "Debug",
     "about": "About"
   },
@@ -129,8 +131,10 @@
       "experimental": "Experimental",
       "english": "English",
       "englishOnly": "English Only",
-      "multilingualExperimental": "Multilingual"
+      "multilingualExperimental": "Multilingual",
+      "localOnly": "100% Local"
     },
+    "geminiCloudWarning": "Gemini sends audio to Google for transcription. Other models process everything locally on your device.",
     "custom": "Custom",
     "active": "Active",
     "switching": "Switching...",
@@ -176,6 +180,12 @@
     },
     "general": {
       "title": "General",
+      "tabs": {
+        "shortcuts": "Shortcuts",
+        "audio": "Audio",
+        "dictation": "Dictation",
+        "keyboardShortcutsTitle": "Keyboard Shortcuts"
+      },
       "shortcut": {
         "title": "VocalType Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
@@ -227,6 +237,22 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "recordingMode": {
+        "label": "Recording Mode",
+        "description": "Choose how you start and stop recording.",
+        "toggle": {
+          "label": "Toggle",
+          "description": "Press once to start, press again to stop"
+        },
+        "pushToTalk": {
+          "label": "Push to Talk",
+          "description": "Hold the shortcut to record, release to stop"
+        },
+        "alwaysOn": {
+          "label": "Always-On Microphone",
+          "description": "Microphone stays open; VAD detects speech automatically"
+        }
       }
     },
     "models": {
@@ -351,7 +377,8 @@
           "none": "None",
           "externalScript": "External Script"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "externalScriptHelp": "External scripts must use an absolute path to an executable local file. Changes are saved on blur or Enter."
       },
       "typingTool": {
         "title": "Typing Tool",
@@ -514,7 +541,15 @@
       "selectModel": "Select model",
       "originalTranscript": "Original",
       "postProcessed": "Post-processed",
-      "action": "Action {{key}}"
+      "action": "Action {{key}}",
+      "export": "Export",
+      "exportSuccess": "History exported.",
+      "exportError": "Export failed.",
+      "transcribeFile": "Transcribe File",
+      "transcribeFileSuccess": "File transcribed and copied to clipboard.",
+      "transcribeFileError": "Transcription failed.",
+      "whisperConfidence": "Whisper confidence: {{overall}}",
+      "wordConfidenceTitle": "Confidence {{confidence}}"
     },
     "gemini": {
       "title": "Gemini API",
@@ -590,6 +625,12 @@
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
+      "runtimeDiagnostics": {
+        "voiceProfileSessions": "{{count}} sessions",
+        "voiceProfileWpm": "{{value}} wpm",
+        "voiceProfilePauses": "{{value}} ms pauses",
+        "voiceAdjustmentValue": "{{chunkSeconds}}s / {{overlapMs}}ms"
+      },
       "paths": {
         "appData": "App Data:",
         "models": "Models:",
@@ -606,6 +647,7 @@
         "title": "Version",
         "description": "Current version of VocalType"
       },
+      "versionLabel": "Version v{{version}}",
       "appDataDirectory": {
         "title": "App Data Directory",
         "description": "Location where VocalType stores its data"
@@ -639,6 +681,7 @@
     }
   },
   "footer": {
+    "version": "v{{version}}",
     "downloadingModel": "Downloading {{model}}...",
     "checkingUpdates": "Checking for updates...",
     "updateAvailable": "Update available: {{version}}",
@@ -672,7 +715,9 @@
     "off": "Off",
     "yes": "Yes",
     "no": "No",
-    "noOptionsFound": "No options found"
+    "noOptionsFound": "No options found",
+    "moreInformation": "More information",
+    "infoGlyph": "i"
   },
   "accessibility": {
     "permissionsRequired": "Accessibility Permissions Required",
@@ -683,9 +728,31 @@
   "errors": {
     "loadDirectory": "Error loading directory: {{error}}"
   },
+  "error": {
+    "boundary": {
+      "sectionMessage": "An error occurred in this section.",
+      "retry": "Retry"
+    }
+  },
   "appLanguage": {
     "title": "Application Language",
     "description": "Change the language of the VocalType interface"
+  },
+  "appContext": {
+    "categories": {
+      "autoDetected": "Auto (detected)",
+      "code": "Code",
+      "email": "Email",
+      "chat": "Chat",
+      "document": "Document",
+      "notes": "Notes",
+      "browser": "Browser",
+      "unknown": "Unknown"
+    }
+  },
+  "bootstrap": {
+    "desktopRuntimeUnavailable": "VocalType failed to connect to the desktop runtime. Please restart the app.",
+    "criticalFallback": "VocalType encountered a critical error. Please restart the app."
   },
   "overlay": {
     "transcribing": "Transcribing...",
@@ -696,13 +763,13 @@
     "cancelRecording": "Cancel recording"
   },
   "auth": {
-    "trialBadge": "7-day free trial, no card required",
+    "trialBadge": "14-day free trial, no card required",
     "paidAccess": "Paid access",
     "headline": "Create your account and unlock VocalType instantly.",
-    "subheadline": "Every account starts with a 7-day free trial without requiring a card. After the trial ends, users can subscribe for $4.99 per month to keep unlimited dictation across ChatGPT, Claude, Gemini and Windows apps.",
+    "subheadline": "Every account starts with a 14-day free trial without requiring a card. After the trial ends, users can subscribe for $4.99 per month to keep unlimited dictation across ChatGPT, Claude, Gemini and Windows apps.",
     "features": {
       "trial": {
-        "title": "7-day free trial",
+        "title": "14-day free trial",
         "description": "Create an account and test the full product immediately, with no card required upfront."
       },
       "subscription": {
@@ -724,7 +791,7 @@
     "manageSubscription": "Manage subscription",
     "refreshAccess": "Refresh access",
     "logout": "Logout",
-    "trialNote": "Your 7-day free trial starts when you create your account. No card is required until the trial ends.",
+    "trialNote": "Your 14-day free trial starts when you create your account. No card is required until the trial ends.",
     "sessionExpired": "Your session has expired. Please log in again.",
     "fields": {
       "name": "Name",
@@ -770,5 +837,100 @@
     "pasteFailed": "Automatic paste failed",
     "pasteFailedCopied": "Automatic paste failed — text copied to clipboard",
     "pasteFailedDesc": "Reason: {{reason}}"
+  },
+  "trial": {
+    "welcome": {
+      "badge": "Premium · 14 days",
+      "title": "14 days of VocalType Premium. Free, no card.",
+      "subtitle": "Your full access starts now. No card required during the trial.",
+      "cta": "Let's go →"
+    },
+    "feature1": "Native injection into all your apps",
+    "feature2": "Customizable keyboard shortcut",
+    "feature3": "Unlimited transcriptions",
+    "feature4": "Full history",
+    "badge": {
+      "neutral": "Premium Trial · {{count}}d left",
+      "warning": "{{count}} days of Premium left",
+      "urgent": "⚠ Expires in {{count}} days",
+      "today": "⚠ Expires today",
+      "cta": "Upgrade to Premium →"
+    },
+    "reminder": {
+      "title": "Your trial is expiring soon",
+      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
+      "cta": "Upgrade to Premium →"
+    }
+  },
+  "dictionary": {
+    "tab": "Dictionary",
+    "empty": "No custom terms yet. Add words, proper nouns, or acronyms.",
+    "fromPlaceholder": "Whisper hears…",
+    "toPlaceholder": "Replace with…",
+    "add": "Add",
+    "remove": "Remove",
+    "save": "Save",
+    "cancel": "Cancel",
+    "duplicate": "\"{{from}}\" is already in the dictionary.",
+    "arrow": "→",
+    "export": "Export",
+    "importMerge": "Import (merge)",
+    "exportSuccess": "Dictionary exported.",
+    "importReplaceSuccess": "Dictionary imported (replaced).",
+    "importMergeSuccess": "Dictionary imported (merged)."
+  },
+  "snippets": {
+    "title": "Voice Snippets",
+    "description": "Say the trigger phrase and VocalType will paste the expansion instead.",
+    "empty": "No snippets yet. Add one below.",
+    "triggerPlaceholder": "Trigger phrase…",
+    "expansionPlaceholder": "Text to paste…",
+    "add": "Add",
+    "remove": "Remove",
+    "save": "Save",
+    "cancel": "Cancel",
+    "duplicate": "\"{{trigger}}\" already exists.",
+    "arrow": "→"
+  },
+  "stats": {
+    "title": "Statistics",
+    "totalWords": "Total Words",
+    "totalTranscriptions": "Transcriptions",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "avgWords": "Avg. Words",
+    "mostUsedModel": "Most Used Model",
+    "timeSaved": "Time Saved",
+    "timeSavedUnit": "min",
+    "noData": "No data yet. Start transcribing to build your stats.",
+    "refresh": "Refresh"
+  },
+  "basic": {
+    "copiedToClipboard": "Text copied to clipboard",
+    "copiedToClipboardDesc": "Native injection is reserved for the Premium plan.",
+    "seePremium": "See Premium →",
+    "quotaExceeded": "Weekly limit reached",
+    "quotaExceededDesc": "Upgrade to Premium to dictate without limits.",
+    "upgradeCta": "Upgrade to Premium →",
+    "upgrade": "Upgrade to Premium",
+    "historyLimited": "History limited to {{limit}} entries on Basic",
+    "shortcutsLocked": "Custom shortcuts are a Premium feature",
+    "premiumBadge": "Premium"
+  },
+  "commandMode": {
+    "label": "Command Mode",
+    "recording": "Speak now… ({{count}}s)",
+    "processing": "Processing…",
+    "errorTitle": "Command Mode — error"
+  },
+  "transcription": {
+    "warmup_preparing": "Preparing microphone…",
+    "warmup_ready": "Dictation will be available automatically once the engine is ready."
+  },
+  "whisperMode": {
+    "label": "Whisper Mode",
+    "enabled": "Whisper Mode on",
+    "disabled": "Whisper Mode off",
+    "errorTitle": "Whisper Mode — error"
   }
 }

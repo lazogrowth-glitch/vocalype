@@ -1,9 +1,14 @@
 export type TranscriptionLifecycleState =
   | "idle"
+  | "preparing_microphone"
   | "recording"
+  | "paused"
+  | "stopping"
   | "transcribing"
   | "processing"
   | "pasting"
+  | "completed"
+  | "cancelled"
   | "error";
 
 export type RuntimeErrorStage =
@@ -34,8 +39,10 @@ export interface AppTranscriptionContext {
 
 export interface LifecycleStateEvent {
   state: TranscriptionLifecycleState;
+  operation_id?: number | null;
   binding_id?: string | null;
   detail?: string | null;
+  recoverable: boolean;
   timestamp_ms: number;
 }
 
@@ -44,6 +51,9 @@ export interface RuntimeErrorEvent {
   stage: RuntimeErrorStage;
   message: string;
   recoverable: boolean;
+  operation_id?: number | null;
+  device_name?: string | null;
+  model_id?: string | null;
   timestamp_ms: number;
 }
 
@@ -204,6 +214,12 @@ export interface RuntimeDiagnosticsSnapshot {
   selected_output_device?: string | null;
   is_recording: boolean;
   is_paused: boolean;
+  operation_id?: number | null;
+  active_stage?: TranscriptionLifecycleState | null;
+  last_audio_error?: string | null;
+  partial_result: boolean;
+  device_resolution?: string | null;
+  cancelled_at_stage?: TranscriptionLifecycleState | null;
   current_app_context?: AppTranscriptionContext | null;
   last_transcription_app_context?: AppTranscriptionContext | null;
   adaptive_voice_profile_enabled: boolean;

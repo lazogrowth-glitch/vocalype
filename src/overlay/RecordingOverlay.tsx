@@ -6,7 +6,29 @@ import { commands } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "transcribing" | "processing";
+type OverlayState = "preparing" | "recording" | "transcribing" | "processing";
+
+type LifecycleState =
+  | "idle"
+  | "preparing_microphone"
+  | "recording"
+  | "paused"
+  | "stopping"
+  | "transcribing"
+  | "processing"
+  | "pasting"
+  | "completed"
+  | "cancelled"
+  | "error";
+
+interface LifecycleStateEventPayload {
+  state: LifecycleState;
+  operation_id?: number | null;
+  binding_id?: string | null;
+  detail?: string | null;
+  recoverable: boolean;
+  timestamp_ms: number;
+}
 
 interface ActionInfo {
   key: number;
@@ -193,7 +215,7 @@ const RecordingOverlay: React.FC = () => {
       setState(overlayState);
       setIsVisible(true);
       setIsPaused(false);
-      if (overlayState === "recording") {
+      if (overlayState === "recording" || overlayState === "preparing") {
         setTimerStart(Date.now());
         setSelectedAction(null);
       }
@@ -208,6 +230,54 @@ const RecordingOverlay: React.FC = () => {
         clearTimeout(cancelTimerRef.current);
         cancelTimerRef.current = null;
       }
+    });
+
+    register("transcription-lifecycle", async (event: any) => {
+      await syncLanguageFromSettings();
+      const lifecycleState = (event.payload as LifecycleStateEventPayload).state;
+      if (
+        lifecycleState === "idle" ||
+        lifecycleState === "completed" ||
+        lifecycleState === "cancelled" ||
+        lifecycleState === "error"
+      ) {
+        setIsVisible(false);
+        setSelectedAction(null);
+        setCancelPending(false);
+        setIsPaused(false);
+        return;
+      }
+
+      setIsVisible(true);
+      if (lifecycleState === "preparing_microphone") {
+        setState("preparing");
+        setTimerStart(Date.now());
+        setSelectedAction(null);
+        setIsPaused(false);
+        return;
+      }
+
+      if (
+        lifecycleState === "recording" ||
+        lifecycleState === "paused" ||
+        lifecycleState === "stopping"
+      ) {
+        setState("recording");
+        if (lifecycleState === "recording") {
+          setTimerStart((prev) => (prev === 0 ? Date.now() : prev));
+        }
+        setIsPaused(lifecycleState === "paused");
+        return;
+      }
+
+      if (lifecycleState === "transcribing") {
+        setState("transcribing");
+        setIsPaused(false);
+        return;
+      }
+
+      setState("processing");
+      setIsPaused(false);
     });
 
     register("cancel-pending", () => {
@@ -240,6 +310,7 @@ const RecordingOverlay: React.FC = () => {
       }
     });
 
+
     return () => {
       active = false;
       cleanups.forEach((fn) => fn());
@@ -255,7 +326,7 @@ const RecordingOverlay: React.FC = () => {
       className={`recording-overlay state-${state} ${isVisible ? "is-visible" : "is-hidden"}`}
     >
       <div className="overlay-left">
-        {state === "recording" ? <MicIcon /> : <DotsIcon />}
+        {state === "recording" || state === "preparing" ? <MicIcon /> : <DotsIcon />}
       </div>
 
       {selectedAction && state === "recording" && (
@@ -263,6 +334,13 @@ const RecordingOverlay: React.FC = () => {
       )}
 
       <div className="overlay-middle">
+        {state === "preparing" && (
+          <div className="transcribing-text">
+            {t("overlay.preparingMicrophone", {
+              defaultValue: "Starting microphone...",
+            })}
+          </div>
+        )}
         {state === "recording" && !cancelPending && (
           <>
             <TimerDisplay startTime={timerStart} isPaused={isPaused} />

@@ -13,6 +13,8 @@
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "history": "Historique",
+    "snippets": "Snippets",
+    "stats": "Statistiques",
     "debug": "Débogage",
     "about": "À propos"
   },
@@ -129,8 +131,10 @@
       "experimental": "Expérimental",
       "english": "Anglais",
       "englishOnly": "Anglais uniquement",
-      "multilingualExperimental": "Multilingue"
+      "multilingualExperimental": "Multilingue",
+      "localOnly": "100% local"
     },
+    "geminiCloudWarning": "Gemini envoie l'audio à Google pour la transcription. Les autres modèles traitent tout localement sur ta machine.",
     "custom": "Personnalisé",
     "active": "Actif",
     "switching": "Changement...",
@@ -229,6 +233,12 @@
     },
     "general": {
       "title": "Général",
+      "tabs": {
+        "shortcuts": "Raccourcis",
+        "audio": "Audio",
+        "dictation": "Dictée",
+        "keyboardShortcutsTitle": "Raccourcis clavier"
+      },
       "shortcut": {
         "title": "Raccourcis VocalType",
         "description": "Configurer les raccourcis clavier pour déclencher l'enregistrement de la reconnaissance vocale",
@@ -280,6 +290,22 @@
       "pushToTalk": {
         "label": "Appuyer pour parler",
         "description": "Maintenez pour enregistrer, relâchez pour arrêter"
+      },
+      "recordingMode": {
+        "label": "Mode d'enregistrement",
+        "description": "Choisissez comment démarrer et arrêter l'enregistrement.",
+        "toggle": {
+          "label": "Bascule",
+          "description": "Appuyez une fois pour démarrer, réappuyez pour arrêter"
+        },
+        "pushToTalk": {
+          "label": "Appuyer pour parler",
+          "description": "Maintenez le raccourci pour enregistrer, relâchez pour arrêter"
+        },
+        "alwaysOn": {
+          "label": "Microphone toujours actif",
+          "description": "Le microphone reste ouvert ; la VAD détecte la parole automatiquement"
+        }
       }
     },
     "sound": {
@@ -351,7 +377,8 @@
           "none": "Aucun",
           "externalScript": "Script externe"
         },
-        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh"
+        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh",
+        "externalScriptHelp": "Les scripts externes doivent utiliser un chemin absolu vers un fichier exécutable local. Les changements sont enregistrés au blur ou avec Entrée."
       },
       "typingTool": {
         "title": "Outil de frappe",
@@ -526,7 +553,15 @@
       "action": "Action {{key}}",
       "reprocess": "Retraiter avec un autre modèle",
       "reprocessing": "Retraitement en cours...",
-      "selectModel": "Sélectionner un modèle"
+      "selectModel": "Sélectionner un modèle",
+      "export": "Exporter",
+      "exportSuccess": "Historique exporté.",
+      "exportError": "Échec de l'export.",
+      "transcribeFile": "Transcrire un fichier",
+      "transcribeFileSuccess": "Fichier transcrit et copié dans le presse-papiers.",
+      "transcribeFileError": "Échec de la transcription.",
+      "whisperConfidence": "Confiance Whisper : {{overall}}",
+      "wordConfidenceTitle": "Confiance {{confidence}}"
     },
     "debug": {
       "title": "Débogage",
@@ -590,6 +625,12 @@
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
+      "runtimeDiagnostics": {
+        "voiceProfileSessions": "{{count}} sessions",
+        "voiceProfileWpm": "{{value}} mpm",
+        "voiceProfilePauses": "{{value}} ms de pauses",
+        "voiceAdjustmentValue": "{{chunkSeconds}}s / {{overlapMs}}ms"
+      },
       "paths": {
         "appData": "Données de l'application :",
         "models": "Modèles :",
@@ -606,6 +647,7 @@
         "title": "Version",
         "description": "Version actuelle de VocalType"
       },
+      "versionLabel": "Version v{{version}}",
       "appDataDirectory": {
         "title": "Emplacement des données de l'application",
         "description": "Emplacement où VocalType stocke ses données"
@@ -639,6 +681,7 @@
     }
   },
   "footer": {
+    "version": "v{{version}}",
     "downloadingModel": "Téléchargement de {{model}}...",
     "checkingUpdates": "Recherche de mises à jour...",
     "updateAvailable": "Mise à jour disponible : {{version}}",
@@ -672,7 +715,9 @@
     "off": "Désactivé",
     "yes": "Oui",
     "no": "Non",
-    "noOptionsFound": "Aucune option trouvée"
+    "noOptionsFound": "Aucune option trouvée",
+    "moreInformation": "Plus d'informations",
+    "infoGlyph": "i"
   },
   "accessibility": {
     "permissionsRequired": "Autorisations d'accessibilité requises",
@@ -683,9 +728,31 @@
   "errors": {
     "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}"
   },
+  "error": {
+    "boundary": {
+      "sectionMessage": "Une erreur est survenue dans cette section.",
+      "retry": "Réessayer"
+    }
+  },
   "appLanguage": {
     "title": "Langue de l'application",
     "description": "Changer la langue de l'interface de VocalType"
+  },
+  "appContext": {
+    "categories": {
+      "autoDetected": "Auto (détecté)",
+      "code": "Code",
+      "email": "E-mail",
+      "chat": "Chat",
+      "document": "Document",
+      "notes": "Notes",
+      "browser": "Navigateur",
+      "unknown": "Inconnu"
+    }
+  },
+  "bootstrap": {
+    "desktopRuntimeUnavailable": "VocalType n'a pas réussi à se connecter au runtime desktop. Redémarre l'application.",
+    "criticalFallback": "VocalType a rencontré une erreur critique. Redémarre l'application."
   },
   "overlay": {
     "transcribing": "Transcription...",
@@ -696,13 +763,13 @@
     "cancelRecording": "Annuler l'enregistrement"
   },
   "auth": {
-    "trialBadge": "7 jours d'essai gratuit, sans carte",
+    "trialBadge": "14 jours d'essai gratuit, sans carte",
     "paidAccess": "Accès payant",
     "headline": "Créez votre compte et débloquez VocalType instantanément.",
-    "subheadline": "Chaque compte démarre avec un essai gratuit de 7 jours sans carte requise. Après l'essai, abonnez-vous à 4,99 $/mois pour une dictée illimitée dans ChatGPT, Claude, Gemini et les applications Windows.",
+    "subheadline": "Chaque compte démarre avec un essai gratuit de 14 jours sans carte requise. Après l'essai, abonnez-vous à 4,99 $/mois pour une dictée illimitée dans ChatGPT, Claude, Gemini et les applications Windows.",
     "features": {
       "trial": {
-        "title": "7 jours d'essai gratuit",
+        "title": "14 jours d'essai gratuit",
         "description": "Créez un compte et testez le produit complet immédiatement, sans carte requise à l'avance."
       },
       "subscription": {
@@ -724,7 +791,7 @@
     "manageSubscription": "Gérer l'abonnement",
     "refreshAccess": "Rafraîchir l'accès",
     "logout": "Se déconnecter",
-    "trialNote": "Votre essai gratuit de 7 jours commence à la création du compte. Aucune carte requise avant la fin de l'essai.",
+    "trialNote": "Votre essai gratuit de 14 jours commence à la création du compte. Aucune carte requise avant la fin de l'essai.",
     "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
     "fields": {
       "name": "Nom",
@@ -770,5 +837,100 @@
     "pasteFailed": "Échec du collage automatique",
     "pasteFailedCopied": "Échec du collage automatique — texte copié dans le presse-papiers",
     "pasteFailedDesc": "Raison : {{reason}}"
+  },
+  "trial": {
+    "welcome": {
+      "badge": "Premium · 14 jours",
+      "title": "14 jours de VocalType Premium. Gratuit, sans carte.",
+      "subtitle": "Ton accès complet démarre maintenant. Aucune carte requise.",
+      "cta": "C'est parti →"
+    },
+    "feature1": "Injection native dans toutes tes apps",
+    "feature2": "Raccourci clavier personnalisable",
+    "feature3": "Transcriptions illimitées",
+    "feature4": "Historique complet",
+    "badge": {
+      "neutral": "Trial Premium · {{count}}j restants",
+      "warning": "Plus que {{count}} jours de Premium",
+      "urgent": "⚠ Expire dans {{count}} jours",
+      "today": "⚠ Expire aujourd'hui",
+      "cta": "Passer à Premium →"
+    },
+    "reminder": {
+      "title": "Ton trial expire bientôt",
+      "desc": "Passe à Premium pour garder l'injection native, tes raccourcis et tes transcriptions illimitées.",
+      "cta": "Passer à Premium →"
+    }
+  },
+  "dictionary": {
+    "tab": "Dictionnaire",
+    "empty": "Aucun terme custom. Ajoute des mots, noms propres ou acronymes.",
+    "fromPlaceholder": "Whisper entend…",
+    "toPlaceholder": "Remplacer par…",
+    "add": "Ajouter",
+    "remove": "Supprimer",
+    "save": "Sauvegarder",
+    "cancel": "Annuler",
+    "duplicate": "\"{{from}}\" est déjà dans le dictionnaire.",
+    "arrow": "→",
+    "export": "Exporter",
+    "importMerge": "Importer (fusionner)",
+    "exportSuccess": "Dictionnaire exporté.",
+    "importReplaceSuccess": "Dictionnaire importé (remplacé).",
+    "importMergeSuccess": "Dictionnaire importé (fusionné)."
+  },
+  "snippets": {
+    "title": "Snippets vocaux",
+    "description": "Dites la phrase déclencheur et VocalType colle l'expansion à la place.",
+    "empty": "Aucun snippet. Ajoutez-en un ci-dessous.",
+    "triggerPlaceholder": "Phrase déclencheur…",
+    "expansionPlaceholder": "Texte à coller…",
+    "add": "Ajouter",
+    "remove": "Supprimer",
+    "save": "Sauvegarder",
+    "cancel": "Annuler",
+    "duplicate": "\"{{trigger}}\" existe déjà.",
+    "arrow": "→"
+  },
+  "stats": {
+    "title": "Statistiques",
+    "totalWords": "Mots totaux",
+    "totalTranscriptions": "Transcriptions",
+    "today": "Aujourd'hui",
+    "thisWeek": "Cette semaine",
+    "avgWords": "Mots moy.",
+    "mostUsedModel": "Modèle le + utilisé",
+    "timeSaved": "Temps économisé",
+    "timeSavedUnit": "min",
+    "noData": "Aucune donnée. Commencez à transcrire pour voir vos stats.",
+    "refresh": "Actualiser"
+  },
+  "basic": {
+    "copiedToClipboard": "Texte copié dans le presse-papier",
+    "copiedToClipboardDesc": "L'injection directe est réservée au plan Premium.",
+    "seePremium": "Voir Premium →",
+    "quotaExceeded": "Limite atteinte pour cette semaine",
+    "quotaExceededDesc": "Passe à Premium pour dicter sans limite.",
+    "upgradeCta": "Passer à Premium →",
+    "upgrade": "Passer à Premium",
+    "historyLimited": "Historique limité à {{limit}} entrées en Basic",
+    "shortcutsLocked": "Raccourcis personnalisés réservés à Premium",
+    "premiumBadge": "Premium"
+  },
+  "commandMode": {
+    "label": "Command Mode",
+    "recording": "Parle maintenant… ({{count}}s)",
+    "processing": "Traitement en cours…",
+    "errorTitle": "Command Mode — erreur"
+  },
+  "transcription": {
+    "warmup_preparing": "Préparation du micro…",
+    "warmup_ready": "La dictée sera disponible automatiquement dès que le moteur est prêt."
+  },
+  "whisperMode": {
+    "label": "Mode Chuchotement",
+    "enabled": "Mode Chuchotement activé",
+    "disabled": "Mode Chuchotement désactivé",
+    "errorTitle": "Mode Chuchotement — erreur"
   }
 }

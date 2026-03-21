@@ -1,32 +1,48 @@
 mod actions;
-mod adaptive_runtime;
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-mod apple_intelligence;
-mod audio_feedback;
 pub mod audio_toolkit;
 pub mod cli;
-mod clipboard;
 mod commands;
-mod context_detector;
-pub mod gemini_client;
+pub mod error;
 mod helpers;
-mod input;
-mod llm_client;
 mod managers;
-mod overlay;
-mod prompt_builder;
-mod runtime_observability;
-mod secret_store;
 mod settings;
 mod shortcut;
-mod signal_handle;
-mod transcription_confidence;
-mod transcription_coordinator;
 mod tray;
-mod tray_i18n;
-mod utils;
-mod vocabulary_store;
-mod voice_profile;
+
+// ── Organised sub-modules ────────────────────────────────────────────────────
+
+/// LLM provider clients (Gemini, OpenAI-compatible, prompt builder).
+mod llm;
+/// Platform abstraction (keyboard, clipboard, overlay, audio feedback, signals).
+mod platform;
+/// Text processing pipeline (filler, dictionary, punctuation, LLM cleanup).
+mod processing;
+/// Application runtime core (adaptive engine, transcription lifecycle, VAD).
+mod runtime;
+/// Security subsystem (license, integrity, crypto, keyring).
+mod security;
+
+// ── Backward-compatible re-exports ───────────────────────────────────────────
+// `pub use` ensures existing `use crate::X::SomeType` imports in sub-modules
+// continue to resolve without changes.
+
+// processing
+pub use processing::{dictionary, filler, post_processing, punctuation};
+// security
+pub use security::{integrity, license, model_crypto, secret_store};
+// llm
+pub use llm::{gemini_client, llm_client, prompt_builder};
+// runtime
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+pub use runtime::apple_intelligence;
+pub use runtime::{
+    adaptive_runtime, chunking, command_mode, context_detector, model_ids, runtime_observability,
+    startup_warmup, transcription_confidence, transcription_coordinator, vocabulary_store,
+    voice_profile,
+};
+// platform
+pub use platform::signal_handle;
+pub use platform::{audio_feedback, clipboard, input, overlay, utils};
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
@@ -255,51 +271,14 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
         HistoryManager::new(app_handle)
             .map_err(|err| format!("Failed to initialize history manager: {}", err))?,
     );
+    let dictionary_manager = dictionary::DictionaryManager::new(app_handle);
 
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
-
-    {
-        let app_handle = app_handle.clone();
-        let model_manager = model_manager.clone();
-        let transcription_manager = transcription_manager.clone();
-        thread::spawn(move || {
-            // Wait for the UI to fully paint before loading the ONNX model into RAM.
-            // 4 s gives even slower machines time to render before the memory spike.
-            thread::sleep(Duration::from_secs(4));
-
-            let settings = settings::get_settings(&app_handle);
-            if settings.selected_model.is_empty()
-                || settings.model_unload_timeout == settings::ModelUnloadTimeout::Immediately
-            {
-                return;
-            }
-
-            // Skip preload on battery to avoid hurting perceived startup speed.
-            let on_battery = settings
-                .adaptive_machine_profile
-                .as_ref()
-                .and_then(|p| p.on_battery)
-                .unwrap_or(false);
-            if on_battery {
-                log::info!("Skipping model preload on battery (will load on first use)");
-                return;
-            }
-
-            let is_downloaded = model_manager
-                .get_model_info(&settings.selected_model)
-                .map(|model| model.is_downloaded)
-                .unwrap_or(false);
-
-            if is_downloaded {
-                log::info!("Preloading selected model {}", settings.selected_model);
-                transcription_manager.initiate_model_load();
-            }
-        });
-    }
+    app_handle.manage(dictionary_manager);
 
     {
         let app_handle = app_handle.clone();
@@ -457,9 +436,7 @@ fn sync_autostart_state(app_handle: &AppHandle) {
             settings::write_settings(app_handle, settings);
         }
 
-        if let Err(err) = autostart_manager.disable() {
-            log::warn!("Failed to disable autostart for debug build: {}", err);
-        }
+        let _ = autostart_manager.disable();
 
         return;
     }
@@ -482,9 +459,9 @@ fn sync_autostart_state(app_handle: &AppHandle) {
 
 #[cfg(debug_assertions)]
 fn should_export_typescript_bindings() -> bool {
-    matches!(
+    !matches!(
         std::env::var("VOCALTYPE_EXPORT_BINDINGS").as_deref(),
-        Ok("1") | Ok("true") | Ok("TRUE") | Ok("yes") | Ok("YES")
+        Ok("0") | Ok("false") | Ok("FALSE") | Ok("no") | Ok("NO")
     )
 }
 
@@ -557,14 +534,15 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_show_tray_icon_setting,
         shortcut::change_long_audio_model_setting,
         shortcut::change_long_audio_threshold_setting,
-        shortcut::handy_keys::start_handy_keys_recording,
-        shortcut::handy_keys::stop_handy_keys_recording,
+        shortcut::native_shortcut_capture::start_native_shortcut_capture_recording,
+        shortcut::native_shortcut_capture::stop_native_shortcut_capture_recording,
         trigger_update_check,
         commands::cancel_operation,
         commands::toggle_pause,
         commands::get_app_dir_path,
         commands::get_app_settings,
         commands::get_default_settings,
+        commands::get_startup_warmup_status,
         commands::get_log_dir_path,
         commands::set_log_level,
         commands::open_recordings_folder,
@@ -573,6 +551,8 @@ pub fn run(cli_args: CliArgs) {
         commands::export_settings,
         commands::import_settings,
         commands::get_machine_device_id,
+        integrity::get_integrity_snapshot,
+        license::get_license_runtime_state,
         commands::load_secure_auth_token,
         commands::store_secure_auth_token,
         commands::check_apple_intelligence_available,
@@ -619,6 +599,25 @@ pub fn run(cli_args: CliArgs) {
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
         commands::history::reprocess_history_entry,
+        commands::history::get_history_stats,
+        commands::history::export_history_entries,
+        commands::history::transcribe_audio_file,
+        commands::dictionary::get_dictionary,
+        commands::dictionary::add_dictionary_entry,
+        commands::dictionary::remove_dictionary_entry,
+        commands::dictionary::update_dictionary_entry,
+        commands::dictionary::clear_dictionary,
+        commands::dictionary::export_dictionary,
+        commands::dictionary::import_dictionary,
+        commands::snippets::get_voice_snippets,
+        commands::snippets::add_voice_snippet,
+        commands::snippets::remove_voice_snippet,
+        commands::snippets::update_voice_snippet,
+        commands::app_context::get_recent_apps,
+        commands::app_context::list_app_context_overrides,
+        commands::app_context::set_app_context_override,
+        commands::app_context::remove_app_context_override,
+        commands::app_context::set_app_context_enabled,
         commands::gemini::change_gemini_api_key_setting,
         commands::gemini::change_gemini_model_setting,
         secret_store::get_secure_auth_token,
@@ -627,6 +626,9 @@ pub fn run(cli_args: CliArgs) {
         secret_store::get_secure_auth_session,
         secret_store::set_secure_auth_session,
         secret_store::clear_secure_auth_session,
+        secret_store::get_secure_license_bundle,
+        secret_store::set_secure_license_bundle,
+        secret_store::clear_secure_license_bundle,
         helpers::clamshell::is_laptop,
     ]);
 
@@ -740,8 +742,7 @@ pub fn run(cli_args: CliArgs) {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
-            app.manage(actions::ActiveActionState(std::sync::Mutex::new(None)));
-            app.manage(actions::ActiveChunkingHandle(std::sync::Mutex::new(None)));
+            app.manage(chunking::ActiveChunkingHandle(std::sync::Mutex::new(None)));
             app.manage(context_detector::ActiveAppContextState(std::sync::Mutex::new(
                 context_detector::ActiveAppContextSnapshot::default(),
             )));
@@ -759,9 +760,14 @@ pub fn run(cli_args: CliArgs) {
                     log::info!("Frontend reported ready; showing main window");
                     show_main_window(&app_handle_for_ready);
                 }
+
+                startup_warmup::ensure_startup_warmup(&app_handle_for_ready, "desktop-ui-ready");
             });
 
             initialize_core_logic(&app_handle)?;
+            app.manage(startup_warmup::StartupWarmupState::new(
+                startup_warmup::initial_status(&app_handle),
+            ));
 
             // Run WMI GPU/NPU hardware detection in background so it never
             // blocks startup. The result is persisted to the settings store

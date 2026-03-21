@@ -1,7 +1,7 @@
 //! Shared shortcut event handling logic
 //!
 //! This module contains the common logic for handling shortcut events,
-//! used by both the Tauri and handy-keys implementations.
+//! used by both the Tauri and native shortcut capture implementations.
 
 use log::warn;
 use std::sync::{Arc, Mutex};
@@ -74,6 +74,11 @@ pub fn handle_shortcut_event(
             let audio_manager = app.state::<Arc<AudioRecordingManager>>();
             if audio_manager.is_recording() {
                 let paused = audio_manager.toggle_pause();
+                if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+                    if let Some(operation_id) = coordinator.active_operation_id() {
+                        let _ = coordinator.set_paused(app, operation_id, paused);
+                    }
+                }
                 crate::overlay::emit_recording_paused(app, paused);
             }
         }
@@ -93,6 +98,27 @@ pub fn handle_shortcut_event(
     if binding_id == "copy_latest_history" {
         if is_pressed {
             crate::tray::copy_last_transcript(app);
+        }
+        return;
+    }
+
+    // Command Mode: press-only (start fires on key-down, stop is a no-op).
+    // The full async pipeline is self-contained inside CommandModeAction::start().
+    if binding_id == "command_mode" {
+        if is_pressed {
+            if let Some(action) = ACTION_MAP.get(binding_id) {
+                action.start(app, binding_id, hotkey_string);
+            }
+        }
+        return;
+    }
+
+    // Whisper Mode: press-only toggle — no push-to-talk, no release handling.
+    if binding_id == "whisper_mode" {
+        if is_pressed {
+            if let Some(action) = ACTION_MAP.get(binding_id) {
+                action.start(app, binding_id, hotkey_string);
+            }
         }
         return;
     }

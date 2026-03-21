@@ -1,14 +1,51 @@
+//! Tray icon, menu, and i18n for the system tray.
+//!
+//! ## Tray i18n
+//!
+//! Menu strings are auto-generated at compile time by `build.rs` from the
+//! frontend locale files (`src/i18n/locales/*/translation.json`).
+//!
+//! The English `translation.json` is the single source of truth:
+//! - `TrayStrings` struct fields are derived from the English `"tray"` keys.
+//! - All languages are auto-discovered from the locales directory.
+//!
+//! To add a new tray menu item:
+//! 1. Add the key to `en/translation.json` under `"tray"`.
+//! 2. Add translations to the other locale files.
+//! 3. Use the new field in `update_tray_menu` (e.g., `strings.new_field`).
+
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
-use crate::tray_i18n::get_tray_translations;
 use log::{error, info, warn};
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIcon;
 use tauri::{AppHandle, Manager, Theme};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+
+// ── Tray i18n ────────────────────────────────────────────────────────────────
+
+// Auto-generated `TrayStrings` struct and `TRANSLATIONS` static.
+include!(concat!(env!("OUT_DIR"), "/tray_translations.rs"));
+
+/// Extract the base language code from a locale string (e.g. `"en-US"` → `"en"`).
+fn get_language_code(locale: &str) -> &str {
+    locale.split(['-', '_']).next().unwrap_or("en")
+}
+
+/// Return localized tray menu strings for the given locale, falling back to English.
+fn get_tray_translations(locale: Option<String>) -> TrayStrings {
+    let lang = locale.as_deref().map(get_language_code).unwrap_or("en");
+    TRANSLATIONS
+        .get(lang)
+        .or_else(|| TRANSLATIONS.get("en"))
+        .cloned()
+        .expect("English translations must exist")
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TrayIconState {

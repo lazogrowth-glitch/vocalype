@@ -25,6 +25,32 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
     [snapshot],
   );
   const adaptiveProfile = snapshot?.adaptive_machine_profile ?? null;
+  const voiceProfileSessions = snapshot?.adaptive_voice_profile
+    ? t("settings.debug.runtimeDiagnostics.voiceProfileSessions", {
+        defaultValue: "{{count}} sessions",
+        count: snapshot.adaptive_voice_profile.sessions_count,
+      })
+    : null;
+  const voiceProfileWpm = snapshot?.adaptive_voice_profile
+    ? t("settings.debug.runtimeDiagnostics.voiceProfileWpm", {
+        defaultValue: "{{value}} wpm",
+        value: snapshot.adaptive_voice_profile.avg_words_per_minute.toFixed(0),
+      })
+    : null;
+  const voiceProfilePauses = snapshot?.adaptive_voice_profile
+    ? t("settings.debug.runtimeDiagnostics.voiceProfilePauses", {
+        defaultValue: "{{value}} ms pauses",
+        value: snapshot.adaptive_voice_profile.avg_pause_ms.toFixed(0),
+      })
+    : null;
+  const voiceAdjustmentValue = snapshot?.active_voice_runtime_adjustment
+    ? t("settings.debug.runtimeDiagnostics.voiceAdjustmentValue", {
+        defaultValue: "{{chunkSeconds}}s / {{overlapMs}}ms",
+        chunkSeconds:
+          snapshot.active_voice_runtime_adjustment.adjusted_chunk_seconds,
+        overlapMs: snapshot.active_voice_runtime_adjustment.adjusted_overlap_ms,
+      })
+    : null;
 
   const handleCapture = async () => {
     setBusy(true);
@@ -125,6 +151,35 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
             })}
             : <span className="font-semibold">{snapshot.lifecycle_state}</span>
           </p>
+          {snapshot.operation_id != null && (
+            <p>
+              {t("settings.debug.runtimeDiagnostics.operationId", {
+                defaultValue: "Operation",
+              })}
+              : <span className="font-semibold">{snapshot.operation_id}</span>
+              {snapshot.active_stage ? ` · ${snapshot.active_stage}` : ""}
+            </p>
+          )}
+          {snapshot.cancelled_at_stage && (
+            <p>
+              {t("settings.debug.runtimeDiagnostics.cancelledAt", {
+                defaultValue: "Cancelled at",
+              })}
+              :{" "}
+              <span className="font-semibold">{snapshot.cancelled_at_stage}</span>
+            </p>
+          )}
+          {snapshot.partial_result && (
+            <p>
+              {t("settings.debug.runtimeDiagnostics.partialResult", {
+                defaultValue: "Partial result",
+              })}
+              :{" "}
+              <span className="font-semibold">
+                {t("common.yes", { defaultValue: "yes" })}
+              </span>
+            </p>
+          )}
           <p>
             {t("settings.debug.runtimeDiagnostics.model", {
               defaultValue: "Model",
@@ -265,6 +320,23 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
             })}
             : <span className="font-semibold">{snapshot.paste_method}</span>
           </p>
+          {snapshot.device_resolution && (
+            <p>
+              {t("settings.debug.runtimeDiagnostics.deviceResolution", {
+                defaultValue: "Device resolution",
+              })}
+              :{" "}
+              <span className="font-semibold">{snapshot.device_resolution}</span>
+            </p>
+          )}
+          {snapshot.last_audio_error && (
+            <p className="break-words">
+              {t("settings.debug.runtimeDiagnostics.lastAudioError", {
+                defaultValue: "Last audio error",
+              })}
+              : <span className="font-semibold">{snapshot.last_audio_error}</span>
+            </p>
+          )}
           <p>
             {t("settings.debug.runtimeDiagnostics.updatedAt", {
               defaultValue: "Captured at",
@@ -325,21 +397,11 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                     defaultValue: "Voice profile",
                   })}
                   :{" "}
-                  <span className="font-semibold">
-                    {snapshot.adaptive_voice_profile.sessions_count} sessions
-                  </span>
+                  <span className="font-semibold">{voiceProfileSessions}</span>
                   {" · "}
-                  <span className="text-text/60">
-                    {snapshot.adaptive_voice_profile.avg_words_per_minute.toFixed(
-                      0,
-                    )}{" "}
-                    wpm
-                  </span>
+                  <span className="text-text/60">{voiceProfileWpm}</span>
                   {" · "}
-                  <span className="text-text/60">
-                    {snapshot.adaptive_voice_profile.avg_pause_ms.toFixed(0)} ms
-                    pauses
-                  </span>
+                  <span className="text-text/60">{voiceProfilePauses}</span>
                 </p>
                 {snapshot.active_voice_runtime_adjustment && (
                   <p>
@@ -347,15 +409,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                       defaultValue: "Voice adjustment",
                     })}
                     :{" "}
-                    <span className="font-semibold">
-                      {snapshot.active_voice_runtime_adjustment.adjusted_chunk_seconds}
-                      s /{" "}
-                      {
-                        snapshot.active_voice_runtime_adjustment
-                          .adjusted_overlap_ms
-                      }
-                      ms
-                    </span>
+                    <span className="font-semibold">{voiceAdjustmentValue}</span>
                     {snapshot.active_voice_runtime_adjustment.reason
                       ? ` · ${snapshot.active_voice_runtime_adjustment.reason}`
                       : ""}

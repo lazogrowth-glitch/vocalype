@@ -5,7 +5,13 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, write_settings};
 use log::warn;
 use std::sync::Arc;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
+
+fn transcription_session_active(app: &AppHandle) -> bool {
+    app.try_state::<crate::TranscriptionCoordinator>()
+        .and_then(|coordinator| coordinator.active_operation_id())
+        .is_some()
+}
 
 #[tauri::command]
 #[specta::specta]
@@ -31,12 +37,19 @@ pub async fn download_model(
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    crate::license::enforce_premium_access(&app_handle, "model download")?;
+
     model_manager
         .download_model(&model_id)
         .await
         .map_err(|e| e.to_string())?;
 
     maybe_schedule_whisper_calibration(&app_handle, model_manager.inner().clone(), &model_id);
+
+    if get_settings(&app_handle).selected_model == model_id {
+        crate::startup_warmup::ensure_startup_warmup(&app_handle, "model-downloaded");
+    }
+
     Ok(())
 }
 
@@ -76,7 +89,13 @@ pub async fn delete_model(
 
     model_manager
         .delete_model(&model_id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    if settings.selected_model == model_id || active_uses_same_files {
+        crate::startup_warmup::ensure_startup_warmup(&app_handle, "model-deleted");
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -88,6 +107,8 @@ pub async fn set_active_model(
     audio_manager: State<'_, Arc<AudioRecordingManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    crate::license::enforce_premium_access(&app_handle, "model activation")?;
+
     // Check if model exists and is available
     let model_info = model_manager
         .get_model_info(&model_id)
@@ -95,6 +116,14 @@ pub async fn set_active_model(
 
     if !model_info.is_downloaded {
         return Err(format!("Model not downloaded: {}", model_id));
+    }
+
+    if transcription_session_active(&app_handle) {
+        let mut settings = get_settings(&app_handle);
+        settings.selected_model = model_id.clone();
+        write_settings(&app_handle, settings);
+        crate::startup_warmup::ensure_startup_warmup(&app_handle, "active-model-deferred");
+        return Ok(());
     }
 
     // Load the model in the transcription manager
@@ -115,6 +144,8 @@ pub async fn set_active_model(
             model_id, e
         );
     }
+
+    crate::startup_warmup::ensure_startup_warmup(&app_handle, "active-model-changed");
 
     Ok(())
 }
@@ -139,9 +170,7 @@ pub async fn get_transcription_model_status(
 pub async fn is_model_loading(
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
 ) -> Result<bool, String> {
-    // Check if transcription manager has a loaded model
-    let current_model = transcription_manager.get_current_model();
-    Ok(current_model.is_none())
+    Ok(transcription_manager.is_loading_model())
 }
 
 #[tauri::command]

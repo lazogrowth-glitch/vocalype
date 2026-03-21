@@ -1,3 +1,28 @@
+/**
+ * auth/client — authentication and session persistence.
+ *
+ * ## Owns
+ * - Auth token (stored in OS keyring via Rust `get/set/clear_secure_auth_token`)
+ * - `AuthSession` (user info, subscription tier, expiry) — serialized to OS keyring
+ * - Device UUID (`vocaltype.device.id`) — generated once, persisted to `auth.store.json`
+ * - Device registration flag (`vocaltype.device.registered`) — UX-only hint
+ * - Registered emails set (`vocaltype.device.registered_emails`) — UX-only hint
+ * - Trial welcome flag (`vocaltype.onboarding.trial_shown`)
+ *
+ * ## Does NOT own
+ * - App configuration / shortcuts → see `settingsStore.ts`
+ * - Model downloads → see `modelStore.ts`
+ *
+ * ## Persistence layers
+ * | Data | Where |
+ * |------|-------|
+ * | Token + session | OS keyring (Tauri `keyring` crate) |
+ * | Device ID + flags | `auth.store.json` (Tauri store plugin) |
+ *
+ * The `isDeviceRegistered()` flag is a **UX hint only**. The backend enforces
+ * uniqueness via the `device_registrations` table and returns HTTP 409 on
+ * duplicate registration attempts.
+ */
 import type {
   AuthPayload,
   AuthSession,
@@ -14,6 +39,7 @@ const DEVICE_ID_KEY = "vocaltype.device.id";
 const DEVICE_REGISTERED_KEY = "vocaltype.device.registered";
 // Stores the set of emails that have already been registered on this device.
 const REGISTERED_EMAILS_KEY = "vocaltype.device.registered_emails";
+const TRIAL_WELCOME_SHOWN_KEY = "vocaltype.onboarding.trial_shown";
 const AUTH_STORE_FILE = "auth.store.json";
 
 type PersistedAuthSession = Omit<AuthSession, "token"> & {
@@ -121,33 +147,6 @@ const readPersistedSessionToken = (
   return token ? token : null;
 };
 
-const loadSecureStoredToken = async (): Promise<string | null> => {
-  try {
-    const token = await invoke<string | null>("load_secure_auth_token");
-    return typeof token === "string" && token.trim() ? token : null;
-  } catch (error) {
-    console.warn("Failed to load secure auth token:", error);
-    return null;
-  }
-};
-
-const persistSecureStoredToken = async (token: string): Promise<boolean> => {
-  try {
-    await invoke("store_secure_auth_token", { token });
-    return true;
-  } catch (error) {
-    console.warn("Failed to store secure auth token:", error);
-    return false;
-  }
-};
-
-const clearSecureStoredToken = async (): Promise<void> => {
-  try {
-    await invoke("clear_secure_auth_token");
-  } catch (error) {
-    console.warn("Failed to clear secure auth token:", error);
-  }
-};
 
 const MACHINE_DEVICE_ID_LENGTH = 64;
 
@@ -264,6 +263,16 @@ export const authClient = {
     return newId;
   },
 
+  /**
+   * Returns whether this device has previously registered an account.
+   *
+   * UX HINT ONLY — not a security gate.
+   * The backend is the real authority: it enforces device uniqueness via the
+   * device_registrations table and returns HTTP 409 if a second account is attempted.
+   * This local flag just avoids showing the register form to users who already have
+   * an account, improving UX. It can be bypassed by clearing the store, but the
+   * backend 409 will still block the actual registration attempt.
+   */
   async isDeviceRegistered(): Promise<boolean> {
     try {
       const store = await getAuthStore();
@@ -469,6 +478,8 @@ export const authClient = {
 
   async clearStoredSession() {
     cachedSession = null;
+    cachedDeviceId = null;
+    cachedRegisteredEmails = null;
     clearLegacyLocalAuth();
     await this.clearStoredToken();
 
@@ -499,6 +510,25 @@ export const authClient = {
 
   getErrorStatus(error: unknown) {
     return error instanceof AuthApiError ? error.status : null;
+  },
+
+  async hasSeenTrialWelcome(): Promise<boolean> {
+    try {
+      const store = await getAuthStore();
+      return (await store.get<boolean>(TRIAL_WELCOME_SHOWN_KEY)) === true;
+    } catch {
+      return false;
+    }
+  },
+
+  async markTrialWelcomeSeen(): Promise<void> {
+    try {
+      const store = await getAuthStore();
+      await store.set(TRIAL_WELCOME_SHOWN_KEY, true);
+      await store.save();
+    } catch (error) {
+      console.warn("Failed to persist trial welcome flag:", error);
+    }
   },
 
   // ─── API Calls ──────────────────────────────────────────────────────────────

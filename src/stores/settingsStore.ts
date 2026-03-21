@@ -1,7 +1,25 @@
+/**
+ * settingsStore — user-configurable app settings.
+ *
+ * ## Owns
+ * - All fields of `AppSettings` (shortcuts, model, language, recording mode, …)
+ * - Audio device lists (microphone, output)
+ * - Post-process provider / model options (ephemeral, fetched at runtime)
+ *
+ * ## Does NOT own
+ * - Auth state (token, session, subscription) → see `src/lib/auth/client.ts`
+ * - Model download / extraction progress → see `modelStore.ts`
+ *
+ * ## Persistence
+ * Settings are persisted to `settings_store.json` by the Rust backend via
+ * Tauri commands (`get_settings`, `update_setting`, …). This store is purely a
+ * frontend cache — the backend is the source of truth.
+ */
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { AppSettings as Settings, AudioDevice } from "@/bindings";
 import { commands } from "@/bindings";
+import { toast } from "sonner";
 
 interface SettingsStore {
   settings: Settings | null;
@@ -89,9 +107,21 @@ const settingUpdaters: {
         ? "default"
         : (value as string),
     ),
+  selected_microphone_index: (value) =>
+    commands.setSelectedMicrophone(
+      (value as string) === "Default" || value === null
+        ? "default"
+        : (value as string),
+    ),
   clamshell_microphone: (value) =>
     commands.setClamshellMicrophone(
       (value as string) === "Default" ? "default" : (value as string),
+    ),
+  clamshell_microphone_index: (value) =>
+    commands.setClamshellMicrophone(
+      (value as string) === "Default" || value === null
+        ? "default"
+        : (value as string),
     ),
   selected_output_device: (value) =>
     commands.setSelectedOutputDevice(
@@ -185,7 +215,11 @@ export const useSettingsStore = create<SettingsStore>()(
             ...settings,
             always_on_microphone: settings.always_on_microphone ?? false,
             selected_microphone: settings.selected_microphone ?? "Default",
+            selected_microphone_index:
+              settings.selected_microphone_index ?? "default",
             clamshell_microphone: settings.clamshell_microphone ?? "Default",
+            clamshell_microphone_index:
+              settings.clamshell_microphone_index ?? "default",
             selected_output_device:
               settings.selected_output_device ?? "Default",
           };
@@ -287,6 +321,7 @@ export const useSettingsStore = create<SettingsStore>()(
         if (settings) {
           set({ settings: { ...settings, [key]: originalValue } });
         }
+        toast.error("Échec de la mise à jour du paramètre.");
       } finally {
         setUpdating(updateKey, false);
       }
@@ -390,9 +425,11 @@ export const useSettingsStore = create<SettingsStore>()(
         setUpdating,
         refreshSettings,
         setPostProcessModelOptions,
+        postProcessModelOptions,
       } = get();
       const updateKey = "post_process_provider_id";
       const previousId = settings?.post_process_provider_id ?? null;
+      const previousOptions = postProcessModelOptions[providerId] ?? [];
 
       setUpdating(updateKey, true);
 
@@ -420,6 +457,7 @@ export const useSettingsStore = create<SettingsStore>()(
               : null,
           }));
         }
+        setPostProcessModelOptions(providerId, previousOptions);
       } finally {
         setUpdating(updateKey, false);
       }

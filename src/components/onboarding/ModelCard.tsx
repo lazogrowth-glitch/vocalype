@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  AlertTriangle,
   Check,
   Globe,
   Loader2,
@@ -162,6 +163,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const isFeatured = variant === "featured";
   const isClickable =
     status === "available" || status === "active" || status === "downloadable";
+  const isGemini = model.id === "gemini-api";
 
   // Get translated model name and description
   const displayName = getTranslatedModelName(model, t);
@@ -236,6 +238,13 @@ const ModelCard: React.FC<ModelCardProps> = ({
                   {badge.label}
                 </Badge>
               ))}
+            {showRecommended && !isGemini && (
+              <Badge variant="secondary">
+                {t("modelSelector.badges.localOnly", {
+                  defaultValue: "100% local",
+                })}
+              </Badge>
+            )}
             {status === "active" && (
               <Badge variant="primary">
                 <Check className="w-3 h-3 mr-1" />
@@ -255,6 +264,17 @@ const ModelCard: React.FC<ModelCardProps> = ({
           <p className="mt-0.5 text-[11.5px] leading-5 text-white/40">
             {displayDescription}
           </p>
+          {isGemini && (
+            <div className="mt-1.5 flex items-start gap-1.5 rounded-[6px] bg-amber-500/8 px-2 py-1.5 text-[11px] leading-4 text-amber-400/80">
+              <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
+              <span>
+                {t("modelSelector.geminiCloudWarning", {
+                  defaultValue:
+                    "Gemini sends audio to Google for transcription. Other models process everything locally on your device.",
+                })}
+              </span>
+            </div>
+          )}
           <div className="mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-white/28">
             {model.supported_languages.length > 0 && (
               <span>{getLanguageDisplayText(model.supported_languages, t)}</span>

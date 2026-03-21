@@ -10,7 +10,7 @@ interface AppDataDirectoryProps {
 }
 
 export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
-  descriptionMode = "inline",
+  descriptionMode: _descriptionMode = "inline",
   grouped = false,
 }) => {
   const { t } = useTranslation();

@@ -185,6 +185,17 @@ impl HistoryManager {
         Ok(Connection::open(&self.db_path)?)
     }
 
+    /// Count transcriptions recorded after `since_timestamp` (Unix seconds).
+    pub fn count_recent_transcriptions(&self, since_timestamp: i64) -> Result<i64> {
+        let conn = self.get_connection()?;
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM transcription_history WHERE timestamp >= ?1",
+            params![since_timestamp],
+            |row| row.get(0),
+        )?;
+        Ok(count)
+    }
+
     /// Save a transcription to history (both database and WAV file)
     pub async fn save_transcription(
         &self,
@@ -632,6 +643,93 @@ impl HistoryManager {
         Ok(())
     }
 
+    /// Aggregate stats for the dashboard.
+    pub async fn get_stats(&self) -> Result<crate::commands::history::HistoryStats> {
+        let conn = self.get_connection()?;
+
+        let total_entries: i64 =
+            conn.query_row("SELECT COUNT(*) FROM transcription_history", [], |r| {
+                r.get(0)
+            })?;
+
+        // Rough word count: sum of word counts over all transcription_text rows.
+        let total_words: i64 = {
+            let mut stmt = conn.prepare("SELECT transcription_text FROM transcription_history")?;
+            let texts = stmt.query_map([], |r| r.get::<_, String>(0))?;
+            let mut words: i64 = 0;
+            for t in texts {
+                words += t?.split_whitespace().count() as i64;
+            }
+            words
+        };
+
+        let now = Utc::now().timestamp();
+        let start_of_today = now - (now % 86_400); // floor to day in UTC
+        let start_of_week = now - 7 * 86_400;
+
+        let entries_today: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM transcription_history WHERE timestamp >= ?1",
+            params![start_of_today],
+            |r| r.get(0),
+        )?;
+
+        let entries_this_week: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM transcription_history WHERE timestamp >= ?1",
+            params![start_of_week],
+            |r| r.get(0),
+        )?;
+
+        let most_used_model: Option<String> = conn
+            .query_row(
+                "SELECT model_name FROM transcription_history \
+                 WHERE model_name IS NOT NULL \
+                 GROUP BY model_name ORDER BY COUNT(*) DESC LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .optional()?;
+
+        Ok(crate::commands::history::HistoryStats {
+            total_entries,
+            total_words,
+            entries_today,
+            entries_this_week,
+            most_used_model,
+        })
+    }
+
+    /// Save a transcription from an external audio file (no WAV copy needed).
+    pub async fn save_file_transcription(
+        &self,
+        original_file_name: &str,
+        transcription_text: &str,
+        confidence_payload: Option<
+            &crate::transcription_confidence::TranscriptionConfidencePayload,
+        >,
+    ) -> Result<()> {
+        let timestamp = Utc::now().timestamp();
+        let title = format!("Fichier : {}", original_file_name);
+        let file_ref = format!("file::{}", original_file_name);
+
+        self.save_to_database(
+            file_ref,
+            timestamp,
+            title,
+            transcription_text.to_string(),
+            confidence_payload.cloned(),
+            None,
+            None,
+            None,
+            None,
+        )?;
+
+        self.cleanup_old_entries()?;
+
+        let _ = self.app_handle.emit("history-updated", ());
+
+        Ok(())
+    }
+
     fn format_timestamp_title(&self, timestamp: i64) -> String {
         if let Some(utc_datetime) = DateTime::from_timestamp(timestamp, 0) {
             // Convert UTC to local timezone
@@ -712,9 +810,7 @@ mod tests {
     #[test]
     fn sanitize_recording_file_name_rejects_parent_traversal() {
         let err = HistoryManager::sanitize_recording_file_name("../secrets.wav").unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("contains invalid path components"));
+        assert!(err.to_string().contains("contains invalid path components"));
     }
 
     #[test]

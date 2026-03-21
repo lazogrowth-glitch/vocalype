@@ -1,0 +1,12 @@
+#!/bin/sh
+# VocalType pre-commit hook — runs fast checks before every commit.
+# Install with: bun install  (the "prepare" script runs `husky` automatically)
+
+# 1. Lint-staged: prettier + eslint on staged frontend files
+bun lint-staged
+
+# 2. Translation consistency — fail fast if a key is missing in any locale
+bun run check:translations
+
+# 3. Rust formatting check — no changes, just verify
+(cd src-tauri && cargo fmt -- --check)

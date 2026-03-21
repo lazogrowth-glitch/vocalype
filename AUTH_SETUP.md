@@ -6,9 +6,9 @@ Flow:
 
 1. `register` creates the account.
 2. `login` returns a JWT session.
-3. Registration immediately starts a 7-day free trial without requiring a card.
-4. The desktop app calls `/auth/session` to unlock access during the trial.
-5. After the trial ends, `checkout` opens Stripe to start a paid subscription.
+3. Registration immediately starts a 14-day free trial without requiring a card.
+4. The desktop app calls `/auth/session` to unlock access and determine whether the user is on `premium` or `basic`.
+5. After the trial ends, users keep Basic access unless they start a paid Stripe subscription.
 6. Stripe webhook marks the user as `active`, `past_due`, `canceled`, or another Stripe subscription state.
 
 ## Railway variables
@@ -26,6 +26,17 @@ STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 ```
+
+Recommended production additions:
+
+```bash
+TRUST_X_FORWARDED_FOR=0
+DATABASE_PATH=/secure/path/vocaltype.db
+CORS_ALLOWED_ORIGINS=https://vocaltypeai.com,https://www.vocaltypeai.com
+```
+
+If you enable `TRUST_X_FORWARDED_FOR=1`, only do it behind a trusted reverse
+proxy that overwrites `X-Forwarded-For`.
 
 `ADMIN_SECRET` is deprecated. Admin endpoints now expect a short-lived JWT in
 `Authorization: Bearer ...`, signed with `ADMIN_TOKEN_SECRET`, scoped with
@@ -71,6 +82,13 @@ Set this variable for the Vite/Tauri app:
 VITE_AUTH_API_URL=https://your-railway-api.up.railway.app
 ```
 
+## Windows production notes
+
+- Do not run the Flask development server in production.
+- Restrict filesystem access to the backend directory and SQLite database.
+- Keep secrets outside the repo and outside synced desktop folders.
+- Review [SECURITY_CHECKLIST.md](/c:/developer/sas/vocaltype/SECURITY_CHECKLIST.md) before release.
+
 ## Required API endpoints
 
 The frontend calls these endpoints:
@@ -113,7 +131,7 @@ POST /billing/portal
 ```
 
 After the free trial ends without payment, `/auth/session` should return
-something like:
+something like a Basic tier session:
 
 ```json
 {
@@ -121,7 +139,14 @@ something like:
     "status": "inactive",
     "trial_ends_at": "2026-03-16T00:00:00+00:00",
     "current_period_ends_at": null,
-    "has_access": false
+    "has_access": true,
+    "tier": "basic",
+    "quota": {
+      "count": 0,
+      "limit": 30,
+      "remaining": 30,
+      "reset_at": "2026-03-23T00:00:00+00:00"
+    }
   }
 }
 ```

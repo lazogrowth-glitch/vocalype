@@ -1,25 +1,51 @@
-import React, { lazy, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlignLeft,
+  BarChart2,
   Clock3,
   FlaskConical,
   History,
   Info,
   LayoutGrid,
   Settings2,
+  Zap,
 } from "lucide-react";
 import VocalTypeLogo from "./icons/VocalTypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
+import { TranscriptionWarmupBadge } from "./TranscriptionWarmupBadge";
 import { useSettings } from "../hooks/useSettings";
 
-const GeneralSettings = lazy(() => import("./settings/general/GeneralSettings").then(m => ({ default: m.GeneralSettings })));
-const ModelsSettings = lazy(() => import("./settings/models/ModelsSettings").then(m => ({ default: m.ModelsSettings })));
-const AdvancedSettings = lazy(() => import("./settings/advanced/AdvancedSettings").then(m => ({ default: m.AdvancedSettings })));
-const PostProcessingSettings = lazy(() => import("./settings/post-processing/PostProcessingSettings").then(m => ({ default: m.PostProcessingSettings })));
-const HistorySettings = lazy(() => import("./settings/history/HistorySettings").then(m => ({ default: m.HistorySettings })));
-const DebugSettings = lazy(() => import("./settings/debug/DebugSettings").then(m => ({ default: m.DebugSettings })));
-const AboutSettings = lazy(() => import("./settings/about/AboutSettings").then(m => ({ default: m.AboutSettings })));
+import { usePlan } from "@/lib/subscription/context";
+// GeneralSettings is the default view — keep it eager so there's no flash on startup.
+import { GeneralSettings } from "./settings/general/GeneralSettings";
+
+// All other panels are lazily loaded; they are only rendered when the user
+// navigates to them, reducing the initial JS parse/eval cost.
+const AdvancedSettings = React.lazy(
+  () => import("./settings/advanced/AdvancedSettings").then(m => ({ default: m.AdvancedSettings })),
+);
+const HistorySettings = React.lazy(
+  () => import("./settings/history/HistorySettings").then(m => ({ default: m.HistorySettings })),
+);
+const DebugSettings = React.lazy(
+  () => import("./settings/debug/DebugSettings").then(m => ({ default: m.DebugSettings })),
+);
+const AboutSettings = React.lazy(
+  () => import("./settings/about/AboutSettings").then(m => ({ default: m.AboutSettings })),
+);
+const PostProcessingSettings = React.lazy(
+  () => import("./settings/post-processing/PostProcessingSettings").then(m => ({ default: m.PostProcessingSettings })),
+);
+const ModelsSettings = React.lazy(
+  () => import("./settings/models/ModelsSettings").then(m => ({ default: m.ModelsSettings })),
+);
+const SnippetsSettings = React.lazy(
+  () => import("./settings/snippets/SnippetsSettings").then(m => ({ default: m.SnippetsSettings })),
+);
+const StatsSettings = React.lazy(
+  () => import("./settings/stats/StatsSettings").then(m => ({ default: m.StatsSettings })),
+);
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
 
@@ -69,6 +95,18 @@ export const SECTIONS_CONFIG = {
     component: HistorySettings,
     enabled: () => true,
   },
+  snippets: {
+    labelKey: "sidebar.snippets",
+    icon: Zap,
+    component: SnippetsSettings,
+    enabled: () => true,
+  },
+  stats: {
+    labelKey: "sidebar.stats",
+    icon: BarChart2,
+    component: StatsSettings,
+    enabled: () => true,
+  },
   debug: {
     labelKey: "sidebar.debug",
     icon: FlaskConical,
@@ -88,12 +126,25 @@ interface SidebarProps {
   onSectionChange: (section: SidebarSection) => void;
 }
 
+function useTrialBadge(trialEndsAt: string | null) {
+  if (!trialEndsAt) return null;
+  const days = Math.max(
+    0,
+    Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000),
+  );
+  if (days >= 8) return { days, urgency: "neutral" as const };
+  if (days >= 3) return { days, urgency: "warning" as const };
+  return { days, urgency: "urgent" as const };
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { isTrialing, trialEndsAt, onStartCheckout } = usePlan();
+  const trialBadge = useTrialBadge(isTrialing ? trialEndsAt : null);
 
   const availableSections = useMemo(
     () =>
@@ -110,6 +161,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <VocalTypeLogo width={104} />
         </div>
       </div>
+
+      {trialBadge && (
+        <button
+          type="button"
+          onClick={() =>
+            onStartCheckout()
+              .then((url) => url && window.open(url, "_blank"))
+              .catch(() => {})
+          }
+          className={`w-full border-b px-[18px] py-2.5 text-left transition-opacity hover:opacity-80 ${
+            trialBadge.urgency === "neutral"
+              ? "border-logo-primary/15 bg-logo-primary/8"
+              : trialBadge.urgency === "warning"
+                ? "border-orange-500/20 bg-orange-500/10"
+                : "border-red-500/20 bg-red-500/10"
+          }`}
+        >
+          <p
+            className={`text-[11px] font-medium leading-tight ${
+              trialBadge.urgency === "neutral"
+                ? "text-logo-primary"
+                : trialBadge.urgency === "warning"
+                  ? "text-orange-400"
+                  : "text-red-400"
+            }`}
+          >
+            {trialBadge.urgency === "neutral" &&
+              t("trial.badge.neutral", {
+                count: trialBadge.days,
+                defaultValue: `Trial Premium · {{count}}j restants`,
+              })}
+            {trialBadge.urgency === "warning" &&
+              t("trial.badge.warning", {
+                count: trialBadge.days,
+                defaultValue: `Plus que {{count}} jours de Premium`,
+              })}
+            {trialBadge.urgency === "urgent" &&
+              (trialBadge.days === 0
+                ? t("trial.badge.today", { defaultValue: "⚠ Expire aujourd'hui" })
+                : t("trial.badge.urgent", {
+                    count: trialBadge.days,
+                    defaultValue: `⚠ Expire dans {{count}} jours`,
+                  }))}
+          </p>
+          <p className="mt-0.5 text-[10px] text-white/30">
+            {t("trial.badge.cta", { defaultValue: "Passer à Premium →" })}
+          </p>
+        </button>
+      )}
+
+      <TranscriptionWarmupBadge />
 
       <div className="flex flex-1 flex-col py-2.5">
         {availableSections.map((section) => {

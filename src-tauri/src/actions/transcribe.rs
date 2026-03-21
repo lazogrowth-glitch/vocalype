@@ -18,7 +18,9 @@ use crate::runtime_observability::{emit_runtime_error_with_context, RuntimeError
 use crate::settings::get_settings;
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
-use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
+use crate::utils::{
+    self, show_preparing_overlay, show_recording_overlay, show_transcribing_overlay,
+};
 use crate::TranscriptionCoordinator;
 use log::{debug, error, info, warn};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -161,6 +163,7 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             return;
         }
     };
+    show_preparing_overlay(app);
 
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.initiate_model_load();

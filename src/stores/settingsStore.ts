@@ -107,9 +107,21 @@ const settingUpdaters: {
         ? "default"
         : (value as string),
     ),
+  selected_microphone_index: (value) =>
+    commands.setSelectedMicrophone(
+      (value as string) === "Default" || value === null
+        ? "default"
+        : (value as string),
+    ),
   clamshell_microphone: (value) =>
     commands.setClamshellMicrophone(
       (value as string) === "Default" ? "default" : (value as string),
+    ),
+  clamshell_microphone_index: (value) =>
+    commands.setClamshellMicrophone(
+      (value as string) === "Default" || value === null
+        ? "default"
+        : (value as string),
     ),
   selected_output_device: (value) =>
     commands.setSelectedOutputDevice(
@@ -203,7 +215,11 @@ export const useSettingsStore = create<SettingsStore>()(
             ...settings,
             always_on_microphone: settings.always_on_microphone ?? false,
             selected_microphone: settings.selected_microphone ?? "Default",
+            selected_microphone_index:
+              settings.selected_microphone_index ?? "default",
             clamshell_microphone: settings.clamshell_microphone ?? "Default",
+            clamshell_microphone_index:
+              settings.clamshell_microphone_index ?? "default",
             selected_output_device:
               settings.selected_output_device ?? "Default",
           };

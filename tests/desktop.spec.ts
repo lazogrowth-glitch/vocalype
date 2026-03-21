@@ -1,24 +1,9 @@
 import { test, expect } from "@playwright/test";
-
-/** Inject a minimal Tauri runtime mock so the app bootstraps in the browser. */
-const injectTauriMock = async (page: import("@playwright/test").Page) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(window, "__TAURI_INTERNALS__", {
-      value: {
-        // All invoke calls return null — the app's error boundaries handle it gracefully
-        invoke: (_cmd: string, _args?: unknown) => Promise.resolve(null),
-        transformCallback: () => 0,
-        convertFileSrc: (src: string) => src,
-      },
-      writable: true,
-      configurable: true,
-    });
-  });
-};
+import { injectTauriMock } from "./helpers/tauriMock";
 
 test.describe("Desktop app — with mocked Tauri", () => {
   test.beforeEach(async ({ page }) => {
-    await injectTauriMock(page);
+    await injectTauriMock(page, { windowLabel: "main" });
     await page.goto("/desktop/");
   });
 
@@ -43,7 +28,7 @@ test.describe("Desktop app — with mocked Tauri", () => {
   test("auth portal renders when no session stored", async ({ page }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({ timeout: 10000 });
     // Auth portal shows Login and Create account tabs
-    await expect(page.getByRole("button", { name: /login/i })).toBeVisible({
+    await expect(page.getByRole("button", { name: "Login", exact: true })).toBeVisible({
       timeout: 8000,
     });
   });

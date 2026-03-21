@@ -401,6 +401,11 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     }
 }
 
+/// Shows the microphone preparation overlay window.
+pub fn show_preparing_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "preparing");
+}
+
 /// Shows the recording overlay window with fade-in animation
 pub fn show_recording_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "recording");

@@ -50,21 +50,29 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
     }
 
     const selectedClamshellMicrophone =
-      getSetting("clamshell_microphone") === "default"
-        ? "Default"
-        : getSetting("clamshell_microphone") || "Default";
+      getSetting("clamshell_microphone_index") === "default"
+        ? "default"
+        : getSetting("clamshell_microphone_index") || "default";
 
-    const handleClamshellMicrophoneSelect = async (deviceName: string) => {
-      await updateSetting("clamshell_microphone", deviceName);
+    const handleClamshellMicrophoneSelect = async (deviceIndex: string) => {
+      await updateSetting("clamshell_microphone_index", deviceIndex);
     };
 
     const handleReset = async () => {
-      await resetSetting("clamshell_microphone");
+      await resetSetting("clamshell_microphone_index");
     };
 
+    const nameCounts = audioDevices.reduce<Record<string, number>>((acc, device) => {
+      acc[device.name] = (acc[device.name] ?? 0) + 1;
+      return acc;
+    }, {});
+
     const microphoneOptions = audioDevices.map((device) => ({
-      value: device.name,
-      label: device.name,
+      value: device.index,
+      label:
+        nameCounts[device.name] > 1 && device.index !== "default"
+          ? `${device.name} (${device.index})`
+          : device.name,
     }));
 
     return (
@@ -85,7 +93,7 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
                 : t("settings.sound.microphone.placeholder")
             }
             disabled={
-              isUpdating("clamshell_microphone") ||
+              isUpdating("clamshell_microphone_index") ||
               isLoading ||
               audioDevices.length === 0
             }
@@ -93,7 +101,7 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
           />
           <ResetButton
             onClick={handleReset}
-            disabled={isUpdating("clamshell_microphone") || isLoading}
+            disabled={isUpdating("clamshell_microphone_index") || isLoading}
           />
         </div>
       </SettingContainer>

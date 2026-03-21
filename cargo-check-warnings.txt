@@ -1,0 +1,220 @@
+    Checking vocaltype v0.7.17 (C:\developer\sas\vocaltype\src-tauri)
+warning: variable does not need to be mutable
+    --> src\settings\mod.rs:1700:9
+     |
+1700 |     let mut settings = if let Some(settings_value) = store.get("settings") {
+     |         ----^^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `settings`
+    --> src\settings\mod.rs:1700:9
+     |
+1700 |     let mut settings = if let Some(settings_value) = store.get("settings") {
+     |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_settings`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `migrate_secret_to_secure_store` is never used
+    --> src\settings\mod.rs:1433:4
+     |
+1433 | fn migrate_secret_to_secure_store(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `hydrate_settings_secrets` is never used
+    --> src\settings\mod.rs:1456:4
+     |
+1456 | fn hydrate_settings_secrets(app: &AppHandle, settings: &mut AppSettings) {
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `migrate_secret_to_secure_store` is never used
+ --> src\settings\persistence.rs:9:4
+  |
+9 | fn migrate_secret_to_secure_store(
+  |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `hydrate_settings_secrets` is never used
+  --> src\settings\persistence.rs:32:4
+   |
+32 | fn hydrate_settings_secrets(app: &AppHandle, settings: &mut AppSettings) {
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `load_or_create_app_settings` is never used
+   --> src\settings\persistence.rs:100:8
+    |
+100 | pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `get_settings_fast` is never used
+   --> src\settings\persistence.rs:193:8
+    |
+193 | pub fn get_settings_fast(app: &AppHandle) -> AppSettings {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `refresh_adaptive_profile_if_needed` is never used
+   --> src\settings\persistence.rs:227:8
+    |
+227 | pub fn refresh_adaptive_profile_if_needed(app: &AppHandle) {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: trait `LlmTextProvider` is never used
+  --> src\llm\mod.rs:27:11
+   |
+27 | pub trait LlmTextProvider: Send + Sync {
+   |           ^^^^^^^^^^^^^^^
+
+warning: struct `GeminiProvider` is never constructed
+  --> src\llm\mod.rs:40:12
+   |
+40 | pub struct GeminiProvider {
+   |            ^^^^^^^^^^^^^^
+
+warning: function `text_provider_for` is never used
+  --> src\llm\mod.rs:72:8
+   |
+72 | pub fn text_provider_for(
+   |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `ProcessingContext` is never constructed
+  --> src\processing\mod.rs:28:12
+   |
+28 | pub struct ProcessingContext<'a> {
+   |            ^^^^^^^^^^^^^^^^^
+
+warning: associated items `new` and `category` are never used
+  --> src\processing\mod.rs:36:12
+   |
+35 | impl<'a> ProcessingContext<'a> {
+   | ------------------------------ associated items in this implementation
+36 |     pub fn new(app_context: Option<&'a AppTranscriptionContext>, language: &'a str) -> Self {
+   |            ^^^
+...
+44 |     pub fn category(&self) -> AppContextCategory {
+   |            ^^^^^^^^
+
+warning: trait `SyncProcessingStep` is never used
+  --> src\processing\mod.rs:57:11
+   |
+57 | pub trait SyncProcessingStep: Send + Sync {
+   |           ^^^^^^^^^^^^^^^^^^
+
+warning: struct `FillerStep` is never constructed
+  --> src\processing\mod.rs:68:12
+   |
+68 | pub struct FillerStep;
+   |            ^^^^^^^^^^
+
+warning: struct `PunctuationStep` is never constructed
+  --> src\processing\mod.rs:80:12
+   |
+80 | pub struct PunctuationStep;
+   |            ^^^^^^^^^^^^^^^
+
+warning: struct `SyncPipeline` is never constructed
+  --> src\processing\mod.rs:97:12
+   |
+97 | pub struct SyncPipeline {
+   |            ^^^^^^^^^^^^
+
+warning: associated items `standard` and `run` are never used
+   --> src\processing\mod.rs:103:12
+    |
+101 | impl SyncPipeline {
+    | ----------------- associated items in this implementation
+102 |     /// Build the standard sync pipeline: filler → punctuation.
+103 |     pub fn standard() -> Self {
+    |            ^^^^^^^^
+...
+110 |     pub fn run(&self, text: String, ctx: &ProcessingContext<'_>) -> String {
+    |            ^^^
+
+warning: constant `SERVICE_NAME` is never used
+ --> src\security\secrets.rs:4:7
+  |
+4 | const SERVICE_NAME: &str = "com.vocaltype.desktop";
+  |       ^^^^^^^^^^^^
+
+warning: constant `GEMINI_API_KEY_ACCOUNT` is never used
+ --> src\security\secrets.rs:5:7
+  |
+5 | const GEMINI_API_KEY_ACCOUNT: &str = "gemini_api_key";
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `AUTH_TOKEN_ACCOUNT` is never used
+ --> src\security\secrets.rs:6:7
+  |
+6 | const AUTH_TOKEN_ACCOUNT: &str = "auth_token";
+  |       ^^^^^^^^^^^^^^^^^^
+
+warning: constant `POST_PROCESS_API_KEY_PREFIX` is never used
+ --> src\security\secrets.rs:7:7
+  |
+7 | const POST_PROCESS_API_KEY_PREFIX: &str = "post_process_api_key:";
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `entry` is never used
+ --> src\security\secrets.rs:9:4
+  |
+9 | fn entry(account: &str) -> Result<Entry, String> {
+  |    ^^^^^
+
+warning: function `account_for_post_process_provider` is never used
+  --> src\security\secrets.rs:18:4
+   |
+18 | fn account_for_post_process_provider(provider_id: &str) -> String {
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `store_secret` is never used
+  --> src\security\secrets.rs:22:4
+   |
+22 | fn store_secret(account: &str, value: &str) -> Result<(), String> {
+   |    ^^^^^^^^^^^^
+
+warning: function `load_secret` is never used
+  --> src\security\secrets.rs:43:4
+   |
+43 | fn load_secret(account: &str) -> Option<String> {
+   |    ^^^^^^^^^^^
+
+warning: function `store_gemini_api_key` is never used
+  --> src\security\secrets.rs:59:8
+   |
+59 | pub fn store_gemini_api_key(value: &str) -> Result<(), String> {
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `load_gemini_api_key` is never used
+  --> src\security\secrets.rs:63:8
+   |
+63 | pub fn load_gemini_api_key() -> Option<String> {
+   |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `store_auth_token` is never used
+  --> src\security\secrets.rs:67:8
+   |
+67 | pub fn store_auth_token(value: &str) -> Result<(), String> {
+   |        ^^^^^^^^^^^^^^^^
+
+warning: function `load_auth_token` is never used
+  --> src\security\secrets.rs:71:8
+   |
+71 | pub fn load_auth_token() -> Option<String> {
+   |        ^^^^^^^^^^^^^^^
+
+warning: function `store_post_process_api_key` is never used
+  --> src\security\secrets.rs:75:8
+   |
+75 | pub fn store_post_process_api_key(provider_id: &str, value: &str) -> Result<(), String> {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `load_post_process_api_key` is never used
+  --> src\security\secrets.rs:79:8
+   |
+79 | pub fn load_post_process_api_key(provider_id: &str) -> Option<String> {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `vocaltype` (lib) generated 33 warnings (run `cargo fix --lib -p vocaltype` to apply 2 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.68s

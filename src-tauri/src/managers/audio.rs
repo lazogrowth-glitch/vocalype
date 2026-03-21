@@ -357,19 +357,73 @@ impl AudioRecordingManager {
             false
         };
 
-        let device_name = if use_clamshell_mic {
-            settings.clamshell_microphone.as_ref()
+        let (device_name, device_index) = if use_clamshell_mic {
+            (
+                settings.clamshell_microphone.as_ref(),
+                settings.clamshell_microphone_index.as_ref(),
+            )
         } else {
-            settings.selected_microphone.as_ref()
+            (
+                settings.selected_microphone.as_ref(),
+                settings.selected_microphone_index.as_ref(),
+            )
         };
+
+        if device_name.is_none() && device_index.is_none() {
+            self.set_last_device_resolution(Some("default-device".to_string()));
+            return Ok(None);
+        }
+
+        let devices = list_input_devices()
+            .map_err(|e| anyhow::anyhow!("Failed to list audio input devices: {}", e))?;
+        if let Some(device_index) = device_index {
+            if let Some(device) = devices.iter().find(|d| &d.index == device_index) {
+                if let Some(device_name) = device_name {
+                    if &device.name != device_name {
+                        return Err(anyhow::anyhow!(
+                            "Selected microphone '{}' moved or changed; expected '{}' at index '{}'",
+                            device.name,
+                            device_name,
+                            device_index
+                        ));
+                    }
+                }
+                self.set_last_device_resolution(Some(format!("index:{}", device_index)));
+                return Ok(Some(device.device.clone()));
+            }
+            if let Some(device_name) = device_name {
+                let matching_by_name: Vec<_> =
+                    devices.iter().filter(|d| &d.name == device_name).collect();
+                return match matching_by_name.len() {
+                    1 => {
+                        self.set_last_device_resolution(Some(format!(
+                            "name-fallback:{}",
+                            device_name
+                        )));
+                        Ok(Some(matching_by_name[0].device.clone()))
+                    }
+                    0 => Err(anyhow::anyhow!(
+                        "Selected microphone '{}' is no longer available",
+                        device_name
+                    )),
+                    count => Err(anyhow::anyhow!(
+                        "Selected microphone '{}' is ambiguous ({} matching devices)",
+                        device_name,
+                        count
+                    )),
+                };
+            }
+            return Err(anyhow::anyhow!(
+                "Selected microphone index '{}' is no longer available",
+                device_index
+            ));
+        }
 
         let Some(device_name) = device_name else {
             self.set_last_device_resolution(Some("default-device".to_string()));
             return Ok(None);
         };
 
-        let devices = list_input_devices()
-            .map_err(|e| anyhow::anyhow!("Failed to list audio input devices: {}", e))?;
         let matching: Vec<_> = devices
             .into_iter()
             .filter(|d| d.name == *device_name)
@@ -381,7 +435,7 @@ impl AudioRecordingManager {
                 device_name
             )),
             1 => {
-                self.set_last_device_resolution(Some(format!("exact:{}", device_name)));
+                self.set_last_device_resolution(Some(format!("name:{}", device_name)));
                 Ok(matching.into_iter().next().map(|device| device.device))
             }
             count => Err(anyhow::anyhow!(
@@ -715,16 +769,16 @@ impl AudioRecordingManager {
     /// In **OnDemand** mode the change is picked up the next time the stream
     /// is opened (i.e. on the next recording).
     pub fn set_whisper_mode(&self, enabled: bool) -> Result<(), anyhow::Error> {
-        if self.is_recording() {
-            return Err(anyhow::anyhow!(
-                "Cannot toggle whisper mode while a dictation session is active"
-            ));
-        }
         self.whisper_mode.store(enabled, Ordering::Relaxed);
         info!(
             "Whisper mode {}",
             if enabled { "enabled" } else { "disabled" }
         );
+
+        if self.is_recording() {
+            debug!("Whisper mode change deferred until the next recorder reopen");
+            return Ok(());
+        }
 
         // In AlwaysOn mode restart the stream so the gain applies immediately.
         if matches!(

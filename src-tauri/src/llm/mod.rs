@@ -10,6 +10,7 @@
 //!
 //! Implement [`LlmTextProvider`] and add a branch in
 //! `llm_client::send_chat_completion_with_schema`.
+#![allow(dead_code)]
 
 pub mod gemini_client;
 pub mod llm_client;
@@ -17,6 +18,8 @@ pub mod prompt_builder;
 
 use crate::settings::PostProcessProvider;
 use anyhow::Result;
+use std::future::Future;
+use std::pin::Pin;
 
 /// Minimal trait for text-completion LLM providers used in post-processing.
 ///
@@ -31,7 +34,7 @@ pub trait LlmTextProvider: Send + Sync {
         &'a self,
         system_prompt: Option<&'a str>,
         user_content: &'a str,
-    ) -> impl std::future::Future<Output = Result<Option<String>>> + Send + 'a;
+    ) -> Pin<Box<dyn Future<Output = Result<Option<String>>> + Send + 'a>>;
 }
 
 /// Thin wrapper around `gemini_client` implementing [`LlmTextProvider`].
@@ -45,17 +48,20 @@ impl LlmTextProvider for GeminiProvider {
         "gemini"
     }
 
-    async fn complete<'a>(
+    fn complete<'a>(
         &'a self,
         system_prompt: Option<&'a str>,
         user_content: &'a str,
-    ) -> Result<Option<String>> {
-        let sys = system_prompt.unwrap_or_default();
-        match gemini_client::generate_text(&self.api_key, &self.model, sys, user_content).await {
-            Ok(text) if !text.is_empty() => Ok(Some(text)),
-            Ok(_) => Ok(None),
-            Err(e) => Err(anyhow::anyhow!("Gemini API error: {}", e)),
-        }
+    ) -> Pin<Box<dyn Future<Output = Result<Option<String>>> + Send + 'a>> {
+        Box::pin(async move {
+            let sys = system_prompt.unwrap_or_default();
+            match gemini_client::generate_text(&self.api_key, &self.model, sys, user_content).await
+            {
+                Ok(text) if !text.is_empty() => Ok(Some(text)),
+                Ok(_) => Ok(None),
+                Err(e) => Err(anyhow::anyhow!("Gemini API error: {}", e)),
+            }
+        })
     }
 }
 

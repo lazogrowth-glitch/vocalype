@@ -24,21 +24,29 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
     } = useSettings();
 
     const selectedMicrophone =
-      getSetting("selected_microphone") === "default"
-        ? "Default"
-        : getSetting("selected_microphone") || "Default";
+      getSetting("selected_microphone_index") === "default"
+        ? "default"
+        : getSetting("selected_microphone_index") || "default";
 
-    const handleMicrophoneSelect = async (deviceName: string) => {
-      await updateSetting("selected_microphone", deviceName);
+    const handleMicrophoneSelect = async (deviceIndex: string) => {
+      await updateSetting("selected_microphone_index", deviceIndex);
     };
 
     const handleReset = async () => {
-      await resetSetting("selected_microphone");
+      await resetSetting("selected_microphone_index");
     };
 
+    const nameCounts = audioDevices.reduce<Record<string, number>>((acc, device) => {
+      acc[device.name] = (acc[device.name] ?? 0) + 1;
+      return acc;
+    }, {});
+
     const microphoneOptions = audioDevices.map((device) => ({
-      value: device.name,
-      label: device.name,
+      value: device.index,
+      label:
+        nameCounts[device.name] > 1 && device.index !== "default"
+          ? `${device.name} (${device.index})`
+          : device.name,
     }));
 
     return (
@@ -59,7 +67,7 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
                 : t("settings.sound.microphone.placeholder")
             }
             disabled={
-              isUpdating("selected_microphone") ||
+              isUpdating("selected_microphone_index") ||
               isLoading ||
               audioDevices.length === 0
             }
@@ -67,7 +75,7 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
           />
           <ResetButton
             onClick={handleReset}
-            disabled={isUpdating("selected_microphone") || isLoading}
+            disabled={isUpdating("selected_microphone_index") || isLoading}
           />
         </div>
       </SettingContainer>

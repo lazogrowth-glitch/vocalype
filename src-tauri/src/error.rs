@@ -4,7 +4,7 @@
 //!
 //! Internal Rust code uses `AppResult<T>`:
 //! ```rust
-//! use crate::error::{AppError, AppResult};
+//! use vocaltype_app_lib::error::{AppError, AppResult};
 //!
 //! fn load_model(id: &str) -> AppResult<()> {
 //!     if id.is_empty() {
@@ -18,6 +18,10 @@
 //! can only carry a string error. Use `.map_err(|e| e.to_string())` or the
 //! `into_tauri_err` helper at the call site:
 //! ```rust
+//! fn some_internal_fn() -> Result<(), &'static str> {
+//!     Ok(())
+//! }
+//!
 //! #[tauri::command]
 //! fn my_command() -> Result<(), String> {
 //!     some_internal_fn().map_err(|e| e.to_string())

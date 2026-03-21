@@ -11,16 +11,16 @@ mod tray;
 
 // ── Organised sub-modules ────────────────────────────────────────────────────
 
-/// Text processing pipeline (filler, dictionary, punctuation, LLM cleanup).
-mod processing;
-/// Security subsystem (license, integrity, crypto, keyring).
-mod security;
 /// LLM provider clients (Gemini, OpenAI-compatible, prompt builder).
 mod llm;
-/// Application runtime core (adaptive engine, transcription lifecycle, VAD).
-mod runtime;
 /// Platform abstraction (keyboard, clipboard, overlay, audio feedback, signals).
 mod platform;
+/// Text processing pipeline (filler, dictionary, punctuation, LLM cleanup).
+mod processing;
+/// Application runtime core (adaptive engine, transcription lifecycle, VAD).
+mod runtime;
+/// Security subsystem (license, integrity, crypto, keyring).
+mod security;
 
 // ── Backward-compatible re-exports ───────────────────────────────────────────
 // `pub use` ensures existing `use crate::X::SomeType` imports in sub-modules
@@ -33,17 +33,16 @@ pub use security::{integrity, license, model_crypto, secret_store};
 // llm
 pub use llm::{gemini_client, llm_client, prompt_builder};
 // runtime
-pub use runtime::{
-    adaptive_runtime, chunking, command_mode, context_detector, model_ids,
-    runtime_observability, startup_warmup, transcription_confidence,
-    transcription_coordinator, vocabulary_store, voice_profile,
-};
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub use runtime::apple_intelligence;
+pub use runtime::{
+    adaptive_runtime, chunking, command_mode, context_detector, model_ids, runtime_observability,
+    startup_warmup, transcription_confidence, transcription_coordinator, vocabulary_store,
+    voice_profile,
+};
 // platform
-pub use platform::{audio_feedback, clipboard, input, overlay, utils};
-#[cfg(unix)]
 pub use platform::signal_handle;
+pub use platform::{audio_feedback, clipboard, input, overlay, utils};
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]

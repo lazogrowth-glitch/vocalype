@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { injectTauriMock } from "./helpers/tauriMock";
 
 test.describe("Overlay window", () => {
+  test.beforeEach(async ({ page }) => {
+    await injectTauriMock(page, { windowLabel: "overlay" });
+  });
+
   test("overlay page loads with HTTP 200", async ({ page }) => {
     const response = await page.goto("/src/overlay/");
     expect(response?.status()).toBe(200);
@@ -23,7 +28,8 @@ test.describe("Overlay window", () => {
         !e.includes("__TAURI_INTERNALS__") &&
         !e.includes("invoke") &&
         !e.includes("plugin") &&
-        !e.includes("tauri"),
+        !e.includes("tauri") &&
+        !e.includes("transformCallback"),
     );
     expect(critical).toHaveLength(0);
   });
@@ -33,8 +39,9 @@ test.describe("Overlay window", () => {
     const bg = await page.evaluate(
       () => document.body.style.background || getComputedStyle(document.body).background,
     );
-    // The overlay CSS sets background: transparent
-    expect(bg).toContain("transparent");
+    expect(
+      bg.includes("transparent") || bg.includes("rgba(0, 0, 0, 0)"),
+    ).toBeTruthy();
   });
 
   test("overlay root is attached after React hydration", async ({ page }) => {

@@ -1,4 +1,6 @@
 use super::*;
+use std::ops::Deref;
+use tauri_plugin_store::StoreExt;
 
 fn persist_store(store: &impl Deref<Target = tauri_plugin_store::Store<tauri::Wry>>) {
     if let Err(err) = store.save() {
@@ -139,6 +141,12 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         persist_settings_payload(&store, &default_settings);
         default_settings
     };
+
+    let pre_migration_version = settings.settings_version;
+    migrate_settings(&mut settings);
+    if settings.settings_version != pre_migration_version {
+        persist_settings_payload(&store, &settings);
+    }
 
     if prepare_settings_for_runtime(app, &mut settings) {
         match serde_json::to_value(exportable_settings(settings.clone())) {

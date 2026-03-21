@@ -11,7 +11,6 @@
 import { useEffect } from "react";
 import { authClient } from "@/lib/auth/client";
 import type { AuthSession } from "@/lib/auth/types";
-import type { LicenseRuntimeState } from "@/lib/license/types";
 
 const REFRESH_INTERVAL_MS = 17 * 60 * 1000;
 

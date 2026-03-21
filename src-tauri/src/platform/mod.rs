@@ -34,7 +34,5 @@ pub mod audio_feedback;
 pub mod clipboard;
 pub mod input;
 pub mod overlay;
-pub mod utils;
-
-#[cfg(unix)]
 pub mod signal_handle;
+pub mod utils;

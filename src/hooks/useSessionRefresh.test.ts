@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { useSessionRefresh } from "./useSessionRefresh";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -82,10 +82,12 @@ describe("useSessionRefresh", () => {
       value: "visible",
       configurable: true,
     });
-    document.dispatchEvent(new Event("visibilitychange"));
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      await Promise.resolve();
+    });
 
-    await vi.runAllTimersAsync();
-    expect(authClient.getSession).toHaveBeenCalled();
+    expect(authClient.getSession).toHaveBeenCalledWith("tok");
   });
 
   it("cleans up interval and event listener on unmount", () => {

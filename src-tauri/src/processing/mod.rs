@@ -13,6 +13,7 @@
 //!
 //! Implement [`SyncProcessingStep`] for pure-text transforms (no async, no app state)
 //! and add your step to the relevant position in `actions/post_processing.rs`.
+#![allow(dead_code)]
 
 pub mod dictionary;
 pub mod filler;
@@ -34,7 +35,10 @@ pub struct ProcessingContext<'a> {
 
 impl<'a> ProcessingContext<'a> {
     pub fn new(app_context: Option<&'a AppTranscriptionContext>, language: &'a str) -> Self {
-        Self { app_context, language }
+        Self {
+            app_context,
+            language,
+        }
     }
 
     /// Shorthand for the resolved context category.
@@ -65,7 +69,9 @@ pub trait SyncProcessingStep: Send + Sync {
 pub struct FillerStep;
 
 impl SyncProcessingStep for FillerStep {
-    fn name(&self) -> &'static str { "filler_removal" }
+    fn name(&self) -> &'static str {
+        "filler_removal"
+    }
     fn apply(&self, text: String, _ctx: &ProcessingContext<'_>) -> String {
         filler::clean_transcript(&text)
     }
@@ -75,7 +81,9 @@ impl SyncProcessingStep for FillerStep {
 pub struct PunctuationStep;
 
 impl SyncProcessingStep for PunctuationStep {
-    fn name(&self) -> &'static str { "punctuation_fix" }
+    fn name(&self) -> &'static str {
+        "punctuation_fix"
+    }
     fn apply(&self, text: String, ctx: &ProcessingContext<'_>) -> String {
         punctuation::fix_punctuation(&text, ctx.category())
     }

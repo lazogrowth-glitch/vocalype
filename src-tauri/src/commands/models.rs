@@ -5,7 +5,13 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, write_settings};
 use log::warn;
 use std::sync::Arc;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
+
+fn transcription_session_active(app: &AppHandle) -> bool {
+    app.try_state::<crate::TranscriptionCoordinator>()
+        .and_then(|coordinator| coordinator.active_operation_id())
+        .is_some()
+}
 
 #[tauri::command]
 #[specta::specta]
@@ -110,6 +116,14 @@ pub async fn set_active_model(
 
     if !model_info.is_downloaded {
         return Err(format!("Model not downloaded: {}", model_id));
+    }
+
+    if transcription_session_active(&app_handle) {
+        let mut settings = get_settings(&app_handle);
+        settings.selected_model = model_id.clone();
+        write_settings(&app_handle, settings);
+        crate::startup_warmup::ensure_startup_warmup(&app_handle, "active-model-deferred");
+        return Ok(());
     }
 
     // Load the model in the transcription manager

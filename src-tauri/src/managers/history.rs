@@ -267,10 +267,6 @@ impl HistoryManager {
         let retention_period = crate::settings::get_recording_retention_period(&self.app_handle);
 
         match retention_period {
-            crate::settings::RecordingRetentionPeriod::Never => {
-                // Don't delete anything
-                return Ok(());
-            }
             crate::settings::RecordingRetentionPeriod::PreserveLimit => {
                 // Use the old count-based logic with history_limit
                 let limit = crate::settings::get_history_limit(&self.app_handle);
@@ -696,6 +692,59 @@ impl HistoryManager {
             entries_this_week,
             most_used_model,
         })
+    }
+
+    /// Delete all history entries and their associated WAV files from disk.
+    pub async fn clear_all_history(&self) -> Result<()> {
+        let conn = self.get_connection()?;
+
+        // Gather all file names before deleting rows
+        let mut stmt =
+            conn.prepare("SELECT id, file_name FROM transcription_history")?;
+        let rows = stmt.query_map([], |row| {
+            Ok((row.get::<_, i64>("id")?, row.get::<_, String>("file_name")?))
+        })?;
+
+        let mut entries: Vec<(i64, String)> = Vec::new();
+        for row in rows {
+            entries.push(row?);
+        }
+
+        // Delete all WAV files
+        for (_, file_name) in &entries {
+            // Skip file references (entries transcribed from external files)
+            if file_name.starts_with("file::") {
+                continue;
+            }
+            match Self::sanitize_recording_file_name(file_name) {
+                Ok(safe_name) => {
+                    let file_path = self.recordings_dir.join(safe_name);
+                    if file_path.exists() {
+                        if let Err(e) = fs::remove_file(&file_path) {
+                            error!("Failed to delete WAV file {}: {}", file_name, e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        "Refusing to delete file with invalid name '{}': {}",
+                        file_name, e
+                    );
+                }
+            }
+        }
+
+        // Delete all database rows
+        conn.execute("DELETE FROM transcription_history", [])?;
+
+        info!("Cleared all history ({} entries)", entries.len());
+
+        // Emit history updated event
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(())
     }
 
     /// Save a transcription from an external audio file (no WAV copy needed).

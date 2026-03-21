@@ -15,8 +15,12 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
+    const rawRetentionPeriod = getSetting("recording_retention_period");
+    // "never" was removed — normalise legacy values to "preserve_limit" in the UI
     const selectedRetentionPeriod =
-      getSetting("recording_retention_period") || "never";
+      !rawRetentionPeriod || rawRetentionPeriod === "never"
+        ? "preserve_limit"
+        : rawRetentionPeriod;
     const historyLimit = getSetting("history_limit") || 5;
 
     const handleRetentionPeriodSelect = async (period: string) => {
@@ -27,7 +31,6 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
     };
 
     const retentionOptions = [
-      { value: "never", label: t("settings.debug.recordingRetention.never") },
       {
         value: "preserve_limit",
         label: t("settings.debug.recordingRetention.preserveLimit", {

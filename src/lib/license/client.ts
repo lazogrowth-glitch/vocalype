@@ -1,6 +1,6 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
-import { authClient, AuthApiError } from "@/lib/auth/client";
+import { authClient, AuthApiError, hashDeviceId } from "@/lib/auth/client";
 import type {
   IntegritySnapshot,
   LicenseEnvelope,
@@ -42,14 +42,36 @@ async function getAppVersionSafe() {
   }
 }
 
+/**
+ * Sanitize the integrity snapshot before sending it to the server.
+ *
+ * The snapshot is used solely for detecting binary tampering.
+ * Fields that may contain user-identifiable information are stripped:
+ *   - executable_path  (may contain the OS username in the file path)
+ *
+ * Fields that ARE sent (no personal data):
+ *   - release_build    (boolean — is this a release or debug build)
+ *   - binary_sha256    (hash of the application binary — detects tampering)
+ *   - tamper_flags     (list of integrity anomaly codes — no user data)
+ */
+function sanitizeIntegrityForServer(
+  snapshot: IntegritySnapshot,
+): Omit<IntegritySnapshot, "executable_path"> {
+  const { executable_path: _executable_path, ...safe } = snapshot;
+  return safe;
+}
+
 async function postLicense(
   path: string,
   token: string,
 ): Promise<StoredLicenseBundle> {
-  const device_id = await authClient.getOrCreateDeviceId();
+  const rawDeviceId = await authClient.getOrCreateDeviceId();
+  const device_id = await hashDeviceId(rawDeviceId);
   const app_version = await getAppVersionSafe();
   const app_channel = import.meta.env.DEV ? "dev" : "stable";
-  const integrity = await licenseClient.getIntegritySnapshot();
+  const rawIntegrity = await licenseClient.getIntegritySnapshot();
+  // Strip sensitive fields (executable_path may contain the OS username)
+  const integrity = sanitizeIntegrityForServer(rawIntegrity);
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     method: "POST",
     headers: buildHeaders(token),
@@ -123,7 +145,8 @@ export const licenseClient = {
   },
 
   async status(token: string): Promise<LicenseRuntimeState> {
-    const device_id = await authClient.getOrCreateDeviceId();
+    const rawDeviceId = await authClient.getOrCreateDeviceId();
+    const device_id = await hashDeviceId(rawDeviceId);
     const response = await fetch(
       `${getApiBaseUrl()}/license/status?device_id=${encodeURIComponent(device_id)}`,
       {
@@ -147,7 +170,8 @@ export const licenseClient = {
     anomalyType: string,
     details: Record<string, unknown>,
   ): Promise<void> {
-    const device_id = await authClient.getOrCreateDeviceId();
+    const rawDeviceId = await authClient.getOrCreateDeviceId();
+    const device_id = await hashDeviceId(rawDeviceId);
     await fetch(`${getApiBaseUrl()}/license/report-anomaly`, {
       method: "POST",
       headers: buildHeaders(token),

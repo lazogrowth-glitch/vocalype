@@ -11,6 +11,7 @@ import {
   Loader2,
   Download,
   FileAudio,
+  Eraser,
 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -71,7 +72,9 @@ const ExportHistoryButton: React.FC = () => {
       if (result.status === "ok") {
         await writeTextFile(filePath, result.data);
         toast.success(
-          t("settings.history.exportSuccess", { defaultValue: "Historique exporté." }),
+          t("settings.history.exportSuccess", {
+            defaultValue: "Historique exporté.",
+          }),
         );
       } else {
         toast.error(result.error);
@@ -79,7 +82,9 @@ const ExportHistoryButton: React.FC = () => {
     } catch (e) {
       console.error(e);
       toast.error(
-        t("settings.history.exportError", { defaultValue: "Échec de l'export." }),
+        t("settings.history.exportError", {
+          defaultValue: "Échec de l'export.",
+        }),
       );
     } finally {
       setExporting(false);
@@ -91,15 +96,75 @@ const ExportHistoryButton: React.FC = () => {
       type="button"
       onClick={handleExport}
       disabled={exporting}
-      className="flex items-center gap-1 text-[12px] text-white/30 transition-colors hover:text-white/55 disabled:opacity-40"
-      title={t("settings.history.export", { defaultValue: "Exporter" })}
+      className="flex items-center gap-1.5 rounded-md border border-logo-primary/30 bg-logo-primary/5 px-2.5 py-1 text-[12px] text-logo-primary/80 transition-colors hover:bg-logo-primary/10 hover:text-logo-primary disabled:opacity-40"
+      title={t("settings.history.exportMyData", {
+        defaultValue: "Export my data",
+      })}
     >
       {exporting ? (
         <Loader2 size={11} className="animate-spin" />
       ) : (
         <Download size={11} />
       )}
-      {t("settings.history.export", { defaultValue: "Exporter" })}
+      {t("settings.history.exportMyData", { defaultValue: "Export my data" })}
+    </button>
+  );
+};
+
+// ── Clear all history button ───────────────────────────────────────────────────
+
+const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
+  onCleared,
+}) => {
+  const { t } = useTranslation();
+  const [clearing, setClearing] = useState(false);
+
+  const handleClear = async () => {
+    const confirmed = window.confirm(
+      t("settings.history.clearAllConfirm", {
+        defaultValue:
+          "Are you sure? This will permanently delete all recordings and transcriptions.",
+      }),
+    );
+    if (!confirmed) return;
+
+    setClearing(true);
+    try {
+      await invoke("clear_all_history");
+      toast.success(
+        t("settings.history.clearAllSuccess", {
+          defaultValue: "All history cleared.",
+        }),
+      );
+      onCleared();
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        t("settings.history.clearAllError", {
+          defaultValue: "Failed to clear history.",
+        }),
+      );
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClear}
+      disabled={clearing}
+      className="flex items-center gap-1 text-[12px] text-red-400/60 transition-colors hover:text-red-400 disabled:opacity-40"
+      title={t("settings.history.clearAll", {
+        defaultValue: "Clear all history",
+      })}
+    >
+      {clearing ? (
+        <Loader2 size={11} className="animate-spin" />
+      ) : (
+        <Eraser size={11} />
+      )}
+      {t("settings.history.clearAll", { defaultValue: "Clear all history" })}
     </button>
   );
 };
@@ -148,14 +213,18 @@ const TranscribeFileButton: React.FC = () => {
       onClick={handleTranscribeFile}
       disabled={transcribing}
       className="flex items-center gap-1 text-[12px] text-white/30 transition-colors hover:text-white/55 disabled:opacity-40"
-      title={t("settings.history.transcribeFile", { defaultValue: "Transcrire un fichier" })}
+      title={t("settings.history.transcribeFile", {
+        defaultValue: "Transcrire un fichier",
+      })}
     >
       {transcribing ? (
         <Loader2 size={11} className="animate-spin" />
       ) : (
         <FileAudio size={11} />
       )}
-      {t("settings.history.transcribeFile", { defaultValue: "Transcrire un fichier" })}
+      {t("settings.history.transcribeFile", {
+        defaultValue: "Transcrire un fichier",
+      })}
     </button>
   );
 };
@@ -364,6 +433,7 @@ export const HistorySettings: React.FC = () => {
           <div className="flex items-center gap-3">
             <TranscribeFileButton />
             <ExportHistoryButton />
+            <ClearAllHistoryButton onCleared={loadHistoryEntries} />
             <OpenRecordingsButton
               onClick={openRecordingsFolder}
               label={t("settings.history.openFolder")}
@@ -381,7 +451,11 @@ export const HistorySettings: React.FC = () => {
               </span>
               <button
                 type="button"
-                onClick={() => onStartCheckout().then((url) => url && window.open(url, "_blank"))}
+                onClick={() =>
+                  onStartCheckout().then(
+                    (url) => url && window.open(url, "_blank"),
+                  )
+                }
                 className="ml-3 shrink-0 rounded bg-amber-500/20 px-2.5 py-1 text-amber-300 transition-colors hover:bg-amber-500/30"
               >
                 {t("basic.upgrade", { defaultValue: "Passer à Premium" })}
@@ -389,7 +463,10 @@ export const HistorySettings: React.FC = () => {
             </div>
           )}
           <div className="divide-y divide-white/8">
-            {(isBasicTier ? historyEntries.slice(0, BASIC_HISTORY_LIMIT) : historyEntries).map((entry) => (
+            {(isBasicTier
+              ? historyEntries.slice(0, BASIC_HISTORY_LIMIT)
+              : historyEntries
+            ).map((entry) => (
               <HistoryEntryComponent
                 key={entry.id}
                 entry={entry}
@@ -501,7 +578,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
   return (
-      <div className="flex flex-col gap-3 py-[14px]">
+    <div className="flex flex-col gap-3 py-[14px]">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <p className="text-[11.5px] text-white/32">{formattedDate}</p>
@@ -624,7 +701,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           className="pb-2 text-[13.5px] italic text-white/82 select-text cursor-text"
         />
       )}
-      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full max-w-[320px]" />
+      <AudioPlayer
+        onLoadRequest={handleLoadAudio}
+        className="w-full max-w-[320px]"
+      />
     </div>
   );
 };

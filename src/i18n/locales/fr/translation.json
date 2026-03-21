@@ -121,6 +121,16 @@
         "checkFailed": "Échec de la vérification des autorisations. Veuillez réessayer.",
         "requestFailed": "Échec de la demande d'autorisation. Veuillez réessayer."
       }
+    },
+    "consent": {
+      "title": "Votre vie privée",
+      "subtitle": "Avant de commencer, voici comment VocalType gère vos données.",
+      "localStorageInfo": "Vos enregistrements audio et transcriptions sont stockés localement sur cet appareil. Ils ne sont jamais envoyés à un serveur.",
+      "serverSentInfo": "Un identifiant d'appareil haché et la version de l'application sont transmis à nos serveurs uniquement pour la validation de la licence. Aucune donnée audio ni transcription n'est jamais envoyée.",
+      "exportInfo": "Vous pouvez exporter ou supprimer toutes vos données à tout moment depuis les paramètres Historique.",
+      "privacyPolicyLink": "Lire la politique de confidentialité complète",
+      "checkboxLabel": "Je comprends et j'accepte la façon dont VocalType gère mes données.",
+      "continueButton": "Continuer"
     }
   },
   "modelSelector": {
@@ -561,7 +571,14 @@
       "transcribeFileSuccess": "Fichier transcrit et copié dans le presse-papiers.",
       "transcribeFileError": "Échec de la transcription.",
       "whisperConfidence": "Confiance Whisper : {{overall}}",
-      "wordConfidenceTitle": "Confiance {{confidence}}"
+      "wordConfidenceTitle": "Confiance {{confidence}}",
+      "exportMyData": "Exporter mes données",
+      "clearAll": "Effacer tout l'historique",
+      "clearAllConfirm": "Êtes-vous sûr ? Cela supprimera définitivement tous les enregistrements et transcriptions.",
+      "clearAllSuccess": "Tout l'historique a été effacé.",
+      "clearAllError": "Échec de la suppression de l'historique.",
+      "loadMore": "Charger plus",
+      "loadingMore": "Chargement…"
     },
     "debug": {
       "title": "Débogage",
@@ -665,6 +682,7 @@
         "description": "Voir le code source et contribuer",
         "button": "Voir sur GitHub"
       },
+      "privacyPolicy": "Politique de confidentialité",
       "supportDevelopment": {
         "title": "Soutenir le développement",
         "description": "Aidez-nous à continuer à construire VocalType",

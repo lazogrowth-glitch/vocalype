@@ -4,7 +4,10 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useTranslation } from "react-i18next";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
-import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
+import Onboarding, {
+  AccessibilityOnboarding,
+  ConsentStep,
+} from "./components/onboarding";
 import { TrialWelcomeModal } from "./components/onboarding/TrialWelcomeModal";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
@@ -34,11 +37,16 @@ const renderSettingsContent = (section: SidebarSection) => {
 
 function App() {
   const { i18n, t } = useTranslation();
-  const [currentSection, setCurrentSection] = useState<SidebarSection>("general");
+  const [currentSection, setCurrentSection] =
+    useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
-  const refreshAudioDevices = useSettingsStore((state) => state.refreshAudioDevices);
-  const refreshOutputDevices = useSettingsStore((state) => state.refreshOutputDevices);
+  const refreshAudioDevices = useSettingsStore(
+    (state) => state.refreshAudioDevices,
+  );
+  const refreshOutputDevices = useSettingsStore(
+    (state) => state.refreshOutputDevices,
+  );
 
   const {
     session,
@@ -64,10 +72,18 @@ function App() {
   const currentTier = session?.subscription?.tier ?? null;
   const isBasicTier = hasAnyAccess && currentTier === "basic";
   const hasPremiumAccess = hasAnyAccess && currentTier === "premium";
-  const isTrialing = session?.subscription?.status === "trialing" && hasPremiumAccess;
-  const trialEndsAt = isTrialing ? (session?.subscription?.trial_ends_at ?? null) : null;
+  const isTrialing =
+    session?.subscription?.status === "trialing" && hasPremiumAccess;
+  const trialEndsAt = isTrialing
+    ? (session?.subscription?.trial_ends_at ?? null)
+    : null;
 
-  const { onboardingStep, handleAccessibilityComplete, handleModelSelected } = useOnboarding({
+  const {
+    onboardingStep,
+    handleConsentAccepted,
+    handleAccessibilityComplete,
+    handleModelSelected,
+  } = useOnboarding({
     authLoading,
     hasAnyAccess,
   });
@@ -98,7 +114,12 @@ function App() {
       refreshAudioDevices();
       refreshOutputDevices();
     }
-  }, [onboardingStep, refreshAudioDevices, refreshOutputDevices, hasCompletedPostOnboardingInit]);
+  }, [
+    onboardingStep,
+    refreshAudioDevices,
+    refreshOutputDevices,
+    hasCompletedPostOnboardingInit,
+  ]);
 
   if (authLoading) {
     return (
@@ -139,6 +160,10 @@ function App() {
     );
   }
 
+  if (onboardingStep === "consent") {
+    return <ConsentStep onAccept={handleConsentAccepted} />;
+  }
+
   if (onboardingStep === "accessibility") {
     return <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />;
   }
@@ -164,35 +189,62 @@ function App() {
         onStartCheckout: handleStartCheckout,
       }}
     >
-    <div dir={direction} style={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden", background: "#0f0f0f", fontFamily: "'Segoe UI', system-ui, sans-serif", color: "inherit" }}>
-      <Toaster
-        theme="system"
-        toastOptions={{
-          unstyled: true,
-          classNames: {
-            toast:
-              "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-            title: "font-medium",
-            description: "text-mid-gray",
-          },
+      <div
+        dir={direction}
+        style={{
+          display: "flex",
+          width: "100vw",
+          height: "100vh",
+          overflow: "hidden",
+          background: "#0f0f0f",
+          fontFamily: "'Segoe UI', system-ui, sans-serif",
+          color: "inherit",
         }}
-      />
-      <Sidebar
-        activeSection={currentSection}
-        onSectionChange={setCurrentSection}
-      />
+      >
+        <Toaster
+          theme="system"
+          toastOptions={{
+            unstyled: true,
+            classNames: {
+              toast:
+                "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
+              title: "font-medium",
+              description: "text-mid-gray",
+            },
+          }}
+        />
+        <Sidebar
+          activeSection={currentSection}
+          onSectionChange={setCurrentSection}
+        />
 
-      <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "24px 28px", minWidth: 0, background: "#0f0f0f" }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, lineHeight: 1, letterSpacing: "-0.3px", color: "#fff", marginBottom: 20 }}>
-          {SECTIONS_CONFIG[currentSection]
-            ? t(SECTIONS_CONFIG[currentSection].labelKey)
-            : t(SECTIONS_CONFIG.general.labelKey)}
-        </h1>
-        <ErrorBoundary>
-          {renderSettingsContent(currentSection)}
-        </ErrorBoundary>
-      </main>
-    </div>
+        <main
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            padding: "24px 28px",
+            minWidth: 0,
+            background: "#0f0f0f",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: 24,
+              fontWeight: 600,
+              lineHeight: 1,
+              letterSpacing: "-0.3px",
+              color: "#fff",
+              marginBottom: 20,
+            }}
+          >
+            {SECTIONS_CONFIG[currentSection]
+              ? t(SECTIONS_CONFIG[currentSection].labelKey)
+              : t(SECTIONS_CONFIG.general.labelKey)}
+          </h1>
+          <ErrorBoundary>{renderSettingsContent(currentSection)}</ErrorBoundary>
+        </main>
+      </div>
     </PlanContext.Provider>
   );
 }

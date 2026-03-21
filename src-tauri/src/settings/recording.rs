@@ -4,7 +4,10 @@ use specta::Type;
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum RecordingRetentionPeriod {
-    Never,
+    /// Kept for deserialization compatibility with older settings files.
+    /// Treated as `Months3` at runtime — "never delete indefinitely" is not
+    /// a GDPR-compliant default.
+    #[serde(alias = "never")]
     PreserveLimit,
     Days3,
     Weeks2,

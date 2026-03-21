@@ -295,6 +295,18 @@ pub async fn transcribe_audio_file(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn clear_all_history(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+) -> Result<(), String> {
+    history_manager
+        .clear_all_history()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn update_recording_retention_period(
     app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
@@ -303,7 +315,8 @@ pub async fn update_recording_retention_period(
     use crate::settings::RecordingRetentionPeriod;
 
     let retention_period = match period.as_str() {
-        "never" => RecordingRetentionPeriod::Never,
+        // "never" is no longer offered — treat legacy values as preserve_limit
+        "never" => RecordingRetentionPeriod::PreserveLimit,
         "preserve_limit" => RecordingRetentionPeriod::PreserveLimit,
         "days3" => RecordingRetentionPeriod::Days3,
         "weeks2" => RecordingRetentionPeriod::Weeks2,

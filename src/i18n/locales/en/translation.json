@@ -121,6 +121,16 @@
         "checkFailed": "Failed to check permissions. Please try again.",
         "requestFailed": "Failed to request permission. Please try again."
       }
+    },
+    "consent": {
+      "title": "Your Privacy",
+      "subtitle": "Before you start, here is how VocalType handles your data.",
+      "localStorageInfo": "Your audio recordings and transcriptions are stored locally on this device. They are never uploaded to any server.",
+      "serverSentInfo": "A hashed device identifier and your app version are sent to our servers for license validation only. No audio or transcription data is ever transmitted.",
+      "exportInfo": "You can export or delete all your data at any time from the History settings.",
+      "privacyPolicyLink": "Read the full Privacy Policy",
+      "checkboxLabel": "I understand and accept how VocalType handles my data.",
+      "continueButton": "Continue"
     }
   },
   "modelSelector": {
@@ -549,7 +559,14 @@
       "transcribeFileSuccess": "File transcribed and copied to clipboard.",
       "transcribeFileError": "Transcription failed.",
       "whisperConfidence": "Whisper confidence: {{overall}}",
-      "wordConfidenceTitle": "Confidence {{confidence}}"
+      "wordConfidenceTitle": "Confidence {{confidence}}",
+      "exportMyData": "Export my data",
+      "clearAll": "Clear all history",
+      "clearAllConfirm": "Are you sure? This will permanently delete all recordings and transcriptions.",
+      "clearAllSuccess": "All history cleared.",
+      "clearAllError": "Failed to clear history.",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…"
     },
     "gemini": {
       "title": "Gemini API",
@@ -665,6 +682,7 @@
         "description": "View source code and contribute",
         "button": "View on GitHub"
       },
+      "privacyPolicy": "Privacy Policy",
       "supportDevelopment": {
         "title": "Support Development",
         "description": "Help us continue building VocalType",

@@ -43,9 +43,19 @@ export const AboutSettings: React.FC = () => {
           variant="secondary"
           size="md"
           className="inline-flex w-auto"
-          onClick={() => openUrl("https://github.com/lazogrowth-glitch/vocaltype")}
+          onClick={() =>
+            openUrl("https://github.com/lazogrowth-glitch/vocaltype")
+          }
         >
           {t("settings.about.sourceCode.button")}
+        </Button>
+        <Button
+          variant="secondary"
+          size="md"
+          className="inline-flex w-auto"
+          onClick={() => openUrl("https://vocaltypeai.com/privacy")}
+        >
+          {t("settings.about.privacyPolicy")}
         </Button>
       </section>
 

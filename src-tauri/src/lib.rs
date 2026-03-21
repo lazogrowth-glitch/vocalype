@@ -602,6 +602,7 @@ pub fn run(cli_args: CliArgs) {
         commands::history::get_history_stats,
         commands::history::export_history_entries,
         commands::history::transcribe_audio_file,
+        commands::history::clear_all_history,
         commands::dictionary::get_dictionary,
         commands::dictionary::add_dictionary_entry,
         commands::dictionary::remove_dictionary_entry,

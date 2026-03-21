@@ -57,7 +57,8 @@ const getSecureAuthToken = () => invoke<string | null>("get_secure_auth_token");
 const setSecureAuthToken = (token: string) =>
   invoke<void>("set_secure_auth_token", { token });
 const clearSecureAuthToken = () => invoke<void>("clear_secure_auth_token");
-const getSecureAuthSession = () => invoke<string | null>("get_secure_auth_session");
+const getSecureAuthSession = () =>
+  invoke<string | null>("get_secure_auth_session");
 const setSecureAuthSession = (sessionJson: string) =>
   invoke<void>("set_secure_auth_session", { sessionJson });
 const clearSecureAuthSession = () => invoke<void>("clear_secure_auth_session");
@@ -147,6 +148,17 @@ const readPersistedSessionToken = (
   return token ? token : null;
 };
 
+// ─── Privacy: device ID hashing ─────────────────────────────────────────────
+// We hash the raw device ID with SHA-256 + a fixed application salt before
+// sending it to any server. This ensures the server never receives the raw
+// hardware identifier, reducing re-identification risk across services.
+export async function hashDeviceId(rawId: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(rawId + "vocaltype-salt");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 const MACHINE_DEVICE_ID_LENGTH = 64;
 
@@ -404,7 +416,9 @@ export const authClient = {
         secureSession ??
         hydratePersistedSession(
           persistedSession ??
-            (legacySession ? sanitizeSessionForPersistence(legacySession) : null),
+            (legacySession
+              ? sanitizeSessionForPersistence(legacySession)
+              : null),
           cachedToken ?? migratedSessionToken,
         );
 
@@ -534,7 +548,8 @@ export const authClient = {
   // ─── API Calls ──────────────────────────────────────────────────────────────
 
   async login(payload: AuthPayload) {
-    const device_id = await authClient.getOrCreateDeviceId();
+    const rawDeviceId = await authClient.getOrCreateDeviceId();
+    const device_id = await hashDeviceId(rawDeviceId);
     return request<AuthSession>(
       "/auth/login",
       {
@@ -546,7 +561,8 @@ export const authClient = {
   },
 
   async register(payload: AuthPayload) {
-    const device_id = await authClient.getOrCreateDeviceId();
+    const rawDeviceId = await authClient.getOrCreateDeviceId();
+    const device_id = await hashDeviceId(rawDeviceId);
     const session = await request<AuthSession>(
       "/auth/register",
       {

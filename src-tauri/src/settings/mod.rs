@@ -608,7 +608,8 @@ fn default_history_limit() -> usize {
 }
 
 fn default_recording_retention_period() -> RecordingRetentionPeriod {
-    RecordingRetentionPeriod::PreserveLimit
+    // Default to 3 months for GDPR compliance — data should not be kept indefinitely.
+    RecordingRetentionPeriod::Months3
 }
 
 fn default_audio_feedback_volume() -> f32 {

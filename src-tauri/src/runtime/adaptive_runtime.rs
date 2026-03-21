@@ -1104,7 +1104,9 @@ fn schedule_phase(
 ) {
     let key = calibration_key(model_id, phase);
     {
-        let mut guard = CALIBRATIONS_IN_PROGRESS.lock().unwrap();
+        let mut guard = CALIBRATIONS_IN_PROGRESS
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         if !guard.insert(key.clone()) {
             return;
         }
@@ -1113,7 +1115,9 @@ fn schedule_phase(
     let app = app.clone();
     let model_id = model_id.to_string();
     std::thread::spawn(move || {
-        let _calibration_guard = CALIBRATION_EXECUTION_LOCK.lock().unwrap();
+        let _calibration_guard = CALIBRATION_EXECUTION_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         if delay_secs > 0 {
             std::thread::sleep(Duration::from_secs(delay_secs));
         }
@@ -1148,7 +1152,10 @@ fn schedule_phase(
                 );
             }
         }
-        CALIBRATIONS_IN_PROGRESS.lock().unwrap().remove(&key);
+        CALIBRATIONS_IN_PROGRESS
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&key);
     });
 }
 

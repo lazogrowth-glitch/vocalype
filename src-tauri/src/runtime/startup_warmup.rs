@@ -37,8 +37,10 @@ pub struct StartupWarmupStatus {
     pub phase: StartupWarmupPhase,
     pub reason: StartupWarmupReason,
     pub can_record: bool,
+    pub microphone_checked: bool,
     pub microphone_ready: bool,
     pub model_ready: bool,
+    pub blocking_reason: Option<String>,
     pub message: String,
     pub detail: Option<String>,
     pub updated_at_ms: u64,
@@ -96,8 +98,10 @@ fn no_model_status(snapshot: &WarmupSnapshot) -> StartupWarmupStatus {
         phase: StartupWarmupPhase::Idle,
         reason: StartupWarmupReason::NoModelSelected,
         can_record: false,
+        microphone_checked: snapshot.always_on_microphone,
         microphone_ready: !snapshot.always_on_microphone,
         model_ready: false,
+        blocking_reason: Some("NO_MODEL_SELECTED".to_string()),
         message: "Choisissez un modele pour activer la dictee.".to_string(),
         detail: None,
         updated_at_ms: 0,
@@ -109,8 +113,10 @@ fn missing_model_status(snapshot: &WarmupSnapshot, model_id: &str) -> StartupWar
         phase: StartupWarmupPhase::Failed,
         reason: StartupWarmupReason::ModelError,
         can_record: false,
+        microphone_checked: snapshot.always_on_microphone,
         microphone_ready: !snapshot.always_on_microphone,
         model_ready: false,
+        blocking_reason: Some("MODEL_NOT_FOUND".to_string()),
         message: "Impossible de preparer la dictee.".to_string(),
         detail: Some(format!("Modele introuvable: {}", model_id)),
         updated_at_ms: 0,
@@ -122,8 +128,10 @@ fn not_downloaded_status(snapshot: &WarmupSnapshot, model_name: &str) -> Startup
         phase: StartupWarmupPhase::Idle,
         reason: StartupWarmupReason::ModelNotDownloaded,
         can_record: false,
+        microphone_checked: snapshot.always_on_microphone,
         microphone_ready: !snapshot.always_on_microphone,
         model_ready: false,
+        blocking_reason: Some("MODEL_NOT_DOWNLOADED".to_string()),
         message: "Telechargez votre modele pour activer la dictee.".to_string(),
         detail: Some(format!("Le modele '{}' n'est pas telecharge.", model_name)),
         updated_at_ms: 0,
@@ -135,8 +143,10 @@ fn preparing_microphone_status(model_name: &str, model_ready: bool) -> StartupWa
         phase: StartupWarmupPhase::Preparing,
         reason: StartupWarmupReason::PreparingMicrophone,
         can_record: false,
+        microphone_checked: true,
         microphone_ready: false,
         model_ready,
+        blocking_reason: Some("PREPARING_MICROPHONE".to_string()),
         message: "Preparation du micro...".to_string(),
         detail: Some(format!("Initialisation du microphone pour {}", model_name)),
         updated_at_ms: 0,
@@ -148,8 +158,10 @@ fn preparing_model_status(model_name: &str, microphone_ready: bool) -> StartupWa
         phase: StartupWarmupPhase::Preparing,
         reason: StartupWarmupReason::PreparingModel,
         can_record: false,
+        microphone_checked: true,
         microphone_ready,
         model_ready: false,
+        blocking_reason: Some("PREPARING_MODEL".to_string()),
         message: "Preparation du moteur vocal...".to_string(),
         detail: Some(format!("Chargement de {}", model_name)),
         updated_at_ms: 0,
@@ -161,8 +173,10 @@ fn ready_status(model_name: &str, microphone_ready: bool) -> StartupWarmupStatus
         phase: StartupWarmupPhase::Ready,
         reason: StartupWarmupReason::Ready,
         can_record: true,
+        microphone_checked: true,
         microphone_ready,
         model_ready: true,
+        blocking_reason: None,
         message: "Dictee prete".to_string(),
         detail: Some(format!("{} est charge.", model_name)),
         updated_at_ms: 0,
@@ -174,8 +188,10 @@ fn microphone_error_status(detail: String) -> StartupWarmupStatus {
         phase: StartupWarmupPhase::Failed,
         reason: StartupWarmupReason::MicrophoneError,
         can_record: false,
+        microphone_checked: true,
         microphone_ready: false,
         model_ready: false,
+        blocking_reason: Some("MICROPHONE_ERROR".to_string()),
         message: "Impossible d'initialiser le microphone.".to_string(),
         detail: Some(detail),
         updated_at_ms: 0,
@@ -191,8 +207,10 @@ fn model_error_status(
         phase: StartupWarmupPhase::Failed,
         reason: StartupWarmupReason::ModelError,
         can_record: false,
+        microphone_checked: true,
         microphone_ready,
         model_ready: false,
+        blocking_reason: Some("MODEL_ERROR".to_string()),
         message: "Le moteur vocal n'a pas pu etre charge.".to_string(),
         detail: Some(format!("{} {}", model_name, detail)),
         updated_at_ms: 0,
@@ -258,13 +276,20 @@ fn immediate_status(app: &AppHandle, snapshot: &WarmupSnapshot) -> StartupWarmup
         Err(status) => return status,
     };
 
-    let microphone_ready = if snapshot.always_on_microphone {
-        app.try_state::<Arc<AudioRecordingManager>>()
-            .map(|manager| manager.is_microphone_stream_open())
-            .unwrap_or(false)
-    } else {
-        true
-    };
+    let (microphone_checked, microphone_ready, microphone_error) =
+        match app.try_state::<Arc<AudioRecordingManager>>() {
+            Some(manager) if snapshot.always_on_microphone => (
+                true,
+                manager.is_microphone_stream_open(),
+                (!manager.is_microphone_stream_open())
+                    .then(|| "Microphone stream is not open".to_string()),
+            ),
+            Some(manager) => match manager.preflight_microphone() {
+                Ok(()) => (true, true, None),
+                Err(err) => (true, false, Some(err.to_string())),
+            },
+            None => (false, false, Some("Audio manager unavailable".to_string())),
+        };
 
     let model_ready = app
         .try_state::<Arc<TranscriptionManager>>()
@@ -278,6 +303,10 @@ fn immediate_status(app: &AppHandle, snapshot: &WarmupSnapshot) -> StartupWarmup
         ready_status(&model_info.name, microphone_ready)
     } else if snapshot.always_on_microphone && !microphone_ready {
         preparing_microphone_status(&model_info.name, model_ready)
+    } else if !microphone_ready && microphone_checked {
+        microphone_error_status(
+            microphone_error.unwrap_or_else(|| "Microphone preflight failed".to_string()),
+        )
     } else {
         preparing_model_status(&model_info.name, microphone_ready)
     }
@@ -324,7 +353,17 @@ fn run_generation(app: &AppHandle, generation: u64) {
     let mut microphone_ready = if snapshot.always_on_microphone {
         audio_manager.is_microphone_stream_open()
     } else {
-        true
+        match audio_manager.preflight_microphone() {
+            Ok(()) => true,
+            Err(err) => {
+                let _ = set_status_if_current(
+                    app,
+                    generation,
+                    microphone_error_status(err.to_string()),
+                );
+                return;
+            }
+        }
     };
     let mut model_ready = transcription_manager.get_current_model().as_deref()
         == Some(snapshot.selected_model.as_str())

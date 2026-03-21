@@ -34,9 +34,9 @@ export const GeneralSettings: React.FC = () => {
     warmupStatus.phase !== "ready";
 
   const tabs = [
-    { id: "shortcuts" as const, label: "Raccourcis" },
-    { id: "audio" as const, label: "Audio" },
-    { id: "dictation" as const, label: "Dictée" },
+    { id: "shortcuts" as const, label: t("settings.general.tabs.shortcuts") },
+    { id: "audio" as const, label: t("settings.general.tabs.audio") },
+    { id: "dictation" as const, label: t("settings.general.tabs.dictation") },
     { id: "dictionary" as const, label: t("dictionary.tab") },
     {
       id: "context" as const,
@@ -64,7 +64,7 @@ export const GeneralSettings: React.FC = () => {
       </div>
 
       {activeTab === "shortcuts" && (
-        <SettingsGroup title="Raccourcis clavier">
+        <SettingsGroup title={t("settings.general.tabs.keyboardShortcutsTitle")}>
           {shouldShowWarmupNotice && (
             <div
               className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-[12px] ${
@@ -142,7 +142,7 @@ export const GeneralSettings: React.FC = () => {
       )}
 
       {activeTab === "audio" && (
-        <SettingsGroup title="Audio">
+        <SettingsGroup title={t("settings.general.tabs.audio")}>
           <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
           <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
           <AudioFeedback descriptionMode="tooltip" grouped={true} />

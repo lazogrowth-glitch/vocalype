@@ -233,6 +233,12 @@
     },
     "general": {
       "title": "Général",
+      "tabs": {
+        "shortcuts": "Raccourcis",
+        "audio": "Audio",
+        "dictation": "Dictée",
+        "keyboardShortcutsTitle": "Raccourcis clavier"
+      },
       "shortcut": {
         "title": "Raccourcis VocalType",
         "description": "Configurer les raccourcis clavier pour déclencher l'enregistrement de la reconnaissance vocale",

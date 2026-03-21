@@ -16,10 +16,6 @@ use regex::Regex;
 static PURE_FILLER_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b(euh|heu|um|uh|erm|ben|bah|hein|nan)\b").unwrap());
 
-/// When the same word opens a sentence twice ("non non …") both instances
-/// are removed, leaving the rest. Handles false-start self-corrections.
-static DOUBLE_START_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^(\w+)\s+\1\s+").unwrap());
-
 /// Self-correction phrases — everything before *and including* the phrase
 /// is dropped; what follows becomes the new text.
 /// Searched case-insensitively; listed longest-first to avoid partial matches.
@@ -85,7 +81,7 @@ fn apply_pass(text: &str) -> String {
     let mut s = text.to_string();
 
     // 1. Double-start: "WORD WORD rest" → "rest" (same word repeated at opening).
-    s = DOUBLE_START_RE.replace(&s, "").into_owned();
+    s = strip_double_start(&s);
     s = normalize_whitespace(&s);
 
     // 2. Self-correction phrases — keep only what follows the phrase.
@@ -116,6 +112,26 @@ fn apply_pass(text: &str) -> String {
     s = normalize_whitespace(&s);
 
     s
+}
+
+fn strip_double_start(text: &str) -> String {
+    let trimmed = text.trim_start();
+    let mut words = trimmed.splitn(3, char::is_whitespace);
+    let Some(first) = words.next() else {
+        return text.to_string();
+    };
+    let Some(second) = words.next() else {
+        return text.to_string();
+    };
+    let Some(rest) = words.next() else {
+        return text.to_string();
+    };
+
+    if first.eq_ignore_ascii_case(second) {
+        rest.trim_start().to_string()
+    } else {
+        text.to_string()
+    }
 }
 
 fn normalize_whitespace(text: &str) -> String {

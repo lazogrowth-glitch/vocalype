@@ -74,6 +74,11 @@ pub fn handle_shortcut_event(
             let audio_manager = app.state::<Arc<AudioRecordingManager>>();
             if audio_manager.is_recording() {
                 let paused = audio_manager.toggle_pause();
+                if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+                    if let Some(operation_id) = coordinator.active_operation_id() {
+                        let _ = coordinator.set_paused(app, operation_id, paused);
+                    }
+                }
                 crate::overlay::emit_recording_paused(app, paused);
             }
         }

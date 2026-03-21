@@ -147,33 +147,6 @@ const readPersistedSessionToken = (
   return token ? token : null;
 };
 
-const loadSecureStoredToken = async (): Promise<string | null> => {
-  try {
-    const token = await invoke<string | null>("load_secure_auth_token");
-    return typeof token === "string" && token.trim() ? token : null;
-  } catch (error) {
-    console.warn("Failed to load secure auth token:", error);
-    return null;
-  }
-};
-
-const persistSecureStoredToken = async (token: string): Promise<boolean> => {
-  try {
-    await invoke("store_secure_auth_token", { token });
-    return true;
-  } catch (error) {
-    console.warn("Failed to store secure auth token:", error);
-    return false;
-  }
-};
-
-const clearSecureStoredToken = async (): Promise<void> => {
-  try {
-    await invoke("clear_secure_auth_token");
-  } catch (error) {
-    console.warn("Failed to clear secure auth token:", error);
-  }
-};
 
 const MACHINE_DEVICE_ID_LENGTH = 64;
 

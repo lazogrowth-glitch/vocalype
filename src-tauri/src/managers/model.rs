@@ -230,7 +230,10 @@ impl ModelManager {
     }
 
     fn set_downloading_state_for_filename(&self, filename: &str, is_downloading: bool) {
-        let mut models = self.available_models.lock().unwrap();
+        let mut models = self
+            .available_models
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         for model in models.values_mut().filter(|m| m.filename == filename) {
             model.is_downloading = is_downloading;
         }
@@ -288,7 +291,10 @@ impl ModelManager {
     pub fn get_available_models(&self) -> Vec<ModelInfo> {
         let settings = get_settings(&self.app_handle);
         let recommended_ids = Self::recommended_model_ids_from_settings(&settings);
-        let models = self.available_models.lock().unwrap();
+        let models = self
+            .available_models
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         models
             .values()
             .filter(|m| m.id != PARAKEET_V3_LEGACY_ID)
@@ -301,7 +307,10 @@ impl ModelManager {
     }
 
     pub fn get_model_info(&self, model_id: &str) -> Option<ModelInfo> {
-        let models = self.available_models.lock().unwrap();
+        let models = self
+            .available_models
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         models.get(model_id).cloned()
     }
 
@@ -333,7 +342,10 @@ impl ModelManager {
     }
 
     fn update_download_status(&self) -> Result<()> {
-        let mut models = self.available_models.lock().unwrap();
+        let mut models = self
+            .available_models
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
 
         for model in models.values_mut() {
             if matches!(model.engine_type, EngineType::GeminiApi) {
@@ -351,7 +363,10 @@ impl ModelManager {
                 // Clean up any leftover .extracting directories from interrupted extractions
                 // But only if this model is NOT currently being extracted
                 let is_currently_extracting = {
-                    let extracting = self.extracting_models.lock().unwrap();
+                    let extracting = self
+                        .extracting_models
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner());
                     extracting.contains(&model.id)
                 };
                 if extracting_path.exists() && !is_currently_extracting {
@@ -567,7 +582,10 @@ impl ModelManager {
         // Clear stale selection: selected model is set but doesn't exist
         // in available_models (e.g. deleted custom model file)
         if !settings.selected_model.is_empty() {
-            let models = self.available_models.lock().unwrap();
+            let models = self
+                .available_models
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             let exists = models.contains_key(&settings.selected_model);
             drop(models);
 
@@ -584,7 +602,10 @@ impl ModelManager {
         // If no model is selected, pick the first downloaded local model.
         // Gemini is cloud-only and should not be auto-selected.
         if settings.selected_model.is_empty() {
-            let models = self.available_models.lock().unwrap();
+            let models = self
+                .available_models
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             let recommended_ids = Self::recommended_model_ids_from_settings(&settings);
             let available_model = recommended_ids
                 .iter()
@@ -739,7 +760,10 @@ impl ModelManager {
 
     pub async fn download_model(&self, model_id: &str) -> Result<()> {
         let model_info = {
-            let models = self.available_models.lock().unwrap();
+            let models = self
+                .available_models
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             models.get(model_id).cloned()
         };
 
@@ -818,7 +842,7 @@ impl ModelManager {
         // Create cancellation flag for this download
         let cancel_flag = Arc::new(AtomicBool::new(false));
         {
-            let mut flags = self.cancel_flags.lock().unwrap();
+            let mut flags = self.cancel_flags.lock().unwrap_or_else(|e| e.into_inner());
             flags.insert(model_id.to_string(), cancel_flag.clone());
         }
 
@@ -833,7 +857,7 @@ impl ModelManager {
         let mut response = request.send().await?;
         if let Err(err) = Self::verify_response_etag(&model_info, &response) {
             self.set_downloading_state_for_filename(&model_info.filename, false);
-            let mut flags = self.cancel_flags.lock().unwrap();
+            let mut flags = self.cancel_flags.lock().unwrap_or_else(|e| e.into_inner());
             flags.remove(model_id);
             return Err(err);
         }
@@ -856,7 +880,7 @@ impl ModelManager {
             response = client.get(&url).send().await?;
             if let Err(err) = Self::verify_response_etag(&model_info, &response) {
                 self.set_downloading_state_for_filename(&model_info.filename, false);
-                let mut flags = self.cancel_flags.lock().unwrap();
+                let mut flags = self.cancel_flags.lock().unwrap_or_else(|e| e.into_inner());
                 flags.remove(model_id);
                 return Err(err);
             }
@@ -926,7 +950,7 @@ impl ModelManager {
 
                 // Remove cancel flag
                 {
-                    let mut flags = self.cancel_flags.lock().unwrap();
+                    let mut flags = self.cancel_flags.lock().unwrap_or_else(|e| e.into_inner());
                     flags.remove(model_id);
                 }
 
@@ -999,7 +1023,10 @@ impl ModelManager {
         if model_info.is_directory {
             // Track that this model is being extracted
             {
-                let mut extracting = self.extracting_models.lock().unwrap();
+                let mut extracting = self
+                    .extracting_models
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 extracting.insert(model_id.to_string());
             }
 
@@ -1034,7 +1061,10 @@ impl ModelManager {
                 self.set_downloading_state_for_filename(&model_info.filename, false);
                 // Remove from extracting set
                 {
-                    let mut extracting = self.extracting_models.lock().unwrap();
+                    let mut extracting = self
+                        .extracting_models
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner());
                     extracting.remove(model_id);
                 }
                 let _ = self.app_handle.emit(
@@ -1080,7 +1110,10 @@ impl ModelManager {
                 let _ = fs::remove_dir_all(&temp_extract_dir);
                 self.set_downloading_state_for_filename(&model_info.filename, false);
                 {
-                    let mut extracting = self.extracting_models.lock().unwrap();
+                    let mut extracting = self
+                        .extracting_models
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner());
                     extracting.remove(model_id);
                 }
                 let _ = self.app_handle.emit(
@@ -1096,7 +1129,10 @@ impl ModelManager {
             info!("Successfully extracted archive for model: {}", model_id);
             // Remove from extracting set
             {
-                let mut extracting = self.extracting_models.lock().unwrap();
+                let mut extracting = self
+                    .extracting_models
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 extracting.remove(model_id);
             }
             // Emit extraction completed event
@@ -1119,7 +1155,7 @@ impl ModelManager {
 
         // Remove cancel flag on successful completion
         {
-            let mut flags = self.cancel_flags.lock().unwrap();
+            let mut flags = self.cancel_flags.lock().unwrap_or_else(|e| e.into_inner());
             flags.remove(model_id);
         }
 
@@ -1138,7 +1174,10 @@ impl ModelManager {
         debug!("ModelManager: delete_model called for: {}", model_id);
 
         let model_info = {
-            let models = self.available_models.lock().unwrap();
+            let models = self
+                .available_models
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             models.get(model_id).cloned()
         };
 
@@ -1202,7 +1241,10 @@ impl ModelManager {
         // Custom models should be removed from the list entirely since they
         // have no download URL and can't be re-downloaded
         if model_info.is_custom {
-            let mut models = self.available_models.lock().unwrap();
+            let mut models = self
+                .available_models
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             models.remove(model_id);
             debug!("ModelManager: removed custom model from available models");
         } else {
@@ -1281,13 +1323,16 @@ impl ModelManager {
     pub fn cancel_download(&self, model_id: &str) -> Result<()> {
         debug!("ModelManager: cancel_download called for: {}", model_id);
         let filename = {
-            let models = self.available_models.lock().unwrap();
+            let models = self
+                .available_models
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             models.get(model_id).map(|m| m.filename.clone())
         };
 
         // Set the cancellation flag to stop the download loop
         {
-            let flags = self.cancel_flags.lock().unwrap();
+            let flags = self.cancel_flags.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(flag) = flags.get(model_id) {
                 flag.store(true, Ordering::Relaxed);
                 info!("Cancellation flag set for: {}", model_id);
@@ -1300,7 +1345,10 @@ impl ModelManager {
         if let Some(filename) = filename {
             self.set_downloading_state_for_filename(&filename, false);
         } else {
-            let mut models = self.available_models.lock().unwrap();
+            let mut models = self
+                .available_models
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             if let Some(model) = models.get_mut(model_id) {
                 model.is_downloading = false;
             }

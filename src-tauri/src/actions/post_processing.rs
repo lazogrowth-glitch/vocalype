@@ -47,6 +47,7 @@ pub(super) fn decide_post_process_mode(
 
 pub(super) async fn process_transcription_text(
     app: &AppHandle,
+    operation_id: u64,
     transcription: &str,
     active_app_context: Option<&AppTranscriptionContext>,
     selected_action_key: Option<u8>,
@@ -151,7 +152,7 @@ pub(super) async fn process_transcription_text(
     ) {
         show_processing_overlay(app);
         if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
-            coordinator.notify_enter_processing();
+            let _ = coordinator.mark_processing(app, operation_id, "post-process");
         }
     }
 

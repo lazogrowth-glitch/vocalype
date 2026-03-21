@@ -7,7 +7,7 @@ use crate::utils;
 use log::{debug, error, info};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,9 +26,11 @@ pub(super) fn decide_paste_execution_mode(is_basic_plan: bool) -> PasteExecution
 
 pub(super) fn dispatch_text_insertion(
     app: &AppHandle,
+    operation_id: u64,
     final_text: String,
     is_basic_plan: bool,
     profiler: Arc<Mutex<PipelineProfiler>>,
+    on_success: Option<Box<dyn FnOnce() + Send + 'static>>,
 ) {
     let app_clone = app.clone();
     let fallback_text = final_text.clone();
@@ -39,15 +41,27 @@ pub(super) fn dispatch_text_insertion(
         p.set_transcription_chars(&final_text);
     }
 
-    emit_lifecycle_state(
-        app,
-        TranscriptionLifecycleState::Pasting,
-        None,
-        Some("paste-dispatch"),
-    );
+    if let Some(coordinator) = app.try_state::<crate::TranscriptionCoordinator>() {
+        if !coordinator.mark_pasting(app, operation_id) {
+            return;
+        }
+    } else {
+        emit_lifecycle_state(
+            app,
+            TranscriptionLifecycleState::Pasting,
+            None,
+            Some("paste-dispatch"),
+        );
+    }
 
     let profiler_for_paste = Arc::clone(&profiler);
     app.run_on_main_thread(move || {
+        let mut on_success = on_success;
+        if let Some(coordinator) = app_clone.try_state::<crate::TranscriptionCoordinator>() {
+            if !coordinator.is_operation_active(operation_id) {
+                return;
+            }
+        }
         if let Ok(mut p) = profiler_for_paste.lock() {
             p.push_step_since("paste_dispatch_wait", paste_time, None);
         }
@@ -70,6 +84,18 @@ pub(super) fn dispatch_text_insertion(
                             p.mark_completed();
                             p.emit(&app_clone);
                         }
+                        if let Some(callback) = on_success.take() {
+                            callback();
+                        }
+                        if let Some(coordinator) =
+                            app_clone.try_state::<crate::TranscriptionCoordinator>()
+                        {
+                            let _ = coordinator.complete_operation(
+                                &app_clone,
+                                operation_id,
+                                "clipboard-copy-completed",
+                            );
+                        }
                     }
                     Err(e) => {
                         error!("Basic tier clipboard write failed: {}", e);
@@ -80,14 +106,23 @@ pub(super) fn dispatch_text_insertion(
             PasteExecutionMode::NativePasteAllowed => match utils::paste(final_text, app_clone.clone()) {
                 Ok(()) => {
                     debug!("Text pasted in {:?}", paste_time.elapsed());
-                    if let Ok(mut p) = profiler_for_paste.lock() {
-                        p.push_step_since(
-                            "paste_execute",
-                            paste_exec_started,
-                            Some("ok".to_string()),
+                        if let Ok(mut p) = profiler_for_paste.lock() {
+                            p.push_step_since(
+                                "paste_execute",
+                                paste_exec_started,
+                                Some("ok".to_string()),
                         );
-                        p.mark_completed();
-                        p.emit(&app_clone);
+                            p.mark_completed();
+                            p.emit(&app_clone);
+                        }
+                        if let Some(callback) = on_success.take() {
+                            callback();
+                        }
+                        if let Some(coordinator) =
+                            app_clone.try_state::<crate::TranscriptionCoordinator>()
+                        {
+                        let _ =
+                            coordinator.complete_operation(&app_clone, operation_id, "pasted");
                     }
                 }
                 Err(e) => {
@@ -123,6 +158,11 @@ pub(super) fn dispatch_text_insertion(
                         );
                         p.mark_error("PASTE_FAILED");
                         p.emit(&app_clone);
+                    }
+                    if let Some(coordinator) =
+                        app_clone.try_state::<crate::TranscriptionCoordinator>()
+                    {
+                        let _ = coordinator.fail_operation(&app_clone, operation_id, "paste-failed");
                     }
                 }
             },
@@ -165,6 +205,9 @@ pub(super) fn dispatch_text_insertion(
             );
             p.mark_error("PASTE_MAIN_THREAD_DISPATCH_FAILED");
             p.emit(app);
+        }
+        if let Some(coordinator) = app.try_state::<crate::TranscriptionCoordinator>() {
+            let _ = coordinator.fail_operation(app, operation_id, "paste-dispatch-failed");
         }
         utils::hide_recording_overlay(app);
         change_tray_icon(app, TrayIconState::Idle);

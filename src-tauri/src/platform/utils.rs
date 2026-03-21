@@ -1,6 +1,5 @@
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::runtime_observability::{emit_lifecycle_state, TranscriptionLifecycleState};
 use crate::shortcut;
 use crate::TranscriptionCoordinator;
 use log::info;
@@ -23,10 +22,14 @@ pub fn cancel_current_operation(app: &AppHandle) {
 
     shortcut::unregister_cancel_shortcut(app);
     shortcut::unregister_pause_shortcut(app);
+    shortcut::unregister_action_shortcuts(app);
+
+    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+        let _ = coordinator.notify_cancel(app, "cancel-operation");
+    }
 
     // Cancel any ongoing recording
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
-    let recording_was_active = audio_manager.is_recording();
     audio_manager.cancel_recording();
 
     // Update tray icon and hide overlay
@@ -36,17 +39,6 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Unload model if immediate unload is enabled
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.maybe_unload_immediately("cancellation");
-
-    // Notify coordinator so it can keep lifecycle state coherent.
-    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
-        coordinator.notify_cancel(recording_was_active);
-    }
-    emit_lifecycle_state(
-        app,
-        TranscriptionLifecycleState::Idle,
-        None,
-        Some("cancel-operation"),
-    );
 
     info!("Operation cancellation completed - returned to idle state");
 }

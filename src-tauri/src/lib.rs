@@ -742,7 +742,6 @@ pub fn run(cli_args: CliArgs) {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
-            app.manage(actions::ActiveActionState(std::sync::Mutex::new(None)));
             app.manage(chunking::ActiveChunkingHandle(std::sync::Mutex::new(None)));
             app.manage(context_detector::ActiveAppContextState(std::sync::Mutex::new(
                 context_detector::ActiveAppContextSnapshot::default(),

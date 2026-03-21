@@ -103,7 +103,7 @@ impl DictionaryManager {
             return Err("Le champ 'de' ne peut pas être vide".to_string());
         }
         let re = build_pattern(&from).ok_or_else(|| format!("Pattern invalide pour '{}'", from))?;
-        let mut compiled = self.compiled.lock().unwrap();
+        let mut compiled = self.compiled.lock().unwrap_or_else(|e| e.into_inner());
         if compiled
             .iter()
             .any(|e| e.from.to_lowercase() == from.to_lowercase())
@@ -116,7 +116,7 @@ impl DictionaryManager {
 
     /// Removes the entry matching `from` (case-insensitive).
     pub fn remove(&self, from: &str) -> Result<(), String> {
-        let mut compiled = self.compiled.lock().unwrap();
+        let mut compiled = self.compiled.lock().unwrap_or_else(|e| e.into_inner());
         let before = compiled.len();
         compiled.retain(|e| e.from.to_lowercase() != from.to_lowercase());
         if compiled.len() == before {
@@ -128,7 +128,7 @@ impl DictionaryManager {
     /// Updates the replacement for the entry matching `from` (case-insensitive).
     pub fn update(&self, from: &str, to: String) -> Result<(), String> {
         let to = to.trim().to_string();
-        let mut compiled = self.compiled.lock().unwrap();
+        let mut compiled = self.compiled.lock().unwrap_or_else(|e| e.into_inner());
         let entry = compiled
             .iter_mut()
             .find(|e| e.from.to_lowercase() == from.to_lowercase())
@@ -139,7 +139,7 @@ impl DictionaryManager {
 
     /// Removes all entries.
     pub fn clear(&self) -> Result<(), String> {
-        let mut compiled = self.compiled.lock().unwrap();
+        let mut compiled = self.compiled.lock().unwrap_or_else(|e| e.into_inner());
         compiled.clear();
         save_to_file(&self.file_path, &[])
     }
@@ -157,10 +157,9 @@ fn build_pattern(from: &str) -> Option<Regex> {
         return None;
     }
     let escaped = regex::escape(term);
-    // (?<!\w) / (?!\w) work correctly for both single-word and multi-word
-    // phrases — spaces inside the pattern are non-word chars, so boundaries
-    // are only asserted at the outermost edges of the phrase.
-    Regex::new(&format!(r"(?i)(?<!\w){}(?!\w)", escaped))
+    // The Rust `regex` crate does not support look-around, so we capture the
+    // surrounding non-word boundaries and preserve them during replacement.
+    Regex::new(&format!(r"(?i)(^|[^\pL\pN_])({})([^\pL\pN_]|$)", escaped))
         .map_err(|e| {
             warn!(
                 "dictionary: failed to compile pattern for '{}': {}",
@@ -224,7 +223,16 @@ pub fn apply_dictionary(text: &str, patterns: &[(Regex, String)]) -> String {
     }
     let mut result = text.to_string();
     for (re, to) in patterns {
-        result = re.replace_all(&result, to.as_str()).into_owned();
+        result = re
+            .replace_all(&result, |caps: &regex::Captures<'_>| {
+                format!(
+                    "{}{}{}",
+                    caps.get(1).map_or("", |m| m.as_str()),
+                    to,
+                    caps.get(3).map_or("", |m| m.as_str())
+                )
+            })
+            .into_owned();
     }
     result
 }

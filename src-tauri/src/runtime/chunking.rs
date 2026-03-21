@@ -58,6 +58,7 @@ pub struct ChunkingHandle {
     pub(crate) shared_state: Arc<Mutex<ChunkingSharedState>>,
     pub(crate) results: Arc<Mutex<Vec<(usize, String)>>>,
     pub(crate) pending_chunks: Arc<AtomicUsize>,
+    pub(crate) failed_chunks: Arc<AtomicUsize>,
     pub(crate) chunk_overlap_samples: usize,
 }
 

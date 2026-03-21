@@ -10,6 +10,7 @@ use crate::settings::{get_settings, AdaptiveMachineProfile};
 use crate::voice_profile::{
     current_runtime_adjustment, current_voice_profile, VoiceProfile, VoiceRuntimeAdjustment,
 };
+use crate::TranscriptionCoordinator;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::VecDeque;
@@ -24,10 +25,15 @@ const MAX_PIPELINE_PROFILES: usize = 50;
 #[serde(rename_all = "snake_case")]
 pub enum TranscriptionLifecycleState {
     Idle,
+    PreparingMicrophone,
     Recording,
+    Paused,
+    Stopping,
     Transcribing,
     Processing,
     Pasting,
+    Completed,
+    Cancelled,
     Error,
 }
 
@@ -48,8 +54,10 @@ pub enum RuntimeErrorStage {
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct LifecycleStateEvent {
     pub state: TranscriptionLifecycleState,
+    pub operation_id: Option<u64>,
     pub binding_id: Option<String>,
     pub detail: Option<String>,
+    pub recoverable: bool,
     pub timestamp_ms: u64,
 }
 
@@ -59,6 +67,9 @@ pub struct RuntimeErrorEvent {
     pub stage: RuntimeErrorStage,
     pub message: String,
     pub recoverable: bool,
+    pub operation_id: Option<u64>,
+    pub device_name: Option<String>,
+    pub model_id: Option<String>,
     pub timestamp_ms: u64,
 }
 
@@ -102,6 +113,12 @@ pub struct RuntimeDiagnostics {
     pub selected_output_device: Option<String>,
     pub is_recording: bool,
     pub is_paused: bool,
+    pub operation_id: Option<u64>,
+    pub active_stage: Option<TranscriptionLifecycleState>,
+    pub last_audio_error: Option<String>,
+    pub partial_result: bool,
+    pub device_resolution: Option<String>,
+    pub cancelled_at_stage: Option<TranscriptionLifecycleState>,
     pub current_app_context: Option<AppTranscriptionContext>,
     pub last_transcription_app_context: Option<AppTranscriptionContext>,
     pub adaptive_voice_profile_enabled: bool,
@@ -127,8 +144,10 @@ impl RuntimeObservabilityState {
             lifecycle_state: Mutex::new(TranscriptionLifecycleState::Idle),
             last_lifecycle_event: Mutex::new(LifecycleStateEvent {
                 state: TranscriptionLifecycleState::Idle,
+                operation_id: None,
                 binding_id: None,
                 detail: Some("startup".to_string()),
+                recoverable: true,
                 timestamp_ms: now,
             }),
             recent_errors: Mutex::new(VecDeque::new()),
@@ -137,12 +156,18 @@ impl RuntimeObservabilityState {
     }
 
     fn set_lifecycle(&self, event: LifecycleStateEvent) {
-        *self.lifecycle_state.lock().unwrap() = event.state;
-        *self.last_lifecycle_event.lock().unwrap() = event;
+        *self
+            .lifecycle_state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = event.state;
+        *self
+            .last_lifecycle_event
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = event;
     }
 
     fn push_error(&self, error: RuntimeErrorEvent) {
-        let mut errors = self.recent_errors.lock().unwrap();
+        let mut errors = self.recent_errors.lock().unwrap_or_else(|e| e.into_inner());
         errors.push_back(error);
         while errors.len() > MAX_RUNTIME_ERRORS {
             errors.pop_front();
@@ -150,7 +175,10 @@ impl RuntimeObservabilityState {
     }
 
     fn push_pipeline_profile(&self, profile: PipelineProfileEvent) {
-        let mut profiles = self.recent_pipeline_profiles.lock().unwrap();
+        let mut profiles = self
+            .recent_pipeline_profiles
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         profiles.push_back(profile);
         while profiles.len() > MAX_PIPELINE_PROFILES {
             profiles.pop_front();
@@ -166,9 +194,20 @@ impl RuntimeObservabilityState {
         Vec<PipelineProfileEvent>,
     ) {
         (
-            *self.lifecycle_state.lock().unwrap(),
-            self.last_lifecycle_event.lock().unwrap().clone(),
-            self.recent_errors.lock().unwrap().iter().cloned().collect(),
+            *self
+                .lifecycle_state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner()),
+            self.last_lifecycle_event
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone(),
+            self.recent_errors
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .iter()
+                .cloned()
+                .collect(),
             self.recent_pipeline_profiles
                 .lock()
                 .unwrap()
@@ -192,10 +231,23 @@ pub fn emit_lifecycle_state(
     binding_id: Option<&str>,
     detail: Option<&str>,
 ) {
+    emit_lifecycle_state_with_context(app, state, None, binding_id, detail, true);
+}
+
+pub fn emit_lifecycle_state_with_context(
+    app: &AppHandle,
+    state: TranscriptionLifecycleState,
+    operation_id: Option<u64>,
+    binding_id: Option<&str>,
+    detail: Option<&str>,
+    recoverable: bool,
+) {
     let event = LifecycleStateEvent {
         state,
+        operation_id,
         binding_id: binding_id.map(ToString::to_string),
         detail: detail.map(ToString::to_string),
+        recoverable,
         timestamp_ms: now_ms(),
     };
 
@@ -213,11 +265,31 @@ pub fn emit_runtime_error(
     message: impl Into<String>,
     recoverable: bool,
 ) {
+    emit_runtime_error_with_context(app, code, stage, message, recoverable, None, None, None);
+}
+
+pub fn emit_runtime_error_with_context(
+    app: &AppHandle,
+    code: impl Into<String>,
+    stage: RuntimeErrorStage,
+    message: impl Into<String>,
+    recoverable: bool,
+    operation_id: Option<u64>,
+    device_name: Option<String>,
+    model_id: Option<String>,
+) {
+    let resolved_operation_id = operation_id.or_else(|| {
+        app.try_state::<TranscriptionCoordinator>()
+            .and_then(|coordinator| coordinator.active_operation_id())
+    });
     let event = RuntimeErrorEvent {
         code: code.into(),
         stage,
         message: message.into(),
         recoverable,
+        operation_id: resolved_operation_id,
+        device_name,
+        model_id,
         timestamp_ms: now_ms(),
     };
 
@@ -225,12 +297,16 @@ pub fn emit_runtime_error(
         obs.push_error(event.clone());
     }
 
-    emit_lifecycle_state(
-        app,
-        TranscriptionLifecycleState::Error,
-        None,
-        Some(&event.code),
-    );
+    if resolved_operation_id.is_some() {
+        emit_lifecycle_state_with_context(
+            app,
+            TranscriptionLifecycleState::Error,
+            resolved_operation_id,
+            None,
+            Some(&event.code),
+            recoverable,
+        );
+    }
     let _ = app.emit("runtime-error", event);
 }
 
@@ -289,8 +365,10 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         } else {
             let fallback = LifecycleStateEvent {
                 state: TranscriptionLifecycleState::Idle,
+                operation_id: None,
                 binding_id: None,
                 detail: Some("observability-uninitialized".to_string()),
+                recoverable: true,
                 timestamp_ms: now_ms(),
             };
             (
@@ -307,6 +385,10 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         &adaptive_calibration_state,
         tm.get_current_model().as_deref(),
     );
+    let (operation_id, active_stage, cancelled_at_stage, partial_result) = app
+        .try_state::<TranscriptionCoordinator>()
+        .map(|coordinator| coordinator.diagnostics_snapshot())
+        .unwrap_or((None, None, None, false));
 
     RuntimeDiagnostics {
         captured_at_ms: now_ms(),
@@ -325,6 +407,12 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         selected_output_device,
         is_recording: am.is_recording(),
         is_paused: am.is_paused(),
+        operation_id,
+        active_stage,
+        last_audio_error: am.last_error_message(),
+        partial_result,
+        device_resolution: am.last_device_resolution(),
+        cancelled_at_stage,
         current_app_context: Some(detect_current_app_context()),
         last_transcription_app_context: active_context_state
             .as_ref()
@@ -353,6 +441,9 @@ mod tests {
                 stage: RuntimeErrorStage::Unknown,
                 message: "x".to_string(),
                 recoverable: true,
+                operation_id: None,
+                device_name: None,
+                model_id: None,
                 timestamp_ms: i as u64,
             });
         }

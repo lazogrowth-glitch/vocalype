@@ -151,6 +151,35 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
             })}
             : <span className="font-semibold">{snapshot.lifecycle_state}</span>
           </p>
+          {snapshot.operation_id != null && (
+            <p>
+              {t("settings.debug.runtimeDiagnostics.operationId", {
+                defaultValue: "Operation",
+              })}
+              : <span className="font-semibold">{snapshot.operation_id}</span>
+              {snapshot.active_stage ? ` · ${snapshot.active_stage}` : ""}
+            </p>
+          )}
+          {snapshot.cancelled_at_stage && (
+            <p>
+              {t("settings.debug.runtimeDiagnostics.cancelledAt", {
+                defaultValue: "Cancelled at",
+              })}
+              :{" "}
+              <span className="font-semibold">{snapshot.cancelled_at_stage}</span>
+            </p>
+          )}
+          {snapshot.partial_result && (
+            <p>
+              {t("settings.debug.runtimeDiagnostics.partialResult", {
+                defaultValue: "Partial result",
+              })}
+              :{" "}
+              <span className="font-semibold">
+                {t("common.yes", { defaultValue: "yes" })}
+              </span>
+            </p>
+          )}
           <p>
             {t("settings.debug.runtimeDiagnostics.model", {
               defaultValue: "Model",
@@ -291,6 +320,23 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
             })}
             : <span className="font-semibold">{snapshot.paste_method}</span>
           </p>
+          {snapshot.device_resolution && (
+            <p>
+              {t("settings.debug.runtimeDiagnostics.deviceResolution", {
+                defaultValue: "Device resolution",
+              })}
+              :{" "}
+              <span className="font-semibold">{snapshot.device_resolution}</span>
+            </p>
+          )}
+          {snapshot.last_audio_error && (
+            <p className="break-words">
+              {t("settings.debug.runtimeDiagnostics.lastAudioError", {
+                defaultValue: "Last audio error",
+              })}
+              : <span className="font-semibold">{snapshot.last_audio_error}</span>
+            </p>
+          )}
           <p>
             {t("settings.debug.runtimeDiagnostics.updatedAt", {
               defaultValue: "Captured at",

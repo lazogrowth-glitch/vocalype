@@ -31,7 +31,7 @@ impl TranscriptionManager {
         // Check if model is loaded, if not try to load it
         {
             // If the model is loading, wait for it to complete.
-            let mut is_loading = self.is_loading.lock().unwrap();
+            let mut is_loading = self.is_loading.lock().unwrap_or_else(|e| e.into_inner());
             while *is_loading {
                 is_loading = self.loading_condvar.wait(is_loading).unwrap();
             }

@@ -35,6 +35,11 @@ pub fn toggle_pause(app: AppHandle) -> bool {
         return false;
     }
     let paused = audio_manager.toggle_pause();
+    if let Some(coordinator) = app.try_state::<crate::TranscriptionCoordinator>() {
+        if let Some(operation_id) = coordinator.active_operation_id() {
+            let _ = coordinator.set_paused(&app, operation_id, paused);
+        }
+    }
     crate::overlay::emit_recording_paused(&app, paused);
     paused
 }

@@ -1255,7 +1255,7 @@ export type KeyboardImplementation = "tauri" | "native_shortcut_capture"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LicenseRuntimeState = { state: LicenseState; reason: string | null; device_id: string | null; grant_expires_at: string | null; offline_expires_at: string | null; grace_until: string | null; entitlement_status: string | null; last_refreshed_at: string | null; integrity_anomalies: string[] }
 export type LicenseState = "online_valid" | "offline_valid" | "expired"
-export type LifecycleStateEvent = { state: TranscriptionLifecycleState; binding_id: string | null; detail: string | null; timestamp_ms: number }
+export type LifecycleStateEvent = { state: TranscriptionLifecycleState; operation_id: number | null; binding_id: string | null; detail: string | null; recoverable: boolean; timestamp_ms: number }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 export type MachineScoreDetails = { ram_score?: number; cpu_threads_score?: number; cpu_family_score?: number; gpu_prebench_bonus?: number; npu_prebench_bonus?: number; low_power_penalty?: number; power_penalty?: number; thermal_penalty?: number; final_score?: number; tier_reason?: string }
 export type MachineStatusMode = "optimal" | "battery" | "saver" | "thermal" | "memory_limited" | "fallback" | "calibrating"
@@ -1277,17 +1277,17 @@ export type PowerMode = "normal" | "saver" | "unknown"
  */
 export type RecentAppEntry = { process_name: string; window_title: string | null; category: AppContextCategory; detected_at_ms: number }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
-export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; lifecycle_state: TranscriptionLifecycleState; last_lifecycle_event: LifecycleStateEvent; recent_errors: RuntimeErrorEvent[]; selected_model: string; loaded_model_id: string | null; loaded_model_name: string | null; model_loaded: boolean; paste_method: string; clipboard_handling: string; selected_language: string; selected_microphone: string | null; selected_output_device: string | null; is_recording: boolean; is_paused: boolean; current_app_context: AppTranscriptionContext | null; last_transcription_app_context: AppTranscriptionContext | null; adaptive_voice_profile_enabled: boolean; adaptive_voice_profile: VoiceProfile | null; active_voice_runtime_adjustment: VoiceRuntimeAdjustment | null; machine_status: MachineStatusSnapshot | null; recent_pipeline_profiles: PipelineProfileEvent[]; adaptive_machine_profile: AdaptiveMachineProfile | null; adaptive_calibration_state: CalibrationStatusSnapshot[] }
-export type RuntimeErrorEvent = { code: string; stage: RuntimeErrorStage; message: string; recoverable: boolean; timestamp_ms: number }
+export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; lifecycle_state: TranscriptionLifecycleState; last_lifecycle_event: LifecycleStateEvent; recent_errors: RuntimeErrorEvent[]; selected_model: string; loaded_model_id: string | null; loaded_model_name: string | null; model_loaded: boolean; paste_method: string; clipboard_handling: string; selected_language: string; selected_microphone: string | null; selected_output_device: string | null; is_recording: boolean; is_paused: boolean; operation_id: number | null; active_stage: TranscriptionLifecycleState | null; last_audio_error: string | null; partial_result: boolean; device_resolution: string | null; cancelled_at_stage: TranscriptionLifecycleState | null; current_app_context: AppTranscriptionContext | null; last_transcription_app_context: AppTranscriptionContext | null; adaptive_voice_profile_enabled: boolean; adaptive_voice_profile: VoiceProfile | null; active_voice_runtime_adjustment: VoiceRuntimeAdjustment | null; machine_status: MachineStatusSnapshot | null; recent_pipeline_profiles: PipelineProfileEvent[]; adaptive_machine_profile: AdaptiveMachineProfile | null; adaptive_calibration_state: CalibrationStatusSnapshot[] }
+export type RuntimeErrorEvent = { code: string; stage: RuntimeErrorStage; message: string; recoverable: boolean; operation_id: number | null; device_name: string | null; model_id: string | null; timestamp_ms: number }
 export type RuntimeErrorStage = "capture" | "vad" | "transcription" | "post_process" | "paste" | "shortcut" | "model" | "system" | "unknown"
 export type SavedProcessingModel = { id: string; provider_id: string; model_id: string; label: string }
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
 export type StartupWarmupPhase = "idle" | "preparing" | "ready" | "failed"
 export type StartupWarmupReason = "no_model_selected" | "model_not_downloaded" | "preparing_microphone" | "preparing_model" | "ready" | "microphone_error" | "model_error"
-export type StartupWarmupStatus = { phase: StartupWarmupPhase; reason: StartupWarmupReason; can_record: boolean; microphone_ready: boolean; model_ready: boolean; message: string; detail: string | null; updated_at_ms: number }
+export type StartupWarmupStatus = { phase: StartupWarmupPhase; reason: StartupWarmupReason; can_record: boolean; microphone_checked: boolean; microphone_ready: boolean; model_ready: boolean; blocking_reason: string | null; message: string; detail: string | null; updated_at_ms: number }
 export type TranscriptionConfidencePayload = { engine: string; overall_confidence: number; mapping_stable: boolean; words: ConfidenceWord[] }
-export type TranscriptionLifecycleState = "idle" | "recording" | "transcribing" | "processing" | "pasting" | "error"
+export type TranscriptionLifecycleState = "idle" | "preparing_microphone" | "recording" | "paused" | "stopping" | "transcribing" | "processing" | "pasting" | "completed" | "cancelled" | "error"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type UnsafeBackendRecord = { backend: WhisperBackendPreference; unsafe_until_ms: number; reason: string; failed_at_ms: number }
 export type VoiceProfile = { sessions_count?: number; avg_words_per_minute?: number; avg_pause_ms?: number; preferred_terms?: string[]; last_updated_ms?: number | null }
@@ -1305,58 +1305,9 @@ export type WhisperModelAdaptiveConfig = { backend: WhisperBackendPreference; th
 
 import {
 	invoke as TAURI_INVOKE,
-	Channel as TAURI_CHANNEL,
+	Channel as _TAURI_CHANNEL,
 } from "@tauri-apps/api/core";
-import * as TAURI_API_EVENT from "@tauri-apps/api/event";
-import { type WebviewWindow as __WebviewWindow__ } from "@tauri-apps/api/webviewWindow";
-
-type __EventObj__<T> = {
-	listen: (
-		cb: TAURI_API_EVENT.EventCallback<T>,
-	) => ReturnType<typeof TAURI_API_EVENT.listen<T>>;
-	once: (
-		cb: TAURI_API_EVENT.EventCallback<T>,
-	) => ReturnType<typeof TAURI_API_EVENT.once<T>>;
-	emit: null extends T
-		? (payload?: T) => ReturnType<typeof TAURI_API_EVENT.emit>
-		: (payload: T) => ReturnType<typeof TAURI_API_EVENT.emit>;
-};
 
 export type Result<T, E> =
 	| { status: "ok"; data: T }
 	| { status: "error"; error: E };
-
-function __makeEvents__<T extends Record<string, any>>(
-	mappings: Record<keyof T, string>,
-) {
-	return new Proxy(
-		{} as unknown as {
-			[K in keyof T]: __EventObj__<T[K]> & {
-				(handle: __WebviewWindow__): __EventObj__<T[K]>;
-			};
-		},
-		{
-			get: (_, event) => {
-				const name = mappings[event as keyof T];
-
-				return new Proxy((() => {}) as any, {
-					apply: (_, __, [window]: [__WebviewWindow__]) => ({
-						listen: (arg: any) => window.listen(name, arg),
-						once: (arg: any) => window.once(name, arg),
-						emit: (arg: any) => window.emit(name, arg),
-					}),
-					get: (_, command: keyof __EventObj__<any>) => {
-						switch (command) {
-							case "listen":
-								return (arg: any) => TAURI_API_EVENT.listen(name, arg);
-							case "once":
-								return (arg: any) => TAURI_API_EVENT.once(name, arg);
-							case "emit":
-								return (arg: any) => TAURI_API_EVENT.emit(name, arg);
-						}
-					},
-				});
-			},
-		},
-	);
-}

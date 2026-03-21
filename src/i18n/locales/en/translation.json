@@ -180,6 +180,12 @@
     },
     "general": {
       "title": "General",
+      "tabs": {
+        "shortcuts": "Shortcuts",
+        "audio": "Audio",
+        "dictation": "Dictation",
+        "keyboardShortcutsTitle": "Keyboard Shortcuts"
+      },
       "shortcut": {
         "title": "VocalType Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",

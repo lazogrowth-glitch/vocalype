@@ -6,10 +6,8 @@ mod transcribe;
 
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
-
-pub struct ActiveActionState(pub Mutex<Option<u8>>);
 
 pub trait ShortcutAction: Send + Sync {
     fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);

@@ -1,9 +1,13 @@
-use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
+use crate::audio_toolkit::{
+    list_input_devices, vad::SmoothedVad, AudioRecorder, AudioRecorderRuntimeError, SileroVad,
+};
 use crate::helpers::clamshell;
 use crate::model_ids::is_parakeet_v3_model_id;
+use crate::runtime_observability::{emit_runtime_error_with_context, RuntimeErrorStage};
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use crate::voice_profile::current_runtime_adjustment;
+use cpal::traits::HostTrait;
 use log::{debug, error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -192,6 +196,7 @@ fn create_audio_recorder(
     is_paused: Arc<AtomicBool>,
     selected_model_id: &str,
     gain: f32,
+    last_error: Arc<Mutex<Option<String>>>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let is_parakeet_v3 = is_parakeet_v3_model_id(selected_model_id);
     let (vad_threshold, prefill_frames, mut hangover_frames, onset_frames) = if is_parakeet_v3 {
@@ -242,6 +247,39 @@ fn create_audio_recorder(
                     utils::emit_levels(&app_handle, &levels);
                 }
             }
+        })
+        .with_error_callback({
+            let app_handle = app_handle.clone();
+            let last_error = Arc::clone(&last_error);
+            move |runtime_error| {
+                let (code, stage, message): (&str, RuntimeErrorStage, String) = match runtime_error
+                {
+                    AudioRecorderRuntimeError::StreamLost(message) => {
+                        ("AUDIO_STREAM_LOST", RuntimeErrorStage::Capture, message)
+                    }
+                    AudioRecorderRuntimeError::VadFailed(message) => {
+                        ("VAD_FAILED", RuntimeErrorStage::Vad, message)
+                    }
+                };
+                *last_error.lock().unwrap_or_else(|e| e.into_inner()) = Some(message.clone());
+                let operation_id = app_handle
+                    .try_state::<crate::TranscriptionCoordinator>()
+                    .and_then(|coordinator| coordinator.active_operation_id());
+                let model_id = app_handle
+                    .try_state::<Arc<crate::managers::transcription::TranscriptionManager>>()
+                    .and_then(|manager| manager.get_current_model());
+                let device_name = get_settings(&app_handle).selected_microphone.clone();
+                emit_runtime_error_with_context(
+                    &app_handle,
+                    code,
+                    stage,
+                    message,
+                    true,
+                    operation_id,
+                    device_name,
+                    model_id,
+                );
+            }
         });
 
     Ok(recorder)
@@ -262,6 +300,8 @@ pub struct AudioRecordingManager {
     did_mute: Arc<Mutex<bool>>,
     /// When true the recorder is opened with `WHISPER_MODE_GAIN` instead of 1.0.
     whisper_mode: Arc<AtomicBool>,
+    last_error: Arc<Mutex<Option<String>>>,
+    last_device_resolution: Arc<Mutex<Option<String>>>,
 }
 
 impl AudioRecordingManager {
@@ -286,6 +326,8 @@ impl AudioRecordingManager {
             is_paused: Arc::new(AtomicBool::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
             whisper_mode: Arc::new(AtomicBool::new(settings.whisper_mode)),
+            last_error: Arc::new(Mutex::new(None)),
+            last_device_resolution: Arc::new(Mutex::new(None)),
         };
 
         Ok(manager)
@@ -293,7 +335,21 @@ impl AudioRecordingManager {
 
     /* ---------- helper methods --------------------------------------------- */
 
-    fn get_effective_microphone_device(&self, settings: &AppSettings) -> Option<cpal::Device> {
+    fn set_last_error(&self, error: Option<String>) {
+        *self.last_error.lock().unwrap_or_else(|e| e.into_inner()) = error;
+    }
+
+    fn set_last_device_resolution(&self, resolution: Option<String>) {
+        *self
+            .last_device_resolution
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = resolution;
+    }
+
+    fn get_effective_microphone_device(
+        &self,
+        settings: &AppSettings,
+    ) -> Result<Option<cpal::Device>, anyhow::Error> {
         // Check if we're in clamshell mode and have a clamshell microphone configured
         let use_clamshell_mic = if let Ok(is_clamshell) = clamshell::is_clamshell() {
             is_clamshell && settings.clamshell_microphone.is_some()
@@ -302,21 +358,37 @@ impl AudioRecordingManager {
         };
 
         let device_name = if use_clamshell_mic {
-            settings.clamshell_microphone.as_ref()?
+            settings.clamshell_microphone.as_ref()
         } else {
-            settings.selected_microphone.as_ref()?
+            settings.selected_microphone.as_ref()
         };
 
-        // Find the device by name
-        match list_input_devices() {
-            Ok(devices) => devices
-                .into_iter()
-                .find(|d| d.name == *device_name)
-                .map(|d| d.device),
-            Err(e) => {
-                debug!("Failed to list devices, using default: {}", e);
-                None
+        let Some(device_name) = device_name else {
+            self.set_last_device_resolution(Some("default-device".to_string()));
+            return Ok(None);
+        };
+
+        let devices = list_input_devices()
+            .map_err(|e| anyhow::anyhow!("Failed to list audio input devices: {}", e))?;
+        let matching: Vec<_> = devices
+            .into_iter()
+            .filter(|d| d.name == *device_name)
+            .collect();
+
+        match matching.len() {
+            0 => Err(anyhow::anyhow!(
+                "Selected microphone '{}' is no longer available",
+                device_name
+            )),
+            1 => {
+                self.set_last_device_resolution(Some(format!("exact:{}", device_name)));
+                Ok(matching.into_iter().next().map(|device| device.device))
             }
+            count => Err(anyhow::anyhow!(
+                "Selected microphone '{}' is ambiguous ({} matching devices)",
+                device_name,
+                count
+            )),
         }
     }
 
@@ -351,6 +423,7 @@ impl AudioRecordingManager {
     }
 
     pub fn start_microphone_stream(&self) -> Result<(), anyhow::Error> {
+        self.set_last_error(None);
         let mut open_flag = self.is_open.lock().unwrap_or_else(|e| e.into_inner());
         if *open_flag {
             debug!("Microphone stream already active");
@@ -389,14 +462,18 @@ impl AudioRecordingManager {
             Arc::clone(&self.is_paused),
             &settings.selected_model,
             gain,
+            Arc::clone(&self.last_error),
         )?);
 
         // Get the selected device from settings, considering clamshell mode
-        let selected_device = self.get_effective_microphone_device(&settings);
+        let selected_device = self.get_effective_microphone_device(&settings)?;
 
         if let Some(rec) = recorder_opt.as_mut() {
-            rec.open(selected_device)
-                .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
+            rec.open(selected_device).map_err(|e| {
+                let message = format!("Failed to open recorder: {}", e);
+                self.set_last_error(Some(message.clone()));
+                anyhow::anyhow!(message)
+            })?;
         }
 
         *open_flag = true;
@@ -404,6 +481,20 @@ impl AudioRecordingManager {
             "Microphone stream initialized in {:?}",
             start_time.elapsed()
         );
+        Ok(())
+    }
+
+    pub fn preflight_microphone(&self) -> Result<(), anyhow::Error> {
+        let settings = get_settings(&self.app_handle);
+        if settings.selected_microphone.is_some() || settings.clamshell_microphone.is_some() {
+            let _ = self.get_effective_microphone_device(&settings)?;
+            return Ok(());
+        }
+
+        let host = crate::audio_toolkit::get_cpal_host();
+        host.default_input_device()
+            .ok_or_else(|| anyhow::anyhow!("No input device found"))?;
+        self.set_last_device_resolution(Some("default-device".to_string()));
         Ok(())
     }
 
@@ -429,6 +520,7 @@ impl AudioRecordingManager {
             if *self.is_recording.lock().unwrap_or_else(|e| e.into_inner()) {
                 let _ = rec.stop();
                 *self.is_recording.lock().unwrap_or_else(|e| e.into_inner()) = false;
+                *self.state.lock().unwrap_or_else(|e| e.into_inner()) = RecordingState::Idle;
             }
             let _ = rec.close();
         }
@@ -440,6 +532,11 @@ impl AudioRecordingManager {
     /* ---------- mode switching --------------------------------------------- */
 
     pub fn update_mode(&self, new_mode: MicrophoneMode) -> Result<(), anyhow::Error> {
+        if self.is_recording() {
+            return Err(anyhow::anyhow!(
+                "Cannot change microphone mode while a dictation session is active"
+            ));
+        }
         let mode_guard = self.mode.lock().unwrap_or_else(|e| e.into_inner());
         let cur_mode = mode_guard.clone();
 
@@ -479,6 +576,7 @@ impl AudioRecordingManager {
 
     pub fn try_start_recording(&self, binding_id: &str) -> bool {
         self.is_paused.store(false, Ordering::Relaxed);
+        self.set_last_error(None);
         let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
 
         if let RecordingState::Idle = *state {
@@ -489,6 +587,7 @@ impl AudioRecordingManager {
             ) {
                 if let Err(e) = self.start_microphone_stream() {
                     error!("Failed to open microphone stream: {e}");
+                    self.set_last_error(Some(e.to_string()));
                     return false;
                 }
             }
@@ -508,7 +607,9 @@ impl AudioRecordingManager {
                     return true;
                 }
             }
-            error!("Recorder not available");
+            let message = "Recorder not available".to_string();
+            error!("{}", message);
+            self.set_last_error(Some(message));
             false
         } else {
             false
@@ -516,6 +617,11 @@ impl AudioRecordingManager {
     }
 
     pub fn update_selected_device(&self) -> Result<(), anyhow::Error> {
+        if self.is_recording() {
+            return Err(anyhow::anyhow!(
+                "Cannot change microphone device while a dictation session is active"
+            ));
+        }
         // If currently open, restart the microphone stream to use the new device
         if *self.is_open.lock().unwrap_or_else(|e| e.into_inner()) {
             self.stop_microphone_stream();
@@ -609,6 +715,11 @@ impl AudioRecordingManager {
     /// In **OnDemand** mode the change is picked up the next time the stream
     /// is opened (i.e. on the next recording).
     pub fn set_whisper_mode(&self, enabled: bool) -> Result<(), anyhow::Error> {
+        if self.is_recording() {
+            return Err(anyhow::anyhow!(
+                "Cannot toggle whisper mode while a dictation session is active"
+            ));
+        }
         self.whisper_mode.store(enabled, Ordering::Relaxed);
         info!(
             "Whisper mode {}",
@@ -673,5 +784,19 @@ impl AudioRecordingManager {
                 self.stop_microphone_stream();
             }
         }
+    }
+
+    pub fn last_error_message(&self) -> Option<String> {
+        self.last_error
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+
+    pub fn last_device_resolution(&self) -> Option<String> {
+        self.last_device_resolution
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
     }
 }

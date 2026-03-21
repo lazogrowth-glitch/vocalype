@@ -14,7 +14,9 @@
     "postProcessing": "Постобробка",
     "history": "Історія",
     "debug": "Дебаг",
-    "about": "Інфо"
+    "about": "Інфо",
+    "snippets": "Snippets",
+    "stats": "Stats"
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
@@ -156,8 +158,10 @@
       "experimental": "Експериментальна",
       "english": "English",
       "englishOnly": "English Only",
-      "multilingualExperimental": "Multilingual Experimental"
-    }
+      "multilingualExperimental": "Multilingual Experimental",
+      "localOnly": "100% Local"
+    },
+    "geminiCloudWarning": "Gemini sends audio to Google for transcription. Other models process everything locally on your device."
   },
   "settings": {
     "modelSettings": {
@@ -193,6 +197,10 @@
           "copy_latest_history": {
             "name": "Copy Latest History",
             "description": "Copies the latest transcription entry to your clipboard."
+          },
+          "pause": {
+            "name": "Pause / Resume",
+            "description": "The keyboard shortcut to pause or resume the current recording."
           }
         },
         "errors": {
@@ -213,6 +221,12 @@
       "pushToTalk": {
         "label": "Утримувати для запису (Push To Talk)",
         "description": "Утримуйте для запису, відпустіть для зупинки"
+      },
+      "tabs": {
+        "shortcuts": "Shortcuts",
+        "audio": "Audio",
+        "dictation": "Dictation",
+        "keyboardShortcutsTitle": "Keyboard Shortcuts"
       }
     },
     "models": {
@@ -337,7 +351,8 @@
           "none": "Немає",
           "externalScript": "Зовнішній скрипт"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "externalScriptHelp": "External scripts must use an absolute path to an executable local file. Changes are saved on blur or Enter."
       },
       "typingTool": {
         "title": "Інструмент введення",
@@ -500,7 +515,15 @@
       "selectModel": "Select model",
       "originalTranscript": "Original",
       "postProcessed": "Post-processed",
-      "action": "Action {{key}}"
+      "action": "Action {{key}}",
+      "export": "Export",
+      "exportSuccess": "History exported.",
+      "exportError": "Export failed.",
+      "transcribeFile": "Transcribe File",
+      "transcribeFileSuccess": "File transcribed and copied to clipboard.",
+      "transcribeFileError": "Transcription failed.",
+      "whisperConfidence": "Whisper confidence: {{overall}}",
+      "wordConfidenceTitle": "Confidence {{confidence}}"
     },
     "debug": {
       "title": "Дебаг",
@@ -572,6 +595,12 @@
       "pasteDelay": {
         "title": "Затримка вставки",
         "description": "Затримка перед надсиланням натискання клавіші вставки (у мілісекундах). Збільшіть, якщо вставляється неправильний текст."
+      },
+      "runtimeDiagnostics": {
+        "voiceProfileSessions": "{{count}} sessions",
+        "voiceProfileWpm": "{{value}} wpm",
+        "voiceProfilePauses": "{{value}} ms pauses",
+        "voiceAdjustmentValue": "{{chunkSeconds}}s / {{overlapMs}}ms"
       }
     },
     "about": {
@@ -609,7 +638,8 @@
         "import": "Import",
         "exportSuccess": "Settings exported successfully",
         "importSuccess": "Settings imported successfully"
-      }
+      },
+      "versionLabel": "Version v{{version}}"
     },
     "longAudioModel": {
       "title": "Long Audio Model",
@@ -646,7 +676,8 @@
     "downloading": "Завантаження... {{progress}}%",
     "installing": "Встановлення...",
     "preparing": "Підготовка...",
-    "checkForUpdates": "Перевірити оновлення"
+    "checkForUpdates": "Перевірити оновлення",
+    "version": "v{{version}}"
   },
   "common": {
     "loading": "Завантаження...",
@@ -668,7 +699,9 @@
     "off": "Вимк.",
     "yes": "Так",
     "no": "Ні",
-    "noOptionsFound": "Опцій не знайдено"
+    "noOptionsFound": "Опцій не знайдено",
+    "moreInformation": "More information",
+    "infoGlyph": "i"
   },
   "accessibility": {
     "permissionsRequired": "Потрібні права доступу",
@@ -766,5 +799,122 @@
     "pasteFailed": "Automatic paste failed",
     "pasteFailedCopied": "Automatic paste failed — text copied to clipboard",
     "pasteFailedDesc": "Reason: {{reason}}"
+  },
+  "error": {
+    "boundary": {
+      "sectionMessage": "An error occurred in this section.",
+      "retry": "Retry"
+    }
+  },
+  "appContext": {
+    "categories": {
+      "autoDetected": "Auto (detected)",
+      "code": "Code",
+      "email": "Email",
+      "chat": "Chat",
+      "document": "Document",
+      "notes": "Notes",
+      "browser": "Browser",
+      "unknown": "Unknown"
+    }
+  },
+  "bootstrap": {
+    "desktopRuntimeUnavailable": "VocalType failed to connect to the desktop runtime. Please restart the app.",
+    "criticalFallback": "VocalType encountered a critical error. Please restart the app."
+  },
+  "trial": {
+    "welcome": {
+      "badge": "Premium · 14 days",
+      "title": "14 days of VocalType Premium. Free, no card.",
+      "subtitle": "Your full access starts now. No card required during the trial.",
+      "cta": "Let's go →"
+    },
+    "feature1": "Native injection into all your apps",
+    "feature2": "Customizable keyboard shortcut",
+    "feature3": "Unlimited transcriptions",
+    "feature4": "Full history",
+    "badge": {
+      "neutral": "Premium Trial · {{count}}d left",
+      "warning": "{{count}} days of Premium left",
+      "urgent": "⚠ Expires in {{count}} days",
+      "today": "⚠ Expires today",
+      "cta": "Upgrade to Premium →"
+    },
+    "reminder": {
+      "title": "Your trial is expiring soon",
+      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
+      "cta": "Upgrade to Premium →"
+    }
+  },
+  "dictionary": {
+    "tab": "Dictionary",
+    "empty": "No custom terms yet. Add words, proper nouns, or acronyms.",
+    "fromPlaceholder": "Whisper hears…",
+    "toPlaceholder": "Replace with…",
+    "add": "Add",
+    "remove": "Remove",
+    "save": "Save",
+    "cancel": "Cancel",
+    "duplicate": "\"{{from}}\" is already in the dictionary.",
+    "arrow": "→",
+    "export": "Export",
+    "importMerge": "Import (merge)",
+    "exportSuccess": "Dictionary exported.",
+    "importReplaceSuccess": "Dictionary imported (replaced).",
+    "importMergeSuccess": "Dictionary imported (merged)."
+  },
+  "snippets": {
+    "title": "Voice Snippets",
+    "description": "Say the trigger phrase and VocalType will paste the expansion instead.",
+    "empty": "No snippets yet. Add one below.",
+    "triggerPlaceholder": "Trigger phrase…",
+    "expansionPlaceholder": "Text to paste…",
+    "add": "Add",
+    "remove": "Remove",
+    "save": "Save",
+    "cancel": "Cancel",
+    "duplicate": "\"{{trigger}}\" already exists.",
+    "arrow": "→"
+  },
+  "stats": {
+    "title": "Statistics",
+    "totalWords": "Total Words",
+    "totalTranscriptions": "Transcriptions",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "avgWords": "Avg. Words",
+    "mostUsedModel": "Most Used Model",
+    "timeSaved": "Time Saved",
+    "timeSavedUnit": "min",
+    "noData": "No data yet. Start transcribing to build your stats.",
+    "refresh": "Refresh"
+  },
+  "basic": {
+    "copiedToClipboard": "Text copied to clipboard",
+    "copiedToClipboardDesc": "Native injection is reserved for the Premium plan.",
+    "seePremium": "See Premium →",
+    "quotaExceeded": "Weekly limit reached",
+    "quotaExceededDesc": "Upgrade to Premium to dictate without limits.",
+    "upgradeCta": "Upgrade to Premium →",
+    "upgrade": "Upgrade to Premium",
+    "historyLimited": "History limited to {{limit}} entries on Basic",
+    "shortcutsLocked": "Custom shortcuts are a Premium feature",
+    "premiumBadge": "Premium"
+  },
+  "commandMode": {
+    "label": "Command Mode",
+    "recording": "Speak now… ({{count}}s)",
+    "processing": "Processing…",
+    "errorTitle": "Command Mode — error"
+  },
+  "transcription": {
+    "warmup_preparing": "Preparing microphone…",
+    "warmup_ready": "Dictation will be available automatically once the engine is ready."
+  },
+  "whisperMode": {
+    "label": "Whisper Mode",
+    "enabled": "Whisper Mode on",
+    "disabled": "Whisper Mode off",
+    "errorTitle": "Whisper Mode — error"
   }
 }

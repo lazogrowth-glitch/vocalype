@@ -17,8 +17,10 @@ export interface StartupWarmupStatusSnapshot {
   phase: StartupWarmupPhase;
   reason: StartupWarmupReason;
   can_record: boolean;
+  microphone_checked: boolean;
   microphone_ready: boolean;
   model_ready: boolean;
+  blocking_reason?: string | null;
   message: string;
   detail?: string | null;
   updated_at_ms: number;

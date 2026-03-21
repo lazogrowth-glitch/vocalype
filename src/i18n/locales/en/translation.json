@@ -131,6 +131,9 @@
       "privacyPolicyLink": "Read the full Privacy Policy",
       "checkboxLabel": "I understand and accept how VocalType handles my data.",
       "continueButton": "Continue"
+    },
+    "progress": {
+      "stepOf": "Step {{current}} of {{total}}"
     }
   },
   "modelSelector": {
@@ -735,7 +738,8 @@
     "no": "No",
     "noOptionsFound": "No options found",
     "moreInformation": "More information",
-    "infoGlyph": "i"
+    "infoGlyph": "i",
+    "back": "Back"
   },
   "accessibility": {
     "permissionsRequired": "Accessibility Permissions Required",
@@ -959,5 +963,8 @@
     "enabled": "Whisper Mode on",
     "disabled": "Whisper Mode off",
     "errorTitle": "Whisper Mode — error"
+  },
+  "hints": {
+    "firstLaunch": "Press {{shortcut}} anywhere to start dictating — your text will appear automatically."
   }
 }

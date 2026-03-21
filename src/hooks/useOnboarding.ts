@@ -47,10 +47,18 @@ export function useOnboarding({
   authLoading,
   hasAnyAccess,
 }: UseOnboardingProps) {
-  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
-    null,
-  );
+  const [stepHistory, setStepHistory] = useState<OnboardingStep[]>([]);
   const [isReturningUser, setIsReturningUser] = useState(false);
+
+  const onboardingStep = stepHistory[stepHistory.length - 1] ?? null;
+
+  const pushStep = useCallback((step: OnboardingStep) => {
+    setStepHistory((prev) => [...prev, step]);
+  }, []);
+
+  const handleGoBack = useCallback(() => {
+    setStepHistory((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+  }, []);
 
   const checkOnboardingStatus = useCallback(async () => {
     try {
@@ -61,7 +69,7 @@ export function useOnboarding({
       // haven't seen it yet — e.g. installed before this policy was added).
       const consentAccepted = await hasAcceptedConsent();
       if (!consentAccepted) {
-        setOnboardingStep("consent");
+        pushStep("consent");
         return;
       }
 
@@ -77,23 +85,23 @@ export function useOnboarding({
               checkMicrophonePermission(),
             ]);
             if (!hasAccessibility || !hasMicrophone) {
-              setOnboardingStep("accessibility");
+              pushStep("accessibility");
               return;
             }
           } catch (e) {
             console.warn("Failed to check permissions:", e);
           }
         }
-        setOnboardingStep("done");
+        pushStep("done");
       } else {
         setIsReturningUser(false);
-        setOnboardingStep(isDevFlavor ? "model" : "accessibility");
+        pushStep(isDevFlavor ? "model" : "accessibility");
       }
     } catch (error) {
       console.error("Failed to check onboarding status:", error);
-      setOnboardingStep("accessibility");
+      pushStep("accessibility");
     }
-  }, []);
+  }, [pushStep]);
 
   const handleConsentAccepted = useCallback(async () => {
     await markConsentAccepted();
@@ -113,31 +121,31 @@ export function useOnboarding({
               checkMicrophonePermission(),
             ]);
             if (!hasAccessibility || !hasMicrophone) {
-              setOnboardingStep("accessibility");
+              pushStep("accessibility");
               return;
             }
           } catch (e) {
             console.warn("Failed to check permissions:", e);
           }
         }
-        setOnboardingStep("done");
+        pushStep("done");
       } else {
         setIsReturningUser(false);
-        setOnboardingStep(isDevFlavor ? "model" : "accessibility");
+        pushStep(isDevFlavor ? "model" : "accessibility");
       }
     } catch (error) {
       console.error("Failed to check onboarding status after consent:", error);
-      setOnboardingStep("accessibility");
+      pushStep("accessibility");
     }
-  }, []);
+  }, [pushStep]);
 
   const handleAccessibilityComplete = useCallback(() => {
-    setOnboardingStep(isReturningUser ? "done" : "model");
-  }, [isReturningUser]);
+    pushStep(isReturningUser ? "done" : "model");
+  }, [isReturningUser, pushStep]);
 
   const handleModelSelected = useCallback(() => {
-    setOnboardingStep("done");
-  }, []);
+    pushStep("done");
+  }, [pushStep]);
 
   useEffect(() => {
     if (authLoading || !hasAnyAccess) {
@@ -152,5 +160,6 @@ export function useOnboarding({
     handleConsentAccepted,
     handleAccessibilityComplete,
     handleModelSelected,
+    handleGoBack,
   };
 }

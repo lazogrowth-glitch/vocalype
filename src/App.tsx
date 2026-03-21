@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useTranslation } from "react-i18next";
@@ -32,6 +32,34 @@ const renderSettingsContent = (section: SidebarSection) => {
     >
       <ActiveComponent />
     </Suspense>
+  );
+};
+
+const OnboardingProgressBar: React.FC<{ current: number; total: number }> = ({
+  current,
+  total,
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-1.5 pt-3 pb-2">
+      <p className="text-[11px] text-text/35">
+        {t("onboarding.progress.stepOf", { current, total })}
+      </p>
+      <div className="flex gap-1">
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            className="h-[3px] w-7 rounded-full transition-all duration-300"
+            style={{
+              background:
+                i < current
+                  ? "rgba(100,140,255,0.9)"
+                  : "rgba(255,255,255,0.12)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
 
@@ -83,10 +111,19 @@ function App() {
     handleConsentAccepted,
     handleAccessibilityComplete,
     handleModelSelected,
+    handleGoBack,
   } = useOnboarding({
     authLoading,
     hasAnyAccess,
   });
+
+  const [showFirstLaunchHint, setShowFirstLaunchHint] = useState(
+    () => !localStorage.getItem("vt.firstUseHintShown"),
+  );
+  const dismissHint = useCallback(() => {
+    localStorage.setItem("vt.firstUseHintShown", "1");
+    setShowFirstLaunchHint(false);
+  }, []);
 
   useBackendEvents({
     t,
@@ -161,17 +198,34 @@ function App() {
   }
 
   if (onboardingStep === "consent") {
-    return <ConsentStep onAccept={handleConsentAccepted} />;
+    return (
+      <>
+        <OnboardingProgressBar current={1} total={3} />
+        <ConsentStep onAccept={handleConsentAccepted} />
+      </>
+    );
   }
 
   if (onboardingStep === "accessibility") {
-    return <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />;
+    return (
+      <>
+        <OnboardingProgressBar current={2} total={3} />
+        <AccessibilityOnboarding
+          onComplete={handleAccessibilityComplete}
+          onBack={handleGoBack}
+        />
+      </>
+    );
   }
 
   if (onboardingStep === "model") {
     return (
       <>
-        <Onboarding onModelSelected={handleModelSelected} />
+        <OnboardingProgressBar current={3} total={3} />
+        <Onboarding
+          onModelSelected={handleModelSelected}
+          onBack={handleGoBack}
+        />
         {showTrialWelcome && (
           <TrialWelcomeModal onDismiss={handleDismissTrialWelcome} />
         )}
@@ -242,6 +296,23 @@ function App() {
               ? t(SECTIONS_CONFIG[currentSection].labelKey)
               : t(SECTIONS_CONFIG.general.labelKey)}
           </h1>
+          {showFirstLaunchHint && (
+            <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-text/70">
+              <span>
+                {t("hints.firstLaunch", {
+                  shortcut:
+                    settings?.bindings?.transcribe?.current_binding ??
+                    "Ctrl+Shift+Space",
+                })}
+              </span>
+              <button
+                onClick={dismissHint}
+                className="text-text/30 hover:text-text/60 transition-colors text-base leading-none"
+              >
+                ×
+              </button>
+            </div>
+          )}
           <ErrorBoundary>{renderSettingsContent(currentSection)}</ErrorBoundary>
         </main>
       </div>

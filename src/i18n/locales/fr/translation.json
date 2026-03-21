@@ -131,6 +131,9 @@
       "privacyPolicyLink": "Lire la politique de confidentialité complète",
       "checkboxLabel": "Je comprends et j'accepte la façon dont VocalType gère mes données.",
       "continueButton": "Continuer"
+    },
+    "progress": {
+      "stepOf": "Étape {{current}} sur {{total}}"
     }
   },
   "modelSelector": {
@@ -735,7 +738,8 @@
     "no": "Non",
     "noOptionsFound": "Aucune option trouvée",
     "moreInformation": "Plus d'informations",
-    "infoGlyph": "i"
+    "infoGlyph": "i",
+    "back": "Retour"
   },
   "accessibility": {
     "permissionsRequired": "Autorisations d'accessibilité requises",
@@ -959,5 +963,8 @@
     "enabled": "Mode Chuchotement activé",
     "disabled": "Mode Chuchotement désactivé",
     "errorTitle": "Mode Chuchotement — erreur"
+  },
+  "hints": {
+    "firstLaunch": "Appuyez sur {{shortcut}} depuis n'importe quelle app pour dicter — le texte apparaîtra automatiquement."
   }
 }

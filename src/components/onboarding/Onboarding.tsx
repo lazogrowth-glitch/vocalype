@@ -7,6 +7,7 @@ import type { ModelCardStatus } from "./ModelCard";
 import ModelCard from "./ModelCard";
 import VocalTypeLogo from "../icons/VocalTypeLogo";
 import { useModelStore } from "../../stores/modelStore";
+import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 
 interface AdaptiveProfileSnapshot {
   machine_tier: "low" | "medium" | "high";
@@ -53,9 +54,10 @@ const getOnboardingRank = (model: ModelInfo): number => {
 
 interface OnboardingProps {
   onModelSelected: () => void;
+  onBack?: () => void;
 }
 
-const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
+const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
   const { t, i18n } = useTranslation();
   const {
     models,
@@ -182,7 +184,16 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   })();
 
   return (
-    <div className="h-screen w-screen flex flex-col p-6 gap-4 inset-0">
+    <div className="relative h-screen w-screen flex flex-col p-6 gap-4 inset-0">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="absolute top-4 left-4 flex items-center gap-1.5 text-sm text-text/50 hover:text-text/80 transition-colors"
+        >
+          ← {t("common.back")}
+        </button>
+      )}
       <div className="flex flex-col items-center gap-2 shrink-0">
         <VocalTypeLogo width={200} />
         <p className="text-text/70 max-w-md font-medium mx-auto">
@@ -239,7 +250,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                   )}
                 </div>
                 <p className="text-xs text-text/50 mt-3">
-                  {model?.name ?? modelId}
+                  {model ? getTranslatedModelName(model, t) : modelId}
                 </p>
               </button>
             );

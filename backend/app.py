@@ -383,6 +383,20 @@ def init_db():
         )
         """
     )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS referrals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            referrer_id INTEGER NOT NULL,
+            referee_id INTEGER NOT NULL,
+            converted INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (referrer_id) REFERENCES users(id),
+            FOREIGN KEY (referee_id) REFERENCES users(id)
+        )
+        """
+    )
+    ensure_column(db, "users", "referral_code", "TEXT")
     db.commit()
     db.close()
 
@@ -1592,6 +1606,8 @@ def register():
         )
         return jsonify({"error": "Cet email est déjà utilisé"}), 409
 
+    ref_code = data.get("ref", "").strip() or None
+
     try:
         trial_end = (utc_now() + timedelta(days=14)).isoformat()
         db = get_db()
@@ -1619,6 +1635,18 @@ def register():
                 "SELECT * FROM users WHERE email = ?",
                 (email,),
             ).fetchone()
+
+            if ref_code:
+                referrer = db.execute(
+                    "SELECT id FROM users WHERE referral_code = ?",
+                    (ref_code,),
+                ).fetchone()
+                if referrer and referrer["id"] != user["id"]:
+                    db.execute(
+                        "INSERT INTO referrals (referrer_id, referee_id) VALUES (?, ?)",
+                        (referrer["id"], user["id"]),
+                    )
+                    db.commit()
         finally:
             db.close()
 
@@ -2010,6 +2038,16 @@ def webhook():
                 "SELECT id FROM users WHERE stripe_customer_id = ?",
                 (customer_id,),
             ).fetchone()
+
+            if row and status == "active":
+                db.execute(
+                    """
+                    UPDATE referrals SET converted = 1
+                    WHERE referee_id = ? AND converted = 0
+                    """,
+                    (row["id"],),
+                )
+                db.commit()
         finally:
             db.close()
 
@@ -2430,6 +2468,64 @@ def change_password(user):
 
     log_security_event("change_password_success", user_id=user["id"], ip=ip_address)
     return jsonify({"ok": True})
+
+
+REFERRAL_BASE_URL = os.environ.get("REFERRAL_BASE_URL", "https://vocalype.com/r")
+
+
+def _get_or_create_referral_code(user, db: sqlite3.Connection) -> str:
+    """Return the user's referral code, creating one if it doesn't exist yet."""
+    code = user["referral_code"]
+    if code:
+        return code
+    code = secrets.token_urlsafe(8)
+    db.execute("UPDATE users SET referral_code = ? WHERE id = ?", (code, user["id"]))
+    db.commit()
+    return code
+
+
+@app.route("/referral/code", methods=["GET"])
+@auth_required
+def get_referral_code(user):
+    db = get_db()
+    try:
+        # Reload fresh row so referral_code is up to date
+        row = db.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()
+        if not row:
+            return jsonify({"error": "User not found"}), 404
+        code = _get_or_create_referral_code(row, db)
+    finally:
+        db.close()
+    return jsonify({
+        "code": code,
+        "referral_url": f"{REFERRAL_BASE_URL}/{code}",
+    })
+
+
+@app.route("/referral/stats", methods=["GET"])
+@auth_required
+def get_referral_stats(user):
+    db = get_db()
+    try:
+        row = db.execute(
+            """
+            SELECT
+                COUNT(*)                                    AS referral_count,
+                SUM(CASE WHEN converted = 1 THEN 1 ELSE 0 END) AS converted_count
+            FROM referrals
+            WHERE referrer_id = ?
+            """,
+            (user["id"],),
+        ).fetchone()
+    finally:
+        db.close()
+    referral_count = int(row["referral_count"] or 0)
+    converted_count = int(row["converted_count"] or 0)
+    return jsonify({
+        "referral_count": referral_count,
+        "converted_count": converted_count,
+        "earned_months": converted_count,  # 1 free month per conversion
+    })
 
 
 if __name__ == "__main__":

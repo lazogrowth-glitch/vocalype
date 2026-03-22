@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { TitleBar } from "./components/TitleBar";
 import { useTranslation } from "react-i18next";
 import { LogicalSize, getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
@@ -268,6 +269,7 @@ function App() {
         dir={direction}
         style={{
           display: "flex",
+          flexDirection: "column",
           width: "100vw",
           height: "100vh",
           overflow: "hidden",
@@ -276,6 +278,7 @@ function App() {
           color: "inherit",
         }}
       >
+        <TitleBar />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-text focus:rounded-lg focus:ring-2 focus:ring-logo-primary focus:outline-none text-sm font-medium"
@@ -301,56 +304,62 @@ function App() {
             },
           }}
         />
-        <Sidebar
-          activeSection={currentSection}
-          onSectionChange={setCurrentSection}
-        />
-
-        <main
-          id="main-content"
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            overflowX: "hidden",
-            padding: "20px 28px 28px",
-            minWidth: 0,
-            minHeight: 0,
-            background: "#0f0f0f",
-          }}
+        <div
+          style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}
         >
-          <h1
+          <Sidebar
+            activeSection={currentSection}
+            onSectionChange={setCurrentSection}
+          />
+
+          <main
+            id="main-content"
             style={{
-              fontSize: 24,
-              fontWeight: 600,
-              lineHeight: 1,
-              letterSpacing: "-0.3px",
-              color: "#fff",
-              marginBottom: 20,
+              flex: 1,
+              overflowY: "auto",
+              overflowX: "hidden",
+              padding: "20px 28px 28px",
+              minWidth: 0,
+              minHeight: 0,
+              background: "#0f0f0f",
             }}
           >
-            {SECTIONS_CONFIG[currentSection]
-              ? t(SECTIONS_CONFIG[currentSection].labelKey)
-              : t(SECTIONS_CONFIG.general.labelKey)}
-          </h1>
-          {showFirstLaunchHint && (
-            <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-text/70">
-              <span>
-                {t("hints.firstLaunch", {
-                  shortcut:
-                    settings?.bindings?.transcribe?.current_binding ??
-                    "Ctrl+Shift+Space",
-                })}
-              </span>
-              <button
-                onClick={dismissHint}
-                className="text-text/70 hover:text-text/80 transition-colors text-base leading-none"
-              >
-                ×
-              </button>
-            </div>
-          )}
-          <ErrorBoundary>{renderSettingsContent(currentSection)}</ErrorBoundary>
-        </main>
+            <h1
+              style={{
+                fontSize: 24,
+                fontWeight: 600,
+                lineHeight: 1,
+                letterSpacing: "-0.3px",
+                color: "#fff",
+                marginBottom: 20,
+              }}
+            >
+              {SECTIONS_CONFIG[currentSection]
+                ? t(SECTIONS_CONFIG[currentSection].labelKey)
+                : t(SECTIONS_CONFIG.general.labelKey)}
+            </h1>
+            {showFirstLaunchHint && (
+              <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-text/70">
+                <span>
+                  {t("hints.firstLaunch", {
+                    shortcut:
+                      settings?.bindings?.transcribe?.current_binding ??
+                      "Ctrl+Shift+Space",
+                  })}
+                </span>
+                <button
+                  onClick={dismissHint}
+                  className="text-text/70 hover:text-text/80 transition-colors text-base leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            <ErrorBoundary>
+              {renderSettingsContent(currentSection)}
+            </ErrorBoundary>
+          </main>
+        </div>
       </div>
     </PlanContext.Provider>
   );

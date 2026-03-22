@@ -12,8 +12,9 @@
         "height": 875,
         "minWidth": 1348,
         "minHeight": 875,
+        "decorations": false,
         "resizable": true,
-        "maximizable": false,
+        "maximizable": true,
         "center": true,
         "visible": false
       }

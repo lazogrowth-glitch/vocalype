@@ -18,7 +18,7 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
     const rawRetentionPeriod = getSetting("recording_retention_period");
     // "never" was removed — normalise legacy values to "preserve_limit" in the UI
     const selectedRetentionPeriod =
-      !rawRetentionPeriod || rawRetentionPeriod === "never"
+      !rawRetentionPeriod || (rawRetentionPeriod as string) === "never"
         ? "preserve_limit"
         : rawRetentionPeriod;
     const historyLimit = getSetting("history_limit") || 5;

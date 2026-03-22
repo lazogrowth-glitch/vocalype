@@ -10,6 +10,7 @@ import { AudioFeedback } from "../AudioFeedback";
 import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
+import { AutoPauseMedia } from "../AutoPauseMedia";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 import { LongAudioModelSettings } from "./LongAudioModelSettings";
 import { useStartupWarmupStatus } from "../../../hooks/useStartupWarmupStatus";
@@ -171,6 +172,28 @@ export const GeneralSettings: React.FC = () => {
               </span>
             </div>
             <ShortcutInput shortcutId="whisper_mode" grouped={true} />
+            {/* ── Agent Key ────────────────────────────────────────────── */}
+            <div className="flex items-center gap-1.5 border-t border-white/6 px-4 pb-0.5 pt-2">
+              <span className="text-[10.5px] text-white/40">
+                {t("agentKey.label", { defaultValue: "Agent Key" })}
+              </span>
+            </div>
+            <ShortcutInput
+              shortcutId="agent_key"
+              grouped={true}
+              disabled={isBasicTier}
+            />
+            {/* ── Meeting Key ──────────────────────────────────────────── */}
+            <div className="flex items-center gap-1.5 border-t border-white/6 px-4 pb-0.5 pt-2">
+              <span className="text-[10.5px] text-white/40">
+                {t("meetingKey.label", { defaultValue: "Meeting Key" })}
+              </span>
+            </div>
+            <ShortcutInput
+              shortcutId="meeting_key"
+              grouped={true}
+              disabled={isBasicTier}
+            />
           </SettingsGroup>
         </div>
       )}
@@ -180,6 +203,7 @@ export const GeneralSettings: React.FC = () => {
           <SettingsGroup title={t("settings.general.tabs.audio")}>
             <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
             <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
+            <AutoPauseMedia descriptionMode="tooltip" grouped={true} />
             <AudioFeedback descriptionMode="tooltip" grouped={true} />
             <OutputDeviceSelector
               descriptionMode="tooltip"

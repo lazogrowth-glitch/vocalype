@@ -44,6 +44,45 @@ fn hydrate_settings_secrets(app: &AppHandle, settings: &mut AppSettings) {
         crate::secret_store::set_gemini_api_key,
     );
 
+    settings.groq_stt_api_key = migrate_secret_to_secure_store(
+        crate::secret_store::get_groq_stt_api_key()
+            .map_err(|err| {
+                warn!("Failed to load Groq STT API key from secure store: {}", err);
+                err
+            })
+            .ok()
+            .flatten(),
+        settings.groq_stt_api_key.as_deref(),
+        crate::secret_store::set_groq_stt_api_key,
+    );
+
+    settings.mistral_stt_api_key = migrate_secret_to_secure_store(
+        crate::secret_store::get_mistral_stt_api_key()
+            .map_err(|err| {
+                warn!(
+                    "Failed to load Mistral STT API key from secure store: {}",
+                    err
+                );
+                err
+            })
+            .ok()
+            .flatten(),
+        settings.mistral_stt_api_key.as_deref(),
+        crate::secret_store::set_mistral_stt_api_key,
+    );
+
+    settings.deepgram_api_key = migrate_secret_to_secure_store(
+        crate::secret_store::get_deepgram_api_key()
+            .map_err(|err| {
+                warn!("Failed to load Deepgram API key from secure store: {}", err);
+                err
+            })
+            .ok()
+            .flatten(),
+        settings.deepgram_api_key.as_deref(),
+        crate::secret_store::set_deepgram_api_key,
+    );
+
     let provider_ids: Vec<String> = settings
         .post_process_providers
         .iter()
@@ -78,6 +117,9 @@ fn hydrate_settings_secrets(app: &AppHandle, settings: &mut AppSettings) {
 
 pub(crate) fn strip_secrets_for_persistence(mut settings: AppSettings) -> AppSettings {
     settings.gemini_api_key = None;
+    settings.groq_stt_api_key = None;
+    settings.mistral_stt_api_key = None;
+    settings.deepgram_api_key = None;
     for value in settings.post_process_api_keys.values_mut() {
         value.clear();
     }

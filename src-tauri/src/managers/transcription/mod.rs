@@ -150,6 +150,9 @@ enum LoadedEngine {
     MoonshineStreaming(MoonshineStreamingEngine),
     SenseVoice(SenseVoiceEngine),
     GeminiApi,
+    GroqWhisper,
+    MistralVoxtral,
+    Deepgram,
 }
 
 #[derive(Clone)]
@@ -368,6 +371,9 @@ impl TranscriptionManager {
                     LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
                     LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
                     LoadedEngine::GeminiApi => {}
+                    LoadedEngine::GroqWhisper => {}
+                    LoadedEngine::MistralVoxtral => {}
+                    LoadedEngine::Deepgram => {}
                 }
             }
             *engine = None; // Drop the engine to free memory

@@ -30,9 +30,12 @@
 //! does not require a specific version of rdev that conflicts with its own
 //! transitive resolution — then drop the direct entry from `Cargo.toml`.
 
+pub mod agent_overlay;
 pub mod audio_feedback;
 pub mod clipboard;
+pub mod clipboard_monitor;
 pub mod input;
+pub mod media_control;
 pub mod overlay;
 pub mod signal_handle;
 pub mod utils;

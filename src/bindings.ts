@@ -942,6 +942,46 @@ async clearAllHistory() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getNotes() : Promise<Result<NoteEntry[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_notes") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async createNote(title: string, content: string) : Promise<Result<NoteEntry, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_note", { title, content }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateNote(id: number, title: string, content: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_note", { id, title, content }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteNote(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_note", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async searchNotes(query: string) : Promise<Result<NoteEntry[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("search_notes", { query }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getDictionary() : Promise<Result<DictionaryEntry[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_dictionary") };
@@ -1086,6 +1126,33 @@ async changeGeminiModelSetting(model: string) : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async setGroqSttApiKey(apiKey: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_groq_stt_api_key", { apiKey }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setMistralSttApiKey(apiKey: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_mistral_stt_api_key", { apiKey }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setDeepgramApiKey(apiKey: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_deepgram_api_key", { apiKey }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async dismissAgentOverlay() : Promise<void> {
+    await TAURI_INVOKE("dismiss_agent_overlay");
 },
 async getSecureAuthToken() : Promise<Result<string | null, string>> {
     try {
@@ -1234,7 +1301,19 @@ settings_version?: number; bindings: Partial<{ [key in string]: ShortcutBinding 
  * on first load via settings migration (T11). New code should read this
  * field; old code continues to use the booleans until migration is done.
  */
-recording_mode?: RecordingMode; selected_microphone?: string | null; selected_microphone_index?: string | null; clamshell_microphone?: string | null; clamshell_microphone_index?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; long_audio_model?: string | null; long_audio_threshold_seconds?: number; gemini_api_key?: string | null; gemini_model?: string; post_process_actions?: PostProcessAction[]; saved_processing_models?: SavedProcessingModel[]; adaptive_profile_applied?: boolean; adaptive_machine_profile?: AdaptiveMachineProfile | null; 
+recording_mode?: RecordingMode; selected_microphone?: string | null; selected_microphone_index?: string | null; clamshell_microphone?: string | null; clamshell_microphone_index?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; long_audio_model?: string | null; long_audio_threshold_seconds?: number; gemini_api_key?: string | null; gemini_model?: string; 
+/**
+ * Groq API key for cloud STT (stored in keyring, never persisted to disk).
+ */
+groq_stt_api_key?: string | null; 
+/**
+ * Mistral API key for Voxtral cloud STT (stored in keyring, never persisted to disk).
+ */
+mistral_stt_api_key?: string | null; 
+/**
+ * Deepgram API key for cloud STT (stored in keyring, never persisted to disk).
+ */
+deepgram_api_key?: string | null; post_process_actions?: PostProcessAction[]; saved_processing_models?: SavedProcessingModel[]; adaptive_profile_applied?: boolean; adaptive_machine_profile?: AdaptiveMachineProfile | null; 
 /**
  * Whether the automatic app-context feature is enabled globally.
  */
@@ -1246,7 +1325,15 @@ whisper_mode?: boolean;
 /**
  * Voice snippets: short trigger phrases → long expansions.
  */
-voice_snippets?: VoiceSnippet[] }
+voice_snippets?: VoiceSnippet[]; 
+/**
+ * Automatically learn word corrections from clipboard changes after paste.
+ */
+auto_learn_dictionary?: boolean; 
+/**
+ * Automatically pause media players (Spotify, etc.) during recording.
+ */
+auto_pause_media?: boolean }
 export type AppTranscriptionContext = { 
 /**
  * Stable process identifier: `.exe` filename on Windows (e.g. `"code.exe"`).
@@ -1266,7 +1353,7 @@ export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type ConfidenceWord = { text: string; confidence: number }
 export type CustomSounds = { start: boolean; stop: boolean }
 export type DictionaryEntry = { from: string; to: string }
-export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GeminiApi"
+export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GeminiApi" | "GroqWhisper" | "MistralVoxtral" | "Deepgram"
 export type GpuKind = "none" | "integrated" | "dedicated" | "unknown"
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_action_key: number | null; model_name: string | null; confidence_payload: TranscriptionConfidencePayload | null }
 export type HistoryStats = { total_entries: number; total_words: number; entries_today: number; entries_this_week: number; most_used_model: string | null }
@@ -1292,6 +1379,7 @@ export type MachineTier = "low" | "medium" | "high"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; expected_etag: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; is_custom: boolean; requires_license_key: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"
+export type NoteEntry = { id: number; title: string; content: string; created_at: number; updated_at: number }
 export type NpuKind = "none" | "qualcomm" | "intel" | "amd" | "unknown"
 export type OverlayPosition = "none" | "top" | "bottom"
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"

@@ -213,6 +213,9 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     if !is_always_on {
         rm.apply_mute();
     }
+    if settings.auto_pause_media {
+        crate::platform::media_control::pause_media();
+    }
 
     if let Some(state) = app.try_state::<ActiveAppContextState>() {
         if let Ok(mut snapshot) = state.0.lock() {
@@ -402,6 +405,8 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
     };
 
     let selected_action_key = coordinator.selected_action(operation_id);
+    let settings = get_settings(app);
+    let auto_pause_media = settings.auto_pause_media;
 
     let chunking_handle = app
         .try_state::<ActiveChunkingHandle>()
@@ -472,6 +477,9 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 }
             };
             play_feedback_sound(&ah, SoundType::Stop);
+            if auto_pause_media {
+                crate::platform::media_control::resume_media();
+            }
             if let Ok(mut p) = profiler.lock() {
                 p.set_audio_duration_samples(all_samples.len());
                 p.push_step_since(
@@ -633,6 +641,9 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 }
             };
             play_feedback_sound(&ah, SoundType::Stop);
+            if auto_pause_media {
+                crate::platform::media_control::resume_media();
+            }
             if let Ok(mut p) = profiler.lock() {
                 p.set_audio_duration_samples(samples.len());
                 p.push_step_since(
@@ -938,6 +949,17 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     return;
                 }
                 TranscriptionStatus::Success => {}
+            }
+
+            // Agent mode: route to AI overlay instead of pasting
+            if binding_id == "agent_key" {
+                utils::hide_recording_overlay(&ah);
+                change_tray_icon(&ah, TrayIconState::Idle);
+                super::agent::run_agent_mode(&ah, operation_id, &transcription).await;
+                if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
+                    let _ = c.complete_operation(&ah, operation_id, "agent-completed");
+                }
+                return;
             }
 
             if should_auto_paste(status) && !transcription.is_empty() {

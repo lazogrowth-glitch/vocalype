@@ -87,6 +87,10 @@ pub(super) fn dispatch_text_insertion(
                         if let Some(callback) = on_success.take() {
                             callback();
                         }
+                        crate::platform::clipboard_monitor::schedule_clipboard_diff_check(
+                            app_clone.clone(),
+                            final_text.clone(),
+                        );
                         if let Some(coordinator) =
                             app_clone.try_state::<crate::TranscriptionCoordinator>()
                         {
@@ -103,7 +107,7 @@ pub(super) fn dispatch_text_insertion(
                     }
                 }
             }
-            PasteExecutionMode::NativePasteAllowed => match utils::paste(final_text, app_clone.clone()) {
+            PasteExecutionMode::NativePasteAllowed => match utils::paste(final_text.clone(), app_clone.clone()) {
                 Ok(()) => {
                     debug!("Text pasted in {:?}", paste_time.elapsed());
                         if let Ok(mut p) = profiler_for_paste.lock() {
@@ -118,6 +122,10 @@ pub(super) fn dispatch_text_insertion(
                         if let Some(callback) = on_success.take() {
                             callback();
                         }
+                        crate::platform::clipboard_monitor::schedule_clipboard_diff_check(
+                            app_clone.clone(),
+                            final_text.clone(),
+                        );
                         if let Some(coordinator) =
                             app_clone.try_state::<crate::TranscriptionCoordinator>()
                         {

@@ -7,9 +7,12 @@ import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { commands, DictionaryEntry } from "@/bindings";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
+import { useSettings } from "@/hooks/useSettings";
 
 export const DictionarySettings: React.FC = () => {
   const { t } = useTranslation();
+  const { getSetting, updateSetting } = useSettings();
+  const autoLearn = getSetting("auto_learn_dictionary") ?? false;
 
   const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [newFrom, setNewFrom] = useState("");
@@ -168,6 +171,38 @@ export const DictionarySettings: React.FC = () => {
 
   return (
     <div className="space-y-4 pt-5">
+      {/* Auto-learn toggle */}
+      <div className="flex items-center justify-between rounded-[8px] border border-white/8 bg-white/[0.03] px-3 py-2.5">
+        <div>
+          <p className="text-[12px] font-medium text-white/80">
+            {t("dictionary.autoLearn", {
+              defaultValue: "Auto-learn corrections",
+            })}
+          </p>
+          <p className="text-[11px] text-white/40">
+            {t("dictionary.autoLearnDesc", {
+              defaultValue:
+                "Automatically learns word corrections when you copy edited text after dictation.",
+            })}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoLearn}
+          onClick={() => updateSetting("auto_learn_dictionary", !autoLearn)}
+          className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${
+            autoLearn ? "bg-logo-primary" : "bg-white/15"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+              autoLearn ? "translate-x-4" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+
       {/* Export/Import toolbar */}
       <div className="flex items-center gap-2">
         <button

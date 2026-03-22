@@ -1,4 +1,65 @@
 use super::*;
+use whichlang::Lang;
+
+/// Maps a whichlang ISO 639-3 `Lang` variant to a BCP-47 two-letter code.
+/// Only covers the languages that Parakeet V3 Multilingual supports.
+fn whichlang_to_bcp47(lang: Lang) -> Option<&'static str> {
+    // whichlang 0.1 supports only these 16 languages
+    match lang {
+        Lang::Eng => Some("en"),
+        Lang::Fra => Some("fr"),
+        Lang::Deu => Some("de"),
+        Lang::Spa => Some("es"),
+        Lang::Por => Some("pt"),
+        Lang::Ita => Some("it"),
+        Lang::Nld => Some("nl"),
+        Lang::Rus => Some("ru"),
+        Lang::Swe => Some("sv"),
+        Lang::Cmn => Some("zh"),
+        Lang::Jpn => Some("ja"),
+        Lang::Kor => Some("ko"),
+        Lang::Ara => Some("ar"),
+        Lang::Hin => Some("hi"),
+        Lang::Tur => Some("tr"),
+        Lang::Vie => Some("vi"),
+    }
+}
+
+/// Detects language drift after Parakeet transcription.
+///
+/// Parakeet has no language-forcing mechanism at the ONNX level — its encoder
+/// accepts only `audio_signal` + `length`, with no language token input.
+/// Language detection is entirely automatic via nemo128.onnx, which means
+/// the model can silently drift to English when audio is ambiguous or short.
+///
+/// This function logs a warning when the transcribed text's detected language
+/// does not match `selected_language`, giving us observability into drift.
+///
+/// NOTE: A Whisper fallback was considered but is not feasible here — only one
+/// engine is loaded at a time, and an on-demand Whisper load would add 1-2 s
+/// of latency per utterance. A proper fallback requires a persistent secondary
+/// engine, which is a larger architectural change.
+fn check_parakeet_language_drift(text: &str, selected_language: &str) {
+    if selected_language == "auto" || text.chars().count() < 40 {
+        return;
+    }
+    let detected = whichlang::detect_language(text);
+    let detected_bcp47 = match whichlang_to_bcp47(detected) {
+        Some(code) => code,
+        None => return, // language not in our mapping — skip
+    };
+    let selected_normalized = match selected_language {
+        "zh-Hans" | "zh-Hant" => "zh",
+        other => other,
+    };
+    if detected_bcp47 != selected_normalized {
+        warn!(
+            "Parakeet language drift detected: output is '{}' but selected_language is '{}'. \
+             Consider switching to Whisper or SenseVoice for forced-language transcription.",
+            detected_bcp47, selected_language
+        );
+    }
+}
 
 impl TranscriptionManager {
     pub fn transcribe_detailed_request(
@@ -130,6 +191,137 @@ impl TranscriptionManager {
             }
         }
 
+        // Handle Groq Whisper API
+        {
+            let engine_guard = self.lock_engine();
+            if let Some(LoadedEngine::GroqWhisper) = engine_guard.as_ref() {
+                drop(engine_guard);
+                let api_key = settings
+                    .groq_stt_api_key
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Groq API key not configured"))?
+                    .clone();
+
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current()
+                        .block_on(crate::groq_stt_client::transcribe_audio(&api_key, &audio))
+                })?;
+
+                let corrected = if !settings.custom_words.is_empty() {
+                    apply_custom_words(
+                        &result,
+                        &settings.custom_words,
+                        settings.word_correction_threshold,
+                    )
+                } else {
+                    result
+                };
+                let final_result = Self::filter_transcription_output_for_context(
+                    corrected,
+                    active_model_id.as_deref(),
+                    app_context.as_ref(),
+                );
+
+                info!(
+                    "Groq STT transcription completed in {}ms",
+                    st.elapsed().as_millis()
+                );
+                self.maybe_unload_immediately("groq transcription");
+                return Ok(TranscriptionOutput {
+                    text: final_result,
+                    confidence_payload: None,
+                });
+            }
+        }
+
+        // Handle Mistral Voxtral API
+        {
+            let engine_guard = self.lock_engine();
+            if let Some(LoadedEngine::MistralVoxtral) = engine_guard.as_ref() {
+                drop(engine_guard);
+                let api_key = settings
+                    .mistral_stt_api_key
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Mistral API key not configured"))?
+                    .clone();
+
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(
+                        crate::mistral_stt_client::transcribe_audio(&api_key, &audio),
+                    )
+                })?;
+
+                let corrected = if !settings.custom_words.is_empty() {
+                    apply_custom_words(
+                        &result,
+                        &settings.custom_words,
+                        settings.word_correction_threshold,
+                    )
+                } else {
+                    result
+                };
+                let final_result = Self::filter_transcription_output_for_context(
+                    corrected,
+                    active_model_id.as_deref(),
+                    app_context.as_ref(),
+                );
+
+                info!(
+                    "Mistral STT transcription completed in {}ms",
+                    st.elapsed().as_millis()
+                );
+                self.maybe_unload_immediately("mistral transcription");
+                return Ok(TranscriptionOutput {
+                    text: final_result,
+                    confidence_payload: None,
+                });
+            }
+        }
+
+        // Handle Deepgram Nova API
+        {
+            let engine_guard = self.lock_engine();
+            if let Some(LoadedEngine::Deepgram) = engine_guard.as_ref() {
+                drop(engine_guard);
+                let api_key = settings
+                    .deepgram_api_key
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Deepgram API key not configured"))?
+                    .clone();
+
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(
+                        crate::deepgram_stt_client::transcribe_audio(&api_key, &audio),
+                    )
+                })?;
+
+                let corrected = if !settings.custom_words.is_empty() {
+                    apply_custom_words(
+                        &result,
+                        &settings.custom_words,
+                        settings.word_correction_threshold,
+                    )
+                } else {
+                    result
+                };
+                let final_result = Self::filter_transcription_output_for_context(
+                    corrected,
+                    active_model_id.as_deref(),
+                    app_context.as_ref(),
+                );
+
+                info!(
+                    "Deepgram STT transcription completed in {}ms",
+                    st.elapsed().as_millis()
+                );
+                self.maybe_unload_immediately("deepgram transcription");
+                return Ok(TranscriptionOutput {
+                    text: final_result,
+                    confidence_payload: None,
+                });
+            }
+        }
+
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
         // which would make the app hang indefinitely on subsequent operations.
@@ -222,9 +414,15 @@ impl TranscriptionManager {
                         };
                         parakeet_engine
                             .transcribe_samples(audio, Some(params))
-                            .map(|result| EngineTranscriptionResult {
-                                text: result.text,
-                                segments: None,
+                            .map(|result| {
+                                check_parakeet_language_drift(
+                                    &result.text,
+                                    &settings.selected_language,
+                                );
+                                EngineTranscriptionResult {
+                                    text: result.text,
+                                    segments: None,
+                                }
                             })
                             .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))
                     }
@@ -247,9 +445,15 @@ impl TranscriptionManager {
                                 Some(ParakeetTimestampMode::Words),
                             )
                         })
-                        .map(|result| EngineTranscriptionResult {
-                            text: result.text,
-                            segments: None,
+                        .map(|result| {
+                            check_parakeet_language_drift(
+                                &result.text,
+                                &settings.selected_language,
+                            );
+                            EngineTranscriptionResult {
+                                text: result.text,
+                                segments: None,
+                            }
                         })
                         .map_err(|e| anyhow::anyhow!("Parakeet V3 transcription failed: {}", e)),
                     LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
@@ -291,6 +495,15 @@ impl TranscriptionManager {
                     }
                     LoadedEngine::GeminiApi => {
                         unreachable!("GeminiApi handled before catch_unwind")
+                    }
+                    LoadedEngine::GroqWhisper => {
+                        unreachable!("GroqWhisper handled before catch_unwind")
+                    }
+                    LoadedEngine::MistralVoxtral => {
+                        unreachable!("MistralVoxtral handled before catch_unwind")
+                    }
+                    LoadedEngine::Deepgram => {
+                        unreachable!("Deepgram handled before catch_unwind")
                     }
                 }
                 },

@@ -1,9 +1,12 @@
+pub mod agent;
 pub mod app_context;
 pub mod audio;
+pub mod cloud_stt;
 pub mod dictionary;
 pub mod gemini;
 pub mod history;
 pub mod models;
+pub mod notes;
 pub mod snippets;
 pub mod transcription;
 
@@ -277,6 +280,9 @@ pub fn export_settings(app: AppHandle, path: String) -> Result<(), String> {
         validate_user_json_path(&app, &path, JsonPathAccess::Write, "settings export")?;
     let mut settings = get_settings(&app);
     settings.gemini_api_key = None;
+    settings.groq_stt_api_key = None;
+    settings.mistral_stt_api_key = None;
+    settings.deepgram_api_key = None;
     settings.external_script_path = None;
     settings
         .post_process_api_keys
@@ -298,6 +304,9 @@ pub fn import_settings(app: AppHandle, path: String) -> Result<(), String> {
     let mut settings: AppSettings =
         serde_json::from_str(&json).map_err(|e| format!("Invalid settings file: {}", e))?;
     settings.gemini_api_key = None;
+    settings.groq_stt_api_key = None;
+    settings.mistral_stt_api_key = None;
+    settings.deepgram_api_key = None;
     settings.external_script_path = None;
     settings
         .post_process_api_keys

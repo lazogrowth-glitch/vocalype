@@ -76,7 +76,10 @@ pub struct TranscriptionCoordinator {
 }
 
 pub fn is_transcribe_binding(id: &str) -> bool {
-    id == "transcribe" || id == "transcribe_with_post_process"
+    matches!(
+        id,
+        "transcribe" | "transcribe_with_post_process" | "agent_key" | "meeting_key"
+    )
 }
 
 pub fn is_action_binding(id: &str) -> bool {

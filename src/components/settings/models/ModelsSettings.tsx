@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dropdown, FeatureGateHint } from "@/components/ui";
 import { GeminiKeyModal } from "./GeminiKeyModal";
+import { CloudSttKeyModal, type CloudSttProvider } from "./CloudSttKeyModal";
 import { ProductModesGrid } from "./ProductModesGrid";
 import { LanguageFilterDropdown } from "./LanguageFilterDropdown";
 
@@ -451,6 +452,10 @@ export const ModelsSettings: React.FC = () => {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [showGeminiKeyDialog, setShowGeminiKeyDialog] = useState(false);
   const [geminiKeyInput, setGeminiKeyInput] = useState("");
+  const [showCloudSttKeyDialog, setShowCloudSttKeyDialog] = useState(false);
+  const [cloudSttProvider, setCloudSttProvider] =
+    useState<CloudSttProvider>("groq");
+  const [cloudSttKeyInput, setCloudSttKeyInput] = useState("");
   const [cancellingModelId, setCancellingModelId] = useState<string | null>(
     null,
   );
@@ -479,6 +484,27 @@ export const ModelsSettings: React.FC = () => {
 
   const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
   const hasGeminiKey = !!geminiApiKey && geminiApiKey.length > 0;
+
+  const groqApiKey = getSetting("groq_stt_api_key") as string | undefined;
+  const hasGroqKey = !!groqApiKey && groqApiKey.length > 0;
+  const mistralApiKey = getSetting("mistral_stt_api_key") as string | undefined;
+  const hasMistralKey = !!mistralApiKey && mistralApiKey.length > 0;
+  const deepgramApiKey = getSetting("deepgram_api_key") as string | undefined;
+  const hasDeepgramKey = !!deepgramApiKey && deepgramApiKey.length > 0;
+
+  const cloudSttModelNeedsKey = (modelId: string): boolean => {
+    if (modelId === "groq-whisper") return !hasGroqKey;
+    if (modelId === "mistral-voxtral") return !hasMistralKey;
+    if (modelId === "deepgram-nova") return !hasDeepgramKey;
+    return false;
+  };
+
+  const modelIdToCloudProvider = (modelId: string): CloudSttProvider | null => {
+    if (modelId === "groq-whisper") return "groq";
+    if (modelId === "mistral-voxtral") return "mistral";
+    if (modelId === "deepgram-nova") return "deepgram";
+    return null;
+  };
   const geminiModel = models.find((model) => model.id === "gemini-api") ?? null;
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
@@ -493,6 +519,9 @@ export const ModelsSettings: React.FC = () => {
     }
     if (modelId === currentModel) {
       if (modelId === "gemini-api" && !hasGeminiKey) {
+        return "available";
+      }
+      if (cloudSttModelNeedsKey(modelId)) {
         return "available";
       }
       return "active";
@@ -520,6 +549,13 @@ export const ModelsSettings: React.FC = () => {
       setShowGeminiKeyDialog(true);
       return;
     }
+    const cloudProvider = modelIdToCloudProvider(modelId);
+    if (cloudProvider && cloudSttModelNeedsKey(modelId)) {
+      setCloudSttProvider(cloudProvider);
+      setCloudSttKeyInput("");
+      setShowCloudSttKeyDialog(true);
+      return;
+    }
     setSwitchingModelId(modelId);
     try {
       await selectModel(modelId);
@@ -536,6 +572,31 @@ export const ModelsSettings: React.FC = () => {
     setSwitchingModelId("gemini-api");
     try {
       await selectModel("gemini-api");
+    } finally {
+      setSwitchingModelId(null);
+    }
+  };
+
+  const handleCloudSttKeySave = async () => {
+    const key = cloudSttKeyInput.trim();
+    if (!key) return;
+    const modelIdMap: Record<CloudSttProvider, string> = {
+      groq: "groq-whisper",
+      mistral: "mistral-voxtral",
+      deepgram: "deepgram-nova",
+    };
+    if (cloudSttProvider === "groq") {
+      await commands.setGroqSttApiKey(key);
+    } else if (cloudSttProvider === "mistral") {
+      await commands.setMistralSttApiKey(key);
+    } else {
+      await commands.setDeepgramApiKey(key);
+    }
+    setShowCloudSttKeyDialog(false);
+    const modelId = modelIdMap[cloudSttProvider];
+    setSwitchingModelId(modelId);
+    try {
+      await selectModel(modelId);
     } finally {
       setSwitchingModelId(null);
     }
@@ -857,6 +918,14 @@ export const ModelsSettings: React.FC = () => {
         onChange={setGeminiKeyInput}
         onSave={handleGeminiKeySave}
         onClose={() => setShowGeminiKeyDialog(false)}
+      />
+      <CloudSttKeyModal
+        show={showCloudSttKeyDialog}
+        provider={cloudSttProvider}
+        value={cloudSttKeyInput}
+        onChange={setCloudSttKeyInput}
+        onSave={handleCloudSttKeySave}
+        onClose={() => setShowCloudSttKeyDialog(false)}
       />
     </div>
   );

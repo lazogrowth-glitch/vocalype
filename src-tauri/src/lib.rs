@@ -31,7 +31,10 @@ pub use processing::{dictionary, filler, post_processing, punctuation};
 // security
 pub use security::{integrity, license, model_crypto, secret_store};
 // llm
-pub use llm::{gemini_client, llm_client, prompt_builder};
+pub use llm::{
+    deepgram_stt_client, gemini_client, groq_stt_client, llm_client, mistral_stt_client,
+    prompt_builder,
+};
 // runtime
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub use runtime::apple_intelligence;
@@ -53,6 +56,7 @@ use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
+use managers::notes::NoteManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
@@ -283,6 +287,10 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
             .map_err(|err| format!("Failed to initialize history manager: {}", err))?,
     );
     let dictionary_manager = dictionary::DictionaryManager::new(app_handle);
+    let note_manager = Arc::new(
+        NoteManager::new(app_handle)
+            .map_err(|err| format!("Failed to initialize note manager: {}", err))?,
+    );
 
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
@@ -290,6 +298,7 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(dictionary_manager);
+    app_handle.manage(note_manager);
 
     {
         let app_handle = app_handle.clone();
@@ -428,6 +437,9 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+
+    // Create the agent overlay window (hidden by default)
+    crate::platform::agent_overlay::create_agent_overlay(app_handle);
 
     Ok(())
 }
@@ -614,6 +626,11 @@ pub fn run(cli_args: CliArgs) {
         commands::history::export_history_entries,
         commands::history::transcribe_audio_file,
         commands::history::clear_all_history,
+        commands::notes::get_notes,
+        commands::notes::create_note,
+        commands::notes::update_note,
+        commands::notes::delete_note,
+        commands::notes::search_notes,
         commands::dictionary::get_dictionary,
         commands::dictionary::add_dictionary_entry,
         commands::dictionary::remove_dictionary_entry,
@@ -632,6 +649,10 @@ pub fn run(cli_args: CliArgs) {
         commands::app_context::set_app_context_enabled,
         commands::gemini::change_gemini_api_key_setting,
         commands::gemini::change_gemini_model_setting,
+        commands::cloud_stt::set_groq_stt_api_key,
+        commands::cloud_stt::set_mistral_stt_api_key,
+        commands::cloud_stt::set_deepgram_api_key,
+        commands::agent::dismiss_agent_overlay,
         secret_store::get_secure_auth_token,
         secret_store::set_secure_auth_token,
         secret_store::clear_secure_auth_token,

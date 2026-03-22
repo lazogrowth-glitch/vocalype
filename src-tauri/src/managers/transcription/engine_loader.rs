@@ -44,7 +44,13 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
-        let model_path = if matches!(model_info.engine_type, EngineType::GeminiApi) {
+        let model_path = if matches!(
+            model_info.engine_type,
+            EngineType::GeminiApi
+                | EngineType::GroqWhisper
+                | EngineType::MistralVoxtral
+                | EngineType::Deepgram
+        ) {
             std::path::PathBuf::new()
         } else {
             self.model_manager.get_model_path(model_id)?
@@ -323,6 +329,69 @@ impl TranscriptionManager {
                     return Err(anyhow::anyhow!(error_msg));
                 }
                 LoadedEngine::GeminiApi
+            }
+            EngineType::GroqWhisper => {
+                let settings = get_settings(&self.app_handle);
+                if settings
+                    .groq_stt_api_key
+                    .as_ref()
+                    .map_or(true, |k| k.is_empty())
+                {
+                    let error_msg = "Groq API key not configured";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(error_msg));
+                }
+                LoadedEngine::GroqWhisper
+            }
+            EngineType::MistralVoxtral => {
+                let settings = get_settings(&self.app_handle);
+                if settings
+                    .mistral_stt_api_key
+                    .as_ref()
+                    .map_or(true, |k| k.is_empty())
+                {
+                    let error_msg = "Mistral API key not configured";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(error_msg));
+                }
+                LoadedEngine::MistralVoxtral
+            }
+            EngineType::Deepgram => {
+                let settings = get_settings(&self.app_handle);
+                if settings
+                    .deepgram_api_key
+                    .as_ref()
+                    .map_or(true, |k| k.is_empty())
+                {
+                    let error_msg = "Deepgram API key not configured";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(error_msg));
+                }
+                LoadedEngine::Deepgram
             }
         };
 

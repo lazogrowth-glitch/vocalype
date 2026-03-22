@@ -8,6 +8,7 @@ import {
   History,
   Info,
   LayoutGrid,
+  NotebookPen,
   Settings2,
   Zap,
 } from "lucide-react";
@@ -51,6 +52,11 @@ const ModelsSettings = React.lazy(() =>
 const SnippetsSettings = React.lazy(() =>
   import("./settings/snippets/SnippetsSettings").then((m) => ({
     default: m.SnippetsSettings,
+  })),
+);
+const NotesSettings = React.lazy(() =>
+  import("./settings/notes/NotesSettings").then((m) => ({
+    default: m.NotesSettings,
   })),
 );
 const StatsSettings = React.lazy(() =>
@@ -99,6 +105,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.postProcessing",
     icon: AlignLeft,
     component: PostProcessingSettings,
+    enabled: () => true,
+  },
+  notes: {
+    labelKey: "sidebar.notes",
+    icon: NotebookPen,
+    component: NotesSettings,
     enabled: () => true,
   },
   history: {

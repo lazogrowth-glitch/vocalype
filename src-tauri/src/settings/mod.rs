@@ -521,6 +521,15 @@ pub struct AppSettings {
     pub gemini_api_key: Option<String>,
     #[serde(default = "default_gemini_model")]
     pub gemini_model: String,
+    /// Groq API key for cloud STT (stored in keyring, never persisted to disk).
+    #[serde(default)]
+    pub groq_stt_api_key: Option<String>,
+    /// Mistral API key for Voxtral cloud STT (stored in keyring, never persisted to disk).
+    #[serde(default)]
+    pub mistral_stt_api_key: Option<String>,
+    /// Deepgram API key for cloud STT (stored in keyring, never persisted to disk).
+    #[serde(default)]
+    pub deepgram_api_key: Option<String>,
     #[serde(default)]
     pub post_process_actions: Vec<PostProcessAction>,
     #[serde(default)]
@@ -538,6 +547,12 @@ pub struct AppSettings {
     /// Voice snippets: short trigger phrases → long expansions.
     #[serde(default)]
     pub voice_snippets: Vec<VoiceSnippet>,
+    /// Automatically learn word corrections from clipboard changes after paste.
+    #[serde(default)]
+    pub auto_learn_dictionary: bool,
+    /// Automatically pause media players (Spotify, etc.) during recording.
+    #[serde(default)]
+    pub auto_pause_media: bool,
 }
 
 fn default_model() -> String {
@@ -1288,6 +1303,26 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "ctrl+alt+w".to_string(),
         },
     );
+    bindings.insert(
+        "agent_key".to_string(),
+        ShortcutBinding {
+            id: "agent_key".to_string(),
+            name: "Agent Key".to_string(),
+            description: "Transcribes your speech and routes it to the AI agent.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
+    bindings.insert(
+        "meeting_key".to_string(),
+        ShortcutBinding {
+            id: "meeting_key".to_string(),
+            name: "Meeting Key".to_string(),
+            description: "Transcribes your speech optimized for meeting notes.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
 
     AppSettings {
         settings_version: CURRENT_SETTINGS_VERSION,
@@ -1350,6 +1385,11 @@ pub fn get_default_settings() -> AppSettings {
         app_context_enabled: default_app_context_enabled(),
         whisper_mode: false,
         voice_snippets: Vec::new(),
+        auto_learn_dictionary: false,
+        auto_pause_media: false,
+        groq_stt_api_key: None,
+        mistral_stt_api_key: None,
+        deepgram_api_key: None,
     }
 }
 

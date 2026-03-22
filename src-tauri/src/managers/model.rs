@@ -45,6 +45,9 @@ pub enum EngineType {
     MoonshineStreaming,
     SenseVoice,
     GeminiApi,
+    GroqWhisper,
+    MistralVoxtral,
+    Deepgram,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]

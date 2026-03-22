@@ -26,6 +26,7 @@ export default defineConfig(async () => ({
         site: "index.html",
         desktop: "desktop/index.html",
         overlay: "src/overlay/index.html",
+        agent: "src/agent/index.html",
       },
     },
   },

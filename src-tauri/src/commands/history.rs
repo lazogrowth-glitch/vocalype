@@ -1,5 +1,7 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::transcription::TranscriptionManager;
+use hound::WavReader;
+use rubato::{FftFixedIn, Resampler};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
@@ -261,7 +263,7 @@ pub async fn transcribe_audio_file(
         return Err(format!("Fichier introuvable : {}", path));
     }
 
-    let samples = crate::audio_toolkit::load_wav_file(&audio_path).map_err(|e| e.to_string())?;
+    let samples = load_external_audio_file(&audio_path).map_err(|e| e.to_string())?;
 
     let tm = Arc::clone(&*transcription_manager);
     let output = tokio::task::spawn_blocking(move || {
@@ -333,4 +335,65 @@ pub async fn update_recording_retention_period(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+/// Load an external audio file (WAV) as 16 kHz mono f32 samples.
+/// Handles arbitrary sample rates and channel counts via resampling.
+fn load_external_audio_file(path: &std::path::Path) -> anyhow::Result<Vec<f32>> {
+    let reader = WavReader::open(path)?;
+    let spec = reader.spec();
+    let num_channels = spec.channels as usize;
+    let in_rate = spec.sample_rate as usize;
+
+    let raw: Vec<f32> = match spec.sample_format {
+        hound::SampleFormat::Int => {
+            let bits = spec.bits_per_sample;
+            let max = (1i64 << (bits - 1)) as f32;
+            match bits {
+                8 => reader
+                    .into_samples::<i8>()
+                    .map(|s| s.map(|v| v as f32 / max))
+                    .collect::<Result<Vec<_>, _>>()?,
+                16 => reader
+                    .into_samples::<i16>()
+                    .map(|s| s.map(|v| v as f32 / max))
+                    .collect::<Result<Vec<_>, _>>()?,
+                24 | 32 => reader
+                    .into_samples::<i32>()
+                    .map(|s| s.map(|v| v as f32 / max))
+                    .collect::<Result<Vec<_>, _>>()?,
+                _ => anyhow::bail!("Unsupported bit depth: {}", bits),
+            }
+        }
+        hound::SampleFormat::Float => reader
+            .into_samples::<f32>()
+            .collect::<Result<Vec<_>, _>>()?,
+    };
+
+    let mono: Vec<f32> = if num_channels == 1 {
+        raw
+    } else {
+        raw.chunks(num_channels)
+            .map(|ch| ch.iter().sum::<f32>() / num_channels as f32)
+            .collect()
+    };
+
+    if in_rate == 16000 {
+        return Ok(mono);
+    }
+
+    const CHUNK: usize = 1024;
+    let mut resampler = FftFixedIn::<f32>::new(in_rate, 16000, CHUNK, 1, 1)?;
+    let mut out = Vec::with_capacity(mono.len() * 16000 / in_rate + 1024);
+
+    for chunk in mono.chunks(CHUNK) {
+        let mut buf = chunk.to_vec();
+        if buf.len() < CHUNK {
+            buf.resize(CHUNK, 0.0);
+        }
+        let frames = resampler.process(&[&buf], None)?;
+        out.extend_from_slice(&frames[0]);
+    }
+
+    Ok(out)
 }

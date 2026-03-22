@@ -563,7 +563,9 @@
       "clearAllSuccess": "All history cleared.",
       "clearAllError": "Failed to clear history.",
       "loadMore": "Load more",
-      "loadingMore": "Loading…"
+      "loadingMore": "Loading…",
+      "confirmDeleteAllMessage": "Delete all history entries?",
+      "confirmYes": "Delete all"
     },
     "debug": {
       "title": "Depuração",
@@ -773,7 +775,13 @@
     "pauseRecording": "Pause recording",
     "resumeRecording": "Resume recording",
     "cancelRecording": "Cancel recording",
-    "pasteSuccess": "Text pasted ✓"
+    "pasteSuccess": "Text pasted ✓",
+    "a11y": {
+      "recording": "Recording in progress.",
+      "transcribing": "Transcribing audio, please wait.",
+      "completed": "Transcription complete. Text pasted.",
+      "error": "Transcription failed. Please try again."
+    }
   },
   "auth": {
     "trialBadge": "14-day free trial, no card required",
@@ -980,6 +988,11 @@
     "adaptiveVoiceProfile": "Learns your speaking rhythm over time to improve silence detection."
   },
   "a11y": {
-    "skipToMain": "Skip to main content"
+    "skipToMain": "Skip to main content",
+    "notifications": "Notifications",
+    "settingsNav": "Settings navigation",
+    "statusReady": "Ready",
+    "statusRecording": "Recording",
+    "statusError": "Error"
   }
 }

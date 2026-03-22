@@ -261,8 +261,15 @@ function App() {
         >
           {t("a11y.skipToMain")}
         </a>
+        <div
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+          id="toast-announcer"
+        />
         <Toaster
           theme="system"
+          containerAriaLabel={t("a11y.notifications")}
           toastOptions={{
             unstyled: true,
             classNames: {

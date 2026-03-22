@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { commands } from "@/bindings";
 import type {
@@ -36,6 +37,7 @@ async function fetchDiagnostics(): Promise<RuntimeDiagnosticsSnapshot | null> {
 export const MachineStatusBar: React.FC<{ variant?: "banner" | "sidebar" }> = ({
   variant = "banner",
 }) => {
+  const { t } = useTranslation();
   const [snapshot, setSnapshot] = useState<RuntimeDiagnosticsSnapshot | null>(
     null,
   );
@@ -104,6 +106,13 @@ export const MachineStatusBar: React.FC<{ variant?: "banner" | "sidebar" }> = ({
       >
         <div className="flex items-center gap-2">
           <span className="h-[6px] w-[6px] shrink-0 rounded-full bg-emerald-400" />
+          <span className="sr-only" aria-live="polite">
+            {status.mode === "optimal"
+              ? t("a11y.statusReady")
+              : status.mode === "thermal" || status.mode === "fallback"
+                ? t("a11y.statusError")
+                : t("a11y.statusReady")}
+          </span>
           <div className="min-w-0">
             <div className="truncate text-[11px] font-medium leading-[1.3] text-emerald-400">
               {modelLabel ?? status.headline}

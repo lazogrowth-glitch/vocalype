@@ -118,16 +118,9 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
 }) => {
   const { t } = useTranslation();
   const [clearing, setClearing] = useState(false);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
   const handleClear = async () => {
-    const confirmed = window.confirm(
-      t("settings.history.clearAllConfirm", {
-        defaultValue:
-          "Are you sure? This will permanently delete all recordings and transcriptions.",
-      }),
-    );
-    if (!confirmed) return;
-
     setClearing(true);
     try {
       await invoke("clear_all_history");
@@ -136,6 +129,7 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
           defaultValue: "All history cleared.",
         }),
       );
+      setConfirmDeleteAll(false);
       onCleared();
     } catch (e) {
       console.error(e);
@@ -149,10 +143,42 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
     }
   };
 
+  if (confirmDeleteAll) {
+    return (
+      <div
+        role="alertdialog"
+        aria-live="assertive"
+        className="flex items-center gap-2 flex-wrap"
+      >
+        <span className="text-sm text-text/80">
+          {t("settings.history.confirmDeleteAllMessage")}
+        </span>
+        <button
+          autoFocus
+          onClick={handleClear}
+          disabled={clearing}
+          className="text-sm text-red-400 hover:text-red-300 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded px-2 py-0.5 disabled:opacity-40"
+        >
+          {clearing ? (
+            <Loader2 size={11} className="animate-spin" />
+          ) : (
+            t("settings.history.confirmYes")
+          )}
+        </button>
+        <button
+          onClick={() => setConfirmDeleteAll(false)}
+          className="text-sm text-text/60 hover:text-text/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary rounded px-2 py-0.5"
+        >
+          {t("common.cancel")}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
-      onClick={handleClear}
+      onClick={() => setConfirmDeleteAll(true)}
       disabled={clearing}
       className="flex items-center gap-1 text-[12px] text-red-400/60 transition-colors hover:text-red-400 disabled:opacity-40"
       title={t("settings.history.clearAll", {

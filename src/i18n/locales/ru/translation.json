@@ -18,7 +18,9 @@
     "debug": "Отладка",
     "about": "О программе",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Биллинг",
+    "referral": "Рефералы"
   },
   "onboarding": {
     "subtitle": "Для начала выберите модель транскрипции",

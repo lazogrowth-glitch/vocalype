@@ -18,7 +18,9 @@
     "about": "حول",
     "models": "النماذج",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "الفواتير",
+    "referral": "الإحالة"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",

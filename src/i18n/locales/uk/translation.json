@@ -18,7 +18,9 @@
     "debug": "Дебаг",
     "about": "Інфо",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Платежі",
+    "referral": "Реферали"
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",

@@ -17,6 +17,8 @@
     "history": "History",
     "snippets": "Snippets",
     "stats": "Stats",
+    "billing": "Billing",
+    "referral": "Referral",
     "debug": "Debug",
     "about": "About"
   },

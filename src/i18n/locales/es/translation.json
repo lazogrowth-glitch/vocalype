@@ -18,7 +18,9 @@
     "debug": "Depuración",
     "about": "Acerca de",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Facturación",
+    "referral": "Referidos"
   },
   "onboarding": {
     "subtitle": "Para comenzar, elige un modelo de transcripción",

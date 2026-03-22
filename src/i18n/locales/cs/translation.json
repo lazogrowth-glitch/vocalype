@@ -18,7 +18,9 @@
     "debug": "Ladění",
     "about": "O aplikaci",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Fakturace",
+    "referral": "Doporučení"
   },
   "onboarding": {
     "subtitle": "Pro začátek vyberte model pro přepis",

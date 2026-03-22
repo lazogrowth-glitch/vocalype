@@ -18,7 +18,9 @@
     "debug": "偵錯",
     "about": "關於",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "帳單",
+    "referral": "推薦"
   },
   "onboarding": {
     "subtitle": "首先，請選擇一種模型",

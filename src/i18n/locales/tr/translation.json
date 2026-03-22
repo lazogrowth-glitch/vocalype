@@ -18,7 +18,9 @@
     "debug": "Hata Ayıklama",
     "about": "Hakkında",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Faturalama",
+    "referral": "Tavsiye"
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",

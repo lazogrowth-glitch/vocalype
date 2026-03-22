@@ -18,7 +18,9 @@
     "debug": "Debug",
     "about": "Informazioni",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Fatturazione",
+    "referral": "Referral"
   },
   "onboarding": {
     "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",

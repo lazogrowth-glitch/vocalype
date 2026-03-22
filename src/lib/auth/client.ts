@@ -28,6 +28,8 @@ import type {
   AuthSession,
   BillingLinkResponse,
   ChangePasswordPayload,
+  ReferralCode,
+  ReferralStats,
   ResetPasswordPayload,
 } from "./types";
 import { load } from "@tauri-apps/plugin-store";
@@ -643,5 +645,13 @@ export const authClient = {
       },
       token,
     );
+  },
+
+  async getReferralCode(token: string): Promise<ReferralCode> {
+    return request<ReferralCode>("/referral/code", { method: "GET" }, token);
+  },
+
+  async getReferralStats(token: string): Promise<ReferralStats> {
+    return request<ReferralStats>("/referral/stats", { method: "GET" }, token);
   },
 };

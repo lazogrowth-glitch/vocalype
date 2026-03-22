@@ -4,7 +4,9 @@ import {
   AlignLeft,
   BarChart2,
   Clock3,
+  CreditCard,
   FlaskConical,
+  Gift,
   History,
   Info,
   LayoutGrid,
@@ -63,6 +65,16 @@ const NotesSettings = React.lazy(() =>
 const MeetingsSettings = React.lazy(() =>
   import("./settings/meetings/MeetingsSettings").then((m) => ({
     default: m.MeetingsSettings,
+  })),
+);
+const BillingSettings = React.lazy(() =>
+  import("./settings/billing/BillingSettings").then((m) => ({
+    default: m.BillingSettings,
+  })),
+);
+const ReferralSettings = React.lazy(() =>
+  import("./settings/referral/ReferralSettings").then((m) => ({
+    default: m.ReferralSettings,
   })),
 );
 const StatsSettings = React.lazy(() =>
@@ -141,6 +153,18 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.stats",
     icon: BarChart2,
     component: StatsSettings,
+    enabled: () => true,
+  },
+  billing: {
+    labelKey: "sidebar.billing",
+    icon: CreditCard,
+    component: BillingSettings,
+    enabled: () => true,
+  },
+  referral: {
+    labelKey: "sidebar.referral",
+    icon: Gift,
+    component: ReferralSettings,
     enabled: () => true,
   },
   debug: {

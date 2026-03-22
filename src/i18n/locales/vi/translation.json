@@ -18,7 +18,9 @@
     "debug": "Gỡ lỗi",
     "about": "Giới thiệu",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Thanh toán",
+    "referral": "Giới thiệu"
   },
   "onboarding": {
     "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",

@@ -18,7 +18,9 @@
     "debug": "デバッグ",
     "about": "概要",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "請求",
+    "referral": "紹介"
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしモデルを選択してください",

@@ -18,7 +18,9 @@
     "debug": "调试",
     "about": "关于",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "账单",
+    "referral": "推荐"
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",

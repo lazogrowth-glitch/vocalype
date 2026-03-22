@@ -18,7 +18,9 @@
     "debug": "Depuração",
     "about": "Sobre",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Faturamento",
+    "referral": "Indicação"
   },
   "onboarding": {
     "subtitle": "Para começar, escolha um modelo de transcrição",

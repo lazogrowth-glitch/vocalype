@@ -18,7 +18,9 @@
     "debug": "Debug",
     "about": "Info",
     "snippets": "Snippets",
-    "stats": "Stats"
+    "stats": "Stats",
+    "billing": "Abrechnung",
+    "referral": "Empfehlung"
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",

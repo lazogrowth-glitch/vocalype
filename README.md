@@ -1,6 +1,6 @@
-# VocalType
+# Vocalype
 
-VocalType is a desktop speech-to-text application built with Tauri, Rust, React, and TypeScript.
+Vocalype is a desktop speech-to-text application built with Tauri, Rust, React, and TypeScript.
 
 ## Development
 
@@ -14,33 +14,33 @@ bun run tauri build
 
 ```bash
 mkdir -p src-tauri/resources/models
-curl -o src-tauri/resources/models/silero_vad_v4.onnx https://downloads.vocaltypeai.com/models/silero_vad_v4.onnx
+curl -o src-tauri/resources/models/silero_vad_v4.onnx https://downloads.vocalype.com/models/silero_vad_v4.onnx
 ```
 
 ## CLI
 
 ```bash
-vocaltype --toggle-transcription
-vocaltype --toggle-post-process
-vocaltype --cancel
-vocaltype --start-hidden
-vocaltype --no-tray
-vocaltype --debug
+vocalype --toggle-transcription
+vocalype --toggle-post-process
+vocalype --cancel
+vocalype --start-hidden
+vocalype --no-tray
+vocalype --debug
 ```
 
 On macOS, the bundled binary can be launched directly:
 
 ```bash
-/Applications/VocalType.app/Contents/MacOS/VocalType --toggle-transcription
+/Applications/Vocalype.app/Contents/MacOS/Vocalype --toggle-transcription
 ```
 
 ## Manual Model Installation
 
 Typical app data directories:
 
-- macOS: `~/Library/Application Support/com.vocaltype.desktop/`
-- Windows: `%APPDATA%\com.vocaltype.desktop\`
-- Linux: `~/.config/com.vocaltype.desktop/`
+- macOS: `~/Library/Application Support/com.vocalype.desktop/`
+- Windows: `%APPDATA%\com.vocalype.desktop\`
+- Linux: `~/.config/com.vocalype.desktop/`
 
 Create the models directory:
 
@@ -50,12 +50,12 @@ mkdir -p "{app_data_dir}/models"
 
 Model downloads:
 
-- Small: `https://downloads.vocaltypeai.com/models/ggml-small.bin`
-- Medium: `https://downloads.vocaltypeai.com/models/whisper-medium-q4_1.bin`
-- Turbo: `https://downloads.vocaltypeai.com/models/ggml-large-v3-turbo.bin`
-- Large: `https://downloads.vocaltypeai.com/models/ggml-large-v3-q5_0.bin`
-- Parakeet V2: `https://downloads.vocaltypeai.com/models/parakeet-v2-int8.tar.gz`
-- Parakeet V3: `https://downloads.vocaltypeai.com/models/parakeet-v3-int8.tar.gz`
+- Small: `https://downloads.vocalype.com/models/ggml-small.bin`
+- Medium: `https://downloads.vocalype.com/models/whisper-medium-q4_1.bin`
+- Turbo: `https://downloads.vocalype.com/models/ggml-large-v3-turbo.bin`
+- Large: `https://downloads.vocalype.com/models/ggml-large-v3-q5_0.bin`
+- Parakeet V2: `https://downloads.vocalype.com/models/parakeet-v2-int8.tar.gz`
+- Parakeet V3: `https://downloads.vocalype.com/models/parakeet-v3-int8.tar.gz`
 
 ## License
 

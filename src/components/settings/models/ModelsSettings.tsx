@@ -739,11 +739,11 @@ export const ModelsSettings: React.FC = () => {
             {adaptiveProfile?.copilot_plus_detected
               ? t("settings.models.hardware.copilotPlusDescription", {
                   defaultValue:
-                    "VocalType will keep this capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
+                    "Vocalype will keep this capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
                 })
               : t("settings.models.hardware.npuDescription", {
                   defaultValue:
-                    "This machine exposes a neural processor. VocalType now shows it in diagnostics and hardware profiling.",
+                    "This machine exposes a neural processor. Vocalype now shows it in diagnostics and hardware profiling.",
                 })}
           </p>
         </div>

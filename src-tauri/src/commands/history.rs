@@ -206,7 +206,7 @@ pub async fn export_history_entries(
             Ok(out)
         }
         "md" => {
-            let mut out = String::from("# VocalType — Historique des transcriptions\n\n");
+            let mut out = String::from("# Vocalype — Historique des transcriptions\n\n");
             for e in &entries {
                 let ts = chrono::DateTime::from_timestamp(e.timestamp, 0)
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())

@@ -209,10 +209,10 @@ mod tests {
     fn learns_and_recovers_terms_for_same_context() {
         let mut store = VocabularyStore::default();
         let context = code_context();
-        store.learn_terms(Some(&context), vec!["VocalType".to_string()]);
+        store.learn_terms(Some(&context), vec!["Vocalype".to_string()]);
 
         let terms = store.terms_for_context(Some(&context), 8);
-        assert!(terms.iter().any(|term| term == "VocalType"));
+        assert!(terms.iter().any(|term| term == "Vocalype"));
     }
 
     #[test]
@@ -222,11 +222,11 @@ mod tests {
             &[
                 "hello".to_string(),
                 "transcribe-rs".to_string(),
-                "VocalType".to_string(),
+                "Vocalype".to_string(),
             ],
         );
 
-        assert_eq!(words.first().map(String::as_str), Some("VocalType"));
+        assert_eq!(words.first().map(String::as_str), Some("Vocalype"));
         assert!(words.iter().any(|word| word == "transcribe-rs"));
     }
 }

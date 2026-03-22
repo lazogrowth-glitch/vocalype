@@ -114,7 +114,7 @@ export const DictionarySettings: React.FC = () => {
   const handleExport = async () => {
     try {
       const filePath = await save({
-        defaultPath: "vocaltype-dictionary.json",
+        defaultPath: "vocalype-dictionary.json",
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (!filePath) return;

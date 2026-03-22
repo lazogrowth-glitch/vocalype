@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This repository contains VocalType, a Tauri desktop speech-to-text application.
+This repository contains Vocalype, a Tauri desktop speech-to-text application.
 
 ## Development
 
@@ -16,7 +16,7 @@ bun run format
 
 ```bash
 mkdir -p src-tauri/resources/models
-curl -o src-tauri/resources/models/silero_vad_v4.onnx https://downloads.vocaltypeai.com/models/silero_vad_v4.onnx
+curl -o src-tauri/resources/models/silero_vad_v4.onnx https://downloads.vocalype.com/models/silero_vad_v4.onnx
 ```
 
 ## Architecture

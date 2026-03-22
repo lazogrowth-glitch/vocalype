@@ -97,7 +97,7 @@
     },
     "permissions": {
       "title": "الأذونات المطلوبة",
-      "description": ".يحتاج VocalType إلى بعض الأذونات ليعمل بشكل صحيح",
+      "description": ".يحتاج Vocalype إلى بعض الأذونات ليعمل بشكل صحيح",
       "microphone": {
         "title": "الوصول إلى الميكروفون",
         "description": ".مطلوب لسماع صوتك من أجل التفريغ الصوتي"
@@ -118,19 +118,19 @@
     },
     "hardware": {
       "copilotPlusTitle": "Copilot+ PC detected",
-      "copilotPlusDescription": "This device exposes an NPU class associated with Copilot+ PCs. VocalType now tracks that capability in its adaptive profile.",
+      "copilotPlusDescription": "This device exposes an NPU class associated with Copilot+ PCs. Vocalype now tracks that capability in its adaptive profile.",
       "npuTitle": "NPU detected",
-      "npuDescription": "This device exposes a neural processor. VocalType now includes it in machine detection and diagnostics."
+      "npuDescription": "This device exposes a neural processor. Vocalype now includes it in machine detection and diagnostics."
     },
     "title": "Model Setup",
     "consent": {
       "title": "Your Privacy",
-      "subtitle": "Before you start, here is how VocalType handles your data.",
+      "subtitle": "Before you start, here is how Vocalype handles your data.",
       "localStorageInfo": "Your audio recordings and transcriptions are stored locally on this device. They are never uploaded to any server.",
       "serverSentInfo": "A hashed device identifier and your app version are sent to our servers for license validation only. No audio or transcription data is ever transmitted.",
       "exportInfo": "You can export or delete all your data at any time from the History settings.",
       "privacyPolicyLink": "Read the full Privacy Policy",
-      "checkboxLabel": "I understand and accept how VocalType handles my data.",
+      "checkboxLabel": "I understand and accept how Vocalype handles my data.",
       "continueButton": "Continue"
     },
     "progress": {
@@ -182,7 +182,7 @@
     "general": {
       "title": "عام",
       "shortcut": {
-        "title": "اختصارات VocalType",
+        "title": "اختصارات Vocalype",
         "description": "إعداد اختصارات لوحة المفاتيح لبدء تسجيل التفريغ الصوتي",
         "loading": "...جاري تحميل الاختصارات",
         "none": "لا توجد اختصارات مجهزة",
@@ -299,11 +299,11 @@
       },
       "autostart": {
         "label": "التشغيل عند بدء التشغيل",
-        "description": ".بدء تشغيل VocalType تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"
+        "description": ".بدء تشغيل Vocalype تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"
       },
       "showTrayIcon": {
         "label": "إظهار أيقونة شريط النظام",
-        "description": ".عرض أيقونة VocalType في شريط النظام"
+        "description": ".عرض أيقونة Vocalype في شريط النظام"
       },
       "overlay": {
         "title": "موقع التراكب",
@@ -522,7 +522,7 @@
       },
       "updateChecks": {
         "label": "التحقق من وجود تحديثات",
-        "description": "التحقق تلقائياً من وجود إصدارات جديدة من VocalType"
+        "description": "التحقق تلقائياً من وجود إصدارات جديدة من Vocalype"
       },
       "soundTheme": {
         "label": "سمة الصوت",
@@ -592,11 +592,11 @@
       "title": "حول",
       "version": {
         "title": "الإصدار",
-        "description": "الإصدار الحالي من VocalType"
+        "description": "الإصدار الحالي من Vocalype"
       },
       "appDataDirectory": {
         "title": "مجلد بيانات التطبيق",
-        "description": "الموقع الذي يخزن فيه VocalType بياناته"
+        "description": "الموقع الذي يخزن فيه Vocalype بياناته"
       },
       "sourceCode": {
         "title": "كود المصدر",
@@ -605,7 +605,7 @@
       },
       "supportDevelopment": {
         "title": "دعم التطوير",
-        "description": "ساعدنا في مواصلة بناء VocalType",
+        "description": "ساعدنا في مواصلة بناء Vocalype",
         "button": "تبرع"
       },
       "acknowledgments": {
@@ -613,7 +613,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "استنتاج عالي الأداء لنموذج التعرف التلقائي على الكلام Whisper من OpenAI",
-          "details": ".يستخدم VocalType برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
+          "details": ".يستخدم Vocalype برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
         }
       },
       "exportImport": {
@@ -669,9 +669,9 @@
       },
       "hardware": {
         "copilotPlusTitle": "Copilot+ PC detected",
-        "copilotPlusDescription": "VocalType now keeps that capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
+        "copilotPlusDescription": "Vocalype now keeps that capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
         "npuTitle": "NPU detected",
-        "npuDescription": "This machine exposes a neural processor. VocalType now shows it in diagnostics and hardware profiling."
+        "npuDescription": "This machine exposes a neural processor. Vocalype now shows it in diagnostics and hardware profiling."
       },
       "modes": {
         "auto": "Auto",
@@ -749,7 +749,7 @@
   },
   "accessibility": {
     "permissionsRequired": "أذونات إمكانية الوصول مطلوبة",
-    "permissionsDescription": ".يحتاج VocalType إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
+    "permissionsDescription": ".يحتاج Vocalype إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
     "openSettings": "فتح إعدادات النظام",
     "dismiss": "تجاهل"
   },
@@ -766,7 +766,7 @@
   },
   "appLanguage": {
     "title": "لغة التطبيق",
-    "description": "تغيير لغة واجهة VocalType"
+    "description": "تغيير لغة واجهة Vocalype"
   },
   "overlay": {
     "transcribing": "...جاري التفريغ",
@@ -786,7 +786,7 @@
   "auth": {
     "trialBadge": "14-day free trial, no card required",
     "paidAccess": "Paid access",
-    "headline": "Create your account and unlock VocalType instantly.",
+    "headline": "Create your account and unlock Vocalype instantly.",
     "subheadline": "Every account starts with a 14-day free trial without requiring a card. After the trial ends, users can subscribe for $4.99 per month to keep unlimited dictation across ChatGPT, Claude, Gemini and Windows apps.",
     "features": {
       "trial": {
@@ -878,13 +878,13 @@
     }
   },
   "bootstrap": {
-    "desktopRuntimeUnavailable": "VocalType failed to connect to the desktop runtime. Please restart the app.",
-    "criticalFallback": "VocalType encountered a critical error. Please restart the app."
+    "desktopRuntimeUnavailable": "Vocalype failed to connect to the desktop runtime. Please restart the app.",
+    "criticalFallback": "Vocalype encountered a critical error. Please restart the app."
   },
   "trial": {
     "welcome": {
       "badge": "Premium · 14 days",
-      "title": "14 days of VocalType Premium. Free, no card.",
+      "title": "14 days of Vocalype Premium. Free, no card.",
       "subtitle": "Your full access starts now. No card required during the trial.",
       "cta": "Let's go →"
     },
@@ -924,7 +924,7 @@
   },
   "snippets": {
     "title": "Voice Snippets",
-    "description": "Say the trigger phrase and VocalType will paste the expansion instead.",
+    "description": "Say the trigger phrase and Vocalype will paste the expansion instead.",
     "empty": "No snippets yet. Add one below.",
     "triggerPlaceholder": "Trigger phrase…",
     "expansionPlaceholder": "Text to paste…",

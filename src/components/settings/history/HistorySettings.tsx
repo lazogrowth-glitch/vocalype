@@ -54,7 +54,7 @@ const ExportHistoryButton: React.FC = () => {
   const handleExport = async () => {
     try {
       const filePath = await save({
-        defaultPath: `vocaltype-history-${new Date().toISOString().slice(0, 10)}.txt`,
+        defaultPath: `vocalype-history-${new Date().toISOString().slice(0, 10)}.txt`,
         filters: [
           { name: "Texte", extensions: ["txt"] },
           { name: "CSV", extensions: ["csv"] },

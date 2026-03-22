@@ -141,7 +141,7 @@ mod tests {
     fn builds_code_prompt_with_terms() {
         let mut settings = get_default_settings();
         settings.adaptive_vocabulary_enabled = true;
-        settings.custom_words = vec!["VocalType".to_string(), "transcribe-rs".to_string()];
+        settings.custom_words = vec!["Vocalype".to_string(), "transcribe-rs".to_string()];
 
         let prompt = build_whisper_initial_prompt(
             &settings,
@@ -151,7 +151,7 @@ mod tests {
         )
         .expect("prompt should exist");
 
-        assert!(prompt.contains("VocalType"));
+        assert!(prompt.contains("Vocalype"));
         assert!(prompt.contains("camelCase"));
         assert!(prompt.len() <= MAX_PROMPT_CHARS);
     }

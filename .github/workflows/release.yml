@@ -1,4 +1,4 @@
-name: "Release VocalType"
+name: "Release Vocalype"
 
 on: workflow_dispatch
 
@@ -68,7 +68,7 @@ jobs:
       target: ${{ matrix.target }}
       build-args: ${{ matrix.args }}
       sign-binaries: true
-      asset-prefix: "vocaltype"
+      asset-prefix: "vocalype"
       upload-artifacts: false
       release-id: ${{ needs.create-release.outputs.release-id }}
     secrets: inherit

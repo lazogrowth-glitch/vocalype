@@ -3,7 +3,7 @@ const WORDMARK = {
   second: "Type",
 };
 
-const VocalTypeLogo = ({
+const VocalypeLogo = ({
   width,
   className,
 }: {
@@ -32,4 +32,4 @@ const VocalTypeLogo = ({
   );
 };
 
-export default VocalTypeLogo;
+export default VocalypeLogo;

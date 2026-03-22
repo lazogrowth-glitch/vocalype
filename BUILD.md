@@ -1,6 +1,6 @@
 # Build Instructions
 
-This guide covers how to set up the development environment and build VocalType from source across different platforms.
+This guide covers how to set up the development environment and build Vocalype from source across different platforms.
 
 ## Prerequisites
 
@@ -52,8 +52,8 @@ This guide covers how to set up the development environment and build VocalType 
 ### 1. Clone the Repository
 
 ```bash
-git clone git@github.com:lazogrowth-glitch/vocaltype.git
-cd vocaltype
+git clone git@github.com:lazogrowth-glitch/vocalype.git
+cd vocalype
 ```
 
 ### 2. Install Dependencies

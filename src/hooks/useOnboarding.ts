@@ -11,7 +11,7 @@ import { load } from "@tauri-apps/plugin-store";
 type OnboardingStep = "consent" | "accessibility" | "model" | "done";
 
 const CONSENT_STORE_FILE = "auth.store.json";
-const CONSENT_ACCEPTED_KEY = "vocaltype.privacy.consent_accepted";
+const CONSENT_ACCEPTED_KEY = "vocalype.privacy.consent_accepted";
 
 async function hasAcceptedConsent(): Promise<boolean> {
   try {

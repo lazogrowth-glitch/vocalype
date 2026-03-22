@@ -143,7 +143,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
                 "settings.advanced.pasteMethod.premiumDirectDescription",
                 {
                   defaultValue:
-                    "On Basic, VocalType will still keep the result recoverable, but dictation falls back to clipboard handling instead of native direct injection.",
+                    "On Basic, Vocalype will still keep the result recoverable, but dictation falls back to clipboard handling instead of native direct injection.",
                 },
               )}
               actionLabel={t("basic.upgrade", {

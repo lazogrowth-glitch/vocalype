@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import VocalTypeLogo from "../icons/VocalTypeLogo";
+import VocalypeLogo from "../icons/VocalypeLogo";
 
 interface ConsentStepProps {
   onAccept: () => void;
@@ -13,7 +13,7 @@ const ConsentStep: React.FC<ConsentStepProps> = ({ onAccept }) => {
 
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center p-8 gap-6">
-      <VocalTypeLogo width={140} />
+      <VocalypeLogo width={140} />
 
       <div className="max-w-md w-full flex flex-col gap-5">
         <div className="text-center">
@@ -42,7 +42,7 @@ const ConsentStep: React.FC<ConsentStepProps> = ({ onAccept }) => {
 
         <button
           type="button"
-          onClick={() => openUrl("https://vocaltypeai.com/privacy")}
+          onClick={() => openUrl("https://vocalype.com/privacy")}
           className="text-xs text-logo-primary/70 hover:text-logo-primary underline text-center transition-colors"
         >
           {t("onboarding.consent.privacyPolicyLink")}

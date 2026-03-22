@@ -147,9 +147,9 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
 
     // Create common menu items
     let version_label = if cfg!(debug_assertions) {
-        format!("VocalType v{} (Dev)", env!("CARGO_PKG_VERSION"))
+        format!("Vocalype v{} (Dev)", env!("CARGO_PKG_VERSION"))
     } else {
-        format!("VocalType v{}", env!("CARGO_PKG_VERSION"))
+        format!("Vocalype v{}", env!("CARGO_PKG_VERSION"))
     };
     let version_i = match MenuItem::with_id(app, "version", &version_label, false, None::<&str>) {
         Ok(item) => item,
@@ -367,7 +367,7 @@ mod tests {
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
         HistoryEntry {
             id: 1,
-            file_name: "vocaltype-1.wav".to_string(),
+            file_name: "vocalype-1.wav".to_string(),
             timestamp: 0,
             saved: false,
             title: "Recording".to_string(),

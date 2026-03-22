@@ -97,7 +97,7 @@
     },
     "permissions": {
       "title": "需要權限",
-      "description": "VocalType 需要一些權限才能正常運作",
+      "description": "Vocalype 需要一些權限才能正常運作",
       "microphone": {
         "title": "麥克風存取",
         "description": "需要聽取您的語音進行轉錄"
@@ -118,19 +118,19 @@
     },
     "hardware": {
       "copilotPlusTitle": "Copilot+ PC detected",
-      "copilotPlusDescription": "This device exposes an NPU class associated with Copilot+ PCs. VocalType now tracks that capability in its adaptive profile.",
+      "copilotPlusDescription": "This device exposes an NPU class associated with Copilot+ PCs. Vocalype now tracks that capability in its adaptive profile.",
       "npuTitle": "NPU detected",
-      "npuDescription": "This device exposes a neural processor. VocalType now includes it in machine detection and diagnostics."
+      "npuDescription": "This device exposes a neural processor. Vocalype now includes it in machine detection and diagnostics."
     },
     "title": "Model Setup",
     "consent": {
       "title": "Your Privacy",
-      "subtitle": "Before you start, here is how VocalType handles your data.",
+      "subtitle": "Before you start, here is how Vocalype handles your data.",
       "localStorageInfo": "Your audio recordings and transcriptions are stored locally on this device. They are never uploaded to any server.",
       "serverSentInfo": "A hashed device identifier and your app version are sent to our servers for license validation only. No audio or transcription data is ever transmitted.",
       "exportInfo": "You can export or delete all your data at any time from the History settings.",
       "privacyPolicyLink": "Read the full Privacy Policy",
-      "checkboxLabel": "I understand and accept how VocalType handles my data.",
+      "checkboxLabel": "I understand and accept how Vocalype handles my data.",
       "continueButton": "Continue"
     },
     "progress": {
@@ -186,7 +186,7 @@
     "general": {
       "title": "一般",
       "shortcut": {
-        "title": "VocalType 快捷鍵",
+        "title": "Vocalype 快捷鍵",
         "description": "設定啟動語音轉文字錄製的鍵盤快捷鍵",
         "loading": "載入快捷鍵中...",
         "none": "未設定快捷鍵",
@@ -298,9 +298,9 @@
       },
       "hardware": {
         "copilotPlusTitle": "Copilot+ PC detected",
-        "copilotPlusDescription": "VocalType now keeps that capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
+        "copilotPlusDescription": "Vocalype now keeps that capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
         "npuTitle": "NPU detected",
-        "npuDescription": "This machine exposes a neural processor. VocalType now shows it in diagnostics and hardware profiling."
+        "npuDescription": "This machine exposes a neural processor. Vocalype now shows it in diagnostics and hardware profiling."
       },
       "modes": {
         "auto": "Auto",
@@ -356,11 +356,11 @@
       },
       "autostart": {
         "label": "開機啟動",
-        "description": "登入電腦時自動啟動 VocalType"
+        "description": "登入電腦時自動啟動 Vocalype"
       },
       "showTrayIcon": {
         "label": "顯示系統匣圖示",
-        "description": "在系統匣中顯示 VocalType 圖示"
+        "description": "在系統匣中顯示 Vocalype 圖示"
       },
       "overlay": {
         "title": "懸浮窗位置",
@@ -579,7 +579,7 @@
       },
       "updateChecks": {
         "label": "檢查更新",
-        "description": "自動檢查 VocalType 的新版本"
+        "description": "自動檢查 Vocalype 的新版本"
       },
       "soundTheme": {
         "label": "聲音主題",
@@ -649,11 +649,11 @@
       "title": "關於",
       "version": {
         "title": "版本",
-        "description": "VocalType 的目前版本"
+        "description": "Vocalype 的目前版本"
       },
       "appDataDirectory": {
         "title": "應用程式資料目錄",
-        "description": "VocalType 儲存資料的位置"
+        "description": "Vocalype 儲存資料的位置"
       },
       "sourceCode": {
         "title": "原始碼",
@@ -662,7 +662,7 @@
       },
       "supportDevelopment": {
         "title": "支持開發",
-        "description": "幫助我們繼續開發 VocalType",
+        "description": "幫助我們繼續開發 Vocalype",
         "button": "捐贈"
       },
       "acknowledgments": {
@@ -670,7 +670,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "針對 OpenAI Whisper 自動語音識別模型的高效能推理引擎",
-          "details": "VocalType 使用 Whisper.cpp 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
+          "details": "Vocalype 使用 Whisper.cpp 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
       },
       "exportImport": {
@@ -749,7 +749,7 @@
   },
   "accessibility": {
     "permissionsRequired": "需要輔助使用權限",
-    "permissionsDescription": "VocalType 需要輔助使用權限才能輸入轉錄的文字",
+    "permissionsDescription": "Vocalype 需要輔助使用權限才能輸入轉錄的文字",
     "openSettings": "開啟系統設定",
     "dismiss": "關閉"
   },
@@ -766,7 +766,7 @@
   },
   "appLanguage": {
     "title": "應用程式語言",
-    "description": "變更 VocalType 介面的語言"
+    "description": "變更 Vocalype 介面的語言"
   },
   "overlay": {
     "transcribing": "正在轉錄...",
@@ -786,7 +786,7 @@
   "auth": {
     "trialBadge": "14-day free trial, no card required",
     "paidAccess": "Paid access",
-    "headline": "Create your account and unlock VocalType instantly.",
+    "headline": "Create your account and unlock Vocalype instantly.",
     "subheadline": "Every account starts with a 14-day free trial without requiring a card. After the trial ends, users can subscribe for $4.99 per month to keep unlimited dictation across ChatGPT, Claude, Gemini and Windows apps.",
     "features": {
       "trial": {
@@ -878,13 +878,13 @@
     }
   },
   "bootstrap": {
-    "desktopRuntimeUnavailable": "VocalType failed to connect to the desktop runtime. Please restart the app.",
-    "criticalFallback": "VocalType encountered a critical error. Please restart the app."
+    "desktopRuntimeUnavailable": "Vocalype failed to connect to the desktop runtime. Please restart the app.",
+    "criticalFallback": "Vocalype encountered a critical error. Please restart the app."
   },
   "trial": {
     "welcome": {
       "badge": "Premium · 14 days",
-      "title": "14 days of VocalType Premium. Free, no card.",
+      "title": "14 days of Vocalype Premium. Free, no card.",
       "subtitle": "Your full access starts now. No card required during the trial.",
       "cta": "Let's go →"
     },
@@ -924,7 +924,7 @@
   },
   "snippets": {
     "title": "Voice Snippets",
-    "description": "Say the trigger phrase and VocalType will paste the expansion instead.",
+    "description": "Say the trigger phrase and Vocalype will paste the expansion instead.",
     "empty": "No snippets yet. Add one below.",
     "triggerPlaceholder": "Trigger phrase…",
     "expansionPlaceholder": "Text to paste…",

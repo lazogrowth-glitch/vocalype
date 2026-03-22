@@ -1,7 +1,7 @@
 use keyring::Entry;
 use tauri::AppHandle;
 
-const SERVICE_NAME: &str = "com.vocaltype.desktop";
+const SERVICE_NAME: &str = "com.vocalype.desktop";
 
 const AUTH_TOKEN_ACCOUNT: &str = "auth.token";
 const AUTH_SESSION_ACCOUNT: &str = "auth.session";

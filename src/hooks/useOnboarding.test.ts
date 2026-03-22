@@ -4,7 +4,7 @@ import { useOnboarding } from "./useOnboarding";
 
 // Mock Tauri/OS modules
 vi.mock("@tauri-apps/api/app", () => ({
-  getIdentifier: vi.fn().mockResolvedValue("com.vocaltype.app"),
+  getIdentifier: vi.fn().mockResolvedValue("com.vocalype.app"),
 }));
 
 vi.mock("@tauri-apps/plugin-os", () => ({

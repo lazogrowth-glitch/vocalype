@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { commands } from "@/bindings";
 import { useSettingsStore } from "@/stores/settingsStore";
-import VocalTypeLogo from "../icons/VocalTypeLogo";
+import VocalypeLogo from "../icons/VocalypeLogo";
 import { Keyboard, Mic, Check, Loader2 } from "lucide-react";
 
 interface AccessibilityOnboardingProps {
@@ -242,7 +242,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
         </button>
       )}
       <div className="flex flex-col items-center gap-2">
-        <VocalTypeLogo width={200} />
+        <VocalypeLogo width={200} />
       </div>
 
       <div className="max-w-md w-full flex flex-col items-center gap-4">

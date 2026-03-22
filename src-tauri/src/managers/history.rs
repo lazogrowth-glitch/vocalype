@@ -12,7 +12,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::audio_toolkit::save_wav_file;
 use crate::transcription_confidence::TranscriptionConfidencePayload;
 
-const RECORDING_FILE_PREFIX: &str = "vocaltype";
+const RECORDING_FILE_PREFIX: &str = "vocalype";
 
 /// Database migrations for transcription history.
 /// Each migration is applied in order. The library tracks which migrations
@@ -863,7 +863,7 @@ mod tests {
 
     #[test]
     fn sanitize_recording_file_name_accepts_plain_file_name() {
-        let safe = HistoryManager::sanitize_recording_file_name("vocaltype-123.wav").unwrap();
-        assert_eq!(safe, "vocaltype-123.wav");
+        let safe = HistoryManager::sanitize_recording_file_name("vocalype-123.wav").unwrap();
+        assert_eq!(safe, "vocalype-123.wav");
     }
 }

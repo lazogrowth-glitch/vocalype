@@ -4,10 +4,10 @@
  * ## Owns
  * - Auth token (stored in OS keyring via Rust `get/set/clear_secure_auth_token`)
  * - `AuthSession` (user info, subscription tier, expiry) — serialized to OS keyring
- * - Device UUID (`vocaltype.device.id`) — generated once, persisted to `auth.store.json`
- * - Device registration flag (`vocaltype.device.registered`) — UX-only hint
- * - Registered emails set (`vocaltype.device.registered_emails`) — UX-only hint
- * - Trial welcome flag (`vocaltype.onboarding.trial_shown`)
+ * - Device UUID (`vocalype.device.id`) — generated once, persisted to `auth.store.json`
+ * - Device registration flag (`vocalype.device.registered`) — UX-only hint
+ * - Registered emails set (`vocalype.device.registered_emails`) — UX-only hint
+ * - Trial welcome flag (`vocalype.onboarding.trial_shown`)
  *
  * ## Does NOT own
  * - App configuration / shortcuts → see `settingsStore.ts`
@@ -33,13 +33,13 @@ import type {
 import { load } from "@tauri-apps/plugin-store";
 import { invoke } from "@tauri-apps/api/core";
 
-const AUTH_TOKEN_KEY = "vocaltype.auth.token";
-const AUTH_SESSION_KEY = "vocaltype.auth.session";
-const DEVICE_ID_KEY = "vocaltype.device.id";
-const DEVICE_REGISTERED_KEY = "vocaltype.device.registered";
+const AUTH_TOKEN_KEY = "vocalype.auth.token";
+const AUTH_SESSION_KEY = "vocalype.auth.session";
+const DEVICE_ID_KEY = "vocalype.device.id";
+const DEVICE_REGISTERED_KEY = "vocalype.device.registered";
 // Stores the set of emails that have already been registered on this device.
-const REGISTERED_EMAILS_KEY = "vocaltype.device.registered_emails";
-const TRIAL_WELCOME_SHOWN_KEY = "vocaltype.onboarding.trial_shown";
+const REGISTERED_EMAILS_KEY = "vocalype.device.registered_emails";
+const TRIAL_WELCOME_SHOWN_KEY = "vocalype.onboarding.trial_shown";
 const AUTH_STORE_FILE = "auth.store.json";
 
 type PersistedAuthSession = Omit<AuthSession, "token"> & {
@@ -154,7 +154,7 @@ const readPersistedSessionToken = (
 // hardware identifier, reducing re-identification risk across services.
 export async function hashDeviceId(rawId: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(rawId + "vocaltype-salt");
+  const data = encoder.encode(rawId + "vocalype-salt");
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");

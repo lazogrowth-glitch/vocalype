@@ -147,7 +147,7 @@
 
 ### Added
 
-- **Initial release** of VocalType
+- **Initial release** of Vocalype
 - Basic speech-to-text transcription functionality
 - Voice Activity Detection (VAD) for automatic recording
 - Cross-platform support (macOS, Windows, Linux)

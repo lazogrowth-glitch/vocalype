@@ -1,7 +1,7 @@
 use keyring::Entry;
 use log::warn;
 
-const SERVICE_NAME: &str = "com.vocaltype.desktop";
+const SERVICE_NAME: &str = "com.vocalype.desktop";
 const GEMINI_API_KEY_ACCOUNT: &str = "gemini_api_key";
 const AUTH_TOKEN_ACCOUNT: &str = "auth_token";
 const POST_PROCESS_API_KEY_PREFIX: &str = "post_process_api_key:";

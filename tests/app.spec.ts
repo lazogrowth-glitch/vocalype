@@ -8,7 +8,7 @@ test.describe("Landing page", () => {
 
   test("has correct title", async ({ page }) => {
     await page.goto("/");
-    expect(await page.title()).toContain("VocalType");
+    expect(await page.title()).toContain("Vocalype");
   });
 
   test("has html and body elements", async ({ page }) => {
@@ -24,9 +24,9 @@ test.describe("Desktop bootstrap — no Tauri runtime", () => {
     expect(response?.status()).toBe(200);
   });
 
-  test("desktop page title is VocalType", async ({ page }) => {
+  test("desktop page title is Vocalype", async ({ page }) => {
     await page.goto("/desktop/");
-    await expect(page).toHaveTitle("VocalType");
+    await expect(page).toHaveTitle("Vocalype");
   });
 
   test("startup splash is shown immediately on load", async ({ page }) => {

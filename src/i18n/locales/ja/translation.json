@@ -97,7 +97,7 @@
     },
     "permissions": {
       "title": "権限が必要です",
-      "description": "VocalTypeが正常に動作するにはいくつかの権限が必要です。",
+      "description": "Vocalypeが正常に動作するにはいくつかの権限が必要です。",
       "microphone": {
         "title": "マイクへのアクセス",
         "description": "文字起こしのためにあなたの声を聞くために必要です。"
@@ -118,19 +118,19 @@
     },
     "hardware": {
       "copilotPlusTitle": "Copilot+ PC detected",
-      "copilotPlusDescription": "This device exposes an NPU class associated with Copilot+ PCs. VocalType now tracks that capability in its adaptive profile.",
+      "copilotPlusDescription": "This device exposes an NPU class associated with Copilot+ PCs. Vocalype now tracks that capability in its adaptive profile.",
       "npuTitle": "NPU detected",
-      "npuDescription": "This device exposes a neural processor. VocalType now includes it in machine detection and diagnostics."
+      "npuDescription": "This device exposes a neural processor. Vocalype now includes it in machine detection and diagnostics."
     },
     "title": "Model Setup",
     "consent": {
       "title": "Your Privacy",
-      "subtitle": "Before you start, here is how VocalType handles your data.",
+      "subtitle": "Before you start, here is how Vocalype handles your data.",
       "localStorageInfo": "Your audio recordings and transcriptions are stored locally on this device. They are never uploaded to any server.",
       "serverSentInfo": "A hashed device identifier and your app version are sent to our servers for license validation only. No audio or transcription data is ever transmitted.",
       "exportInfo": "You can export or delete all your data at any time from the History settings.",
       "privacyPolicyLink": "Read the full Privacy Policy",
-      "checkboxLabel": "I understand and accept how VocalType handles my data.",
+      "checkboxLabel": "I understand and accept how Vocalype handles my data.",
       "continueButton": "Continue"
     },
     "progress": {
@@ -221,9 +221,9 @@
       },
       "hardware": {
         "copilotPlusTitle": "Copilot+ PC detected",
-        "copilotPlusDescription": "VocalType now keeps that capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
+        "copilotPlusDescription": "Vocalype now keeps that capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
         "npuTitle": "NPU detected",
-        "npuDescription": "This machine exposes a neural processor. VocalType now shows it in diagnostics and hardware profiling."
+        "npuDescription": "This machine exposes a neural processor. Vocalype now shows it in diagnostics and hardware profiling."
       },
       "modes": {
         "auto": "Auto",
@@ -239,7 +239,7 @@
     "general": {
       "title": "一般",
       "shortcut": {
-        "title": "VocalTypeショートカット",
+        "title": "Vocalypeショートカット",
         "description": "音声録音を開始するキーボードショートカットを設定",
         "loading": "ショートカットを読み込み中...",
         "none": "ショートカットが設定されていません",
@@ -356,11 +356,11 @@
       },
       "autostart": {
         "label": "起動時に実行",
-        "description": "コンピューターにログインしたときにVocalTypeを自動的に起動。"
+        "description": "コンピューターにログインしたときにVocalypeを自動的に起動。"
       },
       "showTrayIcon": {
         "label": "トレイアイコンを表示",
-        "description": "システムトレイにVocalTypeのアイコンを表示します。"
+        "description": "システムトレイにVocalypeのアイコンを表示します。"
       },
       "overlay": {
         "title": "オーバーレイ位置",
@@ -579,7 +579,7 @@
       },
       "updateChecks": {
         "label": "アップデートを確認",
-        "description": "VocalTypeの新しいバージョンを自動的にチェック"
+        "description": "Vocalypeの新しいバージョンを自動的にチェック"
       },
       "soundTheme": {
         "label": "サウンドテーマ",
@@ -649,11 +649,11 @@
       "title": "概要",
       "version": {
         "title": "バージョン",
-        "description": "VocalTypeの現在のバージョン"
+        "description": "Vocalypeの現在のバージョン"
       },
       "appDataDirectory": {
         "title": "アプリデータディレクトリ",
-        "description": "VocalTypeがデータを保存する場所"
+        "description": "Vocalypeがデータを保存する場所"
       },
       "sourceCode": {
         "title": "ソースコード",
@@ -662,7 +662,7 @@
       },
       "supportDevelopment": {
         "title": "開発を支援",
-        "description": "VocalTypeの開発を支援してください",
+        "description": "Vocalypeの開発を支援してください",
         "button": "寄付する"
       },
       "acknowledgments": {
@@ -670,7 +670,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "OpenAIのWhisper自動音声認識モデルの高性能推論",
-          "details": "VocalTypeは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
+          "details": "Vocalypeは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
       },
       "exportImport": {
@@ -749,7 +749,7 @@
   },
   "accessibility": {
     "permissionsRequired": "アクセシビリティ権限が必要です",
-    "permissionsDescription": "VocalTypeが文字起こしテキストを入力するには、アクセシビリティ権限が必要です。",
+    "permissionsDescription": "Vocalypeが文字起こしテキストを入力するには、アクセシビリティ権限が必要です。",
     "openSettings": "システム設定を開く",
     "dismiss": "閉じる"
   },
@@ -766,7 +766,7 @@
   },
   "appLanguage": {
     "title": "アプリケーション言語",
-    "description": "VocalTypeインターフェースの言語を変更"
+    "description": "Vocalypeインターフェースの言語を変更"
   },
   "overlay": {
     "transcribing": "文字起こし中...",
@@ -786,7 +786,7 @@
   "auth": {
     "trialBadge": "14-day free trial, no card required",
     "paidAccess": "Paid access",
-    "headline": "Create your account and unlock VocalType instantly.",
+    "headline": "Create your account and unlock Vocalype instantly.",
     "subheadline": "Every account starts with a 14-day free trial without requiring a card. After the trial ends, users can subscribe for $4.99 per month to keep unlimited dictation across ChatGPT, Claude, Gemini and Windows apps.",
     "features": {
       "trial": {
@@ -878,13 +878,13 @@
     }
   },
   "bootstrap": {
-    "desktopRuntimeUnavailable": "VocalType failed to connect to the desktop runtime. Please restart the app.",
-    "criticalFallback": "VocalType encountered a critical error. Please restart the app."
+    "desktopRuntimeUnavailable": "Vocalype failed to connect to the desktop runtime. Please restart the app.",
+    "criticalFallback": "Vocalype encountered a critical error. Please restart the app."
   },
   "trial": {
     "welcome": {
       "badge": "Premium · 14 days",
-      "title": "14 days of VocalType Premium. Free, no card.",
+      "title": "14 days of Vocalype Premium. Free, no card.",
       "subtitle": "Your full access starts now. No card required during the trial.",
       "cta": "Let's go →"
     },
@@ -924,7 +924,7 @@
   },
   "snippets": {
     "title": "Voice Snippets",
-    "description": "Say the trigger phrase and VocalType will paste the expansion instead.",
+    "description": "Say the trigger phrase and Vocalype will paste the expansion instead.",
     "empty": "No snippets yet. Add one below.",
     "triggerPlaceholder": "Trigger phrase…",
     "expansionPlaceholder": "Text to paste…",

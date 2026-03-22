@@ -32,10 +32,10 @@ interface AuthPortalProps {
   onLogout: () => void;
 }
 
-const AUTH_SIGNUP_URL = "https://vocaltypeai.com/signup?source=desktop";
-const AUTH_LOGIN_URL = "https://vocaltypeai.com/login?source=desktop";
-const PRIVACY_URL = "https://vocaltypeai.com/privacy";
-const TERMS_URL = "https://vocaltypeai.com/terms";
+const AUTH_SIGNUP_URL = "https://vocalype.com/signup?source=desktop";
+const AUTH_LOGIN_URL = "https://vocalype.com/login?source=desktop";
+const PRIVACY_URL = "https://vocalype.com/privacy";
+const TERMS_URL = "https://vocalype.com/terms";
 
 const accessLabelForSession = (session: AuthSession | null) => {
   if (!session) return "Aucune session detectee";
@@ -171,7 +171,7 @@ export const AuthPortal = ({
       }
     >
       {billingBusy ? <Loader2 size={16} className="animate-spin" /> : null}
-      {hasAccess ? "Gerer mon abonnement" : "Debloquer VocalType"}
+      {hasAccess ? "Gerer mon abonnement" : "Debloquer Vocalype"}
     </button>
   ) : (
     <button
@@ -646,8 +646,8 @@ export const AuthPortal = ({
                   color: "rgba(243,236,223,0.42)",
                 }}
               >
-                VocalType garde le desktop leger: connexion et facturation sur
-                le web, verification instantanee dans l'app.
+                Vocalype garde le desktop leger: connexion et facturation sur le
+                web, verification instantanee dans l'app.
               </div>
             )}
           </section>

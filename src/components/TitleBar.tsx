@@ -1,6 +1,6 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Minus, Square, X } from "lucide-react";
-import VocalTypeLogo from "./icons/VocalTypeLogo";
+import VocalypeLogo from "./icons/VocalypeLogo";
 
 export const TitleBar = () => {
   const win = getCurrentWindow();
@@ -27,7 +27,7 @@ export const TitleBar = () => {
       <div
         style={{ display: "flex", alignItems: "center", pointerEvents: "none" }}
       >
-        <VocalTypeLogo width={76} />
+        <VocalypeLogo width={76} />
       </div>
       <div
         style={

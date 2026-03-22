@@ -3,7 +3,7 @@
 //!
 //! Entries are stored in `{app_data}/dictionary.json` as a JSON array:
 //! ```json
-//! [{ "from": "vocal type", "to": "VocalType" }]
+//! [{ "from": "vocal type", "to": "Vocalype" }]
 //! ```
 //!
 //! Matching is case-insensitive and word-boundary-aware, so "react" does
@@ -256,11 +256,8 @@ mod tests {
     #[test]
     fn basic_replacement() {
         assert_eq!(
-            apply_dictionary(
-                "vocal type is great",
-                &[compiled("vocal type", "VocalType")]
-            ),
-            "VocalType is great"
+            apply_dictionary("vocal type is great", &[compiled("vocal type", "Vocalype")]),
+            "Vocalype is great"
         );
     }
 
@@ -286,11 +283,8 @@ mod tests {
     #[test]
     fn case_insensitive_matching() {
         assert_eq!(
-            apply_dictionary(
-                "VOCAL TYPE is great",
-                &[compiled("vocal type", "VocalType")]
-            ),
-            "VocalType is great"
+            apply_dictionary("VOCAL TYPE is great", &[compiled("vocal type", "Vocalype")]),
+            "Vocalype is great"
         );
     }
 
@@ -316,20 +310,20 @@ mod tests {
     #[test]
     fn entry_at_end_of_string() {
         assert_eq!(
-            apply_dictionary("I love vocal type", &[compiled("vocal type", "VocalType")]),
-            "I love VocalType"
+            apply_dictionary("I love vocal type", &[compiled("vocal type", "Vocalype")]),
+            "I love Vocalype"
         );
     }
 
     #[test]
     fn multiple_entries_applied_in_order() {
         let patterns = vec![
-            compiled("vocal type", "VocalType"),
+            compiled("vocal type", "Vocalype"),
             compiled("react query", "React Query"),
         ];
         assert_eq!(
             apply_dictionary("vocal type uses react query", &patterns),
-            "VocalType uses React Query"
+            "Vocalype uses React Query"
         );
     }
 

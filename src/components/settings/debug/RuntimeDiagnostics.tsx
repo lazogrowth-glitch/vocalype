@@ -84,7 +84,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
     setBusy(true);
     try {
       const path = await save({
-        defaultPath: "vocaltype-runtime-diagnostics.json",
+        defaultPath: "vocalype-runtime-diagnostics.json",
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (!path) {

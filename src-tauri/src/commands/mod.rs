@@ -409,7 +409,7 @@ pub fn get_machine_device_id(app: AppHandle) -> Result<String, String> {
     let app_id = app.config().identifier.trim().to_string();
 
     let mut hasher = Sha256::new();
-    hasher.update("vocaltype-device-id:v1:");
+    hasher.update("vocalype-device-id:v1:");
     hasher.update(app_id.as_bytes());
     hasher.update(b":");
     hasher.update(seed.trim().as_bytes());

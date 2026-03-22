@@ -36,12 +36,12 @@ bun run preview    # Preview built frontend
 mkdir -p src-tauri/resources/models
 
 # Download required VAD model
-curl -o src-tauri/resources/models/silero_vad_v4.onnx https://downloads.vocaltypeai.com/models/silero_vad_v4.onnx
+curl -o src-tauri/resources/models/silero_vad_v4.onnx https://downloads.vocalype.com/models/silero_vad_v4.onnx
 ```
 
 ## Architecture Overview
 
-VocalType is a cross-platform desktop speech-to-text application built with Tauri (Rust backend + React/TypeScript frontend).
+Vocalype is a cross-platform desktop speech-to-text application built with Tauri (Rust backend + React/TypeScript frontend).
 
 ### Core Components
 

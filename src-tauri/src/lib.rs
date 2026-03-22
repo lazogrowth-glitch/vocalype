@@ -97,6 +97,9 @@ pub static TRAY_ICON_ENABLED: AtomicBool = AtomicBool::new(true);
 pub static TRAY_ICON_READY: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_SHOW_MAIN_WINDOW_ON_READY: AtomicBool = AtomicBool::new(false);
 
+const MAIN_WINDOW_WIDTH: f64 = 1348.0;
+const MAIN_WINDOW_HEIGHT: f64 = 846.0;
+
 fn level_filter_from_u8(value: u8) -> log::LevelFilter {
     match value {
         0 => log::LevelFilter::Off,
@@ -135,8 +138,8 @@ pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         // Force the window to the correct size regardless of any cached state
         let _ = main_window.set_size(tauri::Size::Logical(tauri::LogicalSize {
-            width: 800.0,
-            height: 560.0,
+            width: MAIN_WINDOW_WIDTH,
+            height: MAIN_WINDOW_HEIGHT,
         }));
         // First, ensure the window is visible
         if let Err(e) = main_window.show() {
@@ -202,13 +205,21 @@ fn force_show_native_main_window() -> bool {
             return true.into();
         };
 
-        if title != "VocalType" {
+        if title != "Vocalype" {
             return true.into();
         }
 
         let _ = ShowWindow(hwnd, SW_RESTORE);
         let _ = ShowWindow(hwnd, SW_SHOW);
-        let _ = SetWindowPos(hwnd, None, 120, 120, 694, 608, SWP_NOZORDER);
+        let _ = SetWindowPos(
+            hwnd,
+            None,
+            120,
+            120,
+            MAIN_WINDOW_WIDTH as i32,
+            MAIN_WINDOW_HEIGHT as i32,
+            SWP_NOZORDER,
+        );
         let _ = BringWindowToTop(hwnd);
         let _ = SetForegroundWindow(hwnd);
         state.shown = IsWindowVisible(hwnd).as_bool();
@@ -460,7 +471,7 @@ fn sync_autostart_state(app_handle: &AppHandle) {
 #[cfg(debug_assertions)]
 fn should_export_typescript_bindings() -> bool {
     !matches!(
-        std::env::var("VOCALTYPE_EXPORT_BINDINGS").as_deref(),
+        std::env::var("VOCALYPE_EXPORT_BINDINGS").as_deref(),
         Ok("0") | Ok("false") | Ok("FALSE") | Ok("no") | Ok("NO")
     )
 }
@@ -660,7 +671,7 @@ pub fn run(cli_args: CliArgs) {
                     }),
                     // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
                     Target::new(TargetKind::LogDir {
-                        file_name: Some("vocaltype".into()),
+                        file_name: Some("vocalype".into()),
                     })
                     .filter(|metadata| {
                         let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);

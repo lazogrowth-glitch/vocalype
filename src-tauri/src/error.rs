@@ -1,10 +1,10 @@
-//! Centralised error type for VocalType.
+//! Centralised error type for Vocalype.
 //!
 //! ## Usage
 //!
 //! Internal Rust code uses `AppResult<T>`:
 //! ```rust
-//! use vocaltype_app_lib::error::{AppError, AppResult};
+//! use vocalype_app_lib::error::{AppError, AppResult};
 //!
 //! fn load_model(id: &str) -> AppResult<()> {
 //!     if id.is_empty() {
@@ -40,7 +40,7 @@
 
 use thiserror::Error;
 
-/// Top-level domain error for the VocalType backend.
+/// Top-level domain error for the Vocalype backend.
 #[derive(Error, Debug)]
 pub enum AppError {
     /// An audio device could not be opened or enumerated.

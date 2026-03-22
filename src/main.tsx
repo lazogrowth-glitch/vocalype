@@ -69,7 +69,7 @@ const renderFatalStartupError = () => {
   renderBootstrapMessage(
     i18n.t("bootstrap.desktopRuntimeUnavailable", {
       defaultValue:
-        "VocalType failed to connect to the desktop runtime. Please restart the app.",
+        "Vocalype failed to connect to the desktop runtime. Please restart the app.",
     }),
   );
 };
@@ -112,7 +112,7 @@ const bootstrap = async () => {
             >
               {i18n.t("bootstrap.criticalFallback", {
                 defaultValue:
-                  "VocalType encountered a critical error. Please restart the app.",
+                  "Vocalype encountered a critical error. Please restart the app.",
               })}
             </div>
           }
@@ -142,7 +142,7 @@ const bootstrap = async () => {
   } catch (error) {
     console.error("Fatal bootstrap error:", error);
     renderBootstrapMessage(
-      `VocalType startup error: ${error instanceof Error ? error.message : "unknown error"}`,
+      `Vocalype startup error: ${error instanceof Error ? error.message : "unknown error"}`,
     );
   }
 };
@@ -150,7 +150,7 @@ const bootstrap = async () => {
 window.addEventListener("error", (event) => {
   const message = event.error?.message || event.message || "unknown error";
   console.error("Unhandled startup error:", event.error || event.message);
-  renderBootstrapMessage(`VocalType frontend error: ${message}`);
+  renderBootstrapMessage(`Vocalype frontend error: ${message}`);
 });
 
 window.addEventListener("unhandledrejection", (event) => {
@@ -161,7 +161,7 @@ window.addEventListener("unhandledrejection", (event) => {
         ? event.reason
         : "unknown rejection";
   console.error("Unhandled startup rejection:", event.reason);
-  renderBootstrapMessage(`VocalType frontend rejection: ${reason}`);
+  renderBootstrapMessage(`Vocalype frontend rejection: ${reason}`);
 });
 
 void bootstrap();

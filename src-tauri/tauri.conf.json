@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "VocalType",
+  "productName": "Vocalype",
   "version": "0.7.17",
-  "identifier": "com.vocaltype.desktop",
+  "identifier": "com.vocalype.desktop",
   "build": {
     "beforeDevCommand": "bun run dev:frontend",
     "devUrl": "http://localhost:1420",
@@ -15,7 +15,7 @@
       {
         "label": "main",
         "url": "desktop/index.html",
-        "title": "VocalType",
+        "title": "Vocalype",
         "width": 1348,
         "height": 875,
         "minWidth": 1348,
@@ -28,7 +28,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; connect-src 'self' tauri://localhost https://tauri.localhost http://tauri.localhost http://localhost:1420 http://127.0.0.1:1420 https://vocaltypeai.com https://www.vocaltypeai.com https://*.up.railway.app https://api.stripe.com https://checkout.stripe.com https://github.com https://objects.githubusercontent.com; font-src 'self' data:; media-src 'self' asset: https://asset.localhost blob:",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; connect-src 'self' tauri://localhost https://tauri.localhost http://tauri.localhost http://localhost:1420 http://127.0.0.1:1420 https://vocalype.com https://www.vocalype.com https://*.up.railway.app https://api.stripe.com https://checkout.stripe.com https://github.com https://objects.githubusercontent.com; font-src 'self' data:; media-src 'self' asset: https://asset.localhost blob:",
       "assetProtocol": {
         "enable": true,
         "scope": {
@@ -77,7 +77,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg0REJCOEY3NTkxQTRFOUEKUldTYVRocFo5N2piaEo4SE1CRUlnYUFqellqeWFEODNadEx0aG5rMlkyWFR4dXY2YXlhRy96MFkK",
       "endpoints": [
-        "https://github.com/lazogrowth-glitch/vocaltype/releases/latest/download/latest.json"
+        "https://github.com/lazogrowth-glitch/vocalype/releases/latest/download/latest.json"
       ]
     }
   }

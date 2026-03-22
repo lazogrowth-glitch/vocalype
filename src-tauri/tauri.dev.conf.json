@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "VocalType Dev",
-  "identifier": "com.vocaltype.desktop.dev",
+  "productName": "Vocalype Dev",
+  "identifier": "com.vocalype.desktop.dev",
   "app": {
     "windows": [
       {
         "label": "main",
         "url": "desktop/index.html",
-        "title": "VocalType Dev",
+        "title": "Vocalype Dev",
         "width": 1348,
         "height": 875,
         "minWidth": 1348,

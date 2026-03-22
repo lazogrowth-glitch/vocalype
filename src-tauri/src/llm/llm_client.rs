@@ -60,12 +60,12 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
 
     // Common headers
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    headers.insert(REFERER, HeaderValue::from_static("https://vocaltypeai.com"));
+    headers.insert(REFERER, HeaderValue::from_static("https://vocalype.com"));
     headers.insert(
         USER_AGENT,
-        HeaderValue::from_static("VocalType/1.0 (+https://vocaltypeai.com)"),
+        HeaderValue::from_static("Vocalype/1.0 (+https://vocalype.com)"),
     );
-    headers.insert("X-Title", HeaderValue::from_static("VocalType"));
+    headers.insert("X-Title", HeaderValue::from_static("Vocalype"));
 
     // Provider-specific auth headers
     if !api_key.is_empty() {

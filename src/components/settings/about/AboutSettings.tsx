@@ -9,7 +9,7 @@ import { AppDataDirectory } from "../AppDataDirectory";
 import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ExportImportSettings } from "../ExportImportSettings";
 import { LogDirectory } from "../debug";
-import VocalTypeLogo from "../../icons/VocalTypeLogo";
+import VocalypeLogo from "../../icons/VocalypeLogo";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -32,7 +32,7 @@ export const AboutSettings: React.FC = () => {
   return (
     <div className="w-full space-y-6">
       <section className="space-y-3">
-        <VocalTypeLogo width={112} />
+        <VocalypeLogo width={112} />
         <p className="text-[12px] text-white/30">
           {t("settings.about.versionLabel", {
             defaultValue: "Version v{{version}}",
@@ -44,7 +44,7 @@ export const AboutSettings: React.FC = () => {
           size="md"
           className="inline-flex w-auto"
           onClick={() =>
-            openUrl("https://github.com/lazogrowth-glitch/vocaltype")
+            openUrl("https://github.com/lazogrowth-glitch/vocalype")
           }
         >
           {t("settings.about.sourceCode.button")}
@@ -53,7 +53,7 @@ export const AboutSettings: React.FC = () => {
           variant="secondary"
           size="md"
           className="inline-flex w-auto"
-          onClick={() => openUrl("https://vocaltypeai.com/privacy")}
+          onClick={() => openUrl("https://vocalype.com/privacy")}
         >
           {t("settings.about.privacyPolicy")}
         </Button>

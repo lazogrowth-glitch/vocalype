@@ -20,7 +20,7 @@ const tMock = (key: string) => {
   const translations: Record<string, string> = {
     "onboarding.permissions.title": "Permissions Required",
     "onboarding.permissions.description":
-      "VocalType needs a couple of permissions to work properly.",
+      "Vocalype needs a couple of permissions to work properly.",
     "onboarding.permissions.microphone.title": "Microphone Access",
     "onboarding.permissions.microphone.description":
       "Required to hear your voice for transcription.",

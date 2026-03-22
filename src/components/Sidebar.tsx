@@ -11,7 +11,7 @@ import {
   Settings2,
   Zap,
 } from "lucide-react";
-import VocalTypeLogo from "./icons/VocalTypeLogo";
+import VocalypeLogo from "./icons/VocalypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
 import { TranscriptionWarmupBadge } from "./TranscriptionWarmupBadge";
 import { useSettings } from "../hooks/useSettings";
@@ -182,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       <div className="border-b border-white/6 px-[18px] pb-4 pt-5">
         <div className="min-w-0">
-          <VocalTypeLogo width={104} />
+          <VocalypeLogo width={104} />
         </div>
       </div>
 

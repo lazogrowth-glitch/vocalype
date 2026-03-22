@@ -41,13 +41,13 @@ LICENSE_APPROVED_BUILD_HASHES=ton_hash_release
 ## Commande Windows pour recuperer le hash
 
 ```powershell
-Get-FileHash "C:\chemin\vers\VocalType.exe" -Algorithm SHA256
+Get-FileHash "C:\chemin\vers\Vocalype.exe" -Algorithm SHA256
 ```
 
 Ou pour le setup:
 
 ```powershell
-Get-FileHash "C:\chemin\vers\VocalType_0.7.17_x64-setup.exe" -Algorithm SHA256
+Get-FileHash "C:\chemin\vers\Vocalype_0.7.17_x64-setup.exe" -Algorithm SHA256
 ```
 
 ## Quand tu sors une nouvelle version plus tard

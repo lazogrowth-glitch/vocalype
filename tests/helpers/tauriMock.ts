@@ -212,11 +212,11 @@ export async function injectTauriMock(
           case "plugin:app|version":
             return "0.7.17-test";
           case "plugin:app|name":
-            return "VocalType";
+            return "Vocalype";
           case "plugin:app|tauri_version":
             return "2.0.0-test";
           case "plugin:app|identifier":
-            return "com.vocaltype.desktop";
+            return "com.vocalype.desktop";
           case "get_secure_auth_token":
           case "get_secure_auth_session":
           case "get_secure_license_bundle":

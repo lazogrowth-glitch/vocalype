@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useTranslation } from "react-i18next";
+import { LogicalSize, getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
 import Onboarding, {
@@ -18,6 +19,9 @@ import { PlanContext } from "@/lib/subscription/context";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
+
+const AUTH_WINDOW_SIZE = { width: 1220, height: 810 };
+const APP_WINDOW_SIZE = { width: 1220, height: 810 };
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
@@ -96,6 +100,7 @@ function App() {
   const hasAnyAccess =
     licenseState?.state === "online_valid" ||
     licenseState?.state === "offline_valid";
+  const needsAuthWindow = !session || !hasAnyAccess;
 
   const currentTier = session?.subscription?.tier ?? null;
   const isBasicTier = hasAnyAccess && currentTier === "basic";
@@ -157,6 +162,22 @@ function App() {
     refreshOutputDevices,
     hasCompletedPostOnboardingInit,
   ]);
+
+  useEffect(() => {
+    const target = needsAuthWindow ? AUTH_WINDOW_SIZE : APP_WINDOW_SIZE;
+    const resizeWindow = async () => {
+      try {
+        const window = getCurrentWindow();
+        await window.setMinSize(new LogicalSize(1220, 810));
+        await window.setSize(new LogicalSize(target.width, target.height));
+        await window.center();
+      } catch (windowError) {
+        console.warn("Failed to resize main window:", windowError);
+      }
+    };
+
+    void resizeWindow();
+  }, [needsAuthWindow]);
 
   if (authLoading) {
     return (
@@ -291,7 +312,7 @@ function App() {
             flex: 1,
             overflowY: "auto",
             overflowX: "hidden",
-            padding: "24px 28px",
+            padding: "20px 28px 28px",
             minWidth: 0,
             background: "#0f0f0f",
           }}

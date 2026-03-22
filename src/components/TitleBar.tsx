@@ -1,5 +1,6 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Minus, Square, X } from "lucide-react";
+import VocalTypeLogo from "./icons/VocalTypeLogo";
 
 export const TitleBar = () => {
   const win = getCurrentWindow();
@@ -13,7 +14,8 @@ export const TitleBar = () => {
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
+          paddingLeft: 14,
           background: "transparent",
           userSelect: "none",
           WebkitAppRegion: "drag",
@@ -22,6 +24,11 @@ export const TitleBar = () => {
         } as React.CSSProperties
       }
     >
+      <div
+        style={{ display: "flex", alignItems: "center", pointerEvents: "none" }}
+      >
+        <VocalTypeLogo width={76} />
+      </div>
       <div
         style={
           {

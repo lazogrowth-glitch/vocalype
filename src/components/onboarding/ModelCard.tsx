@@ -161,7 +161,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const productBadges = getProductBadges(model, t, copilotOptimized);
 
   const baseClasses =
-    "flex flex-wrap items-center gap-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4 text-left transition-all duration-150";
+    "flex flex-wrap items-center gap-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-2";
 
   const getVariantClasses = () => {
     if (status === "active") {
@@ -254,7 +254,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             ) : null}
           </div>
 
-          <p className="mt-1 text-[13px] leading-6 text-white/56">
+          <p className="mt-1 text-[13px] leading-6 text-white/75">
             {displayDescription}
           </p>
 

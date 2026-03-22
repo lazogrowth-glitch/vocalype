@@ -42,7 +42,7 @@ const OnboardingProgressBar: React.FC<{ current: number; total: number }> = ({
   const { t } = useTranslation();
   return (
     <div className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-1.5 pt-3 pb-2">
-      <p className="text-[11px] text-text/35">
+      <p className="text-[11px] text-text/70">
         {t("onboarding.progress.stepOf", { current, total })}
       </p>
       <div className="flex gap-1">
@@ -255,6 +255,12 @@ function App() {
           color: "inherit",
         }}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-text focus:rounded-lg focus:ring-2 focus:ring-logo-primary focus:outline-none text-sm font-medium"
+        >
+          {t("a11y.skipToMain")}
+        </a>
         <Toaster
           theme="system"
           toastOptions={{
@@ -273,6 +279,7 @@ function App() {
         />
 
         <main
+          id="main-content"
           style={{
             flex: 1,
             overflowY: "auto",
@@ -307,7 +314,7 @@ function App() {
               </span>
               <button
                 onClick={dismissHint}
-                className="text-text/30 hover:text-text/60 transition-colors text-base leading-none"
+                className="text-text/70 hover:text-text/80 transition-colors text-base leading-none"
               >
                 ×
               </button>

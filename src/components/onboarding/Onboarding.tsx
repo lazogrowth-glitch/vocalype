@@ -131,7 +131,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
       <div className="flex shrink-0 flex-col items-center gap-3 pt-2">
         <VocalTypeLogo width={200} />
         <div className="text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-logo-primary/80">Configuration du modèle</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-logo-primary/80">{t("onboarding.title")}</p>
           <p className="mx-auto mt-2 max-w-2xl text-[15px] leading-7 text-text/70">{t("onboarding.subtitle")}</p>
         </div>
       </div>

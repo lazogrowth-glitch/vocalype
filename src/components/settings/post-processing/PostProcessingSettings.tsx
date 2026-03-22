@@ -178,7 +178,15 @@ const PostProcessingActionsComponent: React.FC = () => {
               .map((action) => (
                 <div
                   key={action.key}
-                  className="group flex cursor-pointer items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04]"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleStartEdit(action);
+                    }
+                  }}
+                  className="group flex cursor-pointer items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
                   onClick={() => handleStartEdit(action)}
                 >
                   <span className="flex items-center justify-center w-6 h-6 rounded bg-blue-500/15 text-blue-400 text-xs font-bold font-mono flex-shrink-0">

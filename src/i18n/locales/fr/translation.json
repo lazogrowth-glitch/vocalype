@@ -19,6 +19,7 @@
     "about": "À propos"
   },
   "onboarding": {
+    "title": "Configuration du modèle",
     "subtitle": "Pour commencer, choisissez un modèle de transcription",
     "recommended": "Recommandé",
     "download": "Télécharger",
@@ -977,5 +978,8 @@
     "typingTool": "Backend de saisie Linux pour injecter du texte. Auto choisit le meilleur outil pour votre session.",
     "adaptiveVocabulary": "Apprend les mots peu courants que vous utilisez dans l'application active pour améliorer la reconnaissance.",
     "adaptiveVoiceProfile": "Apprend votre rythme d'élocution au fil du temps pour améliorer la détection des silences."
+  },
+  "a11y": {
+    "skipToMain": "Passer au contenu principal"
   }
 }

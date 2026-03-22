@@ -34,7 +34,7 @@ const Footer: React.FC = () => {
           <div className="hidden min-[760px]:flex">
             <UpdateChecker />
           </div>
-          <span className="text-text/25">•</span>
+          <span className="text-text/50">•</span>
           <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-1 text-[10px] font-medium text-text/62">
             {t("footer.version", {
               defaultValue: "v{{version}}",

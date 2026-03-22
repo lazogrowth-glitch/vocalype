@@ -85,7 +85,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
             </h3>
             {descriptionMode === "inline" && description ? (
               <p
-                className={`mt-[2px] text-[11.5px] leading-5 text-text/35 ${disabled ? "opacity-50" : ""}`}
+                className={`mt-[2px] text-[11.5px] leading-5 text-text/55 ${disabled ? "opacity-50" : ""}`}
               >
                 {description}
               </p>
@@ -131,7 +131,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
                 {title}
               </h3>
               <p
-                className={`mt-[2px] text-[11.5px] leading-5 text-text/35 ${disabled ? "opacity-50" : ""}`}
+                className={`mt-[2px] text-[11.5px] leading-5 text-text/55 ${disabled ? "opacity-50" : ""}`}
               >
                 {description}
               </p>

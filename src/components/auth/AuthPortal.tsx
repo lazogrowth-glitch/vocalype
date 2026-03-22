@@ -256,7 +256,7 @@ export const AuthPortal = ({ isLoading, isSubmitting, error, session, onLogin, o
                     <input className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={t("auth.fields.emailPlaceholder")} />
                     {forgotError && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{forgotError}</div>}
                     <Button className="w-full justify-center py-3 text-sm" disabled={forgotBusy} size="lg" type="submit">{forgotBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{t("auth.sendCode")}</Button>
-                    <button className="w-full text-center text-[13px] text-text/45 transition hover:text-text/70" onClick={handleBackToLogin} type="button">{t("auth.backToLogin")}</button>
+                    <button className="w-full text-center text-[13px] text-text/65 transition hover:text-text/70" onClick={handleBackToLogin} type="button">{t("auth.backToLogin")}</button>
                   </form>
                 ) : (
                   <form className="space-y-4" onSubmit={handleForgotReset}>
@@ -269,7 +269,7 @@ export const AuthPortal = ({ isLoading, isSubmitting, error, session, onLogin, o
                     <input className={inputClass} value={forgotConfirmPwd} onChange={(e) => setForgotConfirmPwd(e.target.value)} type="password" />
                     {forgotError && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{forgotError}</div>}
                     <Button className="w-full justify-center py-3 text-sm" disabled={forgotBusy} size="lg" type="submit">{forgotBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{t("auth.resetPassword")}</Button>
-                    <button className="w-full text-center text-[13px] text-text/45 transition hover:text-text/70" onClick={handleBackToLogin} type="button">{t("auth.backToLogin")}</button>
+                    <button className="w-full text-center text-[13px] text-text/65 transition hover:text-text/70" onClick={handleBackToLogin} type="button">{t("auth.backToLogin")}</button>
                   </form>
                 )}
               </div>
@@ -280,10 +280,10 @@ export const AuthPortal = ({ isLoading, isSubmitting, error, session, onLogin, o
                 <input className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={t("auth.fields.emailPlaceholder")} />
                 <label className={labelClass}>{t("auth.fields.password")}</label>
                 <input className={inputClass} value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder={t("auth.fields.passwordPlaceholder")} />
-                {mode === "login" && <button className="mt-1 text-[13px] text-text/45 transition hover:text-text/70" onClick={() => setMode("forgot")} type="button">{t("auth.forgotPassword")}</button>}
+                {mode === "login" && <button className="mt-1 text-[13px] text-text/65 transition hover:text-text/70" onClick={() => setMode("forgot")} type="button">{t("auth.forgotPassword")}</button>}
                 {displayError && <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{displayError}</div>}
                 <Button className="w-full justify-center py-3 text-sm" disabled={isLoading || isSubmitting} size="lg" type="submit">{isLoading || isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{mode === "register" ? t("auth.createAccount") : t("auth.loginToAccount")}</Button>
-                <p className="text-center text-[13px] leading-6 text-text/45">{t("auth.trialNote")}</p>
+                <p className="text-center text-[13px] leading-6 text-text/65">{t("auth.trialNote")}</p>
               </form>
             )}
           </section>

@@ -19,6 +19,7 @@
     "about": "About"
   },
   "onboarding": {
+    "title": "Model Setup",
     "subtitle": "To get started, choose a transcription model",
     "recommended": "Recommended",
     "download": "Download",
@@ -977,5 +978,8 @@
     "typingTool": "Linux input backend to inject text. Auto picks the best tool for your session.",
     "adaptiveVocabulary": "Learns uncommon words you use from the active app to improve recognition.",
     "adaptiveVoiceProfile": "Learns your speaking rhythm over time to improve silence detection."
+  },
+  "a11y": {
+    "skipToMain": "Skip to main content"
   }
 }

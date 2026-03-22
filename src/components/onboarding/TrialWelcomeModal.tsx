@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +18,39 @@ export const TrialWelcomeModal: React.FC<TrialWelcomeModalProps> = ({
   onDismiss,
 }) => {
   const { t } = useTranslation();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Focus first focusable on open
+    const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button, input, [tabindex]:not([tabindex="-1"])',
+    );
+    focusable?.[0]?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onDismiss();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onDismiss]);
 
   return (
     <div
@@ -27,12 +60,21 @@ export const TrialWelcomeModal: React.FC<TrialWelcomeModalProps> = ({
         if (e.target === e.currentTarget) onDismiss();
       }}
     >
-      <div className="w-full max-w-[420px] rounded-xl border border-white/10 bg-[#181818] p-8 shadow-2xl">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="trial-modal-title"
+        className="w-full max-w-[420px] rounded-xl border border-white/10 bg-[#181818] p-8 shadow-2xl"
+      >
         <div className="mb-5 inline-flex items-center rounded-full border border-logo-primary/25 bg-logo-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-logo-primary">
           {t("trial.welcome.badge")}
         </div>
 
-        <h2 className="mb-2 text-[21px] font-semibold leading-snug text-white">
+        <h2
+          id="trial-modal-title"
+          className="mb-2 text-[21px] font-semibold leading-snug text-white"
+        >
           {t("trial.welcome.title")}
         </h2>
         <p className="mb-7 text-[13px] leading-relaxed text-white/45">

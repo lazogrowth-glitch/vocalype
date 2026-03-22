@@ -53,7 +53,7 @@ export const Slider: React.FC<SliderProps> = ({
             value={value}
             onChange={handleChange}
             disabled={disabled}
-            className="h-[4px] flex-grow appearance-none rounded-full bg-white/8 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-[4px] flex-grow appearance-none rounded-full bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               background: `linear-gradient(to right, var(--color-background-ui) ${
                 ((value - min) / (max - min)) * 100

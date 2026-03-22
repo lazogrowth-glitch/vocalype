@@ -121,6 +121,20 @@
       "copilotPlusDescription": "This device exposes an NPU class associated with Copilot+ PCs. VocalType now tracks that capability in its adaptive profile.",
       "npuTitle": "NPU detected",
       "npuDescription": "This device exposes a neural processor. VocalType now includes it in machine detection and diagnostics."
+    },
+    "title": "Get started",
+    "consent": {
+      "title": "Your Privacy",
+      "subtitle": "Before you start, here is how VocalType handles your data.",
+      "localStorageInfo": "Your audio recordings and transcriptions are stored locally on this device. They are never uploaded to any server.",
+      "serverSentInfo": "A hashed device identifier and your app version are sent to our servers for license validation only. No audio or transcription data is ever transmitted.",
+      "exportInfo": "You can export or delete all your data at any time from the History settings.",
+      "privacyPolicyLink": "Read the full Privacy Policy",
+      "checkboxLabel": "I understand and accept how VocalType handles my data.",
+      "continueButton": "Continue"
+    },
+    "progress": {
+      "stepOf": "Step {{current}} of {{total}}"
     }
   },
   "modelSelector": {
@@ -161,7 +175,8 @@
       "multilingualExperimental": "Multilingual Experimental",
       "localOnly": "100% Local"
     },
-    "geminiCloudWarning": "Gemini sends audio to Google for transcription. Other models process everything locally on your device."
+    "geminiCloudWarning": "Gemini sends audio to Google for transcription. Other models process everything locally on your device.",
+    "downloadEta": "{{eta}} remaining"
   },
   "settings": {
     "modelSettings": {
@@ -280,6 +295,22 @@
         "audio": "Audio",
         "dictation": "Dictation",
         "keyboardShortcutsTitle": "Keyboard Shortcuts"
+      },
+      "recordingMode": {
+        "label": "Recording Mode",
+        "description": "Choose how you start and stop recording.",
+        "toggle": {
+          "label": "Toggle",
+          "description": "Press once to start, press again to stop"
+        },
+        "pushToTalk": {
+          "label": "Push to Talk",
+          "description": "Hold the shortcut to record, release to stop"
+        },
+        "alwaysOn": {
+          "label": "Always-On Microphone",
+          "description": "Microphone stays open; VAD detects speech automatically"
+        }
       }
     },
     "sound": {
@@ -523,7 +554,18 @@
       "transcribeFileSuccess": "File transcribed and copied to clipboard.",
       "transcribeFileError": "Transcription failed.",
       "whisperConfidence": "Whisper confidence: {{overall}}",
-      "wordConfidenceTitle": "Confidence {{confidence}}"
+      "wordConfidenceTitle": "Confidence {{confidence}}",
+      "deletedUndo": "Entry deleted",
+      "undo": "Undo",
+      "exportMyData": "Export my data",
+      "clearAll": "Clear all history",
+      "clearAllConfirm": "Are you sure? This will permanently delete all recordings and transcriptions.",
+      "clearAllSuccess": "All history cleared.",
+      "clearAllError": "Failed to clear history.",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…",
+      "confirmDeleteAllMessage": "Delete all history entries?",
+      "confirmYes": "Delete all"
     },
     "debug": {
       "title": "Ladění",
@@ -639,7 +681,8 @@
         "exportSuccess": "Settings exported successfully",
         "importSuccess": "Settings imported successfully"
       },
-      "versionLabel": "Version v{{version}}"
+      "versionLabel": "Version v{{version}}",
+      "privacyPolicy": "Privacy Policy"
     },
     "longAudioModel": {
       "title": "Long Audio Model",
@@ -701,7 +744,8 @@
     "no": "Ne",
     "noOptionsFound": "Nenalezeny žádné možnosti",
     "moreInformation": "More information",
-    "infoGlyph": "i"
+    "infoGlyph": "i",
+    "back": "Back"
   },
   "accessibility": {
     "permissionsRequired": "Vyžadována oprávnění usnadnění přístupu",
@@ -710,7 +754,15 @@
     "dismiss": "Zavřít"
   },
   "errors": {
-    "loadDirectory": "Chyba při načítání adresáře: {{error}}"
+    "loadDirectory": "Chyba při načítání adresáře: {{error}}",
+    "actionable": {
+      "noModelLoaded": "No model is loaded. Go to Models and select one.",
+      "microphoneUnavailable": "Microphone could not be accessed. Check your system audio settings.",
+      "outOfMemory": "Not enough memory. Close other applications and try again.",
+      "audioCaptureFailed": "Audio capture failed. Try a different microphone in Settings.",
+      "generic": "{{detail}}",
+      "unknownPasteReason": "An unexpected error occurred."
+    }
   },
   "appLanguage": {
     "title": "Jazyk aplikace",
@@ -722,7 +774,14 @@
     "cancelConfirm": "Esc again to cancel",
     "pauseRecording": "Pause recording",
     "resumeRecording": "Resume recording",
-    "cancelRecording": "Cancel recording"
+    "cancelRecording": "Cancel recording",
+    "pasteSuccess": "Text pasted ✓",
+    "a11y": {
+      "recording": "Recording in progress.",
+      "transcribing": "Transcribing audio, please wait.",
+      "completed": "Transcription complete. Text pasted.",
+      "error": "Transcription failed. Please try again."
+    }
   },
   "auth": {
     "trialBadge": "14-day free trial, no card required",
@@ -916,5 +975,24 @@
     "enabled": "Whisper Mode on",
     "disabled": "Whisper Mode off",
     "errorTitle": "Whisper Mode — error"
+  },
+  "hints": {
+    "firstLaunch": "Press {{shortcut}} anywhere to start dictating — your text will appear automatically."
+  },
+  "tooltips": {
+    "vad": "Voice Activity Detection — automatically detects when you start and stop speaking.",
+    "postProcessing": "Runs AI on your transcription after capture to fix grammar or apply a custom prompt.",
+    "pasteMethod": "How text is inserted: Clipboard uses Cmd+V (most compatible), Direct simulates keystrokes.",
+    "typingTool": "Linux input backend to inject text. Auto picks the best tool for your session.",
+    "adaptiveVocabulary": "Learns uncommon words you use from the active app to improve recognition.",
+    "adaptiveVoiceProfile": "Learns your speaking rhythm over time to improve silence detection."
+  },
+  "a11y": {
+    "skipToMain": "Skip to main content",
+    "notifications": "Notifications",
+    "settingsNav": "Settings navigation",
+    "statusReady": "Ready",
+    "statusRecording": "Recording",
+    "statusError": "Error"
   }
 }

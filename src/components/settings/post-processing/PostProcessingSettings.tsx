@@ -221,7 +221,7 @@ const PostProcessingActionsComponent: React.FC = () => {
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-6">
             <div className="flex flex-col items-start gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-logo-primary/20 bg-logo-primary/10 text-logo-primary">
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-text">

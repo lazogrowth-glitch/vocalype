@@ -227,8 +227,14 @@ const ProcessingModelsSection: React.FC = () => {
               <button
                 onClick={() => handleDelete(model.id)}
                 className="p-1 text-mid-gray/40 hover:text-red-400 transition-colors"
+                aria-label={t("settings.models.processingModels.delete", {
+                  defaultValue: "Delete model",
+                })}
+                title={t("settings.models.processingModels.delete", {
+                  defaultValue: "Delete model",
+                })}
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -355,6 +361,7 @@ const ProcessingModelsSection: React.FC = () => {
                     >
                       <RefreshCcw
                         className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
+                        aria-hidden="true"
                       />
                     </button>
                   ) : null}
@@ -698,12 +705,14 @@ export const ModelsSettings: React.FC = () => {
 
   return (
     <div className="w-full space-y-6">
-      <div className="flex gap-1 border-b border-white/8">
+      <div className="flex gap-1 border-b border-white/8" role="tablist">
         {(["transcription", "processing"] as const).map((tab) => (
           <button
             key={tab}
+            role="tab"
+            aria-selected={activeTab === tab}
             onClick={() => setActiveTab(tab)}
-            className={`border-b-2 px-[14px] pb-[9px] pt-[7px] text-[13px] transition-colors ${
+            className={`border-b-2 px-[14px] pb-[9px] pt-[7px] text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 ${
               activeTab === tab
                 ? "border-logo-primary text-logo-primary"
                 : "border-transparent text-white/40 hover:text-white/65"
@@ -741,7 +750,7 @@ export const ModelsSettings: React.FC = () => {
       )}
 
       {activeTab === "transcription" && (
-        <div className="space-y-4">
+        <div className="space-y-4" role="tabpanel">
           {!hasGeminiKey && geminiModel ? (
             <FeatureGateHint
               tone="info"
@@ -770,10 +779,14 @@ export const ModelsSettings: React.FC = () => {
         </div>
       )}
 
-      {activeTab === "processing" && <ProcessingModelsSection />}
+      {activeTab === "processing" && (
+        <div role="tabpanel">
+          <ProcessingModelsSection />
+        </div>
+      )}
 
       {activeTab === "transcription" && filteredModels.length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">

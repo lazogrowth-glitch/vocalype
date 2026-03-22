@@ -173,9 +173,10 @@ export const SnippetsSettings: React.FC = () => {
           variant="primary"
           size="md"
           className="shrink-0 mt-0.5"
-          title={t("snippets.add", { defaultValue: "Ajouter" })}
+          aria-label={t("snippets.add", { defaultValue: "Add" })}
+          title={t("snippets.add", { defaultValue: "Add" })}
         >
-          <Plus size={15} />
+          <Plus size={15} aria-hidden="true" />
         </Button>
       </div>
 
@@ -225,7 +226,11 @@ export const SnippetsSettings: React.FC = () => {
                         onClick={confirmEdit}
                         className="rounded px-2 py-0.5 text-[11.5px] text-green-400 hover:bg-white/8 transition-colors"
                       >
-                        <Check size={13} className="inline mr-1" />
+                        <Check
+                          size={13}
+                          className="inline mr-1"
+                          aria-hidden="true"
+                        />
                         {t("snippets.save", { defaultValue: "Enregistrer" })}
                       </button>
                       <button
@@ -233,7 +238,11 @@ export const SnippetsSettings: React.FC = () => {
                         onClick={cancelEdit}
                         className="rounded px-2 py-0.5 text-[11.5px] text-white/40 hover:bg-white/8 transition-colors"
                       >
-                        <X size={13} className="inline mr-1" />
+                        <X
+                          size={13}
+                          className="inline mr-1"
+                          aria-hidden="true"
+                        />
                         {t("snippets.cancel", { defaultValue: "Annuler" })}
                       </button>
                     </div>
@@ -256,19 +265,25 @@ export const SnippetsSettings: React.FC = () => {
                         type="button"
                         onClick={() => startEdit(s)}
                         className="rounded p-1 text-white/35 hover:text-white/70 hover:bg-white/8 transition-colors"
-                        title={t("snippets.edit", { defaultValue: "Modifier" })}
+                        aria-label={t("snippets.edit", {
+                          defaultValue: "Edit",
+                        })}
+                        title={t("snippets.edit", { defaultValue: "Edit" })}
                       >
-                        <Pencil size={13} />
+                        <Pencil size={13} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleRemove(s.id)}
                         className="rounded p-1 text-white/35 hover:text-red-400 hover:bg-white/8 transition-colors"
+                        aria-label={t("snippets.remove", {
+                          defaultValue: "Remove",
+                        })}
                         title={t("snippets.remove", {
-                          defaultValue: "Supprimer",
+                          defaultValue: "Remove",
                         })}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={13} aria-hidden="true" />
                       </button>
                     </div>
                   </div>

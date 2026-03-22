@@ -85,9 +85,9 @@ fn validate_user_json_path(
             )
         })?,
         JsonPathAccess::Write => {
-            let parent = candidate.parent().ok_or_else(|| {
-                format!("Path for {} must include a parent directory", purpose)
-            })?;
+            let parent = candidate
+                .parent()
+                .ok_or_else(|| format!("Path for {} must include a parent directory", purpose))?;
             let resolved_parent = parent.canonicalize().map_err(|err| {
                 format!(
                     "Failed to resolve parent directory for {} '{}': {}",
@@ -273,7 +273,8 @@ pub fn open_app_data_dir(app: AppHandle) -> Result<(), String> {
 #[specta::specta]
 #[tauri::command]
 pub fn export_settings(app: AppHandle, path: String) -> Result<(), String> {
-    let output_path = validate_user_json_path(&app, &path, JsonPathAccess::Write, "settings export")?;
+    let output_path =
+        validate_user_json_path(&app, &path, JsonPathAccess::Write, "settings export")?;
     let mut settings = get_settings(&app);
     settings.gemini_api_key = None;
     settings.external_script_path = None;
@@ -292,8 +293,8 @@ pub fn export_settings(app: AppHandle, path: String) -> Result<(), String> {
 #[tauri::command]
 pub fn import_settings(app: AppHandle, path: String) -> Result<(), String> {
     let input_path = validate_user_json_path(&app, &path, JsonPathAccess::Read, "settings import")?;
-    let json = std::fs::read_to_string(&input_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let json =
+        std::fs::read_to_string(&input_path).map_err(|e| format!("Failed to read file: {}", e))?;
     let mut settings: AppSettings =
         serde_json::from_str(&json).map_err(|e| format!("Invalid settings file: {}", e))?;
     settings.gemini_api_key = None;

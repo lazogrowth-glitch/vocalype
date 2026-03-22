@@ -72,7 +72,7 @@ export const ProductModesGrid: React.FC<ProductModesGridProps> = ({
             <div
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">

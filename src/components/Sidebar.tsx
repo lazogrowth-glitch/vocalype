@@ -276,6 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   width={16}
                   height={16}
                   className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+                  aria-hidden="true"
                 />
               </span>
               <span

@@ -55,9 +55,10 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
           variant="ghost"
           size="sm"
           onClick={handlePlayBothSounds}
+          aria-label="Preview sound theme (plays start then stop)"
           title="Preview sound theme (plays start then stop)"
         >
-          <PlayIcon className="h-4 w-4" />
+          <PlayIcon className="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
     </SettingContainer>

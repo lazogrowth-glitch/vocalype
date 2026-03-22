@@ -249,7 +249,10 @@ export const AppContextSettings: React.FC = () => {
             className="text-white/30 hover:text-white/60"
             title={t("appContext.refresh", { defaultValue: "Actualiser" })}
           >
-            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-3 w-3 ${loading ? "animate-spin" : ""}`}
+              aria-hidden="true"
+            />
           </Button>
         </div>
 
@@ -342,11 +345,14 @@ export const AppContextSettings: React.FC = () => {
                   size="sm"
                   onClick={() => handleRemoveOverride(ov.process_name)}
                   className="shrink-0 text-white/30 hover:text-red-400"
+                  aria-label={t("appContext.removeOverride", {
+                    defaultValue: "Remove override",
+                  })}
                   title={t("appContext.removeOverride", {
-                    defaultValue: "Supprimer l'override",
+                    defaultValue: "Remove override",
                   })}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
             ))}

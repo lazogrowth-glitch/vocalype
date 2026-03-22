@@ -176,7 +176,7 @@ export const DictionarySettings: React.FC = () => {
           className="flex items-center gap-1 rounded-[6px] border border-white/8 bg-white/[0.04] px-2.5 py-1.5 text-[11.5px] text-white/45 transition-colors hover:text-white/70"
           title={t("dictionary.export", { defaultValue: "Exporter" })}
         >
-          <Download size={12} />
+          <Download size={12} aria-hidden="true" />
           {t("dictionary.export", { defaultValue: "Exporter" })}
         </button>
         <button
@@ -187,7 +187,7 @@ export const DictionarySettings: React.FC = () => {
             defaultValue: "Importer (fusionner)",
           })}
         >
-          <Upload size={12} />
+          <Upload size={12} aria-hidden="true" />
           {t("dictionary.importMerge", { defaultValue: "Importer" })}
         </button>
       </div>
@@ -275,17 +275,19 @@ export const DictionarySettings: React.FC = () => {
                       type="button"
                       onClick={() => confirmEdit(entry.from)}
                       className="rounded p-1 text-green-400 hover:bg-white/8 transition-colors"
+                      aria-label={t("dictionary.save")}
                       title={t("dictionary.save")}
                     >
-                      <Check size={14} />
+                      <Check size={14} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       onClick={cancelEdit}
                       className="rounded p-1 text-white/40 hover:bg-white/8 transition-colors"
+                      aria-label={t("dictionary.cancel")}
                       title={t("dictionary.cancel")}
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
@@ -294,17 +296,21 @@ export const DictionarySettings: React.FC = () => {
                       type="button"
                       onClick={() => startEdit(entry)}
                       className="rounded p-1 text-white/35 hover:text-white/70 hover:bg-white/8 transition-colors"
-                      title={t("dictionary.save")}
+                      aria-label={t("dictionary.edit", {
+                        defaultValue: "Edit",
+                      })}
+                      title={t("dictionary.edit", { defaultValue: "Edit" })}
                     >
-                      <Pencil size={13} />
+                      <Pencil size={13} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRemove(entry.from)}
                       className="rounded p-1 text-white/35 hover:text-red-400 hover:bg-white/8 transition-colors"
+                      aria-label={t("dictionary.remove")}
                       title={t("dictionary.remove")}
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={13} aria-hidden="true" />
                     </button>
                   </div>
                 )}

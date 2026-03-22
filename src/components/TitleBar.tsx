@@ -9,15 +9,16 @@ export const TitleBar = () => {
       data-tauri-drag-region
       style={
         {
-          height: 36,
+          height: 38,
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-end",
-          paddingRight: 4,
           background: "transparent",
           userSelect: "none",
           WebkitAppRegion: "drag",
+          position: "relative",
+          zIndex: 9999,
         } as React.CSSProperties
       }
     >
@@ -26,76 +27,79 @@ export const TitleBar = () => {
           {
             display: "flex",
             alignItems: "center",
+            height: "100%",
             WebkitAppRegion: "no-drag",
           } as React.CSSProperties
         }
       >
-        <button
-          type="button"
+        <WinBtn
           onClick={() => win.minimize()}
-          style={btnStyle}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background =
-              "rgba(255,255,255,0.08)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background =
-              "transparent")
-          }
+          hoverBg="rgba(255,255,255,0.1)"
           aria-label="Minimize"
         >
-          <Minus size={12} strokeWidth={2} />
-        </button>
-
-        <button
-          type="button"
+          <Minus size={11} strokeWidth={2.5} />
+        </WinBtn>
+        <WinBtn
           onClick={() => win.toggleMaximize()}
-          style={btnStyle}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background =
-              "rgba(255,255,255,0.08)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background =
-              "transparent")
-          }
+          hoverBg="rgba(255,255,255,0.1)"
           aria-label="Maximize"
         >
-          <Square size={10} strokeWidth={2} />
-        </button>
-
-        <button
-          type="button"
+          <Square size={9} strokeWidth={2.5} />
+        </WinBtn>
+        <WinBtn
           onClick={() => win.close()}
-          style={btnStyle}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background =
-              "rgba(220,50,50,0.75)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.background =
-              "transparent")
-          }
+          hoverBg="rgba(196,43,43,0.85)"
           aria-label="Close"
         >
-          <X size={12} strokeWidth={2} />
-        </button>
+          <X size={11} strokeWidth={2.5} />
+        </WinBtn>
       </div>
     </div>
   );
 };
 
-const btnStyle: React.CSSProperties = {
-  width: 40,
-  height: 36,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "transparent",
-  border: "none",
-  color: "rgba(255,255,255,0.5)",
-  cursor: "pointer",
-  transition: "background 0.15s, color 0.15s",
-  borderRadius: 0,
-  padding: 0,
-};
+const WinBtn = ({
+  children,
+  onClick,
+  hoverBg,
+  "aria-label": ariaLabel,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  hoverBg: string;
+  "aria-label": string;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={ariaLabel}
+    style={
+      {
+        width: 46,
+        height: 38,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "transparent",
+        border: "none",
+        color: "rgba(255,255,255,0.75)",
+        cursor: "pointer",
+        transition: "background 0.12s",
+        padding: 0,
+        borderRadius: 0,
+        WebkitAppRegion: "no-drag",
+      } as React.CSSProperties
+    }
+    onMouseEnter={(e) => {
+      (e.currentTarget as HTMLButtonElement).style.background = hoverBg;
+      (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+    }}
+    onMouseLeave={(e) => {
+      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+      (e.currentTarget as HTMLButtonElement).style.color =
+        "rgba(255,255,255,0.75)";
+    }}
+  >
+    {children}
+  </button>
+);

@@ -184,27 +184,47 @@ function App() {
     return (
       <div
         dir={direction}
-        className="h-screen flex items-center justify-center text-sm text-mid-gray"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          background: "#0f0f0f",
+        }}
       >
-        {t("common.loading")}
+        <TitleBar />
+        <div className="flex-1 flex items-center justify-center text-sm text-mid-gray">
+          {t("common.loading")}
+        </div>
       </div>
     );
   }
 
   if (!session || !hasAnyAccess) {
     return (
-      <AuthPortal
-        error={authError}
-        isLoading={authLoading}
-        isSubmitting={authSubmitting}
-        onLogin={handleLogin}
-        onLogout={handleLogout}
-        onOpenBillingPortal={handleOpenBillingPortal}
-        onRefreshSession={refreshSession}
-        onRegister={handleRegister}
-        onStartCheckout={handleStartCheckout}
-        session={session}
-      />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          background: "#050505",
+        }}
+      >
+        <TitleBar />
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <AuthPortal
+            error={authError}
+            isLoading={authLoading}
+            isSubmitting={authSubmitting}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+            onOpenBillingPortal={handleOpenBillingPortal}
+            onRefreshSession={refreshSession}
+            onRegister={handleRegister}
+            onStartCheckout={handleStartCheckout}
+            session={session}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -212,37 +232,54 @@ function App() {
     return (
       <div
         dir={direction}
-        className="h-screen flex items-center justify-center text-sm text-mid-gray"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          background: "#0f0f0f",
+        }}
       >
-        {t("common.loading")}
+        <TitleBar />
+        <div className="flex-1 flex items-center justify-center text-sm text-mid-gray">
+          {t("common.loading")}
+        </div>
       </div>
     );
   }
 
   if (onboardingStep === "consent") {
     return (
-      <>
+      <div
+        style={{ display: "flex", flexDirection: "column", height: "100vh" }}
+      >
+        <TitleBar />
         <OnboardingProgressBar current={1} total={3} />
         <ConsentStep onAccept={handleConsentAccepted} />
-      </>
+      </div>
     );
   }
 
   if (onboardingStep === "accessibility") {
     return (
-      <>
+      <div
+        style={{ display: "flex", flexDirection: "column", height: "100vh" }}
+      >
+        <TitleBar />
         <OnboardingProgressBar current={2} total={3} />
         <AccessibilityOnboarding
           onComplete={handleAccessibilityComplete}
           onBack={handleGoBack}
         />
-      </>
+      </div>
     );
   }
 
   if (onboardingStep === "model") {
     return (
-      <>
+      <div
+        style={{ display: "flex", flexDirection: "column", height: "100vh" }}
+      >
+        <TitleBar />
         <OnboardingProgressBar current={3} total={3} />
         <Onboarding
           onModelSelected={handleModelSelected}
@@ -251,7 +288,7 @@ function App() {
         {showTrialWelcome && (
           <TrialWelcomeModal onDismiss={handleDismissTrialWelcome} />
         )}
-      </>
+      </div>
     );
   }
 

@@ -699,8 +699,7 @@ impl HistoryManager {
         let conn = self.get_connection()?;
 
         // Gather all file names before deleting rows
-        let mut stmt =
-            conn.prepare("SELECT id, file_name FROM transcription_history")?;
+        let mut stmt = conn.prepare("SELECT id, file_name FROM transcription_history")?;
         let rows = stmt.query_map([], |row| {
             Ok((row.get::<_, i64>("id")?, row.get::<_, String>("file_name")?))
         })?;

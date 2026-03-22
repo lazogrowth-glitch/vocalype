@@ -167,7 +167,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
 
   return (
-    <aside
+    <nav
+      aria-label={t("a11y.settingsNav")}
       style={{
         width: 224,
         flexShrink: 0,
@@ -276,6 +277,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   width={16}
                   height={16}
                   className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+                  aria-hidden="true"
                 />
               </span>
               <span
@@ -292,6 +294,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="border-t border-white/6 px-[18px] py-3">
         <MachineStatusBar variant="sidebar" />
       </div>
-    </aside>
+    </nav>
   );
 };

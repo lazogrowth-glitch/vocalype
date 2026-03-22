@@ -134,7 +134,8 @@
     },
     "progress": {
       "stepOf": "Étape {{current}} sur {{total}}"
-    }
+    },
+    "title": "Commencer"
   },
   "modelSelector": {
     "badges": {
@@ -584,7 +585,9 @@
       "clearAllSuccess": "Tout l'historique a été effacé.",
       "clearAllError": "Échec de la suppression de l'historique.",
       "loadMore": "Charger plus",
-      "loadingMore": "Chargement…"
+      "loadingMore": "Chargement…",
+      "confirmDeleteAllMessage": "Supprimer tout l'historique ?",
+      "confirmYes": "Tout supprimer"
     },
     "debug": {
       "title": "Débogage",
@@ -794,7 +797,13 @@
     "pauseRecording": "Mettre en pause l'enregistrement",
     "resumeRecording": "Reprendre l'enregistrement",
     "cancelRecording": "Annuler l'enregistrement",
-    "pasteSuccess": "Texte collé ✓"
+    "pasteSuccess": "Texte collé ✓",
+    "a11y": {
+      "recording": "Enregistrement en cours.",
+      "transcribing": "Transcription en cours, veuillez patienter.",
+      "completed": "Transcription terminée. Texte collé.",
+      "error": "Transcription échouée. Veuillez réessayer."
+    }
   },
   "auth": {
     "trialBadge": "14 jours d'essai gratuit, sans carte",
@@ -977,5 +986,13 @@
     "typingTool": "Backend de saisie Linux pour injecter du texte. Auto choisit le meilleur outil pour votre session.",
     "adaptiveVocabulary": "Apprend les mots peu courants que vous utilisez dans l'application active pour améliorer la reconnaissance.",
     "adaptiveVoiceProfile": "Apprend votre rythme d'élocution au fil du temps pour améliorer la détection des silences."
+  },
+  "a11y": {
+    "notifications": "Notifications",
+    "settingsNav": "Navigation des paramètres",
+    "statusReady": "Prêt",
+    "statusRecording": "Enregistrement",
+    "statusError": "Erreur",
+    "skipToMain": "Passer au contenu principal"
   }
 }

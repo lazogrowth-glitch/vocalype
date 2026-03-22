@@ -134,7 +134,8 @@
     },
     "progress": {
       "stepOf": "Step {{current}} of {{total}}"
-    }
+    },
+    "title": "Get started"
   },
   "modelSelector": {
     "badges": {
@@ -572,7 +573,9 @@
       "clearAllSuccess": "All history cleared.",
       "clearAllError": "Failed to clear history.",
       "loadMore": "Load more",
-      "loadingMore": "Loading…"
+      "loadingMore": "Loading…",
+      "confirmDeleteAllMessage": "Delete all history entries?",
+      "confirmYes": "Delete all"
     },
     "gemini": {
       "title": "Gemini API",
@@ -794,7 +797,13 @@
     "pauseRecording": "Pause recording",
     "resumeRecording": "Resume recording",
     "cancelRecording": "Cancel recording",
-    "pasteSuccess": "Text pasted ✓"
+    "pasteSuccess": "Text pasted ✓",
+    "a11y": {
+      "recording": "Recording in progress.",
+      "transcribing": "Transcribing audio, please wait.",
+      "completed": "Transcription complete. Text pasted.",
+      "error": "Transcription failed. Please try again."
+    }
   },
   "auth": {
     "trialBadge": "14-day free trial, no card required",
@@ -977,5 +986,13 @@
     "typingTool": "Linux input backend to inject text. Auto picks the best tool for your session.",
     "adaptiveVocabulary": "Learns uncommon words you use from the active app to improve recognition.",
     "adaptiveVoiceProfile": "Learns your speaking rhythm over time to improve silence detection."
+  },
+  "a11y": {
+    "notifications": "Notifications",
+    "settingsNav": "Settings navigation",
+    "statusReady": "Ready",
+    "statusRecording": "Recording",
+    "statusError": "Error",
+    "skipToMain": "Skip to main content"
   }
 }

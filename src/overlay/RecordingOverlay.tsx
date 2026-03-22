@@ -171,7 +171,7 @@ const AudioBars: React.FC = () => {
   }, []);
 
   return (
-    <div className="bars-container" ref={barsRef}>
+    <div className="bars-container" ref={barsRef} aria-hidden="true">
       {Array.from({ length: 9 }, (_, i) => (
         <div key={i} className="bar" />
       ))}
@@ -327,8 +327,18 @@ const RecordingOverlay: React.FC = () => {
   return (
     <div
       dir={direction}
+      role="status"
       className={`recording-overlay state-${state} ${isVisible ? "is-visible" : "is-hidden"}`}
     >
+      <span className="sr-only" aria-live="assertive" aria-atomic="true">
+        {state === "recording"
+          ? t("overlay.a11y.recording")
+          : state === "transcribing"
+            ? t("overlay.a11y.transcribing")
+            : state === "processing"
+              ? t("overlay.a11y.transcribing")
+              : ""}
+      </span>
       <div className="overlay-left">
         {state === "recording" || state === "preparing" ? (
           <MicIcon />

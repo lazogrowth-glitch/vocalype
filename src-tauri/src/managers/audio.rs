@@ -9,8 +9,8 @@ use crate::utils;
 use crate::voice_profile::current_runtime_adjustment;
 use cpal::traits::HostTrait;
 use log::{debug, error, info};
-use std::sync::atomic::{AtomicBool, Ordering};
 use parking_lot::{Mutex, RwLock};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::Manager;
@@ -661,10 +661,7 @@ impl AudioRecordingManager {
         if *self.is_open.lock() {
             self.stop_microphone_stream();
             self.start_microphone_stream()?;
-        } else if matches!(
-            *self.mode.read(),
-            MicrophoneMode::AlwaysOn
-        ) {
+        } else if matches!(*self.mode.read(), MicrophoneMode::AlwaysOn) {
             self.start_microphone_stream()?;
         }
         Ok(())
@@ -720,10 +717,7 @@ impl AudioRecordingManager {
         }
     }
     pub fn is_recording(&self) -> bool {
-        matches!(
-            *self.state.read(),
-            RecordingState::Recording { .. }
-        )
+        matches!(*self.state.read(), RecordingState::Recording { .. })
     }
 
     pub fn is_paused(&self) -> bool {
@@ -754,11 +748,7 @@ impl AudioRecordingManager {
         }
 
         // In AlwaysOn mode restart the stream so the gain applies immediately.
-        if matches!(
-            *self.mode.read(),
-            MicrophoneMode::AlwaysOn
-        ) && *self.is_open.lock()
-        {
+        if matches!(*self.mode.read(), MicrophoneMode::AlwaysOn) && *self.is_open.lock() {
             self.stop_microphone_stream();
             self.start_microphone_stream()?;
         }
@@ -769,10 +759,7 @@ impl AudioRecordingManager {
     /// Returns a copy of all samples recorded so far without stopping the recording.
     /// Returns None if not currently recording.
     pub fn snapshot_recording(&self) -> Option<Vec<f32>> {
-        if !matches!(
-            *self.state.read(),
-            RecordingState::Recording { .. }
-        ) {
+        if !matches!(*self.state.read(), RecordingState::Recording { .. }) {
             return None;
         }
         self.recorder.lock().as_ref()?.snapshot().ok()

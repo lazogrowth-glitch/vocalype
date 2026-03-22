@@ -21,10 +21,10 @@ use parakeet_rs::{
     ExecutionConfig as ParakeetExecutionConfig, ExecutionProvider as ParakeetExecutionProvider,
     ParakeetTDT, TimestampMode as ParakeetTimestampMode, Transcriber,
 };
+use parking_lot::{Condvar, Mutex, MutexGuard};
 use serde::Serialize;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use parking_lot::{Condvar, Mutex, MutexGuard};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};

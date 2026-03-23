@@ -44,7 +44,7 @@ def env_int(name: str, default: int, minimum: int) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate a short-lived admin JWT for VocalType backend endpoints."
+        description="Generate a short-lived admin JWT for Vocalype backend endpoints."
     )
     parser.add_argument(
         "--subject",
@@ -101,7 +101,7 @@ def main() -> int:
     print()
     print("Example curl:")
     print(
-        "curl -X POST \"$VOCALTYPE_API_URL/admin/activate\" "
+        "curl -X POST \"$VOCALYPE_API_URL/admin/activate\" "
         "-H \"Authorization: Bearer "
         f"{token}"
         "\" "

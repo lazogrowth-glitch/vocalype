@@ -40,7 +40,7 @@ function New-LatestJson {
 
     $latest = [ordered]@{
         version = $Version
-        notes = "VocalType $Version"
+        notes = "Vocalype $Version"
         pub_date = $pubDate
         platforms = [ordered]@{
             "windows-x86_64" = [ordered]@{

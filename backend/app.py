@@ -26,8 +26,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 app = Flask(__name__)
 
 DEFAULT_ALLOWED_ORIGINS = (
-    "https://vocaltypeai.com",
-    "https://www.vocaltypeai.com",
+    "https://vocalype.com",
+    "https://www.vocalype.com",
     "tauri://localhost",
     "https://tauri.localhost",
     "http://tauri.localhost",
@@ -111,7 +111,7 @@ LICENSE_APPROVED_BUILD_HASHES = {
 }
 APP_RETURN_URL = os.environ.get(
     "APP_RETURN_URL",
-    os.environ.get("FRONTEND_URL", "https://vocaltypeai.com"),
+    os.environ.get("FRONTEND_URL", "https://vocalype.com"),
 )
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "vocaltype.db")
 TRUST_X_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "").strip().lower() in {
@@ -1248,12 +1248,12 @@ def send_reset_email(to_email: str, code: str) -> None:
         return
 
     body = (
-        f"Your VocalType password reset code is: {code}\n\n"
+        f"Your Vocalype password reset code is: {code}\n\n"
         "This code expires in 1 hour. If you did not request a reset, "
         "you can safely ignore this email."
     )
     msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = "VocalType - Password Reset Code"
+    msg["Subject"] = "Vocalype - Password Reset Code"
     msg["From"] = smtp_from
     msg["To"] = to_email
 
@@ -1280,15 +1280,15 @@ def send_trial_start_email(to_email: str, name: str) -> None:
 
     plain = (
         f"Bonjour {first_name},\n\n"
-        "Ton accès Premium VocalType est actif. 14 jours complets, sans carte.\n\n"
+        "Ton accès Premium Vocalype est actif. 14 jours complets, sans carte.\n\n"
         "Ce que tu as maintenant :\n"
         "  • Injection native dans toutes tes apps\n"
         "  • Raccourci clavier personnalisable\n"
         "  • Transcriptions illimitées\n"
         "  • Historique complet\n\n"
         "Aucune action requise — ton trial a démarré automatiquement.\n\n"
-        f"Ouvre VocalType et commence à dicter : {site_url}\n\n"
-        "— L'équipe VocalType"
+        f"Ouvre Vocalype et commence à dicter : {site_url}\n\n"
+        "— L'équipe Vocalype"
     )
 
     html = f"""<!DOCTYPE html>
@@ -1310,7 +1310,7 @@ def send_trial_start_email(to_email: str, name: str) -> None:
             Bonjour {first_name},
           </p>
           <p style="margin:0 0 24px;font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">
-            Ton accès Premium VocalType est actif.<br>
+            Ton accès Premium Vocalype est actif.<br>
             14 jours complets, sans carte de crédit.
           </p>
 
@@ -1331,7 +1331,7 @@ def send_trial_start_email(to_email: str, name: str) -> None:
 
           <!-- CTA -->
           <a href="{site_url}" style="display:inline-block;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#c9a84c;font-size:13px;font-weight:600;padding:11px 24px;border-radius:8px;text-decoration:none;">
-            Ouvrir VocalType →
+            Ouvrir Vocalype →
           </a>
         </td></tr>
 
@@ -1349,7 +1349,7 @@ def send_trial_start_email(to_email: str, name: str) -> None:
 </html>"""
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Ton accès Premium VocalType est actif — 14 jours complets"
+    msg["Subject"] = "Ton accès Premium Vocalype est actif — 14 jours complets"
     msg["From"] = smtp_from
     msg["To"] = to_email
     msg.attach(MIMEText(plain, "plain", "utf-8"))
@@ -1382,7 +1382,7 @@ def send_trial_reminder_email(to_email: str, name: str, days_left: int) -> None:
 
     plain = (
         f"Bonjour {first_name},\n\n"
-        f"Ton trial Premium VocalType expire {days_str}.\n\n"
+        f"Ton trial Premium Vocalype expire {days_str}.\n\n"
         "Ce que tu perdras sans abonnement :\n"
         "  • Injection native dans tes apps (retour au presse-papier)\n"
         "  • Raccourcis clavier personnalisés (désactivés)\n"
@@ -1390,7 +1390,7 @@ def send_trial_reminder_email(to_email: str, name: str, days_left: int) -> None:
         "  • Historique complet (limité à 5 entrées)\n\n"
         "Passe à Premium maintenant pour continuer sans interruption.\n\n"
         f"Voir les offres : {site_url}\n\n"
-        "— L'équipe VocalType"
+        "— L'équipe Vocalype"
     )
 
     html = f"""<!DOCTYPE html>
@@ -1440,7 +1440,7 @@ def send_trial_reminder_email(to_email: str, name: str, days_left: int) -> None:
         <!-- Footer -->
         <tr><td style="padding:16px 36px;border-top:1px solid rgba(255,255,255,0.06);">
           <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2);line-height:1.6;">
-            Tu peux continuer à utiliser VocalType en mode Basic après l'expiration.
+            Tu peux continuer à utiliser Vocalype en mode Basic après l'expiration.
           </p>
         </td></tr>
 
@@ -1451,7 +1451,7 @@ def send_trial_reminder_email(to_email: str, name: str, days_left: int) -> None:
 </html>"""
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"Ton trial VocalType expire {days_str} — passe à Premium"
+    msg["Subject"] = f"Ton trial Vocalype expire {days_str} — passe à Premium"
     msg["From"] = smtp_from
     msg["To"] = to_email
     msg.attach(MIMEText(plain, "plain", "utf-8"))

@@ -41,7 +41,7 @@ export const MeetingsSettings: React.FC = () => {
   useEffect(() => {
     loadMeetings();
     commands.detectActiveMeetingApp().then((res) => {
-      if (res.status === "ok") setDetectedApp(res.data ?? null);
+      setDetectedApp(res);
     });
   }, [loadMeetings]);
 
@@ -110,14 +110,12 @@ export const MeetingsSettings: React.FC = () => {
   };
 
   const handleCloseMeeting = async () => {
-    const res = await commands.closeMeeting();
-    if (res.status === "ok") {
-      toast.success(
-        t("meetings.closed", {
-          defaultValue: "Meeting closed — next recording starts a new one",
-        }),
-      );
-    }
+    await commands.closeMeeting();
+    toast.success(
+      t("meetings.closed", {
+        defaultValue: "Meeting closed — next recording starts a new one",
+      }),
+    );
   };
 
   const scheduleSave = useCallback(

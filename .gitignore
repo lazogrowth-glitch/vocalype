@@ -45,3 +45,4 @@ backend/.env.production
 # Python backend artifacts
 backend/__pycache__/
 backend/*.db
+.claude/

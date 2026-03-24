@@ -46,3 +46,7 @@ backend/.env.production
 backend/__pycache__/
 backend/*.db
 .claude/
+
+# Test/dev artifacts (never commit these)
+.pydeps-onnxasr/
+tmp-parakeet-tests/

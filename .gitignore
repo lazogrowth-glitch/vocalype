@@ -50,3 +50,15 @@ backend/*.db
 # Test/dev artifacts (never commit these)
 .pydeps-onnxasr/
 tmp-parakeet-tests/
+
+# Log files
+launch.err
+launch.out
+tmp-tauri-*.log
+cargo-check-warnings*.txt
+cargo-test-warnings*.txt
+
+# Python cache
+**/__pycache__/
+*.pyc
+*.pyo

@@ -70,7 +70,7 @@ Activate a user directly:
 
 ```bash
 export ADMIN_TOKEN_SECRET="replace-me"
-export VOCALTYPE_API_URL="https://your-railway-api.up.railway.app"
+export VOCALYPE_API_URL="https://your-railway-api.up.railway.app"
 python scripts/admin-activate-user.py --email user@example.com
 ```
 

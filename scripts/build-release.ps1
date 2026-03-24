@@ -1,7 +1,7 @@
 param(
-    [string]$PrivateKeyPath = "$env:USERPROFILE\.tauri\vocaltype-new.key",
+    [string]$PrivateKeyPath = "$env:USERPROFILE\.tauri\vocalype-new.key",
     [string]$PrivateKeyPassword = "",
-    [string]$ReleaseRepo = "lazogrowth-glitch/vocaltype",
+    [string]$ReleaseRepo = "lazogrowth-glitch/vocalype",
     [switch]$SkipSigning,
     [switch]$Clean
 )

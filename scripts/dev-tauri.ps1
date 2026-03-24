@@ -53,10 +53,10 @@ if ($existingPid) {
     Start-Sleep -Milliseconds 500
 }
 
-# Kill any stale vocaltype instance to avoid single-instance blocking the new dev session
-$stale = Get-Process -Name "vocaltype" -ErrorAction SilentlyContinue
+# Kill any stale vocalype instance to avoid single-instance blocking the new dev session
+$stale = Get-Process -Name "vocalype" -ErrorAction SilentlyContinue
 if ($stale) {
-    Write-Host "Stopping stale vocaltype instance(s)..."
+    Write-Host "Stopping stale vocalype instance(s)..."
     $stale | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Milliseconds 500
 }

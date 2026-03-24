@@ -9,7 +9,7 @@ import sys
 import time
 
 
-DEFAULT_AUDIENCE = "vocaltype-admin"
+DEFAULT_AUDIENCE = "vocalype-admin"
 DEFAULT_SCOPE = "admin:activate"
 DEFAULT_TTL_SECONDS = 300
 

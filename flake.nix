@@ -186,7 +186,7 @@
 
             meta = {
               description = "A free, open source, and extensible speech-to-text application that works completely offline";
-              homepage = "https://github.com/lazogrowth-glitch/vocaltype";
+              homepage = "https://github.com/lazogrowth-glitch/vocalype";
               license = lib.licenses.mit;
               mainProgram = "vocalype";
               platforms = supportedSystems;

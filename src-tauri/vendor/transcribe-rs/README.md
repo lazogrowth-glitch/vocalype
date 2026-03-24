@@ -2,7 +2,7 @@
 
 A Rust library for audio transcription supporting multiple engines including Whisper, Parakeet, Moonshine, SenseVoice, and GigaAM.
 
-This library was extracted from the [VocalType](https://github.com/lazogrowth-glitch/vocaltype) project to help other developers integrate transcription capabilities into their applications. We hope to support additional ASR models in the future and may expand to include features like microphone input and real-time transcription.
+This library was extracted from the [Vocalype](https://github.com/lazogrowth-glitch/vocalype) project to help other developers integrate transcription capabilities into their applications. We hope to support additional ASR models in the future and may expand to include features like microphone input and real-time transcription.
 
 ## Features
 

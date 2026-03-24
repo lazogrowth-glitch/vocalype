@@ -7,7 +7,7 @@ from pathlib import Path
 
 def load_backend_module():
     module_path = Path(__file__).with_name("app.py")
-    spec = importlib.util.spec_from_file_location("vocaltype_backend_app", module_path)
+    spec = importlib.util.spec_from_file_location("vocalype_backend_app", module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError("Unable to load backend app module")
     module = importlib.util.module_from_spec(spec)

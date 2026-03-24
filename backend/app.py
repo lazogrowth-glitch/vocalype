@@ -87,7 +87,7 @@ STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
 ADMIN_TOKEN_SECRET = os.environ.get("ADMIN_TOKEN_SECRET", "")
-ADMIN_TOKEN_AUDIENCE = os.environ.get("ADMIN_TOKEN_AUDIENCE", "vocaltype-admin")
+ADMIN_TOKEN_AUDIENCE = os.environ.get("ADMIN_TOKEN_AUDIENCE", "vocalype-admin")
 ADMIN_TOKEN_MAX_AGE_SECONDS = env_int("ADMIN_TOKEN_MAX_AGE_SECONDS", 300, 60)
 LICENSE_GRANT_TTL_SECONDS = env_int("LICENSE_GRANT_TTL_SECONDS", 3600, 300)
 LICENSE_OFFLINE_TTL_SECONDS = env_int("LICENSE_OFFLINE_TTL_SECONDS", 72 * 3600, 3600)
@@ -95,8 +95,8 @@ LICENSE_REFRESH_INTERVAL_SECONDS = env_int("LICENSE_REFRESH_INTERVAL_SECONDS", 2
 LICENSE_REVOCATION_GRACE_SECONDS = env_int(
     "LICENSE_REVOCATION_GRACE_SECONDS", 24 * 3600, 3600
 )
-LICENSE_AUDIENCE = os.environ.get("LICENSE_AUDIENCE", "vocaltype-license")
-LICENSE_ISSUER = os.environ.get("LICENSE_ISSUER", "vocaltype-backend")
+LICENSE_AUDIENCE = os.environ.get("LICENSE_AUDIENCE", "vocalype-license")
+LICENSE_ISSUER = os.environ.get("LICENSE_ISSUER", "vocalype-backend")
 LICENSE_STRICT_BUILD_APPROVAL = env_bool("LICENSE_STRICT_BUILD_APPROVAL", False)
 LICENSE_ALLOW_DEBUG_BUILDS = env_bool("LICENSE_ALLOW_DEBUG_BUILDS", True)
 LICENSE_ALLOWED_CHANNELS = {
@@ -113,7 +113,7 @@ APP_RETURN_URL = os.environ.get(
     "APP_RETURN_URL",
     os.environ.get("FRONTEND_URL", "https://vocalype.com"),
 )
-DATABASE_PATH = os.environ.get("DATABASE_PATH", "vocaltype.db")
+DATABASE_PATH = os.environ.get("DATABASE_PATH", "vocalype.db")
 TRUST_X_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "").strip().lower() in {
     "1",
     "true",
@@ -750,7 +750,7 @@ def build_license_payloads(user, entitlement, *, device_id: str, integrity_evalu
     model_unlock_key = hashlib.sha256(
         "|".join(
             [
-                "vocaltype-model-unlock-v1",
+                "vocalype-model-unlock-v1",
                 JWT_SECRET,
                 str(user["id"]),
                 device_id,
@@ -1556,7 +1556,7 @@ def find_valid_reset_token_row(db: sqlite3.Connection, user_id: int, code: str):
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "service": "vocaltype-backend"})
+    return jsonify({"status": "ok", "service": "vocalype-backend"})
 
 
 @app.route("/auth/register", methods=["POST"])

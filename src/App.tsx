@@ -20,6 +20,8 @@ import { PlanContext } from "@/lib/subscription/context";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { listen } from "@tauri-apps/api/event";
+import { authClient } from "@/lib/auth/client";
 
 const AUTH_WINDOW_SIZE = { width: 1348, height: 875 };
 const APP_WINDOW_SIZE = { width: 1348, height: 875 };
@@ -143,6 +145,20 @@ function App() {
   useEffect(() => {
     initializeRTL(i18n.language);
   }, [i18n.language]);
+
+  // Handle deep link auth: vocalype://auth-callback?token=xxx
+  useEffect(() => {
+    const unlisten = listen<string>("deep-link-auth", async (event) => {
+      const token = event.payload;
+      if (token) {
+        await authClient.setStoredToken(token);
+        await refreshSession();
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [refreshSession]);
 
   // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {

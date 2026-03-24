@@ -73,6 +73,7 @@ pub use transcription_coordinator::TranscriptionCoordinator;
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
 use crate::settings::{get_settings_fast, refresh_adaptive_profile_if_needed};
@@ -690,6 +691,7 @@ pub fn run(cli_args: CliArgs) {
 
     let builder = tauri::Builder::default()
         .device_event_filter(tauri::DeviceEventFilter::Always)
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             LogBuilder::new()
@@ -722,6 +724,22 @@ pub fn run(cli_args: CliArgs) {
 
     let app = builder
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            // Check if a deep link URL was passed (deep-link plugin forwards it here on Windows)
+            if let Some(url) = args.iter().find(|a| a.starts_with("vocalype://")) {
+                if url.contains("auth-callback") {
+                    let query_start = url.find('?').map(|i| i + 1).unwrap_or(url.len());
+                    for pair in url[query_start..].split('&') {
+                        if let Some(token) = pair.strip_prefix("token=") {
+                            log::info!("Deep link auth via single-instance, showing app");
+                            show_main_window(app);
+                            let _ = app.emit("deep-link-auth", token.to_string());
+                            return;
+                        }
+                    }
+                }
+                show_main_window(app);
+                return;
+            }
             if args.iter().any(|a| a == "--toggle-transcription") {
                 signal_handle::send_transcription_input(app, "transcribe", "CLI");
             } else if args.iter().any(|a| a == "--toggle-post-process") {
@@ -811,6 +829,36 @@ pub fn run(cli_args: CliArgs) {
             });
 
             initialize_core_logic(&app_handle)?;
+
+            // Register vocalype:// URL scheme (needed on Windows/Linux in dev)
+            #[cfg(not(target_os = "macos"))]
+            if let Err(e) = app.deep_link().register("vocalype") {
+                log::warn!("Failed to register vocalype:// scheme: {}", e);
+            }
+
+            // Handle incoming deep links (e.g. vocalype://auth-callback?token=xxx)
+            let handle_for_deeplink = app_handle.clone();
+            app.deep_link().on_open_url(move |event| {
+                for url in event.urls() {
+                    if url.scheme() == "vocalype" {
+                        let host = url.host_str().unwrap_or("");
+                        if host == "auth-callback" {
+                            if let Some(query) = url.query() {
+                                for pair in query.split('&') {
+                                    if let Some(token) = pair.strip_prefix("token=") {
+                                        log::info!("Deep link auth received, showing app");
+                                        show_main_window(&handle_for_deeplink);
+                                        let _ = handle_for_deeplink
+                                            .emit("deep-link-auth", token.to_string());
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
             app.manage(startup_warmup::StartupWarmupState::new(
                 startup_warmup::initial_status(&app_handle),
             ));

@@ -74,6 +74,11 @@
     "windows": {}
   },
   "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["vocalype"]
+      }
+    },
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg0REJCOEY3NTkxQTRFOUEKUldTYVRocFo5N2piaEo4SE1CRUlnYUFqellqeWFEODNadEx0aG5rMlkyWFR4dXY2YXlhRy96MFkK",
       "endpoints": [

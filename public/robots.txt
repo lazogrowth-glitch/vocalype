@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://vocalype.com/sitemap.xml

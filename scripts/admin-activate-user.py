@@ -47,7 +47,7 @@ def env_int(name: str, default: int, minimum: int) -> int:
 def normalize_base_url(raw_value: str) -> str:
     value = raw_value.strip().rstrip("/")
     if not value:
-        raise ValueError("Missing API base URL. Set VOCALTYPE_API_URL or pass --api-url.")
+        raise ValueError("Missing API base URL. Set VOCALYPE_API_URL or pass --api-url.")
     if not value.startswith(("http://", "https://")):
         raise ValueError("API URL must start with http:// or https://")
     return value
@@ -67,12 +67,12 @@ def generate_token(subject: str, audience: str, ttl_seconds: int, secret: str) -
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Activate a VocalType user through the admin endpoint."
+        description="Activate a Vocalype user through the admin endpoint."
     )
     parser.add_argument("--email", required=True, help="User email to activate.")
     parser.add_argument(
         "--api-url",
-        default=os.environ.get("VOCALTYPE_API_URL", ""),
+        default=os.environ.get("VOCALYPE_API_URL", ""),
         help="Backend base URL, e.g. https://your-api.up.railway.app",
     )
     parser.add_argument(

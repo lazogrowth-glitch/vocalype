@@ -1,5 +1,5 @@
 {
-  description = "VocalType - A free, open source, and extensible speech-to-text application that works completely offline";
+  description = "Vocalype - A free, open source, and extensible speech-to-text application that works completely offline";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -28,7 +28,7 @@
           lib = pkgs.lib;
 
           bunDeps = pkgs.stdenv.mkDerivation {
-              pname = "vocaltype-bun-deps";
+              pname = "vocalype-bun-deps";
             inherit version;
             src = self;
 
@@ -55,8 +55,8 @@
           };
         in
         {
-          vocaltype = pkgs.rustPlatform.buildRustPackage {
-            pname = "vocaltype";
+          vocalype = pkgs.rustPlatform.buildRustPackage {
+            pname = "vocalype";
             inherit version;
             src = self;
 
@@ -188,12 +188,12 @@
               description = "A free, open source, and extensible speech-to-text application that works completely offline";
               homepage = "https://github.com/lazogrowth-glitch/vocaltype";
               license = lib.licenses.mit;
-              mainProgram = "vocaltype";
+              mainProgram = "vocalype";
               platforms = supportedSystems;
             };
           };
 
-          default = self.packages.${system}.vocaltype;
+          default = self.packages.${system}.vocalype;
         }
       );
 
@@ -254,7 +254,7 @@
             XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:${pkgs.hicolor-icon-theme}/share";
 
             shellHook = ''
-              echo "VocalType development environment"
+              echo "Vocalype development environment"
               bun install
               echo "Run 'bun run tauri dev' to start"
             '';

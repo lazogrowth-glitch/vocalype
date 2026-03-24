@@ -438,7 +438,7 @@ def make_token(user) -> str:
 def load_user_by_id(user_id: int):
     db = get_db()
     try:
-        return db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return db.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
     finally:
         db.close()
 
@@ -446,7 +446,7 @@ def load_user_by_id(user_id: int):
 def load_user_by_email(email: str):
     db = get_db()
     try:
-        return db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        return db.execute("SELECT * FROM users WHERE email = %s", (email,)).fetchone()
     finally:
         db.close()
 
@@ -463,7 +463,7 @@ def record_license_integrity_event(
         db.execute(
             """
             INSERT INTO license_integrity_events (user_id, device_id, event_type, details)
-            VALUES (?, %s, %s, %s)
+            VALUES (%s, %s, %s, %s)
             """,
             (
                 user_id,
@@ -549,8 +549,8 @@ def bootstrap_device_entitlement(
                 last_grant_issued_at = %s,
                 revoked_at = NULL,
                 grace_until = NULL,
-                app_version = COALESCE(?, app_version),
-                app_channel = COALESCE(?, app_channel)
+                app_version = COALESCE(%s, app_version),
+                app_channel = COALESCE(%s, app_channel)
             WHERE user_id = %s AND device_id = %s
             """,
             (
@@ -611,7 +611,7 @@ def sync_device_entitlement_state(
                     last_grant_issued_at,
                     app_version,
                     app_channel
-                ) VALUES (?, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     user["id"],
@@ -635,8 +635,8 @@ def sync_device_entitlement_state(
                     last_grant_issued_at = %s,
                     revoked_at = NULL,
                     grace_until = NULL,
-                    app_version = COALESCE(?, app_version),
-                    app_channel = COALESCE(?, app_channel)
+                    app_version = COALESCE(%s, app_version),
+                    app_channel = COALESCE(%s, app_channel)
                 WHERE id = %s
                 """,
                 (
@@ -669,7 +669,7 @@ def sync_all_entitlements_for_user(user_id: int) -> None:
     db = get_db()
     try:
         device_rows = db.execute(
-            "SELECT device_id FROM premium_device_entitlements WHERE user_id = ?",
+            "SELECT device_id FROM premium_device_entitlements WHERE user_id = %s",
             (user_id,),
         ).fetchall()
     finally:
@@ -861,7 +861,7 @@ def device_is_registered(device_id: str) -> bool:
     db = get_db()
     try:
         row = db.execute(
-            "SELECT id FROM device_registrations WHERE device_id = ?",
+            "SELECT id FROM device_registrations WHERE device_id = %s",
             (device_id,),
         ).fetchone()
         return row is not None
@@ -943,7 +943,7 @@ def check_rate_limit(
     db = get_db()
     try:
         row = db.execute(
-            "SELECT * FROM auth_rate_limits WHERE key = ?",
+            "SELECT * FROM auth_rate_limits WHERE key = %s",
             (key,),
         ).fetchone()
 
@@ -952,7 +952,7 @@ def check_rate_limit(
                 db.execute(
                     """
                     INSERT INTO auth_rate_limits (key, attempts, window_started_at, blocked_until)
-                    VALUES (?, %s, %s, NULL)
+                    VALUES (%s, %s, %s, NULL)
                     """,
                     (key, 1, now.isoformat()),
                 )
@@ -1004,7 +1004,7 @@ def clear_rate_limit(scope: str, identifier: str) -> None:
     key = normalize_rate_limit_key(scope, identifier)
     db = get_db()
     try:
-        db.execute("DELETE FROM auth_rate_limits WHERE key = ?", (key,))
+        db.execute("DELETE FROM auth_rate_limits WHERE key = %s", (key,))
         db.commit()
     finally:
         db.close()
@@ -1246,7 +1246,7 @@ def ensure_customer(user):
     db = get_db()
     try:
         db.execute(
-            "UPDATE users SET stripe_customer_id = %s WHERE id = ?",
+            "UPDATE users SET stripe_customer_id = %s WHERE id = %s",
             (customer.id, user["id"]),
         )
         db.commit()
@@ -1514,7 +1514,7 @@ def maybe_send_trial_reminder(user) -> bool:
     # Mark sent immediately to prevent duplicate sends under concurrent requests
     db = get_db()
     db.execute(
-        "UPDATE users SET trial_reminder_sent = 1 WHERE id = ?",
+        "UPDATE users SET trial_reminder_sent = 1 WHERE id = %s",
         (user["id"],),
     )
     db.commit()
@@ -1544,7 +1544,7 @@ def increment_latest_reset_attempt(db: _PgConn, user_id: int) -> None:
 
     next_attempt_count = int(latest_row["attempt_count"] or 0) + 1
     db.execute(
-        "UPDATE password_reset_tokens SET attempt_count = %s, used = %s WHERE id = ?",
+        "UPDATE password_reset_tokens SET attempt_count = %s, used = %s WHERE id = %s",
         (
             next_attempt_count,
             1 if next_attempt_count >= MAX_RESET_TOKEN_ATTEMPTS else 0,
@@ -1643,7 +1643,7 @@ def register():
                     password_hash,
                     subscription_status,
                     trial_end
-                ) VALUES (?, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s)
                 """,
                 (
                     email,
@@ -1655,18 +1655,18 @@ def register():
             )
             db.commit()
             user = db.execute(
-                "SELECT * FROM users WHERE email = ?",
+                "SELECT * FROM users WHERE email = %s",
                 (email,),
             ).fetchone()
 
             if ref_code:
                 referrer = db.execute(
-                    "SELECT id FROM users WHERE referral_code = ?",
+                    "SELECT id FROM users WHERE referral_code = %s",
                     (ref_code,),
                 ).fetchone()
                 if referrer and referrer["id"] != user["id"]:
                     db.execute(
-                        "INSERT INTO referrals (referrer_id, referee_id) VALUES (?, %s)",
+                        "INSERT INTO referrals (referrer_id, referee_id) VALUES (%s, %s)",
                         (referrer["id"], user["id"]),
                     )
                     db.commit()
@@ -1997,8 +1997,8 @@ def billing_checkout(user):
             payment_method_types=["card"],
             line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
             mode="subscription",
-            success_url=f"{APP_RETURN_URL}?checkout=success",
-            cancel_url=f"{APP_RETURN_URL}?checkout=cancelled",
+            success_url=f"{APP_RETURN_URL}%scheckout=success",
+            cancel_url=f"{APP_RETURN_URL}%scheckout=cancelled",
         )
         return jsonify({"url": checkout.url})
     except Exception:
@@ -2058,7 +2058,7 @@ def webhook():
             )
             db.commit()
             row = db.execute(
-                "SELECT id FROM users WHERE stripe_customer_id = ?",
+                "SELECT id FROM users WHERE stripe_customer_id = %s",
                 (customer_id,),
             ).fetchone()
 
@@ -2126,7 +2126,7 @@ def admin_activate():
 
     db = get_db()
     try:
-        user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        user = db.execute("SELECT * FROM users WHERE email = %s", (email,)).fetchone()
         if not user:
             return jsonify({"error": "Utilisateur introuvable"}), 404
 
@@ -2287,7 +2287,7 @@ def forgot_password():
             db.execute(
                 """
                 INSERT INTO password_reset_tokens (user_id, token, expires_at, used, attempt_count)
-                VALUES (?, %s, %s, 0, 0)
+                VALUES (%s, %s, %s, 0, 0)
                 """,
                 (user["id"], generate_password_hash(code), expires_at),
             )
@@ -2440,16 +2440,16 @@ def reset_password():
             return jsonify({"error": "Code invalide ou expiré"}), 400
 
         db.execute(
-            "UPDATE password_reset_tokens SET used = 1 WHERE user_id = ?",
+            "UPDATE password_reset_tokens SET used = 1 WHERE user_id = %s",
             (user["id"],),
         )
         next_token_version = int(user["token_version"] or 0) + 1
         db.execute(
-            "UPDATE users SET password_hash = %s, token_version = %s WHERE id = ?",
+            "UPDATE users SET password_hash = %s, token_version = %s WHERE id = %s",
             (generate_password_hash(new_password), next_token_version, user["id"]),
         )
         db.commit()
-        user = db.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()
+        user = db.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone()
     finally:
         db.close()
 
@@ -2482,7 +2482,7 @@ def change_password(user):
     try:
         next_token_version = int(user["token_version"] or 0) + 1
         db.execute(
-            "UPDATE users SET password_hash = %s, token_version = %s WHERE id = ?",
+            "UPDATE users SET password_hash = %s, token_version = %s WHERE id = %s",
             (generate_password_hash(new_password), next_token_version, user["id"]),
         )
         db.commit()
@@ -2502,7 +2502,7 @@ def _get_or_create_referral_code(user, db: _PgConn) -> str:
     if code:
         return code
     code = secrets.token_urlsafe(8)
-    db.execute("UPDATE users SET referral_code = %s WHERE id = ?", (code, user["id"]))
+    db.execute("UPDATE users SET referral_code = %s WHERE id = %s", (code, user["id"]))
     db.commit()
     return code
 
@@ -2513,7 +2513,7 @@ def get_referral_code(user):
     db = get_db()
     try:
         # Reload fresh row so referral_code is up to date
-        row = db.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()
+        row = db.execute("SELECT * FROM users WHERE id = %s", (user["id"],)).fetchone()
         if not row:
             return jsonify({"error": "User not found"}), 404
         code = _get_or_create_referral_code(row, db)

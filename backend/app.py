@@ -4,7 +4,8 @@
 import os
 import secrets
 import smtplib
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import re
 import time
 import uuid
@@ -113,7 +114,7 @@ APP_RETURN_URL = os.environ.get(
     "APP_RETURN_URL",
     os.environ.get("FRONTEND_URL", "https://vocalype.com"),
 )
-DATABASE_PATH = os.environ.get("DATABASE_PATH", "vocalype.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 TRUST_X_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "").strip().lower() in {
     "1",
     "true",
@@ -275,19 +276,40 @@ def dt_to_iso(value: datetime | None) -> str | None:
     return value.astimezone(timezone.utc).isoformat()
 
 
-def get_db():
-    conn = sqlite3.connect(DATABASE_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+class _PgConn:
+    """Thin wrapper around psycopg2 that mimics the sqlite3 connection API."""
+
+    def __init__(self):
+        self._conn = psycopg2.connect(DATABASE_URL)
+        self._conn.autocommit = False
+        self._cur = self._conn.cursor(cursor_factory=RealDictCursor)
+
+    def execute(self, sql, params=None):
+        self._cur.execute(sql, params)
+        return self._cur
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._cur.close()
+        self._conn.close()
 
 
-def column_exists(db: sqlite3.Connection, table_name: str, column_name: str) -> bool:
-    rows = db.execute(f"PRAGMA table_info({table_name})").fetchall()
-    return any(row["name"] == column_name for row in rows)
+def get_db() -> _PgConn:
+    return _PgConn()
+
+
+def column_exists(db: _PgConn, table_name: str, column_name: str) -> bool:
+    rows = db.execute(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = %s AND column_name = %s",
+        (table_name, column_name),
+    ).fetchall()
+    return len(rows) > 0
 
 
 def ensure_column(
-    db: sqlite3.Connection,
+    db: _PgConn,
     table_name: str,
     column_name: str,
     definition: str,
@@ -301,7 +323,7 @@ def init_db():
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             name TEXT,
             password_hash TEXT NOT NULL,
@@ -316,7 +338,7 @@ def init_db():
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS device_registrations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             device_id TEXT UNIQUE NOT NULL,
             user_id INTEGER NOT NULL,
             registered_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -327,7 +349,7 @@ def init_db():
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS password_reset_tokens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             token TEXT UNIQUE NOT NULL,
             expires_at TEXT NOT NULL,
@@ -354,7 +376,7 @@ def init_db():
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS premium_device_entitlements (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             device_id TEXT NOT NULL,
             plan TEXT NOT NULL DEFAULT 'premium',
@@ -374,7 +396,7 @@ def init_db():
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS license_integrity_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER,
             device_id TEXT,
             event_type TEXT NOT NULL,
@@ -386,7 +408,7 @@ def init_db():
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS referrals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             referrer_id INTEGER NOT NULL,
             referee_id INTEGER NOT NULL,
             converted INTEGER NOT NULL DEFAULT 0,
@@ -441,7 +463,7 @@ def record_license_integrity_event(
         db.execute(
             """
             INSERT INTO license_integrity_events (user_id, device_id, event_type, details)
-            VALUES (?, ?, ?, ?)
+            VALUES (?, %s, %s, %s)
             """,
             (
                 user_id,
@@ -472,7 +494,7 @@ def load_device_entitlement(user_id: int, device_id: str):
         return db.execute(
             """
             SELECT * FROM premium_device_entitlements
-            WHERE user_id = ? AND device_id = ?
+            WHERE user_id = %s AND device_id = %s
             """,
             (user_id, device_id),
         ).fetchone()
@@ -494,7 +516,7 @@ def bootstrap_device_entitlement(
     try:
         db.execute(
             """
-            INSERT OR IGNORE INTO premium_device_entitlements (
+            INSERT INTO premium_device_entitlements (
                 user_id,
                 device_id,
                 plan,
@@ -504,7 +526,8 @@ def bootstrap_device_entitlement(
                 last_grant_issued_at,
                 app_version,
                 app_channel
-            ) VALUES (?, ?, 'premium', ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, 'premium', %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (user_id, device_id) DO NOTHING
             """,
             (
                 user["id"],
@@ -521,14 +544,14 @@ def bootstrap_device_entitlement(
             """
             UPDATE premium_device_entitlements
             SET plan = 'premium',
-                entitlement_status = ?,
-                last_seen_at = ?,
-                last_grant_issued_at = ?,
+                entitlement_status = %s,
+                last_seen_at = %s,
+                last_grant_issued_at = %s,
                 revoked_at = NULL,
                 grace_until = NULL,
                 app_version = COALESCE(?, app_version),
                 app_channel = COALESCE(?, app_channel)
-            WHERE user_id = ? AND device_id = ?
+            WHERE user_id = %s AND device_id = %s
             """,
             (
                 ENTITLEMENT_STATUS_ACTIVE,
@@ -544,7 +567,7 @@ def bootstrap_device_entitlement(
         return db.execute(
             """
             SELECT * FROM premium_device_entitlements
-            WHERE user_id = ? AND device_id = ?
+            WHERE user_id = %s AND device_id = %s
             """,
             (user["id"], device_id),
         ).fetchone()
@@ -569,7 +592,7 @@ def sync_device_entitlement_state(
         row = db.execute(
             """
             SELECT * FROM premium_device_entitlements
-            WHERE user_id = ? AND device_id = ?
+            WHERE user_id = %s AND device_id = %s
             """,
             (user["id"], device_id),
         ).fetchone()
@@ -588,7 +611,7 @@ def sync_device_entitlement_state(
                     last_grant_issued_at,
                     app_version,
                     app_channel
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     user["id"],
@@ -606,15 +629,15 @@ def sync_device_entitlement_state(
             db.execute(
                 """
                 UPDATE premium_device_entitlements
-                SET plan = ?,
-                    entitlement_status = ?,
-                    last_seen_at = ?,
-                    last_grant_issued_at = ?,
+                SET plan = %s,
+                    entitlement_status = %s,
+                    last_seen_at = %s,
+                    last_grant_issued_at = %s,
                     revoked_at = NULL,
                     grace_until = NULL,
                     app_version = COALESCE(?, app_version),
                     app_channel = COALESCE(?, app_channel)
-                WHERE id = ?
+                WHERE id = %s
                 """,
                 (
                     tier,
@@ -630,7 +653,7 @@ def sync_device_entitlement_state(
         return db.execute(
             """
             SELECT * FROM premium_device_entitlements
-            WHERE user_id = ? AND device_id = ?
+            WHERE user_id = %s AND device_id = %s
             """,
             (user["id"], device_id),
         ).fetchone()
@@ -852,7 +875,7 @@ def register_device(device_id: str, user_id: int) -> None:
     db = get_db()
     try:
         db.execute(
-            "INSERT OR IGNORE INTO device_registrations (device_id, user_id) VALUES (?, ?)",
+            "INSERT INTO device_registrations (device_id, user_id) VALUES (%s, %s) ON CONFLICT (device_id) DO NOTHING",
             (device_id, user_id),
         )
         db.commit()
@@ -929,7 +952,7 @@ def check_rate_limit(
                 db.execute(
                     """
                     INSERT INTO auth_rate_limits (key, attempts, window_started_at, blocked_until)
-                    VALUES (?, ?, ?, NULL)
+                    VALUES (?, %s, %s, NULL)
                     """,
                     (key, 1, now.isoformat()),
                 )
@@ -955,8 +978,8 @@ def check_rate_limit(
             db.execute(
                 """
                 UPDATE auth_rate_limits
-                SET attempts = ?, window_started_at = ?, blocked_until = ?
-                WHERE key = ?
+                SET attempts = %s, window_started_at = %s, blocked_until = %s
+                WHERE key = %s
                 """,
                 (attempts, window_started_at.isoformat(), blocked_until.isoformat(), key),
             )
@@ -966,8 +989,8 @@ def check_rate_limit(
         db.execute(
             """
             UPDATE auth_rate_limits
-            SET attempts = ?, window_started_at = ?, blocked_until = NULL
-            WHERE key = ?
+            SET attempts = %s, window_started_at = %s, blocked_until = NULL
+            WHERE key = %s
             """,
             (attempts, window_started_at.isoformat(), key),
         )
@@ -1223,7 +1246,7 @@ def ensure_customer(user):
     db = get_db()
     try:
         db.execute(
-            "UPDATE users SET stripe_customer_id = ? WHERE id = ?",
+            "UPDATE users SET stripe_customer_id = %s WHERE id = ?",
             (customer.id, user["id"]),
         )
         db.commit()
@@ -1507,11 +1530,11 @@ def maybe_send_trial_reminder(user) -> bool:
     return True
 
 
-def increment_latest_reset_attempt(db: sqlite3.Connection, user_id: int) -> None:
+def increment_latest_reset_attempt(db: _PgConn, user_id: int) -> None:
     latest_row = db.execute(
         """
         SELECT id, attempt_count FROM password_reset_tokens
-        WHERE user_id = ? AND used = 0
+        WHERE user_id = %s AND used = 0
         ORDER BY id DESC LIMIT 1
         """,
         (user_id,),
@@ -1521,7 +1544,7 @@ def increment_latest_reset_attempt(db: sqlite3.Connection, user_id: int) -> None
 
     next_attempt_count = int(latest_row["attempt_count"] or 0) + 1
     db.execute(
-        "UPDATE password_reset_tokens SET attempt_count = ?, used = ? WHERE id = ?",
+        "UPDATE password_reset_tokens SET attempt_count = %s, used = %s WHERE id = ?",
         (
             next_attempt_count,
             1 if next_attempt_count >= MAX_RESET_TOKEN_ATTEMPTS else 0,
@@ -1531,11 +1554,11 @@ def increment_latest_reset_attempt(db: sqlite3.Connection, user_id: int) -> None
     db.commit()
 
 
-def find_valid_reset_token_row(db: sqlite3.Connection, user_id: int, code: str):
+def find_valid_reset_token_row(db: _PgConn, user_id: int, code: str):
     rows = db.execute(
         """
         SELECT * FROM password_reset_tokens
-        WHERE user_id = ? AND used = 0
+        WHERE user_id = %s AND used = 0
         ORDER BY id DESC
         """,
         (user_id,),
@@ -1620,7 +1643,7 @@ def register():
                     password_hash,
                     subscription_status,
                     trial_end
-                ) VALUES (?, ?, ?, ?, ?)
+                ) VALUES (?, %s, %s, %s, %s)
                 """,
                 (
                     email,
@@ -1643,7 +1666,7 @@ def register():
                 ).fetchone()
                 if referrer and referrer["id"] != user["id"]:
                     db.execute(
-                        "INSERT INTO referrals (referrer_id, referee_id) VALUES (?, ?)",
+                        "INSERT INTO referrals (referrer_id, referee_id) VALUES (?, %s)",
                         (referrer["id"], user["id"]),
                     )
                     db.commit()
@@ -1941,9 +1964,9 @@ def transcription_record(user):
         db.execute(
             """
             UPDATE users
-            SET weekly_transcription_count = ?,
-                weekly_transcription_reset_at = ?
-            WHERE id = ?
+            SET weekly_transcription_count = %s,
+                weekly_transcription_reset_at = %s
+            WHERE id = %s
             """,
             (count, dt_to_iso(reset_at), user["id"]),
         )
@@ -2028,8 +2051,8 @@ def webhook():
             db.execute(
                 """
                 UPDATE users
-                SET subscription_status = ?, trial_end = ?, period_end = ?
-                WHERE stripe_customer_id = ?
+                SET subscription_status = %s, trial_end = %s, period_end = %s
+                WHERE stripe_customer_id = %s
                 """,
                 (status, to_iso(trial_end), to_iso(period_end), customer_id),
             )
@@ -2043,7 +2066,7 @@ def webhook():
                 db.execute(
                     """
                     UPDATE referrals SET converted = 1
-                    WHERE referee_id = ? AND converted = 0
+                    WHERE referee_id = %s AND converted = 0
                     """,
                     (row["id"],),
                 )
@@ -2111,8 +2134,8 @@ def admin_activate():
         db.execute(
             """
             UPDATE users
-            SET subscription_status = ?, period_end = ?
-            WHERE email = ?
+            SET subscription_status = %s, period_end = %s
+            WHERE email = %s
             """,
             ("active", far_future, email),
         )
@@ -2169,7 +2192,7 @@ def revoke_device():
             entitlement = db.execute(
                 """
                 SELECT * FROM premium_device_entitlements
-                WHERE user_id = ? AND device_id = ?
+                WHERE user_id = %s AND device_id = %s
                 """,
                 (user_id, device_id),
             ).fetchone()
@@ -2177,7 +2200,7 @@ def revoke_device():
             entitlement = db.execute(
                 """
                 SELECT * FROM premium_device_entitlements
-                WHERE device_id = ?
+                WHERE device_id = %s
                 ORDER BY id DESC
                 LIMIT 1
                 """,
@@ -2191,11 +2214,11 @@ def revoke_device():
         db.execute(
             """
             UPDATE premium_device_entitlements
-            SET entitlement_status = ?,
-                revoked_at = ?,
-                grace_until = ?,
-                last_seen_at = ?
-            WHERE id = ?
+            SET entitlement_status = %s,
+                revoked_at = %s,
+                grace_until = %s,
+                last_seen_at = %s
+            WHERE id = %s
             """,
             (
                 ENTITLEMENT_STATUS_REVOKED,
@@ -2258,13 +2281,13 @@ def forgot_password():
         db = get_db()
         try:
             db.execute(
-                "UPDATE password_reset_tokens SET used = 1 WHERE user_id = ? AND used = 0",
+                "UPDATE password_reset_tokens SET used = 1 WHERE user_id = %s AND used = 0",
                 (user["id"],),
             )
             db.execute(
                 """
                 INSERT INTO password_reset_tokens (user_id, token, expires_at, used, attempt_count)
-                VALUES (?, ?, ?, 0, 0)
+                VALUES (?, %s, %s, 0, 0)
                 """,
                 (user["id"], generate_password_hash(code), expires_at),
             )
@@ -2422,7 +2445,7 @@ def reset_password():
         )
         next_token_version = int(user["token_version"] or 0) + 1
         db.execute(
-            "UPDATE users SET password_hash = ?, token_version = ? WHERE id = ?",
+            "UPDATE users SET password_hash = %s, token_version = %s WHERE id = ?",
             (generate_password_hash(new_password), next_token_version, user["id"]),
         )
         db.commit()
@@ -2459,7 +2482,7 @@ def change_password(user):
     try:
         next_token_version = int(user["token_version"] or 0) + 1
         db.execute(
-            "UPDATE users SET password_hash = ?, token_version = ? WHERE id = ?",
+            "UPDATE users SET password_hash = %s, token_version = %s WHERE id = ?",
             (generate_password_hash(new_password), next_token_version, user["id"]),
         )
         db.commit()
@@ -2473,13 +2496,13 @@ def change_password(user):
 REFERRAL_BASE_URL = os.environ.get("REFERRAL_BASE_URL", "https://vocalype.com/r")
 
 
-def _get_or_create_referral_code(user, db: sqlite3.Connection) -> str:
+def _get_or_create_referral_code(user, db: _PgConn) -> str:
     """Return the user's referral code, creating one if it doesn't exist yet."""
     code = user["referral_code"]
     if code:
         return code
     code = secrets.token_urlsafe(8)
-    db.execute("UPDATE users SET referral_code = ? WHERE id = ?", (code, user["id"]))
+    db.execute("UPDATE users SET referral_code = %s WHERE id = ?", (code, user["id"]))
     db.commit()
     return code
 
@@ -2513,7 +2536,7 @@ def get_referral_stats(user):
                 COUNT(*)                                    AS referral_count,
                 SUM(CASE WHEN converted = 1 THEN 1 ELSE 0 END) AS converted_count
             FROM referrals
-            WHERE referrer_id = ?
+            WHERE referrer_id = %s
             """,
             (user["id"],),
         ).fetchone()

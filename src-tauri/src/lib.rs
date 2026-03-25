@@ -98,6 +98,10 @@ use windows::Win32::UI::WindowsAndMessaging::{
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Info as u8);
 
+// Pending deep-link auth token: stored here when the deep link fires before
+// the frontend is ready, then flushed once "desktop-ui-ready" is received.
+static PENDING_DEEP_LINK_TOKEN: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
 // Cached tray visibility flag to avoid store access in on_window_event (which can deadlock)
 pub static TRAY_ICON_ENABLED: AtomicBool = AtomicBool::new(true);
 pub static TRAY_ICON_READY: AtomicBool = AtomicBool::new(false);
@@ -725,14 +729,18 @@ pub fn run(cli_args: CliArgs) {
     let app = builder
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             // Check if a deep link URL was passed (deep-link plugin forwards it here on Windows)
-            if let Some(url) = args.iter().find(|a| a.starts_with("vocalype://")) {
-                if url.contains("auth-callback") {
-                    let query_start = url.find('?').map(|i| i + 1).unwrap_or(url.len());
-                    for pair in url[query_start..].split('&') {
-                        if let Some(token) = pair.strip_prefix("token=") {
+            if let Some(raw_url) = args.iter().find(|a| a.starts_with("vocalype://")) {
+                if raw_url.contains("auth-callback") {
+                    if let Ok(url) = url::Url::parse(raw_url) {
+                        if let Some((_, token)) = url.query_pairs().find(|(k, _)| k == "token") {
+                            let token = token.into_owned();
                             log::info!("Deep link auth via single-instance, showing app");
                             show_main_window(app);
-                            let _ = app.emit("deep-link-auth", token.to_string());
+                            // Store as backup in case frontend listener isn't ready yet
+                            if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
+                                *guard = Some(token.clone());
+                            }
+                            let _ = app.emit("deep-link-auth", token);
                             return;
                         }
                     }
@@ -817,12 +825,26 @@ pub fn run(cli_args: CliArgs) {
                 voice_profile::VoiceProfile::load(&app_handle),
             )));
             app.manage(runtime_observability::RuntimeObservabilityState::new());
+            // Must be managed before the "desktop-ui-ready" listener fires
+            // (listener calls ensure_startup_warmup which accesses this state).
+            app.manage(startup_warmup::StartupWarmupState::new(
+                startup_warmup::initial_status(&app_handle),
+            ));
 
             let app_handle_for_ready = app_handle.clone();
             app_handle.listen("desktop-ui-ready", move |_| {
                 if SHOULD_SHOW_MAIN_WINDOW_ON_READY.swap(false, Ordering::Relaxed) {
                     log::info!("Frontend reported ready; showing main window");
                     show_main_window(&app_handle_for_ready);
+                }
+
+                // Flush any deep-link token that arrived before the frontend was ready
+                if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
+                    if let Some(token) = guard.take() {
+                        log::info!("Flushing pending deep-link auth token to frontend");
+                        show_main_window(&app_handle_for_ready);
+                        let _ = app_handle_for_ready.emit("deep-link-auth", token);
+                    }
                 }
 
                 startup_warmup::ensure_startup_warmup(&app_handle_for_ready, "desktop-ui-ready");
@@ -843,25 +865,31 @@ pub fn run(cli_args: CliArgs) {
                     if url.scheme() == "vocalype" {
                         let host = url.host_str().unwrap_or("");
                         if host == "auth-callback" {
-                            if let Some(query) = url.query() {
-                                for pair in query.split('&') {
-                                    if let Some(token) = pair.strip_prefix("token=") {
-                                        log::info!("Deep link auth received, showing app");
-                                        show_main_window(&handle_for_deeplink);
-                                        let _ = handle_for_deeplink
-                                            .emit("deep-link-auth", token.to_string());
-                                        break;
+                            let token_opt = url.query_pairs()
+                                .find(|(k, _)| k == "token")
+                                .map(|(_, v)| v.into_owned());
+                            if let Some(token) = token_opt {
+                                log::info!("Deep link auth received");
+                                show_main_window(&handle_for_deeplink);
+                                // Try to emit immediately (app already running case).
+                                // If the frontend isn't ready yet, store for later flush.
+                                if handle_for_deeplink.emit("deep-link-auth", token.clone()).is_err() {
+                                    if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
+                                        *guard = Some(token);
+                                    }
+                                } else {
+                                    // emit succeeded but frontend might still miss it if
+                                    // it hasn't set up its listener — store as backup too.
+                                    if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
+                                        *guard = Some(token);
                                     }
                                 }
+                                break;
                             }
                         }
                     }
                 }
             });
-
-            app.manage(startup_warmup::StartupWarmupState::new(
-                startup_warmup::initial_status(&app_handle),
-            ));
 
             // Run WMI GPU/NPU hardware detection in background so it never
             // blocks startup. The result is persisted to the settings store

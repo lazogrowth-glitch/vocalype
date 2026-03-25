@@ -2,6 +2,7 @@ use clap::Parser;
 
 #[derive(Parser, Debug, Clone, Default)]
 #[command(name = "vocalype", about = "vocalype - Speech to Text")]
+#[command(allow_external_subcommands = true, ignore_errors = true)]
 pub struct CliArgs {
     /// Start with the main window hidden
     #[arg(long)]

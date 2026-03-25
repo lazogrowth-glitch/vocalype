@@ -1,3 +1,4 @@
 !macro NSIS_HOOK_POSTINSTALL
-  Exec '"$INSTDIR\vocalype.exe"'
+  Sleep 1500
+  ExecShell "open" "$INSTDIR\vocalype.exe"
 !macroend

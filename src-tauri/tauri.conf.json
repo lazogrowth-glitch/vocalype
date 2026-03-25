@@ -71,7 +71,11 @@
         "files": {}
       }
     },
-    "windows": {}
+    "windows": {
+      "nsis": {
+        "installerHooks": "installer-hooks.nsi"
+      }
+    }
   },
   "plugins": {
     "deep-link": {

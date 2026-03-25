@@ -117,21 +117,8 @@ export function useAuthFlow(
       console.error("Failed to refresh auth session:", error);
       const status = authClient.getErrorStatus(error);
 
-      if (status === 401 || status === 403) {
-        applySession(null);
-        setAuthError(t("auth.sessionExpired"));
-      } else {
-        if (!persistedSession) {
-          setAuthError(
-            error instanceof Error
-              ? error.message
-              : t("auth.errors.networkError"),
-          );
-          setLicenseState(await licenseClient.getRuntimeState());
-        } else {
-          setLicenseState(await licenseClient.getRuntimeState());
-        }
-      }
+      applySession(null);
+      void authClient.clearStoredToken();
     } finally {
       setAuthLoading(false);
     }

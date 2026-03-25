@@ -63,7 +63,17 @@ export function useAuthFlow(
         if (mode === "issue") {
           await licenseClient.issue(token);
         } else {
-          await licenseClient.refresh(token);
+          try {
+            await licenseClient.refresh(token);
+          } catch (refreshError) {
+            const refreshStatus = authClient.getErrorStatus(refreshError);
+            if (refreshStatus !== 401 && refreshStatus !== 403) {
+              // No existing license to refresh — try issuing a new one
+              await licenseClient.issue(token);
+            } else {
+              throw refreshError;
+            }
+          }
         }
       } catch (error) {
         const status = authClient.getErrorStatus(error);

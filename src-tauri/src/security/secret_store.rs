@@ -5,7 +5,6 @@ const SERVICE_NAME: &str = "com.vocalype.desktop";
 
 const AUTH_TOKEN_ACCOUNT: &str = "auth.token";
 const AUTH_SESSION_ACCOUNT: &str = "auth.session";
-const LICENSE_BUNDLE_ACCOUNT: &str = "license.bundle";
 const GEMINI_API_KEY_ACCOUNT: &str = "settings.gemini_api_key";
 const GROQ_STT_API_KEY_ACCOUNT: &str = "settings.groq_stt_api_key";
 const MISTRAL_STT_API_KEY_ACCOUNT: &str = "settings.mistral_stt_api_key";
@@ -71,16 +70,35 @@ pub fn clear_auth_session() -> Result<(), String> {
     delete_secret_value(AUTH_SESSION_ACCOUNT)
 }
 
+fn license_bundle_path() -> Result<std::path::PathBuf, String> {
+    let app_data = std::env::var("APPDATA").map_err(|_| "APPDATA not set".to_string())?;
+    let dir = std::path::PathBuf::from(app_data).join("com.vocalype.desktop");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create app dir: {}", e))?;
+    Ok(dir.join("license.bundle.json"))
+}
+
 pub fn get_license_bundle() -> Result<Option<String>, String> {
-    get_secret_value(LICENSE_BUNDLE_ACCOUNT)
+    let path = license_bundle_path()?;
+    if !path.exists() {
+        return Ok(None);
+    }
+    let data = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read license bundle: {}", e))?;
+    Ok(Some(data))
 }
 
 pub fn set_license_bundle(bundle_json: &str) -> Result<(), String> {
-    set_secret_value(LICENSE_BUNDLE_ACCOUNT, bundle_json)
+    let path = license_bundle_path()?;
+    std::fs::write(&path, bundle_json).map_err(|e| format!("Failed to write license bundle: {}", e))
 }
 
 pub fn clear_license_bundle() -> Result<(), String> {
-    delete_secret_value(LICENSE_BUNDLE_ACCOUNT)
+    let path = license_bundle_path()?;
+    if path.exists() {
+        std::fs::remove_file(&path)
+            .map_err(|e| format!("Failed to delete license bundle: {}", e))?;
+    }
+    Ok(())
 }
 
 pub fn get_gemini_api_key() -> Result<Option<String>, String> {

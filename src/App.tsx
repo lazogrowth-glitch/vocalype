@@ -92,6 +92,7 @@ function App() {
     showTrialWelcome,
     hasCompletedPostOnboardingInit,
     refreshSession,
+    handleDeepLinkAuth,
     handleLogin,
     handleRegister,
     handleLogout,
@@ -151,14 +152,13 @@ function App() {
     const unlisten = listen<string>("deep-link-auth", async (event) => {
       const token = event.payload;
       if (token) {
-        await authClient.setStoredToken(token);
-        await refreshSession();
+        await handleDeepLinkAuth(token);
       }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [refreshSession]);
+  }, [handleDeepLinkAuth]);
 
   // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {

@@ -166,6 +166,25 @@ export function useAuthFlow(
     [applySession, syncLicenseForSession],
   );
 
+  const handleDeepLinkAuth = useCallback(
+    async (token: string) => {
+      setAuthSubmitting(true);
+      setAuthError(null);
+      try {
+        await authClient.setStoredToken(token);
+        const nextSession = await authClient.getSession(token);
+        await syncLicenseForSession(nextSession, { mode: "issue" });
+        applySession(nextSession);
+      } catch (error) {
+        console.error("Deep link auth failed:", error);
+        setAuthError(error instanceof Error ? error.message : "Auth failed");
+      } finally {
+        setAuthSubmitting(false);
+      }
+    },
+    [applySession, syncLicenseForSession],
+  );
+
   const handleLogin = useCallback(
     async (payload: AuthPayload) => {
       await authenticate(authClient.login, payload);
@@ -370,6 +389,7 @@ export function useAuthFlow(
     hasCompletedPostOnboardingInit,
     applySession,
     refreshSession,
+    handleDeepLinkAuth,
     handleLogin,
     handleRegister,
     handleLogout,

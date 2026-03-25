@@ -1,3 +1,3 @@
 !macro NSIS_HOOK_POSTINSTALL
-  ExecShell "" "$INSTDIR\vocalype.exe"
+  Exec '"$INSTDIR\vocalype.exe"'
 !macroend

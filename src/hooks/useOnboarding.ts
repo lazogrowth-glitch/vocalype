@@ -43,6 +43,26 @@ interface UseOnboardingProps {
   hasAnyAccess: boolean;
 }
 
+async function resolvePostConsentStep() {
+  const appIdentifier = await getIdentifier();
+  const isDevFlavor = appIdentifier.endsWith(".dev");
+  const [modelsResult, currentModelResult] = await Promise.all([
+    commands.hasAnyModelsAvailable(),
+    commands.getCurrentModel(),
+  ]);
+  const hasModels = modelsResult.status === "ok" && modelsResult.data;
+  const currentModel =
+    currentModelResult.status === "ok" ? currentModelResult.data.trim() : "";
+  const hasSelectedModel = currentModel.length > 0;
+
+  return {
+    isDevFlavor,
+    hasModels,
+    hasSelectedModel,
+    isReturningUser: hasModels && hasSelectedModel,
+  };
+}
+
 export function useOnboarding({
   authLoading,
   hasAnyAccess,
@@ -62,9 +82,6 @@ export function useOnboarding({
 
   const checkOnboardingStatus = useCallback(async () => {
     try {
-      const appIdentifier = await getIdentifier();
-      const isDevFlavor = appIdentifier.endsWith(".dev");
-
       // Always show consent step first for new users (and returning users who
       // haven't seen it yet — e.g. installed before this policy was added).
       const consentAccepted = await hasAcceptedConsent();
@@ -73,10 +90,10 @@ export function useOnboarding({
         return;
       }
 
-      const result = await commands.hasAnyModelsAvailable();
-      const hasModels = result.status === "ok" && result.data;
+      const { isDevFlavor, hasModels, hasSelectedModel, isReturningUser } =
+        await resolvePostConsentStep();
 
-      if (hasModels) {
+      if (isReturningUser) {
         setIsReturningUser(true);
         if (platform() === "macos" && !isDevFlavor) {
           try {
@@ -95,7 +112,12 @@ export function useOnboarding({
         pushStep("done");
       } else {
         setIsReturningUser(false);
-        pushStep(isDevFlavor ? "model" : "accessibility");
+        if (hasSelectedModel) {
+          pushStep("done");
+          return;
+        }
+
+        pushStep(hasModels || isDevFlavor ? "model" : "accessibility");
       }
     } catch (error) {
       console.error("Failed to check onboarding status:", error);
@@ -107,12 +129,10 @@ export function useOnboarding({
     await markConsentAccepted();
     // After consent, proceed to check the rest of the onboarding flow
     try {
-      const appIdentifier = await getIdentifier();
-      const isDevFlavor = appIdentifier.endsWith(".dev");
-      const result = await commands.hasAnyModelsAvailable();
-      const hasModels = result.status === "ok" && result.data;
+      const { isDevFlavor, hasModels, hasSelectedModel, isReturningUser } =
+        await resolvePostConsentStep();
 
-      if (hasModels) {
+      if (isReturningUser) {
         setIsReturningUser(true);
         if (platform() === "macos" && !isDevFlavor) {
           try {
@@ -131,7 +151,12 @@ export function useOnboarding({
         pushStep("done");
       } else {
         setIsReturningUser(false);
-        pushStep(isDevFlavor ? "model" : "accessibility");
+        if (hasSelectedModel) {
+          pushStep("done");
+          return;
+        }
+
+        pushStep(hasModels || isDevFlavor ? "model" : "accessibility");
       }
     } catch (error) {
       console.error("Failed to check onboarding status after consent:", error);

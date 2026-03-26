@@ -16,10 +16,19 @@ vi.mock("tauri-plugin-macos-permissions-api", () => ({
   checkMicrophonePermission: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock("@tauri-apps/plugin-store", () => ({
+  load: vi.fn().mockResolvedValue({
+    get: vi.fn().mockResolvedValue(true),
+    set: vi.fn().mockResolvedValue(undefined),
+    save: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
+
 // @/bindings is globally mocked in setup.ts; extend here
 vi.mock("@/bindings", () => ({
   commands: {
     hasAnyModelsAvailable: vi.fn(),
+    getCurrentModel: vi.fn(),
   },
 }));
 
@@ -32,6 +41,7 @@ import {
 
 const mockCommands = commands as unknown as {
   hasAnyModelsAvailable: ReturnType<typeof vi.fn>;
+  getCurrentModel: ReturnType<typeof vi.fn>;
 };
 const mockPlatform = platform as ReturnType<typeof vi.fn>;
 const mockCheckA11y = checkAccessibilityPermission as ReturnType<typeof vi.fn>;
@@ -42,6 +52,10 @@ beforeEach(() => {
   mockPlatform.mockReturnValue("linux");
   mockCheckA11y.mockResolvedValue(true);
   mockCheckMic.mockResolvedValue(true);
+  mockCommands.getCurrentModel.mockResolvedValue({
+    status: "ok",
+    data: "",
+  });
 });
 
 describe("useOnboarding", () => {
@@ -60,10 +74,29 @@ describe("useOnboarding", () => {
     });
   });
 
-  it("sets onboardingStep to 'done' when models available and not macOS", async () => {
+  it("sets onboardingStep to 'model' when models exist but none is selected", async () => {
     mockCommands.hasAnyModelsAvailable.mockResolvedValue({
       status: "ok",
       data: true,
+    });
+
+    const { result } = renderHook(() =>
+      useOnboarding({ authLoading: false, hasAnyAccess: true }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.onboardingStep).toBe("model");
+    });
+  });
+
+  it("sets onboardingStep to 'done' when a model is already selected", async () => {
+    mockCommands.hasAnyModelsAvailable.mockResolvedValue({
+      status: "ok",
+      data: true,
+    });
+    mockCommands.getCurrentModel.mockResolvedValue({
+      status: "ok",
+      data: "parakeet-tdt-0.6b-v3-multilingual",
     });
 
     const { result } = renderHook(() =>
@@ -82,6 +115,10 @@ describe("useOnboarding", () => {
     mockCommands.hasAnyModelsAvailable.mockResolvedValue({
       status: "ok",
       data: true,
+    });
+    mockCommands.getCurrentModel.mockResolvedValue({
+      status: "ok",
+      data: "parakeet-tdt-0.6b-v3-multilingual",
     });
 
     const { result } = renderHook(() =>

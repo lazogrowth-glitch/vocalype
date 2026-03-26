@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use specta::Type;
 use tauri::AppHandle;
 
@@ -52,6 +53,13 @@ fn parse_utc(value: &str) -> Option<DateTime<Utc>> {
         .map(|dt| dt.with_timezone(&Utc))
 }
 
+fn hash_backend_device_id(device_id: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(device_id.trim().to_lowercase().as_bytes());
+    hasher.update(b"vocalype-salt");
+    format!("{:x}", hasher.finalize())
+}
+
 fn load_license_bundle() -> Result<Option<StoredLicenseBundle>, String> {
     let raw = crate::secret_store::get_license_bundle()?;
     match raw {
@@ -80,6 +88,7 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
     };
 
     let expected_device_id = crate::commands::get_machine_device_id(app.clone())?;
+    let expected_backend_device_id = hash_backend_device_id(&expected_device_id);
     let integrity_snapshot = crate::integrity::collect_integrity_snapshot(app);
     let now = Utc::now();
     let grant_expires_at = parse_utc(&bundle.grant_expires_at);
@@ -100,7 +109,11 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
         integrity_anomalies: bundle.integrity_anomalies.clone().unwrap_or_default(),
     };
 
-    if bundle.device_id.trim().to_lowercase() != expected_device_id.trim().to_lowercase() {
+    let stored_device_id = bundle.device_id.trim().to_lowercase();
+    let expected_local_device_id = expected_device_id.trim().to_lowercase();
+    if stored_device_id != expected_local_device_id
+        && stored_device_id != expected_backend_device_id
+    {
         return Ok(LicenseRuntimeState {
             reason: Some("Stored license bundle belongs to another device".to_string()),
             ..base
@@ -192,7 +205,7 @@ pub fn enforce_premium_access(app: &AppHandle, action_name: &str) -> Result<(), 
     let state = current_license_state(app)?;
     match state.state {
         LicenseState::OnlineValid | LicenseState::OfflineValid => {
-            // State is valid — now check the plan
+            // State is valid - now check the plan
             if current_plan(app).as_deref() != Some("premium") {
                 return Err(format!(
                     "Premium subscription required for {}.",
@@ -238,4 +251,17 @@ pub fn current_model_unlock_key(app: &AppHandle) -> Result<String, String> {
 #[specta::specta]
 pub fn get_license_runtime_state(app: AppHandle) -> Result<LicenseRuntimeState, String> {
     current_license_state(&app)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::hash_backend_device_id;
+
+    #[test]
+    fn hashes_device_id_like_frontend_auth_client() {
+        assert_eq!(
+            hash_backend_device_id("abc123"),
+            "82d9f197f420ced8b0f9241c0795b720a546039a39cdd4da1a4d54daa6d42029"
+        );
+    }
 }

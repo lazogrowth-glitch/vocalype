@@ -115,14 +115,22 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     }
 
     if !crate::startup_warmup::can_start_recording(app) {
-        let message = crate::startup_warmup::block_message(app);
-        warn!(
-            "Blocking transcription start until warmup completes: {}",
-            message
-        );
-        let _ = app.emit("transcription-warmup-blocked", message);
+        let warmup_status = crate::startup_warmup::current_status(app);
         crate::startup_warmup::ensure_startup_warmup(app, "transcription-blocked");
-        return;
+
+        // Let recording start while the selected model finishes loading in the
+        // background. This removes the perceived 2-5s dead time before the
+        // overlay appears, while still keeping hard blocks for missing models
+        // or microphone failures.
+        if warmup_status.reason != crate::startup_warmup::StartupWarmupReason::PreparingModel {
+            let message = crate::startup_warmup::block_message(app);
+            warn!(
+                "Blocking transcription start until warmup completes: {}",
+                message
+            );
+            let _ = app.emit("transcription-warmup-blocked", message);
+            return;
+        }
     }
 
     if crate::license::current_plan(app).as_deref() == Some("basic") {

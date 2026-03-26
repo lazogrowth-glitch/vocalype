@@ -105,10 +105,11 @@ impl ModelManager {
         self.runtime_cache_dir.join(&model_info.filename)
     }
 
-    fn model_requires_sealing(model_info: &ModelInfo) -> bool {
-        model_info.requires_license_key
-            && !model_info.is_custom
-            && !matches!(model_info.engine_type, EngineType::GeminiApi)
+    fn model_requires_sealing(_model_info: &ModelInfo) -> bool {
+        // Sealing disabled: the encrypt/decrypt cycle adds ~1.6 GB of disk I/O
+        // for large models (tar + encrypt after download, decrypt + extract on load)
+        // with no meaningful security benefit since the key is machine-derived.
+        false
     }
 
     fn verify_response_etag(model_info: &ModelInfo, response: &reqwest::Response) -> Result<()> {
@@ -425,7 +426,8 @@ impl ModelManager {
 
     fn write_directory_archive(&self, src_dir: &Path, archive_path: &Path) -> Result<()> {
         let archive_file = File::create(archive_path)?;
-        let encoder = flate2::write::GzEncoder::new(archive_file, flate2::Compression::default());
+        // Use no compression — model weights are incompressible, compression only wastes time
+        let encoder = flate2::write::GzEncoder::new(archive_file, flate2::Compression::none());
         let mut builder = tar::Builder::new(encoder);
         builder.append_dir_all("payload", src_dir)?;
         let encoder = builder.into_inner()?;
@@ -1201,42 +1203,24 @@ impl ModelManager {
         debug!("ModelManager: Model path: {:?}", model_path);
         debug!("ModelManager: Partial path: {:?}", partial_path);
 
-        let mut deleted_something = false;
-
         if model_info.is_directory {
-            // Delete complete model directory if it exists
             if model_path.exists() && model_path.is_dir() {
                 info!("Deleting model directory at: {:?}", model_path);
                 fs::remove_dir_all(&model_path)?;
-                info!("Model directory deleted successfully");
-                deleted_something = true;
             }
-        } else {
-            // Delete complete model file if it exists
-            if model_path.exists() {
-                info!("Deleting model file at: {:?}", model_path);
-                fs::remove_file(&model_path)?;
-                info!("Model file deleted successfully");
-                deleted_something = true;
-            }
+        } else if model_path.exists() {
+            info!("Deleting model file at: {:?}", model_path);
+            fs::remove_file(&model_path)?;
         }
 
         if sealed_path.exists() {
             info!("Deleting sealed model artifact at: {:?}", sealed_path);
             fs::remove_file(&sealed_path)?;
-            deleted_something = true;
         }
 
-        // Delete partial file if it exists (same for both types)
         if partial_path.exists() {
             info!("Deleting partial file at: {:?}", partial_path);
             fs::remove_file(&partial_path)?;
-            info!("Partial file deleted successfully");
-            deleted_something = true;
-        }
-
-        if !deleted_something {
-            return Err(anyhow::anyhow!("No model files found to delete"));
         }
 
         let _ = self.clear_runtime_cache_for_model(model_id);

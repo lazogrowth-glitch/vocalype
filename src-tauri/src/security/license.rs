@@ -120,20 +120,8 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
         });
     }
 
-    // Basic-tier users skip integrity binding (no model unlock needed)
-    if has_premium {
-        if let Some(bound_hash) = bundle.build_binding_sha256.as_deref() {
-            let current_hash = integrity_snapshot.binary_sha256.as_deref();
-            if current_hash != Some(bound_hash) {
-                return Ok(LicenseRuntimeState {
-                    reason: Some(
-                        "Binary integrity changed since premium license was issued".to_string(),
-                    ),
-                    ..base
-                });
-            }
-        }
-    }
+    // Binary integrity binding check intentionally disabled:
+    // build_binding_sha256 changes on every rebuild and would block users after updates.
 
     if !has_premium && !has_basic {
         return Ok(LicenseRuntimeState {

@@ -184,6 +184,7 @@ export const SECTIONS_CONFIG = {
 interface SidebarProps {
   activeSection: SidebarSection;
   onSectionChange: (section: SidebarSection) => void;
+  collapsed?: boolean;
 }
 
 function useTrialBadge(trialEndsAt: string | null) {
@@ -200,6 +201,7 @@ function useTrialBadge(trialEndsAt: string | null) {
 export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
+  collapsed = false,
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
@@ -218,7 +220,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <nav
       aria-label={t("a11y.settingsNav")}
       style={{
-        width: 224,
+        width: collapsed ? 56 : 224,
         flexShrink: 0,
         height: "100%",
         overflow: "hidden",
@@ -226,15 +228,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         borderRight: "0.5px solid rgba(255,255,255,0.08)",
         display: "flex",
         flexDirection: "column",
+        transition: "width 0.2s ease",
       }}
     >
-      <div className="border-b border-white/6 px-[18px] pb-4 pt-5">
-        <div className="min-w-0">
-          <VocalypeLogo width={104} />
+      {!collapsed && (
+        <div className="border-b border-white/6 px-[18px] pb-4 pt-5">
+          <div className="min-w-0">
+            <VocalypeLogo width={104} />
+          </div>
         </div>
-      </div>
+      )}
 
-      {trialBadge ? (
+      {!collapsed && trialBadge ? (
         <button
           type="button"
           onClick={() =>
@@ -285,9 +290,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       ) : null}
 
-      <TranscriptionWarmupBadge />
+      {!collapsed && <TranscriptionWarmupBadge />}
 
-      <div className="flex flex-1 flex-col py-2.5 overflow-y-auto min-h-0">
+      <div
+        className="flex flex-1 flex-col overflow-y-auto min-h-0"
+        style={{ paddingTop: collapsed ? 8 : 10, paddingBottom: 10 }}
+      >
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
@@ -299,8 +307,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                padding: "11px 18px",
+                justifyContent: collapsed ? "center" : "flex-start",
+                gap: collapsed ? 0 : 10,
+                padding: collapsed ? "10px 0" : "11px 18px",
                 fontSize: 14,
                 width: "100%",
                 cursor: "pointer",
@@ -328,20 +337,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   aria-hidden="true"
                 />
               </span>
-              <span
-                className="truncate text-[14px] font-medium leading-5"
-                title={t(section.labelKey)}
-              >
-                {t(section.labelKey)}
-              </span>
+              {!collapsed && (
+                <span
+                  className="truncate text-[14px] font-medium leading-5"
+                  title={t(section.labelKey)}
+                >
+                  {t(section.labelKey)}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
-      <div className="border-t border-white/6 px-[18px] py-3">
-        <MachineStatusBar variant="sidebar" />
-      </div>
+      {!collapsed && (
+        <div className="border-t border-white/6 px-[18px] py-3">
+          <MachineStatusBar variant="sidebar" />
+        </div>
+      )}
     </nav>
   );
 };

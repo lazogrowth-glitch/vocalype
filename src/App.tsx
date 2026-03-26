@@ -74,6 +74,16 @@ function App() {
   const { i18n, t } = useTranslation();
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem("vt.sidebarCollapsed") === "1",
+  );
+  const toggleSidebar = () => {
+    setSidebarCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem("vt.sidebarCollapsed", next ? "1" : "0");
+      return next;
+    });
+  };
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -331,7 +341,15 @@ function App() {
           color: "inherit",
         }}
       >
-        <TitleBar />
+        <TitleBar
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={toggleSidebar}
+          session={session}
+          isTrialing={isTrialing}
+          trialEndsAt={trialEndsAt}
+          onLogout={handleLogout}
+          onOpenBillingPortal={handleOpenBillingPortal}
+        />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-text focus:rounded-lg focus:ring-2 focus:ring-logo-primary focus:outline-none text-sm font-medium"
@@ -363,6 +381,7 @@ function App() {
           <Sidebar
             activeSection={currentSection}
             onSectionChange={setCurrentSection}
+            collapsed={sidebarCollapsed}
           />
 
           <main

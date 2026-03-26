@@ -2,7 +2,7 @@ use super::model_selection::{model_supports_selected_language, resolve_runtime_m
 use super::paste::dispatch_text_insertion;
 use super::post_processing::process_transcription_text;
 use super::profiler::PipelineProfiler;
-use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::chunking::{
     chunking_profile_for_model, deduplicate_boundary, ActiveChunkingHandle, ChunkingHandle,
     ChunkingSharedState, CHUNK_SAMPLER_POLL_MS, MAX_PENDING_BACKGROUND_CHUNKS,
@@ -175,7 +175,9 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     let is_always_on = settings.always_on_microphone;
     debug!("Microphone mode - always_on: {}", is_always_on);
 
-    play_feedback_sound_blocking(app, SoundType::Start);
+    // Play start sound asynchronously so the recording overlay appears instantly.
+    // Blocking here caused 2-5s delay on Windows due to WASAPI stream re-initialization.
+    play_feedback_sound(app, SoundType::Start);
     if is_always_on {
         rm.apply_mute();
     }

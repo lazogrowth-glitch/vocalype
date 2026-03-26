@@ -697,10 +697,9 @@ impl AudioRecordingManager {
 
                 *self.is_recording.lock() = false;
 
-                // In on-demand mode turn the mic off again
-                if matches!(*self.mode.read(), MicrophoneMode::OnDemand) {
-                    self.stop_microphone_stream();
-                }
+                // Keep the microphone stream open in on-demand mode so the next
+                // recording starts instantly (no WASAPI re-initialization delay).
+                // The stream will be closed when the app exits or mode changes.
 
                 // Pad if very short
                 let s_len = samples.len();
@@ -780,10 +779,8 @@ impl AudioRecordingManager {
 
             *self.is_recording.lock() = false;
 
-            // In on-demand mode turn the mic off again
-            if matches!(*self.mode.read(), MicrophoneMode::OnDemand) {
-                self.stop_microphone_stream();
-            }
+            // Keep the microphone stream open in on-demand mode so the next
+            // recording starts instantly (no WASAPI re-initialization delay).
         }
     }
 

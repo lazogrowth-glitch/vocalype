@@ -353,15 +353,30 @@ fn run_generation(app: &AppHandle, generation: u64) {
     let mut microphone_ready = if snapshot.always_on_microphone {
         audio_manager.is_microphone_stream_open()
     } else {
-        match audio_manager.preflight_microphone() {
-            Ok(()) => true,
-            Err(err) => {
-                let _ = set_status_if_current(
-                    app,
-                    generation,
-                    microphone_error_status(err.to_string()),
-                );
-                return;
+        // In on-demand mode, pre-open the microphone stream during warmup so
+        // the first keyboard shortcut starts recording instantly without a
+        // 2-5 second WASAPI re-initialization delay.
+        if audio_manager.is_microphone_stream_open() {
+            true
+        } else {
+            match audio_manager.preflight_microphone() {
+                Ok(()) => {
+                    // Preflight passed — now open the stream in the background so
+                    // it is ready before the user presses the shortcut.
+                    if let Err(err) = audio_manager.start_microphone_stream() {
+                        debug!("On-demand microphone pre-warm failed: {}", err);
+                        // Non-fatal: fall back to opening on first use.
+                    }
+                    true
+                }
+                Err(err) => {
+                    let _ = set_status_if_current(
+                        app,
+                        generation,
+                        microphone_error_status(err.to_string()),
+                    );
+                    return;
+                }
             }
         }
     };

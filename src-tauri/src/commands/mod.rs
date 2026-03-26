@@ -22,6 +22,7 @@ use crate::utils::cancel_current_operation;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::OnceLock;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
@@ -331,6 +332,16 @@ fn hex_encode_lower(bytes: &[u8]) -> String {
 }
 
 fn machine_identifier_seed() -> Result<String, String> {
+    static CACHED: OnceLock<String> = OnceLock::new();
+    if let Some(cached) = CACHED.get() {
+        return Ok(cached.clone());
+    }
+    let result = machine_identifier_seed_uncached()?;
+    let _ = CACHED.set(result.clone());
+    Ok(result)
+}
+
+fn machine_identifier_seed_uncached() -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;

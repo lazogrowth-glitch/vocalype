@@ -76,7 +76,10 @@ fn parakeet_v3_provider_candidates(app_handle: &AppHandle) -> Vec<ParakeetExecut
         return vec![ParakeetExecutionProvider::Cpu];
     };
 
-    let mut providers = Vec::new();
+    // CPU is always tried first for fast, reliable loading.
+    // NPU/GPU providers are appended as fallback candidates only — they can
+    // take dozens of minutes to initialize/compile on first use.
+    let mut providers = vec![ParakeetExecutionProvider::Cpu];
 
     match profile.npu_kind {
         NpuKind::Qualcomm => {
@@ -94,7 +97,6 @@ fn parakeet_v3_provider_candidates(app_handle: &AppHandle) -> Vec<ParakeetExecut
         NpuKind::Unknown | NpuKind::None => {}
     }
 
-    providers.push(ParakeetExecutionProvider::Cpu);
     providers.dedup();
     providers
 }
@@ -358,7 +360,7 @@ impl TranscriptionManager {
     pub fn unload_model(&self) -> Result<()> {
         let unload_start = std::time::Instant::now();
         debug!("Starting to unload model");
-        let previous_model_id = self.get_current_model();
+        let _previous_model_id = self.get_current_model();
 
         {
             let mut engine = self.lock_engine();
@@ -383,14 +385,8 @@ impl TranscriptionManager {
             let mut current_model = self.current_model_id.lock();
             *current_model = None;
         }
-        if let Some(model_id) = previous_model_id.as_deref() {
-            if let Err(err) = self.model_manager.clear_runtime_cache_for_model(model_id) {
-                warn!(
-                    "Failed to clear runtime cache for model '{}': {}",
-                    model_id, err
-                );
-            }
-        }
+        // Runtime cache is kept on disk so the next load doesn't need to
+        // decrypt + extract again. Cache is only cleared when a model is deleted.
         set_active_runtime_model(&self.app_handle, None);
 
         // Emit unloaded event

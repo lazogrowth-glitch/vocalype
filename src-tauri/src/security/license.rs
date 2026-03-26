@@ -89,7 +89,6 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
 
     let expected_device_id = crate::commands::get_machine_device_id(app.clone())?;
     let expected_backend_device_id = hash_backend_device_id(&expected_device_id);
-    let _integrity_snapshot = crate::integrity::collect_integrity_snapshot(app);
     let now = Utc::now();
     let grant_expires_at = parse_utc(&bundle.grant_expires_at);
     let offline_expires_at = parse_utc(&bundle.offline_expires_at);

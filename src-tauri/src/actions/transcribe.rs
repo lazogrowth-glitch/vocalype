@@ -106,13 +106,14 @@ pub(super) fn should_switch_to_long_audio_model(
 
 pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     let start_time = Instant::now();
-    debug!("TranscribeAction::start called for binding: {}", binding_id);
+    debug!("[TIMING] ⏱ shortcut received for binding: {}", binding_id);
 
     if let Err(err) = crate::license::enforce_any_access(app, "dictation") {
         warn!("Access gate denied transcription start: {}", err);
         let _ = app.emit("premium-access-denied", err.clone());
         return;
     }
+    debug!("[TIMING] license check: {:?}", start_time.elapsed());
 
     if !crate::startup_warmup::can_start_recording(app) {
         let warmup_status = crate::startup_warmup::current_status(app);
@@ -131,7 +132,12 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             let _ = app.emit("transcription-warmup-blocked", message);
             return;
         }
+        debug!(
+            "[TIMING] warmup bypassed (PreparingModel): {:?}",
+            start_time.elapsed()
+        );
     }
+    debug!("[TIMING] warmup check: {:?}", start_time.elapsed());
 
     if crate::license::current_plan(app).as_deref() == Some("basic") {
         let since = (chrono::Utc::now() - chrono::Duration::days(7)).timestamp();
@@ -156,6 +162,7 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     }
 
     let captured_app_context = detect_current_app_context();
+    debug!("[TIMING] app context detected: {:?}", start_time.elapsed());
 
     let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() else {
         error!("TranscriptionCoordinator not initialized");
@@ -171,7 +178,12 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             return;
         }
     };
+    debug!("[TIMING] begin_preparing: {:?}", start_time.elapsed());
     show_preparing_overlay(app);
+    debug!(
+        "[TIMING] show_preparing_overlay: {:?}",
+        start_time.elapsed()
+    );
 
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.initiate_model_load();
@@ -181,21 +193,19 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     let rm = app.state::<Arc<AudioRecordingManager>>();
     let settings = get_settings(app);
     let is_always_on = settings.always_on_microphone;
-    debug!("Microphone mode - always_on: {}", is_always_on);
 
-    // Play start sound asynchronously so the recording overlay appears instantly.
-    // Blocking here caused 2-5s delay on Windows due to WASAPI stream re-initialization.
     play_feedback_sound(app, SoundType::Start);
     if is_always_on {
         rm.apply_mute();
     }
 
-    if is_always_on {
-        debug!("Always-on mode: feedback sound finished before capture start");
-    }
-
     let recording_start_time = Instant::now();
     let recording_started = rm.try_start_recording(&binding_id);
+    debug!(
+        "[TIMING] try_start_recording: {:?} (took {:?})",
+        start_time.elapsed(),
+        recording_start_time.elapsed()
+    );
     if !recording_started {
         let reason = rm
             .last_error_message()
@@ -236,9 +246,14 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     shortcut::register_cancel_shortcut(app);
     shortcut::register_pause_shortcut(app);
     shortcut::register_action_shortcuts(app);
+    debug!("[TIMING] shortcuts registered: {:?}", start_time.elapsed());
     let _ = coordinator.mark_recording(app, operation_id);
     change_tray_icon(app, TrayIconState::Recording);
     show_recording_overlay(app);
+    debug!(
+        "[TIMING] ✅ show_recording_overlay (bouton visible): {:?}",
+        start_time.elapsed()
+    );
 
     let current_model_info = app.try_state::<Arc<ModelManager>>().and_then(|mm| {
         let settings = get_settings(app);

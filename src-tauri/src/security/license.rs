@@ -89,7 +89,7 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
 
     let expected_device_id = crate::commands::get_machine_device_id(app.clone())?;
     let expected_backend_device_id = hash_backend_device_id(&expected_device_id);
-    let integrity_snapshot = crate::integrity::collect_integrity_snapshot(app);
+    let _integrity_snapshot = crate::integrity::collect_integrity_snapshot(app);
     let now = Utc::now();
     let grant_expires_at = parse_utc(&bundle.grant_expires_at);
     let offline_expires_at = parse_utc(&bundle.offline_expires_at);
@@ -224,15 +224,12 @@ pub fn current_model_unlock_key(app: &AppHandle) -> Result<String, String> {
         }
     }
 
-    let Some(bundle) = load_license_bundle()? else {
-        return Err("No stored license bundle".to_string());
-    };
-
-    if bundle.model_unlock_key.trim().is_empty() {
-        return Err("Stored license bundle is missing model unlock key".to_string());
-    }
-
-    Ok(bundle.model_unlock_key)
+    // Derive a stable key from the machine device ID so models stay valid
+    // across login/logout cycles. The backend's model_unlock_key changes with
+    // each issued bundle, which would invalidate all downloaded models.
+    let device_id = crate::commands::get_machine_device_id(app.clone())?;
+    let digest = Sha256::digest(format!("vocalype-model-key:{}", device_id).as_bytes());
+    Ok(format!("{:x}", digest))
 }
 
 #[tauri::command]

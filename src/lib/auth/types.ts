@@ -32,6 +32,7 @@ export interface SubscriptionAccess {
 
 export interface AuthSession {
   token: string;
+  refresh_token?: string | null;
   user: AuthUser;
   subscription: SubscriptionAccess;
   show_trial_reminder?: boolean;

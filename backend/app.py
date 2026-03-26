@@ -66,6 +66,7 @@ def parse_allowed_origins() -> list[str]:
 
 CORS_ALLOWED_ORIGINS = parse_allowed_origins()
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 15, 5)
+REFRESH_TOKEN_TTL_DAYS = env_int("REFRESH_TOKEN_TTL_DAYS", 30, 1)
 PASSWORD_MIN_LENGTH = env_int("MIN_PASSWORD_LENGTH", 12, 12)
 RATE_LIMIT_BUCKETS: defaultdict[str, deque[float]] = defaultdict(deque)
 RATE_LIMIT_LOCK = Lock()
@@ -431,6 +432,16 @@ def make_token(user) -> str:
         "user_id": user["id"],
         "ver": int(user["token_version"] or 0),
         "exp": utc_now() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+
+def make_refresh_token(user) -> str:
+    payload = {
+        "user_id": user["id"],
+        "ver": int(user["token_version"] or 0),
+        "type": "refresh",
+        "exp": utc_now() + timedelta(days=REFRESH_TOKEN_TTL_DAYS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
@@ -1076,7 +1087,7 @@ def get_weekly_quota(user) -> dict:
     }
 
 
-def build_user_response(user, token: str, *, show_trial_reminder: bool = False):
+def build_user_response(user, token: str, *, refresh_token: str | None = None, show_trial_reminder: bool = False):
     tier = get_user_tier(user)
     response = {
         "token": token,
@@ -1097,6 +1108,8 @@ def build_user_response(user, token: str, *, show_trial_reminder: bool = False):
         response["subscription"]["quota"] = get_weekly_quota(user)
     if show_trial_reminder:
         response["show_trial_reminder"] = True
+    if refresh_token:
+        response["refresh_token"] = refresh_token
     return response
 
 
@@ -1676,6 +1689,7 @@ def register():
         register_device(device_id, user["id"])
 
         token = make_token(user)
+        refresh_token = make_refresh_token(user)
         log_security_event("register_success", user_id=user["id"], email=email, ip=ip_address)
 
         # Send trial welcome email in background — never blocks the registration response
@@ -1686,7 +1700,7 @@ def register():
             daemon=True,
         ).start()
 
-        return jsonify(build_user_response(user, token)), 201
+        return jsonify(build_user_response(user, token, refresh_token=refresh_token)), 201
     except Exception:
         app.logger.exception("register_failed email=%s ip=%s", email, ip_address)
         return jsonify({"error": "Erreur interne"}), 500
@@ -1745,16 +1759,59 @@ def login():
         )
 
     token = make_token(user)
+    refresh_token = make_refresh_token(user)
     log_security_event("login_success", user_id=user["id"], email=email, ip=ip_address)
-    return jsonify(build_user_response(user, token))
+    return jsonify(build_user_response(user, token, refresh_token=refresh_token))
 
 
 @app.route("/auth/session", methods=["GET"])
 @auth_required
 def session(user):
     token = make_token(user)
+    refresh_token = make_refresh_token(user)
     show_reminder = maybe_send_trial_reminder(user)
-    return jsonify(build_user_response(user, token, show_trial_reminder=show_reminder))
+    return jsonify(build_user_response(user, token, refresh_token=refresh_token, show_trial_reminder=show_reminder))
+
+
+@app.route("/auth/refresh", methods=["POST"])
+def refresh_token_endpoint():
+    data = request.get_json(silent=True) or {}
+    token = data.get("refresh_token", "").strip()
+    if not token:
+        return jsonify({"error": "Refresh token requis"}), 400
+
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    except Exception:
+        return jsonify({"error": "Refresh token invalide ou expiré"}), 401
+
+    if payload.get("type") != "refresh":
+        return jsonify({"error": "Type de token invalide"}), 401
+
+    user = load_user_by_id(payload.get("user_id"))
+    if not user:
+        return jsonify({"error": "Utilisateur introuvable"}), 401
+
+    try:
+        token_version = int(user["token_version"] or 0)
+        claimed_version = int(payload.get("ver", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Token invalide"}), 401
+
+    if claimed_version != token_version:
+        return jsonify({"error": "Token révoqué"}), 401
+
+    new_access = make_token(user)
+    new_refresh = make_refresh_token(user)
+    return jsonify(build_user_response(user, new_access, refresh_token=new_refresh))
+
+
+@app.route("/auth/logout", methods=["POST"])
+@auth_required
+def logout(user):
+    # Stateless tokens — client deletes them locally.
+    # Optionally bump token_version to invalidate all tokens immediately.
+    return jsonify({"ok": True})
 
 
 def parse_license_request_data():

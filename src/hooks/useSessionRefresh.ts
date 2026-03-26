@@ -13,7 +13,8 @@ import { authClient } from "@/lib/auth/client";
 import { licenseClient } from "@/lib/license/client";
 import type { AuthSession } from "@/lib/auth/types";
 
-const REFRESH_INTERVAL_MS = 17 * 60 * 1000;
+// Must be shorter than ACCESS_TOKEN_TTL_MINUTES (15 min) to avoid expiry gaps.
+const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
 interface UseSessionRefreshOptions {
   applySession: (session: AuthSession | null) => void;
@@ -47,16 +48,34 @@ export function useSessionRefresh({
         .catch((error) => {
           const status = authClient.getErrorStatus(error);
           if (status === 401 || status === 403) {
-            // Token expired — only log out if the offline license also expired.
-            licenseClient
-              .getRuntimeState()
-              .then((runtime) => {
-                if (runtime.state !== "offline_valid") {
-                  applySession(null);
-                }
-                // else: offline license still valid, stay quiet and keep session
-              })
-              .catch(() => applySession(null));
+            // Access token expired — try silent refresh first.
+            if (authClient.getStoredRefreshToken()) {
+              authClient
+                .refreshAccessToken()
+                .then((nextSession) => {
+                  applySession(nextSession);
+                  return syncLicenseForSession(nextSession, {
+                    mode: "refresh",
+                    allowOfflineFallback: true,
+                  });
+                })
+                .catch(() => {
+                  // Refresh token also dead — check offline license before logout.
+                  licenseClient
+                    .getRuntimeState()
+                    .then((runtime) => {
+                      if (runtime.state !== "offline_valid") applySession(null);
+                    })
+                    .catch(() => applySession(null));
+                });
+            } else {
+              licenseClient
+                .getRuntimeState()
+                .then((runtime) => {
+                  if (runtime.state !== "offline_valid") applySession(null);
+                })
+                .catch(() => applySession(null));
+            }
           }
         })
         .finally(() => {

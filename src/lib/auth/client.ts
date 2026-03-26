@@ -459,6 +459,10 @@ export const authClient = {
     return cachedToken;
   },
 
+  getStoredRefreshToken() {
+    return cachedSession?.refresh_token ?? null;
+  },
+
   getStoredSession() {
     return cachedSession;
   },
@@ -579,16 +583,27 @@ export const authClient = {
     return session;
   },
 
+  async refreshAccessToken(): Promise<AuthSession> {
+    const refreshToken = this.getStoredRefreshToken();
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+    const session = await request<AuthSession>("/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    await authClient.setStoredSession(session);
+    return session;
+  },
+
   async getSession(token: string) {
     const session = await request<AuthSession>(
       "/auth/session",
       { method: "GET" },
       token,
     );
-    // If the backend returns a refreshed token, persist it automatically
-    if (session.token && session.token !== token) {
-      await authClient.setStoredToken(session.token);
-    }
+    // Persist the refreshed tokens returned by the server
+    await authClient.setStoredSession(session);
     return session;
   },
 

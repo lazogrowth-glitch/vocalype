@@ -127,13 +127,25 @@ export function useAuthFlow(
       const status = authClient.getErrorStatus(error);
 
       if (status === 401 || status === 403) {
-        // Token expired — try to stay alive with the cached offline license
-        // so the user doesn't have to log in every morning.
+        // Access token expired — try silent refresh with the refresh token.
+        if (authClient.getStoredRefreshToken()) {
+          try {
+            const refreshed = await authClient.refreshAccessToken();
+            applySession(refreshed);
+            await syncLicenseForSession(refreshed, {
+              mode: "refresh",
+              allowOfflineFallback: true,
+            });
+            return; // Silently recovered — user sees nothing.
+          } catch {
+            // Refresh token also expired/revoked — fall through to offline/logout.
+          }
+        }
+
+        // No usable refresh token — try staying alive with the offline license.
         try {
           const offlineRuntime = await licenseClient.getRuntimeState();
           if (offlineRuntime.state === "offline_valid" && persistedSession) {
-            // Offline license still valid: keep the session in UI, update
-            // license state, and nudge the user to re-authenticate.
             setLicenseState(offlineRuntime);
             toast(
               t("auth.sessionExpiredNotice", {
@@ -153,11 +165,11 @@ export function useAuthFlow(
             return;
           }
         } catch {
-          // If we can't even read the offline license, fall through to logout.
+          // Can't read offline license — fall through to logout.
         }
       }
 
-      // No valid offline fallback — clear everything and show login.
+      // Nothing worked — clear everything and show login.
       applySession(null);
       void authClient.clearStoredToken();
     } finally {

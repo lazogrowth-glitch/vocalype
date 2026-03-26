@@ -124,15 +124,46 @@ export function useAuthFlow(
         allowOfflineFallback: true,
       });
     } catch (error) {
-      console.error("Failed to refresh auth session:", error);
       const status = authClient.getErrorStatus(error);
 
+      if (status === 401 || status === 403) {
+        // Token expired — try to stay alive with the cached offline license
+        // so the user doesn't have to log in every morning.
+        try {
+          const offlineRuntime = await licenseClient.getRuntimeState();
+          if (offlineRuntime.state === "offline_valid" && persistedSession) {
+            // Offline license still valid: keep the session in UI, update
+            // license state, and nudge the user to re-authenticate.
+            setLicenseState(offlineRuntime);
+            toast(
+              t("auth.sessionExpiredNotice", {
+                defaultValue:
+                  "Session expirée — reconnectez-vous pour continuer",
+              }),
+              {
+                action: {
+                  label: t("auth.reconnect", {
+                    defaultValue: "Se reconnecter",
+                  }),
+                  onClick: () => applySession(null),
+                },
+                duration: 8000,
+              },
+            );
+            return;
+          }
+        } catch {
+          // If we can't even read the offline license, fall through to logout.
+        }
+      }
+
+      // No valid offline fallback — clear everything and show login.
       applySession(null);
       void authClient.clearStoredToken();
     } finally {
       setAuthLoading(false);
     }
-  }, [applySession, syncLicenseForSession, t]);
+  }, [applySession, syncLicenseForSession, setLicenseState, t]);
 
   const handleStartCheckout = useCallback(async () => {
     const token = authClient.getStoredToken();

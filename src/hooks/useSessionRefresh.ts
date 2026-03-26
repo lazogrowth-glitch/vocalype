@@ -10,6 +10,7 @@
  */
 import { useEffect } from "react";
 import { authClient } from "@/lib/auth/client";
+import { licenseClient } from "@/lib/license/client";
 import type { AuthSession } from "@/lib/auth/types";
 
 const REFRESH_INTERVAL_MS = 17 * 60 * 1000;
@@ -46,7 +47,16 @@ export function useSessionRefresh({
         .catch((error) => {
           const status = authClient.getErrorStatus(error);
           if (status === 401 || status === 403) {
-            applySession(null);
+            // Token expired — only log out if the offline license also expired.
+            licenseClient
+              .getRuntimeState()
+              .then((runtime) => {
+                if (runtime.state !== "offline_valid") {
+                  applySession(null);
+                }
+                // else: offline license still valid, stay quiet and keep session
+              })
+              .catch(() => applySession(null));
           }
         })
         .finally(() => {

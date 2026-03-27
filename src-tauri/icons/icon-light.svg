@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="dark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#222222"/>
+      <stop offset="100%" stop-color="#111111"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#F0EFE8"/>
+
+  <!-- V shape -->
+  <path d="M108 148 L213 358 L256 410 L299 358 L404 148 L368 148 L256 338 L144 148 Z" fill="url(#dark)"/>
+
+  <!-- Dot + ripples -->
+  <circle cx="256" cy="412" r="16" fill="#D4860A"/>
+  <circle cx="256" cy="412" r="28" fill="none" stroke="#D4860A" stroke-width="3" opacity="0.35"/>
+  <circle cx="256" cy="412" r="42" fill="none" stroke="#D4860A" stroke-width="2" opacity="0.15"/>
+</svg>

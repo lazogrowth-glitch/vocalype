@@ -161,7 +161,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const productBadges = getProductBadges(model, t, copilotOptimized);
 
   const baseClasses =
-    "flex flex-wrap items-center gap-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-2";
+    "flex flex-wrap items-center rounded-2xl border border-white/8 bg-white/[0.03] text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-2";
 
   const getVariantClasses = () => {
     if (status === "active") {
@@ -201,6 +201,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
       }}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
+      style={{ padding: "12px 16px", gap: 16 }}
       className={[
         baseClasses,
         getVariantClasses(),
@@ -210,13 +211,28 @@ const ModelCard: React.FC<ModelCardProps> = ({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-4">
+      <div
+        style={{
+          display: "flex",
+          minWidth: 0,
+          flex: 1,
+          alignItems: "center",
+          gap: 16,
+        }}
+      >
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-logo-primary/12 text-logo-primary">
           <Globe className="h-4 w-4" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
             <h3
               className={`text-[14px] font-semibold text-white transition-colors ${
                 isClickable ? "group-hover:text-logo-primary" : ""
@@ -270,7 +286,16 @@ const ModelCard: React.FC<ModelCardProps> = ({
             </div>
           ) : null}
 
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-[12px] text-white/34">
+          <div
+            style={{
+              marginTop: 6,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 8,
+            }}
+            className="text-[12px] text-white/34"
+          >
             {model.supported_languages.length > 0 ? (
               <span>
                 {getLanguageDisplayText(model.supported_languages, t)}
@@ -287,8 +312,8 @@ const ModelCard: React.FC<ModelCardProps> = ({
 
         {(model.accuracy_score > 0 || model.speed_score > 0) && (
           <div className="ml-auto hidden items-center min-[900px]:flex">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <p className="w-12 text-right text-[10px] text-white/34">
                   {t("onboarding.modelCard.accuracy")}
                 </p>
@@ -299,7 +324,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <p className="w-12 text-right text-[10px] text-white/34">
                   {t("onboarding.modelCard.speed")}
                 </p>
@@ -328,14 +353,17 @@ const ModelCard: React.FC<ModelCardProps> = ({
       ) : null}
 
       {status === "downloading" && downloadProgress !== undefined ? (
-        <div className="mt-3 basis-full">
+        <div style={{ marginTop: 12 }} className="basis-full">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-mid-gray/20">
             <div
               className="h-full rounded-full bg-logo-primary transition-all duration-300"
               style={{ width: `${downloadProgress}%` }}
             />
           </div>
-          <div className="mt-1 flex items-center justify-between text-xs">
+          <div
+            style={{ marginTop: 4 }}
+            className="flex items-center justify-between text-xs"
+          >
             <span className="text-text/50">
               {t("modelSelector.downloading", {
                 percentage: Math.round(downloadProgress),

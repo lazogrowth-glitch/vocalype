@@ -53,6 +53,17 @@
   }
 }
 
+/* Global: all clickable elements show pointer cursor */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+[role="tab"],
+[role="option"],
+select:not(:disabled),
+label[for],
+a[href] {
+  cursor: pointer;
+}
+
 .logo-primary {
   fill: var(--color-logo-primary);
 }

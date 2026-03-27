@@ -101,28 +101,18 @@ export const MachineStatusBar: React.FC<{ variant?: "banner" | "sidebar" }> = ({
 
   if (variant === "sidebar") {
     return (
-      <div
-        className={`rounded-full border px-[10px] py-[6px] ${MODE_STYLES[status.mode]}`}
-      >
-        <div className="flex items-center gap-2">
-          <span className="h-[6px] w-[6px] shrink-0 rounded-full bg-emerald-400" />
-          <span className="sr-only" aria-live="polite">
-            {status.mode === "optimal"
-              ? t("a11y.statusReady")
-              : status.mode === "thermal" || status.mode === "fallback"
-                ? t("a11y.statusError")
-                : t("a11y.statusReady")}
-          </span>
-          <div className="min-w-0">
-            <div className="truncate text-[11px] font-medium leading-[1.3] text-emerald-400">
-              {modelLabel ?? status.headline}
-            </div>
-            <div className="truncate text-[11px] leading-[1.3] text-white/55">
-              {backendLabel ? `${backendLabel} · ` : ""}
-              {status.headline}
-            </div>
-          </div>
-        </div>
+      <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.05]">
+        <span className="h-[6px] w-[6px] shrink-0 rounded-full bg-emerald-400" />
+        <span className="sr-only" aria-live="polite">
+          {status.mode === "optimal"
+            ? t("a11y.statusReady")
+            : status.mode === "thermal" || status.mode === "fallback"
+              ? t("a11y.statusError")
+              : t("a11y.statusReady")}
+        </span>
+        <span className="truncate text-[11px] leading-none text-white/40">
+          {modelLabel ?? status.headline}
+        </span>
       </div>
     );
   }

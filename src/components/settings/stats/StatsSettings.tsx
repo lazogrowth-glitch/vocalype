@@ -27,7 +27,10 @@ const StatCard: React.FC<{
   value: string | number;
   sub?: string;
 }> = ({ label, value, sub }) => (
-  <div className="flex flex-col gap-1 rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
+  <div
+    className="flex flex-col gap-1 rounded-[10px] border border-white/8 bg-white/[0.03]"
+    style={{ padding: "16px 20px" }}
+  >
     <p className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-white/30">
       {label}
     </p>
@@ -64,7 +67,7 @@ export const StatsSettings: React.FC = () => {
   }, [load]);
 
   return (
-    <div className="space-y-5 pt-5">
+    <div style={{ paddingTop: 8 }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-[12px] font-medium text-white/50">
@@ -90,7 +93,14 @@ export const StatsSettings: React.FC = () => {
       ) : stats ? (
         <>
           {/* Grid — primary stats */}
-          <div className="grid grid-cols-2 gap-3">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
             <StatCard
               label={t("stats.totalWords", { defaultValue: "Mots dictés" })}
               value={formatNumber(stats.total_words)}
@@ -123,8 +133,14 @@ export const StatsSettings: React.FC = () => {
 
           {/* Most used model */}
           {stats.most_used_model && (
-            <div className="rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
-              <p className="mb-1 text-[10.5px] font-medium uppercase tracking-[0.1em] text-white/30">
+            <div
+              className="rounded-[10px] border border-white/8 bg-white/[0.03]"
+              style={{ padding: "16px 20px", marginBottom: 12 }}
+            >
+              <p
+                style={{ marginBottom: 4 }}
+                className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-white/30"
+              >
                 {t("stats.mostUsedModel", {
                   defaultValue: "Modèle le plus utilisé",
                 })}
@@ -137,8 +153,14 @@ export const StatsSettings: React.FC = () => {
 
           {/* Words per transcription */}
           {stats.total_entries > 0 && (
-            <div className="rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
-              <p className="mb-1 text-[10.5px] font-medium uppercase tracking-[0.1em] text-white/30">
+            <div
+              className="rounded-[10px] border border-white/8 bg-white/[0.03]"
+              style={{ padding: "16px 20px" }}
+            >
+              <p
+                style={{ marginBottom: 4 }}
+                className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-white/30"
+              >
                 {t("stats.avgWords", {
                   defaultValue: "Mots par transcription (moy.)",
                 })}

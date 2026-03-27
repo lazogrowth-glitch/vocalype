@@ -168,14 +168,20 @@ export const MeetingsSettings: React.FC = () => {
       >
         {/* Detected app badge */}
         {detectedApp && (
-          <div className="flex items-center gap-1.5 border-b border-white/8 px-3 py-1.5">
+          <div
+            style={{ padding: "6px 12px" }}
+            className="flex items-center gap-1.5 border-b border-white/8"
+          >
             <Video size={11} className="text-green-400/70" />
             <span className="text-[11px] text-green-400/80">{detectedApp}</span>
           </div>
         )}
 
         {/* Search + New */}
-        <div className="flex items-center gap-1.5 border-b border-white/8 p-2">
+        <div
+          style={{ padding: "8px 12px" }}
+          className="flex items-center gap-1.5 border-b border-white/8"
+        >
           <div className="relative flex-1">
             <Search
               size={12}
@@ -186,7 +192,8 @@ export const MeetingsSettings: React.FC = () => {
               placeholder={t("meetings.search", { defaultValue: "Search…" })}
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full rounded bg-white/5 py-1 pr-2 pl-7 text-[12px] text-white/70 placeholder-white/25 outline-none focus:ring-1 focus:ring-white/15"
+              style={{ padding: "8px 8px 8px 28px" }}
+              className="w-full rounded bg-white/5 text-[12px] text-white/70 placeholder-white/25 outline-none focus:ring-1 focus:ring-white/15"
             />
           </div>
           <button
@@ -201,7 +208,10 @@ export const MeetingsSettings: React.FC = () => {
         {/* Meeting list */}
         <div className="flex-1 overflow-y-auto">
           {meetings.length === 0 && (
-            <div className="flex flex-col items-center gap-2 px-4 pt-8 text-center text-[12px] text-white/25">
+            <div
+              style={{ padding: "32px 16px 16px" }}
+              className="flex flex-col items-center gap-2 text-center text-[12px] text-white/25"
+            >
               <Mic size={24} className="opacity-40" />
               <p>
                 {t("meetings.empty", {
@@ -215,7 +225,8 @@ export const MeetingsSettings: React.FC = () => {
             <div
               key={m.id}
               onClick={() => setSelectedId(m.id)}
-              className={`group flex cursor-pointer items-start justify-between gap-1 px-3 py-2 transition-colors ${
+              style={{ padding: "10px 16px" }}
+              className={`group flex cursor-pointer items-start justify-between gap-1 transition-colors ${
                 selectedId === m.id
                   ? "bg-white/8 text-white/90"
                   : "text-white/55 hover:bg-white/5 hover:text-white/75"
@@ -265,7 +276,10 @@ export const MeetingsSettings: React.FC = () => {
         ) : (
           <>
             {/* Title + close button */}
-            <div className="flex items-center gap-2 border-b border-white/8 px-4 py-2">
+            <div
+              style={{ padding: "10px 16px" }}
+              className="flex items-center gap-2 border-b border-white/8"
+            >
               <div className="flex-1">
                 <input
                   type="text"
@@ -284,7 +298,8 @@ export const MeetingsSettings: React.FC = () => {
               </div>
               <button
                 onClick={handleCloseMeeting}
-                className="rounded px-2 py-1 text-[11px] text-white/35 transition-colors hover:bg-white/8 hover:text-white/60"
+                style={{ padding: "10px 16px" }}
+                className="rounded text-[11px] text-white/35 transition-colors hover:bg-white/8 hover:text-white/60"
                 title={t("meetings.closeTitle", {
                   defaultValue: "End meeting — next recording starts a new one",
                 })}
@@ -299,8 +314,8 @@ export const MeetingsSettings: React.FC = () => {
               })}
               value={editTranscript}
               onChange={(e) => handleTranscriptChange(e.target.value)}
-              className="flex-1 resize-none bg-transparent px-4 py-3 text-[13px] leading-relaxed text-white/75 placeholder-white/20 outline-none"
-              style={{ fontFamily: "inherit" }}
+              style={{ padding: "10px 16px", fontFamily: "inherit" }}
+              className="flex-1 resize-none bg-transparent text-[13px] leading-relaxed text-white/75 placeholder-white/20 outline-none"
             />
           </>
         )}

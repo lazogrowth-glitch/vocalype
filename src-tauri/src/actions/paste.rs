@@ -37,14 +37,24 @@ pub(super) fn dispatch_text_insertion(
     let main_thread_fallback_text = fallback_text.clone();
     let paste_time = Instant::now();
 
+    info!(
+        "[PASTE] dispatch_text_insertion called: op={} text_len={} is_basic={} text_preview='{}'",
+        operation_id,
+        final_text.len(),
+        is_basic_plan,
+        final_text.chars().take(60).collect::<String>()
+    );
+
     if let Ok(mut p) = profiler.lock() {
         p.set_transcription_chars(&final_text);
     }
 
     if let Some(coordinator) = app.try_state::<crate::TranscriptionCoordinator>() {
         if !coordinator.mark_pasting(app, operation_id) {
+            info!("[PASTE] mark_pasting returned false — operation {} already cancelled or superseded, skipping paste", operation_id);
             return;
         }
+        info!("[PASTE] mark_pasting OK for op={}", operation_id);
     } else {
         emit_lifecycle_state(
             app,
@@ -57,8 +67,10 @@ pub(super) fn dispatch_text_insertion(
     let profiler_for_paste = Arc::clone(&profiler);
     app.run_on_main_thread(move || {
         let mut on_success = on_success;
+        info!("[PASTE] on_main_thread: checking op={} still active", operation_id);
         if let Some(coordinator) = app_clone.try_state::<crate::TranscriptionCoordinator>() {
             if !coordinator.is_operation_active(operation_id) {
+                info!("[PASTE] operation {} no longer active on main thread — paste aborted", operation_id);
                 return;
             }
         }
@@ -69,6 +81,7 @@ pub(super) fn dispatch_text_insertion(
         let text_for_fallback = fallback_text.clone();
         let paste_exec_started = Instant::now();
 
+        info!("[PASTE] execution mode: {:?}", decide_paste_execution_mode(is_basic_plan));
         match decide_paste_execution_mode(is_basic_plan) {
             PasteExecutionMode::ClipboardOnlyBasic => {
                 match app_clone.clipboard().write_text(&final_text) {

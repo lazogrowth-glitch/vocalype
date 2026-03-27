@@ -43,10 +43,6 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showTooltip]);
 
-  // Row style: flex items-center justify-between py-[13px] border-b border-white/5
-  // When grouped (inside a SettingsGroup which handles dividers), use simpler row
-  const rowClasses = grouped ? "" : "border-b border-white/5 last:border-b-0";
-
   const infoButton = (
     <div
       ref={tooltipRef}
@@ -74,8 +70,18 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
 
   if (layout === "stacked") {
     return (
-      <div className={rowClasses}>
-        <div className="mb-3 flex items-center gap-[10px]">
+      <div
+        className="border-b border-white/[0.05] last:border-b-0"
+        style={{ padding: "14px 20px" }}
+      >
+        <div
+          style={{
+            marginBottom: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
           {descriptionMode === "tooltip" ? infoButton : null}
           <div className="min-w-0">
             <h3
@@ -99,7 +105,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
 
   return (
     <div
-      className={`group ${rowClasses}`}
+      className="group border-b border-white/[0.05] last:border-b-0"
       style={{
         display: "flex",
         width: "100%",
@@ -107,8 +113,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
         justifyContent: "space-between",
         gap: 16,
         minHeight: 48,
-        padding: "13px 0",
-        borderBottom: "0.5px solid rgba(255,255,255,0.05)",
+        padding: "14px 20px",
       }}
     >
       <div className="min-w-0">

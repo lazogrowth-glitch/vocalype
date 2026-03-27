@@ -887,6 +887,36 @@ fn should_replace_config(
     improvement > 0.0
 }
 
+/// Pick the best Whisper model based on real calibration scores.
+/// Lower `overall_score` = faster + more stable on this machine.
+/// Returns None if no eligible model has been calibrated yet.
+fn select_best_calibrated_whisper_model(profile: &AdaptiveMachineProfile) -> Option<String> {
+    let mut candidates: Vec<(&str, f32)> = Vec::new();
+
+    if profile.calibrated_models.iter().any(|id| id == "small")
+        && profile.whisper.small.overall_score > 0.0
+    {
+        candidates.push(("small", profile.whisper.small.overall_score));
+    }
+    if profile.calibrated_models.iter().any(|id| id == "turbo")
+        && profile.whisper.turbo.overall_score > 0.0
+        && profile.total_memory_gb >= 12
+    {
+        candidates.push(("turbo", profile.whisper.turbo.overall_score));
+    }
+    if profile.calibrated_models.iter().any(|id| id == "large")
+        && profile.whisper.large.overall_score > 0.0
+        && large_eligibility_reason(profile).is_none()
+    {
+        candidates.push(("large", profile.whisper.large.overall_score));
+    }
+
+    candidates
+        .into_iter()
+        .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+        .map(|(id, _)| id.to_string())
+}
+
 fn apply_candidate_result(
     app: &AppHandle,
     model_id: &str,
@@ -954,6 +984,22 @@ fn apply_candidate_result(
     }
     if matches!(phase, CalibrationPhase::Full) {
         profile.last_full_bench_at = Some(now_ms());
+    }
+
+    // Update secondary model recommendation based on real benchmark scores.
+    if let Some(best_id) = select_best_calibrated_whisper_model(profile) {
+        let previous = profile.secondary_model_id.as_deref().unwrap_or("none");
+        if previous != best_id {
+            info!(
+                "Adaptive calibration: secondary model updated '{}' → '{}' (scores: small={:.0} turbo={:.0} large={:.0})",
+                previous,
+                best_id,
+                profile.whisper.small.overall_score,
+                profile.whisper.turbo.overall_score,
+                profile.whisper.large.overall_score,
+            );
+            profile.secondary_model_id = Some(best_id);
+        }
     }
 
     write_settings(app, settings);

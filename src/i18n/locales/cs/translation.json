@@ -647,6 +647,10 @@
         "voiceProfileWpm": "{{value}} wpm",
         "voiceProfilePauses": "{{value}} ms pauses",
         "voiceAdjustmentValue": "{{chunkSeconds}}s / {{overlapMs}}ms"
+      },
+      "autoPauseMedia": {
+        "label": "Auto-pause media",
+        "description": "Automatically pauses Spotify and other media players during recording, then resumes when done."
       }
     },
     "about": {
@@ -924,7 +928,10 @@
     "importMerge": "Import (merge)",
     "exportSuccess": "Dictionary exported.",
     "importReplaceSuccess": "Dictionary imported (replaced).",
-    "importMergeSuccess": "Dictionary imported (merged)."
+    "importMergeSuccess": "Dictionary imported (merged).",
+    "autoLearn": "Auto-learn",
+    "autoLearnDesc": "Automatically learns word corrections when you copy modified text after dictation.",
+    "edit": "Edit"
   },
   "snippets": {
     "title": "Voice Snippets",

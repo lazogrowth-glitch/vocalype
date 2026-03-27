@@ -30,7 +30,7 @@ function UsageBar({ used, limit }: { used: number; limit: number }) {
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const isHigh = pct >= 80;
   return (
-    <div className="space-y-1.5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div className="flex items-center justify-between text-[12px]">
         <span className="text-white/50">
           {used.toLocaleString()} / {limit.toLocaleString()}
@@ -117,9 +117,16 @@ export const BillingSettings: React.FC = () => {
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full">
       {/* Header */}
-      <section className="flex items-center gap-3">
+      <section
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-logo-primary/20 bg-logo-primary/10">
           <CreditCard size={18} className="text-logo-primary" />
         </div>
@@ -148,7 +155,7 @@ export const BillingSettings: React.FC = () => {
           }
           grouped={false}
         >
-          <div className="flex items-center gap-2">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isTrialing && trialEndsAt && (
               <span className="text-[12px] text-white/40">
                 {t("billing.plan.trialEnds", {
@@ -178,7 +185,15 @@ export const BillingSettings: React.FC = () => {
               "Resets every Monday. Usage is approximate — based on transcription count.",
           })}
         >
-          <div className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-4 space-y-3">
+          <div
+            className="rounded-xl border border-white/8 bg-white/[0.03]"
+            style={{
+              padding: "16px 20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
             <p className="text-[12px] font-medium text-white/60">
               {t("billing.usage.transcriptions", {
                 defaultValue: "Transcriptions this week",
@@ -202,22 +217,36 @@ export const BillingSettings: React.FC = () => {
         <SettingsGroup
           title={t("billing.stats.title", { defaultValue: "All-time stats" })}
         >
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+          >
+            <div
+              className="rounded-xl border border-white/8 bg-white/[0.03]"
+              style={{ padding: "16px 20px" }}
+            >
               <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
                 {t("billing.stats.words", { defaultValue: "Words dictated" })}
               </p>
-              <p className="mt-1 text-[22px] font-semibold leading-none text-white/90">
+              <p
+                style={{ marginTop: 4 }}
+                className="text-[22px] font-semibold leading-none text-white/90"
+              >
                 {stats.total_words.toLocaleString()}
               </p>
             </div>
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
+            <div
+              className="rounded-xl border border-white/8 bg-white/[0.03]"
+              style={{ padding: "16px 20px" }}
+            >
               <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
                 {t("billing.stats.sessions", {
                   defaultValue: "Total sessions",
                 })}
               </p>
-              <p className="mt-1 text-[22px] font-semibold leading-none text-white/90">
+              <p
+                style={{ marginTop: 4 }}
+                className="text-[22px] font-semibold leading-none text-white/90"
+              >
                 {stats.total_entries.toLocaleString()}
               </p>
             </div>

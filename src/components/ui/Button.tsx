@@ -37,14 +37,21 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const sizeClasses = {
-    sm: "px-3 py-1.5 text-[12px]",
-    md: "px-4 py-2 text-[13px]",
-    lg: "px-4 py-2.5 text-[14px]",
+    sm: "text-[12px]",
+    md: "text-[13px]",
+    lg: "text-[14px]",
+  };
+
+  const sizeStyles = {
+    sm: { padding: "8px 16px" },
+    md: { padding: "10px 18px" },
+    lg: { padding: "10px 20px" },
   };
 
   return (
     <button
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      style={sizeStyles[size]}
       {...props}
     >
       {children}

@@ -1,18 +1,141 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Pencil, Trash2, Check, X, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { commands, type VoiceSnippet } from "@/bindings";
-import { Button } from "../../ui/Button";
-import { Input } from "../../ui/Input";
 
-// ── Inline edit state ────────────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────────────────
 
-interface EditState {
-  id: string;
-  trigger: string;
-  expansion: string;
+interface SnippetModalProps {
+  title: string;
+  initialTrigger?: string;
+  initialExpansion?: string;
+  submitLabel: string;
+  onSubmit: (trigger: string, expansion: string) => Promise<void>;
+  onClose: () => void;
 }
+
+const SnippetModal: React.FC<SnippetModalProps> = ({
+  title,
+  initialTrigger = "",
+  initialExpansion = "",
+  submitLabel,
+  onSubmit,
+  onClose,
+}) => {
+  const { t } = useTranslation();
+  const [trigger, setTrigger] = useState(initialTrigger);
+  const [expansion, setExpansion] = useState(initialExpansion);
+  const [submitting, setSubmitting] = useState(false);
+  const triggerRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    triggerRef.current?.focus();
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const handleSubmit = async () => {
+    const t2 = trigger.trim();
+    const e2 = expansion.trim();
+    if (!t2 || !e2 || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(t2, e2);
+      onClose();
+    } catch {
+      // error already toasted in parent
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.65)" }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="w-[620px] rounded-[14px] border border-white/10 shadow-2xl"
+        style={{ background: "#1b1b1b" }}
+      >
+        {/* Header */}
+        <div style={{ padding: "24px 28px 18px" }}>
+          <h2 className="text-[17px] font-semibold text-white/90">{title}</h2>
+        </div>
+
+        {/* Body */}
+        <div
+          style={{
+            padding: "0 28px 12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          <input
+            ref={triggerRef}
+            type="text"
+            value={trigger}
+            onChange={(e) => setTrigger(e.target.value)}
+            placeholder={t("snippets.triggerPlaceholder", {
+              defaultValue: "Déclencheur (ex : mon email)",
+            })}
+            style={{ padding: "12px 16px" }}
+            className="w-full rounded-[8px] border border-white/10 bg-white/[0.06] text-[14px] text-white/85 placeholder-white/30 outline-none focus:border-logo-primary/50 focus:bg-white/[0.08] transition-colors"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSubmit();
+            }}
+          />
+          <textarea
+            value={expansion}
+            onChange={(e) => setExpansion(e.target.value)}
+            placeholder={t("snippets.expansionPlaceholder", {
+              defaultValue: "Texte à coller (ex : jean@exemple.com)",
+            })}
+            rows={7}
+            style={{ padding: "12px 16px" }}
+            className="w-full resize-none rounded-[8px] border border-white/10 bg-white/[0.06] text-[14px] text-white/85 placeholder-white/30 outline-none focus:border-logo-primary/50 focus:bg-white/[0.08] transition-colors"
+          />
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{ padding: "18px 28px" }}
+          className="flex items-center justify-end gap-2"
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ padding: "10px 18px" }}
+            className="rounded-[8px] border border-white/10 text-[13px] font-medium text-white/55 transition-colors hover:border-white/20 hover:text-white/75"
+          >
+            {t("snippets.cancel", { defaultValue: "Annuler" })}
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!trigger.trim() || !expansion.trim() || submitting}
+            style={{ padding: "10px 18px" }}
+            className="rounded-[8px] bg-logo-primary text-[13px] font-medium text-black transition-opacity disabled:opacity-40 hover:opacity-90"
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -20,10 +143,15 @@ export const SnippetsSettings: React.FC = () => {
   const { t } = useTranslation();
 
   const [snippets, setSnippets] = useState<VoiceSnippet[]>([]);
-  const [newTrigger, setNewTrigger] = useState("");
-  const [newExpansion, setNewExpansion] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [edit, setEdit] = useState<EditState | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editSnippet, setEditSnippet] = useState<VoiceSnippet | null>(null);
+  const [preFill, setPreFill] = useState<{
+    trigger: string;
+    expansion: string;
+  } | null>(null);
+  const [dismissedExamples, setDismissedExamples] = useState<Set<number>>(
+    new Set(),
+  );
 
   const load = async () => {
     try {
@@ -38,38 +166,36 @@ export const SnippetsSettings: React.FC = () => {
     load();
   }, []);
 
-  // ── Add ─────────────────────────────────────────────────────────────────
+  // ── Add ───────────────────────────────────────────────────────────────────
 
-  const handleAdd = async () => {
-    const trigger = newTrigger.trim();
-    const expansion = newExpansion.trim();
-    if (!trigger || !expansion) return;
-
-    setAdding(true);
-    try {
-      const result = await commands.addVoiceSnippet(trigger, expansion);
-      if (result.status === "ok") {
-        setNewTrigger("");
-        setNewExpansion("");
-        await load();
-      } else {
-        toast.error(result.error);
-      }
-    } catch (e) {
-      toast.error(String(e));
-    } finally {
-      setAdding(false);
+  const handleAdd = async (trigger: string, expansion: string) => {
+    const result = await commands.addVoiceSnippet(trigger, expansion);
+    if (result.status === "ok") {
+      await load();
+    } else {
+      toast.error(result.error);
+      throw new Error(result.error);
     }
   };
 
-  const handleAddKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAdd();
+  // ── Edit ──────────────────────────────────────────────────────────────────
+
+  const handleEdit = async (trigger: string, expansion: string) => {
+    if (!editSnippet) return;
+    const result = await commands.updateVoiceSnippet(
+      editSnippet.id,
+      trigger,
+      expansion,
+    );
+    if (result.status === "ok") {
+      await load();
+    } else {
+      toast.error(result.error);
+      throw new Error(result.error);
     }
   };
 
-  // ── Remove ───────────────────────────────────────────────────────────────
+  // ── Remove ────────────────────────────────────────────────────────────────
 
   const handleRemove = async (id: string) => {
     try {
@@ -84,215 +210,219 @@ export const SnippetsSettings: React.FC = () => {
     }
   };
 
-  // ── Inline edit ──────────────────────────────────────────────────────────
-
-  const startEdit = (s: VoiceSnippet) => {
-    setEdit({ id: s.id, trigger: s.trigger, expansion: s.expansion });
-  };
-
-  const cancelEdit = () => setEdit(null);
-
-  const confirmEdit = async () => {
-    if (!edit) return;
-    const trigger = edit.trigger.trim();
-    const expansion = edit.expansion.trim();
-    if (!trigger || !expansion) return;
-
-    try {
-      const result = await commands.updateVoiceSnippet(
-        edit.id,
-        trigger,
-        expansion,
-      );
-      if (result.status === "ok") {
-        setEdit(null);
-        await load();
-      } else {
-        toast.error(result.error);
-      }
-    } catch (e) {
-      toast.error(String(e));
-    }
-  };
-
-  const handleEditKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      confirmEdit();
-    } else if (e.key === "Escape") {
-      cancelEdit();
-    }
-  };
-
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-5 pt-5">
-      {/* Info banner */}
-      <div className="rounded-[8px] border border-white/6 bg-white/[0.02] px-4 py-3">
-        <p className="mb-1 text-[11.5px] font-medium text-white/50">
-          {t("snippets.howItWorks", { defaultValue: "Comment ça marche" })}
-        </p>
-        <p className="text-[11px] text-white/30 leading-relaxed">
+    <>
+      {/* Add modal */}
+      {showAddModal && (
+        <SnippetModal
+          title={t("snippets.addTitle", { defaultValue: "Ajouter un snippet" })}
+          initialTrigger={preFill?.trigger ?? ""}
+          initialExpansion={preFill?.expansion ?? ""}
+          submitLabel={t("snippets.addSubmit", { defaultValue: "Ajouter" })}
+          onSubmit={handleAdd}
+          onClose={() => {
+            setShowAddModal(false);
+            setPreFill(null);
+          }}
+        />
+      )}
+
+      {/* Edit modal */}
+      {editSnippet && (
+        <SnippetModal
+          title={t("snippets.editTitle", {
+            defaultValue: "Modifier le snippet",
+          })}
+          initialTrigger={editSnippet.trigger}
+          initialExpansion={editSnippet.expansion}
+          submitLabel={t("snippets.save", { defaultValue: "Enregistrer" })}
+          onSubmit={handleEdit}
+          onClose={() => setEditSnippet(null)}
+        />
+      )}
+
+      {/* Header row */}
+      <div
+        className="flex items-center justify-between"
+        style={{ marginBottom: 32 }}
+      >
+        <p className="text-[12px] text-white/35 leading-relaxed max-w-sm">
           {t("snippets.description", {
             defaultValue:
-              "Dis le déclencheur exact → le texte d'expansion est collé automatiquement. Ex : « mon email » → « jean@exemple.com ».",
+              "Dis le déclencheur → le texte s'insère automatiquement.",
           })}
         </p>
-      </div>
-
-      {/* Add row */}
-      <div className="flex items-start gap-2">
-        <div className="flex flex-1 flex-col gap-1.5">
-          <Input
-            type="text"
-            value={newTrigger}
-            onChange={(e) => setNewTrigger(e.target.value)}
-            onKeyDown={handleAddKeyDown}
-            placeholder={t("snippets.triggerPlaceholder", {
-              defaultValue: "Déclencheur vocal (ex : mon email)",
-            })}
-            variant="compact"
-            disabled={adding}
-          />
-          <Input
-            type="text"
-            value={newExpansion}
-            onChange={(e) => setNewExpansion(e.target.value)}
-            onKeyDown={handleAddKeyDown}
-            placeholder={t("snippets.expansionPlaceholder", {
-              defaultValue: "Texte à coller (ex : jean@exemple.com)",
-            })}
-            variant="compact"
-            disabled={adding}
-          />
-        </div>
-        <Button
-          onClick={handleAdd}
-          disabled={!newTrigger.trim() || !newExpansion.trim() || adding}
-          variant="primary"
-          size="md"
-          className="shrink-0 mt-0.5"
-          aria-label={t("snippets.add", { defaultValue: "Add" })}
-          title={t("snippets.add", { defaultValue: "Add" })}
+        <button
+          type="button"
+          onClick={() => setShowAddModal(true)}
+          style={{ padding: "10px 18px" }}
+          className="flex items-center gap-2 rounded-[9px] bg-logo-primary text-[13.5px] font-semibold text-black transition-opacity hover:opacity-85 cursor-pointer"
         >
           <Plus size={15} aria-hidden="true" />
-        </Button>
+          {t("snippets.addNew", { defaultValue: "Ajouter" })}
+        </button>
       </div>
 
       {/* List */}
       {snippets.length === 0 ? (
-        <p className="px-1 text-[13px] italic text-white/35">
-          {t("snippets.empty", {
-            defaultValue: "Aucun snippet. Ajoutes-en un ci-dessus.",
-          })}
-        </p>
+        <div className="rounded-[12px] border border-white/6 bg-white/[0.02] overflow-hidden">
+          {/* Example rows (clickable, pre-fill modal) */}
+          {[
+            {
+              trigger: "mon LinkedIn",
+              expansion: "https://linkedin.com/in/votre-profil",
+            },
+            { trigger: "mon email", expansion: "votre@email.com" },
+            {
+              trigger: "intro réunion",
+              expansion:
+                "Bonjour à tous, merci de vous joindre à cette réunion…",
+            },
+          ]
+            .filter((_, i) => !dismissedExamples.has(i))
+            .map((ex, _i, arr) => {
+              const originalIndex = [
+                "mon LinkedIn",
+                "mon email",
+                "intro réunion",
+              ].indexOf(ex.trigger);
+              return (
+                <div
+                  key={originalIndex}
+                  style={{
+                    padding: "10px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                  className="group border-b border-white/[0.04] last:border-0 hover:bg-logo-primary/[0.06] hover:border-logo-primary/20 transition-colors"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreFill({
+                        trigger: ex.trigger,
+                        expansion: ex.expansion,
+                      });
+                      setShowAddModal(true);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                    className="text-left cursor-pointer"
+                  >
+                    <span
+                      style={{ padding: "2px 8px" }}
+                      className="shrink-0 rounded-[6px] bg-white/[0.05] group-hover:bg-logo-primary/[0.12] font-mono text-[12px] text-white/25 group-hover:text-logo-primary/70 transition-colors"
+                    >
+                      {ex.trigger}
+                    </span>
+                    <span className="shrink-0 text-[12px] text-white/15 group-hover:text-logo-primary/40 transition-colors">
+                      →
+                    </span>
+                    <span
+                      style={{ padding: "2px 10px" }}
+                      className="min-w-0 truncate rounded-[6px] border border-white/[0.07] group-hover:border-logo-primary/20 bg-white/[0.03] group-hover:bg-logo-primary/[0.06] text-[12px] text-white/25 group-hover:text-logo-primary/60 italic transition-colors"
+                    >
+                      {ex.expansion}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDismissedExamples(
+                        (prev) => new Set([...prev, originalIndex]),
+                      );
+                    }}
+                    className="shrink-0 text-white/20 hover:text-white/50 transition-colors cursor-pointer"
+                    aria-label="Ignorer cette suggestion"
+                  >
+                    <X size={12} aria-hidden="true" />
+                  </button>
+                </div>
+              );
+            })}
+          {/* CTA */}
+          <div
+            className="flex flex-col items-center text-center"
+            style={{ gap: 16, padding: "32px 24px" }}
+          >
+            <p className="text-[13px] text-white/35">
+              {t("snippets.empty", {
+                defaultValue: "Aucun snippet pour l'instant.",
+              })}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              style={{ padding: "10px 18px" }}
+              className="flex items-center gap-2 rounded-[8px] border border-white/12 bg-white/[0.05] text-[13px] font-medium text-white/50 transition-colors hover:bg-white/[0.09] hover:text-white/80 cursor-pointer"
+            >
+              <Plus size={14} aria-hidden="true" />
+              {t("snippets.addFirst", {
+                defaultValue: "Créer mon premier snippet",
+              })}
+            </button>
+          </div>
+        </div>
       ) : (
-        <div className="divide-y divide-white/6 rounded-lg border border-white/8">
-          {snippets.map((s) => {
-            const isEditing = edit?.id === s.id;
-            return (
-              <div key={s.id} className="flex flex-col gap-1.5 px-4 py-3">
-                {isEditing ? (
-                  <>
-                    <Input
-                      type="text"
-                      value={edit.trigger}
-                      onChange={(e) =>
-                        setEdit(
-                          (prev) =>
-                            prev && { ...prev, trigger: e.target.value },
-                        )
-                      }
-                      onKeyDown={handleEditKeyDown}
-                      variant="compact"
-                      autoFocus
-                    />
-                    <Input
-                      type="text"
-                      value={edit.expansion}
-                      onChange={(e) =>
-                        setEdit(
-                          (prev) =>
-                            prev && { ...prev, expansion: e.target.value },
-                        )
-                      }
-                      onKeyDown={handleEditKeyDown}
-                      variant="compact"
-                    />
-                    <div className="flex gap-1.5 pt-0.5">
-                      <button
-                        type="button"
-                        onClick={confirmEdit}
-                        className="rounded px-2 py-0.5 text-[11.5px] text-green-400 hover:bg-white/8 transition-colors"
-                      >
-                        <Check
-                          size={13}
-                          className="inline mr-1"
-                          aria-hidden="true"
-                        />
-                        {t("snippets.save", { defaultValue: "Enregistrer" })}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelEdit}
-                        className="rounded px-2 py-0.5 text-[11.5px] text-white/40 hover:bg-white/8 transition-colors"
-                      >
-                        <X
-                          size={13}
-                          className="inline mr-1"
-                          aria-hidden="true"
-                        />
-                        {t("snippets.cancel", { defaultValue: "Annuler" })}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="rounded bg-logo-primary/10 px-2 py-0.5 text-[11px] font-mono font-medium text-logo-primary">
-                          {s.trigger}
-                        </span>
-                        <span className="text-[11px] text-white/30">→</span>
-                        <span className="text-[12.5px] text-white/75 truncate max-w-[240px]">
-                          {s.expansion}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(s)}
-                        className="rounded p-1 text-white/35 hover:text-white/70 hover:bg-white/8 transition-colors"
-                        aria-label={t("snippets.edit", {
-                          defaultValue: "Edit",
-                        })}
-                        title={t("snippets.edit", { defaultValue: "Edit" })}
-                      >
-                        <Pencil size={13} aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(s.id)}
-                        className="rounded p-1 text-white/35 hover:text-red-400 hover:bg-white/8 transition-colors"
-                        aria-label={t("snippets.remove", {
-                          defaultValue: "Remove",
-                        })}
-                        title={t("snippets.remove", {
-                          defaultValue: "Remove",
-                        })}
-                      >
-                        <Trash2 size={13} aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+        <div className="divide-y divide-white/[0.05] rounded-[10px] border border-white/8 overflow-hidden">
+          {snippets.map((s) => (
+            <div
+              key={s.id}
+              style={{ padding: "10px 16px" }}
+              className="group flex items-center gap-3 transition-colors hover:bg-white/[0.03]"
+            >
+              {/* Trigger pill */}
+              <span
+                style={{ padding: "2px 8px" }}
+                className="shrink-0 rounded-[6px] bg-white/[0.07] font-mono text-[12px] text-white/75"
+              >
+                {s.trigger}
+              </span>
+
+              {/* Arrow */}
+              <span className="shrink-0 text-[13px] text-white/20">→</span>
+
+              {/* Expansion */}
+              <span className="min-w-0 flex-1 truncate text-[13px] text-white/50">
+                {s.expansion}
+              </span>
+
+              {/* Actions — visible on hover */}
+              <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => setEditSnippet(s)}
+                  className="rounded p-1.5 text-white/35 transition-colors hover:bg-white/8 hover:text-white/70"
+                  aria-label={t("snippets.edit", { defaultValue: "Modifier" })}
+                  title={t("snippets.edit", { defaultValue: "Modifier" })}
+                >
+                  <Pencil size={13} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(s.id)}
+                  className="rounded p-1.5 text-white/35 transition-colors hover:bg-white/8 hover:text-red-400"
+                  aria-label={t("snippets.remove", {
+                    defaultValue: "Supprimer",
+                  })}
+                  title={t("snippets.remove", { defaultValue: "Supprimer" })}
+                >
+                  <Trash2 size={13} aria-hidden="true" />
+                </button>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
-    </div>
+    </>
   );
 };

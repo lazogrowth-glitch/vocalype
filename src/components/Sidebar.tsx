@@ -1,189 +1,19 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  AlignLeft,
-  BarChart2,
-  Clock3,
-  CreditCard,
-  FlaskConical,
-  Gift,
-  History,
-  Info,
-  LayoutGrid,
-  Mic,
-  NotebookPen,
-  Settings2,
-  Zap,
-} from "lucide-react";
+import { Mic } from "lucide-react";
 import VocalypeLogo from "./icons/VocalypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
-import { TranscriptionWarmupBadge } from "./TranscriptionWarmupBadge";
 import { useSettings } from "../hooks/useSettings";
 import { usePlan } from "@/lib/subscription/context";
-import { GeneralSettings } from "./settings/general/GeneralSettings";
+import { SECTIONS_CONFIG } from "./sections-config";
 
-const AdvancedSettings = React.lazy(() =>
-  import("./settings/advanced/AdvancedSettings").then((m) => ({
-    default: m.AdvancedSettings,
-  })),
-);
-const HistorySettings = React.lazy(() =>
-  import("./settings/history/HistorySettings").then((m) => ({
-    default: m.HistorySettings,
-  })),
-);
-const DebugSettings = React.lazy(() =>
-  import("./settings/debug/DebugSettings").then((m) => ({
-    default: m.DebugSettings,
-  })),
-);
-const AboutSettings = React.lazy(() =>
-  import("./settings/about/AboutSettings").then((m) => ({
-    default: m.AboutSettings,
-  })),
-);
-const PostProcessingSettings = React.lazy(() =>
-  import("./settings/post-processing/PostProcessingSettings").then((m) => ({
-    default: m.PostProcessingSettings,
-  })),
-);
-const ModelsSettings = React.lazy(() =>
-  import("./settings/models/ModelsSettings").then((m) => ({
-    default: m.ModelsSettings,
-  })),
-);
-const SnippetsSettings = React.lazy(() =>
-  import("./settings/snippets/SnippetsSettings").then((m) => ({
-    default: m.SnippetsSettings,
-  })),
-);
-const NotesSettings = React.lazy(() =>
-  import("./settings/notes/NotesSettings").then((m) => ({
-    default: m.NotesSettings,
-  })),
-);
-const MeetingsSettings = React.lazy(() =>
-  import("./settings/meetings/MeetingsSettings").then((m) => ({
-    default: m.MeetingsSettings,
-  })),
-);
-const BillingSettings = React.lazy(() =>
-  import("./settings/billing/BillingSettings").then((m) => ({
-    default: m.BillingSettings,
-  })),
-);
-const ReferralSettings = React.lazy(() =>
-  import("./settings/referral/ReferralSettings").then((m) => ({
-    default: m.ReferralSettings,
-  })),
-);
-const StatsSettings = React.lazy(() =>
-  import("./settings/stats/StatsSettings").then((m) => ({
-    default: m.StatsSettings,
-  })),
-);
-
-export type SidebarSection = keyof typeof SECTIONS_CONFIG;
-
-interface IconProps {
-  width?: number | string;
-  height?: number | string;
-  size?: number | string;
-  className?: string;
-  [key: string]: any;
-}
-
-interface SectionConfig {
-  labelKey: string;
-  icon: React.ComponentType<IconProps>;
-  component: React.ComponentType;
-  enabled: (settings: any) => boolean;
-}
-
-export const SECTIONS_CONFIG = {
-  general: {
-    labelKey: "sidebar.general",
-    icon: LayoutGrid,
-    component: GeneralSettings,
-    enabled: () => true,
-  },
-  models: {
-    labelKey: "sidebar.models",
-    icon: Clock3,
-    component: ModelsSettings,
-    enabled: () => true,
-  },
-  advanced: {
-    labelKey: "sidebar.advanced",
-    icon: Settings2,
-    component: AdvancedSettings,
-    enabled: () => true,
-  },
-  postprocessing: {
-    labelKey: "sidebar.postProcessing",
-    icon: AlignLeft,
-    component: PostProcessingSettings,
-    enabled: () => true,
-  },
-  notes: {
-    labelKey: "sidebar.notes",
-    icon: NotebookPen,
-    component: NotesSettings,
-    enabled: () => true,
-  },
-  meetings: {
-    labelKey: "sidebar.meetings",
-    icon: Mic,
-    component: MeetingsSettings,
-    enabled: () => true,
-  },
-  history: {
-    labelKey: "sidebar.history",
-    icon: History,
-    component: HistorySettings,
-    enabled: () => true,
-  },
-  snippets: {
-    labelKey: "sidebar.snippets",
-    icon: Zap,
-    component: SnippetsSettings,
-    enabled: () => true,
-  },
-  stats: {
-    labelKey: "sidebar.stats",
-    icon: BarChart2,
-    component: StatsSettings,
-    enabled: () => true,
-  },
-  billing: {
-    labelKey: "sidebar.billing",
-    icon: CreditCard,
-    component: BillingSettings,
-    enabled: () => true,
-  },
-  referral: {
-    labelKey: "sidebar.referral",
-    icon: Gift,
-    component: ReferralSettings,
-    enabled: () => true,
-  },
-  debug: {
-    labelKey: "sidebar.debug",
-    icon: FlaskConical,
-    component: DebugSettings,
-    enabled: (settings) => settings?.debug_mode ?? false,
-  },
-  about: {
-    labelKey: "sidebar.about",
-    icon: Info,
-    component: AboutSettings,
-    enabled: () => true,
-  },
-} as const satisfies Record<string, SectionConfig>;
+const BOTTOM_SECTION_IDS = new Set(["billing", "referral", "about", "debug"]);
 
 interface SidebarProps {
-  activeSection: SidebarSection;
-  onSectionChange: (section: SidebarSection) => void;
+  activeSection: import("./sections-config").SidebarSection;
+  onSectionChange: (
+    section: import("./sections-config").SidebarSection,
+  ) => void;
   collapsed?: boolean;
 }
 
@@ -208,12 +38,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { isTrialing, trialEndsAt, onStartCheckout } = usePlan();
   const trialBadge = useTrialBadge(isTrialing ? trialEndsAt : null);
 
-  const availableSections = useMemo(
+  const allSections = useMemo(
     () =>
       Object.entries(SECTIONS_CONFIG)
         .filter(([_, config]) => config.enabled(settings))
-        .map(([id, config]) => ({ id: id as SidebarSection, ...config })),
+        .map(([id, config]) => ({
+          id: id as import("./sections-config").SidebarSection,
+          ...config,
+        })),
     [settings],
+  );
+
+  const mainSections = useMemo(
+    () => allSections.filter((s) => !BOTTOM_SECTION_IDS.has(s.id)),
+    [allSections],
+  );
+  const bottomSections = useMemo(
+    () => allSections.filter((s) => BOTTOM_SECTION_IDS.has(s.id)),
+    [allSections],
   );
 
   return (
@@ -225,16 +67,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         height: "100%",
         overflow: "hidden",
         background: "#141414",
-        borderRight: "0.5px solid rgba(255,255,255,0.08)",
+        borderRight: "none",
         display: "flex",
         flexDirection: "column",
         transition: "width 0.2s ease",
       }}
     >
       {!collapsed && (
-        <div className="border-b border-white/6 px-[18px] pb-4 pt-5">
-          <div className="min-w-0">
-            <VocalypeLogo width={104} />
+        <div style={{ padding: "32px 16px 16px" }}>
+          <div className="flex items-center gap-[10px] min-w-0">
+            <img
+              src="/icon128.png"
+              alt="Vocalype"
+              width={30}
+              height={30}
+              className="shrink-0 rounded-[7px]"
+            />
+            <VocalypeLogo width={115} />
           </div>
         </div>
       )}
@@ -290,16 +139,93 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       ) : null}
 
-      {!collapsed && <TranscriptionWarmupBadge />}
-
+      {/* Main nav */}
       <div
         className="flex flex-1 flex-col overflow-y-auto min-h-0"
-        style={{ paddingTop: collapsed ? 8 : 10, paddingBottom: 10 }}
+        style={{ paddingTop: collapsed ? 8 : 8, paddingBottom: 8 }}
       >
-        {availableSections.map((section) => {
+        {mainSections.map((section, index) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
+          // Séparateur entre Config (snippets) et Utilisation (history)
+          const showDivider = !collapsed && section.id === "history";
 
+          return (
+            <React.Fragment key={section.id}>
+              {showDivider && (
+                <div
+                  style={{
+                    margin: "6px 16px",
+                    height: "0.5px",
+                    background: "rgba(255,255,255,0.08)",
+                  }}
+                />
+              )}
+              <button
+                key={`btn-${section.id}`}
+                type="button"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: collapsed ? "center" : "flex-start",
+                  gap: collapsed ? 0 : 10,
+                  padding: collapsed ? "12px 0" : "10px 16px",
+                  fontSize: 14,
+                  width: "100%",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  borderRight: isActive
+                    ? "2px solid #c9a84c"
+                    : "2px solid transparent",
+                  background: isActive
+                    ? "rgba(201,168,76,0.10)"
+                    : "transparent",
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.55)",
+                  borderRadius: collapsed ? 0 : "0px",
+                }}
+                onClick={() => onSectionChange(section.id)}
+                aria-current={isActive ? "page" : undefined}
+                aria-label={t(section.labelKey)}
+                title={t(section.labelKey)}
+              >
+                <span
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center transition-colors ${
+                    isActive ? "text-white" : "text-current"
+                  }`}
+                >
+                  <Icon
+                    width={16}
+                    height={16}
+                    className="shrink-0 opacity-70"
+                    aria-hidden="true"
+                  />
+                </span>
+                {!collapsed && (
+                  <span
+                    className="truncate text-[13.5px] font-normal leading-5"
+                    title={t(section.labelKey)}
+                  >
+                    {t(section.labelKey)}
+                  </span>
+                )}
+              </button>
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {/* Bottom sections — Facturation, Parrainage, À propos */}
+      <div
+        className="flex flex-col shrink-0"
+        style={{
+          borderTop: "0.5px solid rgba(255,255,255,0.08)",
+          paddingTop: 6,
+          paddingBottom: 6,
+        }}
+      >
+        {bottomSections.map((section) => {
+          const Icon = section.icon;
+          const isActive = activeSection === section.id;
           return (
             <button
               key={section.id}
@@ -309,7 +235,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 alignItems: "center",
                 justifyContent: collapsed ? "center" : "flex-start",
                 gap: collapsed ? 0 : 10,
-                padding: collapsed ? "10px 0" : "11px 18px",
+                padding: collapsed ? "10px 0" : "9px 16px",
                 fontSize: 14,
                 width: "100%",
                 cursor: "pointer",
@@ -317,44 +243,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 borderRight: isActive
                   ? "2px solid #c9a84c"
                   : "2px solid transparent",
-                background: isActive ? "rgba(201,168,76,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.58)",
+                background: isActive ? "rgba(201,168,76,0.10)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.38)",
               }}
               onClick={() => onSectionChange(section.id)}
               aria-current={isActive ? "page" : undefined}
               aria-label={t(section.labelKey)}
               title={t(section.labelKey)}
             >
-              <span
-                className={`flex h-4 w-4 shrink-0 items-center justify-center transition-colors ${
-                  isActive ? "text-white" : "text-current"
-                }`}
-              >
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                 <Icon
-                  width={16}
-                  height={16}
-                  className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+                  width={15}
+                  height={15}
+                  className="shrink-0 opacity-60"
                   aria-hidden="true"
                 />
               </span>
               {!collapsed && (
-                <span
-                  className="truncate text-[14px] font-medium leading-5"
-                  title={t(section.labelKey)}
-                >
+                <span className="truncate text-[12.5px] font-normal leading-5">
                   {t(section.labelKey)}
                 </span>
               )}
             </button>
           );
         })}
-      </div>
 
-      {!collapsed && (
-        <div className="border-t border-white/6 px-[18px] py-3">
-          <MachineStatusBar variant="sidebar" />
-        </div>
-      )}
+        {/* Status bar */}
+        {!collapsed && (
+          <div style={{ padding: "6px 16px 2px" }}>
+            <MachineStatusBar variant="sidebar" />
+          </div>
+        )}
+      </div>
     </nav>
   );
 };

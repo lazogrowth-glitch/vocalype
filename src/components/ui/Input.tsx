@@ -17,14 +17,15 @@ export const Input: React.FC<InputProps> = ({
     ? "cursor-not-allowed opacity-60"
     : "hover:bg-white/[0.08] hover:border-white/14 focus:outline-none focus:bg-white/[0.08] focus:border-white/14";
 
-  const variantClasses = {
-    default: "px-3 py-2",
-    compact: "px-3 py-[5px] min-h-[34px]",
+  const variantStyle = {
+    default: { padding: "10px 16px" },
+    compact: { padding: "10px 16px", minHeight: "38px" },
   } as const;
 
   return (
     <input
-      className={`${baseClasses} ${variantClasses[variant]} ${interactiveClasses} ${className}`}
+      className={`${baseClasses} ${interactiveClasses} ${className}`}
+      style={variantStyle[variant]}
       disabled={disabled}
       {...props}
     />

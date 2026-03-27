@@ -109,7 +109,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
-            className={`px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded min-w-[200px] text-start flex items-center justify-between transition-all duration-150 ${
+            style={{ padding: "10px 16px" }}
+            className={`text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded min-w-[200px] text-start flex items-center justify-between transition-all duration-150 ${
               isUpdating("selected_language")
                 ? "opacity-50 cursor-not-allowed"
                 : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
@@ -146,13 +147,17 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                   onChange={handleSearchChange}
                   onKeyDown={handleKeyDown}
                   placeholder={t("settings.general.language.searchPlaceholder")}
-                  className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary focus:border-logo-primary"
+                  style={{ padding: "10px 16px" }}
+                  className="w-full text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary focus:border-logo-primary"
                 />
               </div>
 
               <div className="max-h-48 overflow-y-auto">
                 {filteredLanguages.length === 0 ? (
-                  <div className="px-2 py-2 text-sm text-mid-gray text-center">
+                  <div
+                    style={{ padding: "10px 16px" }}
+                    className="text-sm text-mid-gray text-center"
+                  >
                     {t("settings.general.language.noResults")}
                   </div>
                 ) : (
@@ -160,7 +165,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                     <button
                       key={language.value}
                       type="button"
-                      className={`w-full px-2 py-1 text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
+                      style={{ padding: "10px 16px" }}
+                      className={`w-full text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
                         selectedLanguage === language.value
                           ? "bg-logo-primary/20 text-logo-primary font-semibold"
                           : ""

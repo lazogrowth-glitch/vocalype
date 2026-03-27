@@ -3,7 +3,7 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
@@ -21,8 +21,18 @@ fn paste_via_clipboard(
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
 ) -> Result<(), String> {
+    info!(
+        "[PASTE] paste_via_clipboard: method={:?} text_len={} delay={}ms",
+        paste_method,
+        text.len(),
+        paste_delay_ms
+    );
     let clipboard = app_handle.clipboard();
     let clipboard_content = clipboard.read_text().unwrap_or_default();
+    info!(
+        "[PASTE] saved clipboard content (len={}), writing new text to clipboard",
+        clipboard_content.len()
+    );
 
     // Write text to clipboard first
     // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
@@ -42,9 +52,14 @@ fn paste_via_clipboard(
         .map_err(|e| format!("Failed to write to clipboard: {}", e));
 
     write_result?;
+    info!(
+        "[PASTE] text written to clipboard, sleeping {}ms before sending key combo",
+        paste_delay_ms
+    );
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
+    info!("[PASTE] sending paste key combo ({:?})", paste_method);
     // Send paste key combo
     #[cfg(target_os = "linux")]
     let key_combo_sent = try_send_key_combo_linux(paste_method)?;
@@ -55,12 +70,22 @@ fn paste_via_clipboard(
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
         match paste_method {
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo)?,
+            PasteMethod::CtrlV => {
+                info!("[PASTE] sending Ctrl+V via enigo");
+                input::send_paste_ctrl_v(enigo)?;
+            }
+            PasteMethod::CtrlShiftV => {
+                info!("[PASTE] sending Ctrl+Shift+V via enigo");
+                input::send_paste_ctrl_shift_v(enigo)?;
+            }
+            PasteMethod::ShiftInsert => {
+                info!("[PASTE] sending Shift+Insert via enigo");
+                input::send_paste_shift_insert(enigo)?;
+            }
             _ => return Err("Invalid paste method for clipboard paste".into()),
         }
     }
+    info!("[PASTE] key combo sent successfully");
 
     // Give the target app enough time to consume clipboard content before restore.
     // Too-short delays can cause apparent "paste did nothing" on some apps.
@@ -69,9 +94,17 @@ fn paste_via_clipboard(
 
     #[cfg(not(target_os = "windows"))]
     let restore_delay_ms = paste_delay_ms.max(250);
+    info!(
+        "[PASTE] waiting {}ms before restoring clipboard",
+        restore_delay_ms
+    );
     std::thread::sleep(std::time::Duration::from_millis(restore_delay_ms));
 
     // Restore original clipboard content
+    info!(
+        "[PASTE] restoring original clipboard content (len={})",
+        clipboard_content.len()
+    );
     // On Wayland, prefer wl-copy for better compatibility
     #[cfg(target_os = "linux")]
     if is_wayland() && is_wl_copy_available() {
@@ -655,23 +688,25 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     };
 
     info!(
-        "Using paste method: {:?}, delay: {}ms",
-        paste_method, paste_delay_ms
+        "[PASTE] paste() called: method={:?}, delay={}ms, text_len={}, trailing_space={}, auto_submit={}",
+        paste_method, paste_delay_ms, text.len(), settings.append_trailing_space, settings.auto_submit
     );
 
     // Get the managed Enigo instance
-    let enigo_state = app_handle
-        .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+    let enigo_state = app_handle.try_state::<EnigoState>().ok_or_else(|| {
+        warn!("[PASTE] EnigoState not initialized in app state!");
+        "Enigo state not initialized".to_string()
+    })?;
+    let mut enigo = enigo_state.0.lock().map_err(|e| {
+        warn!("[PASTE] Failed to lock Enigo mutex: {}", e);
+        format!("Failed to lock Enigo: {}", e)
+    })?;
+    info!("[PASTE] Enigo lock acquired, proceeding with paste");
 
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {
-            info!("PasteMethod::None selected - skipping paste action");
+            info!("[PASTE] PasteMethod::None — no text will be inserted, only clipboard will be updated");
         }
         PasteMethod::Direct => {
             paste_direct(
@@ -703,6 +738,10 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     }
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
+        info!(
+            "[PASTE] auto_submit enabled, sending return key ({:?})",
+            settings.auto_submit_key
+        );
         std::thread::sleep(Duration::from_millis(50));
         send_return_key(&mut enigo, settings.auto_submit_key)?;
     }
@@ -714,8 +753,13 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         clipboard
             .write_text(&text)
             .map_err(|e| format!("Failed to copy to clipboard: {}", e))?;
+        info!(
+            "[PASTE] text also copied to clipboard (clipboard_handling={:?})",
+            settings.clipboard_handling
+        );
     }
 
+    info!("[PASTE] paste() completed successfully");
     Ok(())
 }
 

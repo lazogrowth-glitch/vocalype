@@ -65,12 +65,12 @@ export const TitleBar = ({
       data-tauri-drag-region
       style={
         {
-          height: 38,
+          height: 52,
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "transparent",
+          background: "#141414",
           userSelect: "none",
           WebkitAppRegion: "drag",
           position: "relative",

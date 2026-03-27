@@ -26,7 +26,7 @@ export const GeneralSettings: React.FC = () => {
   const { isBasicTier, onStartCheckout } = usePlan();
   const warmupStatus = useStartupWarmupStatus();
   const [activeTab, setActiveTab] = useState<
-    "shortcuts" | "audio" | "dictation" | "dictionary" | "context"
+    "shortcuts" | "audio" | "dictionary" | "context"
   >("shortcuts");
 
   const shouldShowWarmupNotice =
@@ -35,9 +35,8 @@ export const GeneralSettings: React.FC = () => {
     warmupStatus.phase !== "ready";
 
   const tabs = [
-    { id: "shortcuts" as const, label: t("settings.general.tabs.shortcuts") },
     { id: "audio" as const, label: t("settings.general.tabs.audio") },
-    { id: "dictation" as const, label: t("settings.general.tabs.dictation") },
+    { id: "shortcuts" as const, label: t("settings.general.tabs.shortcuts") },
     { id: "dictionary" as const, label: t("dictionary.tab") },
     {
       id: "context" as const,
@@ -47,7 +46,11 @@ export const GeneralSettings: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="mb-0 flex gap-1 border-b border-white/8" role="tablist">
+      <div
+        className="flex border-b border-white/8"
+        style={{ gap: 20 }}
+        role="tablist"
+      >
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -55,7 +58,7 @@ export const GeneralSettings: React.FC = () => {
             role="tab"
             aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`border-b-2 px-[14px] pb-[9px] pt-[7px] text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
+            className={`border-b-2 px-[16px] pb-[10px] pt-[8px] text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
               activeTab === tab.id
                 ? "border-logo-primary text-logo-primary"
                 : "border-transparent text-white/40 hover:text-white/65"
@@ -67,46 +70,61 @@ export const GeneralSettings: React.FC = () => {
       </div>
 
       {activeTab === "shortcuts" && (
-        <div role="tabpanel">
-          <SettingsGroup
-            title={t("settings.general.tabs.keyboardShortcutsTitle")}
-          >
-            {shouldShowWarmupNotice && (
+        <div
+          role="tabpanel"
+          style={{
+            paddingTop: 16,
+            display: "flex",
+            flexDirection: "column",
+            gap: 0,
+          }}
+        >
+          {/* Warmup / error notice */}
+          {shouldShowWarmupNotice && (
+            <div
+              style={{
+                marginBottom: 16,
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+                padding: "12px 16px",
+              }}
+              className={`rounded-[10px] border text-[12px] ${
+                warmupStatus.phase === "failed"
+                  ? "border-red-400/30 bg-red-400/10 text-red-100"
+                  : "border-logo-primary/25 bg-logo-primary/10 text-white/80"
+              }`}
+            >
               <div
-                className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-[12px] ${
+                style={{ marginTop: 2, flexShrink: 0 }}
+                className={`flex h-7 w-7 items-center justify-center rounded-full ${
                   warmupStatus.phase === "failed"
-                    ? "border-red-400/30 bg-red-400/10 text-red-100"
-                    : "border-logo-primary/25 bg-logo-primary/10 text-white/80"
+                    ? "bg-red-400/15 text-red-300"
+                    : "bg-logo-primary/15 text-logo-primary"
                 }`}
               >
-                <div
-                  className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                    warmupStatus.phase === "failed"
-                      ? "bg-red-400/15 text-red-300"
-                      : "bg-logo-primary/15 text-logo-primary"
-                  }`}
-                >
-                  {warmupStatus.phase === "failed" ? (
-                    <TriangleAlert className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <LoaderCircle
-                      className="h-4 w-4 animate-spin"
-                      aria-hidden="true"
-                    />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium leading-5">
-                    {warmupStatus.message}
-                  </p>
-                  <p className="mt-1 leading-5 text-white/55">
-                    {warmupStatus.detail ||
-                      getStartupWarmupFallbackDetail(warmupStatus)}
-                  </p>
-                </div>
+                {warmupStatus.phase === "failed" ? (
+                  <TriangleAlert className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <LoaderCircle
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                )}
               </div>
-            )}
-            {isBasicTier && (
+              <div className="min-w-0">
+                <p className="font-medium leading-5">{warmupStatus.message}</p>
+                <p style={{ marginTop: 4 }} className="leading-5 text-white/55">
+                  {warmupStatus.detail ||
+                    getStartupWarmupFallbackDetail(warmupStatus)}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Premium gate for basic users */}
+          {isBasicTier && (
+            <div style={{ marginBottom: 16 }}>
               <FeatureGateHint
                 tone="premium"
                 title={t("basic.shortcutsLocked", {
@@ -124,7 +142,13 @@ export const GeneralSettings: React.FC = () => {
                   if (url) window.open(url, "_blank");
                 }}
               />
-            )}
+            </div>
+          )}
+
+          {/* ── Main keyboard shortcuts ──────────────────────────────── */}
+          <SettingsGroup
+            title={t("settings.general.tabs.keyboardShortcutsTitle")}
+          >
             <ShortcutInput
               shortcutId="transcribe"
               grouped={true}
@@ -150,45 +174,89 @@ export const GeneralSettings: React.FC = () => {
               grouped={true}
               disabled={isBasicTier}
             />
-            <RecordingModeSelector grouped={true} />
-            {/* ── Command Mode ─────────────────────────────────────────── */}
-            <div className="flex items-center gap-1.5 border-t border-white/6 px-4 pb-0.5 pt-2">
-              <span className="text-[10.5px] text-white/40">
-                {t("commandMode.label", { defaultValue: "Command Mode" })}
-              </span>
+          </SettingsGroup>
+
+          <div
+            style={{
+              height: "0.5px",
+              background: "rgba(255,255,255,0.06)",
+              margin: "28px 0",
+            }}
+          />
+
+          {/* ── Recording mode ───────────────────────────────────────── */}
+          <RecordingModeSelector grouped={false} />
+
+          <div
+            style={{
+              height: "0.5px",
+              background: "rgba(255,255,255,0.06)",
+              margin: "28px 0",
+            }}
+          />
+
+          {/* ── Command Mode ─────────────────────────────────────────── */}
+          <SettingsGroup
+            title={t("commandMode.label", { defaultValue: "Command Mode" })}
+            titleBadge={
               <span className="rounded bg-logo-primary/15 px-1.5 py-0.5 text-[9.5px] font-medium text-logo-primary">
                 {t("basic.premiumBadge", { defaultValue: "Premium" })}
               </span>
-            </div>
+            }
+          >
             <ShortcutInput
               shortcutId="command_mode"
               grouped={true}
               disabled={isBasicTier}
             />
-            {/* ── Whisper Mode ─────────────────────────────────────────── */}
-            <div className="flex items-center gap-1.5 border-t border-white/6 px-4 pb-0.5 pt-2">
-              <span className="text-[10.5px] text-white/40">
-                {t("whisperMode.label", { defaultValue: "Whisper Mode" })}
-              </span>
-            </div>
+          </SettingsGroup>
+
+          <div
+            style={{
+              height: "0.5px",
+              background: "rgba(255,255,255,0.06)",
+              margin: "28px 0",
+            }}
+          />
+
+          {/* ── Whisper Mode ─────────────────────────────────────────── */}
+          <SettingsGroup
+            title={t("whisperMode.label", { defaultValue: "Whisper Mode" })}
+          >
             <ShortcutInput shortcutId="whisper_mode" grouped={true} />
-            {/* ── Agent Key ────────────────────────────────────────────── */}
-            <div className="flex items-center gap-1.5 border-t border-white/6 px-4 pb-0.5 pt-2">
-              <span className="text-[10.5px] text-white/40">
-                {t("agentKey.label", { defaultValue: "Agent Key" })}
-              </span>
-            </div>
+          </SettingsGroup>
+
+          <div
+            style={{
+              height: "0.5px",
+              background: "rgba(255,255,255,0.06)",
+              margin: "28px 0",
+            }}
+          />
+
+          {/* ── Agent Key ────────────────────────────────────────────── */}
+          <SettingsGroup
+            title={t("agentKey.label", { defaultValue: "Agent Key" })}
+          >
             <ShortcutInput
               shortcutId="agent_key"
               grouped={true}
               disabled={isBasicTier}
             />
-            {/* ── Meeting Key ──────────────────────────────────────────── */}
-            <div className="flex items-center gap-1.5 border-t border-white/6 px-4 pb-0.5 pt-2">
-              <span className="text-[10.5px] text-white/40">
-                {t("meetingKey.label", { defaultValue: "Meeting Key" })}
-              </span>
-            </div>
+          </SettingsGroup>
+
+          <div
+            style={{
+              height: "0.5px",
+              background: "rgba(255,255,255,0.06)",
+              margin: "28px 0",
+            }}
+          />
+
+          {/* ── Meeting Key ──────────────────────────────────────────── */}
+          <SettingsGroup
+            title={t("meetingKey.label", { defaultValue: "Meeting Key" })}
+          >
             <ShortcutInput
               shortcutId="meeting_key"
               grouped={true}
@@ -199,7 +267,7 @@ export const GeneralSettings: React.FC = () => {
       )}
 
       {activeTab === "audio" && (
-        <div role="tabpanel">
+        <div role="tabpanel" style={{ paddingTop: 16 }}>
           <SettingsGroup title={t("settings.general.tabs.audio")}>
             <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
             <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
@@ -212,11 +280,6 @@ export const GeneralSettings: React.FC = () => {
             />
             <VolumeSlider disabled={!audioFeedbackEnabled} />
           </SettingsGroup>
-        </div>
-      )}
-
-      {activeTab === "dictation" && (
-        <div role="tabpanel" className="space-y-6 pt-6">
           <ModelSettingsCard />
           <LongAudioModelSettings />
         </div>

@@ -64,7 +64,8 @@ export const LanguageFilterDropdown: React.FC<LanguageFilterDropdownProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 rounded-[7px] border px-3 py-1.5 text-[12.5px] ${
+        style={{ padding: "10px 16px" }}
+        className={`flex items-center gap-1.5 rounded-[7px] border text-[12.5px] ${
           value !== "all"
             ? "border-logo-primary/25 bg-logo-primary/12 text-logo-primary"
             : "border-white/10 bg-white/[0.06] text-white/55 hover:text-white/75"
@@ -93,14 +94,16 @@ export const LanguageFilterDropdown: React.FC<LanguageFilterDropdownProps> = ({
                 }
               }}
               placeholder={t("settings.general.language.searchPlaceholder")}
-              className="w-full rounded-md border border-mid-gray/40 bg-mid-gray/10 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-logo-primary"
+              style={{ padding: "10px 16px" }}
+              className="w-full rounded-md border border-mid-gray/40 bg-mid-gray/10 text-sm focus:outline-none focus:ring-1 focus:ring-logo-primary"
             />
           </div>
           <div className="max-h-48 overflow-y-auto">
             <button
               type="button"
               onClick={() => close("all")}
-              className={`w-full px-3 py-1.5 text-left text-sm transition-colors ${
+              style={{ padding: "10px 16px" }}
+              className={`w-full text-left text-sm transition-colors ${
                 value === "all"
                   ? "bg-logo-primary/20 font-semibold text-logo-primary"
                   : "hover:bg-mid-gray/10"
@@ -113,7 +116,8 @@ export const LanguageFilterDropdown: React.FC<LanguageFilterDropdownProps> = ({
                 key={lang.value}
                 type="button"
                 onClick={() => close(lang.value)}
-                className={`w-full px-3 py-1.5 text-left text-sm transition-colors ${
+                style={{ padding: "10px 16px" }}
+                className={`w-full text-left text-sm transition-colors ${
                   value === lang.value
                     ? "bg-logo-primary/20 font-semibold text-logo-primary"
                     : "hover:bg-mid-gray/10"
@@ -123,7 +127,10 @@ export const LanguageFilterDropdown: React.FC<LanguageFilterDropdownProps> = ({
               </button>
             ))}
             {filteredLanguages.length === 0 && (
-              <div className="px-3 py-2 text-center text-sm text-text/50">
+              <div
+                style={{ padding: "10px 16px" }}
+                className="text-center text-sm text-text/50"
+              >
                 {t("settings.general.language.noResults")}
               </div>
             )}

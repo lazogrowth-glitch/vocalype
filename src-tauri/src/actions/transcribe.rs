@@ -14,7 +14,9 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::{TranscriptionManager, TranscriptionRequest};
 use crate::model_ids::is_parakeet_v3_model_id;
 use crate::post_processing::cleanup_assembled_transcription;
-use crate::runtime_observability::{emit_runtime_error_with_context, RuntimeErrorStage};
+use crate::runtime_observability::{
+    emit_runtime_error_with_context, RuntimeErrorStage, TranscriptionLifecycleState,
+};
 use crate::settings::get_settings;
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
@@ -42,7 +44,15 @@ impl Drop for FinishGuard {
             }
         }
         if let Some(coordinator) = self.app.try_state::<TranscriptionCoordinator>() {
-            if coordinator.is_operation_active(self.operation_id) {
+            // Don't abort if the operation is already in the Pasting stage.
+            // The paste has been dispatched to the main thread and will
+            // complete (or fail) the operation itself — calling fail_operation
+            // here would clear active_operation_id before the main thread runs,
+            // causing is_operation_active() to return false and silently skip
+            // the paste.
+            let already_pasting =
+                coordinator.lifecycle_state() == TranscriptionLifecycleState::Pasting;
+            if coordinator.is_operation_active(self.operation_id) && !already_pasting {
                 coordinator.fail_operation(&self.app, self.operation_id, "pipeline-aborted");
             }
         }
@@ -267,6 +277,11 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     let chunking_profile = chunking_profile_for_model(app, current_model_info.as_ref(), &settings);
 
     if let Some(chunking_profile) = chunking_profile {
+        let is_parakeet_v3 = current_model_info
+            .as_ref()
+            .map(|info| is_parakeet_v3_model_id(&info.id))
+            .unwrap_or(false);
+
         let rm_s = Arc::clone(&*app.state::<Arc<AudioRecordingManager>>());
         let tm_s = Arc::clone(&*app.state::<Arc<TranscriptionManager>>());
 
@@ -278,7 +293,10 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let failed_chunks = Arc::new(AtomicUsize::new(0));
         let pending_chunks = Arc::new(AtomicUsize::new(0));
 
-        let (chunk_tx, chunk_rx) = std::sync::mpsc::channel::<Option<(Vec<f32>, usize)>>();
+        // Channel payload: (audio, chunk_idx, overlap_cutoff_secs)
+        // overlap_cutoff_secs = 0.0 for the first chunk (no real overlap yet),
+        // = overlap_samples / 16_000 for all subsequent chunks.
+        let (chunk_tx, chunk_rx) = std::sync::mpsc::channel::<Option<(Vec<f32>, usize, f32)>>();
 
         let shared_s = Arc::clone(&shared_state);
         let tx_s = chunk_tx.clone();
@@ -303,12 +321,14 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     continue;
                 }
 
-                let chunk_start = last_committed.saturating_sub(chunking_profile.overlap_samples);
+                let actual_overlap = last_committed.min(chunking_profile.overlap_samples);
+                let chunk_start = last_committed - actual_overlap;
                 let chunk_end = last_committed + chunking_profile.interval_samples;
                 let chunk = snapshot[chunk_start..chunk_end].to_vec();
+                let cutoff_secs = actual_overlap as f32 / 16_000.0;
 
                 pending_s.fetch_add(1, Ordering::Relaxed);
-                match tx_s.send(Some((chunk, next_idx))) {
+                match tx_s.send(Some((chunk, next_idx, cutoff_secs))) {
                     Ok(()) => {
                         let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
                         s.last_committed_idx = chunk_end;
@@ -325,17 +345,55 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let results_w = Arc::clone(&results);
         let failed_chunks_w = Arc::clone(&failed_chunks);
         let pending_w = Arc::clone(&pending_chunks);
+        let is_parakeet_v3_w = is_parakeet_v3;
         let worker_handle = std::thread::spawn(move || {
             while let Ok(message) = chunk_rx.recv() {
-                let Some((audio, idx)) = message else {
+                let Some((audio, idx, overlap_cutoff_secs)) = message else {
                     break;
                 };
 
-                match tm_s.transcribe_request(TranscriptionRequest {
+                match tm_s.transcribe_detailed_request(TranscriptionRequest {
                     audio,
                     app_context: None,
                 }) {
-                    Ok(text) => {
+                    Ok(output) => {
+                        // Timestamp-based overlap trimming — Parakeet V3 only.
+                        // Parakeet V3 TDT outputs per-word timestamps that are reliable
+                        // enough to use as the sole deduplication mechanism.
+                        // For other engines (Whisper, Moonshine…) their segments carry
+                        // sentence-level or zero timestamps that would incorrectly drop
+                        // the whole chunk; rely on deduplicate_boundary instead.
+                        let text = if is_parakeet_v3_w && overlap_cutoff_secs > 0.0 {
+                            if let Some(segs) = &output.segments {
+                                // Words mode succeeded: filter out every word that lies
+                                // entirely within the overlap prefix.
+                                let mut out = String::new();
+                                for seg in segs.iter().filter(|s| s.start >= overlap_cutoff_secs) {
+                                    let is_punct = seg.text.len() == 1
+                                        && seg.text.chars().all(|c| {
+                                            matches!(c, '.' | ',' | '!' | '?' | ';' | ':' | ')')
+                                        });
+                                    if !out.is_empty() && !is_punct {
+                                        out.push(' ');
+                                    }
+                                    out.push_str(&seg.text);
+                                }
+                                // Empty → the chunk contained only overlap audio.
+                                out
+                            } else {
+                                // Words mode fell back to Sentences (no per-word timestamps).
+                                // Returning the full text risks non-deterministic duplicates
+                                // because the same overlap audio is transcribed differently
+                                // each call ("râpaient" vs "rappelle"). Return empty so the
+                                // overlap zone is simply skipped; the final chunk covers this
+                                // region from last_committed onward without any overlap.
+                                String::new()
+                            }
+                        } else {
+                            // First chunk (cutoff = 0.0) or non-Parakeet engine:
+                            // return verbatim — deduplicate_boundary handles assembly.
+                            output.text
+                        };
                         results_w
                             .lock()
                             .unwrap_or_else(|e| e.into_inner())
@@ -361,6 +419,7 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 pending_chunks,
                 failed_chunks,
                 chunk_overlap_samples: chunking_profile.overlap_samples,
+                is_parakeet_v3,
             });
         }
     } else if let Some(info) = current_model_info {
@@ -537,12 +596,31 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         (s.last_committed_idx, s.next_chunk_idx)
                     };
 
-                    let overlap_start = last_committed.saturating_sub(ch.chunk_overlap_samples);
-                    let remaining = all_samples[overlap_start..].to_vec();
+                    // For Parakeet V3: send only the truly new audio (from last_committed
+                    // onward, no overlap prefix). The overlap zone is already covered by
+                    // the last background chunk via timestamp-based trimming, so including
+                    // it again would force another timestamp filter — or, if Words mode fell
+                    // back to Sentences, risk a non-deterministic duplicate.
+                    // For every other engine: keep the overlap so deduplicate_boundary has
+                    // enough context to find the boundary.
+                    let (remaining, final_cutoff_secs) = if ch.is_parakeet_v3 {
+                        (all_samples[last_committed..].to_vec(), 0.0_f32)
+                    } else {
+                        let actual_overlap = last_committed.min(ch.chunk_overlap_samples);
+                        let overlap_start = last_committed - actual_overlap;
+                        (
+                            all_samples[overlap_start..].to_vec(),
+                            actual_overlap as f32 / 16_000.0,
+                        )
+                    };
                     let sent_final = !remaining.is_empty();
                     if sent_final {
                         ch.pending_chunks.fetch_add(1, Ordering::Relaxed);
-                        if ch.chunk_tx.send(Some((remaining, next_idx))).is_err() {
+                        if ch
+                            .chunk_tx
+                            .send(Some((remaining, next_idx, final_cutoff_secs)))
+                            .is_err()
+                        {
                             ch.pending_chunks.fetch_sub(1, Ordering::Relaxed);
                         }
                     }

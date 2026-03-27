@@ -2,7 +2,7 @@ use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
-use log::warn;
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
@@ -80,6 +80,10 @@ fn resolve_input_device_selector(device_selector: &str) -> Result<(String, Strin
 #[tauri::command]
 #[specta::specta]
 pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), String> {
+    info!(
+        "[MODE] update_microphone_mode called: always_on={}",
+        always_on
+    );
     let rm = app.state::<Arc<AudioRecordingManager>>();
     let new_mode = if always_on {
         MicrophoneMode::AlwaysOn
@@ -88,16 +92,29 @@ pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), Str
     };
 
     let session_active = transcription_session_active(&app);
+    info!(
+        "[MODE] session_active={} stream_open={}",
+        session_active,
+        rm.is_microphone_stream_open()
+    );
+
     if !session_active {
-        rm.update_mode(new_mode.clone())
-            .map_err(|e| format!("Failed to update microphone mode: {}", e))?;
+        info!("[MODE] calling update_mode...");
+        rm.update_mode(new_mode.clone()).map_err(|e| {
+            info!("[MODE] update_mode FAILED: {}", e);
+            format!("Failed to update microphone mode: {}", e)
+        })?;
+        info!("[MODE] update_mode OK");
     }
 
+    info!("[MODE] writing settings...");
     let mut settings = get_settings(&app);
     settings.always_on_microphone = always_on;
     write_settings(&app, settings);
+    info!("[MODE] settings written, triggering warmup...");
 
     crate::startup_warmup::ensure_startup_warmup(&app, "microphone-mode-changed");
+    info!("[MODE] update_microphone_mode done");
     Ok(())
 }
 

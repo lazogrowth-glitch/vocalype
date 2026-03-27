@@ -33,10 +33,11 @@ pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;
 /// English Parakeet profile tuned to reduce long-utterance truncation.
 pub(crate) const PARAKEET_V3_EN_CHUNK_INTERVAL_SAMPLES: usize = 20 * 16_000; // 20 s at 16 kHz
 pub(crate) const PARAKEET_V3_EN_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1 s
-/// French-first multilingual Parakeet profile tuned for lower EN drift.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 5 * 16_000; // 5 s at 16 kHz
-/// Small overlap limits boundary cuts while keeping tight chunks.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1 s
+/// French-first multilingual Parakeet profile — 8 s matches the model's full-attention
+/// operating range; 2 s overlap covers French liaisons and connected-speech boundaries.
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; // 8 s at 16 kHz
+/// 2 s overlap — recommended floor for full-attention TDT models in buffered streaming.
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 2 * 16_000; // 2 s
 
 // ── Chunking types ───────────────────────────────────────────────────────────
 
@@ -54,12 +55,16 @@ pub(crate) struct ChunkingSharedState {
 pub struct ChunkingHandle {
     pub(crate) sampler_handle: std::thread::JoinHandle<()>,
     pub(crate) worker_handle: std::thread::JoinHandle<()>,
-    pub(crate) chunk_tx: std::sync::mpsc::Sender<Option<(Vec<f32>, usize)>>,
+    pub(crate) chunk_tx: std::sync::mpsc::Sender<Option<(Vec<f32>, usize, f32)>>,
     pub(crate) shared_state: Arc<Mutex<ChunkingSharedState>>,
     pub(crate) results: Arc<Mutex<Vec<(usize, String)>>>,
     pub(crate) pending_chunks: Arc<AtomicUsize>,
     pub(crate) failed_chunks: Arc<AtomicUsize>,
     pub(crate) chunk_overlap_samples: usize,
+    /// True when the active model is Parakeet V3 TDT.
+    /// Used to gate timestamp-based overlap trimming (which is only safe for
+    /// word-level TDT output) and to skip redundant text deduplication.
+    pub(crate) is_parakeet_v3: bool,
 }
 
 pub struct ActiveChunkingHandle(pub Mutex<Option<ChunkingHandle>>);

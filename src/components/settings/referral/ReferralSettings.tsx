@@ -15,7 +15,10 @@ const StatCard: React.FC<{
   value: string | number;
   sub?: string;
 }> = ({ label, value, sub }) => (
-  <div className="flex flex-col gap-1 rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
+  <div
+    className="flex flex-col gap-1 rounded-[10px] border border-white/8 bg-white/[0.03]"
+    style={{ padding: "16px 20px" }}
+  >
     <p className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-white/30">
       {label}
     </p>
@@ -90,9 +93,16 @@ export const ReferralSettings: React.FC = () => {
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full">
       {/* Header */}
-      <section className="flex items-center gap-3">
+      <section
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-500/20 bg-green-500/10">
           <Gift size={18} className="text-green-400" />
         </div>
@@ -113,7 +123,15 @@ export const ReferralSettings: React.FC = () => {
       <SettingsGroup
         title={t("referral.link.title", { defaultValue: "Your referral link" })}
       >
-        <div className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-4 space-y-3">
+        <div
+          className="rounded-xl border border-white/8 bg-white/[0.03]"
+          style={{
+            padding: "16px 20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
           {loading ? (
             <p className="text-[13px] text-white/30">
               {t("common.loading", { defaultValue: "Loading…" })}
@@ -126,8 +144,11 @@ export const ReferralSettings: React.FC = () => {
             </p>
           ) : code ? (
             <>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div
+                  className="flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/20"
+                  style={{ padding: "10px 16px" }}
+                >
                   <p className="truncate text-[13px] font-mono text-white/70">
                     {code.referral_url}
                   </p>
@@ -178,7 +199,13 @@ export const ReferralSettings: React.FC = () => {
         <SettingsGroup
           title={t("referral.stats.title", { defaultValue: "Your referrals" })}
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 12,
+            }}
+          >
             <StatCard
               label={t("referral.stats.invited", { defaultValue: "Invited" })}
               value={stats.referral_count}

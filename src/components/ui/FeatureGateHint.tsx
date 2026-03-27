@@ -54,11 +54,13 @@ export const FeatureGateHint: React.FC<FeatureGateHintProps> = ({
 
   return (
     <div
-      className={`rounded-xl border px-4 py-3 ${style.container} ${className}`.trim()}
+      style={{ padding: "16px 20px" }}
+      className={`rounded-xl border ${style.container} ${className}`.trim()}
     >
-      <div className="flex items-start gap-3">
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div
-          className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${style.icon}`}
+          style={{ marginTop: 2, flexShrink: 0 }}
+          className={`flex h-8 w-8 items-center justify-center rounded-full border ${style.icon}`}
         >
           {tone === "premium" && !actionLabel ? (
             <Lock className="h-4 w-4" />
@@ -68,11 +70,14 @@ export const FeatureGateHint: React.FC<FeatureGateHintProps> = ({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-white/90">{title}</p>
-          <p className="mt-1 text-[12px] leading-5 text-white/60">
+          <p
+            style={{ marginTop: 4 }}
+            className="text-[12px] leading-5 text-white/60"
+          >
             {description}
           </p>
           {actionLabel && onAction ? (
-            <div className="mt-3">
+            <div style={{ marginTop: 12 }}>
               <Button
                 type="button"
                 variant={style.buttonVariant}

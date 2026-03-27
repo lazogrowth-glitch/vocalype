@@ -170,9 +170,9 @@ const PostProcessingActionsComponent: React.FC = () => {
       layout="stacked"
       grouped={true}
     >
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {actions.length > 0 && (
-          <div className="space-y-2">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[...actions]
               .sort((a, b) => a.key - b.key)
               .map((action) => (
@@ -186,7 +186,9 @@ const PostProcessingActionsComponent: React.FC = () => {
                       handleStartEdit(action);
                     }
                   }}
-                  className="group flex cursor-pointer items-center gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
+                  style={{ padding: "10px 16px" }}
+                  className="group flex cursor-pointer items-center rounded-xl border border-white/6 bg-white/[0.02] hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
+                  style={{ padding: "10px 16px", gap: 12 }}
                   onClick={() => handleStartEdit(action)}
                 >
                   <span className="flex items-center justify-center w-6 h-6 rounded bg-blue-500/15 text-blue-400 text-xs font-bold font-mono flex-shrink-0">
@@ -204,7 +206,8 @@ const PostProcessingActionsComponent: React.FC = () => {
                     )}
                   </span>
                   <button
-                    className="text-xs text-mid-gray/60 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity px-1"
+                    style={{ padding: "4px 8px" }}
+                    className="text-xs text-mid-gray/60 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(action.key);
@@ -218,12 +221,22 @@ const PostProcessingActionsComponent: React.FC = () => {
         )}
 
         {actions.length === 0 && !editingAction && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-6">
-            <div className="flex flex-col items-start gap-3">
+          <div
+            className="rounded-2xl border border-white/10 bg-white/[0.03]"
+            style={{ padding: "24px" }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 12,
+              }}
+            >
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-logo-primary/20 bg-logo-primary/10 text-logo-primary">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               </div>
-              <div className="space-y-1">
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <p className="text-sm font-semibold text-text">
                   {t("settings.postProcessing.actions.noActions")}
                 </p>
@@ -243,9 +256,17 @@ const PostProcessingActionsComponent: React.FC = () => {
         )}
 
         {editingAction && (
-          <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-            <div className="flex gap-3">
-              <div className="space-y-1 flex flex-col">
+          <div
+            className="rounded-2xl border border-white/10 bg-white/[0.03]"
+            style={{
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label className="text-sm font-semibold">
                   {t("settings.postProcessing.actions.key")}
                 </label>
@@ -266,7 +287,14 @@ const PostProcessingActionsComponent: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div className="space-y-1 flex flex-col flex-1">
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  flex: 1,
+                }}
+              >
                 <label className="text-sm font-semibold">
                   {t("settings.postProcessing.actions.name")}
                 </label>
@@ -284,7 +312,7 @@ const PostProcessingActionsComponent: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-1 flex flex-col">
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label className="text-sm font-semibold">
                 {t("settings.postProcessing.actions.prompt")}
               </label>
@@ -305,7 +333,7 @@ const PostProcessingActionsComponent: React.FC = () => {
               </p>
             </div>
 
-            <div className="space-y-1 flex flex-col">
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label className="text-sm font-semibold">
                 {t("settings.postProcessing.actions.model")}
               </label>
@@ -327,7 +355,7 @@ const PostProcessingActionsComponent: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex gap-2 pt-1">
+            <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
               <Button
                 onClick={handleSave}
                 variant="primary"
@@ -381,7 +409,7 @@ PostProcessingActions.displayName = "PostProcessingActions";
 
 export const PostProcessingSettings: React.FC = () => {
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full">
       <SettingsGroup>
         <PostProcessingActions />
       </SettingsGroup>

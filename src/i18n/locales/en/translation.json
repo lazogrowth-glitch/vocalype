@@ -23,7 +23,7 @@
     "about": "About"
   },
   "onboarding": {
-    "title": "Model Setup",
+    "title": "Get started",
     "subtitle": "To get started, choose a transcription model",
     "recommended": "Recommended",
     "download": "Download",
@@ -139,8 +139,7 @@
     },
     "progress": {
       "stepOf": "Step {{current}} of {{total}}"
-    },
-    "title": "Get started"
+    }
   },
   "modelSelector": {
     "badges": {
@@ -670,6 +669,10 @@
       "pasteDelay": {
         "title": "Paste Delay",
         "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
+      },
+      "autoPauseMedia": {
+        "label": "Auto-pause media",
+        "description": "Automatically pauses Spotify and other media players during recording, then resumes when done."
       }
     },
     "about": {
@@ -925,7 +928,10 @@
     "importMerge": "Import (merge)",
     "exportSuccess": "Dictionary exported.",
     "importReplaceSuccess": "Dictionary imported (replaced).",
-    "importMergeSuccess": "Dictionary imported (merged)."
+    "importMergeSuccess": "Dictionary imported (merged).",
+    "autoLearn": "Auto-learn",
+    "autoLearnDesc": "Automatically learns word corrections when you copy modified text after dictation.",
+    "edit": "Edit"
   },
   "snippets": {
     "title": "Voice Snippets",

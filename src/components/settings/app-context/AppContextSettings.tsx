@@ -94,7 +94,8 @@ const CategorySelect: React.FC<CategorySelectProps> = ({
       value={value}
       onChange={(e) => onChange(e.target.value as AppContextCategory | "auto")}
       disabled={disabled}
-      className="rounded-[6px] border border-white/10 bg-white/[0.05] px-2 py-1 text-[11.5px] text-white/70 outline-none transition-colors hover:border-white/20 focus:border-logo-primary/50 disabled:cursor-not-allowed disabled:opacity-40"
+      style={{ padding: "8px 12px" }}
+      className="rounded-[6px] border border-white/10 bg-white/[0.05] text-[11.5px] text-white/70 outline-none transition-colors hover:border-white/20 focus:border-logo-primary/50 disabled:cursor-not-allowed disabled:opacity-40"
     >
       <option value="auto">
         {t("appContext.categories.autoDetected", {
@@ -205,14 +206,14 @@ export const AppContextSettings: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 pt-6">
+    <div style={{ paddingTop: 8 }}>
       {/* ── Global toggle ──────────────────────────────────────────────────── */}
       <div>
-        <div className="mb-3">
+        <div style={{ marginBottom: 12 }}>
           <p className="text-[13px] font-medium text-white/80">
             {t("appContext.title", { defaultValue: "Contexte automatique" })}
           </p>
-          <p className="mt-0.5 text-[11.5px] text-white/40">
+          <p style={{ marginTop: 2 }} className="text-[11.5px] text-white/40">
             {t("appContext.description", {
               defaultValue:
                 "Adapte la dictée selon l'app active — ton formel pour les e-mails, conversationnel pour le chat, texte brut pour le code.",
@@ -257,7 +258,10 @@ export const AppContextSettings: React.FC = () => {
         </div>
 
         {recentApps.length === 0 ? (
-          <p className="rounded-[8px] border border-white/6 bg-white/[0.02] px-4 py-3 text-[12px] text-white/30">
+          <p
+            style={{ padding: "10px 16px" }}
+            className="rounded-[8px] border border-white/6 bg-white/[0.02] text-[12px] text-white/30"
+          >
             {t("appContext.noRecentApps", {
               defaultValue:
                 "Aucune app détectée pour l'instant. Lance une dictée pour remplir cette liste.",
@@ -274,7 +278,8 @@ export const AppContextSettings: React.FC = () => {
               return (
                 <div
                   key={app.process_name}
-                  className={`flex items-center gap-3 px-3 py-2.5 ${
+                  style={{ padding: "10px 16px" }}
+                  className={`flex items-center gap-3 ${
                     i < recentApps.length - 1 ? "border-b border-white/6" : ""
                   }`}
                 >
@@ -328,7 +333,8 @@ export const AppContextSettings: React.FC = () => {
             {standaloneOverrides.map((ov, i) => (
               <div
                 key={ov.process_name}
-                className={`flex items-center gap-3 px-3 py-2.5 ${
+                style={{ padding: "10px 16px" }}
+                className={`flex items-center gap-3 ${
                   i < standaloneOverrides.length - 1
                     ? "border-b border-white/6"
                     : ""
@@ -361,13 +367,19 @@ export const AppContextSettings: React.FC = () => {
       )}
 
       {/* ── How it works ───────────────────────────────────────────────────── */}
-      <div className="rounded-[8px] border border-white/6 bg-white/[0.02] px-4 py-3">
+      <div
+        style={{ padding: "10px 16px" }}
+        className="rounded-[8px] border border-white/6 bg-white/[0.02]"
+      >
         <p className="mb-1.5 text-[11px] font-medium text-white/40">
           {t("appContext.howItWorks", {
             defaultValue: "Comment ça fonctionne",
           })}
         </p>
-        <ul className="space-y-1 text-[11px] text-white/30">
+        <ul
+          style={{ display: "flex", flexDirection: "column", gap: 4 }}
+          className="text-[11px] text-white/30"
+        >
           <li>
             <span className="text-white/50">
               {t("appContext.categories.code", { defaultValue: "Code" })}

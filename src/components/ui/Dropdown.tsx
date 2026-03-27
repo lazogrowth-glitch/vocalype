@@ -177,7 +177,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
       <button
         ref={triggerRef}
         type="button"
-        className={`flex min-h-[34px] w-full items-center justify-between rounded-[7px] border border-white/10 bg-white/[0.06] px-3 py-[5px] text-start text-[12.5px] font-normal text-white/70 transition-all duration-150 ${
+        style={{ padding: "10px 16px" }}
+        className={`flex min-h-[38px] w-full items-center justify-between rounded-[7px] border border-white/10 bg-white/[0.06] text-start text-[12.5px] font-normal text-white/70 transition-all duration-150 ${
           disabled
             ? "opacity-50 cursor-not-allowed"
             : "cursor-pointer hover:bg-white/[0.08] hover:border-white/14"
@@ -208,10 +209,14 @@ export const Dropdown: React.FC<DropdownProps> = ({
         <div
           id={listboxId}
           role="listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-[8px] border border-white/10 bg-[#141414] shadow-lg"
+          className="absolute right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-[8px] border border-white/10 bg-[#141414] shadow-lg"
+          style={{ minWidth: "100%", width: "max-content", maxWidth: 320 }}
         >
           {options.length === 0 ? (
-            <div className="px-3 py-2 text-[12.5px] text-mid-gray">
+            <div
+              style={{ padding: "10px 16px" }}
+              className="text-[12.5px] text-mid-gray"
+            >
               {t("common.noOptionsFound")}
             </div>
           ) : (
@@ -219,7 +224,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
               <button
                 key={option.value}
                 type="button"
-                className={`w-full px-3 py-2 text-start text-[12.5px] transition-colors duration-150 hover:bg-white/[0.06] ${
+                style={{ padding: "10px 16px" }}
+                className={`w-full text-start text-[12.5px] transition-colors duration-150 hover:bg-white/[0.06] ${
                   selectedValue === option.value
                     ? "bg-logo-primary/14 font-medium text-logo-primary"
                     : ""

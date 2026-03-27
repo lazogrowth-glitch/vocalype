@@ -83,33 +83,39 @@ export const RecordingModeSelector: React.FC<RecordingModeSelectorProps> =
     ];
 
     return (
-      <div
-        className={
-          grouped
-            ? "border-t border-white/6 px-4 py-3"
-            : "rounded-lg bg-white/4 px-4 py-3"
-        }
-      >
-        <p className="mb-1 text-sm font-medium text-white/90">
-          {t("settings.general.recordingMode.label")}
-        </p>
-        <p className="mb-3 text-xs text-white/50">
-          {t("settings.general.recordingMode.description")}
-        </p>
+      <section>
+        <div style={{ marginBottom: 14 }}>
+          <h2
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              color: "rgba(255,255,255,0.25)",
+            }}
+          >
+            {t("settings.general.recordingMode.label")}
+          </h2>
+          <p className="mt-1 text-[11.5px] leading-5 text-white/40">
+            {t("settings.general.recordingMode.description")}
+          </p>
+        </div>
 
-        <div className="flex flex-col gap-2">
-          {modes.map(({ id, labelKey, descKey }) => {
+        <div className="rounded-[10px] border border-white/8">
+          {modes.map(({ id, labelKey, descKey }, index) => {
             const selected = currentMode === id;
             return (
               <button
                 key={id}
                 onClick={() => handleSelect(id)}
                 disabled={isBusy}
+                style={{ padding: "14px 20px" }}
                 className={[
-                  "flex items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors",
-                  selected
-                    ? "bg-white/10 ring-1 ring-white/20"
-                    : "hover:bg-white/5",
+                  "flex w-full items-center gap-3 text-left transition-colors",
+                  index !== modes.length - 1
+                    ? "border-b border-white/[0.05]"
+                    : "",
+                  selected ? "bg-white/[0.04]" : "hover:bg-white/[0.03]",
                   isBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer",
                 ].join(" ")}
                 aria-pressed={selected}
@@ -117,22 +123,22 @@ export const RecordingModeSelector: React.FC<RecordingModeSelectorProps> =
                 {/* Radio dot */}
                 <span
                   className={[
-                    "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+                    "flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full border",
                     selected
-                      ? "border-blue-400 bg-blue-500"
-                      : "border-white/30 bg-transparent",
+                      ? "border-logo-primary bg-logo-primary"
+                      : "border-white/25 bg-transparent",
                   ].join(" ")}
                 >
                   {selected && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                    <span className="h-[6px] w-[6px] rounded-full bg-white" />
                   )}
                 </span>
 
                 <span>
-                  <span className="block text-sm font-medium text-white/90">
+                  <span className="block text-[14px] font-normal leading-5 text-white/85">
                     {t(labelKey)}
                   </span>
-                  <span className="block text-xs text-white/50">
+                  <span className="block text-[11.5px] leading-5 text-white/40">
                     {t(descKey)}
                   </span>
                 </span>
@@ -140,7 +146,7 @@ export const RecordingModeSelector: React.FC<RecordingModeSelectorProps> =
             );
           })}
         </div>
-      </div>
+      </section>
     );
   });
 

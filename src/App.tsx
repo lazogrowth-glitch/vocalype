@@ -11,7 +11,8 @@ import Onboarding, {
   ConsentStep,
 } from "./components/onboarding";
 import { TrialWelcomeModal } from "./components/onboarding/TrialWelcomeModal";
-import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
+import { Sidebar } from "./components/Sidebar";
+import { SidebarSection, SECTIONS_CONFIG } from "./components/sections-config";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
@@ -48,11 +49,14 @@ const OnboardingProgressBar: React.FC<{ current: number; total: number }> = ({
 }) => {
   const { t } = useTranslation();
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-1.5 pt-3 pb-2">
+    <div
+      className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center"
+      style={{ gap: 6, paddingTop: 12, paddingBottom: 8 }}
+    >
       <p className="text-[11px] text-text/70">
         {t("onboarding.progress.stepOf", { current, total })}
       </p>
-      <div className="flex gap-1">
+      <div style={{ display: "flex", gap: 4 }}>
         {Array.from({ length: total }, (_, i) => (
           <div
             key={i}
@@ -143,6 +147,15 @@ function App() {
     localStorage.setItem("vt.firstUseHintShown", "1");
     setShowFirstLaunchHint(false);
   }, []);
+
+  // Auto-dismiss the hint the first time a real transcription fires
+  useEffect(() => {
+    if (!showFirstLaunchHint) return;
+    const unlisten = listen("transcription-lifecycle", dismissHint);
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [showFirstLaunchHint, dismissHint]);
 
   useBackendEvents({
     t,
@@ -376,7 +389,13 @@ function App() {
           }}
         />
         <div
-          style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}
+          style={{
+            display: "flex",
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            background: "#141414",
+          }}
         >
           <Sidebar
             activeSection={currentSection}
@@ -394,6 +413,8 @@ function App() {
               minWidth: 0,
               minHeight: 0,
               background: "#0f0f0f",
+              borderTopLeftRadius: 16,
+              marginTop: -1,
             }}
           >
             <h1
@@ -411,20 +432,23 @@ function App() {
                 : t(SECTIONS_CONFIG.general.labelKey)}
             </h1>
             {showFirstLaunchHint && (
-              <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-text/70">
+              <div
+                className="rounded-xl border border-white/10 bg-white/[0.04] text-sm text-text/70"
+                style={{
+                  margin: "0 16px 12px",
+                  padding: "12px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
                 <span>
                   {t("hints.firstLaunch", {
                     shortcut:
                       settings?.bindings?.transcribe?.current_binding ??
-                      "Ctrl+Shift+Space",
+                      "Ctrl+Space",
                   })}
                 </span>
-                <button
-                  onClick={dismissHint}
-                  className="text-text/70 hover:text-text/80 transition-colors text-base leading-none"
-                >
-                  ×
-                </button>
               </div>
             )}
             <ErrorBoundary>

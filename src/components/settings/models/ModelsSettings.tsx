@@ -205,22 +205,29 @@ const ProcessingModelsSection: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div
+        className="rounded-[10px] border border-white/8 bg-white/[0.03]"
+        style={{ padding: "16px 20px" }}
+      >
         <p className="text-[13.5px] font-medium text-white">
           {t("settings.models.processingModels.title")}
         </p>
-        <p className="mt-1 text-[11.5px] leading-5 text-white/40">
+        <p
+          style={{ marginTop: 4 }}
+          className="text-[11.5px] leading-5 text-white/40"
+        >
           {t("settings.models.processingModels.description")}
         </p>
       </div>
 
       {savedModels.length > 0 && (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {savedModels.map((model) => (
             <div
               key={model.id}
-              className="flex items-center justify-between rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3"
+              className="flex items-center justify-between rounded-[10px] border border-white/8 bg-white/[0.03]"
+              style={{ padding: "16px 20px" }}
             >
               <span className="truncate pr-3 text-[13px] text-text">
                 {model.label}
@@ -243,7 +250,10 @@ const ProcessingModelsSection: React.FC = () => {
       )}
 
       {savedModels.length === 0 && !isAdding && (
-        <div className="rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
+        <div
+          className="rounded-[10px] border border-white/8 bg-white/[0.03]"
+          style={{ padding: "16px 20px" }}
+        >
           <p className="text-[12.5px] text-mid-gray">
             {t("settings.models.processingModels.noModels")}
           </p>
@@ -251,8 +261,16 @@ const ProcessingModelsSection: React.FC = () => {
       )}
 
       {isAdding && (
-        <div className="space-y-3 rounded-[10px] border border-white/8 bg-white/[0.03] p-4">
-          <div className="space-y-1">
+        <div
+          className="rounded-[10px] border border-white/8 bg-white/[0.03]"
+          style={{
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <label className="text-sm font-semibold">
               {t("settings.models.processingModels.provider")}
             </label>
@@ -291,7 +309,9 @@ const ProcessingModelsSection: React.FC = () => {
               ) : null}
 
               {providerRequiresApiKey ? (
-                <div className="space-y-1">
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                >
                   <label className="text-sm font-semibold">
                     {t("settings.models.processingModels.apiKey")}
                   </label>
@@ -321,11 +341,11 @@ const ProcessingModelsSection: React.FC = () => {
                 />
               ) : null}
 
-              <div className="space-y-1">
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label className="text-sm font-semibold">
                   {t("settings.models.processingModels.model")}
                 </label>
-                <div className="flex items-center gap-2">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {modelOptions.length > 0 ? (
                     <Dropdown
                       selectedValue={selectedModel || null}
@@ -388,7 +408,9 @@ const ProcessingModelsSection: React.FC = () => {
             </>
           )}
 
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div
+            style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingTop: 4 }}
+          >
             <Button
               onClick={handleSave}
               variant="primary"
@@ -765,15 +787,20 @@ export const ModelsSettings: React.FC = () => {
   }
 
   return (
-    <div className="w-full space-y-6">
-      <div className="flex gap-1 border-b border-white/8" role="tablist">
+    <div className="w-full">
+      <div
+        className="flex border-b border-white/8"
+        style={{ gap: 4 }}
+        role="tablist"
+      >
         {(["transcription", "processing"] as const).map((tab) => (
           <button
             key={tab}
             role="tab"
             aria-selected={activeTab === tab}
             onClick={() => setActiveTab(tab)}
-            className={`border-b-2 px-[14px] pb-[9px] pt-[7px] text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 ${
+            style={{ padding: "7px 14px 9px" }}
+            className={`border-b-2 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 ${
               activeTab === tab
                 ? "border-logo-primary text-logo-primary"
                 : "border-transparent text-white/40 hover:text-white/65"
@@ -784,34 +811,11 @@ export const ModelsSettings: React.FC = () => {
         ))}
       </div>
 
-      {(adaptiveProfile?.copilot_plus_detected ||
-        adaptiveProfile?.npu_detected) && (
-        <div className="rounded-[10px] border border-white/8 bg-white/[0.03] px-4 py-3">
-          <p className="text-[13px] font-medium text-white/85">
-            {adaptiveProfile?.copilot_plus_detected
-              ? t("settings.models.hardware.copilotPlusTitle", {
-                  defaultValue: "Copilot+ PC detected",
-                })
-              : t("settings.models.hardware.npuTitle", {
-                  defaultValue: "NPU detected",
-                })}
-          </p>
-          <p className="mt-1 text-[11.5px] leading-5 text-white/40">
-            {adaptiveProfile?.copilot_plus_detected
-              ? t("settings.models.hardware.copilotPlusDescription", {
-                  defaultValue:
-                    "Vocalype will keep this capability in the adaptive profile, but true NPU execution still depends on the model runtime.",
-                })
-              : t("settings.models.hardware.npuDescription", {
-                  defaultValue:
-                    "This machine exposes a neural processor. Vocalype now shows it in diagnostics and hardware profiling.",
-                })}
-          </p>
-        </div>
-      )}
-
       {activeTab === "transcription" && (
-        <div className="space-y-4" role="tabpanel">
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: 10 }}
+          role="tabpanel"
+        >
           {!hasGeminiKey && geminiModel ? (
             <FeatureGateHint
               tone="info"
@@ -847,9 +851,15 @@ export const ModelsSettings: React.FC = () => {
       )}
 
       {activeTab === "transcription" && filteredModels.length > 0 ? (
-        <div className="space-y-6" role="tabpanel">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: 20 }}
+          role="tabpanel"
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div
+              className="flex items-center justify-between"
+              style={{ marginBottom: 4 }}
+            >
               <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
                 {t("settings.models.yourModels")}
               </h2>
@@ -881,8 +891,11 @@ export const ModelsSettings: React.FC = () => {
           </div>
 
           {availableModels.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <h2
+                style={{ marginBottom: 4 }}
+                className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25"
+              >
                 {t("settings.models.availableModels")}
               </h2>
               {availableModels.map((model: ModelInfo) => (

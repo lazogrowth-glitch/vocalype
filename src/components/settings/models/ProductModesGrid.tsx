@@ -51,7 +51,7 @@ export const ProductModesGrid: React.FC<ProductModesGridProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-2">
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {productModes.map(({ id, label, description, modelId, model }) => {
         const isActiveMode =
           (adaptiveProfile?.active_runtime_model_id || currentModel) ===
@@ -63,7 +63,8 @@ export const ProductModesGrid: React.FC<ProductModesGridProps> = ({
             key={id}
             type="button"
             onClick={() => onSelect(modelId)}
-            className={`flex w-full items-center gap-4 rounded-[10px] border px-4 py-3.5 text-left transition-all ${
+            style={{ padding: "8px 16px", marginBottom: 6 }}
+            className={`flex w-full items-center gap-4 rounded-[10px] border text-left transition-all ${
               isActiveMode
                 ? "border-logo-primary/30 bg-logo-primary/[0.08]"
                 : "border-white/8 bg-white/[0.03] hover:bg-white/[0.05]"
@@ -75,7 +76,7 @@ export const ProductModesGrid: React.FC<ProductModesGridProps> = ({
               <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <p className="text-[13.5px] font-medium text-white">{label}</p>
                 {id === "auto" && (
                   <span className="rounded-md border border-logo-primary/25 bg-logo-primary/15 px-2 py-0.5 text-[10px] font-medium text-logo-primary">

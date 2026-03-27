@@ -136,6 +136,11 @@ pub struct TranscriptionRequest {
 pub struct TranscriptionOutput {
     pub text: String,
     pub confidence_payload: Option<TranscriptionConfidencePayload>,
+    /// Word-level timed segments from the model (Parakeet V3 only).
+    /// Each segment carries a `start` / `end` in seconds relative to the
+    /// audio buffer that was passed to the engine.  Used by the chunking
+    /// worker to trim the overlap prefix without relying on fragile text dedup.
+    pub segments: Option<Vec<transcribe_rs::TranscriptionSegment>>,
 }
 
 #[derive(Debug)]

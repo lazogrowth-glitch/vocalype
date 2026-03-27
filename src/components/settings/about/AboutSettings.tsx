@@ -30,8 +30,15 @@ export const AboutSettings: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full space-y-6">
-      <section className="space-y-3">
+    <div className="w-full">
+      <section
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          marginBottom: 16,
+        }}
+      >
         <VocalypeLogo width={112} />
         <p className="text-[12px] text-white/30">
           {t("settings.about.versionLabel", {

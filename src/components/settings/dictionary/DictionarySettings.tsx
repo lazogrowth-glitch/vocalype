@@ -170,9 +170,19 @@ export const DictionarySettings: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4 pt-5">
+    <div
+      style={{
+        paddingTop: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
+      }}
+    >
       {/* Auto-learn toggle */}
-      <div className="flex items-center justify-between rounded-[8px] border border-white/8 bg-white/[0.03] px-3 py-2.5">
+      <div
+        className="flex items-center justify-between rounded-[8px] border border-white/8 bg-white/[0.03]"
+        style={{ padding: "14px 20px" }}
+      >
         <div>
           <p className="text-[12px] font-medium text-white/80">
             {t("dictionary.autoLearn", {
@@ -203,32 +213,54 @@ export const DictionarySettings: React.FC = () => {
         </button>
       </div>
 
+      <div
+        style={{
+          height: "0.5px",
+          background: "rgba(255,255,255,0.06)",
+          margin: "28px 0 24px",
+        }}
+      />
+
       {/* Export/Import toolbar */}
-      <div className="flex items-center gap-2">
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button
           type="button"
           onClick={handleExport}
-          className="flex items-center gap-1 rounded-[6px] border border-white/8 bg-white/[0.04] px-2.5 py-1.5 text-[11.5px] text-white/45 transition-colors hover:text-white/70"
+          style={{
+            padding: "8px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+          className="rounded-[7px] border border-white/8 bg-white/[0.04] text-[12px] text-white/45 transition-colors hover:text-white/70"
           title={t("dictionary.export", { defaultValue: "Exporter" })}
         >
-          <Download size={12} aria-hidden="true" />
+          <Download size={13} aria-hidden="true" />
           {t("dictionary.export", { defaultValue: "Exporter" })}
         </button>
         <button
           type="button"
           onClick={() => handleImport(false)}
-          className="flex items-center gap-1 rounded-[6px] border border-white/8 bg-white/[0.04] px-2.5 py-1.5 text-[11.5px] text-white/45 transition-colors hover:text-white/70"
+          style={{
+            padding: "8px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+          className="rounded-[7px] border border-white/8 bg-white/[0.04] text-[12px] text-white/45 transition-colors hover:text-white/70"
           title={t("dictionary.importMerge", {
             defaultValue: "Importer (fusionner)",
           })}
         >
-          <Upload size={12} aria-hidden="true" />
+          <Upload size={13} aria-hidden="true" />
           {t("dictionary.importMerge", { defaultValue: "Importer" })}
         </button>
       </div>
 
       {/* Add row */}
-      <div className="flex items-center gap-2">
+      <div
+        style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}
+      >
         <Input
           type="text"
           value={newFrom}
@@ -264,96 +296,103 @@ export const DictionarySettings: React.FC = () => {
       </div>
 
       {/* Entry list */}
-      {entries.length === 0 ? (
-        <p className="px-1 text-[13px] text-white/35 italic">
-          {t("dictionary.empty")}
-        </p>
-      ) : (
-        <div className="divide-y divide-white/6 rounded-lg border border-white/8">
-          {entries.map((entry) => {
-            const isEditing = editingFrom === entry.from;
-            return (
-              <div
-                key={entry.from}
-                className="flex items-center gap-3 px-4 py-2.5"
-              >
-                {/* From (read-only) */}
-                <span className="min-w-0 flex-1 truncate text-[13px] text-white/60 font-mono">
-                  {entry.from}
-                </span>
-
-                <span className="shrink-0 text-white/25 text-[12px]">
-                  {t("dictionary.arrow")}
-                </span>
-
-                {/* To — editable inline */}
-                {isEditing ? (
-                  <Input
-                    type="text"
-                    value={editTo}
-                    onChange={(e) => setEditTo(e.target.value)}
-                    onKeyDown={(e) => handleEditKeyDown(e, entry.from)}
-                    variant="compact"
-                    className="min-w-0 flex-1 text-[13px]"
-                    autoFocus
-                  />
-                ) : (
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-white/90">
-                    {entry.to}
+      <div style={{ marginTop: 16 }}>
+        {entries.length === 0 ? (
+          <p className="px-1 text-[13px] text-white/35 italic">
+            {t("dictionary.empty")}
+          </p>
+        ) : (
+          <div className="divide-y divide-white/6 rounded-lg border border-white/8">
+            {entries.map((entry) => {
+              const isEditing = editingFrom === entry.from;
+              return (
+                <div
+                  key={entry.from}
+                  style={{
+                    padding: "10px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  {/* From (read-only) */}
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-white/60 font-mono">
+                    {entry.from}
                   </span>
-                )}
 
-                {/* Actions */}
-                {isEditing ? (
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => confirmEdit(entry.from)}
-                      className="rounded p-1 text-green-400 hover:bg-white/8 transition-colors"
-                      aria-label={t("dictionary.save")}
-                      title={t("dictionary.save")}
-                    >
-                      <Check size={14} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelEdit}
-                      className="rounded p-1 text-white/40 hover:bg-white/8 transition-colors"
-                      aria-label={t("dictionary.cancel")}
-                      title={t("dictionary.cancel")}
-                    >
-                      <X size={14} aria-hidden="true" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(entry)}
-                      className="rounded p-1 text-white/35 hover:text-white/70 hover:bg-white/8 transition-colors"
-                      aria-label={t("dictionary.edit", {
-                        defaultValue: "Edit",
-                      })}
-                      title={t("dictionary.edit", { defaultValue: "Edit" })}
-                    >
-                      <Pencil size={13} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(entry.from)}
-                      className="rounded p-1 text-white/35 hover:text-red-400 hover:bg-white/8 transition-colors"
-                      aria-label={t("dictionary.remove")}
-                      title={t("dictionary.remove")}
-                    >
-                      <Trash2 size={13} aria-hidden="true" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  <span className="shrink-0 text-white/25 text-[12px]">
+                    {t("dictionary.arrow")}
+                  </span>
+
+                  {/* To — editable inline */}
+                  {isEditing ? (
+                    <Input
+                      type="text"
+                      value={editTo}
+                      onChange={(e) => setEditTo(e.target.value)}
+                      onKeyDown={(e) => handleEditKeyDown(e, entry.from)}
+                      variant="compact"
+                      className="min-w-0 flex-1 text-[13px]"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate text-[13px] text-white/90">
+                      {entry.to}
+                    </span>
+                  )}
+
+                  {/* Actions */}
+                  {isEditing ? (
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => confirmEdit(entry.from)}
+                        className="rounded p-1 text-green-400 hover:bg-white/8 transition-colors"
+                        aria-label={t("dictionary.save")}
+                        title={t("dictionary.save")}
+                      >
+                        <Check size={14} aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="rounded p-1 text-white/40 hover:bg-white/8 transition-colors"
+                        aria-label={t("dictionary.cancel")}
+                        title={t("dictionary.cancel")}
+                      >
+                        <X size={14} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(entry)}
+                        className="rounded p-1 text-white/35 hover:text-white/70 hover:bg-white/8 transition-colors"
+                        aria-label={t("dictionary.edit", {
+                          defaultValue: "Edit",
+                        })}
+                        title={t("dictionary.edit", { defaultValue: "Edit" })}
+                      >
+                        <Pencil size={13} aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(entry.from)}
+                        className="rounded p-1 text-white/35 hover:text-red-400 hover:bg-white/8 transition-colors"
+                        aria-label={t("dictionary.remove")}
+                        title={t("dictionary.remove")}
+                      >
+                        <Trash2 size={13} aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

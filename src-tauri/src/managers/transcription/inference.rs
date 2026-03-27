@@ -86,6 +86,7 @@ impl TranscriptionManager {
             return Ok(TranscriptionOutput {
                 text: String::new(),
                 confidence_payload: None,
+                segments: None,
             });
         }
 
@@ -187,6 +188,7 @@ impl TranscriptionManager {
                 return Ok(TranscriptionOutput {
                     text: final_result,
                     confidence_payload: None,
+                    segments: None,
                 });
             }
         }
@@ -230,6 +232,7 @@ impl TranscriptionManager {
                 return Ok(TranscriptionOutput {
                     text: final_result,
                     confidence_payload: None,
+                    segments: None,
                 });
             }
         }
@@ -274,6 +277,7 @@ impl TranscriptionManager {
                 return Ok(TranscriptionOutput {
                     text: final_result,
                     confidence_payload: None,
+                    segments: None,
                 });
             }
         }
@@ -318,6 +322,7 @@ impl TranscriptionManager {
                 return Ok(TranscriptionOutput {
                     text: final_result,
                     confidence_payload: None,
+                    segments: None,
                 });
             }
         }
@@ -346,166 +351,211 @@ impl TranscriptionManager {
             let transcribe_result = catch_unwind(AssertUnwindSafe(
                 || -> Result<EngineTranscriptionResult> {
                     match &mut engine {
-                    LoadedEngine::Whisper(whisper_engine) => {
-                        let whisper_language = if settings.selected_language == "auto" {
-                            None
-                        } else {
-                            let normalized = if settings.selected_language == "zh-Hans"
-                                || settings.selected_language == "zh-Hant"
-                            {
-                                "zh".to_string()
+                        LoadedEngine::Whisper(whisper_engine) => {
+                            let whisper_language = if settings.selected_language == "auto" {
+                                None
                             } else {
-                                settings.selected_language.clone()
+                                let normalized = if settings.selected_language == "zh-Hans"
+                                    || settings.selected_language == "zh-Hant"
+                                {
+                                    "zh".to_string()
+                                } else {
+                                    settings.selected_language.clone()
+                                };
+                                Some(normalized)
                             };
-                            Some(normalized)
-                        };
 
-                        let current_model_id = self.get_current_model();
-                        let whisper_gpu_active =
-                            self.whisper_gpu_active.load(Ordering::Relaxed);
-                        let n_threads = self.recommended_whisper_threads(
-                            current_model_id.as_deref(),
-                            whisper_gpu_active,
-                        );
-
-                        let params = WhisperInferenceParams {
-                            language: whisper_language,
-                            translate: settings.translate_to_english,
-                            initial_prompt: initial_prompt.clone(),
-                            greedy_best_of: Some(1),
-                            n_threads: Some(n_threads),
-                            debug_mode: false,
-                            // Each dictation chunk is independent. Reusing decoder text
-                            // context across calls can both slow decoding and smear text
-                            // from earlier chunks into later ones.
-                            no_context: true,
-                            // Skip timestamp computation — we only need raw text.
-                            // This alone saves ~10-20% of inference time.
-                            no_timestamps: true,
-                            // Treat the full clip as one segment — avoids per-segment
-                            // overhead. Safe for push-to-talk dictation clips.
-                            single_segment: true,
-                            // Disable whisper.cpp's multi-temperature retry ladder for
-                            // latency-sensitive dictation. Without this, a bad short clip
-                            // can trigger several full re-decodes and explode latency.
-                            temperature: Some(0.0),
-                            temperature_inc: Some(0.0),
-                            entropy_thold: Some(9_999.0),
-                            logprob_thold: Some(-9_999.0),
-                            ..Default::default()
-                        };
-                        debug!(
-                            "Whisper inference params: model={:?}, gpu_active={}, threads={}",
-                            current_model_id, whisper_gpu_active, n_threads
-                        );
-
-                        whisper_engine
-                            .transcribe_samples(audio, Some(params))
-                            .map(|result| EngineTranscriptionResult {
-                                text: result.text,
-                                segments: result.segments,
-                            })
-                            .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
-                    }
-                    LoadedEngine::Parakeet(parakeet_engine) => {
-                        let params = ParakeetInferenceParams {
-                            timestamp_granularity: TimestampGranularity::Segment,
-                            ..Default::default()
-                        };
-                        parakeet_engine
-                            .transcribe_samples(audio, Some(params))
-                            .map(|result| {
-                                check_parakeet_language_drift(
-                                    &result.text,
-                                    &settings.selected_language,
-                                );
-                                EngineTranscriptionResult {
-                                    text: result.text,
-                                    segments: None,
-                                }
-                            })
-                            .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))
-                    }
-                    LoadedEngine::ParakeetV3(parakeet_engine) => parakeet_engine
-                        .transcribe_samples(
-                            audio.clone(),
-                            16_000,
-                            1,
-                            Some(ParakeetTimestampMode::Sentences),
-                        )
-                        .or_else(|sentence_err| {
-                            debug!(
-                                "Parakeet V3 sentence-mode decode failed, retrying with word mode: {}",
-                                sentence_err
+                            let current_model_id = self.get_current_model();
+                            let whisper_gpu_active =
+                                self.whisper_gpu_active.load(Ordering::Relaxed);
+                            let n_threads = self.recommended_whisper_threads(
+                                current_model_id.as_deref(),
+                                whisper_gpu_active,
                             );
-                            parakeet_engine.transcribe_samples(
-                                audio,
+
+                            let params = WhisperInferenceParams {
+                                language: whisper_language,
+                                translate: settings.translate_to_english,
+                                initial_prompt: initial_prompt.clone(),
+                                greedy_best_of: Some(1),
+                                n_threads: Some(n_threads),
+                                debug_mode: false,
+                                // Each dictation chunk is independent. Reusing decoder text
+                                // context across calls can both slow decoding and smear text
+                                // from earlier chunks into later ones.
+                                no_context: true,
+                                // Skip timestamp computation — we only need raw text.
+                                // This alone saves ~10-20% of inference time.
+                                no_timestamps: true,
+                                // Treat the full clip as one segment — avoids per-segment
+                                // overhead. Safe for push-to-talk dictation clips.
+                                single_segment: true,
+                                // Disable whisper.cpp's multi-temperature retry ladder for
+                                // latency-sensitive dictation. Without this, a bad short clip
+                                // can trigger several full re-decodes and explode latency.
+                                temperature: Some(0.0),
+                                temperature_inc: Some(0.0),
+                                entropy_thold: Some(9_999.0),
+                                logprob_thold: Some(-9_999.0),
+                                ..Default::default()
+                            };
+                            debug!(
+                                "Whisper inference params: model={:?}, gpu_active={}, threads={}",
+                                current_model_id, whisper_gpu_active, n_threads
+                            );
+
+                            whisper_engine
+                                .transcribe_samples(audio, Some(params))
+                                .map(|result| EngineTranscriptionResult {
+                                    text: result.text,
+                                    segments: result.segments,
+                                })
+                                .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
+                        }
+                        LoadedEngine::Parakeet(parakeet_engine) => {
+                            let params = ParakeetInferenceParams {
+                                timestamp_granularity: TimestampGranularity::Segment,
+                                ..Default::default()
+                            };
+                            parakeet_engine
+                                .transcribe_samples(audio, Some(params))
+                                .map(|result| {
+                                    check_parakeet_language_drift(
+                                        &result.text,
+                                        &settings.selected_language,
+                                    );
+                                    EngineTranscriptionResult {
+                                        text: result.text,
+                                        segments: None,
+                                    }
+                                })
+                                .map_err(|e| {
+                                    anyhow::anyhow!("Parakeet transcription failed: {}", e)
+                                })
+                        }
+                        LoadedEngine::ParakeetV3(parakeet_engine) => {
+                            match parakeet_engine.transcribe_samples(
+                                audio.clone(),
                                 16_000,
                                 1,
                                 Some(ParakeetTimestampMode::Words),
-                            )
-                        })
-                        .map(|result| {
-                            check_parakeet_language_drift(
-                                &result.text,
-                                &settings.selected_language,
-                            );
-                            EngineTranscriptionResult {
-                                text: result.text,
-                                segments: None,
+                            ) {
+                                Ok(result) => {
+                                    check_parakeet_language_drift(
+                                        &result.text,
+                                        &settings.selected_language,
+                                    );
+                                    // Words mode succeeded — convert per-word timed tokens to
+                                    // TranscriptionSegment so the chunking worker can trim the
+                                    // overlap prefix by timestamp (immune to non-determinism).
+                                    let segments: Vec<transcribe_rs::TranscriptionSegment> = result
+                                        .tokens
+                                        .iter()
+                                        .map(|t| transcribe_rs::TranscriptionSegment {
+                                            start: t.start,
+                                            end: t.end,
+                                            text: t.text.clone(),
+                                            confidence: None,
+                                            words: None,
+                                        })
+                                        .collect();
+                                    Ok(EngineTranscriptionResult {
+                                        text: result.text,
+                                        segments: if segments.is_empty() {
+                                            None
+                                        } else {
+                                            Some(segments)
+                                        },
+                                    })
+                                }
+                                Err(word_err) => {
+                                    // Words mode failed — fall back to Sentences. We do NOT
+                                    // propagate sentence-level tokens as word timestamps: sentence
+                                    // tokens have t_start=0 for the whole sentence, which causes
+                                    // the overlap filter to drop legitimate new content. Keep
+                                    // segments=None so the assembly falls back to deduplicate_boundary.
+                                    debug!(
+                                    "Parakeet V3 word-mode decode failed, retrying with sentence mode: {}",
+                                    word_err
+                                );
+                                    parakeet_engine
+                                        .transcribe_samples(
+                                            audio,
+                                            16_000,
+                                            1,
+                                            Some(ParakeetTimestampMode::Sentences),
+                                        )
+                                        .map(|result| {
+                                            check_parakeet_language_drift(
+                                                &result.text,
+                                                &settings.selected_language,
+                                            );
+                                            EngineTranscriptionResult {
+                                                text: result.text,
+                                                segments: None,
+                                            }
+                                        })
+                                        .map_err(|e| {
+                                            anyhow::anyhow!(
+                                                "Parakeet V3 transcription failed: {}",
+                                                e
+                                            )
+                                        })
+                                }
                             }
-                        })
-                        .map_err(|e| anyhow::anyhow!("Parakeet V3 transcription failed: {}", e)),
-                    LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
-                        .transcribe_samples(audio, None)
-                        .map(|result| EngineTranscriptionResult {
-                            text: result.text,
-                            segments: None,
-                        })
-                        .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
-                    LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
-                        .transcribe_samples(audio, None)
-                        .map(|result| EngineTranscriptionResult {
-                            text: result.text,
-                            segments: None,
-                        })
-                        .map_err(|e| {
-                            anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
-                        }),
-                    LoadedEngine::SenseVoice(sense_voice_engine) => {
-                        let language = match settings.selected_language.as_str() {
-                            "zh" | "zh-Hans" | "zh-Hant" => SenseVoiceLanguage::Chinese,
-                            "en" => SenseVoiceLanguage::English,
-                            "ja" => SenseVoiceLanguage::Japanese,
-                            "ko" => SenseVoiceLanguage::Korean,
-                            "yue" => SenseVoiceLanguage::Cantonese,
-                            _ => SenseVoiceLanguage::Auto,
-                        };
-                        let params = SenseVoiceInferenceParams {
-                            language,
-                            use_itn: true,
-                        };
-                        sense_voice_engine
-                            .transcribe_samples(audio, Some(params))
+                        }
+                        LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
+                            .transcribe_samples(audio, None)
                             .map(|result| EngineTranscriptionResult {
                                 text: result.text,
                                 segments: None,
                             })
-                            .map_err(|e| anyhow::anyhow!("SenseVoice transcription failed: {}", e))
+                            .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
+                        LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
+                            .transcribe_samples(audio, None)
+                            .map(|result| EngineTranscriptionResult {
+                                text: result.text,
+                                segments: None,
+                            })
+                            .map_err(|e| {
+                                anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
+                            }),
+                        LoadedEngine::SenseVoice(sense_voice_engine) => {
+                            let language = match settings.selected_language.as_str() {
+                                "zh" | "zh-Hans" | "zh-Hant" => SenseVoiceLanguage::Chinese,
+                                "en" => SenseVoiceLanguage::English,
+                                "ja" => SenseVoiceLanguage::Japanese,
+                                "ko" => SenseVoiceLanguage::Korean,
+                                "yue" => SenseVoiceLanguage::Cantonese,
+                                _ => SenseVoiceLanguage::Auto,
+                            };
+                            let params = SenseVoiceInferenceParams {
+                                language,
+                                use_itn: true,
+                            };
+                            sense_voice_engine
+                                .transcribe_samples(audio, Some(params))
+                                .map(|result| EngineTranscriptionResult {
+                                    text: result.text,
+                                    segments: None,
+                                })
+                                .map_err(|e| {
+                                    anyhow::anyhow!("SenseVoice transcription failed: {}", e)
+                                })
+                        }
+                        LoadedEngine::GeminiApi => {
+                            unreachable!("GeminiApi handled before catch_unwind")
+                        }
+                        LoadedEngine::GroqWhisper => {
+                            unreachable!("GroqWhisper handled before catch_unwind")
+                        }
+                        LoadedEngine::MistralVoxtral => {
+                            unreachable!("MistralVoxtral handled before catch_unwind")
+                        }
+                        LoadedEngine::Deepgram => {
+                            unreachable!("Deepgram handled before catch_unwind")
+                        }
                     }
-                    LoadedEngine::GeminiApi => {
-                        unreachable!("GeminiApi handled before catch_unwind")
-                    }
-                    LoadedEngine::GroqWhisper => {
-                        unreachable!("GroqWhisper handled before catch_unwind")
-                    }
-                    LoadedEngine::MistralVoxtral => {
-                        unreachable!("MistralVoxtral handled before catch_unwind")
-                    }
-                    LoadedEngine::Deepgram => {
-                        unreachable!("Deepgram handled before catch_unwind")
-                    }
-                }
                 },
             ));
 
@@ -607,9 +657,16 @@ impl TranscriptionManager {
             .as_ref()
             .and_then(|segments| build_whisper_confidence_payload(segments, &final_result));
 
+        // Keep word-level segments for Parakeet V3 so the chunking worker can
+        // trim the overlap prefix by timestamp (avoids text-dedup fragility).
+        // For all other engines segments are used only for confidence and are
+        // consumed above, so we pass them through as-is.
+        let timed_segments = result.segments;
+
         Ok(TranscriptionOutput {
             text: final_result,
             confidence_payload,
+            segments: timed_segments,
         })
     }
 }

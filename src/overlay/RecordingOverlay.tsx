@@ -37,12 +37,12 @@ interface ActionInfo {
 
 const MicIcon: React.FC = () => (
   <svg
-    width="14"
-    height="14"
+    width="13"
+    height="13"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="rgba(255,255,255,0.8)"
-    strokeWidth="2"
+    stroke="#c9a84c"
+    strokeWidth="2.2"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -54,11 +54,11 @@ const MicIcon: React.FC = () => (
 
 const DotsIcon: React.FC = () => (
   <svg
-    width="14"
-    height="14"
+    width="13"
+    height="13"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="rgba(255,255,255,0.7)"
+    stroke="rgba(255,255,255,0.5)"
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -69,12 +69,12 @@ const DotsIcon: React.FC = () => (
 
 const XIcon: React.FC = () => (
   <svg
-    width="12"
-    height="12"
+    width="10"
+    height="10"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="rgba(255,255,255,0.5)"
-    strokeWidth="2"
+    stroke="rgba(255,255,255,0.55)"
+    strokeWidth="2.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -85,10 +85,10 @@ const XIcon: React.FC = () => (
 
 const PauseIcon: React.FC = () => (
   <svg
-    width="12"
-    height="12"
+    width="11"
+    height="11"
     viewBox="0 0 24 24"
-    fill="rgba(255,255,255,0.6)"
+    fill="rgba(255,255,255,0.55)"
     stroke="none"
   >
     <rect x="6" y="4" width="4" height="16" rx="1" />
@@ -98,10 +98,10 @@ const PauseIcon: React.FC = () => (
 
 const PlayIcon: React.FC = () => (
   <svg
-    width="12"
-    height="12"
+    width="11"
+    height="11"
     viewBox="0 0 24 24"
-    fill="rgba(255,255,255,0.6)"
+    fill="rgba(255,255,255,0.55)"
     stroke="none"
   >
     <polygon points="6,4 20,12 6,20" />

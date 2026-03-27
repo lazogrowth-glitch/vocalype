@@ -578,6 +578,7 @@ impl AudioRecordingManager {
     /* ---------- mode switching --------------------------------------------- */
 
     pub fn update_mode(&self, new_mode: MicrophoneMode) -> Result<(), anyhow::Error> {
+        info!("[MODE] update_mode: is_recording={}", self.is_recording());
         if self.is_recording() {
             return Err(anyhow::anyhow!(
                 "Cannot change microphone mode while a dictation session is active"
@@ -585,22 +586,35 @@ impl AudioRecordingManager {
         }
         let mode_guard = self.mode.read();
         let cur_mode = mode_guard.clone();
+        info!("[MODE] transition {:?} -> {:?}", cur_mode, new_mode);
 
         match (cur_mode, &new_mode) {
             (MicrophoneMode::AlwaysOn, MicrophoneMode::OnDemand) => {
+                info!("[MODE] AlwaysOn->OnDemand: stopping stream");
                 if matches!(*self.state.read(), RecordingState::Idle) {
                     drop(mode_guard);
                     self.stop_microphone_stream();
+                    info!("[MODE] stream stopped");
                 }
             }
             (MicrophoneMode::OnDemand, MicrophoneMode::AlwaysOn) => {
+                info!(
+                    "[MODE] OnDemand->AlwaysOn: starting stream (already_open={})",
+                    *self.is_open.lock()
+                );
                 drop(mode_guard);
                 self.start_microphone_stream()?;
+                info!("[MODE] stream start OK");
             }
-            _ => {}
+            _ => {
+                info!("[MODE] same mode or push_to_talk change, no stream action");
+                drop(mode_guard);
+            }
         }
 
+        info!("[MODE] writing new mode...");
         *self.mode.write() = new_mode;
+        info!("[MODE] mode written OK");
         Ok(())
     }
 

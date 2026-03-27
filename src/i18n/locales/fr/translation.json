@@ -646,6 +646,10 @@
         "label": "Muet pendant l'enregistrement",
         "description": "Couper le son du système pendant l'enregistrement"
       },
+      "autoPauseMedia": {
+        "label": "Mettre les médias en pause",
+        "description": "Met automatiquement en pause Spotify et autres lecteurs multimédias pendant l'enregistrement, puis les reprend à la fin."
+      },
       "appendTrailingSpace": {
         "label": "Ajouter un espace final",
         "description": "Ajouter un espace après la transcription collée"
@@ -914,6 +918,9 @@
     "empty": "Aucun terme custom. Ajoute des mots, noms propres ou acronymes.",
     "fromPlaceholder": "Whisper entend…",
     "toPlaceholder": "Remplacer par…",
+    "autoLearn": "Apprentissage automatique",
+    "autoLearnDesc": "Apprend automatiquement les corrections de mots lorsque vous copiez un texte modifié après une dictée.",
+    "edit": "Modifier",
     "add": "Ajouter",
     "remove": "Supprimer",
     "save": "Sauvegarder",

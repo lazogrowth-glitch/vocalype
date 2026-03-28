@@ -27,6 +27,14 @@ impl ParakeetTDT {
         path: P,
         config: Option<ExecutionConfig>,
     ) -> Result<Self> {
+        Self::from_pretrained_with_cache(path, config, None)
+    }
+
+    pub fn from_pretrained_with_cache<P: AsRef<Path>>(
+        path: P,
+        config: Option<ExecutionConfig>,
+        cache_dir: Option<&Path>,
+    ) -> Result<Self> {
         let path = path.as_ref();
 
         if !path.is_dir() {
@@ -65,7 +73,7 @@ impl ParakeetTDT {
         let vocab = Vocabulary::from_file(&vocab_path)?;
         let vocab_size = vocab.size();
 
-        let model = ParakeetTDTModel::from_pretrained(path, exec_config, vocab_size)?;
+        let model = ParakeetTDTModel::from_pretrained(path, exec_config, vocab_size, cache_dir)?;
         let decoder = ParakeetTDTDecoder::from_vocab(vocab);
 
         Ok(Self {

@@ -434,6 +434,16 @@ pub struct AppSettings {
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
+    /// When true, Vocalype listens for the wake word "dictate" in the
+    /// background and starts a hands-free recording session automatically.
+    /// Requires the microphone stream to be open (AlwaysOn mode recommended).
+    #[serde(default)]
+    pub wake_word_enabled: bool,
+    /// Sliding window of the last observed inter-word pause durations (ms).
+    /// Accumulated across all recording modes to calibrate the adaptive
+    /// silence threshold for wake-word auto-stop.
+    #[serde(default)]
+    pub speaking_rate_pauses: Vec<u64>,
     /// Canonical recording mode — supersedes the `push_to_talk` and
     /// `always_on_microphone` boolean pair. Populated from those booleans
     /// on first load via settings migration (T11). New code should read this
@@ -1336,6 +1346,7 @@ pub fn get_default_settings() -> AppSettings {
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
         always_on_microphone: false,
+        wake_word_enabled: false,
         recording_mode: RecordingMode::default(),
         selected_microphone: None,
         selected_microphone_index: None,
@@ -1390,6 +1401,7 @@ pub fn get_default_settings() -> AppSettings {
         groq_stt_api_key: None,
         mistral_stt_api_key: None,
         deepgram_api_key: None,
+        speaking_rate_pauses: Vec::new(),
     }
 }
 

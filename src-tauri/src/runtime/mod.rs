@@ -23,10 +23,12 @@ pub mod context_detector;
 pub mod model_ids;
 pub mod runtime_observability;
 pub mod startup_warmup;
+pub mod telemetry;
 pub mod transcription_confidence;
 pub mod transcription_coordinator;
 pub mod vocabulary_store;
 pub mod voice_profile;
+pub mod wake_word;
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub mod apple_intelligence;

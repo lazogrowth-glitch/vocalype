@@ -40,8 +40,8 @@ pub use llm::{
 pub use runtime::apple_intelligence;
 pub use runtime::{
     adaptive_runtime, chunking, command_mode, context_detector, model_ids, runtime_observability,
-    startup_warmup, transcription_confidence, transcription_coordinator, vocabulary_store,
-    voice_profile,
+    startup_warmup, telemetry, transcription_confidence, transcription_coordinator,
+    vocabulary_store, voice_profile, wake_word,
 };
 // platform
 pub use platform::signal_handle;
@@ -270,36 +270,77 @@ fn main_window_needs_native_recovery(app: &AppHandle) -> bool {
 fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
     TRAY_ICON_READY.store(false, Ordering::Relaxed);
 
+    let t_total = std::time::Instant::now();
+    log::info!("[startup] initialize_core_logic — start");
+
     // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
     // The frontend is responsible for calling the `initialize_enigo` command
     // after onboarding completes. This avoids triggering permission dialogs
     // on macOS before the user is ready.
 
     // Initialize the managers
+    let t = std::time::Instant::now();
     let recording_manager = Arc::new(
         AudioRecordingManager::new(app_handle)
             .map_err(|err| format!("Failed to initialize recording manager: {}", err))?,
     );
+    log::info!(
+        "[startup] AudioRecordingManager::new — {}ms",
+        t.elapsed().as_millis()
+    );
+
+    let t = std::time::Instant::now();
     let model_manager = Arc::new(
         ModelManager::new(app_handle)
             .map_err(|err| format!("Failed to initialize model manager: {}", err))?,
     );
+    log::info!(
+        "[startup] ModelManager::new — {}ms",
+        t.elapsed().as_millis()
+    );
+
+    let t = std::time::Instant::now();
     let transcription_manager = Arc::new(
         TranscriptionManager::new(app_handle, model_manager.clone())
             .map_err(|err| format!("Failed to initialize transcription manager: {}", err))?,
     );
+    log::info!(
+        "[startup] TranscriptionManager::new — {}ms",
+        t.elapsed().as_millis()
+    );
+
+    let t = std::time::Instant::now();
     let history_manager = Arc::new(
         HistoryManager::new(app_handle)
             .map_err(|err| format!("Failed to initialize history manager: {}", err))?,
     );
+    log::info!(
+        "[startup] HistoryManager::new — {}ms",
+        t.elapsed().as_millis()
+    );
+
+    let t = std::time::Instant::now();
     let dictionary_manager = dictionary::DictionaryManager::new(app_handle);
+    log::info!(
+        "[startup] DictionaryManager::new — {}ms",
+        t.elapsed().as_millis()
+    );
+
+    let t = std::time::Instant::now();
     let note_manager = Arc::new(
         NoteManager::new(app_handle)
             .map_err(|err| format!("Failed to initialize note manager: {}", err))?,
     );
+    log::info!("[startup] NoteManager::new — {}ms", t.elapsed().as_millis());
+
+    let t = std::time::Instant::now();
     let meeting_manager = Arc::new(
         MeetingManager::new(app_handle)
             .map_err(|err| format!("Failed to initialize meeting manager: {}", err))?,
+    );
+    log::info!(
+        "[startup] MeetingManager::new — {}ms",
+        t.elapsed().as_millis()
     );
 
     // Add managers to Tauri's managed state
@@ -446,12 +487,10 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
 
     sync_autostart_state(app_handle);
 
-    // Create the recording overlay window (hidden by default)
-    utils::create_recording_overlay(app_handle);
-
-    // Create the agent overlay window (hidden by default)
-    crate::platform::agent_overlay::create_agent_overlay(app_handle);
-
+    log::info!(
+        "[startup] initialize_core_logic — TOTAL {}ms",
+        t_total.elapsed().as_millis()
+    );
     Ok(())
 }
 
@@ -568,6 +607,7 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_show_tray_icon_setting,
         shortcut::change_long_audio_model_setting,
         shortcut::change_long_audio_threshold_setting,
+        shortcut::change_wake_word_enabled_setting,
         shortcut::native_shortcut_capture::start_native_shortcut_capture_recording,
         shortcut::native_shortcut_capture::stop_native_shortcut_capture_recording,
         trigger_update_check,
@@ -799,8 +839,12 @@ pub fn run(cli_args: CliArgs) {
         })
         .manage(cli_args.clone())
         .setup(move |app| {
+            log::info!("[startup] setup() — start");
+
             // Fast read — no WMI hardware detection, returns instantly.
+            let t = std::time::Instant::now();
             let mut settings = get_settings_fast(&app.handle());
+            log::info!("[startup] get_settings_fast — {}ms", t.elapsed().as_millis());
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
             if cli_args.debug {
@@ -825,6 +869,26 @@ pub fn run(cli_args: CliArgs) {
                 voice_profile::VoiceProfile::load(&app_handle),
             )));
             app.manage(runtime_observability::RuntimeObservabilityState::new());
+
+            // Transcription telemetry — append-only JSONL log for diagnostics.
+            {
+                use std::sync::Arc;
+                let tel = app_handle
+                    .path()
+                    .app_log_dir()
+                    .ok()
+                    .map(|d| {
+                        telemetry::TranscriptionTelemetry::new(
+                            &d.join("transcription_telemetry.jsonl"),
+                        )
+                    })
+                    .unwrap_or_else(telemetry::TranscriptionTelemetry::disabled);
+                if let Some(p) = &tel.log_path {
+                    log::info!("[telemetry] logging to {}", p.display());
+                }
+                app.manage(Arc::new(tel));
+            }
+
             // Must be managed before the "desktop-ui-ready" listener fires
             // (listener calls ensure_startup_warmup which accesses this state).
             app.manage(startup_warmup::StartupWarmupState::new(
@@ -848,9 +912,35 @@ pub fn run(cli_args: CliArgs) {
                 }
 
                 startup_warmup::ensure_startup_warmup(&app_handle_for_ready, "desktop-ui-ready");
+
+                // Créer les overlays après que l'UI est visible — évite de bloquer le démarrage
+                // (~150ms chacun). Idempotent : les fonctions vérifient si la fenêtre existe déjà.
+                let app_h = app_handle_for_ready.clone();
+                let _ = app_handle_for_ready.run_on_main_thread(move || {
+                    utils::create_recording_overlay(&app_h);
+                    crate::platform::agent_overlay::create_agent_overlay(&app_h);
+                    log::info!("[startup] overlays created (deferred)");
+                });
             });
 
+            let t = std::time::Instant::now();
             initialize_core_logic(&app_handle)?;
+            log::info!("[startup] initialize_core_logic (outer) — {}ms", t.elapsed().as_millis());
+
+            // Démarrer le chargement modèle + micro dès maintenant — en parallèle du chargement
+            // de la webview (~3s en dev, ~500ms en prod). Quand desktop-ui-ready arrive, le modèle
+            // est déjà chargé ou en cours de chargement → l'app s'affiche prête immédiatement.
+            startup_warmup::ensure_startup_warmup(&app_handle, "early-startup");
+            log::info!("[startup] model pre-warm launched");
+
+            // Wake-word detection — kept alive as managed state for the lifetime
+            // of the app.  Starts immediately; only polls inference when
+            // `settings.wake_word_enabled == true` and no recording is active.
+            let t = std::time::Instant::now();
+            app.manage(Arc::new(wake_word::WakeWordManager::new(
+                app_handle.clone(),
+            )));
+            log::info!("[startup] WakeWordManager::new — {}ms", t.elapsed().as_millis());
 
             // Register vocalype:// URL scheme (needed on Windows/Linux in dev)
             #[cfg(not(target_os = "macos"))]

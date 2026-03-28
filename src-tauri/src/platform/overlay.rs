@@ -292,6 +292,9 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
+    if app_handle.get_webview_window("recording_overlay").is_some() {
+        return;
+    }
     let position = calculate_overlay_position(app_handle);
 
     // On Linux (Wayland), monitor detection often fails, but we don't need exact coordinates
@@ -349,6 +352,9 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 /// Creates the recording overlay panel and keeps it hidden by default (macOS)
 #[cfg(target_os = "macos")]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
+    if app_handle.get_webview_window("recording_overlay").is_some() {
+        return;
+    }
     if let Some((x, y)) = calculate_overlay_position(app_handle) {
         // PanelBuilder creates a Tauri window then converts it to NSPanel.
         // The window remains registered, so get_webview_window() still works.
@@ -387,6 +393,11 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     let settings = settings::get_settings(app_handle);
     if settings.overlay_position == OverlayPosition::None {
         return;
+    }
+
+    // Fallback: create the overlay if deferred creation hasn't fired yet
+    if app_handle.get_webview_window("recording_overlay").is_none() {
+        create_recording_overlay(app_handle);
     }
 
     update_overlay_position(app_handle);

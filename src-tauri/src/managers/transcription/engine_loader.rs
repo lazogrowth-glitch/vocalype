@@ -174,6 +174,15 @@ impl TranscriptionManager {
                     let mut last_error = None;
                     let mut loaded_engine = None;
 
+                    // Cache pre-optimized ONNX sessions in AppData to skip the
+                    // Level3 graph optimization on subsequent launches (~2-3s → ~300ms).
+                    let ort_cache_dir = self
+                        .app_handle
+                        .path()
+                        .app_data_dir()
+                        .ok()
+                        .map(|d| d.join("cache").join("parakeet").join(model_id));
+
                     for provider in provider_candidates {
                         let provider_label = parakeet_provider_label(provider);
                         info!(
@@ -181,9 +190,10 @@ impl TranscriptionManager {
                             model_id, provider_label
                         );
 
-                        match ParakeetTDT::from_pretrained(
+                        match ParakeetTDT::from_pretrained_with_cache(
                             &model_path,
                             Some(parakeet_v3_execution_config(provider)),
+                            ort_cache_dir.as_deref(),
                         ) {
                             Ok(engine) => {
                                 info!(

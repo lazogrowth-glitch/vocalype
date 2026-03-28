@@ -1,3 +1,4 @@
+use crate::context_detector::{ActiveAppContextState, AppContextCategory};
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
@@ -668,6 +669,18 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
+/// Return the detected app category for the last transcription, used by smart paste.
+fn get_paste_category(app_handle: &AppHandle) -> AppContextCategory {
+    app_handle
+        .try_state::<ActiveAppContextState>()
+        .and_then(|s| {
+            s.0.lock()
+                .ok()
+                .and_then(|g| g.last_transcription_context().map(|c| c.category))
+        })
+        .unwrap_or(AppContextCategory::Unknown)
+}
+
 fn should_copy_result_to_clipboard(
     paste_method: PasteMethod,
     clipboard_handling: ClipboardHandling,
@@ -679,13 +692,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
-
-    // Append trailing space if setting is enabled
-    let text = if settings.append_trailing_space {
-        format!("{} ", text)
-    } else {
-        text
-    };
 
     info!(
         "[PASTE] paste() called: method={:?}, delay={}ms, text_len={}, trailing_space={}, auto_submit={}",
@@ -702,6 +708,34 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         format!("Failed to lock Enigo: {}", e)
     })?;
     info!("[PASTE] Enigo lock acquired, proceeding with paste");
+
+    // ── Smart paste context adaptation ─────────────────────────────────── //
+    // Reads ~80 chars before the cursor and adapts the text:
+    //   • Code/terminal — strip trailing auto-period (no cursor read: Ctrl+C = SIGINT).
+    //   • CtrlShiftV (terminal paste) — same, skip cursor read.
+    //   • All other injection modes — read cursor context, then:
+    //       - Add leading space if cursor doesn't end with whitespace.
+    //       - Capitalize after sentence-ending punctuation or at field start.
+    //       - Lowercase after comma / semicolon / colon.
+    let text = if paste_method == PasteMethod::None || paste_method == PasteMethod::CtrlShiftV {
+        text
+    } else {
+        let category = get_paste_category(&app_handle);
+        let ctx = if matches!(category, AppContextCategory::Code) {
+            super::cursor_context::CursorContext::unavailable()
+        } else {
+            super::cursor_context::capture(&mut enigo, &app_handle)
+        };
+        super::smart_paste::adapt(&text, &ctx, category).text
+    };
+
+    // Append trailing space AFTER smart paste so period-stripping isn't confused
+    // by the extra space (strip_trailing_auto_period handles it either way).
+    let text = if settings.append_trailing_space {
+        format!("{} ", text)
+    } else {
+        text
+    };
 
     // Perform the paste operation
     match paste_method {

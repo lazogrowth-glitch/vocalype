@@ -1,5 +1,6 @@
 use crate::audio_toolkit::{
-    list_input_devices, vad::SmoothedVad, AudioRecorder, AudioRecorderRuntimeError, SileroVad,
+    list_input_devices, vad::SmoothedVad, AudioRecorder, AudioRecorderPreviewCb,
+    AudioRecorderRuntimeError, AudioRecorderVadCb, SileroVad, VadDecision,
 };
 use crate::helpers::clamshell;
 use crate::model_ids::is_parakeet_v3_model_id;
@@ -10,7 +11,8 @@ use crate::voice_profile::current_runtime_adjustment;
 use cpal::traits::HostTrait;
 use log::{debug, error, info};
 use parking_lot::{Mutex, RwLock};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::collections::VecDeque;
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::Manager;
@@ -170,6 +172,18 @@ fn is_system_already_muted() -> bool {
 
 const WHISPER_SAMPLE_RATE: usize = 16000;
 
+// ── Speaking-rate tracker constants ───────────────────────────────────── //
+const SR_MAX_PAUSES: usize = 10;
+const SR_WARMUP_PAUSES: usize = 5;
+const SR_MIN_PAUSE_MS: u64 = 80;
+const SR_MAX_PAUSE_MS: u64 = 1_800;
+const SR_PAUSE_MULTIPLIER: f64 = 1.8;
+const SR_MIN_THRESHOLD_MS: u64 = 400;
+const SR_MAX_THRESHOLD_MS: u64 = 3_000;
+const SR_ENERGY_ALPHA: f32 = 0.20;
+const SR_ENERGY_REL_THRESHOLD: f32 = 0.15;
+const SR_MIN_PEAK_ENERGY: f32 = 0.003;
+
 /// Linear gain applied to every audio sample when whisper mode is active.
 /// ×4.0 ≈ +12 dB — enough to bring a whispered voice to near-normal levels
 /// while still leaving headroom before the [-1, 1] clamp fires.
@@ -198,6 +212,9 @@ fn create_audio_recorder(
     selected_model_id: &str,
     gain: f32,
     last_error: Arc<Mutex<Option<String>>>,
+    preview_cb: AudioRecorderPreviewCb,
+    vad_cb: AudioRecorderVadCb,
+    speaking_rate_cb: AudioRecorderVadCb,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let is_parakeet_v3 = is_parakeet_v3_model_id(selected_model_id);
     let (vad_threshold, prefill_frames, mut hangover_frames, onset_frames) = if is_parakeet_v3 {
@@ -237,6 +254,9 @@ fn create_audio_recorder(
         .with_vad(Box::new(smoothed_vad))
         .with_gain(gain)
         .with_pause_flag(is_paused.clone())
+        .with_preview_callback(preview_cb)
+        .with_vad_callback(vad_cb)
+        .with_speaking_rate_callback(speaking_rate_cb)
         .with_level_callback({
             let app_handle = app_handle.clone();
             let is_paused = is_paused.clone();
@@ -303,6 +323,24 @@ pub struct AudioRecordingManager {
     whisper_mode: Arc<AtomicBool>,
     last_error: Arc<Mutex<Option<String>>>,
     last_device_resolution: Arc<Mutex<Option<String>>>,
+    /// Shared preview callback forwarded to the AudioRecorder for every 16 kHz
+    /// frame.  Populated by the wake-word manager; `None` when feature is off.
+    preview_cb: AudioRecorderPreviewCb,
+    /// Shared VAD-decision callback forwarded to the AudioRecorder.
+    /// Populated by the wake-word auto-stop monitor.
+    vad_cb: AudioRecorderVadCb,
+
+    // ── Speaking-rate tracker (persists across all recording sessions) ── //
+    /// Internal VAD callback that always runs during recording — feeds the tracker.
+    speaking_rate_cb: AudioRecorderVadCb,
+    /// Sliding window of observed inter-word pause durations.
+    sr_observed_pauses: Arc<std::sync::Mutex<VecDeque<u64>>>,
+    /// Computed adaptive threshold (0 = not enough data yet).
+    sr_dynamic_threshold_ms: Arc<AtomicU64>,
+    /// Per-session energy state — reset at the start of each recording.
+    sr_noise_start_ms: Arc<AtomicU64>,
+    sr_energy_ema: Arc<AtomicU32>,
+    sr_peak_energy: Arc<AtomicU32>,
 }
 
 impl AudioRecordingManager {
@@ -329,7 +367,24 @@ impl AudioRecordingManager {
             whisper_mode: Arc::new(AtomicBool::new(settings.whisper_mode)),
             last_error: Arc::new(Mutex::new(None)),
             last_device_resolution: Arc::new(Mutex::new(None)),
+            // AudioRecorderPreviewCb / AudioRecorderVadCb use std::sync::Mutex (not parking_lot).
+            preview_cb: Arc::new(std::sync::Mutex::new(None)),
+            vad_cb: Arc::new(std::sync::Mutex::new(None)),
+
+            speaking_rate_cb: Arc::new(std::sync::Mutex::new(None)),
+            sr_observed_pauses: Arc::new(std::sync::Mutex::new(VecDeque::with_capacity(
+                SR_MAX_PAUSES + 1,
+            ))),
+            sr_dynamic_threshold_ms: Arc::new(AtomicU64::new(0)),
+            sr_noise_start_ms: Arc::new(AtomicU64::new(0)),
+            sr_energy_ema: Arc::new(AtomicU32::new(0)),
+            sr_peak_energy: Arc::new(AtomicU32::new(0)),
         };
+
+        // Load previously saved pauses from settings and compute initial threshold.
+        manager.load_speaking_rate_from_settings();
+        // Wire up the internal speaking-rate callback.
+        manager.init_speaking_rate_callback();
 
         Ok(manager)
     }
@@ -514,6 +569,9 @@ impl AudioRecordingManager {
             &settings.selected_model,
             gain,
             Arc::clone(&self.last_error),
+            Arc::clone(&self.preview_cb),
+            Arc::clone(&self.vad_cb),
+            Arc::clone(&self.speaking_rate_cb),
         )?);
 
         // Get the selected device from settings, considering clamshell mode
@@ -634,6 +692,11 @@ impl AudioRecordingManager {
     pub fn try_start_recording(&self, binding_id: &str) -> bool {
         self.is_paused.store(false, Ordering::Relaxed);
         self.set_last_error(None);
+        // Reset per-session energy state for the speaking-rate tracker.
+        self.sr_noise_start_ms.store(0, Ordering::Relaxed);
+        self.sr_energy_ema.store(0_f32.to_bits(), Ordering::Relaxed);
+        self.sr_peak_energy
+            .store(0_f32.to_bits(), Ordering::Relaxed);
         let mut state = self.state.write();
 
         if let RecordingState::Idle = *state {
@@ -710,6 +773,9 @@ impl AudioRecordingManager {
                 };
 
                 *self.is_recording.lock() = false;
+
+                // Persist the updated speaking-rate pauses to settings.
+                self.save_speaking_rate_to_settings();
 
                 // Keep the microphone stream open in on-demand mode so the next
                 // recording starts instantly (no WASAPI re-initialization delay).
@@ -802,7 +868,180 @@ impl AudioRecordingManager {
         self.last_error.lock().clone()
     }
 
+    /// Register a callback fired for every 16 kHz audio frame, whether or not
+    /// a recording session is active.  Used by the wake-word manager to fill
+    /// its ring buffer without starting a real recording.
+    /// The callback is shared via `Arc<Mutex<…>>` so it takes effect immediately
+    /// on the running recorder thread without restarting the stream.
+    pub fn set_preview_callback<F>(&self, cb: F)
+    where
+        F: Fn(&[f32]) + Send + Sync + 'static,
+    {
+        // preview_cb uses std::sync::Mutex (from AudioRecorderPreviewCb type),
+        // so lock() returns a LockResult that must be unwrapped.
+        if let Ok(mut guard) = self.preview_cb.lock() {
+            *guard = Some(Box::new(cb));
+        }
+    }
+
+    /// Remove the preview callback (disables wake-word audio feed).
+    pub fn clear_preview_callback(&self) {
+        if let Ok(mut guard) = self.preview_cb.lock() {
+            *guard = None;
+        }
+    }
+
+    /// Register a callback fired for every VAD decision during an active recording.
+    /// `cb` receives `(decision, rms_energy)` — the energy allows detecting end-of-speech
+    /// even during the VAD hangover window (Level 3 prosodic detection).
+    pub fn set_vad_callback<F>(&self, cb: F)
+    where
+        F: Fn(VadDecision, f32) + Send + Sync + 'static,
+    {
+        if let Ok(mut guard) = self.vad_cb.lock() {
+            *guard = Some(Box::new(cb));
+        }
+    }
+
+    /// Remove the VAD callback.
+    pub fn clear_vad_callback(&self) {
+        if let Ok(mut guard) = self.vad_cb.lock() {
+            *guard = None;
+        }
+    }
+
     pub fn last_device_resolution(&self) -> Option<String> {
         self.last_device_resolution.lock().clone()
+    }
+
+    // ── Speaking-rate tracker ──────────────────────────────────────────── //
+
+    /// Load pauses saved from previous sessions and compute the initial threshold.
+    fn load_speaking_rate_from_settings(&self) {
+        let settings = get_settings(&self.app_handle);
+        if settings.speaking_rate_pauses.is_empty() {
+            return;
+        }
+        if let Ok(mut p) = self.sr_observed_pauses.lock() {
+            p.clear();
+            for &ms in settings.speaking_rate_pauses.iter().take(SR_MAX_PAUSES) {
+                p.push_back(ms);
+            }
+            self.recompute_threshold(&p);
+        }
+    }
+
+    /// Save the current pause window to settings.
+    fn save_speaking_rate_to_settings(&self) {
+        if let Ok(p) = self.sr_observed_pauses.lock() {
+            if p.is_empty() {
+                return;
+            }
+            let mut settings = get_settings(&self.app_handle);
+            settings.speaking_rate_pauses = p.iter().copied().collect();
+            crate::settings::write_settings(&self.app_handle, settings);
+        }
+    }
+
+    /// Recompute `sr_dynamic_threshold_ms` from the current pause window.
+    fn recompute_threshold(&self, pauses: &VecDeque<u64>) {
+        if pauses.len() < SR_WARMUP_PAUSES {
+            return;
+        }
+        let mut sorted: Vec<u64> = pauses.iter().copied().collect();
+        sorted.sort_unstable();
+        let median = sorted[sorted.len() / 2];
+        let computed = (median as f64 * SR_PAUSE_MULTIPLIER) as u64;
+        let clamped = computed.clamp(SR_MIN_THRESHOLD_MS, SR_MAX_THRESHOLD_MS);
+        self.sr_dynamic_threshold_ms
+            .store(clamped, Ordering::Relaxed);
+    }
+
+    /// Returns current time as milliseconds since the Unix epoch.
+    fn now_ms() -> u64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+    }
+
+    /// Wire up the internal speaking-rate callback (called once in `new()`).
+    /// Uses absolute SystemTime ms so the callback needs no per-session epoch.
+    fn init_speaking_rate_callback(&self) {
+        let pauses = Arc::clone(&self.sr_observed_pauses);
+        let dyn_thresh = Arc::clone(&self.sr_dynamic_threshold_ms);
+        let noise_start = Arc::clone(&self.sr_noise_start_ms);
+        let ema_cell = Arc::clone(&self.sr_energy_ema);
+        let peak_cell = Arc::clone(&self.sr_peak_energy);
+
+        if let Ok(mut guard) = self.speaking_rate_cb.lock() {
+            *guard = Some(Box::new(move |_decision, rms| {
+                let now = Self::now_ms();
+
+                // ── Energy EMA + peak ─────────────────────────────── //
+                let prev_ema = f32::from_bits(ema_cell.load(Ordering::Relaxed));
+                let new_ema = SR_ENERGY_ALPHA * rms + (1.0 - SR_ENERGY_ALPHA) * prev_ema;
+                ema_cell.store(new_ema.to_bits(), Ordering::Relaxed);
+
+                let prev_peak = f32::from_bits(peak_cell.load(Ordering::Relaxed));
+                if new_ema > prev_peak {
+                    peak_cell.store(new_ema.to_bits(), Ordering::Relaxed);
+                }
+
+                let rel_thresh = prev_peak * SR_ENERGY_REL_THRESHOLD;
+                let above = new_ema > rel_thresh && prev_peak > SR_MIN_PEAK_ENERGY;
+
+                if above {
+                    // Energy active — detect Noise→Speech transition.
+                    let prev_noise = noise_start.swap(0, Ordering::Relaxed);
+                    if prev_noise > 0 {
+                        let pause_ms = now.saturating_sub(prev_noise);
+                        if pause_ms >= SR_MIN_PAUSE_MS && pause_ms <= SR_MAX_PAUSE_MS {
+                            if let Ok(mut p) = pauses.lock() {
+                                p.push_back(pause_ms);
+                                if p.len() > SR_MAX_PAUSES {
+                                    p.pop_front();
+                                }
+                                // Recompute threshold after warmup.
+                                if p.len() >= SR_WARMUP_PAUSES {
+                                    let mut sorted: Vec<u64> = p.iter().copied().collect();
+                                    sorted.sort_unstable();
+                                    let median = sorted[sorted.len() / 2];
+                                    let computed = (median as f64 * SR_PAUSE_MULTIPLIER) as u64;
+                                    let clamped =
+                                        computed.clamp(SR_MIN_THRESHOLD_MS, SR_MAX_THRESHOLD_MS);
+                                    dyn_thresh.store(clamped, Ordering::Relaxed);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Energy low — record start of silence on Speech→Noise transition.
+                    noise_start
+                        .compare_exchange(0, now, Ordering::Relaxed, Ordering::Relaxed)
+                        .ok();
+                }
+            }));
+        }
+    }
+
+    /// Returns the current adaptive silence threshold, or `None` if warmup
+    /// is not complete (caller should use its own default).
+    pub fn get_adaptive_threshold(&self) -> Option<u64> {
+        let v = self.sr_dynamic_threshold_ms.load(Ordering::Relaxed);
+        if v == 0 {
+            None
+        } else {
+            Some(v)
+        }
+    }
+
+    /// Returns a snapshot of the current observed-pauses window.
+    pub fn get_speaking_rate_pauses(&self) -> VecDeque<u64> {
+        self.sr_observed_pauses
+            .lock()
+            .ok()
+            .map(|p| p.clone())
+            .unwrap_or_default()
     }
 }

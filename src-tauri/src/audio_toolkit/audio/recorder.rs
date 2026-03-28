@@ -32,6 +32,28 @@ pub enum AudioRecorderRuntimeError {
     VadFailed(String),
 }
 
+/// Shared callback fired for every 16 kHz resampled frame regardless of
+/// recording state.  Stored behind an `Arc<Mutex<…>>` so it can be updated
+/// while the audio worker thread is already running (e.g. wake-word arm/disarm).
+pub type AudioRecorderPreviewCb = Arc<Mutex<Option<Box<dyn Fn(&[f32]) + Send + Sync + 'static>>>>;
+
+/// The VAD decision emitted for each audio frame during an active recording.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VadDecision {
+    /// Silero detected speech in this frame.
+    Speech,
+    /// Silero classified this frame as noise / silence.
+    Noise,
+}
+
+/// Shared callback fired for every VAD decision during an active recording.
+/// Carries `(decision, rms_energy)` so callers can track actual audio energy
+/// independently of the VAD hangover window.
+/// Same `Arc<Mutex<Option<…>>>` pattern as `AudioRecorderPreviewCb` so it can
+/// be swapped in/out without restarting the recorder.
+pub type AudioRecorderVadCb =
+    Arc<Mutex<Option<Box<dyn Fn(VadDecision, f32) + Send + Sync + 'static>>>>;
+
 pub struct AudioRecorder {
     device: Option<Device>,
     cmd_tx: Option<mpsc::Sender<Cmd>>,
@@ -40,6 +62,13 @@ pub struct AudioRecorder {
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     error_cb: Option<Arc<dyn Fn(AudioRecorderRuntimeError) + Send + Sync + 'static>>,
     pause_flag: Option<Arc<AtomicBool>>,
+    /// Shared callback for every 16 kHz frame — used by wake-word detection.
+    preview_cb: Option<AudioRecorderPreviewCb>,
+    /// Shared callback fired for each VAD decision during recording.
+    vad_cb: Option<AudioRecorderVadCb>,
+    /// Second VAD callback slot — used internally by AudioRecordingManager to
+    /// track speaking rate across all recording modes, independent of vad_cb.
+    speaking_rate_cb: Option<AudioRecorderVadCb>,
     /// Linear gain multiplier applied to every audio sample before VAD / accumulation.
     /// `1.0` = unity (no change); `4.0` ≈ +12 dB boost for whisper mode.
     gain: f32,
@@ -55,6 +84,9 @@ impl AudioRecorder {
             level_cb: None,
             error_cb: None,
             pause_flag: None,
+            preview_cb: None,
+            vad_cb: None,
+            speaking_rate_cb: None,
             gain: 1.0,
         })
     }
@@ -92,6 +124,26 @@ impl AudioRecorder {
         self
     }
 
+    /// Attach a shared preview callback fired for every 16 kHz frame.
+    /// The `Arc<Mutex<…>>` wrapper allows the caller to update or remove
+    /// the closure while the recorder thread is already running.
+    pub fn with_preview_callback(mut self, cb: AudioRecorderPreviewCb) -> Self {
+        self.preview_cb = Some(cb);
+        self
+    }
+
+    /// Attach a shared VAD-decision callback fired on every frame during recording.
+    pub fn with_vad_callback(mut self, cb: AudioRecorderVadCb) -> Self {
+        self.vad_cb = Some(cb);
+        self
+    }
+
+    /// Attach the internal speaking-rate callback (second VAD slot).
+    pub fn with_speaking_rate_callback(mut self, cb: AudioRecorderVadCb) -> Self {
+        self.speaking_rate_cb = Some(cb);
+        self
+    }
+
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
         if self.worker_handle.is_some() {
             return Ok(()); // already open
@@ -115,6 +167,9 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
         let error_cb = self.error_cb.clone();
         let pause_flag = self.pause_flag.clone();
+        let preview_cb = self.preview_cb.clone();
+        let vad_cb = self.vad_cb.clone();
+        let speaking_rate_cb = self.speaking_rate_cb.clone();
         let gain = self.gain;
 
         let worker = std::thread::spawn(move || {
@@ -209,6 +264,9 @@ Format: {:?}",
                 level_cb,
                 error_cb,
                 pause_flag,
+                preview_cb,
+                vad_cb,
+                speaking_rate_cb,
                 gain,
             );
             // stream is dropped here, after run_consumer returns
@@ -373,6 +431,9 @@ fn run_consumer(
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     error_cb: Option<Arc<dyn Fn(AudioRecorderRuntimeError) + Send + Sync + 'static>>,
     pause_flag: Option<Arc<AtomicBool>>,
+    preview_cb: Option<AudioRecorderPreviewCb>,
+    vad_cb: Option<AudioRecorderVadCb>,
+    speaking_rate_cb: Option<AudioRecorderVadCb>,
     gain: f32,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -396,22 +457,49 @@ fn run_consumer(
         4000.0, // vocal_max_hz
     );
 
+    fn fire_vad_cb(cb: &Option<AudioRecorderVadCb>, decision: VadDecision, rms: f32) {
+        if let Some(cb) = cb {
+            if let Ok(g) = cb.lock() {
+                if let Some(f) = g.as_ref() {
+                    f(decision, rms);
+                }
+            }
+        }
+    }
+
     fn handle_frame(
         samples: &[f32],
         recording: bool,
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
         out_buf: &mut Vec<f32>,
         error_cb: &Option<Arc<dyn Fn(AudioRecorderRuntimeError) + Send + Sync + 'static>>,
+        vad_cb: &Option<AudioRecorderVadCb>,
+        speaking_rate_cb: &Option<AudioRecorderVadCb>,
     ) {
         if !recording {
             return;
         }
 
+        // Compute RMS energy of the raw frame before VAD classification.
+        // This lets callers detect energy decay even during VAD hangover.
+        let rms = if samples.is_empty() {
+            0.0_f32
+        } else {
+            (samples.iter().map(|&s| s * s).sum::<f32>() / samples.len() as f32).sqrt()
+        };
+
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap_or_else(|e| e.into_inner());
             match det.push_frame(samples) {
-                Ok(VadFrame::Speech(buf)) => out_buf.extend_from_slice(buf),
-                Ok(VadFrame::Noise) => {}
+                Ok(VadFrame::Speech(buf)) => {
+                    out_buf.extend_from_slice(buf);
+                    fire_vad_cb(vad_cb, VadDecision::Speech, rms);
+                    fire_vad_cb(speaking_rate_cb, VadDecision::Speech, rms);
+                }
+                Ok(VadFrame::Noise) => {
+                    fire_vad_cb(vad_cb, VadDecision::Noise, rms);
+                    fire_vad_cb(speaking_rate_cb, VadDecision::Noise, rms);
+                }
                 Err(err) => {
                     let message = err.to_string();
                     log::error!("VAD failed while processing frame: {}", message);
@@ -443,6 +531,17 @@ fn run_consumer(
                     .map_or(false, |f| f.load(Ordering::Relaxed));
                 if !is_paused {
                     frame_resampler.push(&raw, &mut |frame: &[f32]| {
+                        // Fire the preview callback for every 16 kHz frame so the
+                        // wake-word detector can listen even while not recording.
+                        if let Some(pcb) = &preview_cb {
+                            let guard = pcb
+                                .lock()
+                                .unwrap_or_else(|e: std::sync::PoisonError<_>| e.into_inner());
+                            if let Some(cb) = guard.as_ref() {
+                                cb(frame);
+                            }
+                        }
+
                         if gain != 1.0 {
                             // Apply gain boost and clamp to [-1.0, 1.0] to avoid clipping.
                             let boosted: Vec<f32> =
@@ -453,9 +552,19 @@ fn run_consumer(
                                 &vad,
                                 &mut processed_samples,
                                 &error_cb,
+                                &vad_cb,
+                                &speaking_rate_cb,
                             );
                         } else {
-                            handle_frame(frame, recording, &vad, &mut processed_samples, &error_cb);
+                            handle_frame(
+                                frame,
+                                recording,
+                                &vad,
+                                &mut processed_samples,
+                                &error_cb,
+                                &vad_cb,
+                                &speaking_rate_cb,
+                            );
                         }
                     });
                     if processed_samples.len() > MAX_PROCESSED_SAMPLES {
@@ -490,12 +599,28 @@ fn run_consumer(
                     // Drain any audio chunks that were captured but not yet consumed
                     while let Ok(remaining) = sample_rx.try_recv() {
                         frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                            handle_frame(frame, true, &vad, &mut processed_samples, &error_cb)
+                            handle_frame(
+                                frame,
+                                true,
+                                &vad,
+                                &mut processed_samples,
+                                &error_cb,
+                                &vad_cb,
+                                &speaking_rate_cb,
+                            )
                         });
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples, &error_cb)
+                        handle_frame(
+                            frame,
+                            true,
+                            &vad,
+                            &mut processed_samples,
+                            &error_cb,
+                            &vad_cb,
+                            &speaking_rate_cb,
+                        )
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));

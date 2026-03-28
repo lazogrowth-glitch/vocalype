@@ -3,6 +3,7 @@ use crate::model_ids::{
     PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
 };
 use crate::settings::AppSettings;
+use crate::telemetry::TranscriptionTelemetry;
 use crate::voice_profile::current_runtime_adjustment;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
@@ -30,14 +31,33 @@ pub(crate) const WHISPER_LARGE_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s
 pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = 200;
 /// Prevent Whisper from queueing many background chunks when the model is slower than real time.
 pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;
+/// Minimum new samples required before a VAD-triggered flush can fire (1 s at 16 kHz).
+/// Prevents spurious flushes at the very start of an utterance.
+pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s
+/// Width of the silence window scanned for VAD-triggered flush (500 ms at 16 kHz).
+/// 500 ms filters out inter-word hesitation pauses (typically 100-400 ms) while
+/// still catching genuine sentence-ending pauses (≥ 500 ms).
+pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms
+/// Mean-squared energy threshold — windows below this are considered silent.
+/// 1e-5 ≈ RMS 0.003, well below conversational speech (~0.02–0.1 RMS).
+pub(crate) const VAD_FLUSH_ENERGY_THRESHOLD: f32 = 1e-5;
+/// Minimum samples for a Parakeet chunk result to be kept when it produces
+/// only 1 word. Below this, the result is almost certainly a hallucination
+/// (Parakeet inventing English filler words in near-silence audio).
+pub(crate) const PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 24_000; // 1.5 s
+/// Minimum remaining samples to bother sending the final chunk.
+/// Chunks shorter than this are silence tail after the user stopped speaking.
+pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s
 /// English Parakeet profile tuned to reduce long-utterance truncation.
 pub(crate) const PARAKEET_V3_EN_CHUNK_INTERVAL_SAMPLES: usize = 20 * 16_000; // 20 s at 16 kHz
 pub(crate) const PARAKEET_V3_EN_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1 s
-/// French-first multilingual Parakeet profile — 8 s matches the model's full-attention
-/// operating range; 2 s overlap covers French liaisons and connected-speech boundaries.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; // 8 s at 16 kHz
-/// 2 s overlap — recommended floor for full-attention TDT models in buffered streaming.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 2 * 16_000; // 2 s
+/// French-first multilingual Parakeet profile — 4 s chunks match typical sentence length,
+/// avoiding word cuts at boundaries during long utterances.
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 4 * 16_000; // 4 s at 16 kHz
+/// 0.5 s overlap — halves the trimming window vs 1 s, reducing end-of-sentence word loss
+/// when words fall right at an interval boundary. The TDT timestamp trimmer is accurate
+/// enough at 0.5 s cutoff to avoid duplicates.
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
 
 // ── Chunking types ───────────────────────────────────────────────────────────
 
@@ -65,6 +85,10 @@ pub struct ChunkingHandle {
     /// Used to gate timestamp-based overlap trimming (which is only safe for
     /// word-level TDT output) and to skip redundant text deduplication.
     pub(crate) is_parakeet_v3: bool,
+    /// Unique ID for this recording session (epoch-ms at start), used for telemetry.
+    pub(crate) session_id: u64,
+    /// Telemetry writer — shared with sampler + worker threads.
+    pub(crate) tel: Arc<TranscriptionTelemetry>,
 }
 
 pub struct ActiveChunkingHandle(pub Mutex<Option<ChunkingHandle>>);
@@ -154,12 +178,19 @@ pub(crate) fn chunking_profile_for_model(
 /// Remove words duplicated at the boundary between two adjacent chunk transcriptions.
 /// Looks for up to 8 words of suffix/prefix overlap (case-insensitive).
 pub fn deduplicate_boundary(prev: &str, next: &str) -> String {
+    deduplicate_boundary_n(prev, next, 8)
+}
+
+/// Same as `deduplicate_boundary` but caps the search window at `max_words`.
+/// Use a small value (e.g. 3) for Parakeet V3 where timestamp trimming already
+/// handles most of the overlap — only residual 1-2 word duplicates need cleanup.
+pub fn deduplicate_boundary_n(prev: &str, next: &str, max_words: usize) -> String {
     let prev_words: Vec<&str> = prev.split_whitespace().collect();
     let next_words: Vec<&str> = next.split_whitespace().collect();
     if prev_words.is_empty() || next_words.is_empty() {
         return next.to_string();
     }
-    let max_overlap = 8.min(prev_words.len()).min(next_words.len());
+    let max_overlap = max_words.min(prev_words.len()).min(next_words.len());
     for n in (1..=max_overlap).rev() {
         let prev_suffix: Vec<String> = prev_words[prev_words.len() - n..]
             .iter()

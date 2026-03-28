@@ -1,5 +1,5 @@
 use crate::error::Result;
-use ort::session::builder::SessionBuilder;
+use ort::session::{builder::SessionBuilder, Session};
 
 // Hardware acceleration options. CPU is default and most reliable.
 // GPU providers (CUDA, TensorRT, ROCm) offer 5-10x speedup but require specific hardware.
@@ -70,10 +70,98 @@ impl ModelConfig {
         self
     }
 
-    pub(crate) fn apply_to_session_builder(
+    fn provider_cache_tag(&self) -> &'static str {
+        match self.execution_provider {
+            ExecutionProvider::Cpu => "cpu",
+            #[cfg(feature = "qnn")]
+            ExecutionProvider::Qnn => "qnn",
+            #[cfg(feature = "cuda")]
+            ExecutionProvider::Cuda => "cuda",
+            #[cfg(feature = "tensorrt")]
+            ExecutionProvider::TensorRT => "tensorrt",
+            #[cfg(feature = "coreml")]
+            ExecutionProvider::CoreML => "coreml",
+            #[cfg(feature = "directml")]
+            ExecutionProvider::DirectML => "directml",
+            #[cfg(feature = "rocm")]
+            ExecutionProvider::ROCm => "rocm",
+            #[cfg(feature = "openvino")]
+            ExecutionProvider::OpenVINO => "openvino",
+            #[cfg(feature = "openvino")]
+            ExecutionProvider::OpenVinoNpu => "openvino-npu",
+            #[cfg(feature = "openvino")]
+            ExecutionProvider::OpenVinoGpu => "openvino-gpu",
+            #[cfg(feature = "webgpu")]
+            ExecutionProvider::WebGPU => "webgpu",
+        }
+    }
+
+    /// Load an ONNX session with ORT-format caching.
+    ///
+    /// - First call: runs Level3 optimization and saves the optimized model to
+    ///   `{cache_dir}/{stem}_{provider}.opt.ort`.
+    /// - Subsequent calls: if the `.opt.ort` file exists, loads it directly at
+    ///   Level1 (skipping optimization — typically 5-10× faster).
+    ///
+    /// Pass `cache_dir = None` to disable caching (falls back to the plain
+    /// `apply_to_session_builder` path).
+    pub(crate) fn build_session(
         &self,
-        builder: SessionBuilder,
-    ) -> Result<SessionBuilder> {
+        model_path: &std::path::Path,
+        cache_dir: Option<&std::path::Path>,
+    ) -> Result<Session> {
+        use ort::session::builder::GraphOptimizationLevel;
+
+        let cache_path = cache_dir.map(|dir| {
+            let stem = model_path
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned();
+            dir.join(format!("{stem}_{}.opt.ort", self.provider_cache_tag()))
+        });
+
+        // ── Fast path: pre-optimized cache exists ────────────────────────── //
+        if let Some(cache) = &cache_path {
+            if cache.exists() {
+                // Load with Level1 — the .ort file is already fully optimized,
+                // so we skip the expensive Level3 graph optimization pass.
+                // apply_to_session_builder forces Level3, so we build manually here.
+                let builder = Session::builder()?
+                    .with_optimization_level(GraphOptimizationLevel::Level1)?
+                    .with_intra_threads(self.intra_threads)?
+                    .with_inter_threads(self.inter_threads)?;
+                let builder = self.apply_execution_provider(builder)?;
+                return Ok(builder.commit_from_file(cache)?);
+            }
+        }
+
+        // ── Slow path: Level3 optimization + save to cache ───────────────── //
+        // `with_optimized_model_path` takes ownership even on failure, so we
+        // branch explicitly to avoid losing the builder on the error path.
+        let session = if let Some(cache) = cache_path {
+            if let Some(parent) = cache.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let builder = self.apply_to_session_builder(Session::builder()?)?;
+            match builder.with_optimized_model_path(&cache) {
+                Ok(b) => b.commit_from_file(model_path)?,
+                Err(_) => {
+                    // Cache path rejected — load without saving.
+                    self.apply_to_session_builder(Session::builder()?)?
+                        .commit_from_file(model_path)?
+                }
+            }
+        } else {
+            self.apply_to_session_builder(Session::builder()?)?
+                .commit_from_file(model_path)?
+        };
+        Ok(session)
+    }
+
+    /// Applies only the execution provider to an already-configured builder.
+    /// Does NOT set optimization level or thread counts — call those separately.
+    fn apply_execution_provider(&self, builder: SessionBuilder) -> Result<SessionBuilder> {
         #[cfg(any(
             feature = "cuda",
             feature = "tensorrt",
@@ -85,14 +173,8 @@ impl ModelConfig {
             feature = "webgpu"
         ))]
         use ort::execution_providers::CPUExecutionProvider;
-        use ort::session::builder::GraphOptimizationLevel;
 
-        let mut builder = builder
-            .with_optimization_level(GraphOptimizationLevel::Level3)?
-            .with_intra_threads(self.intra_threads)?
-            .with_inter_threads(self.inter_threads)?;
-
-        builder = match self.execution_provider {
+        let builder = match self.execution_provider {
             ExecutionProvider::Cpu => builder,
 
             #[cfg(feature = "qnn")]
@@ -191,5 +273,19 @@ impl ModelConfig {
         };
 
         Ok(builder)
+    }
+
+    pub(crate) fn apply_to_session_builder(
+        &self,
+        builder: SessionBuilder,
+    ) -> Result<SessionBuilder> {
+        use ort::session::builder::GraphOptimizationLevel;
+
+        let builder = builder
+            .with_optimization_level(GraphOptimizationLevel::Level3)?
+            .with_intra_threads(self.intra_threads)?
+            .with_inter_threads(self.inter_threads)?;
+
+        self.apply_execution_provider(builder)
     }
 }

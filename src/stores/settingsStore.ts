@@ -176,6 +176,8 @@ const settingUpdaters: {
   gemini_api_key: (value) =>
     commands.changeGeminiApiKeySetting((value as string | null) ?? ""),
   gemini_model: (value) => commands.changeGeminiModelSetting(value as string),
+  wake_word_enabled: (value) =>
+    commands.changeWakeWordEnabledSetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

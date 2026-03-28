@@ -411,6 +411,14 @@ async changeLongAudioThresholdSetting(threshold: number) : Promise<Result<null, 
     else return { status: "error", error: e  as any };
 }
 },
+async changeWakeWordEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_wake_word_enabled_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
  * Start key recording mode
  */
@@ -1347,6 +1355,18 @@ export type AppSettings = {
  * Never set this manually — it is managed by `migrate_settings`.
  */
 settings_version?: number; bindings: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk: boolean; audio_feedback: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; selected_model?: string; always_on_microphone?: boolean; 
+/**
+ * When true, Vocalype listens for the wake word "dictate" in the
+ * background and starts a hands-free recording session automatically.
+ * Requires the microphone stream to be open (AlwaysOn mode recommended).
+ */
+wake_word_enabled?: boolean; 
+/**
+ * Sliding window of the last observed inter-word pause durations (ms).
+ * Accumulated across all recording modes to calibrate the adaptive
+ * silence threshold for wake-word auto-stop.
+ */
+speaking_rate_pauses?: number[]; 
 /**
  * Canonical recording mode — supersedes the `push_to_talk` and
  * `always_on_microphone` boolean pair. Populated from those booleans

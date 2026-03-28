@@ -4,8 +4,10 @@ use super::post_processing::process_transcription_text;
 use super::profiler::PipelineProfiler;
 use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::chunking::{
-    chunking_profile_for_model, deduplicate_boundary, ActiveChunkingHandle, ChunkingHandle,
-    ChunkingSharedState, CHUNK_SAMPLER_POLL_MS, MAX_PENDING_BACKGROUND_CHUNKS,
+    chunking_profile_for_model, deduplicate_boundary, deduplicate_boundary_n, ActiveChunkingHandle,
+    ChunkingHandle, ChunkingSharedState, CHUNK_SAMPLER_POLL_MS, MAX_PENDING_BACKGROUND_CHUNKS,
+    MIN_FINAL_CHUNK_SAMPLES, PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD, VAD_FLUSH_ENERGY_THRESHOLD,
+    VAD_FLUSH_MIN_CONTENT_SAMPLES, VAD_FLUSH_SILENCE_SAMPLES,
 };
 use crate::context_detector::{detect_current_app_context, ActiveAppContextState};
 use crate::managers::audio::AudioRecordingManager;
@@ -19,6 +21,7 @@ use crate::runtime_observability::{
 };
 use crate::settings::get_settings;
 use crate::shortcut;
+use crate::telemetry::TranscriptionTelemetry;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_preparing_overlay, show_recording_overlay, show_transcribing_overlay,
@@ -114,7 +117,7 @@ pub(super) fn should_switch_to_long_audio_model(
     duration_seconds > threshold_seconds && current_model_id != Some(long_model_id)
 }
 
-pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
+pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     let start_time = Instant::now();
     debug!("[TIMING] ⏱ shortcut received for binding: {}", binding_id);
 
@@ -285,6 +288,18 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let rm_s = Arc::clone(&*app.state::<Arc<AudioRecordingManager>>());
         let tm_s = Arc::clone(&*app.state::<Arc<TranscriptionManager>>());
 
+        // Telemetry — unique session ID per recording.
+        let session_id = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        let tel: Arc<TranscriptionTelemetry> = app
+            .try_state::<Arc<TranscriptionTelemetry>>()
+            .map(|s| Arc::clone(&*s))
+            .unwrap_or_else(|| Arc::new(TranscriptionTelemetry::disabled()));
+        let tel_sampler = Arc::clone(&tel);
+        let tel_worker = Arc::clone(&tel);
+
         let shared_state = Arc::new(Mutex::new(ChunkingSharedState {
             last_committed_idx: 0,
             next_chunk_idx: 0,
@@ -301,42 +316,101 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let shared_s = Arc::clone(&shared_state);
         let tx_s = chunk_tx.clone();
         let pending_s = Arc::clone(&pending_chunks);
-        let sampler_handle = std::thread::spawn(move || loop {
-            std::thread::sleep(std::time::Duration::from_millis(CHUNK_SAMPLER_POLL_MS));
+        let sampler_handle = std::thread::spawn(move || {
+            // After a VAD flush, the boundary falls on a natural pause, so the
+            // next chunk needs no overlap (no risk of cutting mid-word).
+            // This prevents the first words of a new sentence from being
+            // silently discarded by the timestamp-based overlap trimmer.
+            let mut skip_overlap_next_chunk = false;
 
-            let snapshot = match rm_s.snapshot_recording() {
-                Some(s) => s,
-                None => break,
-            };
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(CHUNK_SAMPLER_POLL_MS));
 
-            let total = snapshot.len();
-            let (last_committed, next_idx) = {
-                let s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
-                (s.last_committed_idx, s.next_chunk_idx)
-            };
-            let new_samples = total.saturating_sub(last_committed);
+                let snapshot = match rm_s.snapshot_recording() {
+                    Some(s) => s,
+                    None => break,
+                };
 
-            if new_samples >= chunking_profile.interval_samples {
-                if pending_s.load(Ordering::Relaxed) >= MAX_PENDING_BACKGROUND_CHUNKS {
-                    continue;
-                }
+                let total = snapshot.len();
+                let (last_committed, next_idx) = {
+                    let s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
+                    (s.last_committed_idx, s.next_chunk_idx)
+                };
+                let new_samples = total.saturating_sub(last_committed);
 
-                let actual_overlap = last_committed.min(chunking_profile.overlap_samples);
-                let chunk_start = last_committed - actual_overlap;
-                let chunk_end = last_committed + chunking_profile.interval_samples;
-                let chunk = snapshot[chunk_start..chunk_end].to_vec();
-                let cutoff_secs = actual_overlap as f32 / 16_000.0;
+                // ── Interval flush ────────────────────────────────────────────── //
+                let interval_ready = new_samples >= chunking_profile.interval_samples;
 
-                pending_s.fetch_add(1, Ordering::Relaxed);
-                match tx_s.send(Some((chunk, next_idx, cutoff_secs))) {
-                    Ok(()) => {
-                        let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
-                        s.last_committed_idx = chunk_end;
-                        s.next_chunk_idx += 1;
+                // ── VAD-triggered flush (Parakeet V3 only) ────────────────────── //
+                // When a natural pause of ≥300 ms is detected after ≥1 s of new
+                // speech, flush immediately instead of waiting for the interval.
+                // This prevents sentence-boundary word cuts that happen with fixed
+                // intervals when the user speaks longer than the chunk duration.
+                let recent_energy: Option<f32> = if is_parakeet_v3
+                    && !interval_ready
+                    && new_samples >= VAD_FLUSH_MIN_CONTENT_SAMPLES
+                    && total >= VAD_FLUSH_SILENCE_SAMPLES
+                {
+                    let recent = &snapshot[total - VAD_FLUSH_SILENCE_SAMPLES..];
+                    Some(
+                        recent.iter().map(|s| s * s).sum::<f32>()
+                            / VAD_FLUSH_SILENCE_SAMPLES as f32,
+                    )
+                } else {
+                    None
+                };
+                let vad_flush = recent_energy.map_or(false, |e| e < VAD_FLUSH_ENERGY_THRESHOLD);
+
+                if interval_ready || vad_flush {
+                    if pending_s.load(Ordering::Relaxed) >= MAX_PENDING_BACKGROUND_CHUNKS {
+                        continue;
                     }
-                    Err(_) => {
-                        pending_s.fetch_sub(1, Ordering::Relaxed);
-                        break;
+
+                    // After a VAD flush, skip overlap so the timestamp trimmer
+                    // doesn't discard the first words of the following sentence.
+                    let overlap = if skip_overlap_next_chunk {
+                        0
+                    } else {
+                        chunking_profile.overlap_samples
+                    };
+                    let actual_overlap = last_committed.min(overlap);
+                    let chunk_start = last_committed - actual_overlap;
+                    // Interval flush: commit exactly interval_samples from last_committed.
+                    // VAD flush: commit everything up to now (total) so no audio is lost.
+                    let chunk_end = if interval_ready {
+                        last_committed + chunking_profile.interval_samples
+                    } else {
+                        total
+                    };
+                    let chunk = snapshot[chunk_start..chunk_end].to_vec();
+                    let cutoff_secs = actual_overlap as f32 / 16_000.0;
+
+                    // Next chunk skips overlap only when this one ended on a VAD pause.
+                    skip_overlap_next_chunk = vad_flush;
+
+                    let flush_type = if interval_ready { "interval" } else { "vad" };
+                    tel_sampler.log_chunk_sent(
+                        session_id,
+                        next_idx,
+                        flush_type,
+                        new_samples,
+                        total,
+                        recent_energy.unwrap_or(-1.0),
+                        actual_overlap,
+                        cutoff_secs,
+                    );
+
+                    pending_s.fetch_add(1, Ordering::Relaxed);
+                    match tx_s.send(Some((chunk, next_idx, cutoff_secs))) {
+                        Ok(()) => {
+                            let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
+                            s.last_committed_idx = chunk_end;
+                            s.next_chunk_idx += 1;
+                        }
+                        Err(_) => {
+                            pending_s.fetch_sub(1, Ordering::Relaxed);
+                            break;
+                        }
                     }
                 }
             }
@@ -352,11 +426,14 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     break;
                 };
 
+                let chunk_samples = audio.len();
+                let chunk_start_time = std::time::Instant::now();
                 match tm_s.transcribe_detailed_request(TranscriptionRequest {
                     audio,
                     app_context: None,
                 }) {
                     Ok(output) => {
+                        let latency_ms = chunk_start_time.elapsed().as_millis() as u64;
                         // Timestamp-based overlap trimming — Parakeet V3 only.
                         // Parakeet V3 TDT outputs per-word timestamps that are reliable
                         // enough to use as the sole deduplication mechanism.
@@ -367,7 +444,9 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             if let Some(segs) = &output.segments {
                                 // Words mode succeeded: filter out every word that lies
                                 // entirely within the overlap prefix.
+                                let words_in = segs.len();
                                 let mut out = String::new();
+                                let mut words_out = 0usize;
                                 for seg in segs.iter().filter(|s| s.start >= overlap_cutoff_secs) {
                                     let is_punct = seg.text.len() == 1
                                         && seg.text.chars().all(|c| {
@@ -377,23 +456,86 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                         out.push(' ');
                                     }
                                     out.push_str(&seg.text);
+                                    words_out += 1;
                                 }
+                                // If only stray punctuation survived the trim (e.g. ".")
+                                // discard it — it's a dangling mark from a word that
+                                // was in the overlap zone and got cut.
+                                let out =
+                                    if !out.is_empty() && out.chars().all(|c| !c.is_alphabetic()) {
+                                        String::new()
+                                    } else {
+                                        out
+                                    };
+                                tel_worker.log_chunk_result(
+                                    session_id,
+                                    idx,
+                                    latency_ms,
+                                    overlap_cutoff_secs,
+                                    words_in,
+                                    words_out,
+                                    words_in.saturating_sub(words_out),
+                                    &out.chars().take(120).collect::<String>(),
+                                );
                                 // Empty → the chunk contained only overlap audio.
                                 out
                             } else {
                                 // Words mode fell back to Sentences (no per-word timestamps).
-                                // Returning the full text risks non-deterministic duplicates
-                                // because the same overlap audio is transcribed differently
-                                // each call ("râpaient" vs "rappelle"). Return empty so the
-                                // overlap zone is simply skipped; the final chunk covers this
-                                // region from last_committed onward without any overlap.
-                                String::new()
+                                // Return the full text; assembly uses deduplicate_boundary_n(3)
+                                // to remove any 1-3 word overlap at the boundary rather than
+                                // losing the whole chunk's words.
+                                let words = output.text.split_whitespace().count();
+                                tel_worker.log_chunk_result(
+                                    session_id,
+                                    idx,
+                                    latency_ms,
+                                    overlap_cutoff_secs,
+                                    words,
+                                    words,
+                                    0,
+                                    &format!(
+                                        "(no-word-timestamps-fallback-full) {}",
+                                        &output.text.chars().take(100).collect::<String>()
+                                    ),
+                                );
+                                output.text
                             }
                         } else {
                             // First chunk (cutoff = 0.0) or non-Parakeet engine:
                             // return verbatim — deduplicate_boundary handles assembly.
+                            let words = output.text.split_whitespace().count();
+                            tel_worker.log_chunk_result(
+                                session_id,
+                                idx,
+                                latency_ms,
+                                overlap_cutoff_secs,
+                                words,
+                                words,
+                                0,
+                                &output.text.chars().take(120).collect::<String>(),
+                            );
                             output.text
                         };
+                        // Hallucination filter: Parakeet invents English filler words
+                        // (e.g. "So", "Yeah.", "Leave.") when a short chunk contains
+                        // mostly silence. Discard single-word results from chunks that
+                        // are too short to reliably contain real speech.
+                        let word_count = text.split_whitespace().count();
+                        let text = if is_parakeet_v3_w
+                            && word_count <= 1
+                            && !text.is_empty()
+                            && idx > 0
+                            && chunk_samples < PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD
+                        {
+                            debug!(
+                                "Chunk {}: discarding likely hallucination {:?} ({} samples)",
+                                idx, text, chunk_samples
+                            );
+                            String::new()
+                        } else {
+                            text
+                        };
+
                         results_w
                             .lock()
                             .unwrap_or_else(|e| e.into_inner())
@@ -401,6 +543,7 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     }
                     Err(err) => {
                         failed_chunks_w.fetch_add(1, Ordering::Relaxed);
+                        tel_worker.log_chunk_error(session_id, idx, &err.to_string());
                         warn!("Chunk transcription failed for chunk {}: {}", idx, err);
                     }
                 }
@@ -420,6 +563,8 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 failed_chunks,
                 chunk_overlap_samples: chunking_profile.overlap_samples,
                 is_parakeet_v3,
+                session_id,
+                tel,
             });
         }
     } else if let Some(info) = current_model_info {
@@ -436,7 +581,7 @@ pub(super) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     );
 }
 
-pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_process: bool) {
+pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_process: bool) {
     crate::shortcut::handler::reset_cancel_confirmation();
     shortcut::unregister_cancel_shortcut(app);
     shortcut::unregister_pause_shortcut(app);
@@ -587,6 +732,8 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             show_transcribing_overlay(&ah);
 
             let chunk_finalize_started = Instant::now();
+            let tel_assembly = Arc::clone(&ch.tel);
+            let session_id = ch.session_id;
             let (assembled, chunk_count, failed_chunk_count, all_samples) =
                 tokio::task::spawn_blocking(move || {
                     let _ = ch.sampler_handle.join();
@@ -613,8 +760,21 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                             actual_overlap as f32 / 16_000.0,
                         )
                     };
-                    let sent_final = !remaining.is_empty();
+                    // Skip the final chunk if it's mostly silence tail (< 0.5 s).
+                    // After the user stops speaking the remaining audio is near-silent;
+                    // sending it causes Parakeet to hallucinate English filler words.
+                    let sent_final = remaining.len() >= MIN_FINAL_CHUNK_SAMPLES;
                     if sent_final {
+                        tel_assembly.log_chunk_sent(
+                            session_id,
+                            next_idx,
+                            "final",
+                            remaining.len(),
+                            all_samples.len(),
+                            -1.0,
+                            (final_cutoff_secs * 16_000.0) as usize,
+                            final_cutoff_secs,
+                        );
                         ch.pending_chunks.fetch_add(1, Ordering::Relaxed);
                         if ch
                             .chunk_tx
@@ -637,6 +797,60 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         String::new()
                     } else if results.len() == 1 {
                         results[0].1.clone()
+                    } else if ch.is_parakeet_v3 {
+                        // Parakeet V3: chunks are already perfectly stitched.
+                        // Background chunks are trimmed by word-level timestamp filter;
+                        // the final chunk starts exactly at last_committed with no overlap.
+                        // deduplicate_boundary must NOT run here — it creates false positives
+                        // when a word that legitimately starts the final chunk also happened
+                        // to appear at the end of the previous chunk (e.g. "avait … avait
+                        // 47 personnes"), silently dropping real words.
+                        //
+                        // Capitalisation fix: Parakeet capitalises the first word of every
+                        // chunk because it treats "start of audio = start of sentence".
+                        // When joining, lowercase that first letter unless the previous
+                        // chunk actually ended a sentence (.  !  ?  …).
+                        let non_empty: Vec<&str> = results
+                            .iter()
+                            .map(|(_, t)| t.as_str())
+                            .filter(|t| !t.is_empty())
+                            .collect();
+                        let mut out = String::new();
+                        for (i, chunk) in non_empty.iter().enumerate() {
+                            if i == 0 {
+                                out.push_str(chunk);
+                            } else {
+                                // Apply a light dedup pass (max 3 words) to catch residual
+                                // duplicates from fallback-full chunks that lacked per-word
+                                // timestamps. Word-level trimmed chunks rarely need this, but
+                                // the small window avoids false positives.
+                                let deduped = deduplicate_boundary_n(&out, chunk, 3);
+                                let chunk_to_join = if deduped.is_empty() {
+                                    // whole chunk was duplicate — skip
+                                    continue;
+                                } else {
+                                    deduped
+                                };
+                                // Check BEFORE pushing the space — otherwise last() returns ' '.
+                                let prev_ends_sentence = out
+                                    .chars()
+                                    .last()
+                                    .map_or(false, |c| matches!(c, '.' | '!' | '?' | '…'));
+                                out.push(' ');
+                                if prev_ends_sentence {
+                                    out.push_str(&chunk_to_join);
+                                } else {
+                                    let mut chars = chunk_to_join.chars();
+                                    if let Some(first) = chars.next() {
+                                        for lc in first.to_lowercase() {
+                                            out.push(lc);
+                                        }
+                                        out.push_str(chars.as_str());
+                                    }
+                                }
+                            }
+                        }
+                        out
                     } else {
                         let mut parts = vec![results[0].1.clone()];
                         for i in 1..results.len() {
@@ -647,6 +861,15 @@ pub(super) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         }
                         parts.join(" ")
                     };
+
+                    tel_assembly.log_session_end(
+                        session_id,
+                        chunk_count,
+                        failed_chunk_count,
+                        all_samples.len(),
+                        assembled.split_whitespace().count(),
+                        &assembled.chars().take(200).collect::<String>(),
+                    );
 
                     (assembled, chunk_count, failed_chunk_count, all_samples)
                 })

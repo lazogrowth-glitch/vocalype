@@ -4,7 +4,7 @@ mod model_selection;
 mod paste;
 mod post_processing;
 mod profiler;
-mod transcribe;
+pub(crate) mod transcribe;
 
 use once_cell::sync::Lazy;
 use std::collections::HashMap;

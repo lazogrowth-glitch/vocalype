@@ -48,6 +48,7 @@ impl ParakeetTDTModel {
         model_dir: P,
         exec_config: ExecutionConfig,
         vocab_size: usize,
+        cache_dir: Option<&Path>,
     ) -> Result<Self> {
         let model_dir = model_dir.as_ref();
 
@@ -57,24 +58,18 @@ impl ParakeetTDTModel {
 
         let config = TDTModelConfig::new(vocab_size);
 
-        // Load encoder
-        let builder = Session::builder()?;
-        let builder = exec_config.apply_to_session_builder(builder)?;
-        let encoder = builder.commit_from_file(&encoder_path)?;
+        // Load encoder — uses pre-optimized cache when available
+        let encoder = exec_config.build_session(&encoder_path, cache_dir)?;
 
         // Load decoder_joint
-        let builder = Session::builder()?;
-        let builder = exec_config.apply_to_session_builder(builder)?;
-        let decoder_joint = builder.commit_from_file(&decoder_joint_path)?;
+        let decoder_joint = exec_config.build_session(&decoder_joint_path, cache_dir)?;
 
         // Load the official NeMo feature extractor (nemo128.onnx) if present.
         // This matches the training-time feature extraction exactly, enabling correct
         // language detection. Falls back to manual extraction if the file is missing.
         let preprocessor_path = model_dir.join("nemo128.onnx");
         let preprocessor = if preprocessor_path.exists() {
-            let builder = Session::builder()?;
-            let builder = exec_config.apply_to_session_builder(builder)?;
-            match builder.commit_from_file(&preprocessor_path) {
+            match exec_config.build_session(&preprocessor_path, cache_dir) {
                 Ok(session) => Some(session),
                 Err(e) => {
                     eprintln!("[parakeet] nemo128.onnx found but failed to load ({e}), using manual feature extraction");

@@ -651,6 +651,10 @@
       "autoPauseMedia": {
         "label": "Auto-pause media",
         "description": "Automatically pauses Spotify and other media players during recording, then resumes when done."
+      },
+      "wakeWord": {
+        "label": "Hands-free mode (say \"dictate\")",
+        "description": "Say \"dictate\" to start recording without touching the keyboard. Recording stops automatically when you stop speaking."
       }
     },
     "about": {

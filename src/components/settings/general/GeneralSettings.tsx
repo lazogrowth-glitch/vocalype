@@ -11,6 +11,7 @@ import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { AutoPauseMedia } from "../AutoPauseMedia";
+import { WakeWordToggle } from "../WakeWordToggle";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 import { LongAudioModelSettings } from "./LongAudioModelSettings";
 import { useStartupWarmupStatus } from "../../../hooks/useStartupWarmupStatus";
@@ -186,6 +187,17 @@ export const GeneralSettings: React.FC = () => {
 
           {/* ── Recording mode ───────────────────────────────────────── */}
           <RecordingModeSelector grouped={false} />
+
+          <div
+            style={{
+              height: "0.5px",
+              background: "rgba(255,255,255,0.06)",
+              margin: "28px 0",
+            }}
+          />
+
+          {/* ── Hands-free / Wake word ────────────────────────────────── */}
+          <WakeWordToggle grouped={false} />
 
           <div
             style={{

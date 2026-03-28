@@ -30,6 +30,10 @@ pub fn create_agent_overlay(app: &AppHandle) {
 }
 
 pub fn show_agent_overlay(app: &AppHandle) {
+    // Fallback: create the overlay if deferred creation hasn't fired yet
+    if app.get_webview_window("agent_overlay").is_none() {
+        create_agent_overlay(app);
+    }
     let Some(window) = app.get_webview_window("agent_overlay") else {
         return;
     };

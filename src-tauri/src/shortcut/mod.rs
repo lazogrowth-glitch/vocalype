@@ -1414,3 +1414,12 @@ pub fn change_long_audio_threshold_setting(app: AppHandle, threshold: f32) -> Re
     settings::write_settings(&app, settings);
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_wake_word_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.wake_word_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}

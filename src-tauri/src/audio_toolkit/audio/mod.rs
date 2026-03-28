@@ -6,7 +6,10 @@ mod utils;
 mod visualizer;
 
 pub use device::{list_input_devices, list_output_devices, CpalDeviceInfo};
-pub use recorder::{AudioRecorder, AudioRecorderRuntimeError};
+pub use recorder::{
+    AudioRecorder, AudioRecorderPreviewCb, AudioRecorderRuntimeError, AudioRecorderVadCb,
+    VadDecision,
+};
 pub use resampler::FrameResampler;
 pub use utils::{load_wav_file, save_wav_file};
 pub use visualizer::AudioVisualiser;

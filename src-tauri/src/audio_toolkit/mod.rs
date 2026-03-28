@@ -6,7 +6,8 @@ pub mod vad;
 
 pub use audio::{
     list_input_devices, list_output_devices, load_wav_file, save_wav_file, AudioRecorder,
-    AudioRecorderRuntimeError, CpalDeviceInfo,
+    AudioRecorderPreviewCb, AudioRecorderRuntimeError, AudioRecorderVadCb, CpalDeviceInfo,
+    VadDecision,
 };
 pub use text::{apply_custom_words, filter_transcription_output};
 pub use utils::get_cpal_host;

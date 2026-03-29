@@ -307,6 +307,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let results: Arc<Mutex<Vec<(usize, String)>>> = Arc::new(Mutex::new(Vec::new()));
         let failed_chunks = Arc::new(AtomicUsize::new(0));
         let pending_chunks = Arc::new(AtomicUsize::new(0));
+        let cancel_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
 
         // Channel payload: (audio, chunk_idx, overlap_cutoff_secs)
         // overlap_cutoff_secs = 0.0 for the first chunk (no real overlap yet),
@@ -317,6 +318,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let shared_s = Arc::clone(&shared_state);
         let tx_s = chunk_tx.clone();
         let pending_s = Arc::clone(&pending_chunks);
+        let cancel_flag_worker = Arc::clone(&cancel_flag);
         let sampler_handle = std::thread::spawn(move || {
             // After a VAD flush, the boundary falls on a natural pause, so the
             // next chunk needs no overlap (no risk of cutting mid-word).
@@ -423,6 +425,10 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let is_parakeet_v3_w = is_parakeet_v3;
         let worker_handle = std::thread::spawn(move || {
             while let Ok(message) = chunk_rx.recv() {
+                // ESC was pressed — discard remaining queued chunks immediately.
+                if cancel_flag_worker.load(std::sync::atomic::Ordering::Relaxed) {
+                    break;
+                }
                 let Some((audio, idx, overlap_cutoff_secs, is_final_chunk)) = message else {
                     break;
                 };
@@ -615,6 +621,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 results,
                 pending_chunks,
                 failed_chunks,
+                cancel_flag,
                 chunk_overlap_samples: chunking_profile.overlap_samples,
                 is_parakeet_v3,
                 session_id,

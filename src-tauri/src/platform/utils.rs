@@ -33,14 +33,19 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.cancel_recording();
 
-    // Drop any active chunking handle so the chunk channel closes.
-    // If ESC is pressed while the sampler is running, the worker thread is
-    // blocked on chunk_rx.recv(). Without this, chunk_tx stays alive inside
-    // ActiveChunkingHandle and the worker hangs forever, holding the
-    // TranscriptionManager and causing a deadlock on the next recording.
+    // Signal the chunking worker to stop immediately, then drop the handle.
+    // If ESC is pressed mid-recording, the worker thread may have many silence
+    // chunks queued. Setting cancel_flag lets it exit at the next recv() instead
+    // of draining every queued chunk (which could take tens of seconds).
+    // Dropping the handle also closes chunk_tx so the worker exits cleanly.
     if let Some(handle_state) = app.try_state::<ActiveChunkingHandle>() {
         if let Ok(mut guard) = handle_state.0.lock() {
-            let _ = guard.take(); // drops ChunkingHandle → drops chunk_tx → unblocks worker
+            if let Some(ref handle) = *guard {
+                handle
+                    .cancel_flag
+                    .store(true, std::sync::atomic::Ordering::Relaxed);
+            }
+            let _ = guard.take();
         }
     }
 

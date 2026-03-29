@@ -5,7 +5,7 @@ use crate::model_ids::{
 use crate::settings::AppSettings;
 use crate::telemetry::TranscriptionTelemetry;
 use crate::voice_profile::current_runtime_adjustment;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::AppHandle;
 
@@ -78,6 +78,9 @@ pub struct ChunkingHandle {
     pub(crate) results: Arc<Mutex<Vec<(usize, String)>>>,
     pub(crate) pending_chunks: Arc<AtomicUsize>,
     pub(crate) failed_chunks: Arc<AtomicUsize>,
+    /// Set to true by cancel_current_operation to make the worker thread
+    /// exit immediately without processing remaining queued chunks.
+    pub(crate) cancel_flag: Arc<AtomicBool>,
     pub(crate) chunk_overlap_samples: usize,
     /// True when the active model is Parakeet V3 TDT.
     /// Used to gate timestamp-based overlap trimming (which is only safe for

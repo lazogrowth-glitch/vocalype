@@ -552,7 +552,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         // Known English filler words Parakeet hallucinates on near-silence.
                         const HALLUCINATION_BLOCKLIST: &[&str] = &[
                             "yeah", "but", "so", "we", "leave", "thanks", "hey", "hi", "bye",
-                            "the", "this", "that", "sure", "right", "okay", "ok",
+                            "the", "this", "that", "sure", "right", "okay", "ok", "mm", "uh",
+                            "hmm", "mhm", "hm",
                         ];
                         let bare = text
                             .trim()
@@ -859,7 +860,16 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         let mut out = String::new();
                         for (i, chunk) in non_empty.iter().enumerate() {
                             if i == 0 {
-                                out.push_str(chunk);
+                                // Capitalize the first word of the assembled text — Parakeet
+                                // sometimes returns a lowercase start when it treats the audio
+                                // as a continuation. The assembled result is always sentence-start.
+                                let mut chars = chunk.chars();
+                                if let Some(first) = chars.next() {
+                                    for uc in first.to_uppercase() {
+                                        out.push(uc);
+                                    }
+                                    out.push_str(chars.as_str());
+                                }
                             } else {
                                 // Apply a light dedup pass (max 3 words) to catch residual
                                 // duplicates from fallback-full chunks that lacked per-word

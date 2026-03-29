@@ -256,7 +256,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         }
     }
 
-    shortcut::register_cancel_shortcut(app);
+    // ESC cancel shortcut intentionally disabled — ESC should have no effect.
+    // shortcut::register_cancel_shortcut(app);
     shortcut::register_pause_shortcut(app);
     shortcut::register_action_shortcuts(app);
     debug!("[TIMING] shortcuts registered: {:?}", start_time.elapsed());
@@ -621,6 +622,15 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         });
 
         if let Some(ch) = app.try_state::<ActiveChunkingHandle>() {
+            // Also store a clone of the cancel_flag in a separate state so
+            // cancel_current_operation can still reach it after the handle
+            // is taken by stop_transcription_action.
+            if let Some(flag_state) =
+                app.try_state::<crate::runtime::chunking::ActiveWorkerCancelFlag>()
+            {
+                *flag_state.0.lock().unwrap_or_else(|e| e.into_inner()) =
+                    Some(Arc::clone(&cancel_flag));
+            }
             *ch.0.lock().unwrap_or_else(|e| e.into_inner()) = Some(ChunkingHandle {
                 sampler_handle,
                 worker_handle,

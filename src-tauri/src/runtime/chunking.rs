@@ -94,6 +94,12 @@ pub struct ChunkingHandle {
 
 pub struct ActiveChunkingHandle(pub Mutex<Option<ChunkingHandle>>);
 
+/// Holds the cancel_flag for the currently active worker thread.
+/// Kept as a separate state so it remains accessible even after the
+/// ActiveChunkingHandle is taken by stop_transcription_action, allowing
+/// cancel_current_operation to interrupt a worker that is draining its queue.
+pub struct ActiveWorkerCancelFlag(pub Mutex<Option<Arc<AtomicBool>>>);
+
 // ── Chunking functions ───────────────────────────────────────────────────────
 
 pub(crate) fn chunking_profile_for_model(

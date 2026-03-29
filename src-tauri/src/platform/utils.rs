@@ -39,29 +39,37 @@ pub fn cancel_current_operation(app: &AppHandle) {
     audio_manager.cancel_recording();
     info!("[cancel] step 6: audio recording cancelled");
 
-    if let Some(handle_state) = app.try_state::<ActiveChunkingHandle>() {
-        info!("[cancel] step 7a: found ActiveChunkingHandle, locking...");
-        match handle_state.0.lock() {
+    // Set the cancel_flag via the dedicated state — accessible even after the
+    // ActiveChunkingHandle has been taken by stop_transcription_action.
+    if let Some(flag_state) = app.try_state::<crate::runtime::chunking::ActiveWorkerCancelFlag>() {
+        info!("[cancel] step 7a: found ActiveWorkerCancelFlag, locking...");
+        match flag_state.0.lock() {
             Ok(mut guard) => {
-                if guard.is_some() {
-                    info!("[cancel] step 7b: setting cancel_flag and dropping handle");
-                    if let Some(ref handle) = *guard {
-                        handle
-                            .cancel_flag
-                            .store(true, std::sync::atomic::Ordering::Relaxed);
-                    }
+                if let Some(ref flag) = *guard {
+                    info!("[cancel] step 7b: setting cancel_flag");
+                    flag.store(true, std::sync::atomic::Ordering::Relaxed);
                     let _ = guard.take();
-                    info!("[cancel] step 7c: handle dropped");
+                    info!("[cancel] step 7c: cancel_flag set and cleared from state");
                 } else {
-                    info!("[cancel] step 7b: handle already None (no active chunking)");
+                    info!("[cancel] step 7b: no active worker flag (no chunking session)");
                 }
             }
             Err(e) => {
-                warn!("[cancel] step 7b: mutex poisoned: {}", e);
+                warn!("[cancel] step 7b: cancel flag mutex poisoned: {}", e);
             }
         }
     } else {
-        info!("[cancel] step 7: no ActiveChunkingHandle in state");
+        info!("[cancel] step 7: no ActiveWorkerCancelFlag in state");
+    }
+
+    // Also drop the handle if still present (ESC pressed before releasing button).
+    if let Some(handle_state) = app.try_state::<ActiveChunkingHandle>() {
+        if let Ok(mut guard) = handle_state.0.lock() {
+            if guard.is_some() {
+                info!("[cancel] step 7d: dropping ActiveChunkingHandle");
+                let _ = guard.take();
+            }
+        }
     }
 
     info!("[cancel] step 8: updating tray + hiding overlay...");

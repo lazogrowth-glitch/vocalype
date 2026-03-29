@@ -859,6 +859,7 @@ pub fn run(cli_args: CliArgs) {
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
             app.manage(chunking::ActiveChunkingHandle(std::sync::Mutex::new(None)));
+            app.manage(chunking::ActiveWorkerCancelFlag(std::sync::Mutex::new(None)));
             app.manage(context_detector::ActiveAppContextState(std::sync::Mutex::new(
                 context_detector::ActiveAppContextSnapshot::default(),
             )));

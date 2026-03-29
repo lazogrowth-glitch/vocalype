@@ -424,14 +424,22 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let pending_w = Arc::clone(&pending_chunks);
         let is_parakeet_v3_w = is_parakeet_v3;
         let worker_handle = std::thread::spawn(move || {
+            info!("[worker] started");
             while let Ok(message) = chunk_rx.recv() {
                 // ESC was pressed — discard remaining queued chunks immediately.
                 if cancel_flag_worker.load(std::sync::atomic::Ordering::Relaxed) {
+                    info!("[worker] cancel_flag set — exiting");
                     break;
                 }
                 let Some((audio, idx, overlap_cutoff_secs, is_final_chunk)) = message else {
+                    info!("[worker] received None sentinel — exiting");
                     break;
                 };
+                info!(
+                    "[worker] processing chunk idx={} samples={}",
+                    idx,
+                    audio.len()
+                );
 
                 let chunk_samples = audio.len();
                 // Keep a copy for potential overlap-retry (only when overlap trimming is active).
@@ -609,7 +617,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 }
                 pending_w.fetch_sub(1, Ordering::Relaxed);
             }
-            debug!("Chunk worker thread exited");
+            info!("[worker] thread exited cleanly");
         });
 
         if let Some(ch) = app.try_state::<ActiveChunkingHandle>() {

@@ -895,10 +895,14 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                     deduped
                                 };
                                 // Check BEFORE pushing the space — otherwise last() returns ' '.
+                                // Only treat '!' / '?' / '…' as reliable sentence endings.
+                                // Parakeet appends '.' to every chunk (even mid-sentence VAD
+                                // splits), so using '.' here causes false capitalisation like
+                                // "Tu es. Le meilleur." when the user said one sentence.
                                 let prev_ends_sentence = out
                                     .chars()
                                     .last()
-                                    .map_or(false, |c| matches!(c, '.' | '!' | '?' | '…'));
+                                    .map_or(false, |c| matches!(c, '!' | '?' | '…'));
                                 out.push(' ');
                                 let mut chars = chunk_to_join.chars();
                                 if let Some(first) = chars.next() {

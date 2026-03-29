@@ -562,16 +562,28 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             .to_lowercase();
                         let is_known_hallucination =
                             HALLUCINATION_BLOCKLIST.contains(&bare.as_str());
-                        let text = if is_parakeet_v3_w
+                        // Two discard conditions:
+                        // 1. Background chunk (not final): single word, short, idx>0 or blocklisted.
+                        // 2. Final chunk: single word, blocklisted, short, and session already has
+                        //    prior content (idx > 0) — catches trailing hallucinations like "Yeah."
+                        //    on the silence after the user releases the key.
+                        let is_trailing_hallucination = is_parakeet_v3_w
+                            && word_count <= 1
+                            && !text.is_empty()
+                            && is_final_chunk
+                            && is_known_hallucination
+                            && idx > 0
+                            && chunk_samples < PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD;
+                        let is_background_hallucination = is_parakeet_v3_w
                             && word_count <= 1
                             && !text.is_empty()
                             && !is_final_chunk
                             && chunk_samples < PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD
-                            && (idx > 0 || is_known_hallucination)
-                        {
+                            && (idx > 0 || is_known_hallucination);
+                        let text = if is_trailing_hallucination || is_background_hallucination {
                             debug!(
-                                "Chunk {}: discarding likely hallucination {:?} ({} samples)",
-                                idx, text, chunk_samples
+                                "Chunk {}: discarding likely hallucination {:?} ({} samples, final={})",
+                                idx, text, chunk_samples, is_final_chunk
                             );
                             String::new()
                         } else {

@@ -1,11 +1,12 @@
 use crate::managers::model::{EngineType, ModelInfo};
 use crate::model_ids::{
-    PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
+    PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
 };
+use crate::parakeet_quality::ParakeetSessionCompletion;
 use crate::settings::AppSettings;
 use crate::telemetry::TranscriptionTelemetry;
 use crate::voice_profile::current_runtime_adjustment;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::{Arc, Mutex};
 use tauri::AppHandle;
 
@@ -48,19 +49,13 @@ pub(crate) const PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 24_000; // 1.5 s
 /// Minimum remaining samples to bother sending the final chunk.
 /// Chunks shorter than this are silence tail after the user stopped speaking.
 pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s
-/// English Parakeet profile tuned to reduce long-utterance truncation.
-/// The recorder stores mainly speech frames, so "20 s of samples" can take much
-/// longer than 20 wall-clock seconds when the speaker hesitates or the VAD trims
-/// micro-pauses. Shorter chunks keep long dictation responsive and more reliable.
-pub(crate) const PARAKEET_V3_EN_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s at 16 kHz
-pub(crate) const PARAKEET_V3_EN_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1 s
-/// Multilingual Parakeet profile for dictation-heavy languages like French.
-/// A 30 s speech-only interval is too slow for uninterrupted dictation and can
-/// cause "nothing transcribed until the end" behaviour on long takes.
+/// Unified Parakeet V3 profile for user-selected language dictation.
+/// A shorter interval improves long uninterrupted dictation and helps the
+/// overlap trimmer recover from residual boundary cuts more often.
 pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s at 16 kHz
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1.0 s
 
 // ── Chunking types ───────────────────────────────────────────────────────────
 
@@ -83,6 +78,7 @@ pub struct ChunkingHandle {
     pub(crate) results: Arc<Mutex<Vec<(usize, String)>>>,
     pub(crate) pending_chunks: Arc<AtomicUsize>,
     pub(crate) failed_chunks: Arc<AtomicUsize>,
+    pub(crate) parakeet_counters: Arc<Mutex<ParakeetSessionCompletion>>,
     /// Set to true by cancel_current_operation to make the worker thread
     /// exit immediately without processing remaining queued chunks.
     pub(crate) cancel_flag: Arc<AtomicBool>,
@@ -153,19 +149,30 @@ pub(crate) fn chunking_profile_for_model(
                 _ => None,
             }
         }
-        Some(info) if info.id == PARAKEET_V3_ENGLISH_ID => Some(ChunkingProfile {
-            interval_samples: PARAKEET_V3_EN_CHUNK_INTERVAL_SAMPLES,
-            overlap_samples: PARAKEET_V3_EN_CHUNK_OVERLAP_SAMPLES,
-        }),
         Some(info)
             if matches!(
                 info.id.as_str(),
                 PARAKEET_V3_MULTILINGUAL_ID | PARAKEET_V3_LEGACY_ID
             ) =>
         {
+            let base_chunk_seconds = (PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES / 16_000) as u8;
+            let base_overlap_ms =
+                ((PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES * 1000) / 16_000) as u16;
+            let adjusted = current_runtime_adjustment(
+                app,
+                &info.id,
+                base_chunk_seconds,
+                base_overlap_ms,
+            )
+            .unwrap_or_else(|| crate::voice_profile::VoiceRuntimeAdjustment {
+                adjusted_chunk_seconds: base_chunk_seconds,
+                adjusted_overlap_ms: base_overlap_ms,
+                vad_hangover_frames_delta: 0,
+                reason: None,
+            });
             Some(ChunkingProfile {
-                interval_samples: PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES,
-                overlap_samples: PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES,
+                interval_samples: usize::from(adjusted.adjusted_chunk_seconds) * 16_000,
+                overlap_samples: (usize::from(adjusted.adjusted_overlap_ms) * 16_000) / 1000,
             })
         }
         Some(info)

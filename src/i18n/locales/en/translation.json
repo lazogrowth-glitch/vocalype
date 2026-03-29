@@ -65,13 +65,9 @@
         "name": "Parakeet V3",
         "description": "Experimental multilingual ONNX path. Very fast and can work well when you stay in one language, but still less robust than Whisper for mixed-language dictation."
       },
-      "parakeet-tdt-0.6b-v3-english": {
-        "name": "Parakeet V3 English",
-        "description": "Fast English-first Parakeet profile. Extremely responsive on weaker machines, with an NPU-friendly path on supported Copilot+ PCs."
-      },
       "parakeet-tdt-0.6b-v3-multilingual": {
-        "name": "Parakeet V3 Multilingual",
-        "description": "Fast multilingual Parakeet profile tuned for French and other non-English dictation, with an NPU-friendly path on supported Copilot+ PCs."
+        "name": "Parakeet V3",
+        "description": "Fast Parakeet V3 profile with one shared model path. The spoken language is chosen from the app language setting instead of a separate English model."
       },
       "moonshine-base": {
         "name": "Moonshine Base",

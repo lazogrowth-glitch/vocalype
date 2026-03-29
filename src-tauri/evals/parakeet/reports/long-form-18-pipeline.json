@@ -1,0 +1,3513 @@
+{
+  "model_id": "parakeet-tdt-0.6b-v3-multilingual",
+  "manifest_path": "C:\\developer\\sas\\vocalype\\src-tauri\\evals\\parakeet\\dataset_manifest_long_form_18.json",
+  "aggregate": {
+    "quality": {
+      "samples": 18,
+      "global_wer": 0.15461548,
+      "global_cer": 0.08002239,
+      "global_omission_rate": 0.13548306,
+      "global_duplication_rate": 0.1183736,
+      "global_hallucination_rate": 0.1183736,
+      "average_end_truncation_score": 0.5138889,
+      "top_omitted_terms": [
+        {
+          "word": "pauses",
+          "count": 5
+        },
+        {
+          "word": "a",
+          "count": 4
+        },
+        {
+          "word": "sans",
+          "count": 4
+        },
+        {
+          "word": "est",
+          "count": 3
+        },
+        {
+          "word": "et",
+          "count": 3
+        },
+        {
+          "word": "l",
+          "count": 3
+        },
+        {
+          "word": "application",
+          "count": 2
+        },
+        {
+          "word": "c",
+          "count": 2
+        },
+        {
+          "word": "de",
+          "count": 2
+        },
+        {
+          "word": "dictee",
+          "count": 2
+        }
+      ],
+      "top_duplicated_terms": [
+        {
+          "word": "the",
+          "count": 7
+        },
+        {
+          "word": "and",
+          "count": 4
+        },
+        {
+          "word": "pause",
+          "count": 3
+        },
+        {
+          "word": "so",
+          "count": 3
+        },
+        {
+          "word": "to",
+          "count": 3
+        },
+        {
+          "word": "user",
+          "count": 3
+        },
+        {
+          "word": "à",
+          "count": 3
+        },
+        {
+          "word": "2",
+          "count": 2
+        },
+        {
+          "word": "l'application",
+          "count": 2
+        },
+        {
+          "word": "not",
+          "count": 2
+        }
+      ],
+      "top_hallucinated_terms": [
+        {
+          "word": "the",
+          "count": 7
+        },
+        {
+          "word": "and",
+          "count": 4
+        },
+        {
+          "word": "pause",
+          "count": 3
+        },
+        {
+          "word": "so",
+          "count": 3
+        },
+        {
+          "word": "to",
+          "count": 3
+        },
+        {
+          "word": "user",
+          "count": 3
+        },
+        {
+          "word": "à",
+          "count": 3
+        },
+        {
+          "word": "2",
+          "count": 2
+        },
+        {
+          "word": "l'application",
+          "count": 2
+        },
+        {
+          "word": "not",
+          "count": 2
+        }
+      ]
+    },
+    "avg_latency_ms": 2432.611,
+    "avg_chunk_count": 3.3888888
+  },
+  "by_scenario": {
+    "pausey_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.20754717,
+        "global_cer": 0.052083332,
+        "global_omission_rate": 0.20754717,
+        "global_duplication_rate": 0.14285715,
+        "global_hallucination_rate": 0.14285715,
+        "average_end_truncation_score": 0.75,
+        "top_omitted_terms": [
+          {
+            "word": "application",
+            "count": 1
+          },
+          {
+            "word": "apres",
+            "count": 1
+          },
+          {
+            "word": "arrete",
+            "count": 1
+          },
+          {
+            "word": "et",
+            "count": 1
+          },
+          {
+            "word": "general",
+            "count": 1
+          },
+          {
+            "word": "idee",
+            "count": 1
+          },
+          {
+            "word": "je",
+            "count": 1
+          },
+          {
+            "word": "l",
+            "count": 1
+          },
+          {
+            "word": "phrase",
+            "count": 1
+          },
+          {
+            "word": "reflechir",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "après",
+            "count": 1
+          },
+          {
+            "word": "général",
+            "count": 1
+          },
+          {
+            "word": "idée",
+            "count": 1
+          },
+          {
+            "word": "l'application",
+            "count": 1
+          },
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "réfléchir",
+            "count": 1
+          },
+          {
+            "word": "s'arrête",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "après",
+            "count": 1
+          },
+          {
+            "word": "général",
+            "count": 1
+          },
+          {
+            "word": "idée",
+            "count": 1
+          },
+          {
+            "word": "l'application",
+            "count": 1
+          },
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "réfléchir",
+            "count": 1
+          },
+          {
+            "word": "s'arrête",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 2194.0,
+      "avg_chunk_count": 3.0
+    },
+    "pausey_en": {
+      "quality": {
+        "samples": 2,
+        "global_wer": 0.09024064,
+        "global_cer": 0.06787978,
+        "global_omission_rate": 0.052361853,
+        "global_duplication_rate": 0.0854391,
+        "global_hallucination_rate": 0.0854391,
+        "average_end_truncation_score": 0.25,
+        "top_omitted_terms": [
+          {
+            "word": "pauses",
+            "count": 3
+          },
+          {
+            "word": "places",
+            "count": 1
+          },
+          {
+            "word": "stream",
+            "count": 1
+          },
+          {
+            "word": "users",
+            "count": 1
+          },
+          {
+            "word": "words",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "poses",
+            "count": 2
+          },
+          {
+            "word": "user",
+            "count": 2
+          },
+          {
+            "word": "an",
+            "count": 1
+          },
+          {
+            "word": "change",
+            "count": 1
+          },
+          {
+            "word": "correct",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "place",
+            "count": 1
+          },
+          {
+            "word": "something",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "word",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "poses",
+            "count": 2
+          },
+          {
+            "word": "user",
+            "count": 2
+          },
+          {
+            "word": "an",
+            "count": 1
+          },
+          {
+            "word": "change",
+            "count": 1
+          },
+          {
+            "word": "correct",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "place",
+            "count": 1
+          },
+          {
+            "word": "something",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "word",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 2712.0,
+      "avg_chunk_count": 4.0
+    },
+    "very_long_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.49425286,
+        "global_cer": 0.20662768,
+        "global_omission_rate": 0.40229884,
+        "global_duplication_rate": 0.40229884,
+        "global_hallucination_rate": 0.40229884,
+        "average_end_truncation_score": 0.9166667,
+        "top_omitted_terms": [
+          {
+            "word": "sans",
+            "count": 3
+          },
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "anglais",
+            "count": 1
+          },
+          {
+            "word": "application",
+            "count": 1
+          },
+          {
+            "word": "c",
+            "count": 1
+          },
+          {
+            "word": "correctement",
+            "count": 1
+          },
+          {
+            "word": "de",
+            "count": 1
+          },
+          {
+            "word": "des",
+            "count": 1
+          },
+          {
+            "word": "deux",
+            "count": 1
+          },
+          {
+            "word": "dictee",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "so",
+            "count": 3
+          },
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "angle",
+            "count": 1
+          },
+          {
+            "word": "c'est",
+            "count": 1
+          },
+          {
+            "word": "cas",
+            "count": 1
+          },
+          {
+            "word": "correctment",
+            "count": 1
+          },
+          {
+            "word": "dictée",
+            "count": 1
+          },
+          {
+            "word": "durée",
+            "count": 1
+          },
+          {
+            "word": "française",
+            "count": 1
+          },
+          {
+            "word": "important",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "so",
+            "count": 3
+          },
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "angle",
+            "count": 1
+          },
+          {
+            "word": "c'est",
+            "count": 1
+          },
+          {
+            "word": "cas",
+            "count": 1
+          },
+          {
+            "word": "correctment",
+            "count": 1
+          },
+          {
+            "word": "dictée",
+            "count": 1
+          },
+          {
+            "word": "durée",
+            "count": 1
+          },
+          {
+            "word": "française",
+            "count": 1
+          },
+          {
+            "word": "important",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 3006.0,
+      "avg_chunk_count": 4.0
+    },
+    "self_correct_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.5102041,
+        "global_cer": 0.19485295,
+        "global_omission_rate": 0.48979592,
+        "global_duplication_rate": 0.44444445,
+        "global_hallucination_rate": 0.44444445,
+        "average_end_truncation_score": 1.0,
+        "top_omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "abord",
+            "count": 1
+          },
+          {
+            "word": "auto",
+            "count": 1
+          },
+          {
+            "word": "bizarres",
+            "count": 1
+          },
+          {
+            "word": "ca",
+            "count": 1
+          },
+          {
+            "word": "comprehensibles",
+            "count": 1
+          },
+          {
+            "word": "corrections",
+            "count": 1
+          },
+          {
+            "word": "creer",
+            "count": 1
+          },
+          {
+            "word": "d",
+            "count": 1
+          },
+          {
+            "word": "de",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "the",
+            "count": 2
+          },
+          {
+            "word": "autocorrection",
+            "count": 1
+          },
+          {
+            "word": "bizarre",
+            "count": 1
+          },
+          {
+            "word": "comprehensible",
+            "count": 1
+          },
+          {
+            "word": "d'abord",
+            "count": 1
+          },
+          {
+            "word": "l'équipe",
+            "count": 1
+          },
+          {
+            "word": "n'est",
+            "count": 1
+          },
+          {
+            "word": "of",
+            "count": 1
+          },
+          {
+            "word": "on",
+            "count": 1
+          },
+          {
+            "word": "parler",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "the",
+            "count": 2
+          },
+          {
+            "word": "autocorrection",
+            "count": 1
+          },
+          {
+            "word": "bizarre",
+            "count": 1
+          },
+          {
+            "word": "comprehensible",
+            "count": 1
+          },
+          {
+            "word": "d'abord",
+            "count": 1
+          },
+          {
+            "word": "l'équipe",
+            "count": 1
+          },
+          {
+            "word": "n'est",
+            "count": 1
+          },
+          {
+            "word": "of",
+            "count": 1
+          },
+          {
+            "word": "on",
+            "count": 1
+          },
+          {
+            "word": "parler",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 1258.0,
+      "avg_chunk_count": 2.0
+    },
+    "long_form_en": {
+      "quality": {
+        "samples": 3,
+        "global_wer": 0.08333564,
+        "global_cer": 0.05991176,
+        "global_omission_rate": 0.08333564,
+        "global_duplication_rate": 0.043598324,
+        "global_hallucination_rate": 0.043598324,
+        "average_end_truncation_score": 0.8055555,
+        "top_omitted_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "at",
+            "count": 1
+          },
+          {
+            "word": "clauses",
+            "count": 1
+          },
+          {
+            "word": "dictate",
+            "count": 1
+          },
+          {
+            "word": "here",
+            "count": 1
+          },
+          {
+            "word": "product",
+            "count": 1
+          },
+          {
+            "word": "same",
+            "count": 1
+          },
+          {
+            "word": "stays",
+            "count": 1
+          },
+          {
+            "word": "tests",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "2",
+            "count": 1
+          },
+          {
+            "word": "claws",
+            "count": 1
+          },
+          {
+            "word": "project",
+            "count": 1
+          },
+          {
+            "word": "stay",
+            "count": 1
+          },
+          {
+            "word": "test",
+            "count": 1
+          },
+          {
+            "word": "there",
+            "count": 1
+          },
+          {
+            "word": "will",
+            "count": 1
+          },
+          {
+            "word": "with",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "2",
+            "count": 1
+          },
+          {
+            "word": "claws",
+            "count": 1
+          },
+          {
+            "word": "project",
+            "count": 1
+          },
+          {
+            "word": "stay",
+            "count": 1
+          },
+          {
+            "word": "test",
+            "count": 1
+          },
+          {
+            "word": "there",
+            "count": 1
+          },
+          {
+            "word": "will",
+            "count": 1
+          },
+          {
+            "word": "with",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 2194.3333,
+      "avg_chunk_count": 3.3333333
+    },
+    "long_form_fr": {
+      "quality": {
+        "samples": 2,
+        "global_wer": 0.2767094,
+        "global_cer": 0.14789851,
+        "global_omission_rate": 0.26745012,
+        "global_duplication_rate": 0.2008869,
+        "global_hallucination_rate": 0.2008869,
+        "average_end_truncation_score": 0.29166666,
+        "top_omitted_terms": [
+          {
+            "word": "et",
+            "count": 2
+          },
+          {
+            "word": "quelques",
+            "count": 2
+          },
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "c",
+            "count": 1
+          },
+          {
+            "word": "ce",
+            "count": 1
+          },
+          {
+            "word": "coherente",
+            "count": 1
+          },
+          {
+            "word": "dans",
+            "count": 1
+          },
+          {
+            "word": "debut",
+            "count": 1
+          },
+          {
+            "word": "dictee",
+            "count": 1
+          },
+          {
+            "word": "ecrit",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "and",
+            "count": 2
+          },
+          {
+            "word": "coherent",
+            "count": 1
+          },
+          {
+            "word": "dicté",
+            "count": 1
+          },
+          {
+            "word": "début",
+            "count": 1
+          },
+          {
+            "word": "fidèle",
+            "count": 1
+          },
+          {
+            "word": "hésitation",
+            "count": 1
+          },
+          {
+            "word": "jusqu'à",
+            "count": 1
+          },
+          {
+            "word": "les",
+            "count": 1
+          },
+          {
+            "word": "manière",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 2
+          },
+          {
+            "word": "coherent",
+            "count": 1
+          },
+          {
+            "word": "dicté",
+            "count": 1
+          },
+          {
+            "word": "début",
+            "count": 1
+          },
+          {
+            "word": "fidèle",
+            "count": 1
+          },
+          {
+            "word": "hésitation",
+            "count": 1
+          },
+          {
+            "word": "jusqu'à",
+            "count": 1
+          },
+          {
+            "word": "les",
+            "count": 1
+          },
+          {
+            "word": "manière",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 1226.0,
+      "avg_chunk_count": 2.0
+    },
+    "conversation_long_en": {
+      "quality": {
+        "samples": 2,
+        "global_wer": 0.045547947,
+        "global_cer": 0.024465952,
+        "global_omission_rate": 0.031849317,
+        "global_duplication_rate": 0.045,
+        "global_hallucination_rate": 0.045,
+        "average_end_truncation_score": 0.5,
+        "top_omitted_terms": [
+          {
+            "word": "becomes",
+            "count": 1
+          },
+          {
+            "word": "conversational",
+            "count": 1
+          },
+          {
+            "word": "note",
+            "count": 1
+          },
+          {
+            "word": "paste",
+            "count": 1
+          },
+          {
+            "word": "polished",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "become",
+            "count": 1
+          },
+          {
+            "word": "cover",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "past",
+            "count": 1
+          },
+          {
+            "word": "poll",
+            "count": 1
+          },
+          {
+            "word": "sessional",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "become",
+            "count": 1
+          },
+          {
+            "word": "cover",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "past",
+            "count": 1
+          },
+          {
+            "word": "poll",
+            "count": 1
+          },
+          {
+            "word": "sessional",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 2751.5,
+      "avg_chunk_count": 4.0
+    },
+    "mixed_rhythm_en": {
+      "quality": {
+        "samples": 2,
+        "global_wer": 0.10544635,
+        "global_cer": 0.07837805,
+        "global_omission_rate": 0.08435708,
+        "global_duplication_rate": 0.045008913,
+        "global_hallucination_rate": 0.045008913,
+        "average_end_truncation_score": 0.5,
+        "top_omitted_terms": [
+          {
+            "word": "duplicate",
+            "count": 1
+          },
+          {
+            "word": "idea",
+            "count": 1
+          },
+          {
+            "word": "little",
+            "count": 1
+          },
+          {
+            "word": "real",
+            "count": 1
+          },
+          {
+            "word": "rough",
+            "count": 1
+          },
+          {
+            "word": "same",
+            "count": 1
+          },
+          {
+            "word": "sentences",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "usage",
+            "count": 1
+          },
+          {
+            "word": "words",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "duplicated",
+            "count": 1
+          },
+          {
+            "word": "rules",
+            "count": 1
+          },
+          {
+            "word": "sentence",
+            "count": 1
+          },
+          {
+            "word": "sh",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          },
+          {
+            "word": "word",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "duplicated",
+            "count": 1
+          },
+          {
+            "word": "rules",
+            "count": 1
+          },
+          {
+            "word": "sentence",
+            "count": 1
+          },
+          {
+            "word": "sh",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          },
+          {
+            "word": "word",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 2589.5,
+      "avg_chunk_count": 3.5
+    },
+    "very_long_en": {
+      "quality": {
+        "samples": 2,
+        "global_wer": 0.09022853,
+        "global_cer": 0.0446558,
+        "global_omission_rate": 0.07788285,
+        "global_duplication_rate": 0.08453167,
+        "global_hallucination_rate": 0.08453167,
+        "average_end_truncation_score": 0.20833334,
+        "top_omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "adds",
+            "count": 1
+          },
+          {
+            "word": "app",
+            "count": 1
+          },
+          {
+            "word": "drifts",
+            "count": 1
+          },
+          {
+            "word": "endings",
+            "count": 1
+          },
+          {
+            "word": "model",
+            "count": 1
+          },
+          {
+            "word": "notes",
+            "count": 1
+          },
+          {
+            "word": "out",
+            "count": 1
+          },
+          {
+            "word": "pauses",
+            "count": 1
+          },
+          {
+            "word": "so",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "the",
+            "count": 2
+          },
+          {
+            "word": "2",
+            "count": 1
+          },
+          {
+            "word": "add",
+            "count": 1
+          },
+          {
+            "word": "correctly",
+            "count": 1
+          },
+          {
+            "word": "ending",
+            "count": 1
+          },
+          {
+            "word": "modus",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "or",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "shift",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "the",
+            "count": 2
+          },
+          {
+            "word": "2",
+            "count": 1
+          },
+          {
+            "word": "add",
+            "count": 1
+          },
+          {
+            "word": "correctly",
+            "count": 1
+          },
+          {
+            "word": "ending",
+            "count": 1
+          },
+          {
+            "word": "modus",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "or",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "shift",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 3521.0,
+      "avg_chunk_count": 4.5
+    },
+    "self_correct_en": {
+      "quality": {
+        "samples": 2,
+        "global_wer": 0.052360915,
+        "global_cer": 0.040273745,
+        "global_omission_rate": 0.030621786,
+        "global_duplication_rate": 0.044298045,
+        "global_hallucination_rate": 0.044298045,
+        "average_end_truncation_score": 0.3333333,
+        "top_omitted_terms": [
+          {
+            "word": "filler",
+            "count": 1
+          },
+          {
+            "word": "product",
+            "count": 1
+          },
+          {
+            "word": "safer",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "filter",
+            "count": 1
+          },
+          {
+            "word": "no",
+            "count": 1
+          },
+          {
+            "word": "project",
+            "count": 1
+          },
+          {
+            "word": "s",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          },
+          {
+            "word": "worry",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "filter",
+            "count": 1
+          },
+          {
+            "word": "no",
+            "count": 1
+          },
+          {
+            "word": "project",
+            "count": 1
+          },
+          {
+            "word": "s",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          },
+          {
+            "word": "worry",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 2573.0,
+      "avg_chunk_count": 3.0
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "long_form_en_001",
+      "scenario": "long_form_en",
+      "language": "en",
+      "chunk_count": 3,
+      "latency_ms": 1812,
+      "metrics": {
+        "wer": 0.015625,
+        "cer": 0.003021148,
+        "omission_rate": 0.015625,
+        "duplication_rate": 0.015625,
+        "hallucination_rate": 0.015625,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 64,
+        "hypothesis_word_count": 64,
+        "reference_char_count": 331,
+        "hypothesis_char_count": 330,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "tests",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "test",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "test",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Today I want to run a real long form dictation test to see whether the model can keep the full meaning of what I say from the beginning to the end of the recording without dropping words in the middle of the sentence and without losing the final part when I continue speaking for much longer than in the short test we used before."
+    },
+    {
+      "sample_id": "long_form_en_002",
+      "scenario": "long_form_en",
+      "language": "en",
+      "chunk_count": 3,
+      "latency_ms": 2047,
+      "metrics": {
+        "wer": 0.18032786,
+        "cer": 0.13864307,
+        "omission_rate": 0.18032786,
+        "duplication_rate": 0.074074075,
+        "hallucination_rate": 0.074074075,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 61,
+        "hypothesis_word_count": 54,
+        "reference_char_count": 339,
+        "hypothesis_char_count": 298,
+        "omitted_words": 11,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "at",
+            "count": 1
+          },
+          {
+            "word": "clauses",
+            "count": 1
+          },
+          {
+            "word": "same",
+            "count": 1
+          },
+          {
+            "word": "stays",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "thinking",
+            "count": 1
+          },
+          {
+            "word": "time",
+            "count": 1
+          },
+          {
+            "word": "while",
+            "count": 1
+          },
+          {
+            "word": "working",
+            "count": 1
+          },
+          {
+            "word": "would",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "claws",
+            "count": 1
+          },
+          {
+            "word": "stay",
+            "count": 1
+          },
+          {
+            "word": "will",
+            "count": 1
+          },
+          {
+            "word": "with",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "claws",
+            "count": 1
+          },
+          {
+            "word": "stay",
+            "count": 1
+          },
+          {
+            "word": "will",
+            "count": 1
+          },
+          {
+            "word": "with",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "This test is meant to sound more natural than a simple scripted sentence because I want to speak the way a normal user will speak with. and I want to know whether the transcript still stay readable, accurate and stable when the rhythm is not perfectly even and the idea develops over several claws."
+    },
+    {
+      "sample_id": "long_form_en_003",
+      "scenario": "long_form_en",
+      "language": "en",
+      "chunk_count": 4,
+      "latency_ms": 2724,
+      "metrics": {
+        "wer": 0.054054055,
+        "cer": 0.038071066,
+        "omission_rate": 0.054054055,
+        "duplication_rate": 0.04109589,
+        "hallucination_rate": 0.04109589,
+        "end_truncation_score": 0.6666666,
+        "reference_word_count": 74,
+        "hypothesis_word_count": 73,
+        "reference_char_count": 394,
+        "hypothesis_char_count": 386,
+        "omitted_words": 4,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "dictate",
+            "count": 1
+          },
+          {
+            "word": "here",
+            "count": 1
+          },
+          {
+            "word": "product",
+            "count": 1
+          },
+          {
+            "word": "two",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "2",
+            "count": 1
+          },
+          {
+            "word": "project",
+            "count": 1
+          },
+          {
+            "word": "there",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "2",
+            "count": 1
+          },
+          {
+            "word": "project",
+            "count": 1
+          },
+          {
+            "word": "there",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "I am going to explain a project issue in a realistic way. as if I were talking to someone on the team during a work session and the important thing there is not only whether the app catches the right words but also whether it keeps the structure of the explanation clear enough to read afterwards because a user may a long message like this for one or 2 minutes without really stopping."
+    },
+    {
+      "sample_id": "pausey_en_001",
+      "scenario": "pausey_en",
+      "language": "en",
+      "chunk_count": 4,
+      "latency_ms": 2674,
+      "metrics": {
+        "wer": 0.04411765,
+        "cer": 0.034666665,
+        "omission_rate": 0.04411765,
+        "duplication_rate": 0.04411765,
+        "hallucination_rate": 0.04411765,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 68,
+        "hypothesis_word_count": 68,
+        "reference_char_count": 375,
+        "hypothesis_char_count": 376,
+        "omitted_words": 3,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "pauses",
+            "count": 2
+          },
+          {
+            "word": "stream",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "poses",
+            "count": 2
+          },
+          {
+            "word": "change",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "poses",
+            "count": 2
+          },
+          {
+            "word": "change",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "I want to test how the app behaves when I speak with natural poses because in real life people do not usually speak in one continuous change. they stop for a second to think they take a breath, they restart the sentence and then they continue so this test should help us see whether those poses create strange punctuation, weird cuts or missing pieces in the final transcript."
+    },
+    {
+      "sample_id": "pausey_en_002",
+      "scenario": "pausey_en",
+      "language": "en",
+      "chunk_count": 4,
+      "latency_ms": 2750,
+      "metrics": {
+        "wer": 0.13636364,
+        "cer": 0.1010929,
+        "omission_rate": 0.060606062,
+        "duplication_rate": 0.12676056,
+        "hallucination_rate": 0.12676056,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 66,
+        "hypothesis_word_count": 71,
+        "reference_char_count": 366,
+        "hypothesis_char_count": 395,
+        "omitted_words": 4,
+        "duplicated_words": 9,
+        "hallucinated_words": 9,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "pauses",
+            "count": 1
+          },
+          {
+            "word": "places",
+            "count": 1
+          },
+          {
+            "word": "users",
+            "count": 1
+          },
+          {
+            "word": "words",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "user",
+            "count": 2
+          },
+          {
+            "word": "an",
+            "count": 1
+          },
+          {
+            "word": "correct",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "place",
+            "count": 1
+          },
+          {
+            "word": "something",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "word",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "user",
+            "count": 2
+          },
+          {
+            "word": "an",
+            "count": 1
+          },
+          {
+            "word": "correct",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "place",
+            "count": 1
+          },
+          {
+            "word": "something",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "word",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Right now I am doing a longer speaking test with pause in an unusual place because something user sometimes user hesitate in the middle of the a thought and then continue after a short silence. And what I want to check is whether the app still keeps the whole sentence correct. coherent instead of splitting it badly, adding too many periods or dropping the word that come right after the pause."
+    },
+    {
+      "sample_id": "self_correct_en_001",
+      "scenario": "self_correct_en",
+      "language": "en",
+      "chunk_count": 3,
+      "latency_ms": 2273,
+      "metrics": {
+        "wer": 0.072463766,
+        "cer": 0.06077348,
+        "omission_rate": 0.028985508,
+        "duplication_rate": 0.056338027,
+        "hallucination_rate": 0.056338027,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 69,
+        "hypothesis_word_count": 71,
+        "reference_char_count": 362,
+        "hypothesis_char_count": 376,
+        "omitted_words": 2,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "product",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "no",
+            "count": 1
+          },
+          {
+            "word": "project",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          },
+          {
+            "word": "worry",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "no",
+            "count": 1
+          },
+          {
+            "word": "project",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          },
+          {
+            "word": "worry",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Tomorrow I need to send the report to support no worry. No sorry. That is not that what I meant I need to send it the project team first and then after that I can forward it to support because I want this test to show whether self corrections remain understandable. in the final transcript and whether the app keeps both the original idea and the correction in a sensible way."
+    },
+    {
+      "sample_id": "self_correct_en_002",
+      "scenario": "self_correct_en",
+      "language": "en",
+      "chunk_count": 3,
+      "latency_ms": 2873,
+      "metrics": {
+        "wer": 0.032258064,
+        "cer": 0.01977401,
+        "omission_rate": 0.032258064,
+        "duplication_rate": 0.032258064,
+        "hallucination_rate": 0.032258064,
+        "end_truncation_score": 0.6666666,
+        "reference_word_count": 62,
+        "hypothesis_word_count": 62,
+        "reference_char_count": 354,
+        "hypothesis_char_count": 352,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "filler",
+            "count": 1
+          },
+          {
+            "word": "safer",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "filter",
+            "count": 1
+          },
+          {
+            "word": "s",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "filter",
+            "count": 1
+          },
+          {
+            "word": "s",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "At first I was going to say that we should ship the update on Friday. Actually no let me rephrase that I think Monday is probably s because there are still a few details to verify and I want to know if the transcript handles this kind of spoken correction. cleanly without creating duplicated fragments or strange filter words around the reformulation."
+    },
+    {
+      "sample_id": "conversation_long_en_001",
+      "scenario": "conversation_long_en",
+      "language": "en",
+      "chunk_count": 4,
+      "latency_ms": 2831,
+      "metrics": {
+        "wer": 0.05,
+        "cer": 0.022988506,
+        "omission_rate": 0.05,
+        "duplication_rate": 0.05,
+        "hallucination_rate": 0.05,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 80,
+        "hypothesis_word_count": 80,
+        "reference_char_count": 435,
+        "hypothesis_char_count": 431,
+        "omitted_words": 4,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "becomes",
+            "count": 1
+          },
+          {
+            "word": "note",
+            "count": 1
+          },
+          {
+            "word": "paste",
+            "count": 1
+          },
+          {
+            "word": "polished",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "become",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "past",
+            "count": 1
+          },
+          {
+            "word": "poll",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "become",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "past",
+            "count": 1
+          },
+          {
+            "word": "poll",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Okay, so imagine I am explaining something casually to a teammate and I am not trying to read in a poll. voice I am just speaking the way I normally would and saying that the app works pretty well most of the time. but when the recording become longer and the speech is more spontaneous the real question is whether the transcript still feels like something a person would actually want to copy past into a message document or not."
+    },
+    {
+      "sample_id": "conversation_long_en_002",
+      "scenario": "conversation_long_en",
+      "language": "en",
+      "chunk_count": 4,
+      "latency_ms": 2672,
+      "metrics": {
+        "wer": 0.04109589,
+        "cer": 0.025943397,
+        "omission_rate": 0.01369863,
+        "duplication_rate": 0.04,
+        "hallucination_rate": 0.04,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 73,
+        "hypothesis_word_count": 75,
+        "reference_char_count": 424,
+        "hypothesis_char_count": 431,
+        "omitted_words": 1,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "conversational",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "cover",
+            "count": 1
+          },
+          {
+            "word": "sessional",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "cover",
+            "count": 1
+          },
+          {
+            "word": "sessional",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "This is another long cover sessional sample and the goal is to see whether the model keeps up when the speaker changes direction. a little inside the same message because a lot of people start with one idea then add context and then come back to the original point and what matters for user experience. is that the final text still makes sense without looking broken over punctuated or partially translated into the wrong language."
+    },
+    {
+      "sample_id": "mixed_rhythm_en_001",
+      "scenario": "mixed_rhythm_en",
+      "language": "en",
+      "chunk_count": 4,
+      "latency_ms": 2787,
+      "metrics": {
+        "wer": 0.13513513,
+        "cer": 0.10913706,
+        "omission_rate": 0.10810811,
+        "duplication_rate": 0.029411765,
+        "hallucination_rate": 0.029411765,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 74,
+        "hypothesis_word_count": 68,
+        "reference_char_count": 394,
+        "hypothesis_char_count": 360,
+        "omitted_words": 8,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "duplicate",
+            "count": 1
+          },
+          {
+            "word": "idea",
+            "count": 1
+          },
+          {
+            "word": "little",
+            "count": 1
+          },
+          {
+            "word": "same",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "words",
+            "count": 1
+          },
+          {
+            "word": "would",
+            "count": 1
+          },
+          {
+            "word": "write",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "duplicated",
+            "count": 1
+          },
+          {
+            "word": "word",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "duplicated",
+            "count": 1
+          },
+          {
+            "word": "word",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "For this test I am going to vary the rhythm on purpose so sometimes I will speak fairly quickly and then I will slow down and then I will pause for a moment before continuing because I want to stress the chunking and assembly logic and the see whether app begins to lose word duplicated sections or insert punctuation that does not really match the way a human"
+    },
+    {
+      "sample_id": "mixed_rhythm_en_002",
+      "scenario": "mixed_rhythm_en",
+      "language": "en",
+      "chunk_count": 3,
+      "latency_ms": 2392,
+      "metrics": {
+        "wer": 0.07575758,
+        "cer": 0.04761905,
+        "omission_rate": 0.060606062,
+        "duplication_rate": 0.060606062,
+        "hallucination_rate": 0.060606062,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 66,
+        "hypothesis_word_count": 66,
+        "reference_char_count": 378,
+        "hypothesis_char_count": 376,
+        "omitted_words": 4,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "real",
+            "count": 1
+          },
+          {
+            "word": "rough",
+            "count": 1
+          },
+          {
+            "word": "sentences",
+            "count": 1
+          },
+          {
+            "word": "usage",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "rules",
+            "count": 1
+          },
+          {
+            "word": "sentence",
+            "count": 1
+          },
+          {
+            "word": "sh",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "rules",
+            "count": 1
+          },
+          {
+            "word": "sentence",
+            "count": 1
+          },
+          {
+            "word": "sh",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The reason I am doing this recording is that short benchmark sentence can look very good while user still feels rules and what I really care about now is whether the transcript stays stable over time while I continue talking sh changing speed, changing tone. and sometimes pausing briefly because that is much closer to how an actual user would dictate a real note or message."
+    },
+    {
+      "sample_id": "very_long_en_001",
+      "scenario": "very_long_en",
+      "language": "en",
+      "chunk_count": 5,
+      "latency_ms": 4046,
+      "metrics": {
+        "wer": 0.10638298,
+        "cer": 0.04347826,
+        "omission_rate": 0.10638298,
+        "duplication_rate": 0.09677419,
+        "hallucination_rate": 0.09677419,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 94,
+        "hypothesis_word_count": 93,
+        "reference_char_count": 506,
+        "hypothesis_char_count": 496,
+        "omitted_words": 10,
+        "duplicated_words": 9,
+        "hallucinated_words": 9,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "adds",
+            "count": 1
+          },
+          {
+            "word": "app",
+            "count": 1
+          },
+          {
+            "word": "drifts",
+            "count": 1
+          },
+          {
+            "word": "endings",
+            "count": 1
+          },
+          {
+            "word": "model",
+            "count": 1
+          },
+          {
+            "word": "notes",
+            "count": 1
+          },
+          {
+            "word": "out",
+            "count": 1
+          },
+          {
+            "word": "starts",
+            "count": 1
+          },
+          {
+            "word": "two",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "2",
+            "count": 1
+          },
+          {
+            "word": "add",
+            "count": 1
+          },
+          {
+            "word": "ending",
+            "count": 1
+          },
+          {
+            "word": "modus",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "shift",
+            "count": 1
+          },
+          {
+            "word": "start",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "up",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "2",
+            "count": 1
+          },
+          {
+            "word": "add",
+            "count": 1
+          },
+          {
+            "word": "ending",
+            "count": 1
+          },
+          {
+            "word": "modus",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "shift",
+            "count": 1
+          },
+          {
+            "word": "start",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "up",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "I am now doing a longer dictation that should last closer to 2 minutes and I want to use it as a stress test for the full experience because in real life someone may open the up and speak for a long stretch while writing not after a meeting or while thinking through the problem. loud and if the modus start well but slowly shift add the wrong punctuation changes language or begins to miss the ending of sentences then the experience will still feel unreliable even if the short tests look good."
+    },
+    {
+      "sample_id": "very_long_en_002",
+      "scenario": "very_long_en",
+      "language": "en",
+      "chunk_count": 4,
+      "latency_ms": 2996,
+      "metrics": {
+        "wer": 0.074074075,
+        "cer": 0.045833334,
+        "omission_rate": 0.049382716,
+        "duplication_rate": 0.072289154,
+        "hallucination_rate": 0.072289154,
+        "end_truncation_score": 0.4166667,
+        "reference_word_count": 81,
+        "hypothesis_word_count": 83,
+        "reference_char_count": 480,
+        "hypothesis_char_count": 495,
+        "omitted_words": 4,
+        "duplicated_words": 6,
+        "hallucinated_words": 6,
+        "suffix_match_words": 7,
+        "omitted_terms": [
+          {
+            "word": "pauses",
+            "count": 1
+          },
+          {
+            "word": "so",
+            "count": 1
+          },
+          {
+            "word": "this",
+            "count": 1
+          },
+          {
+            "word": "weaker",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "correctly",
+            "count": 1
+          },
+          {
+            "word": "or",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          },
+          {
+            "word": "waker",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "correctly",
+            "count": 1
+          },
+          {
+            "word": "or",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          },
+          {
+            "word": "waker",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The final English long form sample is here to test endurance more than anything else and what I want to know is whether the app remains correctly. consistent from the first sentence to the last one because sometimes a transcription system looks accurate for ten or twenty seconds. and then becomes much waker once the message continues with more pause, more breath, more hesitation and more natural. spoken structure to this is the kind of or recording that should reveal those problems clearly."
+    },
+    {
+      "sample_id": "long_form_fr_001",
+      "scenario": "long_form_fr",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 1056,
+      "metrics": {
+        "wer": 0.11111111,
+        "cer": 0.044982698,
+        "omission_rate": 0.09259259,
+        "duplication_rate": 0.10909091,
+        "hallucination_rate": 0.10909091,
+        "end_truncation_score": 0.08333331,
+        "reference_word_count": 54,
+        "hypothesis_word_count": 55,
+        "reference_char_count": 289,
+        "hypothesis_char_count": 295,
+        "omitted_words": 5,
+        "duplicated_words": 6,
+        "hallucinated_words": 6,
+        "suffix_match_words": 11,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "debut",
+            "count": 1
+          },
+          {
+            "word": "dictee",
+            "count": 1
+          },
+          {
+            "word": "jusqua",
+            "count": 1
+          },
+          {
+            "word": "modele",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "dicté",
+            "count": 1
+          },
+          {
+            "word": "début",
+            "count": 1
+          },
+          {
+            "word": "jusqu'à",
+            "count": 1
+          },
+          {
+            "word": "les",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "dicté",
+            "count": 1
+          },
+          {
+            "word": "début",
+            "count": 1
+          },
+          {
+            "word": "jusqu'à",
+            "count": 1
+          },
+          {
+            "word": "les",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Bonjour, je suis en train de faire un vrai test de dicté longue pour voir si le modèle garde bien tous les mots du début jusqu'à la fin, sans couper la phrase au milieu et sans oublier les des morceaux quand je continue à parler pendant beaucoup plus longtemps que dans les petits tests rapides."
+    },
+    {
+      "sample_id": "long_form_fr_002",
+      "scenario": "long_form_fr",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 1396,
+      "metrics": {
+        "wer": 0.44230768,
+        "cer": 0.25081432,
+        "omission_rate": 0.44230768,
+        "duplication_rate": 0.29268292,
+        "hallucination_rate": 0.29268292,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 52,
+        "hypothesis_word_count": 41,
+        "reference_char_count": 307,
+        "hypothesis_char_count": 246,
+        "omitted_words": 23,
+        "duplicated_words": 12,
+        "hallucinated_words": 12,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "et",
+            "count": 2
+          },
+          {
+            "word": "quelques",
+            "count": 2
+          },
+          {
+            "word": "c",
+            "count": 1
+          },
+          {
+            "word": "ce",
+            "count": 1
+          },
+          {
+            "word": "coherente",
+            "count": 1
+          },
+          {
+            "word": "dans",
+            "count": 1
+          },
+          {
+            "word": "ecrit",
+            "count": 1
+          },
+          {
+            "word": "est",
+            "count": 1
+          },
+          {
+            "word": "fidele",
+            "count": 1
+          },
+          {
+            "word": "hesitations",
+            "count": 1
+          },
+          {
+            "word": "je",
+            "count": 1
+          },
+          {
+            "word": "la",
+            "count": 1
+          },
+          {
+            "word": "maniere",
+            "count": 1
+          },
+          {
+            "word": "meme",
+            "count": 1
+          },
+          {
+            "word": "parfaitement",
+            "count": 1
+          },
+          {
+            "word": "pauses",
+            "count": 1
+          },
+          {
+            "word": "que",
+            "count": 1
+          },
+          {
+            "word": "reste",
+            "count": 1
+          },
+          {
+            "word": "si",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          },
+          {
+            "word": "veux",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "and",
+            "count": 2
+          },
+          {
+            "word": "coherent",
+            "count": 1
+          },
+          {
+            "word": "fidèle",
+            "count": 1
+          },
+          {
+            "word": "hésitation",
+            "count": 1
+          },
+          {
+            "word": "manière",
+            "count": 1
+          },
+          {
+            "word": "même",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "quelque",
+            "count": 1
+          },
+          {
+            "word": "rest",
+            "count": 1
+          },
+          {
+            "word": "see",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 2
+          },
+          {
+            "word": "coherent",
+            "count": 1
+          },
+          {
+            "word": "fidèle",
+            "count": 1
+          },
+          {
+            "word": "hésitation",
+            "count": 1
+          },
+          {
+            "word": "manière",
+            "count": 1
+          },
+          {
+            "word": "même",
+            "count": 1
+          },
+          {
+            "word": "pause",
+            "count": 1
+          },
+          {
+            "word": "quelque",
+            "count": 1
+          },
+          {
+            "word": "rest",
+            "count": 1
+          },
+          {
+            "word": "see",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Je veux maintenant parler de manière plus naturelle avec quelque hésitation and pause parce que la vraie vie on ne parle pas comme un texte. and see the transcription rest coherent, lisible et fidèle, même quand le rythme devient plus irregulier."
+    },
+    {
+      "sample_id": "pausey_fr_001",
+      "scenario": "pausey_fr",
+      "language": "fr",
+      "chunk_count": 3,
+      "latency_ms": 2194,
+      "metrics": {
+        "wer": 0.20754717,
+        "cer": 0.052083332,
+        "omission_rate": 0.20754717,
+        "duplication_rate": 0.14285715,
+        "hallucination_rate": 0.14285715,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 53,
+        "hypothesis_word_count": 49,
+        "reference_char_count": 288,
+        "hypothesis_char_count": 284,
+        "omitted_words": 11,
+        "duplicated_words": 7,
+        "hallucinated_words": 7,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "application",
+            "count": 1
+          },
+          {
+            "word": "apres",
+            "count": 1
+          },
+          {
+            "word": "arrete",
+            "count": 1
+          },
+          {
+            "word": "et",
+            "count": 1
+          },
+          {
+            "word": "general",
+            "count": 1
+          },
+          {
+            "word": "idee",
+            "count": 1
+          },
+          {
+            "word": "je",
+            "count": 1
+          },
+          {
+            "word": "l",
+            "count": 1
+          },
+          {
+            "word": "phrase",
+            "count": 1
+          },
+          {
+            "word": "reflechir",
+            "count": 1
+          },
+          {
+            "word": "s",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "après",
+            "count": 1
+          },
+          {
+            "word": "général",
+            "count": 1
+          },
+          {
+            "word": "idée",
+            "count": 1
+          },
+          {
+            "word": "l'application",
+            "count": 1
+          },
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "réfléchir",
+            "count": 1
+          },
+          {
+            "word": "s'arrête",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "après",
+            "count": 1
+          },
+          {
+            "word": "général",
+            "count": 1
+          },
+          {
+            "word": "idée",
+            "count": 1
+          },
+          {
+            "word": "l'application",
+            "count": 1
+          },
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "réfléchir",
+            "count": 1
+          },
+          {
+            "word": "s'arrête",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Je fais ce test avec des pauses normales parce que parfois on commence une idée on s'arrête un instant pour réfléchir puis on reprend la Parakeet veux voir si l'application garde bien le sens général sans mettre trop de ponctuation ou couper des morceaux juste après une petite pause."
+    },
+    {
+      "sample_id": "self_correct_fr_001",
+      "scenario": "self_correct_fr",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 1258,
+      "metrics": {
+        "wer": 0.5102041,
+        "cer": 0.19485295,
+        "omission_rate": 0.48979592,
+        "duplication_rate": 0.44444445,
+        "hallucination_rate": 0.44444445,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 49,
+        "hypothesis_word_count": 45,
+        "reference_char_count": 272,
+        "hypothesis_char_count": 264,
+        "omitted_words": 24,
+        "duplicated_words": 20,
+        "hallucinated_words": 20,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "abord",
+            "count": 1
+          },
+          {
+            "word": "auto",
+            "count": 1
+          },
+          {
+            "word": "bizarres",
+            "count": 1
+          },
+          {
+            "word": "ca",
+            "count": 1
+          },
+          {
+            "word": "comprehensibles",
+            "count": 1
+          },
+          {
+            "word": "corrections",
+            "count": 1
+          },
+          {
+            "word": "creer",
+            "count": 1
+          },
+          {
+            "word": "d",
+            "count": 1
+          },
+          {
+            "word": "de",
+            "count": 1
+          },
+          {
+            "word": "doit",
+            "count": 1
+          },
+          {
+            "word": "equipe",
+            "count": 1
+          },
+          {
+            "word": "est",
+            "count": 1
+          },
+          {
+            "word": "l",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "les",
+            "count": 1
+          },
+          {
+            "word": "montrer",
+            "count": 1
+          },
+          {
+            "word": "n",
+            "count": 1
+          },
+          {
+            "word": "parlees",
+            "count": 1
+          },
+          {
+            "word": "repetitions",
+            "count": 1
+          },
+          {
+            "word": "restent",
+            "count": 1
+          },
+          {
+            "word": "sans",
+            "count": 1
+          },
+          {
+            "word": "si",
+            "count": 1
+          },
+          {
+            "word": "texte",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "the",
+            "count": 2
+          },
+          {
+            "word": "autocorrection",
+            "count": 1
+          },
+          {
+            "word": "bizarre",
+            "count": 1
+          },
+          {
+            "word": "comprehensible",
+            "count": 1
+          },
+          {
+            "word": "d'abord",
+            "count": 1
+          },
+          {
+            "word": "l'équipe",
+            "count": 1
+          },
+          {
+            "word": "n'est",
+            "count": 1
+          },
+          {
+            "word": "of",
+            "count": 1
+          },
+          {
+            "word": "on",
+            "count": 1
+          },
+          {
+            "word": "parler",
+            "count": 1
+          },
+          {
+            "word": "repetition",
+            "count": 1
+          },
+          {
+            "word": "rest",
+            "count": 1
+          },
+          {
+            "word": "see",
+            "count": 1
+          },
+          {
+            "word": "side",
+            "count": 1
+          },
+          {
+            "word": "text",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          },
+          {
+            "word": "want",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          },
+          {
+            "word": "ça",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "the",
+            "count": 2
+          },
+          {
+            "word": "autocorrection",
+            "count": 1
+          },
+          {
+            "word": "bizarre",
+            "count": 1
+          },
+          {
+            "word": "comprehensible",
+            "count": 1
+          },
+          {
+            "word": "d'abord",
+            "count": 1
+          },
+          {
+            "word": "l'équipe",
+            "count": 1
+          },
+          {
+            "word": "n'est",
+            "count": 1
+          },
+          {
+            "word": "of",
+            "count": 1
+          },
+          {
+            "word": "on",
+            "count": 1
+          },
+          {
+            "word": "parler",
+            "count": 1
+          },
+          {
+            "word": "repetition",
+            "count": 1
+          },
+          {
+            "word": "rest",
+            "count": 1
+          },
+          {
+            "word": "see",
+            "count": 1
+          },
+          {
+            "word": "side",
+            "count": 1
+          },
+          {
+            "word": "text",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          },
+          {
+            "word": "want",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          },
+          {
+            "word": "ça",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Demain je dois envoyer le rapport au support. Non, attends. Ce n'est pas ça, je veux dire à l'équipe produit d'abord, puis ensuite au support et ce test dans... want to see the autocorrection parler rest comprehensible on the text final side of repetition bizarre."
+    },
+    {
+      "sample_id": "very_long_fr_001",
+      "scenario": "very_long_fr",
+      "language": "fr",
+      "chunk_count": 4,
+      "latency_ms": 3006,
+      "metrics": {
+        "wer": 0.49425286,
+        "cer": 0.20662768,
+        "omission_rate": 0.40229884,
+        "duplication_rate": 0.40229884,
+        "hallucination_rate": 0.40229884,
+        "end_truncation_score": 0.9166667,
+        "reference_word_count": 87,
+        "hypothesis_word_count": 87,
+        "reference_char_count": 513,
+        "hypothesis_char_count": 506,
+        "omitted_words": 35,
+        "duplicated_words": 35,
+        "hallucinated_words": 35,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "sans",
+            "count": 3
+          },
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "anglais",
+            "count": 1
+          },
+          {
+            "word": "application",
+            "count": 1
+          },
+          {
+            "word": "c",
+            "count": 1
+          },
+          {
+            "word": "correctement",
+            "count": 1
+          },
+          {
+            "word": "de",
+            "count": 1
+          },
+          {
+            "word": "des",
+            "count": 1
+          },
+          {
+            "word": "deux",
+            "count": 1
+          },
+          {
+            "word": "dictee",
+            "count": 1
+          },
+          {
+            "word": "duree",
+            "count": 1
+          },
+          {
+            "word": "en",
+            "count": 1
+          },
+          {
+            "word": "est",
+            "count": 1
+          },
+          {
+            "word": "francaise",
+            "count": 1
+          },
+          {
+            "word": "importants",
+            "count": 1
+          },
+          {
+            "word": "interesse",
+            "count": 1
+          },
+          {
+            "word": "l",
+            "count": 1
+          },
+          {
+            "word": "la",
+            "count": 1
+          },
+          {
+            "word": "minutes",
+            "count": 1
+          },
+          {
+            "word": "mots",
+            "count": 1
+          },
+          {
+            "word": "ou",
+            "count": 1
+          },
+          {
+            "word": "passer",
+            "count": 1
+          },
+          {
+            "word": "presque",
+            "count": 1
+          },
+          {
+            "word": "probleme",
+            "count": 1
+          },
+          {
+            "word": "reste",
+            "count": 1
+          },
+          {
+            "word": "savoir",
+            "count": 1
+          },
+          {
+            "word": "secondes",
+            "count": 1
+          },
+          {
+            "word": "soudainement",
+            "count": 1
+          },
+          {
+            "word": "stable",
+            "count": 1
+          },
+          {
+            "word": "suivre",
+            "count": 1
+          },
+          {
+            "word": "sur",
+            "count": 1
+          },
+          {
+            "word": "transformer",
+            "count": 1
+          },
+          {
+            "word": "une",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "so",
+            "count": 3
+          },
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "angle",
+            "count": 1
+          },
+          {
+            "word": "c'est",
+            "count": 1
+          },
+          {
+            "word": "cas",
+            "count": 1
+          },
+          {
+            "word": "correctment",
+            "count": 1
+          },
+          {
+            "word": "dictée",
+            "count": 1
+          },
+          {
+            "word": "durée",
+            "count": 1
+          },
+          {
+            "word": "française",
+            "count": 1
+          },
+          {
+            "word": "important",
+            "count": 1
+          },
+          {
+            "word": "interest",
+            "count": 1
+          },
+          {
+            "word": "interse",
+            "count": 1
+          },
+          {
+            "word": "l'application",
+            "count": 1
+          },
+          {
+            "word": "minute",
+            "count": 1
+          },
+          {
+            "word": "mo",
+            "count": 1
+          },
+          {
+            "word": "nous",
+            "count": 1
+          },
+          {
+            "word": "on",
+            "count": 1
+          },
+          {
+            "word": "one",
+            "count": 1
+          },
+          {
+            "word": "or",
+            "count": 1
+          },
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "passengement",
+            "count": 1
+          },
+          {
+            "word": "problème",
+            "count": 1
+          },
+          {
+            "word": "que",
+            "count": 1
+          },
+          {
+            "word": "restable",
+            "count": 1
+          },
+          {
+            "word": "second",
+            "count": 1
+          },
+          {
+            "word": "si",
+            "count": 1
+          },
+          {
+            "word": "sort",
+            "count": 1
+          },
+          {
+            "word": "suit",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          },
+          {
+            "word": "toi",
+            "count": 1
+          },
+          {
+            "word": "transform",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "so",
+            "count": 3
+          },
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "angle",
+            "count": 1
+          },
+          {
+            "word": "c'est",
+            "count": 1
+          },
+          {
+            "word": "cas",
+            "count": 1
+          },
+          {
+            "word": "correctment",
+            "count": 1
+          },
+          {
+            "word": "dictée",
+            "count": 1
+          },
+          {
+            "word": "durée",
+            "count": 1
+          },
+          {
+            "word": "française",
+            "count": 1
+          },
+          {
+            "word": "important",
+            "count": 1
+          },
+          {
+            "word": "interest",
+            "count": 1
+          },
+          {
+            "word": "interse",
+            "count": 1
+          },
+          {
+            "word": "l'application",
+            "count": 1
+          },
+          {
+            "word": "minute",
+            "count": 1
+          },
+          {
+            "word": "mo",
+            "count": 1
+          },
+          {
+            "word": "nous",
+            "count": 1
+          },
+          {
+            "word": "on",
+            "count": 1
+          },
+          {
+            "word": "one",
+            "count": 1
+          },
+          {
+            "word": "or",
+            "count": 1
+          },
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "passengement",
+            "count": 1
+          },
+          {
+            "word": "problème",
+            "count": 1
+          },
+          {
+            "word": "que",
+            "count": 1
+          },
+          {
+            "word": "restable",
+            "count": 1
+          },
+          {
+            "word": "second",
+            "count": 1
+          },
+          {
+            "word": "si",
+            "count": 1
+          },
+          {
+            "word": "sort",
+            "count": 1
+          },
+          {
+            "word": "suit",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          },
+          {
+            "word": "toi",
+            "count": 1
+          },
+          {
+            "word": "transform",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Je termine avec une dictée française plus longue pour voir si l'application restable sur une durée plus importante parce que le vrai problème. ne se voit pas toujours sort des phrases courtes et que si nous interse et ce qui nous interest maintenant c'est toi si au bout de trente second one minute or Parakeet minute. La transcription continue to suit correctment, so passengement on Angle, so perdre de mo important and so transform the structure de la phrase en cas. quelque chose de difficile à relire."
+    }
+  ]
+}

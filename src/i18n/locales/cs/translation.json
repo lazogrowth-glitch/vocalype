@@ -58,10 +58,6 @@
         "name": "Parakeet V3",
         "description": "Experimentalni vicjeazycna ONNX cesta. Je rychla, ale zatim mene spolehliva nez Whisper pro narocnou francouzstinu a smisenou diktaci."
       },
-      "parakeet-tdt-0.6b-v3-english": {
-        "name": "Parakeet V3 English",
-        "description": "English-first Parakeet profile. Full-context decoding (no segmentation) for top speed and stability in English."
-      },
       "parakeet-tdt-0.6b-v3-multilingual": {
         "name": "Parakeet V3 Multilingual",
         "description": "Multilingual experimental profile tuned for French and non-English dictation with short segmented decoding."

@@ -1,0 +1,1029 @@
+{
+  "model_id": "parakeet-tdt-0.6b-v3-multilingual",
+  "manifest_path": "C:\\developer\\sas\\vocalype\\src-tauri\\evals\\parakeet\\dataset_manifest_smoke.json",
+  "aggregate": {
+    "quality": {
+      "samples": 6,
+      "global_wer": 0.22503181,
+      "global_cer": 0.11320118,
+      "global_omission_rate": 0.21268617,
+      "global_duplication_rate": 0.15213016,
+      "global_hallucination_rate": 0.15213016,
+      "average_end_truncation_score": 0.75,
+      "top_omitted_terms": [
+        {
+          "word": "le",
+          "count": 4
+        },
+        {
+          "word": "verifier",
+          "count": 4
+        },
+        {
+          "word": "a",
+          "count": 2
+        },
+        {
+          "word": "et",
+          "count": 2
+        },
+        {
+          "word": "modele",
+          "count": 2
+        },
+        {
+          "word": "si",
+          "count": 2
+        },
+        {
+          "word": "aujourdhui",
+          "count": 1
+        },
+        {
+          "word": "avant",
+          "count": 1
+        },
+        {
+          "word": "corriger",
+          "count": 1
+        },
+        {
+          "word": "coupe",
+          "count": 1
+        }
+      ],
+      "top_duplicated_terms": [
+        {
+          "word": "vérifier",
+          "count": 4
+        },
+        {
+          "word": "modèle",
+          "count": 2
+        },
+        {
+          "word": "à",
+          "count": 2
+        },
+        {
+          "word": "aujourd'hui",
+          "count": 1
+        },
+        {
+          "word": "avec",
+          "count": 1
+        },
+        {
+          "word": "basse",
+          "count": 1
+        },
+        {
+          "word": "coupes",
+          "count": 1
+        },
+        {
+          "word": "débit",
+          "count": 1
+        },
+        {
+          "word": "echo",
+          "count": 1
+        },
+        {
+          "word": "manière",
+          "count": 1
+        }
+      ],
+      "top_hallucinated_terms": [
+        {
+          "word": "vérifier",
+          "count": 4
+        },
+        {
+          "word": "modèle",
+          "count": 2
+        },
+        {
+          "word": "à",
+          "count": 2
+        },
+        {
+          "word": "aujourd'hui",
+          "count": 1
+        },
+        {
+          "word": "avec",
+          "count": 1
+        },
+        {
+          "word": "basse",
+          "count": 1
+        },
+        {
+          "word": "coupes",
+          "count": 1
+        },
+        {
+          "word": "débit",
+          "count": 1
+        },
+        {
+          "word": "echo",
+          "count": 1
+        },
+        {
+          "word": "manière",
+          "count": 1
+        }
+      ]
+    },
+    "avg_latency_ms": 775.6667,
+    "avg_chunk_count": 2.0
+  },
+  "by_scenario": {
+    "long_no_pause_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.10344828,
+        "global_cer": 0.038961038,
+        "global_omission_rate": 0.10344828,
+        "global_duplication_rate": 0.10344828,
+        "global_hallucination_rate": 0.10344828,
+        "average_end_truncation_score": 0.9166667,
+        "top_omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "coupe",
+            "count": 1
+          },
+          {
+            "word": "maniere",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "coupes",
+            "count": 1
+          },
+          {
+            "word": "manière",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "coupes",
+            "count": 1
+          },
+          {
+            "word": "manière",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 551.0,
+      "avg_chunk_count": 2.0
+    },
+    "low_volume_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.37037036,
+        "global_cer": 0.21383648,
+        "global_omission_rate": 0.33333334,
+        "global_duplication_rate": 0.2173913,
+        "global_hallucination_rate": 0.2173913,
+        "average_end_truncation_score": 0.9166667,
+        "top_omitted_terms": [
+          {
+            "word": "est",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "meme",
+            "count": 1
+          },
+          {
+            "word": "micro",
+            "count": 1
+          },
+          {
+            "word": "modele",
+            "count": 1
+          },
+          {
+            "word": "plus",
+            "count": 1
+          },
+          {
+            "word": "si",
+            "count": 1
+          },
+          {
+            "word": "texte",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "basse",
+            "count": 1
+          },
+          {
+            "word": "microsoft",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "mot",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "basse",
+            "count": 1
+          },
+          {
+            "word": "microsoft",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "mot",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 844.0,
+      "avg_chunk_count": 2.0
+    },
+    "franglais_terms": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.3043478,
+        "global_cer": 0.16541353,
+        "global_omission_rate": 0.3043478,
+        "global_duplication_rate": 0.2,
+        "global_hallucination_rate": 0.2,
+        "average_end_truncation_score": 0.75,
+        "top_omitted_terms": [
+          {
+            "word": "aujourdhui",
+            "count": 1
+          },
+          {
+            "word": "avant",
+            "count": 1
+          },
+          {
+            "word": "corriger",
+            "count": 1
+          },
+          {
+            "word": "et",
+            "count": 1
+          },
+          {
+            "word": "je",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "aujourd'hui",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "echo",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "aujourd'hui",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "echo",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 923.0,
+      "avg_chunk_count": 2.0
+    },
+    "fast_dictation_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.22222222,
+        "global_cer": 0.0952381,
+        "global_omission_rate": 0.18518518,
+        "global_duplication_rate": 0.15384616,
+        "global_hallucination_rate": 0.15384616,
+        "average_end_truncation_score": 1.0,
+        "top_omitted_terms": [
+          {
+            "word": "debit",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "modele",
+            "count": 1
+          },
+          {
+            "word": "si",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "débit",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "sure",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "débit",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "sure",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 597.0,
+      "avg_chunk_count": 2.0
+    },
+    "english_control": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.045454547,
+        "global_cer": 0.022900764,
+        "global_omission_rate": 0.045454547,
+        "global_duplication_rate": 0.0,
+        "global_hallucination_rate": 0.0,
+        "average_end_truncation_score": 0.0,
+        "top_omitted_terms": [
+          {
+            "word": "i",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [],
+        "top_hallucinated_terms": []
+      },
+      "avg_latency_ms": 849.0,
+      "avg_chunk_count": 2.0
+    },
+    "proper_nouns": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.3043478,
+        "global_cer": 0.14285715,
+        "global_omission_rate": 0.3043478,
+        "global_duplication_rate": 0.23809524,
+        "global_hallucination_rate": 0.23809524,
+        "average_end_truncation_score": 0.9166667,
+        "top_omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "et",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "preparer",
+            "count": 1
+          },
+          {
+            "word": "projet",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          },
+          {
+            "word": "yassine",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "préparer",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          },
+          {
+            "word": "yacine",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "préparer",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          },
+          {
+            "word": "yacine",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 890.0,
+      "avg_chunk_count": 2.0
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "long_no_pause_fr_001",
+      "scenario": "long_no_pause_fr",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 551,
+      "metrics": {
+        "wer": 0.10344828,
+        "cer": 0.038961038,
+        "omission_rate": 0.10344828,
+        "duplication_rate": 0.10344828,
+        "hallucination_rate": 0.10344828,
+        "end_truncation_score": 0.9166667,
+        "reference_word_count": 29,
+        "hypothesis_word_count": 29,
+        "reference_char_count": 154,
+        "hypothesis_char_count": 158,
+        "omitted_words": 3,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "coupe",
+            "count": 1
+          },
+          {
+            "word": "maniere",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "coupes",
+            "count": 1
+          },
+          {
+            "word": "manière",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "coupes",
+            "count": 1
+          },
+          {
+            "word": "manière",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Bonjour, je veux tester une phrase longue sans faire de pause pour voir si Parakeet V3 coupes des mots à la fin quand je parle longtemps. de manière continue."
+    },
+    {
+      "sample_id": "fast_dictation_fr_001",
+      "scenario": "fast_dictation_fr",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 597,
+      "metrics": {
+        "wer": 0.22222222,
+        "cer": 0.0952381,
+        "omission_rate": 0.18518518,
+        "duplication_rate": 0.15384616,
+        "hallucination_rate": 0.15384616,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 27,
+        "hypothesis_word_count": 26,
+        "reference_char_count": 168,
+        "hypothesis_char_count": 169,
+        "omitted_words": 5,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "debit",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "modele",
+            "count": 1
+          },
+          {
+            "word": "si",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "débit",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "sure",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "débit",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "sure",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Je vais dicter rapidement cette phrase pour vérifier modèle suit correctement quand le débit de parole augmente et que les mots arrivent presque sans interruption. sure."
+    },
+    {
+      "sample_id": "low_volume_fr_001",
+      "scenario": "low_volume_fr",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 844,
+      "metrics": {
+        "wer": 0.37037036,
+        "cer": 0.21383648,
+        "omission_rate": 0.33333334,
+        "duplication_rate": 0.2173913,
+        "hallucination_rate": 0.2173913,
+        "end_truncation_score": 0.9166667,
+        "reference_word_count": 27,
+        "hypothesis_word_count": 23,
+        "reference_char_count": 159,
+        "hypothesis_char_count": 151,
+        "omitted_words": 9,
+        "duplicated_words": 5,
+        "hallucinated_words": 5,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "est",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "meme",
+            "count": 1
+          },
+          {
+            "word": "micro",
+            "count": 1
+          },
+          {
+            "word": "modele",
+            "count": 1
+          },
+          {
+            "word": "plus",
+            "count": 1
+          },
+          {
+            "word": "si",
+            "count": 1
+          },
+          {
+            "word": "texte",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "basse",
+            "count": 1
+          },
+          {
+            "word": "microsoft",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "mot",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "basse",
+            "count": 1
+          },
+          {
+            "word": "microsoft",
+            "count": 1
+          },
+          {
+            "word": "modèle",
+            "count": 1
+          },
+          {
+            "word": "mot",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Je parle volontairement avec une voix basse, plus basse, pour vérifier modèle comprend encore correctement le mot. quand le volume du Microsoft faible."
+    },
+    {
+      "sample_id": "franglais_terms_001",
+      "scenario": "franglais_terms",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 923,
+      "metrics": {
+        "wer": 0.3043478,
+        "cer": 0.16541353,
+        "omission_rate": 0.3043478,
+        "duplication_rate": 0.2,
+        "hallucination_rate": 0.2,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 23,
+        "hypothesis_word_count": 20,
+        "reference_char_count": 133,
+        "hypothesis_char_count": 123,
+        "omitted_words": 7,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "aujourdhui",
+            "count": 1
+          },
+          {
+            "word": "avant",
+            "count": 1
+          },
+          {
+            "word": "corriger",
+            "count": 1
+          },
+          {
+            "word": "et",
+            "count": 1
+          },
+          {
+            "word": "je",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "aujourd'hui",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "echo",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "aujourd'hui",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "echo",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "aujourd'hui dois push le build sur GitHub, puis vérifier dashboard Echo. le bug dans le reporting avec le prochain meeting."
+    },
+    {
+      "sample_id": "proper_nouns_001",
+      "scenario": "proper_nouns",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 890,
+      "metrics": {
+        "wer": 0.3043478,
+        "cer": 0.14285715,
+        "omission_rate": 0.3043478,
+        "duplication_rate": 0.23809524,
+        "hallucination_rate": 0.23809524,
+        "end_truncation_score": 0.9166667,
+        "reference_word_count": 23,
+        "hypothesis_word_count": 21,
+        "reference_char_count": 133,
+        "hypothesis_char_count": 132,
+        "omitted_words": 7,
+        "duplicated_words": 5,
+        "hallucinated_words": 5,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "et",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "preparer",
+            "count": 1
+          },
+          {
+            "word": "projet",
+            "count": 1
+          },
+          {
+            "word": "verifier",
+            "count": 1
+          },
+          {
+            "word": "yassine",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "préparer",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          },
+          {
+            "word": "yacine",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "préparer",
+            "count": 1
+          },
+          {
+            "word": "vérifier",
+            "count": 1
+          },
+          {
+            "word": "yacine",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Demain, je dois envoyer un message à Yacine, puis vérifier Parakeet Vocalype sur GitHub. et préparer une note pour OpenAI Microsoft."
+    },
+    {
+      "sample_id": "english_control_001",
+      "scenario": "english_control",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 849,
+      "metrics": {
+        "wer": 0.045454547,
+        "cer": 0.022900764,
+        "omission_rate": 0.045454547,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 22,
+        "hypothesis_word_count": 21,
+        "reference_char_count": 131,
+        "hypothesis_char_count": 130,
+        "omitted_words": 1,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "i",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Today want to test a longer English sentence to verify whether Parakeet V3 keeps every word correctly without dropping the ending."
+    }
+  ]
+}

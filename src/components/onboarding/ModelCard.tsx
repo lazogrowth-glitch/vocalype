@@ -92,18 +92,6 @@ const getProductBadges = (
     ];
   }
 
-  if (model.id === "parakeet-tdt-0.6b-v3-english") {
-    return [
-      {
-        label: t("modelSelector.badges.fastEnglish", {
-          defaultValue: "Fast English",
-        }),
-        variant: "speed",
-      },
-      ...hardwareBadges,
-    ];
-  }
-
   if (model.is_recommended) {
     return [{ label: t("onboarding.recommended"), variant: "primary" }];
   }

@@ -21,14 +21,12 @@ const isCopilotOptimizedParakeet = (
   profile: AdaptiveProfileSnapshot | null,
   modelId: string,
 ): boolean =>
-  (modelId === "parakeet-tdt-0.6b-v3-english" ||
-    modelId === "parakeet-tdt-0.6b-v3-multilingual") &&
+  modelId === "parakeet-tdt-0.6b-v3-multilingual" &&
   !!profile?.npu_detected &&
   (profile.npu_kind === "qualcomm" || profile.npu_kind === "intel");
 
 const getOnboardingRank = (model: ModelInfo): number => {
   if (model.id === "parakeet-tdt-0.6b-v3-multilingual") return 1000;
-  if (model.id === "parakeet-tdt-0.6b-v3-english") return 980;
   if (model.id === "large") return 950;
   if (model.id === "turbo") return 900;
   if (model.id === "parakeet-tdt-0.6b-v2") return 850;
@@ -50,7 +48,7 @@ interface OnboardingProps {
 }
 
 const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const {
     models,
     downloadModel,
@@ -113,10 +111,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
         : "downloadable";
 
   const modeCards = (() => {
-    const appIsEnglish = i18n.language.startsWith("en");
-    const rapidId = appIsEnglish
-      ? "parakeet-tdt-0.6b-v3-english"
-      : "parakeet-tdt-0.6b-v3-multilingual";
+    const rapidId = "parakeet-tdt-0.6b-v3-multilingual";
     const balancedId =
       adaptiveProfile?.machine_tier === "low" ? "small" : "turbo";
     const qualityId = "large";

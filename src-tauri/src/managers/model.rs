@@ -1,6 +1,7 @@
 use crate::managers::model_catalog;
 use crate::model_ids::{
-    PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
+    canonical_model_id, PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID,
+    PARAKEET_V3_MULTILINGUAL_ID,
 };
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
@@ -91,6 +92,10 @@ pub struct ModelManager {
 }
 
 impl ModelManager {
+    fn canonicalize_profile_alias(model_id: &str) -> &str {
+        canonical_model_id(model_id)
+    }
+
     fn sealed_path_for_model(&self, model_info: &ModelInfo) -> PathBuf {
         let suffix = if model_info.is_directory {
             SEALED_ARCHIVE_EXTENSION
@@ -311,11 +316,12 @@ impl ModelManager {
     }
 
     pub fn get_model_info(&self, model_id: &str) -> Option<ModelInfo> {
+        let canonical_id = Self::canonicalize_profile_alias(model_id);
         let models = self
             .available_models
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        models.get(model_id).cloned()
+        models.get(canonical_id).cloned()
     }
 
     fn migrate_bundled_models(&self) -> Result<()> {
@@ -570,14 +576,45 @@ impl ModelManager {
         let mut settings = get_settings(&self.app_handle);
         let mut settings_changed = false;
 
-        if settings.selected_model == PARAKEET_V3_LEGACY_ID {
-            settings.selected_model = PARAKEET_V3_MULTILINGUAL_ID.to_string();
+        let canonical_selected = Self::canonicalize_profile_alias(&settings.selected_model);
+        if !settings.selected_model.is_empty() && settings.selected_model != canonical_selected {
+            settings.selected_model = canonical_selected.to_string();
             settings_changed = true;
         }
 
-        if settings.long_audio_model.as_deref() == Some(PARAKEET_V3_LEGACY_ID) {
-            settings.long_audio_model = Some(PARAKEET_V3_MULTILINGUAL_ID.to_string());
-            settings_changed = true;
+        if let Some(long_audio_model) = settings.long_audio_model.clone() {
+            let canonical_long_audio = Self::canonicalize_profile_alias(&long_audio_model);
+            if long_audio_model != canonical_long_audio {
+                settings.long_audio_model = Some(canonical_long_audio.to_string());
+                settings_changed = true;
+            }
+        }
+
+        if let Some(profile) = settings.adaptive_machine_profile.as_mut() {
+            let canonical_recommended =
+                Self::canonicalize_profile_alias(&profile.recommended_model_id);
+            if profile.recommended_model_id != canonical_recommended {
+                profile.recommended_model_id = canonical_recommended.to_string();
+                settings_changed = true;
+            }
+
+            if let Some(secondary_model_id) = profile.secondary_model_id.clone() {
+                let canonical_secondary =
+                    Self::canonicalize_profile_alias(&secondary_model_id);
+                if secondary_model_id != canonical_secondary {
+                    profile.secondary_model_id = Some(canonical_secondary.to_string());
+                    settings_changed = true;
+                }
+            }
+
+            if let Some(active_runtime_model_id) = profile.active_runtime_model_id.clone() {
+                let canonical_active =
+                    Self::canonicalize_profile_alias(&active_runtime_model_id);
+                if active_runtime_model_id != canonical_active {
+                    profile.active_runtime_model_id = Some(canonical_active.to_string());
+                    settings_changed = true;
+                }
+            }
         }
 
         if settings_changed {
@@ -1155,7 +1192,7 @@ impl ModelManager {
         }
 
         // Refresh status for all models so profile aliases sharing the same
-        // underlying files (e.g. Parakeet V3 English/Multilingual) stay in sync.
+        // underlying files stay in sync.
         self.update_download_status()?;
 
         // Remove cancel flag on successful completion

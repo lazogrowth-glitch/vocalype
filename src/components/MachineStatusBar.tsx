@@ -8,8 +8,8 @@ import type {
 } from "@/types/runtimeObservability";
 
 const MODEL_LABELS: Record<string, string> = {
-  "parakeet-tdt-0.6b-v3-multilingual": "Parakeet V3 Multilingual",
-  "parakeet-tdt-0.6b-v3-english": "Parakeet V3 English",
+  "parakeet-tdt-0.6b-v3-multilingual": "Parakeet V3",
+  "parakeet-tdt-0.6b-v3-english": "Parakeet V3",
   turbo: "Whisper Turbo",
   large: "Whisper Large",
   medium: "Whisper Medium",

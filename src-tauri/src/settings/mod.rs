@@ -1,3 +1,4 @@
+use crate::model_ids::{canonical_model_id, PARAKEET_V3_MULTILINGUAL_ID};
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -666,12 +667,8 @@ fn preferred_transcription_language_from_locale(locale: &str) -> String {
 }
 
 fn preferred_model_for_locale(locale: &str) -> String {
-    let base_language = locale.split('-').next().unwrap_or("en");
-    if base_language == "en" {
-        "parakeet-tdt-0.6b-v3-english".to_string()
-    } else {
-        "parakeet-tdt-0.6b-v3-multilingual".to_string()
-    }
+    let _ = locale;
+    PARAKEET_V3_MULTILINGUAL_ID.to_string()
 }
 
 fn secondary_model_for_locale(locale: &str, tier: MachineTier) -> Option<String> {
@@ -1506,6 +1503,39 @@ pub fn migrate_settings(settings: &mut AppSettings) {
             "Settings migrated v0→v1: recording_mode = {:?}",
             settings.recording_mode
         );
+    }
+
+    let canonical_selected = canonical_model_id(&settings.selected_model).to_string();
+    if settings.selected_model != canonical_selected {
+        settings.selected_model = canonical_selected;
+    }
+
+    if let Some(long_audio_model) = settings.long_audio_model.clone() {
+        let canonical_long_audio = canonical_model_id(&long_audio_model).to_string();
+        if long_audio_model != canonical_long_audio {
+            settings.long_audio_model = Some(canonical_long_audio);
+        }
+    }
+
+    if let Some(profile) = settings.adaptive_machine_profile.as_mut() {
+        let canonical_recommended = canonical_model_id(&profile.recommended_model_id).to_string();
+        if profile.recommended_model_id != canonical_recommended {
+            profile.recommended_model_id = canonical_recommended;
+        }
+
+        if let Some(secondary_model_id) = profile.secondary_model_id.clone() {
+            let canonical_secondary = canonical_model_id(&secondary_model_id).to_string();
+            if secondary_model_id != canonical_secondary {
+                profile.secondary_model_id = Some(canonical_secondary);
+            }
+        }
+
+        if let Some(active_runtime_model_id) = profile.active_runtime_model_id.clone() {
+            let canonical_active = canonical_model_id(&active_runtime_model_id).to_string();
+            if active_runtime_model_id != canonical_active {
+                profile.active_runtime_model_id = Some(canonical_active);
+            }
+        }
     }
 
     // Add future migrations here:

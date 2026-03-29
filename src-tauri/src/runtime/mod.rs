@@ -21,6 +21,8 @@ pub mod chunking;
 pub mod command_mode;
 pub mod context_detector;
 pub mod model_ids;
+pub mod parakeet_quality;
+pub mod parakeet_text;
 pub mod runtime_observability;
 pub mod startup_warmup;
 pub mod telemetry;

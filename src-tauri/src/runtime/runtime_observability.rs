@@ -6,6 +6,7 @@ use crate::context_detector::{
 };
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
+use crate::parakeet_quality::{ParakeetDiagnosticsSnapshot, ParakeetDiagnosticsState};
 use crate::settings::{get_settings, AdaptiveMachineProfile};
 use crate::voice_profile::{
     current_runtime_adjustment, current_voice_profile, VoiceProfile, VoiceRuntimeAdjustment,
@@ -126,6 +127,7 @@ pub struct RuntimeDiagnostics {
     pub active_voice_runtime_adjustment: Option<VoiceRuntimeAdjustment>,
     pub machine_status: Option<MachineStatusSnapshot>,
     pub recent_pipeline_profiles: Vec<PipelineProfileEvent>,
+    pub parakeet_diagnostics: ParakeetDiagnosticsSnapshot,
     pub adaptive_machine_profile: Option<AdaptiveMachineProfile>,
     pub adaptive_calibration_state: Vec<CalibrationStatusSnapshot>,
 }
@@ -423,6 +425,13 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         active_voice_runtime_adjustment,
         machine_status,
         recent_pipeline_profiles,
+        parakeet_diagnostics: app
+            .try_state::<ParakeetDiagnosticsState>()
+            .map(|state| state.snapshot())
+            .unwrap_or(ParakeetDiagnosticsSnapshot {
+                active_session: None,
+                recent_sessions: Vec::new(),
+            }),
         adaptive_machine_profile: settings.adaptive_machine_profile,
         adaptive_calibration_state,
     }

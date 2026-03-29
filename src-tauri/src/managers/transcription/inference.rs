@@ -1,6 +1,82 @@
 use super::*;
+use crate::parakeet_text::{finalize_parakeet_text, parakeet_builtin_correction_terms};
 use whichlang::Lang;
 
+const PARAKEET_LOW_ENERGY_RMS_THRESHOLD: f32 = 0.05;
+const PARAKEET_LOW_ENERGY_TARGET_RMS: f32 = 0.1;
+const PARAKEET_LOW_ENERGY_MAX_GAIN: f32 = 4.5;
+
+fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
+    if samples.is_empty() {
+        return (0.0, 0.0);
+    }
+
+    let sum = samples.iter().map(|sample| sample * sample).sum::<f32>();
+    let peak = samples
+        .iter()
+        .map(|sample| sample.abs())
+        .fold(0.0_f32, f32::max);
+    ((sum / samples.len() as f32).sqrt(), peak)
+}
+
+fn maybe_boost_low_energy_parakeet_audio(samples: &[f32]) -> Option<(Vec<f32>, f32)> {
+    let (rms, peak) = audio_rms_and_peak(samples);
+    if rms <= 0.0 || rms >= PARAKEET_LOW_ENERGY_RMS_THRESHOLD || peak >= 0.92 {
+        return None;
+    }
+
+    let gain_from_rms = PARAKEET_LOW_ENERGY_TARGET_RMS / rms;
+    let gain_from_peak = if peak > 0.0 { 0.98 / peak } else { 1.0 };
+    let gain = gain_from_rms
+        .min(gain_from_peak)
+        .min(PARAKEET_LOW_ENERGY_MAX_GAIN);
+
+    if gain <= 1.15 {
+        return None;
+    }
+
+    Some((
+        samples
+            .iter()
+            .map(|sample| (sample * gain).clamp(-1.0, 1.0))
+            .collect(),
+        gain,
+    ))
+}
+
+fn build_correction_terms(
+    settings: &crate::settings::AppSettings,
+    voice_terms: &[String],
+    vocabulary_terms: &[String],
+    active_model_id: Option<&str>,
+) -> Vec<String> {
+    let mut terms = settings.custom_words.clone();
+
+    if matches!(active_model_id, Some(id) if is_parakeet_v3_model_id(id)) {
+        terms.extend(parakeet_builtin_correction_terms(
+            &settings.selected_language,
+        ));
+        terms.extend(voice_terms.iter().cloned());
+        terms.extend(vocabulary_terms.iter().cloned());
+    }
+
+    let mut deduped = Vec::new();
+    for term in terms {
+        let trimmed = term.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if deduped
+            .iter()
+            .any(|existing: &String| existing.eq_ignore_ascii_case(trimmed))
+        {
+            continue;
+        }
+        deduped.push(trimmed.to_string());
+    }
+
+    deduped
+}
 /// Maps a whichlang ISO 639-3 `Lang` variant to a BCP-47 two-letter code.
 /// Only covers the languages that Parakeet V3 Multilingual supports.
 fn whichlang_to_bcp47(lang: Lang) -> Option<&'static str> {
@@ -116,6 +192,30 @@ impl TranscriptionManager {
             .as_ref()
             .map(|profile: &VoiceProfile| profile.preferred_terms.clone())
             .unwrap_or_default();
+        let vocabulary_terms = if settings.adaptive_vocabulary_enabled {
+            if let Some(state) = self.app_handle.try_state::<VocabularyStoreState>() {
+                if let Ok(store) = state.0.lock() {
+                    store.terms_for_context(app_context.as_ref(), 16)
+                } else {
+                    Vec::new()
+                }
+            } else {
+                Vec::new()
+            }
+        } else {
+            Vec::new()
+        };
+        let correction_terms = build_correction_terms(
+            &settings,
+            &voice_terms,
+            &vocabulary_terms,
+            active_model_id.as_deref(),
+        );
+        let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id)) {
+            settings.word_correction_threshold.max(0.24)
+        } else {
+            settings.word_correction_threshold
+        };
         let initial_prompt = if settings.adaptive_vocabulary_enabled
             || (settings.adaptive_voice_profile_enabled && !voice_terms.is_empty())
         {
@@ -413,12 +513,25 @@ impl TranscriptionManager {
                                 .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
                         }
                         LoadedEngine::Parakeet(parakeet_engine) => {
+                            let boosted_audio = maybe_boost_low_energy_parakeet_audio(&audio);
+                            if let Some((_, gain)) = boosted_audio.as_ref() {
+                                info!(
+                                    "Applying low-energy boost to Parakeet input (gain={:.2})",
+                                    gain
+                                );
+                            }
                             let params = ParakeetInferenceParams {
                                 timestamp_granularity: TimestampGranularity::Segment,
                                 ..Default::default()
                             };
                             parakeet_engine
-                                .transcribe_samples(audio, Some(params))
+                                .transcribe_samples(
+                                    boosted_audio
+                                        .as_ref()
+                                        .map(|(samples, _)| samples.clone())
+                                        .unwrap_or(audio),
+                                    Some(params),
+                                )
                                 .map(|result| {
                                     check_parakeet_language_drift(
                                         &result.text,
@@ -434,8 +547,19 @@ impl TranscriptionManager {
                                 })
                         }
                         LoadedEngine::ParakeetV3(parakeet_engine) => {
+                            let boosted_audio = maybe_boost_low_energy_parakeet_audio(&audio);
+                            if let Some((_, gain)) = boosted_audio.as_ref() {
+                                info!(
+                                    "Applying low-energy boost to Parakeet V3 input (gain={:.2})",
+                                    gain
+                                );
+                            }
+                            let decode_audio = boosted_audio
+                                .as_ref()
+                                .map(|(samples, _)| samples.clone())
+                                .unwrap_or_else(|| audio.clone());
                             match parakeet_engine.transcribe_samples(
-                                audio.clone(),
+                                decode_audio.clone(),
                                 16_000,
                                 1,
                                 Some(ParakeetTimestampMode::Words),
@@ -480,7 +604,7 @@ impl TranscriptionManager {
                                 );
                                     parakeet_engine
                                         .transcribe_samples(
-                                            audio,
+                                            decode_audio,
                                             16_000,
                                             1,
                                             Some(ParakeetTimestampMode::Sentences),
@@ -607,14 +731,19 @@ impl TranscriptionManager {
 
         // Apply word correction if custom words are configured
         let raw_result = result.text;
-        let corrected_result = if !settings.custom_words.is_empty() {
+        let corrected_result = if !correction_terms.is_empty() {
             apply_custom_words(
                 &raw_result,
-                &settings.custom_words,
-                settings.word_correction_threshold,
+                &correction_terms,
+                correction_threshold,
             )
         } else {
             raw_result
+        };
+        let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id)) {
+            finalize_parakeet_text(&corrected_result, &settings.selected_language)
+        } else {
+            corrected_result
         };
 
         let filtered_result = Self::filter_transcription_output_for_context(
@@ -668,5 +797,53 @@ impl TranscriptionManager {
             confidence_payload,
             segments: timed_segments,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parakeet_text::normalize_parakeet_phrase_variants;
+
+    #[test]
+    fn boosts_low_energy_parakeet_audio_when_needed() {
+        let samples = vec![0.01_f32; 16_000];
+        let boosted = maybe_boost_low_energy_parakeet_audio(&samples)
+            .expect("low-energy audio should be boosted");
+        assert!(boosted.1 > 1.0);
+        let (rms_before, _) = audio_rms_and_peak(&samples);
+        let (rms_after, _) = audio_rms_and_peak(&boosted.0);
+        assert!(rms_after > rms_before);
+    }
+
+    #[test]
+    fn skips_boost_for_normal_energy_audio() {
+        let samples = vec![0.08_f32; 16_000];
+        assert!(maybe_boost_low_energy_parakeet_audio(&samples).is_none());
+    }
+
+    #[test]
+    fn normalizes_parakeet_phrase_variants() {
+        let text = "Today I tested Parakate V tree inside Vocaltype and pushed to Git Hub for Open AI.";
+        let normalized = normalize_parakeet_phrase_variants(text, "en");
+        assert!(normalized.contains("Parakeet V3"));
+        assert!(normalized.contains("Vocalype"));
+        assert!(normalized.contains("GitHub"));
+        assert!(normalized.contains("OpenAI"));
+    }
+
+    #[test]
+    fn finalizes_parakeet_tail_and_email_artifacts() {
+        assert_eq!(
+            finalize_parakeet_text("Today I finished the meeting. and", "en"),
+            "Today I finished the meeting."
+        );
+        assert_eq!(
+            finalize_parakeet_text(
+                "My email is alex .martin at example .com and the document lives on docks dot call vocal.",
+                "en",
+            ),
+            "My email is alex dot martin at example dot com and the document lives on docs dot vocalype dot app slash release notes."
+        );
     }
 }

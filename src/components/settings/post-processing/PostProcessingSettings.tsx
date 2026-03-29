@@ -186,7 +186,6 @@ const PostProcessingActionsComponent: React.FC = () => {
                       handleStartEdit(action);
                     }
                   }}
-                  style={{ padding: "10px 16px" }}
                   className="group flex cursor-pointer items-center rounded-xl border border-white/6 bg-white/[0.02] hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
                   style={{ padding: "10px 16px", gap: 12 }}
                   onClick={() => handleStartEdit(action)}

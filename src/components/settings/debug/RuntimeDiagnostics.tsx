@@ -27,6 +27,10 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
         .sort((a, b) => b.updated_at_ms - a.updated_at_ms),
     [snapshot],
   );
+  const parakeetSessions = useMemo(
+    () => (snapshot?.parakeet_diagnostics?.recent_sessions ?? []).slice().reverse(),
+    [snapshot],
+  );
   const adaptiveProfile = snapshot?.adaptive_machine_profile ?? null;
   const voiceProfileSessions = snapshot?.adaptive_voice_profile
     ? t("settings.debug.runtimeDiagnostics.voiceProfileSessions", {
@@ -456,6 +460,38 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
               {recentErrors.map((err) => (
                 <p key={`${err.code}-${err.timestamp_ms}`} className="truncate">
                   [{err.stage}] {err.code}: {err.message}
+                </p>
+              ))}
+            </div>
+          )}
+          {parakeetSessions.length > 0 && (
+            <div className="pt-1">
+              <p className="font-semibold mb-1">
+                {t("settings.debug.runtimeDiagnostics.parakeetSessions", {
+                  defaultValue: "Parakeet quality sessions",
+                })}
+              </p>
+              {parakeetSessions.slice(0, 3).map((session) => (
+                <p
+                  key={`${session.session_id}-${session.last_updated_ms}`}
+                  className="break-words"
+                >
+                  {session.model_name || session.model_id}
+                  {" · "}
+                  {session.selected_language}
+                  {" · "}
+                  {session.total_chunks} chunks
+                  {" · "}
+                  {session.retry_chunks} retries
+                  {" · "}
+                  {session.filtered_chunks} filtered
+                  {" · risk "}
+                  {(session.quality_risk_score * 100).toFixed(0)}%
+                  {" · "}
+                  {session.estimated_issue}
+                  {session.assembled_preview
+                    ? ` · ${session.assembled_preview}`
+                    : ""}
                 </p>
               ))}
             </div>

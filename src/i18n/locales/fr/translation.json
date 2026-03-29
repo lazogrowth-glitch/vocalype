@@ -65,12 +65,8 @@
         "name": "Parakeet V3",
         "description": "Chemin ONNX multilingue expérimental. Très rapide et peut très bien marcher si on reste dans une seule langue, mais moins robuste que Whisper pour la dictée avec mélange de langues."
       },
-      "parakeet-tdt-0.6b-v3-english": {
-        "name": "Parakeet V3 Anglais",
-        "description": "Profil Parakeet très rapide orienté anglais. Excellent sur les petites machines, avec un chemin NPU sur les Copilot+ compatibles."
-      },
       "parakeet-tdt-0.6b-v3-multilingual": {
-        "name": "Parakeet V3 Multilingue",
+        "name": "Parakeet V3",
         "description": "Profil Parakeet multilingue rapide, optimisé pour la dictée en français et dans d'autres langues non anglaises, avec un chemin NPU sur les Copilot+ compatibles."
       },
       "moonshine-base": {

@@ -24,7 +24,6 @@ const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
 
 const getModelRank = (model: ModelInfo): number => {
   if (model.id === "parakeet-tdt-0.6b-v3-multilingual") return 1000;
-  if (model.id === "parakeet-tdt-0.6b-v3-english") return 980;
   if (model.id === "large") return 950;
   if (model.id === "turbo") return 900;
   if (model.id === "parakeet-tdt-0.6b-v2") return 850;
@@ -454,10 +453,7 @@ const isCopilotOptimizedParakeet = (
   profile: AdaptiveProfileSnapshot | null,
   modelId: string,
 ): boolean => {
-  if (
-    modelId !== "parakeet-tdt-0.6b-v3-english" &&
-    modelId !== "parakeet-tdt-0.6b-v3-multilingual"
-  ) {
+  if (modelId !== "parakeet-tdt-0.6b-v3-multilingual") {
     return false;
   }
 
@@ -468,7 +464,7 @@ const isCopilotOptimizedParakeet = (
 };
 
 export const ModelsSettings: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ModelsTab>("transcription");
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState("all");
@@ -728,9 +724,7 @@ export const ModelsSettings: React.FC = () => {
   ]);
 
   const productModes = useMemo(() => {
-    const rapidId = i18n.language.startsWith("en")
-      ? "parakeet-tdt-0.6b-v3-english"
-      : "parakeet-tdt-0.6b-v3-multilingual";
+    const rapidId = "parakeet-tdt-0.6b-v3-multilingual";
     const balancedId =
       adaptiveProfile?.machine_tier === "low" ? "small" : "turbo";
     return [
@@ -774,7 +768,7 @@ export const ModelsSettings: React.FC = () => {
       ...entry,
       model: models.find((model) => model.id === entry.modelId) ?? null,
     }));
-  }, [adaptiveProfile, i18n.language, models, t]);
+  }, [adaptiveProfile, models, t]);
 
   if (loading) {
     return (

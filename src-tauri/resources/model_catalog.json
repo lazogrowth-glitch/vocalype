@@ -239,26 +239,9 @@
       "requires_license_key": true
     },
     {
-      "id": "parakeet-tdt-0.6b-v3-english",
-      "name": "Parakeet V3 English",
-      "description": "Fastest English-first profile in the app. Tuned for very high speed, with an NPU-friendly path on supported Copilot+ style PCs.",
-      "filename": "parakeet-tdt-0.6b-v3-int8",
-      "asset_path": "parakeet-v3-int8.tar.gz",
-      "expected_etag": "\"d7a7b2d3f0780d1e0df427e64cff1b32-46\"",
-      "size_mb": 478,
-      "is_directory": true,
-      "engine_type": "Parakeet",
-      "accuracy_score": 0.88,
-      "speed_score": 0.99,
-      "supports_translation": false,
-      "is_recommended": false,
-      "supported_languages_ref": "english_only",
-      "requires_license_key": true
-    },
-    {
       "id": "parakeet-tdt-0.6b-v3-multilingual",
-      "name": "Parakeet V3 Multilingual",
-      "description": "Fast multilingual Parakeet profile tuned for French and other non-English dictation, with an NPU-friendly path on supported Copilot+ style PCs.",
+      "name": "Parakeet V3",
+      "description": "Fast Parakeet profile with one shared model path. The spoken language now comes from the user language setting instead of a separate English-only variant.",
       "filename": "parakeet-tdt-0.6b-v3-int8",
       "asset_path": "parakeet-v3-int8.tar.gz",
       "expected_etag": "\"d7a7b2d3f0780d1e0df427e64cff1b32-46\"",
@@ -275,7 +258,7 @@
     {
       "id": "parakeet-tdt-0.6b-v3",
       "name": "Parakeet V3",
-      "description": "Legacy alias for Parakeet V3. Use Parakeet V3 English or Parakeet V3 Multilingual.",
+      "description": "Legacy alias for Parakeet V3. Redirects to the single Parakeet V3 model entry.",
       "filename": "parakeet-tdt-0.6b-v3-int8",
       "asset_path": "parakeet-v3-int8.tar.gz",
       "expected_etag": "\"d7a7b2d3f0780d1e0df427e64cff1b32-46\"",

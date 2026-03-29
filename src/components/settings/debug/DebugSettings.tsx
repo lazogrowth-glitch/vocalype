@@ -9,6 +9,7 @@ import { SoundPicker } from "../SoundPicker";
 import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
 import { ShortcutInput } from "../ShortcutInput";
 import { UpdateChecksToggle } from "../UpdateChecksToggle";
+import { ParakeetLab } from "./ParakeetLab";
 import { RuntimeDiagnostics } from "./RuntimeDiagnostics";
 import { useSettings } from "../../../hooks/useSettings";
 
@@ -30,6 +31,7 @@ export const DebugSettings: React.FC = () => {
         <WordCorrectionThreshold descriptionMode="tooltip" grouped={true} />
         <PasteDelay descriptionMode="tooltip" grouped={true} />
         <RuntimeDiagnostics grouped={true} />
+        <ParakeetLab grouped={true} />
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         {/* Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration */}
         {!isLinux && (

@@ -24,6 +24,7 @@
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
+    "eval:parakeet": "powershell -ExecutionPolicy Bypass -File scripts/run-parakeet-evals.ps1",
     "prepare": "husky"
   },
   "dependencies": {

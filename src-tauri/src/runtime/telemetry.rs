@@ -80,6 +80,94 @@ impl TranscriptionTelemetry {
 // ── Event helpers ─────────────────────────────────────────────────────────────
 
 impl TranscriptionTelemetry {
+    pub fn log_session_start(
+        &self,
+        session_id: u64,
+        operation_id: Option<u64>,
+        model_id: &str,
+        model_name: Option<&str>,
+        provider: &str,
+        selected_language: &str,
+        device_name: Option<&str>,
+        recording_mode: &str,
+        chunk_interval_samples: usize,
+        chunk_overlap_samples: usize,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            operation_id: Option<u64>,
+            model_id: &'a str,
+            model_name: Option<&'a str>,
+            provider: &'a str,
+            selected_language: &'a str,
+            device_name: Option<&'a str>,
+            recording_mode: &'a str,
+            chunk_interval_samples: usize,
+            chunk_overlap_samples: usize,
+        }
+        self.write_line(&E {
+            event: "session_start",
+            ts_ms: Self::now_ms(),
+            session_id,
+            operation_id,
+            model_id,
+            model_name,
+            provider,
+            selected_language,
+            device_name,
+            recording_mode,
+            chunk_interval_samples,
+            chunk_overlap_samples,
+        });
+    }
+
+    pub fn log_chunk_candidate(
+        &self,
+        session_id: u64,
+        chunk_idx: usize,
+        flush_type: &str,
+        new_samples: usize,
+        total_samples: usize,
+        overlap_samples: usize,
+        cutoff_secs: f32,
+        pending_chunks: usize,
+        accepted: bool,
+        decision_reason: &str,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            chunk_idx: usize,
+            flush_type: &'a str,
+            new_samples: usize,
+            total_samples: usize,
+            overlap_samples: usize,
+            cutoff_secs: f32,
+            pending_chunks: usize,
+            accepted: bool,
+            decision_reason: &'a str,
+        }
+        self.write_line(&E {
+            event: "chunk_candidate",
+            ts_ms: Self::now_ms(),
+            session_id,
+            chunk_idx,
+            flush_type,
+            new_samples,
+            total_samples,
+            overlap_samples,
+            cutoff_secs,
+            pending_chunks,
+            accepted,
+            decision_reason,
+        });
+    }
+
     /// Called when a background chunk is dispatched to the worker.
     ///
     /// * `flush_type`  — `"vad"`, `"interval"`, or `"final"`
@@ -168,6 +256,111 @@ impl TranscriptionTelemetry {
         });
     }
 
+    pub fn log_chunk_retry(
+        &self,
+        session_id: u64,
+        chunk_idx: usize,
+        retry_type: &str,
+        retry_reason: &str,
+        original_samples: usize,
+        retry_samples: usize,
+        success: bool,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            chunk_idx: usize,
+            retry_type: &'a str,
+            retry_reason: &'a str,
+            original_samples: usize,
+            retry_samples: usize,
+            success: bool,
+        }
+        self.write_line(&E {
+            event: "chunk_retry",
+            ts_ms: Self::now_ms(),
+            session_id,
+            chunk_idx,
+            retry_type,
+            retry_reason,
+            original_samples,
+            retry_samples,
+            success,
+        });
+    }
+
+    pub fn log_chunk_filtered(
+        &self,
+        session_id: u64,
+        chunk_idx: usize,
+        filter_name: &str,
+        raw_text_preview: &str,
+        word_count: usize,
+        chunk_samples: usize,
+        is_final_chunk: bool,
+        decision_reason: &str,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            chunk_idx: usize,
+            filter_name: &'a str,
+            raw_text_preview: &'a str,
+            word_count: usize,
+            chunk_samples: usize,
+            is_final_chunk: bool,
+            decision_reason: &'a str,
+        }
+        self.write_line(&E {
+            event: "chunk_filtered",
+            ts_ms: Self::now_ms(),
+            session_id,
+            chunk_idx,
+            filter_name,
+            raw_text_preview,
+            word_count,
+            chunk_samples,
+            is_final_chunk,
+            decision_reason,
+        });
+    }
+
+    pub fn log_assembly_event(
+        &self,
+        session_id: u64,
+        assembly_step: &str,
+        left_chunk_idx: usize,
+        right_chunk_idx: usize,
+        words_removed: usize,
+        decision_reason: &str,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            assembly_step: &'a str,
+            left_chunk_idx: usize,
+            right_chunk_idx: usize,
+            words_removed: usize,
+            decision_reason: &'a str,
+        }
+        self.write_line(&E {
+            event: "assembly_event",
+            ts_ms: Self::now_ms(),
+            session_id,
+            assembly_step,
+            left_chunk_idx,
+            right_chunk_idx,
+            words_removed,
+            decision_reason,
+        });
+    }
+
     /// Called when a chunk fails to transcribe.
     pub fn log_chunk_error(&self, session_id: u64, chunk_idx: usize, error: &str) {
         #[derive(Serialize)]
@@ -219,6 +412,55 @@ impl TranscriptionTelemetry {
             duration_secs: duration_samples as f32 / 16_000.0,
             assembled_word_count,
             assembled_preview,
+        });
+    }
+
+    pub fn log_session_quality_summary(
+        &self,
+        summary: &crate::parakeet_quality::ParakeetSessionDiagnostics,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            operation_id: Option<u64>,
+            model_id: &'a str,
+            provider: &'a str,
+            selected_language: &'a str,
+            duration_secs: f32,
+            total_chunks: usize,
+            empty_chunks: usize,
+            retry_chunks: usize,
+            filtered_chunks: usize,
+            trimmed_words_total: usize,
+            chunk_candidates_rejected: usize,
+            output_words: usize,
+            audio_to_word_ratio: f32,
+            estimated_issue: &'a crate::parakeet_quality::ParakeetFailureMode,
+            quality_risk_score: f32,
+            assembled_preview: &'a str,
+        }
+        self.write_line(&E {
+            event: "session_quality_summary",
+            ts_ms: Self::now_ms(),
+            session_id: summary.session_id,
+            operation_id: summary.operation_id,
+            model_id: &summary.model_id,
+            provider: &summary.provider,
+            selected_language: &summary.selected_language,
+            duration_secs: summary.duration_secs,
+            total_chunks: summary.total_chunks,
+            empty_chunks: summary.empty_chunks,
+            retry_chunks: summary.retry_chunks,
+            filtered_chunks: summary.filtered_chunks,
+            trimmed_words_total: summary.trimmed_words_total,
+            chunk_candidates_rejected: summary.chunk_candidates_rejected,
+            output_words: summary.output_words,
+            audio_to_word_ratio: summary.audio_to_word_ratio,
+            estimated_issue: &summary.estimated_issue,
+            quality_risk_score: summary.quality_risk_score,
+            assembled_preview: &summary.assembled_preview,
         });
     }
 }

@@ -197,6 +197,50 @@ export interface MachineStatusSnapshot {
   active_backend?: string | null;
 }
 
+export type ParakeetFailureMode =
+  | "healthy"
+  | "underchunking_long_utterance"
+  | "overtrim_overlap"
+  | "missing_word_timestamps"
+  | "retry_recovered_chunk"
+  | "final_chunk_hallucination"
+  | "low_audio_density"
+  | "boundary_word_loss";
+
+export interface ParakeetSessionDiagnosticsSnapshot {
+  session_id: number;
+  operation_id?: number | null;
+  binding_id: string;
+  model_id: string;
+  model_name?: string | null;
+  provider: string;
+  selected_language: string;
+  device_name?: string | null;
+  recording_mode: string;
+  chunk_interval_samples: number;
+  chunk_overlap_samples: number;
+  total_chunks: number;
+  empty_chunks: number;
+  retry_chunks: number;
+  filtered_chunks: number;
+  trimmed_words_total: number;
+  chunks_without_word_timestamps: number;
+  chunk_candidates_rejected: number;
+  chunk_candidates_sent: number;
+  output_words: number;
+  duration_secs: number;
+  audio_to_word_ratio: number;
+  estimated_issue: ParakeetFailureMode;
+  quality_risk_score: number;
+  assembled_preview: string;
+  last_updated_ms: number;
+}
+
+export interface ParakeetDiagnosticsSnapshot {
+  active_session?: ParakeetSessionDiagnosticsSnapshot | null;
+  recent_sessions: ParakeetSessionDiagnosticsSnapshot[];
+}
+
 export interface RuntimeDiagnosticsSnapshot {
   captured_at_ms: number;
   app_version: string;
@@ -226,6 +270,7 @@ export interface RuntimeDiagnosticsSnapshot {
   adaptive_voice_profile?: VoiceProfileSnapshot | null;
   active_voice_runtime_adjustment?: VoiceRuntimeAdjustmentSnapshot | null;
   machine_status?: MachineStatusSnapshot | null;
+  parakeet_diagnostics: ParakeetDiagnosticsSnapshot;
   adaptive_machine_profile?: AdaptiveMachineProfileSnapshot | null;
   adaptive_calibration_state?: CalibrationStatusSnapshot[];
 }

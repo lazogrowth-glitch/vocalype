@@ -2,6 +2,7 @@ mod actions;
 pub mod audio_toolkit;
 pub mod cli;
 mod commands;
+pub mod eval;
 pub mod error;
 mod helpers;
 mod managers;
@@ -39,9 +40,9 @@ pub use llm::{
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub use runtime::apple_intelligence;
 pub use runtime::{
-    adaptive_runtime, chunking, command_mode, context_detector, model_ids, runtime_observability,
-    startup_warmup, telemetry, transcription_confidence, transcription_coordinator,
-    vocabulary_store, voice_profile, wake_word,
+    adaptive_runtime, chunking, command_mode, context_detector, model_ids, parakeet_quality,
+    parakeet_text, runtime_observability, startup_warmup, telemetry, transcription_confidence,
+    transcription_coordinator, vocabulary_store, voice_profile, wake_word,
 };
 // platform
 pub use platform::signal_handle;
@@ -869,6 +870,7 @@ pub fn run(cli_args: CliArgs) {
             app.manage(voice_profile::VoiceProfileState(std::sync::Mutex::new(
                 voice_profile::VoiceProfile::load(&app_handle),
             )));
+            app.manage(runtime::parakeet_quality::ParakeetDiagnosticsState::new());
             app.manage(runtime_observability::RuntimeObservabilityState::new());
 
             // Transcription telemetry — append-only JSONL log for diagnostics.

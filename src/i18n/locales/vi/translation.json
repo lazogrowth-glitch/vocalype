@@ -58,10 +58,6 @@
         "name": "Parakeet V3",
         "description": "Duong ONNX da ngon ngu dang thu nghiem. Nhanh, nhung hien tai kem on dinh hon Whisper cho tieng Phap quan trong va dictation tron ngon ngu."
       },
-      "parakeet-tdt-0.6b-v3-english": {
-        "name": "Parakeet V3 English",
-        "description": "English-first Parakeet profile. Full-context decoding (no segmentation) for top speed and stability in English."
-      },
       "parakeet-tdt-0.6b-v3-multilingual": {
         "name": "Parakeet V3 Multilingual",
         "description": "Multilingual experimental profile tuned for French and non-English dictation with short segmented decoding."

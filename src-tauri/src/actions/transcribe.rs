@@ -311,7 +311,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         // Channel payload: (audio, chunk_idx, overlap_cutoff_secs)
         // overlap_cutoff_secs = 0.0 for the first chunk (no real overlap yet),
         // = overlap_samples / 16_000 for all subsequent chunks.
-        let (chunk_tx, chunk_rx) = std::sync::mpsc::channel::<Option<(Vec<f32>, usize, f32)>>();
+        let (chunk_tx, chunk_rx) =
+            std::sync::mpsc::channel::<Option<(Vec<f32>, usize, f32, bool)>>();
 
         let shared_s = Arc::clone(&shared_state);
         let tx_s = chunk_tx.clone();
@@ -401,7 +402,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     );
 
                     pending_s.fetch_add(1, Ordering::Relaxed);
-                    match tx_s.send(Some((chunk, next_idx, cutoff_secs))) {
+                    match tx_s.send(Some((chunk, next_idx, cutoff_secs, false))) {
                         Ok(()) => {
                             let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
                             s.last_committed_idx = chunk_end;
@@ -422,11 +423,17 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let is_parakeet_v3_w = is_parakeet_v3;
         let worker_handle = std::thread::spawn(move || {
             while let Ok(message) = chunk_rx.recv() {
-                let Some((audio, idx, overlap_cutoff_secs)) = message else {
+                let Some((audio, idx, overlap_cutoff_secs, is_final_chunk)) = message else {
                     break;
                 };
 
                 let chunk_samples = audio.len();
+                // Keep a copy for potential overlap-retry (only when overlap trimming is active).
+                let audio_for_retry = if is_parakeet_v3_w && overlap_cutoff_secs > 0.0 {
+                    Some(audio.clone())
+                } else {
+                    None
+                };
                 let chunk_start_time = std::time::Instant::now();
                 match tm_s.transcribe_detailed_request(TranscriptionRequest {
                     audio,
@@ -481,10 +488,31 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 out
                             } else {
                                 // Words mode fell back to Sentences (no per-word timestamps).
-                                // Return the full text; assembly uses deduplicate_boundary_n(3)
-                                // to remove any 1-3 word overlap at the boundary rather than
-                                // losing the whole chunk's words.
-                                let words = output.text.split_whitespace().count();
+                                // If output.text is empty, retry without the overlap prefix —
+                                // Parakeet sometimes fails to transcribe chunks whose audio
+                                // starts mid-sentence (the overlap zone). Stripping the overlap
+                                // gives it clean audio from the actual new content onward.
+                                let retry_text = if output.text.is_empty() {
+                                    if let Some(ref orig) = audio_for_retry {
+                                        let skip = (overlap_cutoff_secs * 16_000.0) as usize;
+                                        let non_overlap = orig[skip.min(orig.len())..].to_vec();
+                                        if non_overlap.len() >= 8_000 {
+                                            tm_s.transcribe_detailed_request(TranscriptionRequest {
+                                                audio: non_overlap,
+                                                app_context: None,
+                                            })
+                                            .map(|o| o.text)
+                                            .unwrap_or_default()
+                                        } else {
+                                            String::new()
+                                        }
+                                    } else {
+                                        String::new()
+                                    }
+                                } else {
+                                    output.text
+                                };
+                                let words = retry_text.split_whitespace().count();
                                 tel_worker.log_chunk_result(
                                     session_id,
                                     idx,
@@ -495,10 +523,10 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                     0,
                                     &format!(
                                         "(no-word-timestamps-fallback-full) {}",
-                                        &output.text.chars().take(100).collect::<String>()
+                                        &retry_text.chars().take(100).collect::<String>()
                                     ),
                                 );
-                                output.text
+                                retry_text
                             }
                         } else {
                             // First chunk (cutoff = 0.0) or non-Parakeet engine:
@@ -521,11 +549,24 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         // mostly silence. Discard single-word results from chunks that
                         // are too short to reliably contain real speech.
                         let word_count = text.split_whitespace().count();
+                        // Known English filler words Parakeet hallucinates on near-silence.
+                        const HALLUCINATION_BLOCKLIST: &[&str] = &[
+                            "yeah", "but", "so", "we", "leave", "thanks", "hey", "hi", "bye",
+                            "the", "this", "that", "sure", "right", "okay", "ok",
+                        ];
+                        let bare = text
+                            .trim()
+                            .trim_end_matches('.')
+                            .trim_end_matches(',')
+                            .to_lowercase();
+                        let is_known_hallucination =
+                            HALLUCINATION_BLOCKLIST.contains(&bare.as_str());
                         let text = if is_parakeet_v3_w
                             && word_count <= 1
                             && !text.is_empty()
-                            && idx > 0
+                            && !is_final_chunk
                             && chunk_samples < PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD
+                            && (idx > 0 || is_known_hallucination)
                         {
                             debug!(
                                 "Chunk {}: discarding likely hallucination {:?} ({} samples)",
@@ -778,7 +819,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         ch.pending_chunks.fetch_add(1, Ordering::Relaxed);
                         if ch
                             .chunk_tx
-                            .send(Some((remaining, next_idx, final_cutoff_secs)))
+                            .send(Some((remaining, next_idx, final_cutoff_secs, true)))
                             .is_err()
                         {
                             ch.pending_chunks.fetch_sub(1, Ordering::Relaxed);
@@ -837,16 +878,18 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                     .last()
                                     .map_or(false, |c| matches!(c, '.' | '!' | '?' | '…'));
                                 out.push(' ');
-                                if prev_ends_sentence {
-                                    out.push_str(&chunk_to_join);
-                                } else {
-                                    let mut chars = chunk_to_join.chars();
-                                    if let Some(first) = chars.next() {
+                                let mut chars = chunk_to_join.chars();
+                                if let Some(first) = chars.next() {
+                                    if prev_ends_sentence {
+                                        for uc in first.to_uppercase() {
+                                            out.push(uc);
+                                        }
+                                    } else {
                                         for lc in first.to_lowercase() {
                                             out.push(lc);
                                         }
-                                        out.push_str(chars.as_str());
                                     }
+                                    out.push_str(chars.as_str());
                                 }
                             }
                         }

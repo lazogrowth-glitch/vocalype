@@ -51,13 +51,11 @@ pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s
 /// English Parakeet profile tuned to reduce long-utterance truncation.
 pub(crate) const PARAKEET_V3_EN_CHUNK_INTERVAL_SAMPLES: usize = 20 * 16_000; // 20 s at 16 kHz
 pub(crate) const PARAKEET_V3_EN_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1 s
-/// French-first multilingual Parakeet profile — 4 s chunks match typical sentence length,
-/// avoiding word cuts at boundaries during long utterances.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 4 * 16_000; // 4 s at 16 kHz
-/// 0.5 s overlap — halves the trimming window vs 1 s, reducing end-of-sentence word loss
-/// when words fall right at an interval boundary. The TDT timestamp trimmer is accurate
-/// enough at 0.5 s cutoff to avoid duplicates.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+/// Multilingual Parakeet profile — rely on VAD for chunk boundaries (natural pauses).
+/// 30 s interval is a last-resort safety net for uninterrupted speech only.
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 30 * 16_000; // 30 s at 16 kHz
+/// No overlap needed: VAD chunks end at natural silence so there is nothing to trim.
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 0; // 0 s
 
 // ── Chunking types ───────────────────────────────────────────────────────────
 
@@ -75,7 +73,7 @@ pub(crate) struct ChunkingSharedState {
 pub struct ChunkingHandle {
     pub(crate) sampler_handle: std::thread::JoinHandle<()>,
     pub(crate) worker_handle: std::thread::JoinHandle<()>,
-    pub(crate) chunk_tx: std::sync::mpsc::Sender<Option<(Vec<f32>, usize, f32)>>,
+    pub(crate) chunk_tx: std::sync::mpsc::Sender<Option<(Vec<f32>, usize, f32, bool)>>,
     pub(crate) shared_state: Arc<Mutex<ChunkingSharedState>>,
     pub(crate) results: Arc<Mutex<Vec<(usize, String)>>>,
     pub(crate) pending_chunks: Arc<AtomicUsize>,

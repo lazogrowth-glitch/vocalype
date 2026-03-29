@@ -1,5 +1,6 @@
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
+use crate::runtime::chunking::ActiveChunkingHandle;
 use crate::shortcut;
 use crate::TranscriptionCoordinator;
 use log::info;
@@ -31,6 +32,17 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Cancel any ongoing recording
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.cancel_recording();
+
+    // Drop any active chunking handle so the chunk channel closes.
+    // If ESC is pressed while the sampler is running, the worker thread is
+    // blocked on chunk_rx.recv(). Without this, chunk_tx stays alive inside
+    // ActiveChunkingHandle and the worker hangs forever, holding the
+    // TranscriptionManager and causing a deadlock on the next recording.
+    if let Some(handle_state) = app.try_state::<ActiveChunkingHandle>() {
+        if let Ok(mut guard) = handle_state.0.lock() {
+            let _ = guard.take(); // drops ChunkingHandle → drops chunk_tx → unblocks worker
+        }
+    }
 
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);

@@ -475,10 +475,6 @@ impl TranscriptionManager {
         .map(|result| result.text)
     }
 
-    pub fn transcribe_request(&self, request: TranscriptionRequest) -> Result<String> {
-        self.transcribe_detailed_request(request)
-            .map(|result| result.text)
-    }
 }
 
 impl Drop for TranscriptionManager {

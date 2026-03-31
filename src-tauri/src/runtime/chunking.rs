@@ -1,7 +1,5 @@
 use crate::managers::model::{EngineType, ModelInfo};
-use crate::model_ids::{
-    PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
-};
+use crate::model_ids::{PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID};
 use crate::parakeet_quality::ParakeetSessionCompletion;
 use crate::settings::AppSettings;
 use crate::telemetry::TranscriptionTelemetry;
@@ -79,9 +77,6 @@ pub struct ChunkingHandle {
     pub(crate) pending_chunks: Arc<AtomicUsize>,
     pub(crate) failed_chunks: Arc<AtomicUsize>,
     pub(crate) parakeet_counters: Arc<Mutex<ParakeetSessionCompletion>>,
-    /// Set to true by cancel_current_operation to make the worker thread
-    /// exit immediately without processing remaining queued chunks.
-    pub(crate) cancel_flag: Arc<AtomicBool>,
     pub(crate) chunk_overlap_samples: usize,
     /// True when the active model is Parakeet V3 TDT.
     /// Used to gate timestamp-based overlap trimming (which is only safe for
@@ -158,18 +153,14 @@ pub(crate) fn chunking_profile_for_model(
             let base_chunk_seconds = (PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES / 16_000) as u8;
             let base_overlap_ms =
                 ((PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES * 1000) / 16_000) as u16;
-            let adjusted = current_runtime_adjustment(
-                app,
-                &info.id,
-                base_chunk_seconds,
-                base_overlap_ms,
-            )
-            .unwrap_or_else(|| crate::voice_profile::VoiceRuntimeAdjustment {
-                adjusted_chunk_seconds: base_chunk_seconds,
-                adjusted_overlap_ms: base_overlap_ms,
-                vad_hangover_frames_delta: 0,
-                reason: None,
-            });
+            let adjusted =
+                current_runtime_adjustment(app, &info.id, base_chunk_seconds, base_overlap_ms)
+                    .unwrap_or_else(|| crate::voice_profile::VoiceRuntimeAdjustment {
+                        adjusted_chunk_seconds: base_chunk_seconds,
+                        adjusted_overlap_ms: base_overlap_ms,
+                        vad_hangover_frames_delta: 0,
+                        reason: None,
+                    });
             Some(ChunkingProfile {
                 interval_samples: usize::from(adjusted.adjusted_chunk_seconds) * 16_000,
                 overlap_samples: (usize::from(adjusted.adjusted_overlap_ms) * 16_000) / 1000,

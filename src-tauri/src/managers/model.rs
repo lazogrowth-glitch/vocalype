@@ -1,7 +1,6 @@
 use crate::managers::model_catalog;
 use crate::model_ids::{
-    canonical_model_id, PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID,
-    PARAKEET_V3_MULTILINGUAL_ID,
+    canonical_model_id, PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
 };
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
@@ -599,8 +598,7 @@ impl ModelManager {
             }
 
             if let Some(secondary_model_id) = profile.secondary_model_id.clone() {
-                let canonical_secondary =
-                    Self::canonicalize_profile_alias(&secondary_model_id);
+                let canonical_secondary = Self::canonicalize_profile_alias(&secondary_model_id);
                 if secondary_model_id != canonical_secondary {
                     profile.secondary_model_id = Some(canonical_secondary.to_string());
                     settings_changed = true;
@@ -608,8 +606,7 @@ impl ModelManager {
             }
 
             if let Some(active_runtime_model_id) = profile.active_runtime_model_id.clone() {
-                let canonical_active =
-                    Self::canonicalize_profile_alias(&active_runtime_model_id);
+                let canonical_active = Self::canonicalize_profile_alias(&active_runtime_model_id);
                 if active_runtime_model_id != canonical_active {
                     profile.active_runtime_model_id = Some(canonical_active.to_string());
                     settings_changed = true;

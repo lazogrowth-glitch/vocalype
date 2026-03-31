@@ -28,11 +28,7 @@ pub fn aggregate_reports(items: Vec<AggregateInput<'_>>) -> AggregateReport {
         samples: items.len(),
         global_wer: items.iter().map(|s| s.metrics.wer).sum::<f32>() / count,
         global_cer: items.iter().map(|s| s.metrics.cer).sum::<f32>() / count,
-        global_omission_rate: items
-            .iter()
-            .map(|s| s.metrics.omission_rate)
-            .sum::<f32>()
-            / count,
+        global_omission_rate: items.iter().map(|s| s.metrics.omission_rate).sum::<f32>() / count,
         global_duplication_rate: items
             .iter()
             .map(|s| s.metrics.duplication_rate)
@@ -48,12 +44,16 @@ pub fn aggregate_reports(items: Vec<AggregateInput<'_>>) -> AggregateReport {
             .map(|s| s.metrics.end_truncation_score)
             .sum::<f32>()
             / count,
-        top_omitted_terms: aggregate_terms(items.iter().flat_map(|s| s.metrics.omitted_terms.iter())),
+        top_omitted_terms: aggregate_terms(
+            items.iter().flat_map(|s| s.metrics.omitted_terms.iter()),
+        ),
         top_duplicated_terms: aggregate_terms(
             items.iter().flat_map(|s| s.metrics.duplicated_terms.iter()),
         ),
         top_hallucinated_terms: aggregate_terms(
-            items.iter().flat_map(|s| s.metrics.hallucinated_terms.iter()),
+            items
+                .iter()
+                .flat_map(|s| s.metrics.hallucinated_terms.iter()),
         ),
     }
 }

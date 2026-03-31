@@ -1036,12 +1036,4 @@ impl AudioRecordingManager {
         }
     }
 
-    /// Returns a snapshot of the current observed-pauses window.
-    pub fn get_speaking_rate_pauses(&self) -> VecDeque<u64> {
-        self.sr_observed_pauses
-            .lock()
-            .ok()
-            .map(|p| p.clone())
-            .unwrap_or_default()
-    }
 }

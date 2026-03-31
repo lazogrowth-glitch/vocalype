@@ -49,16 +49,12 @@ pub fn compute_metrics(reference: &str, hypothesis: &str) -> EvalMetrics {
     let hyp_counts = word_counts(&hyp_words);
     let omitted_words = ref_counts
         .iter()
-        .map(|(word, ref_count)| {
-            ref_count.saturating_sub(*hyp_counts.get(word).unwrap_or(&0))
-        })
+        .map(|(word, ref_count)| ref_count.saturating_sub(*hyp_counts.get(word).unwrap_or(&0)))
         .sum::<usize>();
     let omitted_terms = sorted_positive_deltas(&ref_counts, &hyp_counts);
     let hallucinated_words = hyp_counts
         .iter()
-        .map(|(word, hyp_count)| {
-            hyp_count.saturating_sub(*ref_counts.get(word).unwrap_or(&0))
-        })
+        .map(|(word, hyp_count)| hyp_count.saturating_sub(*ref_counts.get(word).unwrap_or(&0)))
         .sum::<usize>();
     let hallucinated_terms = sorted_positive_deltas(&hyp_counts, &ref_counts);
     let duplicated_words = hyp_counts
@@ -113,17 +109,45 @@ pub fn compute_metrics(reference: &str, hypothesis: &str) -> EvalMetrics {
 }
 
 fn tokenize_words(text: &str) -> Vec<String> {
-    text.split_whitespace()
-        .map(|w| w.trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase())
+    normalize_eval_text(text)
+        .split_whitespace()
+        .map(|w| {
+            w.trim_matches(|c: char| !c.is_alphanumeric())
+                .to_lowercase()
+        })
         .filter(|w| !w.is_empty())
         .collect()
 }
 
 fn normalize_chars(text: &str) -> Vec<char> {
-    text.to_lowercase()
+    normalize_eval_text(text)
         .chars()
         .filter(|c| !c.is_control())
         .collect()
+}
+
+fn normalize_eval_text(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut prev_space = false;
+    for ch in text.to_lowercase().chars() {
+        let mapped = match ch {
+            '\'' | '’' | '-' => ' ',
+            _ => ch,
+        };
+        if mapped.is_control() {
+            continue;
+        }
+        if mapped.is_whitespace() {
+            if !prev_space {
+                out.push(' ');
+                prev_space = true;
+            }
+        } else {
+            out.push(mapped);
+            prev_space = false;
+        }
+    }
+    out.trim().to_string()
 }
 
 fn word_counts(words: &[String]) -> HashMap<String, usize> {
@@ -221,5 +245,14 @@ mod tests {
             "je veux tester la fin",
         );
         assert!(metrics.end_truncation_score > 0.0);
+    }
+
+    #[test]
+    fn metrics_ignore_apostrophes_and_hyphens() {
+        let metrics = compute_metrics(
+            "j ai ouvert l application et est ce que tu viens",
+            "j'ai ouvert l'application et est-ce que tu viens",
+        );
+        assert_eq!(metrics.wer, 0.0);
     }
 }

@@ -83,6 +83,7 @@ pub(crate) const WAKE_WORD_BINDING_ID: &str = "__wake_word__";
 
 pub struct WakeWordManager {
     shutdown: Arc<AtomicBool>,
+    audio_manager: Arc<AudioRecordingManager>,
     /// Kept alive so the thread lives until the manager is dropped.
     _thread: std::thread::JoinHandle<()>,
 }
@@ -117,6 +118,7 @@ impl WakeWordManager {
 
         WakeWordManager {
             shutdown,
+            audio_manager: Arc::clone(&*app.state::<Arc<AudioRecordingManager>>()),
             _thread: thread,
         }
     }
@@ -125,6 +127,7 @@ impl WakeWordManager {
 impl Drop for WakeWordManager {
     fn drop(&mut self) {
         self.shutdown.store(true, Ordering::Relaxed);
+        self.audio_manager.clear_preview_callback();
     }
 }
 

@@ -1,5 +1,8 @@
 use super::*;
-use crate::parakeet_text::{finalize_parakeet_text, parakeet_builtin_correction_terms};
+use crate::parakeet_text::{
+    finalize_parakeet_text, maybe_prefer_sentence_punctuation, parakeet_builtin_correction_terms,
+    should_attempt_sentence_punctuation,
+};
 use whichlang::Lang;
 
 const PARAKEET_LOW_ENERGY_RMS_THRESHOLD: f32 = 0.05;
@@ -211,7 +214,8 @@ impl TranscriptionManager {
             &vocabulary_terms,
             active_model_id.as_deref(),
         );
-        let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id)) {
+        let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
+        {
             settings.word_correction_threshold.max(0.24)
         } else {
             settings.word_correction_threshold
@@ -569,6 +573,26 @@ impl TranscriptionManager {
                                         &result.text,
                                         &settings.selected_language,
                                     );
+                                    let mut display_text = result.text.clone();
+                                    if should_attempt_sentence_punctuation(&display_text) {
+                                        if let Ok(sentence_result) = parakeet_engine
+                                            .transcribe_samples(
+                                                decode_audio.clone(),
+                                                16_000,
+                                                1,
+                                                Some(ParakeetTimestampMode::Sentences),
+                                            )
+                                        {
+                                            if let Some(punctuated) =
+                                                maybe_prefer_sentence_punctuation(
+                                                    &display_text,
+                                                    &sentence_result.text,
+                                                )
+                                            {
+                                                display_text = punctuated;
+                                            }
+                                        }
+                                    }
                                     // Words mode succeeded — convert per-word timed tokens to
                                     // TranscriptionSegment so the chunking worker can trim the
                                     // overlap prefix by timestamp (immune to non-determinism).
@@ -584,7 +608,7 @@ impl TranscriptionManager {
                                         })
                                         .collect();
                                     Ok(EngineTranscriptionResult {
-                                        text: result.text,
+                                        text: display_text,
                                         segments: if segments.is_empty() {
                                             None
                                         } else {
@@ -732,15 +756,12 @@ impl TranscriptionManager {
         // Apply word correction if custom words are configured
         let raw_result = result.text;
         let corrected_result = if !correction_terms.is_empty() {
-            apply_custom_words(
-                &raw_result,
-                &correction_terms,
-                correction_threshold,
-            )
+            apply_custom_words(&raw_result, &correction_terms, correction_threshold)
         } else {
             raw_result
         };
-        let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id)) {
+        let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
+        {
             finalize_parakeet_text(&corrected_result, &settings.selected_language)
         } else {
             corrected_result
@@ -824,7 +845,8 @@ mod tests {
 
     #[test]
     fn normalizes_parakeet_phrase_variants() {
-        let text = "Today I tested Parakate V tree inside Vocaltype and pushed to Git Hub for Open AI.";
+        let text =
+            "Today I tested Parakate V tree inside Vocaltype and pushed to Git Hub for Open AI.";
         let normalized = normalize_parakeet_phrase_variants(text, "en");
         assert!(normalized.contains("Parakeet V3"));
         assert!(normalized.contains("Vocalype"));

@@ -14,7 +14,10 @@ use vocalype_app_lib::eval::report::{
 use vocalype_app_lib::model_ids::{
     PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
 };
-use vocalype_app_lib::parakeet_text::{finalize_parakeet_text, parakeet_builtin_correction_terms};
+use vocalype_app_lib::parakeet_text::{
+    finalize_parakeet_text, maybe_prefer_sentence_punctuation, parakeet_builtin_correction_terms,
+    parakeet_chunk_ends_sentence, should_attempt_sentence_punctuation,
+};
 
 const SAMPLE_RATE: u32 = 16_000;
 const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000;
@@ -70,8 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| PARAKEET_V3_MULTILINGUAL_ID.to_string());
     let output_path = args.next().map(PathBuf::from);
 
-    let manifest: EvalDatasetManifest =
-        serde_json::from_str(&fs::read_to_string(&manifest_path)?)?;
+    let manifest: EvalDatasetManifest = serde_json::from_str(&fs::read_to_string(&manifest_path)?)?;
     let manifest_dir = manifest_path
         .parent()
         .map(Path::to_path_buf)
@@ -175,7 +177,10 @@ fn run_chunked_pipeline(
         &parakeet_builtin_correction_terms(selected_language),
         0.24,
     );
-    Ok((finalize_parakeet_text(&corrected, selected_language), next_idx))
+    Ok((
+        finalize_parakeet_text(&corrected, selected_language),
+        next_idx,
+    ))
 }
 
 fn transcribe_parakeet_chunk(
@@ -186,18 +191,44 @@ fn transcribe_parakeet_chunk(
     let decode_audio = maybe_boost_low_energy_parakeet_audio(&audio)
         .map(|(samples, _)| samples)
         .unwrap_or(audio.clone());
-    let result =
-        engine.transcribe_samples(decode_audio.clone(), SAMPLE_RATE, 1, Some(TimestampMode::Words))?;
+    let result = engine.transcribe_samples(
+        decode_audio.clone(),
+        SAMPLE_RATE,
+        1,
+        Some(TimestampMode::Words),
+    )?;
+    let mut preferred_text = result.text.clone();
+    if should_attempt_sentence_punctuation(&preferred_text) {
+        if let Ok(sentence_result) = engine.transcribe_samples(
+            decode_audio.clone(),
+            SAMPLE_RATE,
+            1,
+            Some(TimestampMode::Sentences),
+        ) {
+            if let Some(punctuated) =
+                maybe_prefer_sentence_punctuation(&preferred_text, &sentence_result.text)
+            {
+                preferred_text = punctuated;
+            }
+        }
+    }
 
     if overlap_cutoff_secs <= 0.0 {
-        return Ok(result.text);
+        return Ok(preferred_text);
     }
 
     let mut trimmed = String::new();
     let mut kept = 0usize;
-    for token in result.tokens.iter().filter(|t| t.start >= overlap_cutoff_secs) {
-        let is_punct =
-            token.text.len() == 1 && token.text.chars().all(|c| matches!(c, '.' | ',' | '!' | '?' | ';' | ':' | ')'));
+    for token in result
+        .tokens
+        .iter()
+        .filter(|t| t.start >= overlap_cutoff_secs)
+    {
+        let is_punct = token.text.len() == 1
+            && token
+                .text
+                .chars()
+                .all(|c| matches!(c, '.' | ',' | '!' | '?' | ';' | ':' | ')'));
         if !trimmed.is_empty() && !is_punct {
             trimmed.push(' ');
         }
@@ -209,12 +240,24 @@ fn transcribe_parakeet_chunk(
         let skip = (overlap_cutoff_secs * SAMPLE_RATE as f32) as usize;
         let retry_audio = decode_audio[skip.min(decode_audio.len())..].to_vec();
         if retry_audio.len() >= MIN_FINAL_CHUNK_SAMPLES {
-            let retry = engine.transcribe_samples(retry_audio, SAMPLE_RATE, 1, Some(TimestampMode::Words))?;
+            let retry = engine.transcribe_samples(
+                retry_audio,
+                SAMPLE_RATE,
+                1,
+                Some(TimestampMode::Words),
+            )?;
             return Ok(retry.text);
         }
     }
 
-    Ok(trimmed.trim().to_string())
+    let trimmed = trimmed.trim().to_string();
+    if trimmed.is_empty() {
+        Ok(trimmed)
+    } else if let Some(punctuated) = maybe_prefer_sentence_punctuation(&trimmed, &preferred_text) {
+        Ok(punctuated)
+    } else {
+        Ok(trimmed)
+    }
 }
 
 fn assemble_parakeet_results(results: &[String]) -> String {
@@ -236,10 +279,7 @@ fn assemble_parakeet_results(results: &[String]) -> String {
             continue;
         }
 
-        let prev_ends_sentence = out
-            .chars()
-            .last()
-            .is_some_and(|c| matches!(c, '!' | '?' | '…'));
+        let prev_ends_sentence = parakeet_chunk_ends_sentence(&out, &deduped);
         if !out.is_empty() {
             out.push(' ');
         }
@@ -326,10 +366,12 @@ fn parakeet_builtin_correction_terms_legacy(selected_language: &str) -> Vec<Stri
 
 fn profile_for_model(model_id: &str) -> ChunkProfile {
     match model_id {
-        PARAKEET_V3_ENGLISH_ID | PARAKEET_V3_MULTILINGUAL_ID | PARAKEET_V3_LEGACY_ID => ChunkProfile {
-            interval_samples: 12 * 16_000,
-            overlap_samples: 16_000,
-        },
+        PARAKEET_V3_ENGLISH_ID | PARAKEET_V3_MULTILINGUAL_ID | PARAKEET_V3_LEGACY_ID => {
+            ChunkProfile {
+                interval_samples: 12 * 16_000,
+                overlap_samples: 16_000,
+            }
+        }
         _ => ChunkProfile {
             interval_samples: 12 * 16_000,
             overlap_samples: 16_000,

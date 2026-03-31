@@ -59,17 +59,6 @@ pub fn init_shortcuts(app: &AppHandle) {
     }
 }
 
-/// Register the cancel shortcut (called when recording starts)
-pub fn register_cancel_shortcut(app: &AppHandle) {
-    let settings = get_settings(app);
-    match settings.keyboard_implementation {
-        KeyboardImplementation::Tauri => tauri_impl::register_cancel_shortcut(app),
-        KeyboardImplementation::NativeShortcutCapture => {
-            native_shortcut_capture::register_cancel_shortcut(app)
-        }
-    }
-}
-
 /// Unregister the cancel shortcut (called when recording stops)
 pub fn unregister_cancel_shortcut(app: &AppHandle) {
     let settings = get_settings(app);

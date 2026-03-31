@@ -780,7 +780,6 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 pending_chunks,
                 failed_chunks,
                 parakeet_counters: Arc::clone(&quality_counters),
-                cancel_flag,
                 chunk_overlap_samples: chunking_profile.overlap_samples,
                 is_parakeet_v3,
                 session_id,
@@ -1078,10 +1077,11 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                 // Parakeet appends '.' to every chunk (even mid-sentence VAD
                                 // splits), so using '.' here causes false capitalisation like
                                 // "Tu es. Le meilleur." when the user said one sentence.
-                                let prev_ends_sentence = out
-                                    .chars()
-                                    .last()
-                                    .map_or(false, |c| matches!(c, '!' | '?' | '…'));
+                                let prev_ends_sentence =
+                                    crate::parakeet_text::parakeet_chunk_ends_sentence(
+                                        &out,
+                                        &chunk_to_join,
+                                    );
                                 out.push(' ');
                                 let mut chars = chunk_to_join.chars();
                                 if let Some(first) = chars.next() {

@@ -14,7 +14,6 @@ use crate::transcription_confidence::{
     build_whisper_confidence_payload, TranscriptionConfidencePayload,
 };
 use crate::vocabulary_store::VocabularyStoreState;
-use crate::voice_profile::{current_voice_profile, VoiceProfile};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use parakeet_rs::{

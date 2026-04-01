@@ -13,7 +13,7 @@ const MIN_PAUSE_FRAMES: usize = 8; // 160ms
 const SILENCE_RMS_THRESHOLD: f32 = 0.012;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
-pub struct VoiceProfile {
+pub struct VoiceProfileSegment {
     #[serde(default)]
     pub sessions_count: u32,
     #[serde(default)]
@@ -26,6 +26,34 @@ pub struct VoiceProfile {
     pub last_updated_ms: Option<u64>,
 }
 
+impl Default for VoiceProfileSegment {
+    fn default() -> Self {
+        Self {
+            sessions_count: 0,
+            avg_words_per_minute: 0.0,
+            avg_pause_ms: 0.0,
+            preferred_terms: Vec::new(),
+            last_updated_ms: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct VoiceProfile {
+    #[serde(default)]
+    pub sessions_count: u32,
+    #[serde(default)]
+    pub avg_words_per_minute: f32,
+    #[serde(default)]
+    pub avg_pause_ms: f32,
+    #[serde(default)]
+    pub preferred_terms: Vec<String>,
+    #[serde(default)]
+    pub last_updated_ms: Option<u64>,
+    #[serde(default)]
+    pub segments: HashMap<String, VoiceProfileSegment>,
+}
+
 impl Default for VoiceProfile {
     fn default() -> Self {
         Self {
@@ -34,6 +62,7 @@ impl Default for VoiceProfile {
             avg_pause_ms: 0.0,
             preferred_terms: Vec::new(),
             last_updated_ms: None,
+            segments: HashMap::new(),
         }
     }
 }
@@ -47,6 +76,29 @@ pub struct VoiceRuntimeAdjustment {
 }
 
 pub struct VoiceProfileState(pub Mutex<VoiceProfile>);
+
+fn normalize_profile_language(selected_language: &str) -> &str {
+    let trimmed = selected_language.trim();
+    if trimmed.is_empty() {
+        "auto"
+    } else if trimmed.starts_with("fr") {
+        "fr"
+    } else if trimmed.starts_with("en") {
+        "en"
+    } else if trimmed.starts_with("zh") {
+        "zh"
+    } else {
+        trimmed
+    }
+}
+
+fn voice_profile_segment_key(model_id: &str, selected_language: &str) -> String {
+    format!(
+        "{}:{}",
+        model_id.trim().to_ascii_lowercase(),
+        normalize_profile_language(selected_language)
+    )
+}
 
 fn now_ms() -> u64 {
     crate::runtime_observability::now_ms()
@@ -188,7 +240,7 @@ fn model_bounds(
 }
 
 pub fn derive_runtime_adjustment(
-    profile: &VoiceProfile,
+    profile: &VoiceProfileSegment,
     model_id: &str,
     base_chunk_seconds: u8,
     base_overlap_ms: u16,
@@ -242,6 +294,60 @@ pub fn derive_runtime_adjustment(
 }
 
 impl VoiceProfile {
+    fn update_stats(
+        sessions_count: &mut u32,
+        avg_words_per_minute: &mut f32,
+        avg_pause_ms: &mut f32,
+        preferred_terms: &mut Vec<String>,
+        last_updated_ms: &mut Option<u64>,
+        samples: &[f32],
+        transcription: &str,
+        custom_words: &[String],
+    ) {
+        let words = normalized_words(transcription);
+        if words.is_empty() || samples.is_empty() {
+            return;
+        }
+
+        let duration_minutes = (samples.len() as f32 / 16_000.0) / 60.0;
+        if duration_minutes <= 0.0 {
+            return;
+        }
+
+        let wpm = words.len() as f32 / duration_minutes;
+        let pause_ms = estimate_avg_pause_ms(samples).unwrap_or(0.0);
+
+        *sessions_count = sessions_count.saturating_add(1);
+        *avg_words_per_minute = ewma(*avg_words_per_minute, wpm, 0.25);
+        if pause_ms > 0.0 {
+            *avg_pause_ms = ewma(*avg_pause_ms, pause_ms, 0.25);
+        }
+        *preferred_terms = extract_preferred_terms(transcription, custom_words);
+        *last_updated_ms = Some(now_ms());
+    }
+
+    pub fn active_segment(
+        &self,
+        model_id: &str,
+        selected_language: &str,
+    ) -> Option<VoiceProfileSegment> {
+        self.segments
+            .get(&voice_profile_segment_key(model_id, selected_language))
+            .cloned()
+    }
+
+    pub fn effective_segment(&self, model_id: &str, selected_language: &str) -> VoiceProfileSegment {
+        self.active_segment(model_id, selected_language)
+            .filter(|segment| segment.sessions_count > 0)
+            .unwrap_or_else(|| VoiceProfileSegment {
+                sessions_count: self.sessions_count,
+                avg_words_per_minute: self.avg_words_per_minute,
+                avg_pause_ms: self.avg_pause_ms,
+                preferred_terms: self.preferred_terms.clone(),
+                last_updated_ms: self.last_updated_ms,
+            })
+    }
+
     pub fn load(app: &AppHandle) -> Self {
         let path = voice_profile_file(app);
         let Ok(content) = fs::read_to_string(path) else {
@@ -267,27 +373,34 @@ impl VoiceProfile {
         samples: &[f32],
         transcription: &str,
         custom_words: &[String],
+        model_id: &str,
+        selected_language: &str,
     ) {
-        let words = normalized_words(transcription);
-        if words.is_empty() || samples.is_empty() {
-            return;
-        }
+        Self::update_stats(
+            &mut self.sessions_count,
+            &mut self.avg_words_per_minute,
+            &mut self.avg_pause_ms,
+            &mut self.preferred_terms,
+            &mut self.last_updated_ms,
+            samples,
+            transcription,
+            custom_words,
+        );
 
-        let duration_minutes = (samples.len() as f32 / 16_000.0) / 60.0;
-        if duration_minutes <= 0.0 {
-            return;
-        }
-
-        let wpm = words.len() as f32 / duration_minutes;
-        let pause_ms = estimate_avg_pause_ms(samples).unwrap_or(0.0);
-
-        self.sessions_count = self.sessions_count.saturating_add(1);
-        self.avg_words_per_minute = ewma(self.avg_words_per_minute, wpm, 0.25);
-        if pause_ms > 0.0 {
-            self.avg_pause_ms = ewma(self.avg_pause_ms, pause_ms, 0.25);
-        }
-        self.preferred_terms = extract_preferred_terms(transcription, custom_words);
-        self.last_updated_ms = Some(now_ms());
+        let segment = self
+            .segments
+            .entry(voice_profile_segment_key(model_id, selected_language))
+            .or_default();
+        Self::update_stats(
+            &mut segment.sessions_count,
+            &mut segment.avg_words_per_minute,
+            &mut segment.avg_pause_ms,
+            &mut segment.preferred_terms,
+            &mut segment.last_updated_ms,
+            samples,
+            transcription,
+            custom_words,
+        );
     }
 }
 
@@ -296,9 +409,18 @@ pub fn current_voice_profile(app: &AppHandle) -> Option<VoiceProfile> {
         .and_then(|state| state.0.lock().ok().map(|profile| profile.clone()))
 }
 
+pub fn current_voice_profile_for_context(
+    app: &AppHandle,
+    model_id: &str,
+    selected_language: &str,
+) -> Option<VoiceProfileSegment> {
+    current_voice_profile(app).map(|profile| profile.effective_segment(model_id, selected_language))
+}
+
 pub fn current_runtime_adjustment(
     app: &AppHandle,
     model_id: &str,
+    selected_language: &str,
     base_chunk_seconds: u8,
     base_overlap_ms: u16,
 ) -> Option<VoiceRuntimeAdjustment> {
@@ -307,7 +429,7 @@ pub fn current_runtime_adjustment(
         return None;
     }
 
-    let profile = current_voice_profile(app)?;
+    let profile = current_voice_profile_for_context(app, model_id, selected_language)?;
     if profile.sessions_count == 0 {
         return None;
     }
@@ -326,7 +448,7 @@ mod tests {
 
     #[test]
     fn voice_adjustment_reduces_chunk_for_fast_speech() {
-        let profile = VoiceProfile {
+        let profile = VoiceProfileSegment {
             sessions_count: 4,
             avg_words_per_minute: 182.0,
             avg_pause_ms: 180.0,
@@ -341,7 +463,7 @@ mod tests {
 
     #[test]
     fn voice_adjustment_relaxes_vad_for_long_pauses() {
-        let profile = VoiceProfile {
+        let profile = VoiceProfileSegment {
             sessions_count: 3,
             avg_words_per_minute: 110.0,
             avg_pause_ms: 820.0,
@@ -352,5 +474,31 @@ mod tests {
         let adjustment = derive_runtime_adjustment(&profile, "small", 10, 500);
         assert!(adjustment.vad_hangover_frames_delta > 0);
         assert!(adjustment.adjusted_chunk_seconds >= 10);
+    }
+
+    #[test]
+    fn segmented_profile_is_preferred_for_matching_context() {
+        let mut profile = VoiceProfile::default();
+        profile.update_from_session(
+            &[0.1; 16_000 * 30],
+            "bonjour ceci est un test de dictée française plus rapide avec Vocalype",
+            &[],
+            "parakeet-tdt-0.6b-v3-multilingual",
+            "fr",
+        );
+        profile.update_from_session(
+            &[0.1; 16_000 * 90],
+            "this is a slower english dictation sample with natural pauses",
+            &[],
+            "parakeet-tdt-0.6b-v3-multilingual",
+            "en",
+        );
+
+        let french = profile.effective_segment("parakeet-tdt-0.6b-v3-multilingual", "fr");
+        let english = profile.effective_segment("parakeet-tdt-0.6b-v3-multilingual", "en");
+
+        assert_eq!(french.sessions_count, 1);
+        assert_eq!(english.sessions_count, 1);
+        assert_ne!(french.preferred_terms, english.preferred_terms);
     }
 }

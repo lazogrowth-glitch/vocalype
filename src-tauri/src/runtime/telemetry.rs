@@ -436,6 +436,7 @@ impl TranscriptionTelemetry {
             trimmed_words_total: usize,
             chunk_candidates_rejected: usize,
             output_words: usize,
+            finalization_recoveries: usize,
             audio_to_word_ratio: f32,
             estimated_issue: &'a crate::parakeet_quality::ParakeetFailureMode,
             quality_risk_score: f32,
@@ -457,10 +458,40 @@ impl TranscriptionTelemetry {
             trimmed_words_total: summary.trimmed_words_total,
             chunk_candidates_rejected: summary.chunk_candidates_rejected,
             output_words: summary.output_words,
+            finalization_recoveries: summary.finalization_recoveries,
             audio_to_word_ratio: summary.audio_to_word_ratio,
             estimated_issue: &summary.estimated_issue,
             quality_risk_score: summary.quality_risk_score,
             assembled_preview: &summary.assembled_preview,
+        });
+    }
+
+    pub fn log_finalization_recovery(
+        &self,
+        session_id: u64,
+        chunk_idx: usize,
+        recovery_type: &str,
+        words_recovered: usize,
+        text_preview: &str,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            chunk_idx: usize,
+            recovery_type: &'a str,
+            words_recovered: usize,
+            text_preview: &'a str,
+        }
+        self.write_line(&E {
+            event: "finalization_recovery",
+            ts_ms: Self::now_ms(),
+            session_id,
+            chunk_idx,
+            recovery_type,
+            words_recovered,
+            text_preview,
         });
     }
 }

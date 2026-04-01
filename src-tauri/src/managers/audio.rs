@@ -11,6 +11,8 @@ use crate::voice_profile::current_runtime_adjustment;
 use cpal::traits::HostTrait;
 use log::{debug, error, info};
 use parking_lot::{Mutex, RwLock};
+use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -203,6 +205,39 @@ pub enum MicrophoneMode {
     OnDemand,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum AudioInputLevelState {
+    Unknown,
+    Silent,
+    Weak,
+    Healthy,
+    Hot,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum MicrophonePermissionState {
+    Unknown,
+    Granted,
+    Denied,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+pub struct AudioRuntimeDiagnostics {
+    pub stream_open: bool,
+    pub recorder_ready: bool,
+    pub recording_active: bool,
+    pub selected_device_available: bool,
+    pub permission_state: MicrophonePermissionState,
+    pub input_level_state: AudioInputLevelState,
+    pub energy_ema: f32,
+    pub peak_energy: f32,
+    pub adaptive_silence_threshold_ms: Option<u64>,
+    pub last_error: Option<String>,
+    pub device_resolution: Option<String>,
+}
+
 /* ──────────────────────────────────────────────────────────────── */
 
 fn create_audio_recorder(
@@ -226,8 +261,13 @@ fn create_audio_recorder(
     };
 
     if !is_parakeet_v3 && WHISPER_MODEL_IDS.contains(&selected_model_id) {
-        if let Some(adjustment) = current_runtime_adjustment(app_handle, selected_model_id, 10, 500)
-        {
+        if let Some(adjustment) = current_runtime_adjustment(
+            app_handle,
+            selected_model_id,
+            &get_settings(app_handle).selected_language,
+            10,
+            500,
+        ) {
             hangover_frames = ((hangover_frames as i16)
                 + i16::from(adjustment.vad_hangover_frames_delta))
             .clamp(8, 28) as usize;
@@ -912,6 +952,65 @@ impl AudioRecordingManager {
 
     pub fn last_device_resolution(&self) -> Option<String> {
         self.last_device_resolution.lock().clone()
+    }
+
+    pub fn runtime_diagnostics(&self) -> AudioRuntimeDiagnostics {
+        let settings = get_settings(&self.app_handle);
+        let stream_open = *self.is_open.lock();
+        let recorder_ready = self.recorder.lock().is_some();
+        let recording_active = self.is_recording();
+        let last_error = self.last_error_message();
+        let device_resolution = self.last_device_resolution();
+        let energy_ema = f32::from_bits(self.sr_energy_ema.load(Ordering::Relaxed));
+        let peak_energy = f32::from_bits(self.sr_peak_energy.load(Ordering::Relaxed));
+
+        let selected_device_available = if settings.selected_microphone.is_some()
+            || settings.clamshell_microphone.is_some()
+        {
+            self.get_effective_microphone_device(&settings).is_ok()
+        } else {
+            crate::audio_toolkit::get_cpal_host()
+                .default_input_device()
+                .is_some()
+        };
+
+        let permission_state = match last_error.as_deref() {
+            Some(message)
+                if message.to_ascii_lowercase().contains("permission")
+                    || message.to_ascii_lowercase().contains("access denied") =>
+            {
+                MicrophonePermissionState::Denied
+            }
+            Some(_) if selected_device_available => MicrophonePermissionState::Granted,
+            None if selected_device_available => MicrophonePermissionState::Granted,
+            _ => MicrophonePermissionState::Unknown,
+        };
+
+        let input_level_state = if peak_energy <= 0.0 {
+            AudioInputLevelState::Unknown
+        } else if energy_ema < 0.003 {
+            AudioInputLevelState::Silent
+        } else if energy_ema < 0.012 {
+            AudioInputLevelState::Weak
+        } else if peak_energy > 0.85 {
+            AudioInputLevelState::Hot
+        } else {
+            AudioInputLevelState::Healthy
+        };
+
+        AudioRuntimeDiagnostics {
+            stream_open,
+            recorder_ready,
+            recording_active,
+            selected_device_available,
+            permission_state,
+            input_level_state,
+            energy_ema,
+            peak_energy,
+            adaptive_silence_threshold_ms: self.get_adaptive_threshold(),
+            last_error,
+            device_resolution,
+        }
     }
 
     // ── Speaking-rate tracker ──────────────────────────────────────────── //

@@ -50,6 +50,26 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
         value: snapshot.adaptive_voice_profile.avg_pause_ms.toFixed(0),
       })
     : null;
+  const activeVoiceProfileSessions = snapshot?.active_voice_profile_segment
+    ? t("settings.debug.runtimeDiagnostics.voiceProfileSessions", {
+        defaultValue: "{{count}} sessions",
+        count: snapshot.active_voice_profile_segment.sessions_count,
+      })
+    : null;
+  const activeVoiceProfileWpm = snapshot?.active_voice_profile_segment
+    ? t("settings.debug.runtimeDiagnostics.voiceProfileWpm", {
+        defaultValue: "{{value}} wpm",
+        value: snapshot.active_voice_profile_segment.avg_words_per_minute.toFixed(
+          0,
+        ),
+      })
+    : null;
+  const activeVoiceProfilePauses = snapshot?.active_voice_profile_segment
+    ? t("settings.debug.runtimeDiagnostics.voiceProfilePauses", {
+        defaultValue: "{{value}} ms pauses",
+        value: snapshot.active_voice_profile_segment.avg_pause_ms.toFixed(0),
+      })
+    : null;
   const voiceAdjustmentValue = snapshot?.active_voice_runtime_adjustment
     ? t("settings.debug.runtimeDiagnostics.voiceAdjustmentValue", {
         defaultValue: "{{chunkSeconds}}s / {{overlapMs}}ms",
@@ -335,6 +355,72 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
             })}
             : <span className="font-semibold">{snapshot.paste_method}</span>
           </p>
+          <p>
+            {t("settings.debug.runtimeDiagnostics.microphoneRuntime", {
+              defaultValue: "Microphone runtime",
+            })}
+            :{" "}
+            <span className="font-semibold">
+              {snapshot.microphone_stream_open
+                ? t("settings.debug.runtimeDiagnostics.streamOpen", {
+                    defaultValue: "stream open",
+                  })
+                : t("settings.debug.runtimeDiagnostics.streamClosed", {
+                    defaultValue: "stream closed",
+                  })}
+            </span>
+            {" · "}
+            <span className="text-text/60">
+              {snapshot.microphone_backend_ready
+                ? t("settings.debug.runtimeDiagnostics.backendReady", {
+                    defaultValue: "backend ready",
+                  })
+                : t("settings.debug.runtimeDiagnostics.backendNotReady", {
+                    defaultValue: "backend not ready",
+                  })}
+            </span>
+            {" · "}
+            <span className="text-text/60">
+              {snapshot.selected_microphone_available
+                ? t("settings.debug.runtimeDiagnostics.deviceAvailable", {
+                    defaultValue: "device available",
+                  })
+                : t("settings.debug.runtimeDiagnostics.deviceMissing", {
+                    defaultValue: "device missing",
+                  })}
+            </span>
+          </p>
+          <p>
+            {t("settings.debug.runtimeDiagnostics.inputLevel", {
+              defaultValue: "Input level",
+            })}
+            : <span className="font-semibold">{snapshot.input_level_state}</span>
+            {" · "}
+            <span className="text-text/60">
+              ema {snapshot.input_energy_ema.toFixed(4)}
+            </span>
+            {" · "}
+            <span className="text-text/60">
+              peak {snapshot.input_peak_energy.toFixed(4)}
+            </span>
+            {snapshot.adaptive_silence_threshold_ms != null && (
+              <>
+                {" · "}
+                <span className="text-text/60">
+                  silence {snapshot.adaptive_silence_threshold_ms}ms
+                </span>
+              </>
+            )}
+          </p>
+          <p>
+            {t("settings.debug.runtimeDiagnostics.microphonePermission", {
+              defaultValue: "Microphone permission",
+            })}
+            :{" "}
+            <span className="font-semibold">
+              {snapshot.microphone_permission_state}
+            </span>
+          </p>
           {snapshot.device_resolution && (
             <p>
               {t("settings.debug.runtimeDiagnostics.deviceResolution", {
@@ -450,6 +536,37 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                 )}
               </>
             )}
+          {snapshot.active_voice_profile_segment && (
+            <>
+              <p>
+                {t("settings.debug.runtimeDiagnostics.activeVoiceProfile", {
+                  defaultValue: "Active voice segment",
+                })}
+                :{" "}
+                <span className="font-semibold">
+                  {activeVoiceProfileSessions}
+                </span>
+                {" Â· "}
+                <span className="text-text/60">{activeVoiceProfileWpm}</span>
+                {" Â· "}
+                <span className="text-text/60">{activeVoiceProfilePauses}</span>
+              </p>
+              {snapshot.active_voice_profile_segment.preferred_terms.length >
+                0 && (
+                <p className="truncate">
+                  {t("settings.debug.runtimeDiagnostics.activeVoiceTerms", {
+                    defaultValue: "Active segment terms",
+                  })}
+                  :{" "}
+                  <span className="text-text/60">
+                    {snapshot.active_voice_profile_segment.preferred_terms
+                      .slice(0, 8)
+                      .join(", ")}
+                  </span>
+                </p>
+              )}
+            </>
+          )}
           {recentErrors.length > 0 && (
             <div className="pt-1">
               <p className="font-semibold mb-1">

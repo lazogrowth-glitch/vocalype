@@ -3,6 +3,7 @@ use crate::parakeet_text::{
     finalize_parakeet_text, maybe_prefer_sentence_punctuation, parakeet_builtin_correction_terms,
     should_attempt_sentence_punctuation,
 };
+use crate::session_keyterms::build_session_keyterms;
 use whichlang::Lang;
 
 const PARAKEET_LOW_ENERGY_RMS_THRESHOLD: f32 = 0.05;
@@ -49,8 +50,7 @@ fn maybe_boost_low_energy_parakeet_audio(samples: &[f32]) -> Option<(Vec<f32>, f
 
 fn build_correction_terms(
     settings: &crate::settings::AppSettings,
-    voice_terms: &[String],
-    vocabulary_terms: &[String],
+    session_keyterms: &[String],
     active_model_id: Option<&str>,
 ) -> Vec<String> {
     let mut terms = settings.custom_words.clone();
@@ -59,8 +59,7 @@ fn build_correction_terms(
         terms.extend(parakeet_builtin_correction_terms(
             &settings.selected_language,
         ));
-        terms.extend(voice_terms.iter().cloned());
-        terms.extend(vocabulary_terms.iter().cloned());
+        terms.extend(session_keyterms.iter().cloned());
     }
 
     let mut deduped = Vec::new();
@@ -187,18 +186,33 @@ impl TranscriptionManager {
         let settings = get_settings(&self.app_handle);
         let active_model_id = self.get_current_model();
         let voice_profile = if settings.adaptive_voice_profile_enabled {
-            current_voice_profile(&self.app_handle)
+            active_model_id.as_deref().and_then(|model_id| {
+                crate::voice_profile::current_voice_profile_for_context(
+                    &self.app_handle,
+                    model_id,
+                    &settings.selected_language,
+                )
+            })
         } else {
             None
         };
         let voice_terms: Vec<String> = voice_profile
             .as_ref()
-            .map(|profile: &VoiceProfile| profile.preferred_terms.clone())
+            .map(|profile| profile.preferred_terms.clone())
             .unwrap_or_default();
         let vocabulary_terms = if settings.adaptive_vocabulary_enabled {
             if let Some(state) = self.app_handle.try_state::<VocabularyStoreState>() {
                 if let Ok(store) = state.0.lock() {
-                    store.terms_for_context(app_context.as_ref(), 16)
+                    if let Some(model_id) = active_model_id.as_deref() {
+                        store.terms_for_session(
+                            app_context.as_ref(),
+                            model_id,
+                            &settings.selected_language,
+                            16,
+                        )
+                    } else {
+                        store.terms_for_context(app_context.as_ref(), 16)
+                    }
                 } else {
                     Vec::new()
                 }
@@ -208,10 +222,17 @@ impl TranscriptionManager {
         } else {
             Vec::new()
         };
-        let correction_terms = build_correction_terms(
-            &settings,
+        let session_keyterms = build_session_keyterms(
+            app_context.as_ref(),
+            &settings.selected_language,
+            &settings.custom_words,
             &voice_terms,
             &vocabulary_terms,
+        )
+        .terms;
+        let correction_terms = build_correction_terms(
+            &settings,
+            &session_keyterms,
             active_model_id.as_deref(),
         );
         let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
@@ -229,7 +250,7 @@ impl TranscriptionManager {
                         &settings,
                         app_context.as_ref(),
                         &store,
-                        &voice_terms,
+                        &session_keyterms,
                     )
                 } else {
                     None
@@ -239,7 +260,7 @@ impl TranscriptionManager {
                     &settings,
                     app_context.as_ref(),
                     &crate::vocabulary_store::VocabularyStore::default(),
-                    &voice_terms,
+                    &session_keyterms,
                 )
             }
         } else {
@@ -825,6 +846,8 @@ impl TranscriptionManager {
 mod tests {
     use super::*;
     use crate::parakeet_text::normalize_parakeet_phrase_variants;
+    use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
+    use crate::session_keyterms::build_session_keyterms;
 
     #[test]
     fn boosts_low_energy_parakeet_audio_when_needed() {
@@ -867,5 +890,34 @@ mod tests {
             ),
             "My email is alex dot martin at example dot com and the document lives on docs dot vocalype dot app slash release notes."
         );
+    }
+
+    #[test]
+    fn session_keyterms_flow_into_parakeet_corrections() {
+        let context = AppTranscriptionContext {
+            process_name: Some("Code.exe".to_string()),
+            window_title: Some("VocalypeSpeech.tsx - GitHub".to_string()),
+            category: AppContextCategory::Code,
+            detected_at_ms: 1,
+        };
+        let session_keyterms = build_session_keyterms(
+            Some(&context),
+            "en",
+            &["Parakeet V3".to_string()],
+            &["Yassine".to_string()],
+            &["Vocalype".to_string()],
+        );
+        let mut settings = crate::settings::get_default_settings();
+        settings.selected_language = "en".to_string();
+
+        let corrections = build_correction_terms(
+            &settings,
+            &session_keyterms.terms,
+            Some("parakeet-tdt-0.6b-v3-multilingual"),
+        );
+
+        assert!(corrections.iter().any(|term| term == "Parakeet V3"));
+        assert!(corrections.iter().any(|term| term == "Yassine"));
+        assert!(corrections.iter().any(|term| term == "Vocalype"));
     }
 }

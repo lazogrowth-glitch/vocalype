@@ -626,6 +626,30 @@ async exportRuntimeDiagnostics(path: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async submitVoiceFeedbackCommand(input: VoiceFeedbackInput) : Promise<Result<VoiceFeedbackEntry, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("submit_voice_feedback_command", { input }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async listVoiceFeedbackCommand(limit: number | null) : Promise<Result<VoiceFeedbackEntry[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_voice_feedback_command", { limit }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async summarizeVoiceFeedbackCommand(limit: number | null) : Promise<Result<VoiceFeedbackSummary, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("summarize_voice_feedback_command", { limit }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getCurrentAppContext() : Promise<Result<AppTranscriptionContext, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_current_app_context") };
@@ -1416,6 +1440,7 @@ process_name: string | null;
  */
 window_title: string | null; category: AppContextCategory; detected_at_ms: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
+export type AudioInputLevelState = "unknown" | "silent" | "weak" | "healthy" | "hot"
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type BenchPhase = "none" | "quick_done" | "full_done"
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
@@ -1449,6 +1474,7 @@ export type MachineStatusMode = "optimal" | "battery" | "saver" | "thermal" | "m
 export type MachineStatusSnapshot = { mode: MachineStatusMode; degraded: boolean; headline: string; detail: string; active_model_id: string | null; active_backend: WhisperBackendPreference | null }
 export type MachineTier = "low" | "medium" | "high"
 export type MeetingEntry = { id: number; title: string; app_name: string; transcript: string; created_at: number; updated_at: number }
+export type MicrophonePermissionState = "unknown" | "granted" | "denied"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; expected_etag: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; is_custom: boolean; requires_license_key: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"
@@ -1457,7 +1483,7 @@ export type NpuKind = "none" | "qualcomm" | "intel" | "amd" | "unknown"
 export type OverlayPosition = "none" | "top" | "bottom"
 export type ParakeetDiagnosticsSnapshot = { active_session: ParakeetSessionDiagnostics | null; recent_sessions: ParakeetSessionDiagnostics[] }
 export type ParakeetFailureMode = "healthy" | "underchunking_long_utterance" | "overtrim_overlap" | "missing_word_timestamps" | "retry_recovered_chunk" | "final_chunk_hallucination" | "low_audio_density" | "boundary_word_loss"
-export type ParakeetSessionDiagnostics = { session_id: number; operation_id: number | null; binding_id: string; model_id: string; model_name: string | null; provider: string; selected_language: string; device_name: string | null; recording_mode: string; chunk_interval_samples: number; chunk_overlap_samples: number; total_chunks: number; empty_chunks: number; retry_chunks: number; filtered_chunks: number; trimmed_words_total: number; chunks_without_word_timestamps: number; chunk_candidates_rejected: number; chunk_candidates_sent: number; output_words: number; duration_secs: number; audio_to_word_ratio: number; estimated_issue: ParakeetFailureMode; quality_risk_score: number; assembled_preview: string; last_updated_ms: number }
+export type ParakeetSessionDiagnostics = { session_id: number; operation_id: number | null; binding_id: string; model_id: string; model_name: string | null; provider: string; selected_language: string; device_name: string | null; recording_mode: string; chunk_interval_samples: number; chunk_overlap_samples: number; total_chunks: number; empty_chunks: number; retry_chunks: number; filtered_chunks: number; trimmed_words_total: number; chunks_without_word_timestamps: number; chunk_candidates_rejected: number; chunk_candidates_sent: number; output_words: number; finalization_recoveries: number; duration_secs: number; audio_to_word_ratio: number; estimated_issue: ParakeetFailureMode; quality_risk_score: number; assembled_preview: string; last_updated_ms: number }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PipelineProfileEvent = { binding_id: string; created_at_ms: number; path: string; model_id: string | null; model_name: string | null; audio_duration_ms: number | null; transcription_chars: number; total_duration_ms: number; completed: boolean; error_code: string | null; steps: PipelineStepTiming[] }
 export type PipelineStepTiming = { step: string; duration_ms: number; detail: string | null }
@@ -1499,7 +1525,7 @@ export type RecordingRetentionPeriod =
  * a GDPR-compliant default.
  */
 "preserve_limit" | "days_3" | "weeks_2" | "months_3"
-export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; lifecycle_state: TranscriptionLifecycleState; last_lifecycle_event: LifecycleStateEvent; recent_errors: RuntimeErrorEvent[]; selected_model: string; loaded_model_id: string | null; loaded_model_name: string | null; model_loaded: boolean; paste_method: string; clipboard_handling: string; selected_language: string; selected_microphone: string | null; selected_output_device: string | null; is_recording: boolean; is_paused: boolean; operation_id: number | null; active_stage: TranscriptionLifecycleState | null; last_audio_error: string | null; partial_result: boolean; device_resolution: string | null; cancelled_at_stage: TranscriptionLifecycleState | null; current_app_context: AppTranscriptionContext | null; last_transcription_app_context: AppTranscriptionContext | null; adaptive_voice_profile_enabled: boolean; adaptive_voice_profile: VoiceProfile | null; active_voice_runtime_adjustment: VoiceRuntimeAdjustment | null; machine_status: MachineStatusSnapshot | null; recent_pipeline_profiles: PipelineProfileEvent[]; parakeet_diagnostics: ParakeetDiagnosticsSnapshot; adaptive_machine_profile: AdaptiveMachineProfile | null; adaptive_calibration_state: CalibrationStatusSnapshot[] }
+export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; lifecycle_state: TranscriptionLifecycleState; last_lifecycle_event: LifecycleStateEvent; recent_errors: RuntimeErrorEvent[]; selected_model: string; loaded_model_id: string | null; loaded_model_name: string | null; model_loaded: boolean; paste_method: string; clipboard_handling: string; selected_language: string; selected_microphone: string | null; selected_output_device: string | null; is_recording: boolean; is_paused: boolean; microphone_stream_open: boolean; microphone_backend_ready: boolean; selected_microphone_available: boolean; microphone_permission_state: MicrophonePermissionState; input_level_state: AudioInputLevelState; input_energy_ema: number; input_peak_energy: number; adaptive_silence_threshold_ms: number | null; operation_id: number | null; active_stage: TranscriptionLifecycleState | null; last_audio_error: string | null; partial_result: boolean; device_resolution: string | null; cancelled_at_stage: TranscriptionLifecycleState | null; current_app_context: AppTranscriptionContext | null; last_transcription_app_context: AppTranscriptionContext | null; adaptive_voice_profile_enabled: boolean; adaptive_voice_profile: VoiceProfile | null; active_voice_profile_segment: VoiceProfileSegment | null; active_voice_runtime_adjustment: VoiceRuntimeAdjustment | null; machine_status: MachineStatusSnapshot | null; recent_pipeline_profiles: PipelineProfileEvent[]; parakeet_diagnostics: ParakeetDiagnosticsSnapshot; adaptive_machine_profile: AdaptiveMachineProfile | null; adaptive_calibration_state: CalibrationStatusSnapshot[] }
 export type RuntimeErrorEvent = { code: string; stage: RuntimeErrorStage; message: string; recoverable: boolean; operation_id: number | null; device_name: string | null; model_id: string | null; timestamp_ms: number }
 export type RuntimeErrorStage = "capture" | "vad" | "transcription" | "post_process" | "paste" | "shortcut" | "model" | "system" | "unknown"
 export type SavedProcessingModel = { id: string; provider_id: string; model_id: string; label: string }
@@ -1512,7 +1538,11 @@ export type TranscriptionConfidencePayload = { engine: string; overall_confidenc
 export type TranscriptionLifecycleState = "idle" | "preparing_microphone" | "recording" | "paused" | "stopping" | "transcribing" | "processing" | "pasting" | "completed" | "cancelled" | "error"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type UnsafeBackendRecord = { backend: WhisperBackendPreference; unsafe_until_ms: number; reason: string; failed_at_ms: number }
-export type VoiceProfile = { sessions_count?: number; avg_words_per_minute?: number; avg_pause_ms?: number; preferred_terms?: string[]; last_updated_ms?: number | null }
+export type VoiceFeedbackEntry = { id: string; created_at_ms: number; expected_text: string; actual_text: string; notes: string | null; selected_language: string | null; tags: string[]; keep_audio_reference: boolean; runtime: RuntimeDiagnostics }
+export type VoiceFeedbackInput = { expected_text: string; actual_text: string; notes?: string | null; selected_language?: string | null; tags?: string[]; keep_audio_reference?: boolean }
+export type VoiceFeedbackSummary = { total_entries: number; top_languages: ([string, number])[]; top_tags: ([string, number])[]; top_input_levels: ([string, number])[]; top_issues: ([string, number])[] }
+export type VoiceProfile = { sessions_count?: number; avg_words_per_minute?: number; avg_pause_ms?: number; preferred_terms?: string[]; last_updated_ms?: number | null; segments?: Partial<{ [key in string]: VoiceProfileSegment }> }
+export type VoiceProfileSegment = { sessions_count?: number; avg_words_per_minute?: number; avg_pause_ms?: number; preferred_terms?: string[]; last_updated_ms?: number | null }
 export type VoiceRuntimeAdjustment = { adjusted_chunk_seconds: number; adjusted_overlap_ms: number; vad_hangover_frames_delta: number; reason: string | null }
 /**
  * A voice snippet: if the entire transcription matches `trigger` (case-insensitive,

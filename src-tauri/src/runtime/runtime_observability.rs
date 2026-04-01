@@ -4,12 +4,16 @@ use crate::adaptive_runtime::{
 use crate::context_detector::{
     detect_current_app_context, ActiveAppContextState, AppTranscriptionContext,
 };
-use crate::managers::audio::AudioRecordingManager;
+use crate::managers::audio::{
+    AudioInputLevelState, AudioRecordingManager, AudioRuntimeDiagnostics,
+    MicrophonePermissionState,
+};
 use crate::managers::transcription::TranscriptionManager;
 use crate::parakeet_quality::{ParakeetDiagnosticsSnapshot, ParakeetDiagnosticsState};
 use crate::settings::{get_settings, AdaptiveMachineProfile};
 use crate::voice_profile::{
-    current_runtime_adjustment, current_voice_profile, VoiceProfile, VoiceRuntimeAdjustment,
+    current_runtime_adjustment, current_voice_profile, current_voice_profile_for_context,
+    VoiceProfile, VoiceProfileSegment, VoiceRuntimeAdjustment,
 };
 use crate::TranscriptionCoordinator;
 use serde::{Deserialize, Serialize};
@@ -114,6 +118,14 @@ pub struct RuntimeDiagnostics {
     pub selected_output_device: Option<String>,
     pub is_recording: bool,
     pub is_paused: bool,
+    pub microphone_stream_open: bool,
+    pub microphone_backend_ready: bool,
+    pub selected_microphone_available: bool,
+    pub microphone_permission_state: MicrophonePermissionState,
+    pub input_level_state: AudioInputLevelState,
+    pub input_energy_ema: f32,
+    pub input_peak_energy: f32,
+    pub adaptive_silence_threshold_ms: Option<u64>,
     pub operation_id: Option<u64>,
     pub active_stage: Option<TranscriptionLifecycleState>,
     pub last_audio_error: Option<String>,
@@ -124,6 +136,7 @@ pub struct RuntimeDiagnostics {
     pub last_transcription_app_context: Option<AppTranscriptionContext>,
     pub adaptive_voice_profile_enabled: bool,
     pub adaptive_voice_profile: Option<VoiceProfile>,
+    pub active_voice_profile_segment: Option<VoiceProfileSegment>,
     pub active_voice_runtime_adjustment: Option<VoiceRuntimeAdjustment>,
     pub machine_status: Option<MachineStatusSnapshot>,
     pub recent_pipeline_profiles: Vec<PipelineProfileEvent>,
@@ -350,13 +363,27 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         settings
             .adaptive_whisper_config(&model_id)
             .and_then(|config| {
-                current_runtime_adjustment(app, &model_id, config.chunk_seconds, config.overlap_ms)
+                current_runtime_adjustment(
+                    app,
+                    &model_id,
+                    &selected_language,
+                    config.chunk_seconds,
+                    config.overlap_ms,
+                )
             })
     } else {
         None
     };
     let adaptive_voice_profile = if adaptive_voice_profile_enabled {
         current_voice_profile(app)
+    } else {
+        None
+    };
+    let active_voice_profile_segment = if adaptive_voice_profile_enabled {
+        current_model_id
+            .as_deref()
+            .and_then(|model_id| current_voice_profile_for_context(app, model_id, &selected_language))
+            .filter(|segment| segment.sessions_count > 0)
     } else {
         None
     };
@@ -391,6 +418,7 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         .try_state::<TranscriptionCoordinator>()
         .map(|coordinator| coordinator.diagnostics_snapshot())
         .unwrap_or((None, None, None, false));
+    let audio_runtime: AudioRuntimeDiagnostics = am.runtime_diagnostics();
 
     RuntimeDiagnostics {
         captured_at_ms: now_ms(),
@@ -409,11 +437,19 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         selected_output_device,
         is_recording: am.is_recording(),
         is_paused: am.is_paused(),
+        microphone_stream_open: audio_runtime.stream_open,
+        microphone_backend_ready: audio_runtime.recorder_ready,
+        selected_microphone_available: audio_runtime.selected_device_available,
+        microphone_permission_state: audio_runtime.permission_state,
+        input_level_state: audio_runtime.input_level_state,
+        input_energy_ema: audio_runtime.energy_ema,
+        input_peak_energy: audio_runtime.peak_energy,
+        adaptive_silence_threshold_ms: audio_runtime.adaptive_silence_threshold_ms,
         operation_id,
         active_stage,
-        last_audio_error: am.last_error_message(),
+        last_audio_error: audio_runtime.last_error,
         partial_result,
-        device_resolution: am.last_device_resolution(),
+        device_resolution: audio_runtime.device_resolution,
         cancelled_at_stage,
         current_app_context: Some(detect_current_app_context()),
         last_transcription_app_context: active_context_state
@@ -422,6 +458,7 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
             .and_then(|snapshot| snapshot.last_transcription_context()),
         adaptive_voice_profile_enabled,
         adaptive_voice_profile,
+        active_voice_profile_segment,
         active_voice_runtime_adjustment,
         machine_status,
         recent_pipeline_profiles,

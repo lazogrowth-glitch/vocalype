@@ -41,8 +41,10 @@ pub use llm::{
 pub use runtime::apple_intelligence;
 pub use runtime::{
     adaptive_runtime, chunking, command_mode, context_detector, model_ids, parakeet_quality,
-    parakeet_text, runtime_observability, startup_warmup, telemetry, transcription_confidence,
-    transcription_coordinator, vocabulary_store, voice_profile, wake_word,
+    parakeet_text, runtime_observability, session_keyterms, startup_warmup, telemetry,
+    transcription_confidence, transcription_coordinator, vocabulary_store, voice_feedback,
+    voice_profile,
+    wake_word,
 };
 // platform
 pub use platform::signal_handle;
@@ -635,6 +637,9 @@ pub fn run(cli_args: CliArgs) {
         commands::initialize_shortcuts,
         commands::get_runtime_diagnostics,
         commands::export_runtime_diagnostics,
+        commands::submit_voice_feedback_command,
+        commands::list_voice_feedback_command,
+        commands::summarize_voice_feedback_command,
         commands::get_current_app_context,
         commands::get_adaptive_runtime_profile,
         commands::get_adaptive_calibration_state,

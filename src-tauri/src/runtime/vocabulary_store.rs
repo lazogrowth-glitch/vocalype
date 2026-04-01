@@ -50,6 +50,134 @@ fn scope_keys_for_context(context: Option<&AppTranscriptionContext>) -> Vec<Stri
     keys
 }
 
+fn normalize_language(selected_language: &str) -> String {
+    let trimmed = selected_language.trim().to_ascii_lowercase();
+    if trimmed.is_empty() {
+        "auto".to_string()
+    } else if trimmed.starts_with("fr") {
+        "fr".to_string()
+    } else if trimmed.starts_with("en") {
+        "en".to_string()
+    } else if trimmed.starts_with("zh") {
+        "zh".to_string()
+    } else {
+        trimmed
+    }
+}
+
+fn scope_keys_for_session(
+    context: Option<&AppTranscriptionContext>,
+    model_id: &str,
+    selected_language: &str,
+) -> Vec<String> {
+    let mut keys = scope_keys_for_context(context);
+    let normalized_model = model_id.trim().to_ascii_lowercase();
+    let normalized_language = normalize_language(selected_language);
+    if !normalized_language.is_empty() {
+        keys.push(format!("language:{normalized_language}"));
+    }
+    if !normalized_model.is_empty() {
+        keys.push(format!("model:{normalized_model}"));
+        keys.push(format!("model_language:{normalized_model}:{normalized_language}"));
+    }
+    keys
+}
+
+fn is_stop_term(term: &str) -> bool {
+    matches!(
+        term,
+        "the"
+            | "and"
+            | "for"
+            | "that"
+            | "this"
+            | "with"
+            | "have"
+            | "from"
+            | "into"
+            | "then"
+            | "than"
+            | "just"
+            | "what"
+            | "when"
+            | "where"
+            | "while"
+            | "because"
+            | "about"
+            | "est"
+            | "une"
+            | "des"
+            | "les"
+            | "que"
+            | "qui"
+            | "sur"
+            | "pas"
+            | "par"
+            | "dans"
+            | "avec"
+            | "pour"
+            | "mais"
+            | "plus"
+            | "cela"
+            | "cette"
+            | "vous"
+            | "nous"
+            | "elle"
+            | "elles"
+            | "ils"
+            | "tout"
+            | "tous"
+            | "toutes"
+    )
+}
+
+fn extract_session_terms(text: &str, custom_words: &[String]) -> Vec<String> {
+    let mut scores: HashMap<String, (String, u32)> = HashMap::new();
+
+    for term in custom_words.iter().filter_map(|term| normalize_term(term)) {
+        let key = term.to_ascii_lowercase();
+        scores
+            .entry(key)
+            .and_modify(|entry| entry.1 = entry.1.saturating_add(5))
+            .or_insert((term, 5));
+    }
+
+    for raw in text.split_whitespace() {
+        let token = raw
+            .trim_matches(|c: char| !c.is_alphanumeric() && c != '_' && c != '-')
+            .trim();
+        if token.len() < 4 {
+            continue;
+        }
+
+        let lower = token.to_ascii_lowercase();
+        if is_stop_term(&lower) {
+            continue;
+        }
+
+        let looks_special = token.contains('_')
+            || token.contains('-')
+            || token.chars().any(|c| c.is_ascii_digit())
+            || token.chars().any(|c| c.is_uppercase());
+        let score = if looks_special { 3 } else { 1 };
+
+        scores
+            .entry(lower)
+            .and_modify(|entry| entry.1 = entry.1.saturating_add(score))
+            .or_insert((token.to_string(), score));
+    }
+
+    let mut ranked: Vec<_> = scores.into_values().collect();
+    ranked.sort_by(|(left_term, left_score), (right_term, right_score)| {
+        right_score
+            .cmp(left_score)
+            .then_with(|| right_term.len().cmp(&left_term.len()))
+            .then_with(|| left_term.cmp(right_term))
+    });
+
+    ranked.into_iter().take(16).map(|(term, _)| term).collect()
+}
+
 fn sort_and_trim_scope(entries: &mut HashMap<String, VocabularyEntry>) {
     if entries.len() <= MAX_TERMS_PER_SCOPE {
         return;
@@ -125,6 +253,54 @@ impl VocabularyStore {
         }
     }
 
+    pub fn learn_terms_for_session(
+        &mut self,
+        context: Option<&AppTranscriptionContext>,
+        model_id: &str,
+        selected_language: &str,
+        terms: impl IntoIterator<Item = String>,
+    ) {
+        let scope_keys = scope_keys_for_session(context, model_id, selected_language);
+        let timestamp = now_ms();
+
+        for term in terms.into_iter().filter_map(|term| normalize_term(&term)) {
+            let key = term.to_ascii_lowercase();
+            for scope_key in &scope_keys {
+                let scope = self.scopes.entry(scope_key.clone()).or_default();
+                let entry = scope.entry(key.clone()).or_insert_with(|| VocabularyEntry {
+                    canonical_word: term.clone(),
+                    observed_variants: vec![term.clone()],
+                    promotion_count: 0,
+                    last_used_at_ms: timestamp,
+                });
+
+                entry.promotion_count = entry.promotion_count.saturating_add(1);
+                entry.last_used_at_ms = timestamp;
+                entry.canonical_word = term.clone();
+                if !entry
+                    .observed_variants
+                    .iter()
+                    .any(|variant| variant.eq_ignore_ascii_case(&term))
+                {
+                    entry.observed_variants.push(term.clone());
+                }
+                sort_and_trim_scope(scope);
+            }
+        }
+    }
+
+    pub fn learn_confirmed_transcription(
+        &mut self,
+        context: Option<&AppTranscriptionContext>,
+        model_id: &str,
+        selected_language: &str,
+        text: &str,
+        custom_words: &[String],
+    ) {
+        let terms = extract_session_terms(text, custom_words);
+        self.learn_terms_for_session(context, model_id, selected_language, terms);
+    }
+
     pub fn terms_for_context(
         &self,
         context: Option<&AppTranscriptionContext>,
@@ -133,6 +309,42 @@ impl VocabularyStore {
         let mut merged: HashMap<String, VocabularyEntry> = HashMap::new();
 
         for scope_key in scope_keys_for_context(context) {
+            if let Some(scope) = self.scopes.get(&scope_key) {
+                for (key, entry) in scope {
+                    let existing = merged.entry(key.clone()).or_insert_with(|| entry.clone());
+                    if entry.promotion_count > existing.promotion_count
+                        || entry.last_used_at_ms > existing.last_used_at_ms
+                    {
+                        *existing = entry.clone();
+                    }
+                }
+            }
+        }
+
+        let mut values: Vec<_> = merged.into_values().collect();
+        values.sort_by(|a, b| {
+            b.promotion_count
+                .cmp(&a.promotion_count)
+                .then_with(|| b.last_used_at_ms.cmp(&a.last_used_at_ms))
+        });
+
+        values
+            .into_iter()
+            .take(limit)
+            .map(|entry| entry.canonical_word)
+            .collect()
+    }
+
+    pub fn terms_for_session(
+        &self,
+        context: Option<&AppTranscriptionContext>,
+        model_id: &str,
+        selected_language: &str,
+        limit: usize,
+    ) -> Vec<String> {
+        let mut merged: HashMap<String, VocabularyEntry> = HashMap::new();
+
+        for scope_key in scope_keys_for_session(context, model_id, selected_language) {
             if let Some(scope) = self.scopes.get(&scope_key) {
                 for (key, entry) in scope {
                     let existing = merged.entry(key.clone()).or_insert_with(|| entry.clone());
@@ -212,6 +424,27 @@ mod tests {
         store.learn_terms(Some(&context), vec!["Vocalype".to_string()]);
 
         let terms = store.terms_for_context(Some(&context), 8);
+        assert!(terms.iter().any(|term| term == "Vocalype"));
+    }
+
+    #[test]
+    fn session_terms_can_be_scoped_by_model_and_language() {
+        let mut store = VocabularyStore::default();
+        let context = code_context();
+        store.learn_terms_for_session(
+            Some(&context),
+            "parakeet-tdt-0.6b-v3-multilingual",
+            "fr",
+            vec!["Yassine".to_string(), "Vocalype".to_string()],
+        );
+
+        let terms = store.terms_for_session(
+            Some(&context),
+            "parakeet-tdt-0.6b-v3-multilingual",
+            "fr",
+            8,
+        );
+        assert!(terms.iter().any(|term| term == "Yassine"));
         assert!(terms.iter().any(|term| term == "Vocalype"));
     }
 

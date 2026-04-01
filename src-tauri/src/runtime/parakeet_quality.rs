@@ -41,6 +41,7 @@ pub struct ParakeetSessionDiagnostics {
     pub chunk_candidates_rejected: usize,
     pub chunk_candidates_sent: usize,
     pub output_words: usize,
+    pub finalization_recoveries: usize,
     pub duration_secs: f32,
     pub audio_to_word_ratio: f32,
     pub estimated_issue: ParakeetFailureMode,
@@ -90,6 +91,7 @@ pub struct ParakeetSessionCompletion {
     pub chunk_candidates_rejected: usize,
     pub chunk_candidates_sent: usize,
     pub output_words: usize,
+    pub finalization_recoveries: usize,
 }
 
 #[derive(Default)]
@@ -131,6 +133,7 @@ impl ParakeetDiagnosticsState {
                     chunk_candidates_rejected: 0,
                     chunk_candidates_sent: 0,
                     output_words: 0,
+                    finalization_recoveries: 0,
                     duration_secs: 0.0,
                     audio_to_word_ratio: 0.0,
                     estimated_issue: ParakeetFailureMode::Healthy,
@@ -160,6 +163,7 @@ impl ParakeetDiagnosticsState {
         session.base.chunk_candidates_rejected = completion.chunk_candidates_rejected;
         session.base.chunk_candidates_sent = completion.chunk_candidates_sent;
         session.base.output_words = completion.output_words;
+        session.base.finalization_recoveries = completion.finalization_recoveries;
         let duration_secs = duration_samples as f32 / 16_000.0;
         session.base.duration_secs = duration_secs;
         session.base.assembled_preview = preview_words(assembled_text, PREVIEW_WORD_LIMIT);
@@ -207,6 +211,9 @@ fn infer_failure_mode(session: &ParakeetSessionDiagnostics) -> ParakeetFailureMo
     if session.chunks_without_word_timestamps > 0 && session.retry_chunks > 0 {
         return ParakeetFailureMode::RetryRecoveredChunk;
     }
+    if session.finalization_recoveries > 0 {
+        return ParakeetFailureMode::RetryRecoveredChunk;
+    }
     if session.chunks_without_word_timestamps > 0 {
         return ParakeetFailureMode::MissingWordTimestamps;
     }
@@ -233,5 +240,6 @@ fn estimate_quality_risk(session: &ParakeetSessionDiagnostics) -> f32 {
     risk += (session.chunks_without_word_timestamps as f32) * 0.07;
     risk += (session.trimmed_words_total as f32 / 30.0).min(0.25);
     risk += (session.chunk_candidates_rejected as f32 / 10.0).min(0.20);
+    risk -= (session.finalization_recoveries as f32 * 0.03).min(0.09);
     risk.clamp(0.0, 1.0)
 }

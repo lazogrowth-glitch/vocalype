@@ -3,8 +3,10 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
 import { commands } from "@/bindings";
+import { useStartupWarmupStatus } from "@/hooks/useStartupWarmupStatus";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
+import { useVoiceState } from "@/stores/voiceState";
 
 type OverlayState = "preparing" | "recording" | "transcribing" | "processing";
 
@@ -181,6 +183,9 @@ const AudioBars: React.FC = () => {
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
+  const warmupStatus = useStartupWarmupStatus();
+  const warmupMessage = useVoiceState((snapshot) => snapshot.warmupMessage);
+  const warmupDetail = useVoiceState((snapshot) => snapshot.warmupDetail);
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const [timerStart, setTimerStart] = useState(0);
@@ -190,6 +195,18 @@ const RecordingOverlay: React.FC = () => {
   const cancelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pauseStartRef = useRef<number>(0);
   const direction = getLanguageDirection(i18n.language);
+  const preparingTitle =
+    warmupStatus?.message ||
+    warmupMessage ||
+    t("overlay.preparingMicrophone", {
+      defaultValue: "Starting microphone...",
+    });
+  const preparingDetail =
+    warmupStatus?.detail ||
+    warmupDetail ||
+    t("transcription.warmup_ready", {
+      defaultValue: "Dictation will be available automatically once the engine is ready.",
+    });
 
   const handleCancel = useCallback(() => {
     commands.cancelOperation();
@@ -353,17 +370,18 @@ const RecordingOverlay: React.FC = () => {
 
       <div className="overlay-middle">
         {state === "preparing" && (
-          <div className="transcribing-text">
-            {t("overlay.preparingMicrophone", {
-              defaultValue: "Starting microphone...",
-            })}
+          <div className="status-stack">
+            <div className="transcribing-text">{preparingTitle}</div>
+            <div className="overlay-subtext">{preparingDetail}</div>
           </div>
         )}
         {state === "recording" && !cancelPending && (
-          <>
-            <TimerDisplay startTime={timerStart} isPaused={isPaused} />
-            <AudioBars />
-          </>
+          <div className="status-stack">
+            <div className="recording-row">
+              <TimerDisplay startTime={timerStart} isPaused={isPaused} />
+              <AudioBars />
+            </div>
+          </div>
         )}
         {state === "recording" && cancelPending && (
           <div className="cancel-confirm-text">
@@ -371,10 +389,14 @@ const RecordingOverlay: React.FC = () => {
           </div>
         )}
         {state === "transcribing" && (
-          <div className="transcribing-text">{t("overlay.transcribing")}</div>
+          <div className="status-stack">
+            <div className="transcribing-text">{t("overlay.transcribing")}</div>
+          </div>
         )}
         {state === "processing" && (
-          <div className="transcribing-text">{t("overlay.processing")}</div>
+          <div className="status-stack">
+            <div className="transcribing-text">{t("overlay.processing")}</div>
+          </div>
         )}
       </div>
 

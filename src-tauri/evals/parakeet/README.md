@@ -47,6 +47,10 @@ This folder holds the local evaluation corpus used to diagnose and improve
 - `dataset_manifest_english_20.json`: clean English benchmark
 - `dataset_manifest_natural_24.json`: more realistic English benchmark
 - `NATURAL_PACK_24.md`: recording guidance for the realistic pack
+- `FRIENDS_PACK_ES_HI_PT.md`: shareable pack for Spanish, Hindi, and Portuguese friends
+- `dataset_manifest_spanish_10.json`: Spanish starter benchmark
+- `dataset_manifest_hindi_10.json`: Hindi starter benchmark
+- `dataset_manifest_portuguese_10.json`: Portuguese starter benchmark
 
 ## Run the Text-Hypothesis Evaluator
 

@@ -5,6 +5,7 @@ use crate::post_processing::{
 };
 use crate::utils::show_processing_overlay;
 use crate::voice_profile::VoiceProfileState;
+use crate::vocabulary_store::VocabularyStoreState;
 use crate::TranscriptionCoordinator;
 use log::debug;
 use std::sync::{Arc, Mutex};
@@ -213,7 +214,17 @@ pub(super) async fn process_transcription_text(
         let voice_profile_started = Instant::now();
         if let Some(state) = app.try_state::<VoiceProfileState>() {
             if let Ok(mut profile) = state.0.lock() {
-                profile.update_from_session(samples, &final_text, &settings.custom_words);
+                let active_model_id = app
+                    .try_state::<Arc<crate::managers::transcription::TranscriptionManager>>()
+                    .and_then(|manager| manager.get_current_model())
+                    .unwrap_or_else(|| settings.selected_model.clone());
+                profile.update_from_session(
+                    samples,
+                    &final_text,
+                    &settings.custom_words,
+                    &active_model_id,
+                    &settings.selected_language,
+                );
                 profile.save(app);
             }
         }
@@ -221,6 +232,33 @@ pub(super) async fn process_transcription_text(
             p.push_step_since(
                 "voice_profile_update",
                 voice_profile_started,
+                Some(format!("enabled=true chars={}", final_text.chars().count())),
+            );
+        }
+    }
+
+    if settings.adaptive_vocabulary_enabled && !final_text.trim().is_empty() {
+        let vocabulary_started = Instant::now();
+        if let Some(state) = app.try_state::<VocabularyStoreState>() {
+            if let Ok(mut store) = state.0.lock() {
+                let active_model_id = app
+                    .try_state::<Arc<crate::managers::transcription::TranscriptionManager>>()
+                    .and_then(|manager| manager.get_current_model())
+                    .unwrap_or_else(|| settings.selected_model.clone());
+                store.learn_confirmed_transcription(
+                    active_app_context,
+                    &active_model_id,
+                    &settings.selected_language,
+                    &final_text,
+                    &settings.custom_words,
+                );
+                store.save(app);
+            }
+        }
+        if let Ok(mut p) = profiler.lock() {
+            p.push_step_since(
+                "adaptive_vocabulary_update",
+                vocabulary_started,
                 Some(format!("enabled=true chars={}", final_text.chars().count())),
             );
         }

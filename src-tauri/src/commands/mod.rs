@@ -16,6 +16,10 @@ use crate::adaptive_runtime::{
 };
 use crate::context_detector::{detect_current_app_context, AppTranscriptionContext};
 use crate::runtime_observability::{collect_runtime_diagnostics, RuntimeDiagnostics};
+use crate::voice_feedback::{
+    list_voice_feedback, submit_voice_feedback, summarize_voice_feedback, VoiceFeedbackEntry,
+    VoiceFeedbackInput, VoiceFeedbackSummary,
+};
 use crate::settings::{get_settings, write_settings, AppSettings, CalibrationPhase, LogLevel};
 use crate::startup_warmup::StartupWarmupStatus;
 use crate::utils::cancel_current_operation;
@@ -546,6 +550,33 @@ pub fn export_runtime_diagnostics(app: AppHandle, path: String) -> Result<(), St
         .map_err(|e| format!("Failed to write diagnostics file: {}", e))?;
     log::info!("Runtime diagnostics exported to {}", output_path.display());
     Ok(())
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn submit_voice_feedback_command(
+    app: AppHandle,
+    input: VoiceFeedbackInput,
+) -> Result<VoiceFeedbackEntry, String> {
+    submit_voice_feedback(&app, input)
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn list_voice_feedback_command(
+    app: AppHandle,
+    limit: Option<usize>,
+) -> Result<Vec<VoiceFeedbackEntry>, String> {
+    list_voice_feedback(&app, limit.unwrap_or(20))
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn summarize_voice_feedback_command(
+    app: AppHandle,
+    limit: Option<usize>,
+) -> Result<VoiceFeedbackSummary, String> {
+    summarize_voice_feedback(&app, limit.unwrap_or(200))
 }
 
 #[specta::specta]

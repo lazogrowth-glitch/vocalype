@@ -179,6 +179,15 @@ export interface VoiceProfileSnapshot {
   avg_pause_ms: number;
   preferred_terms: string[];
   last_updated_ms?: number | null;
+  segments?: Record<string, VoiceProfileSegmentSnapshot>;
+}
+
+export interface VoiceProfileSegmentSnapshot {
+  sessions_count: number;
+  avg_words_per_minute: number;
+  avg_pause_ms: number;
+  preferred_terms: string[];
+  last_updated_ms?: number | null;
 }
 
 export interface VoiceRuntimeAdjustmentSnapshot {
@@ -187,6 +196,15 @@ export interface VoiceRuntimeAdjustmentSnapshot {
   vad_hangover_frames_delta: number;
   reason?: string | null;
 }
+
+export type AudioInputLevelState =
+  | "unknown"
+  | "silent"
+  | "weak"
+  | "healthy"
+  | "hot";
+
+export type MicrophonePermissionState = "unknown" | "granted" | "denied";
 
 export interface MachineStatusSnapshot {
   mode: MachineStatusMode;
@@ -228,6 +246,7 @@ export interface ParakeetSessionDiagnosticsSnapshot {
   chunk_candidates_rejected: number;
   chunk_candidates_sent: number;
   output_words: number;
+  finalization_recoveries: number;
   duration_secs: number;
   audio_to_word_ratio: number;
   estimated_issue: ParakeetFailureMode;
@@ -258,6 +277,14 @@ export interface RuntimeDiagnosticsSnapshot {
   selected_output_device?: string | null;
   is_recording: boolean;
   is_paused: boolean;
+  microphone_stream_open: boolean;
+  microphone_backend_ready: boolean;
+  selected_microphone_available: boolean;
+  microphone_permission_state: MicrophonePermissionState;
+  input_level_state: AudioInputLevelState;
+  input_energy_ema: number;
+  input_peak_energy: number;
+  adaptive_silence_threshold_ms?: number | null;
   operation_id?: number | null;
   active_stage?: TranscriptionLifecycleState | null;
   last_audio_error?: string | null;
@@ -268,6 +295,7 @@ export interface RuntimeDiagnosticsSnapshot {
   last_transcription_app_context?: AppTranscriptionContext | null;
   adaptive_voice_profile_enabled: boolean;
   adaptive_voice_profile?: VoiceProfileSnapshot | null;
+  active_voice_profile_segment?: VoiceProfileSegmentSnapshot | null;
   active_voice_runtime_adjustment?: VoiceRuntimeAdjustmentSnapshot | null;
   machine_status?: MachineStatusSnapshot | null;
   parakeet_diagnostics: ParakeetDiagnosticsSnapshot;

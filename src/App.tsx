@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { TranscriptionWarmupBadge } from "./components/TranscriptionWarmupBadge";
 import { TitleBar } from "./components/TitleBar";
 import { useTranslation } from "react-i18next";
 import { LogicalSize, getCurrentWindow } from "@tauri-apps/api/window";
@@ -23,6 +24,7 @@ import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { listen } from "@tauri-apps/api/event";
 import { authClient } from "@/lib/auth/client";
+import { ensureVoiceStateStore } from "@/stores/voiceState";
 
 const AUTH_WINDOW_SIZE = { width: 1348, height: 875 };
 const APP_WINDOW_SIZE = { width: 1348, height: 875 };
@@ -218,6 +220,10 @@ function App() {
 
     void resizeWindow();
   }, [needsAuthWindow]);
+
+  useEffect(() => {
+    ensureVoiceStateStore();
+  }, []);
 
   if (authLoading) {
     return (
@@ -431,6 +437,7 @@ function App() {
                 ? t(SECTIONS_CONFIG[currentSection].labelKey)
                 : t(SECTIONS_CONFIG.general.labelKey)}
             </h1>
+            <TranscriptionWarmupBadge />
             {showFirstLaunchHint && (
               <div
                 className="rounded-xl border border-white/10 bg-white/[0.04] text-sm text-text/70"

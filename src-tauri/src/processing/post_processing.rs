@@ -9,6 +9,16 @@ use log::{debug, error, warn};
 
 pub(crate) const TRANSCRIPTION_FIELD: &str = "transcription";
 
+#[derive(Debug, Clone, Default)]
+pub(crate) struct ChunkCleanupStrategy {
+    pub multi_chunk: bool,
+    pub long_form: bool,
+    pub preserve_self_corrections: bool,
+    pub preserve_filler_structure: bool,
+    pub conservative_punctuation: bool,
+    pub selected_language_hint: Option<String>,
+}
+
 // ── Text helpers ─────────────────────────────────────────────────────────────
 
 /// Strip invisible Unicode characters that some LLMs may insert.
@@ -43,13 +53,77 @@ pub(crate) fn language_code_to_name(code: &str) -> &'static str {
     }
 }
 
+fn build_chunk_cleanup_system_prompt(
+    strategy: &ChunkCleanupStrategy,
+    selected_language: &str,
+) -> String {
+    let lang_name = if selected_language == "auto" || selected_language.is_empty() {
+        "the language used by the speaker".to_string()
+    } else {
+        language_code_to_name(selected_language).to_string()
+    };
+
+    let mut rules = vec![
+        "You are a speech transcription cleaner.".to_string(),
+        "Fix ONLY assembly issues created by chunking or transcription drift.".to_string(),
+        "(1) Remove exact word or phrase repetitions caused by audio chunk boundaries.".to_string(),
+        format!(
+            "(2) If any words are in the wrong language, convert them to {} only when the intended word is obvious.",
+            lang_name
+        ),
+        "(3) Fix obvious punctuation errors without rewriting the content.".to_string(),
+    ];
+
+    if strategy.multi_chunk {
+        rules.push(
+            "(4) Assume this text came from multiple audio chunks, so prioritize boundary cleanup and coherent joins.".to_string(),
+        );
+    }
+    if strategy.long_form {
+        rules.push(
+            "(5) This is long-form dictation. Preserve all clauses from beginning to end and do not shorten the thought.".to_string(),
+        );
+    }
+    if strategy.preserve_self_corrections {
+        rules.push(
+            "(6) Preserve human self-corrections such as \"no sorry\", \"I mean\", \"wait\", or reformulations unless they are obvious duplicate artifacts.".to_string(),
+        );
+    }
+    if strategy.preserve_filler_structure {
+        rules.push(
+            "(7) Keep natural spoken structure. Do not over-compress pauses or discourse markers if they carry meaning.".to_string(),
+        );
+    }
+    if strategy.conservative_punctuation {
+        rules.push(
+            "(8) Be conservative with punctuation. Do not add sentence breaks unless strongly supported by the wording.".to_string(),
+        );
+    } else {
+        rules.push(
+            "(8) Restore natural punctuation when it is clearly implied by the wording.".to_string(),
+        );
+    }
+    if let Some(language_hint) = &strategy.selected_language_hint {
+        rules.push(format!(
+            "(9) The user explicitly selected {} for this dictation. Prefer staying in that language throughout.",
+            language_hint
+        ));
+    }
+
+    rules.push(
+        "Do NOT rephrase, summarize, add new content, or remove real content. Return ONLY the cleaned text.".to_string(),
+    );
+    rules.join(" ")
+}
+
 // ── Chunk-assembly cleanup ────────────────────────────────────────────────────
 
 /// Quick LLM pass to fix: boundary word repetitions, wrong-language words, punctuation.
 /// Only runs if an LLM provider+model is configured.
-pub(crate) async fn cleanup_assembled_transcription(
+pub(crate) async fn cleanup_assembled_transcription_with_strategy(
     settings: &AppSettings,
     text: &str,
+    strategy: &ChunkCleanupStrategy,
 ) -> Option<String> {
     if text.trim().is_empty() {
         return None;
@@ -76,7 +150,7 @@ pub(crate) async fn cleanup_assembled_transcription(
         language_code_to_name(&settings.selected_language)
     };
 
-    let system_prompt = format!(
+    let _system_prompt = format!(
         "You are a speech transcription cleaner. Fix ONLY these issues: \
         (1) Remove exact word or phrase repetitions caused by audio chunk boundaries \
         (e.g. \"bonjour bonjour\" → \"bonjour\"). \
@@ -87,6 +161,7 @@ pub(crate) async fn cleanup_assembled_transcription(
         lang_name
     );
 
+    let system_prompt = build_chunk_cleanup_system_prompt(strategy, &settings.selected_language);
     debug!(
         "Running chunk cleanup pass (provider: {}, model: {})",
         provider.id, model
@@ -119,6 +194,18 @@ pub(crate) async fn cleanup_assembled_transcription(
 }
 
 // ── Post-processing ───────────────────────────────────────────────────────────
+
+pub(crate) async fn cleanup_assembled_transcription(
+    settings: &AppSettings,
+    text: &str,
+) -> Option<String> {
+    cleanup_assembled_transcription_with_strategy(
+        settings,
+        text,
+        &ChunkCleanupStrategy::default(),
+    )
+    .await
+}
 
 pub(crate) async fn post_process_transcription(
     settings: &AppSettings,

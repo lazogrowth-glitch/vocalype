@@ -3,7 +3,7 @@ use crate::model_ids::{PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID};
 use crate::parakeet_quality::ParakeetSessionCompletion;
 use crate::settings::AppSettings;
 use crate::telemetry::TranscriptionTelemetry;
-use crate::voice_profile::current_runtime_adjustment;
+use crate::voice_profile::{current_runtime_adjustment, current_voice_profile_for_context};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::{Arc, Mutex};
 use tauri::AppHandle;
@@ -54,6 +54,10 @@ pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; 
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
 pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1.0 s
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize = 19_200; // 1.2 s
+pub(crate) const PARAKEET_V3_AUTO_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s
+pub(crate) const PARAKEET_V3_AUTO_CHUNK_OVERLAP_SAMPLES: usize = 19_200; // 1.2 s
 
 // ── Chunking types ───────────────────────────────────────────────────────────
 
@@ -77,6 +81,7 @@ pub struct ChunkingHandle {
     pub(crate) pending_chunks: Arc<AtomicUsize>,
     pub(crate) failed_chunks: Arc<AtomicUsize>,
     pub(crate) parakeet_counters: Arc<Mutex<ParakeetSessionCompletion>>,
+    pub(crate) final_recovery_candidate: Arc<Mutex<Option<(usize, String)>>>,
     pub(crate) chunk_overlap_samples: usize,
     /// True when the active model is Parakeet V3 TDT.
     /// Used to gate timestamp-based overlap trimming (which is only safe for
@@ -96,6 +101,60 @@ pub struct ActiveChunkingHandle(pub Mutex<Option<ChunkingHandle>>);
 /// cancel_current_operation to interrupt a worker that is draining its queue.
 pub struct ActiveWorkerCancelFlag(pub Mutex<Option<Arc<AtomicBool>>>);
 
+fn parakeet_language_base_profile(selected_language: &str) -> (u8, u16) {
+    match selected_language {
+        lang if lang.starts_with("fr") => (
+            (PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES / 16_000) as u8,
+            ((PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES * 1000) / 16_000) as u16,
+        ),
+        "auto" => (
+            (PARAKEET_V3_AUTO_CHUNK_INTERVAL_SAMPLES / 16_000) as u8,
+            ((PARAKEET_V3_AUTO_CHUNK_OVERLAP_SAMPLES * 1000) / 16_000) as u16,
+        ),
+        _ => (
+            (PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES / 16_000) as u8,
+            ((PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES * 1000) / 16_000) as u16,
+        ),
+    }
+}
+
+fn refine_parakeet_adjustment(
+    adjusted_chunk_seconds: u8,
+    adjusted_overlap_ms: u16,
+    selected_language: &str,
+    avg_words_per_minute: f32,
+    avg_pause_ms: f32,
+) -> (u8, u16) {
+    let mut chunk = i16::from(adjusted_chunk_seconds);
+    let mut overlap = i32::from(adjusted_overlap_ms);
+
+    if selected_language.starts_with("fr") {
+        chunk -= 1;
+        overlap += 120;
+    } else if selected_language == "auto" {
+        chunk -= 1;
+        overlap += 160;
+    }
+
+    if avg_words_per_minute >= 165.0 {
+        chunk -= 1;
+        overlap += 120;
+    }
+
+    if avg_pause_ms >= 700.0 {
+        chunk += 1;
+        overlap -= 80;
+    } else if avg_pause_ms > 0.0 && avg_pause_ms <= 180.0 {
+        chunk -= 1;
+        overlap += 160;
+    }
+
+    (
+        chunk.clamp(8, 14) as u8,
+        overlap.clamp(700, 1600) as u16,
+    )
+}
+
 // ── Chunking functions ───────────────────────────────────────────────────────
 
 pub(crate) fn chunking_profile_for_model(
@@ -109,6 +168,7 @@ pub(crate) fn chunking_profile_for_model(
                 let adjusted = current_runtime_adjustment(
                     app,
                     &info.id,
+                    &settings.selected_language,
                     config.chunk_seconds,
                     config.overlap_ms,
                 )
@@ -150,20 +210,45 @@ pub(crate) fn chunking_profile_for_model(
                 PARAKEET_V3_MULTILINGUAL_ID | PARAKEET_V3_LEGACY_ID
             ) =>
         {
-            let base_chunk_seconds = (PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES / 16_000) as u8;
-            let base_overlap_ms =
-                ((PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES * 1000) / 16_000) as u16;
-            let adjusted =
-                current_runtime_adjustment(app, &info.id, base_chunk_seconds, base_overlap_ms)
-                    .unwrap_or_else(|| crate::voice_profile::VoiceRuntimeAdjustment {
-                        adjusted_chunk_seconds: base_chunk_seconds,
-                        adjusted_overlap_ms: base_overlap_ms,
-                        vad_hangover_frames_delta: 0,
-                        reason: None,
-                    });
+            let (base_chunk_seconds, base_overlap_ms) =
+                parakeet_language_base_profile(&settings.selected_language);
+            let adjusted = current_runtime_adjustment(
+                app,
+                &info.id,
+                &settings.selected_language,
+                base_chunk_seconds,
+                base_overlap_ms,
+            )
+            .unwrap_or_else(|| crate::voice_profile::VoiceRuntimeAdjustment {
+                adjusted_chunk_seconds: base_chunk_seconds,
+                adjusted_overlap_ms: base_overlap_ms,
+                vad_hangover_frames_delta: 0,
+                reason: None,
+            });
+            let (chunk_seconds, overlap_ms) =
+                if let Some(profile) = current_voice_profile_for_context(
+                    app,
+                    &info.id,
+                    &settings.selected_language,
+                )
+                .filter(|p| p.sessions_count > 0)
+                {
+                    refine_parakeet_adjustment(
+                        adjusted.adjusted_chunk_seconds,
+                        adjusted.adjusted_overlap_ms,
+                        &settings.selected_language,
+                        profile.avg_words_per_minute,
+                        profile.avg_pause_ms,
+                    )
+                } else {
+                    (
+                        adjusted.adjusted_chunk_seconds,
+                        adjusted.adjusted_overlap_ms,
+                    )
+                };
             Some(ChunkingProfile {
-                interval_samples: usize::from(adjusted.adjusted_chunk_seconds) * 16_000,
-                overlap_samples: (usize::from(adjusted.adjusted_overlap_ms) * 16_000) / 1000,
+                interval_samples: usize::from(chunk_seconds) * 16_000,
+                overlap_samples: (usize::from(overlap_ms) * 16_000) / 1000,
             })
         }
         Some(info)
@@ -263,5 +348,20 @@ mod tests {
         let prev = "Hello World";
         let next = "hello world nice day";
         assert_eq!(deduplicate_boundary(prev, next), "nice day");
+    }
+
+    #[test]
+    fn french_parakeet_base_profile_is_shorter_and_wider() {
+        let (chunk_seconds, overlap_ms) = parakeet_language_base_profile("fr");
+        assert_eq!(chunk_seconds, 10);
+        assert_eq!(overlap_ms, 1200);
+    }
+
+    #[test]
+    fn adaptive_parakeet_profile_tightens_for_fast_tight_speech() {
+        let (chunk_seconds, overlap_ms) =
+            refine_parakeet_adjustment(12, 1000, "en", 172.0, 140.0);
+        assert!(chunk_seconds < 12);
+        assert!(overlap_ms > 1000);
     }
 }

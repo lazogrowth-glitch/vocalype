@@ -35,6 +35,7 @@ struct CoordinatorRuntimeState {
     lifecycle_state: TranscriptionLifecycleState,
     cancelled_at_stage: Option<TranscriptionLifecycleState>,
     partial_result: bool,
+    latest_preview_text: Option<String>,
 }
 
 impl Default for CoordinatorRuntimeState {
@@ -47,6 +48,7 @@ impl Default for CoordinatorRuntimeState {
             lifecycle_state: TranscriptionLifecycleState::Idle,
             cancelled_at_stage: None,
             partial_result: false,
+            latest_preview_text: None,
         }
     }
 }
@@ -221,6 +223,7 @@ impl TranscriptionCoordinator {
         guard.selected_action = None;
         guard.cancelled_at_stage = None;
         guard.partial_result = false;
+        guard.latest_preview_text = None;
         guard.lifecycle_state = TranscriptionLifecycleState::PreparingMicrophone;
         drop(guard);
 
@@ -306,6 +309,30 @@ impl TranscriptionCoordinator {
             .partial_result = partial;
     }
 
+    pub fn update_live_preview(&self, operation_id: u64, text: Option<String>) {
+        let mut guard = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        if guard.active_operation_id != Some(operation_id) {
+            return;
+        }
+        guard.latest_preview_text = text.and_then(|value| {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        });
+    }
+
+    pub fn latest_live_preview(&self, operation_id: u64) -> Option<String> {
+        let guard = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        if guard.active_operation_id == Some(operation_id) {
+            guard.latest_preview_text.clone()
+        } else {
+            None
+        }
+    }
+
     pub fn complete_operation(&self, app: &AppHandle, operation_id: u64, detail: &str) -> bool {
         let (binding_id, transitioned) = {
             let mut guard = self.state.lock().unwrap_or_else(|e| e.into_inner());
@@ -317,6 +344,7 @@ impl TranscriptionCoordinator {
             guard.active_operation_id = None;
             guard.active_binding_id = None;
             guard.selected_action = None;
+            guard.latest_preview_text = None;
             (binding_id, true)
         };
 
@@ -346,6 +374,7 @@ impl TranscriptionCoordinator {
             guard.active_operation_id = None;
             guard.active_binding_id = None;
             guard.selected_action = None;
+            guard.latest_preview_text = None;
             binding_id
         };
 
@@ -371,6 +400,7 @@ impl TranscriptionCoordinator {
             guard.active_operation_id = None;
             guard.active_binding_id = None;
             guard.selected_action = None;
+            guard.latest_preview_text = None;
             (operation_id, binding_id)
         };
 

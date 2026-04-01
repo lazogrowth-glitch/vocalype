@@ -18,7 +18,9 @@ use crate::model_ids::is_parakeet_v3_model_id;
 use crate::parakeet_quality::{
     ParakeetDiagnosticsState, ParakeetSessionCompletion, ParakeetSessionStart,
 };
-use crate::post_processing::cleanup_assembled_transcription;
+use crate::post_processing::{
+    cleanup_assembled_transcription_with_strategy, ChunkCleanupStrategy,
+};
 use crate::runtime_observability::{
     emit_runtime_error_with_context, RuntimeErrorStage, TranscriptionLifecycleState,
 };
@@ -82,8 +84,89 @@ struct TranscriptionResult {
     failed_chunk_count: usize,
 }
 
+#[derive(Clone, Debug)]
+struct AdaptiveCleanupSessionStrategy {
+    llm_cleanup: ChunkCleanupStrategy,
+    reason: String,
+}
+
 fn preview_text(text: &str, max_chars: usize) -> String {
     text.chars().take(max_chars).collect()
+}
+
+fn build_live_preview(results: &[(usize, String)], max_chars: usize) -> String {
+    let mut ordered: Vec<_> = results
+        .iter()
+        .filter_map(|(idx, text)| {
+            let trimmed = text.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some((*idx, trimmed.to_string()))
+            }
+        })
+        .collect();
+    ordered.sort_by_key(|(idx, _)| *idx);
+    preview_text(
+        &ordered
+            .into_iter()
+            .map(|(_, text)| text)
+            .collect::<Vec<_>>()
+            .join(" "),
+        max_chars,
+    )
+}
+
+fn emit_transcription_preview(
+    app: &AppHandle,
+    operation_id: u64,
+    stage: &str,
+    text: &str,
+    stable: bool,
+) {
+    let trimmed = text.trim();
+    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+        coordinator.update_live_preview(
+            operation_id,
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            },
+        );
+    }
+    let _ = app.emit(
+        "transcription-preview",
+        serde_json::json!({
+            "operation_id": operation_id,
+            "stage": stage,
+            "stable": stable,
+            "text": if trimmed.is_empty() { serde_json::Value::Null } else { serde_json::Value::String(trimmed.to_string()) },
+        }),
+    );
+}
+
+fn is_viable_preview_rescue_candidate(text: &str) -> bool {
+    let trimmed = text.trim();
+    trimmed.split_whitespace().count() >= 4
+        && trimmed.chars().filter(|ch| ch.is_alphabetic()).count() >= 12
+}
+
+fn is_viable_final_recovery_candidate(text: &str) -> bool {
+    text.split_whitespace().count() >= 3 && text.chars().any(|ch| ch.is_alphabetic())
+}
+
+fn append_recovered_final_chunk(assembled: &str, recovered: &str) -> String {
+    if assembled.trim().is_empty() {
+        return recovered.trim().to_string();
+    }
+
+    let deduped = deduplicate_boundary_n(assembled, recovered, 6);
+    if deduped.trim().is_empty() {
+        assembled.to_string()
+    } else {
+        format!("{} {}", assembled.trim_end(), deduped.trim_start())
+    }
 }
 
 fn is_operation_active(app: &AppHandle, operation_id: u64) -> bool {
@@ -108,6 +191,59 @@ fn classify_microphone_start_error(message: &str) -> &'static str {
         "MIC_NOT_FOUND"
     } else {
         "MIC_OPEN_FAILED"
+    }
+}
+
+fn derive_adaptive_cleanup_strategy(
+    selected_language: &str,
+    samples: &[f32],
+    chunk_count: usize,
+    failed_chunk_count: usize,
+    is_parakeet_v3: bool,
+) -> AdaptiveCleanupSessionStrategy {
+    let duration_seconds = samples.len() as f32 / 16_000.0;
+    let long_form = duration_seconds >= 35.0 || chunk_count >= 4;
+    let fragile_multi_chunk = chunk_count >= 3 || failed_chunk_count > 0;
+    let preserve_self_corrections = long_form || duration_seconds >= 20.0;
+    let preserve_filler_structure = long_form || duration_seconds >= 25.0;
+    let conservative_punctuation = fragile_multi_chunk || long_form || is_parakeet_v3;
+    let selected_language_hint = if selected_language == "auto" || selected_language.is_empty() {
+        None
+    } else {
+        Some(crate::post_processing::language_code_to_name(selected_language).to_string())
+    };
+
+    let mut reasons = Vec::new();
+    if chunk_count >= 2 {
+        reasons.push("multi_chunk");
+    }
+    if long_form {
+        reasons.push("long_form");
+    }
+    if failed_chunk_count > 0 {
+        reasons.push("partial_chunks");
+    }
+    if is_parakeet_v3 {
+        reasons.push("parakeet");
+    }
+    if selected_language_hint.is_some() {
+        reasons.push("language_locked");
+    }
+
+    AdaptiveCleanupSessionStrategy {
+        llm_cleanup: ChunkCleanupStrategy {
+            multi_chunk: chunk_count >= 2,
+            long_form,
+            preserve_self_corrections,
+            preserve_filler_structure,
+            conservative_punctuation,
+            selected_language_hint,
+        },
+        reason: if reasons.is_empty() {
+            "default".to_string()
+        } else {
+            reasons.join(",")
+        },
     }
 }
 
@@ -313,6 +449,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let tel_sampler = Arc::clone(&tel);
         let tel_worker = Arc::clone(&tel);
         let quality_counters = Arc::new(Mutex::new(ParakeetSessionCompletion::default()));
+        let final_recovery_candidate: Arc<Mutex<Option<(usize, String)>>> =
+            Arc::new(Mutex::new(None));
 
         if is_parakeet_v3 {
             tel.log_session_start(
@@ -515,6 +653,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let pending_w = Arc::clone(&pending_chunks);
         let is_parakeet_v3_w = is_parakeet_v3;
         let counters_worker = Arc::clone(&quality_counters);
+        let final_recovery_worker = Arc::clone(&final_recovery_candidate);
+        let ah_w = app.clone();
+        let operation_id_w = operation_id;
         let worker_handle = std::thread::spawn(move || {
             info!("[worker] started");
             while let Ok(message) = chunk_rx.recv() {
@@ -668,6 +809,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         // (e.g. "So", "Yeah.", "Leave.") when a short chunk contains
                         // mostly silence. Discard single-word results from chunks that
                         // are too short to reliably contain real speech.
+                        let pre_filter_text = text.clone();
                         let word_count = text.split_whitespace().count();
                         // Known English filler words Parakeet hallucinates on near-silence.
                         const HALLUCINATION_BLOCKLIST: &[&str] = &[
@@ -724,6 +866,18 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             text
                         };
 
+                        if is_parakeet_v3_w
+                            && is_final_chunk
+                            && text.trim().is_empty()
+                            && is_viable_final_recovery_candidate(&pre_filter_text)
+                            && !is_trailing_hallucination
+                        {
+                            *final_recovery_worker
+                                .lock()
+                                .unwrap_or_else(|e| e.into_inner()) =
+                                Some((idx, pre_filter_text));
+                        }
+
                         if is_parakeet_v3_w {
                             if let Ok(mut counters) = counters_worker.lock() {
                                 counters.total_chunks += 1;
@@ -745,10 +899,20 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             }
                         }
 
-                        results_w
-                            .lock()
-                            .unwrap_or_else(|e| e.into_inner())
-                            .push((idx, text));
+                        let live_preview = {
+                            let mut guard = results_w.lock().unwrap_or_else(|e| e.into_inner());
+                            guard.push((idx, text));
+                            build_live_preview(&guard, 240)
+                        };
+                        if !live_preview.is_empty() {
+                            emit_transcription_preview(
+                                &ah_w,
+                                operation_id_w,
+                                "recording",
+                                &live_preview,
+                                true,
+                            );
+                        }
                     }
                     Err(err) => {
                         failed_chunks_w.fetch_add(1, Ordering::Relaxed);
@@ -780,6 +944,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 pending_chunks,
                 failed_chunks,
                 parakeet_counters: Arc::clone(&quality_counters),
+                final_recovery_candidate: Arc::clone(&final_recovery_candidate),
                 chunk_overlap_samples: chunking_profile.overlap_samples,
                 is_parakeet_v3,
                 session_id,
@@ -1013,7 +1178,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
 
                     let chunk_count = results.len();
                     let failed_chunk_count = ch.failed_chunks.load(Ordering::Relaxed);
-                    let assembled = if results.is_empty() {
+                    let mut assembled = if results.is_empty() {
                         String::new()
                     } else if results.len() == 1 {
                         results[0].1.clone()
@@ -1110,6 +1275,31 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         parts.join(" ")
                     };
 
+                    if ch.is_parakeet_v3 {
+                        let recovery_candidate = ch
+                            .final_recovery_candidate
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .clone();
+                        if let Some((recovery_idx, recovery_text)) = recovery_candidate {
+                            let recovered = append_recovered_final_chunk(&assembled, &recovery_text);
+                            if recovered != assembled {
+                                tel_assembly.log_finalization_recovery(
+                                    session_id,
+                                    recovery_idx,
+                                    "promote_final_chunk_candidate",
+                                    recovery_text.split_whitespace().count(),
+                                    &preview_text(&recovery_text, 120),
+                                );
+                                if let Ok(mut counters) = ch.parakeet_counters.lock() {
+                                    counters.finalization_recoveries += 1;
+                                    counters.output_words = recovered.split_whitespace().count();
+                                }
+                                assembled = recovered;
+                            }
+                        }
+                    }
+
                     tel_assembly.log_session_end(
                         session_id,
                         chunk_count,
@@ -1120,12 +1310,13 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     );
 
                     let parakeet_summary = if ch.is_parakeet_v3 {
-                        Some(
-                            ch.parakeet_counters
-                                .lock()
-                                .unwrap_or_else(|e| e.into_inner())
-                                .clone(),
-                        )
+                        let mut summary = ch
+                            .parakeet_counters
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .clone();
+                        summary.output_words = assembled.split_whitespace().count();
+                        Some(summary)
                     } else {
                         None
                     };
@@ -1150,6 +1341,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     )),
                 );
             }
+            let is_parakeet_chunked = parakeet_summary.is_some();
             if let Some(summary) = parakeet_summary {
                 if let Some(state) = ah.try_state::<ParakeetDiagnosticsState>() {
                     if let Some(snapshot) =
@@ -1170,11 +1362,22 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             );
 
             let chunk_cleanup_started = Instant::now();
+            let cleanup_strategy = derive_adaptive_cleanup_strategy(
+                &settings.selected_language,
+                &all_samples,
+                chunk_count,
+                failed_chunk_count,
+                is_parakeet_chunked,
+            );
             let transcription = if chunk_count >= 2 && !assembled.is_empty() {
                 let settings_for_cleanup = get_settings(&ah);
-                cleanup_assembled_transcription(&settings_for_cleanup, &assembled)
-                    .await
-                    .unwrap_or(assembled)
+                cleanup_assembled_transcription_with_strategy(
+                    &settings_for_cleanup,
+                    &assembled,
+                    &cleanup_strategy.llm_cleanup,
+                )
+                .await
+                .unwrap_or(assembled)
             } else {
                 assembled
             };
@@ -1183,12 +1386,14 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     "chunk_cleanup",
                     chunk_cleanup_started,
                     Some(format!(
-                        "applied={} failed_chunks={}",
+                        "applied={} failed_chunks={} strategy={}",
                         chunk_count >= 2 && !transcription.is_empty(),
-                        failed_chunk_count
+                        failed_chunk_count,
+                        cleanup_strategy.reason
                     )),
                 );
             }
+            emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
 
             Some(TranscriptionResult {
                 samples: all_samples,
@@ -1464,6 +1669,13 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 }
             }
 
+            emit_transcription_preview(
+                &ah,
+                operation_id,
+                "processing",
+                &transcription_output.text,
+                true,
+            );
             Some(TranscriptionResult {
                 samples,
                 transcription: transcription_output.text,
@@ -1496,57 +1708,126 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
 
             let duration_seconds = samples.len() as f32 / 16_000.0;
             let samples_clone = samples.clone();
+            let preview_rescue = ah
+                .try_state::<TranscriptionCoordinator>()
+                .and_then(|c| c.latest_live_preview(operation_id))
+                .filter(|text| is_viable_preview_rescue_candidate(text));
+            let mut transcription = transcription;
+            let mut effective_status = status;
 
-            match status {
+            match effective_status {
                 TranscriptionStatus::Partial => {
-                    if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
-                        c.mark_partial_result(true);
+                    if transcription.trim().is_empty() {
+                        if let Some(preview) = preview_rescue.clone() {
+                            transcription = preview;
+                            effective_status = TranscriptionStatus::Success;
+                        }
                     }
-                    emit_runtime_error_with_context(
-                        &ah,
-                        "TRANSCRIPTION_PARTIAL",
-                        RuntimeErrorStage::Transcription,
-                        format!(
-                            "One or more chunks failed during transcription (failed_chunks={})",
-                            failed_chunk_count
-                        ),
-                        true,
-                        Some(operation_id),
-                        get_settings(&ah).selected_microphone.clone(),
-                        tm.get_current_model(),
-                    );
-                    if let Ok(mut p) = profiler.lock() {
-                        p.mark_error("TRANSCRIPTION_PARTIAL");
-                        p.emit(&ah);
+                    if matches!(effective_status, TranscriptionStatus::Success) {
+                        if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
+                            c.mark_partial_result(true);
+                        }
+                        if let Ok(mut p) = profiler.lock() {
+                            p.push_step(
+                                "finalize_with_preview_rescue",
+                                Duration::from_millis(0),
+                                Some(format!(
+                                    "source=partial failed_chunks={} chars={}",
+                                    failed_chunk_count,
+                                    transcription.chars().count()
+                                )),
+                            );
+                        }
+                        emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
+                        emit_runtime_error_with_context(
+                            &ah,
+                            "TRANSCRIPTION_PARTIAL_RECOVERED",
+                            RuntimeErrorStage::Transcription,
+                            format!(
+                                "Recovered from partial transcription using latest live preview (failed_chunks={})",
+                                failed_chunk_count
+                            ),
+                            true,
+                            Some(operation_id),
+                            get_settings(&ah).selected_microphone.clone(),
+                            tm.get_current_model(),
+                        );
+                    } else {
+                        if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
+                            c.mark_partial_result(true);
+                        }
+                        emit_runtime_error_with_context(
+                            &ah,
+                            "TRANSCRIPTION_PARTIAL",
+                            RuntimeErrorStage::Transcription,
+                            format!(
+                                "One or more chunks failed during transcription (failed_chunks={})",
+                                failed_chunk_count
+                            ),
+                            true,
+                            Some(operation_id),
+                            get_settings(&ah).selected_microphone.clone(),
+                            tm.get_current_model(),
+                        );
+                        if let Ok(mut p) = profiler.lock() {
+                            p.mark_error("TRANSCRIPTION_PARTIAL");
+                            p.emit(&ah);
+                        }
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
+                            let _ = c.complete_operation(&ah, operation_id, "partial-result-skipped");
+                        }
+                        return;
                     }
-                    utils::hide_recording_overlay(&ah);
-                    change_tray_icon(&ah, TrayIconState::Idle);
-                    if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
-                        let _ = c.complete_operation(&ah, operation_id, "partial-result-skipped");
-                    }
-                    return;
                 }
                 TranscriptionStatus::NoSpeech => {
-                    emit_runtime_error_with_context(
-                        &ah,
-                        "NO_SPEECH_DETECTED",
-                        RuntimeErrorStage::Transcription,
-                        "No speech detected in the captured audio; paste skipped",
-                        true,
-                        Some(operation_id),
-                        get_settings(&ah).selected_microphone.clone(),
-                        tm.get_current_model(),
-                    );
-                    if let Ok(mut p) = profiler.lock() {
-                        p.mark_error("NO_SPEECH_DETECTED");
-                        p.emit(&ah);
+                    if let Some(preview) = preview_rescue.clone() {
+                        transcription = preview;
+                        effective_status = TranscriptionStatus::Success;
+                        if let Ok(mut p) = profiler.lock() {
+                            p.push_step(
+                                "finalize_with_preview_rescue",
+                                Duration::from_millis(0),
+                                Some(format!(
+                                    "source=no_speech chars={}",
+                                    transcription.chars().count()
+                                )),
+                            );
+                        }
+                        emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
+                        emit_runtime_error_with_context(
+                            &ah,
+                            "NO_SPEECH_RECOVERED_FROM_PREVIEW",
+                            RuntimeErrorStage::Transcription,
+                            "Recovered a viable final transcript from the latest live preview",
+                            true,
+                            Some(operation_id),
+                            get_settings(&ah).selected_microphone.clone(),
+                            tm.get_current_model(),
+                        );
+                    } else {
+                        emit_runtime_error_with_context(
+                            &ah,
+                            "NO_SPEECH_DETECTED",
+                            RuntimeErrorStage::Transcription,
+                            "No speech detected in the captured audio; paste skipped",
+                            true,
+                            Some(operation_id),
+                            get_settings(&ah).selected_microphone.clone(),
+                            tm.get_current_model(),
+                        );
+                        if let Ok(mut p) = profiler.lock() {
+                            p.mark_error("NO_SPEECH_DETECTED");
+                            p.emit(&ah);
+                        }
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
+                            let _ = c.complete_operation(&ah, operation_id, "no-speech");
+                        }
+                        return;
                     }
-                    utils::hide_recording_overlay(&ah);
-                    change_tray_icon(&ah, TrayIconState::Idle);
-                    if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
-                        let _ = c.complete_operation(&ah, operation_id, "no-speech");
-                    }
-                    return;
                 }
                 TranscriptionStatus::Success => {}
             }
@@ -1573,7 +1854,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 return;
             }
 
-            if should_auto_paste(status) && !transcription.is_empty() {
+            if should_auto_paste(effective_status) && !transcription.is_empty() {
                 let outcome = process_transcription_text(
                     &ah,
                     operation_id,
@@ -1638,6 +1919,72 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                             });
                         })
                             as Box<dyn FnOnce() + Send + 'static>)
+                    } else {
+                        None
+                    },
+                );
+            } else if let Some(preview) = preview_rescue {
+                transcription = preview;
+                if let Ok(mut p) = profiler.lock() {
+                    p.push_step(
+                        "finalize_with_preview_rescue",
+                        Duration::from_millis(0),
+                        Some(format!(
+                            "source=empty chars={}",
+                            transcription.chars().count()
+                        )),
+                    );
+                }
+                emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
+                let outcome = process_transcription_text(
+                    &ah,
+                    operation_id,
+                    &transcription,
+                    active_app_context.as_ref(),
+                    selected_action_key,
+                    post_process,
+                    &samples,
+                    &profiler,
+                )
+                .await;
+                if !is_operation_active(&ah, operation_id) {
+                    return;
+                }
+
+                dispatch_text_insertion(
+                    &ah,
+                    operation_id,
+                    outcome.final_text.clone(),
+                    is_basic_plan,
+                    Arc::clone(&profiler),
+                    if duration_seconds > 1.0 {
+                        let hm_clone = Arc::clone(&hm);
+                        let samples_for_history = samples_clone.clone();
+                        let transcription_for_history = transcription.clone();
+                        let confidence_for_history = confidence_payload.clone();
+                        let post_processed_text = outcome.post_processed_text.clone();
+                        let post_process_prompt = outcome.post_process_prompt.clone();
+                        let model_name_for_history = tm.get_current_model_name();
+                        let action_key_for_history = if outcome.post_processed_text.is_some() {
+                            selected_action_key
+                        } else {
+                            None
+                        };
+                        Some(Box::new(move || {
+                            tauri::async_runtime::spawn(async move {
+                                let _ = hm_clone
+                                    .save_transcription(
+                                        samples_for_history,
+                                        transcription_for_history,
+                                        confidence_for_history,
+                                        post_processed_text,
+                                        post_process_prompt,
+                                        action_key_for_history,
+                                        model_name_for_history,
+                                    )
+                                    .await;
+                            });
+                        }) as Box<dyn FnOnce() + Send + 'static>)
                     } else {
                         None
                     },
@@ -1724,6 +2071,26 @@ mod tests {
         assert_eq!(
             classify_microphone_start_error("Failed to open recorder"),
             "MIC_OPEN_FAILED"
+        );
+    }
+
+    #[test]
+    fn final_recovery_candidate_requires_real_content() {
+        assert!(!is_viable_final_recovery_candidate("yeah"));
+        assert!(!is_viable_final_recovery_candidate("ok"));
+        assert!(is_viable_final_recovery_candidate(
+            "this should recover the real ending"
+        ));
+    }
+
+    #[test]
+    fn recovered_final_chunk_avoids_readding_duplicate_boundary() {
+        let assembled = "I want to explain the issue with the microphone";
+        let recovered =
+            append_recovered_final_chunk(assembled, "the microphone keeps dropping the ending");
+        assert_eq!(
+            recovered,
+            "I want to explain the issue with the microphone keeps dropping the ending"
         );
     }
 }

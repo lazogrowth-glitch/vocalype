@@ -1,161 +1,214 @@
-{
-  "version": 1,
-  "samples": [
-    {
-      "sample_id": "long_no_pause_fr_001",
-      "scenario": "long_no_pause_fr",
-      "audio_path": "audio/long_no_pause_fr_001.wav",
-      "reference_text": "bonjour je veux tester une phrase longue sans faire de pause pour voir si parakeet v3 coupe des mots a la fin quand je parle longtemps de maniere continue",
-      "language": "fr",
-      "accent": "france_standard",
-      "noise_level": "quiet",
-      "mic_type": "laptop",
-      "duration_bucket": "20_40s",
-      "speech_rate": "normal",
-      "tags": ["long", "no_pause", "french", "dictation"]
-    },
-    {
-      "sample_id": "long_no_pause_fr_002",
-      "scenario": "long_no_pause_fr",
-      "audio_path": "audio/long_no_pause_fr_002.wav",
-      "reference_text": "Placeholder reference text for a second long uninterrupted French dictation sample.",
-      "language": "fr",
-      "accent": "quebec",
-      "noise_level": "quiet",
-      "mic_type": "headset",
-      "duration_bucket": "20_40s",
-      "speech_rate": "fast",
-      "tags": ["long", "no_pause", "french", "quebec", "dictation"]
-    },
-    {
-      "sample_id": "fast_dictation_fr_001",
-      "scenario": "fast_dictation_fr",
-      "audio_path": "audio/fast_dictation_fr_001.wav",
-      "reference_text": "je vais dicter rapidement cette phrase pour verifier si le modele suit correctement quand le debit de parole augmente et que les mots arrivent presque sans interruption",
-      "language": "fr",
-      "accent": "france_standard",
-      "noise_level": "quiet",
-      "mic_type": "built_in_array",
-      "duration_bucket": "8_20s",
-      "speech_rate": "very_fast",
-      "tags": ["fast", "french", "dictation"]
-    },
-    {
-      "sample_id": "fast_dictation_fr_002",
-      "scenario": "fast_dictation_fr",
-      "audio_path": "audio/fast_dictation_fr_002.wav",
-      "reference_text": "Placeholder reference text for a second fast French dictation sample.",
-      "language": "fr",
-      "accent": "belgium",
-      "noise_level": "light",
-      "mic_type": "usb",
-      "duration_bucket": "8_20s",
-      "speech_rate": "very_fast",
-      "tags": ["fast", "french", "dictation", "light_noise"]
-    },
-    {
-      "sample_id": "low_volume_fr_001",
-      "scenario": "low_volume_fr",
-      "audio_path": "audio/low_volume_fr_001.wav",
-      "reference_text": "je parle volontairement avec une voix plus basse pour verifier si le modele comprend encore correctement le texte meme quand le volume du micro est plus faible",
-      "language": "fr",
-      "accent": "france_standard",
-      "noise_level": "quiet",
-      "mic_type": "laptop",
-      "duration_bucket": "8_20s",
-      "speech_rate": "normal",
-      "tags": ["low_volume", "french", "dictation"]
-    },
-    {
-      "sample_id": "light_noise_fr_001",
-      "scenario": "light_noise_fr",
-      "audio_path": "audio/light_noise_fr_001.wav",
-      "reference_text": "Placeholder reference text for a French dictation sample with light background noise.",
-      "language": "fr",
-      "accent": "france_standard",
-      "noise_level": "light",
-      "mic_type": "laptop",
-      "duration_bucket": "8_20s",
-      "speech_rate": "normal",
-      "tags": ["light_noise", "french", "dictation"]
-    },
-    {
-      "sample_id": "light_noise_fr_002",
-      "scenario": "light_noise_fr",
-      "audio_path": "audio/light_noise_fr_002.wav",
-      "reference_text": "Placeholder reference text for a second French dictation sample with light background noise.",
-      "language": "fr",
-      "accent": "quebec",
-      "noise_level": "light",
-      "mic_type": "headset",
-      "duration_bucket": "8_20s",
-      "speech_rate": "fast",
-      "tags": ["light_noise", "french", "dictation", "quebec"]
-    },
-    {
-      "sample_id": "franglais_terms_001",
-      "scenario": "franglais_terms",
-      "audio_path": "audio/franglais_terms_001.wav",
-      "reference_text": "aujourdhui je dois push le build sur github puis verifier le dashboard et corriger le bug dans le reporting avant le prochain meeting",
-      "language": "fr",
-      "accent": "france_standard",
-      "noise_level": "quiet",
-      "mic_type": "usb",
-      "duration_bucket": "8_20s",
-      "speech_rate": "normal",
-      "tags": ["franglais", "technical_terms", "dictation"]
-    },
-    {
-      "sample_id": "proper_nouns_001",
-      "scenario": "proper_nouns",
-      "audio_path": "audio/proper_nouns_001.wav",
-      "reference_text": "demain je dois envoyer un message a Yassine puis verifier le projet Vocalype sur GitHub et preparer une note pour OpenAI et Microsoft",
-      "language": "fr",
-      "accent": "france_standard",
-      "noise_level": "quiet",
-      "mic_type": "usb",
-      "duration_bucket": "8_20s",
-      "speech_rate": "normal",
-      "tags": ["proper_nouns", "brands", "names"]
-    },
-    {
-      "sample_id": "cheap_laptop_mic_001",
-      "scenario": "cheap_laptop_mic",
-      "audio_path": "audio/cheap_laptop_mic_001.wav",
-      "reference_text": "Placeholder reference text for a laptop microphone sample with weaker clarity.",
-      "language": "fr",
-      "accent": "france_standard",
-      "noise_level": "moderate",
-      "mic_type": "laptop",
-      "duration_bucket": "8_20s",
-      "speech_rate": "normal",
-      "tags": ["cheap_mic", "laptop", "moderate_noise"]
-    },
-    {
-      "sample_id": "end_truncation_fr_001",
-      "scenario": "end_truncation_fr",
-      "audio_path": "audio/end_truncation_fr_001.wav",
-      "reference_text": "Placeholder reference text designed to detect final-word truncation in a longer French utterance.",
-      "language": "fr",
-      "accent": "france_standard",
-      "noise_level": "quiet",
-      "mic_type": "headset",
-      "duration_bucket": "20_40s",
-      "speech_rate": "normal",
-      "tags": ["end_truncation", "long", "french"]
-    },
-    {
-      "sample_id": "english_control_001",
-      "scenario": "english_control",
-      "audio_path": "audio/english_control_001.wav",
-      "reference_text": "today I want to test a longer English sentence to verify whether Parakeet V3 keeps every word correctly without dropping the ending",
-      "language": "en",
-      "accent": "north_america",
-      "noise_level": "quiet",
-      "mic_type": "headset",
-      "duration_bucket": "8_20s",
-      "speech_rate": "normal",
-      "tags": ["english", "control", "parakeet_v3"]
-    }
-  ]
+﻿{
+    "version":  1,
+    "samples":  [
+                    {
+                        "sample_id":  "long_no_pause_fr_001",
+                        "scenario":  "long_no_pause_fr",
+                        "audio_path":  "audio/long_no_pause_fr_001.wav",
+                        "reference_text":  "Bonjour, je veux tester une phrase longue sans faire de pause, pour voir si Parakeet V3 coupe des mots à la fin quand je parle longtemps, de manière continue.",
+                        "language":  "fr",
+                        "accent":  "france_standard",
+                        "noise_level":  "quiet",
+                        "mic_type":  "laptop",
+                        "duration_bucket":  "20_40s",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "long",
+                                     "no_pause",
+                                     "french",
+                                     "dictation"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "long_no_pause_fr_002",
+                        "scenario":  "long_no_pause_fr",
+                        "audio_path":  "audio/long_no_pause_fr_002.wav",
+                        "reference_text":  "Placeholder reference text for a second long uninterrupted French dictation sample.",
+                        "language":  "fr",
+                        "accent":  "quebec",
+                        "noise_level":  "quiet",
+                        "mic_type":  "headset",
+                        "duration_bucket":  "20_40s",
+                        "speech_rate":  "fast",
+                        "tags":  [
+                                     "long",
+                                     "no_pause",
+                                     "french",
+                                     "quebec",
+                                     "dictation"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "fast_dictation_fr_001",
+                        "scenario":  "fast_dictation_fr",
+                        "audio_path":  "audio/fast_dictation_fr_001.wav",
+                        "reference_text":  "Je vais dicter rapidement cette phrase pour vérifier si le modèle suit correctement quand le débit de parole augmente et que les mots arrivent presque sans interruption.",
+                        "language":  "fr",
+                        "accent":  "france_standard",
+                        "noise_level":  "quiet",
+                        "mic_type":  "built_in_array",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "very_fast",
+                        "tags":  [
+                                     "fast",
+                                     "french",
+                                     "dictation"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "fast_dictation_fr_002",
+                        "scenario":  "fast_dictation_fr",
+                        "audio_path":  "audio/fast_dictation_fr_002.wav",
+                        "reference_text":  "Placeholder reference text for a second fast French dictation sample.",
+                        "language":  "fr",
+                        "accent":  "belgium",
+                        "noise_level":  "light",
+                        "mic_type":  "usb",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "very_fast",
+                        "tags":  [
+                                     "fast",
+                                     "french",
+                                     "dictation",
+                                     "light_noise"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "low_volume_fr_001",
+                        "scenario":  "low_volume_fr",
+                        "audio_path":  "audio/low_volume_fr_001.wav",
+                        "reference_text":  "Je parle volontairement avec une voix plus basse, pour vérifier si le modèle comprend encore correctement le texte, même quand le volume du micro est plus faible.",
+                        "language":  "fr",
+                        "accent":  "france_standard",
+                        "noise_level":  "quiet",
+                        "mic_type":  "laptop",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "low_volume",
+                                     "french",
+                                     "dictation"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "light_noise_fr_001",
+                        "scenario":  "light_noise_fr",
+                        "audio_path":  "audio/light_noise_fr_001.wav",
+                        "reference_text":  "Placeholder reference text for a French dictation sample with light background noise.",
+                        "language":  "fr",
+                        "accent":  "france_standard",
+                        "noise_level":  "light",
+                        "mic_type":  "laptop",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "light_noise",
+                                     "french",
+                                     "dictation"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "light_noise_fr_002",
+                        "scenario":  "light_noise_fr",
+                        "audio_path":  "audio/light_noise_fr_002.wav",
+                        "reference_text":  "Placeholder reference text for a second French dictation sample with light background noise.",
+                        "language":  "fr",
+                        "accent":  "quebec",
+                        "noise_level":  "light",
+                        "mic_type":  "headset",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "fast",
+                        "tags":  [
+                                     "light_noise",
+                                     "french",
+                                     "dictation",
+                                     "quebec"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "franglais_terms_001",
+                        "scenario":  "franglais_terms",
+                        "audio_path":  "audio/franglais_terms_001.wav",
+                        "reference_text":  "Aujourd'hui, je dois push le build sur GitHub, puis vérifier le dashboard et corriger le bug dans le reporting avant le prochain meeting.",
+                        "language":  "fr",
+                        "accent":  "france_standard",
+                        "noise_level":  "quiet",
+                        "mic_type":  "usb",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "franglais",
+                                     "technical_terms",
+                                     "dictation"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "proper_nouns_001",
+                        "scenario":  "proper_nouns",
+                        "audio_path":  "audio/proper_nouns_001.wav",
+                        "reference_text":  "Demain, je dois envoyer un message à Yassine, puis vérifier le projet Vocalype sur GitHub et préparer une note pour OpenAI et Microsoft.",
+                        "language":  "fr",
+                        "accent":  "france_standard",
+                        "noise_level":  "quiet",
+                        "mic_type":  "usb",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "proper_nouns",
+                                     "brands",
+                                     "names"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "cheap_laptop_mic_001",
+                        "scenario":  "cheap_laptop_mic",
+                        "audio_path":  "audio/cheap_laptop_mic_001.wav",
+                        "reference_text":  "Placeholder reference text for a laptop microphone sample with weaker clarity.",
+                        "language":  "fr",
+                        "accent":  "france_standard",
+                        "noise_level":  "moderate",
+                        "mic_type":  "laptop",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "cheap_mic",
+                                     "laptop",
+                                     "moderate_noise"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "end_truncation_fr_001",
+                        "scenario":  "end_truncation_fr",
+                        "audio_path":  "audio/end_truncation_fr_001.wav",
+                        "reference_text":  "Placeholder reference text designed to detect final-word truncation in a longer French utterance.",
+                        "language":  "fr",
+                        "accent":  "france_standard",
+                        "noise_level":  "quiet",
+                        "mic_type":  "headset",
+                        "duration_bucket":  "20_40s",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "end_truncation",
+                                     "long",
+                                     "french"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "english_control_001",
+                        "scenario":  "english_control",
+                        "audio_path":  "audio/english_control_001.wav",
+                        "reference_text":  "Today, I want to test a longer English sentence to verify whether Parakeet V3 keeps every word correctly without dropping the ending.",
+                        "language":  "en",
+                        "accent":  "north_america",
+                        "noise_level":  "quiet",
+                        "mic_type":  "headset",
+                        "duration_bucket":  "8_20s",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "control",
+                                     "parakeet_v3"
+                                 ]
+                    }
+                ]
 }

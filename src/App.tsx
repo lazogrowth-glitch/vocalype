@@ -31,10 +31,22 @@ import { ensureVoiceStateStore } from "@/stores/voiceState";
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
 const MIN_WINDOW_SIZE = { width: 960, height: 624 };
 const MAX_SCALE = 1;
+const REFERENCE_SCREEN_SIZE = { width: 1920, height: 1080 };
+const DEFAULT_WIDTH_RATIO =
+  DESIGN_WINDOW_SIZE.width / REFERENCE_SCREEN_SIZE.width;
+const DEFAULT_HEIGHT_RATIO =
+  DESIGN_WINDOW_SIZE.height / REFERENCE_SCREEN_SIZE.height;
 
 type WindowSize = {
   width: number;
   height: number;
+};
+
+type StoredWindowSize = WindowSize & {
+  widthRatio?: number;
+  heightRatio?: number;
+  screenWidth?: number;
+  screenHeight?: number;
 };
 
 type LayoutTier = "compact" | "cozy" | "spacious";
@@ -53,13 +65,13 @@ function getLayoutTier(width: number): LayoutTier {
   return "spacious";
 }
 
-function readStoredWindowSize(): WindowSize | null {
+function readStoredWindowSize(): StoredWindowSize | null {
   if (typeof window === "undefined") return null;
   const raw = window.localStorage.getItem(WINDOW_SIZE_STORAGE_KEY);
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw) as Partial<WindowSize>;
+    const parsed = JSON.parse(raw) as Partial<StoredWindowSize>;
     if (
       typeof parsed.width === "number" &&
       typeof parsed.height === "number" &&
@@ -69,6 +81,26 @@ function readStoredWindowSize(): WindowSize | null {
       return {
         width: Math.round(parsed.width),
         height: Math.round(parsed.height),
+        widthRatio:
+          typeof parsed.widthRatio === "number" &&
+          Number.isFinite(parsed.widthRatio)
+            ? parsed.widthRatio
+            : undefined,
+        heightRatio:
+          typeof parsed.heightRatio === "number" &&
+          Number.isFinite(parsed.heightRatio)
+            ? parsed.heightRatio
+            : undefined,
+        screenWidth:
+          typeof parsed.screenWidth === "number" &&
+          Number.isFinite(parsed.screenWidth)
+            ? Math.round(parsed.screenWidth)
+            : undefined,
+        screenHeight:
+          typeof parsed.screenHeight === "number" &&
+          Number.isFinite(parsed.screenHeight)
+            ? Math.round(parsed.screenHeight)
+            : undefined,
       };
     }
   } catch {
@@ -78,7 +110,7 @@ function readStoredWindowSize(): WindowSize | null {
   return null;
 }
 
-function writeStoredWindowSize(size: WindowSize) {
+function writeStoredWindowSize(size: StoredWindowSize) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(WINDOW_SIZE_STORAGE_KEY, JSON.stringify(size));
 }
@@ -88,43 +120,27 @@ function clamp(value: number, min: number, max: number) {
 }
 
 async function resolveAdaptiveWindowSize(): Promise<WindowSize> {
-  const monitor = await currentMonitor();
-
-  if (!monitor) {
+  const monitorBounds = await resolveMonitorBounds();
+  if (!monitorBounds) {
     return DESIGN_WINDOW_SIZE;
   }
 
-  const scale = monitor.scaleFactor || 1;
-  const workAreaWidth = monitor.workArea.size.width / scale;
-  const workAreaHeight = monitor.workArea.size.height / scale;
-  const designScale = Math.min(
-    workAreaWidth / DESIGN_WINDOW_SIZE.width,
-    workAreaHeight / DESIGN_WINDOW_SIZE.height,
-  );
-  const snappedScale =
-    designScale >= 0.95 && designScale <= 1.08 ? 1 : designScale;
-  const finalScale = clamp(
-    snappedScale,
-    MIN_WINDOW_SIZE.width / DESIGN_WINDOW_SIZE.width,
-    MAX_SCALE,
-  );
-
-  const width = Math.round(
-    clamp(
-      DESIGN_WINDOW_SIZE.width * finalScale,
-      MIN_WINDOW_SIZE.width,
-      workAreaWidth,
+  return {
+    width: Math.round(
+      clamp(
+        monitorBounds.width * DEFAULT_WIDTH_RATIO,
+        MIN_WINDOW_SIZE.width,
+        monitorBounds.width,
+      ),
     ),
-  );
-  const height = Math.round(
-    clamp(
-      DESIGN_WINDOW_SIZE.height * finalScale,
-      MIN_WINDOW_SIZE.height,
-      workAreaHeight,
+    height: Math.round(
+      clamp(
+        monitorBounds.height * DEFAULT_HEIGHT_RATIO,
+        MIN_WINDOW_SIZE.height,
+        monitorBounds.height,
+      ),
     ),
-  );
-
-  return { width, height };
+  };
 }
 
 async function resolveMonitorBounds(): Promise<WindowSize | null> {
@@ -139,21 +155,42 @@ async function resolveMonitorBounds(): Promise<WindowSize | null> {
 }
 
 async function resolveWindowSize(): Promise<WindowSize> {
-  const adaptiveSize = await resolveAdaptiveWindowSize();
   const storedSize = readStoredWindowSize();
+  const monitorBounds = await resolveMonitorBounds();
 
-  if (!storedSize) {
-    return adaptiveSize;
+  if (!monitorBounds) {
+    return DESIGN_WINDOW_SIZE;
   }
 
-  const monitorBounds = await resolveMonitorBounds();
-  const maxWidth = monitorBounds?.width ?? adaptiveSize.width;
-  const maxHeight = monitorBounds?.height ?? adaptiveSize.height;
+  if (!storedSize) {
+    return resolveAdaptiveWindowSize();
+  }
+
+  const widthRatio =
+    storedSize.widthRatio ??
+    (storedSize.screenWidth && storedSize.screenWidth > 0
+      ? storedSize.width / storedSize.screenWidth
+      : DEFAULT_WIDTH_RATIO);
+  const heightRatio =
+    storedSize.heightRatio ??
+    (storedSize.screenHeight && storedSize.screenHeight > 0
+      ? storedSize.height / storedSize.screenHeight
+      : DEFAULT_HEIGHT_RATIO);
 
   return {
-    width: Math.round(clamp(storedSize.width, MIN_WINDOW_SIZE.width, maxWidth)),
+    width: Math.round(
+      clamp(
+        monitorBounds.width * widthRatio,
+        MIN_WINDOW_SIZE.width,
+        monitorBounds.width,
+      ),
+    ),
     height: Math.round(
-      clamp(storedSize.height, MIN_WINDOW_SIZE.height, maxHeight),
+      clamp(
+        monitorBounds.height * heightRatio,
+        MIN_WINDOW_SIZE.height,
+        monitorBounds.height,
+      ),
     ),
   };
 }
@@ -306,13 +343,26 @@ function App() {
     const bindResizeListener = async () => {
       unlisten = await windowHandle.onResized(async () => {
         try {
-          const [size, scaleFactor] = await Promise.all([
+          const [size, scaleFactor, monitorBounds] = await Promise.all([
             windowHandle.innerSize(),
             windowHandle.scaleFactor(),
+            resolveMonitorBounds(),
           ]);
+          const width = Math.round(size.width / scaleFactor);
+          const height = Math.round(size.height / scaleFactor);
           writeStoredWindowSize({
-            width: Math.round(size.width / scaleFactor),
-            height: Math.round(size.height / scaleFactor),
+            width,
+            height,
+            screenWidth: monitorBounds?.width,
+            screenHeight: monitorBounds?.height,
+            widthRatio:
+              monitorBounds && monitorBounds.width > 0
+                ? width / monitorBounds.width
+                : undefined,
+            heightRatio:
+              monitorBounds && monitorBounds.height > 0
+                ? height / monitorBounds.height
+                : undefined,
           });
         } catch (error) {
           console.warn("Failed to persist window size:", error);
@@ -390,14 +440,11 @@ function App() {
           new LogicalSize(MIN_WINDOW_SIZE.width, MIN_WINDOW_SIZE.height),
         );
 
-        const hasStoredSize = readStoredWindowSize() !== null;
-        if (hasStoredSize) {
-          return;
-        }
-
         const target = await resolveWindowSize();
         await window.setSize(new LogicalSize(target.width, target.height));
-        await window.center();
+        if (readStoredWindowSize() === null) {
+          await window.center();
+        }
       } catch (windowError) {
         console.warn("Failed to initialize main window size:", windowError);
       }

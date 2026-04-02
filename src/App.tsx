@@ -151,9 +151,7 @@ async function resolveWindowSize(): Promise<WindowSize> {
   const maxHeight = monitorBounds?.height ?? adaptiveSize.height;
 
   return {
-    width: Math.round(
-      clamp(storedSize.width, MIN_WINDOW_SIZE.width, maxWidth),
-    ),
+    width: Math.round(clamp(storedSize.width, MIN_WINDOW_SIZE.width, maxWidth)),
     height: Math.round(
       clamp(storedSize.height, MIN_WINDOW_SIZE.height, maxHeight),
     ),
@@ -385,22 +383,28 @@ function App() {
   ]);
 
   useEffect(() => {
-    const resizeWindow = async () => {
+    const initializeWindowSize = async () => {
       try {
         const window = getCurrentWindow();
-        const target = await resolveWindowSize();
         await window.setMinSize(
           new LogicalSize(MIN_WINDOW_SIZE.width, MIN_WINDOW_SIZE.height),
         );
+
+        const hasStoredSize = readStoredWindowSize() !== null;
+        if (hasStoredSize) {
+          return;
+        }
+
+        const target = await resolveWindowSize();
         await window.setSize(new LogicalSize(target.width, target.height));
         await window.center();
       } catch (windowError) {
-        console.warn("Failed to resize main window:", windowError);
+        console.warn("Failed to initialize main window size:", windowError);
       }
     };
 
-    void resizeWindow();
-  }, [needsAuthWindow]);
+    void initializeWindowSize();
+  }, []);
 
   useEffect(() => {
     ensureVoiceStateStore();

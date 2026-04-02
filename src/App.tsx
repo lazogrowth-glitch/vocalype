@@ -1,10 +1,13 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { TranscriptionWarmupBadge } from "./components/TranscriptionWarmupBadge";
 import { TitleBar } from "./components/TitleBar";
 import { useTranslation } from "react-i18next";
-import { LogicalSize, getCurrentWindow } from "@tauri-apps/api/window";
+import {
+  LogicalSize,
+  currentMonitor,
+  getCurrentWindow,
+} from "@tauri-apps/api/window";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
 import Onboarding, {
@@ -23,11 +26,139 @@ import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { listen } from "@tauri-apps/api/event";
-import { authClient } from "@/lib/auth/client";
 import { ensureVoiceStateStore } from "@/stores/voiceState";
 
-const AUTH_WINDOW_SIZE = { width: 1348, height: 875 };
-const APP_WINDOW_SIZE = { width: 1348, height: 875 };
+const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
+const MIN_WINDOW_SIZE = { width: 960, height: 624 };
+const MAX_SCALE = 1;
+
+type WindowSize = {
+  width: number;
+  height: number;
+};
+
+type LayoutTier = "compact" | "cozy" | "spacious";
+
+const WINDOW_SIZE_STORAGE_KEY = "vt.windowSize";
+
+function getViewportWidth() {
+  return typeof window === "undefined"
+    ? DESIGN_WINDOW_SIZE.width
+    : window.innerWidth;
+}
+
+function getLayoutTier(width: number): LayoutTier {
+  if (width < 1100) return "compact";
+  if (width < 1380) return "cozy";
+  return "spacious";
+}
+
+function readStoredWindowSize(): WindowSize | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(WINDOW_SIZE_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<WindowSize>;
+    if (
+      typeof parsed.width === "number" &&
+      typeof parsed.height === "number" &&
+      Number.isFinite(parsed.width) &&
+      Number.isFinite(parsed.height)
+    ) {
+      return {
+        width: Math.round(parsed.width),
+        height: Math.round(parsed.height),
+      };
+    }
+  } catch {
+    window.localStorage.removeItem(WINDOW_SIZE_STORAGE_KEY);
+  }
+
+  return null;
+}
+
+function writeStoredWindowSize(size: WindowSize) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(WINDOW_SIZE_STORAGE_KEY, JSON.stringify(size));
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+async function resolveAdaptiveWindowSize(): Promise<WindowSize> {
+  const monitor = await currentMonitor();
+
+  if (!monitor) {
+    return DESIGN_WINDOW_SIZE;
+  }
+
+  const scale = monitor.scaleFactor || 1;
+  const workAreaWidth = monitor.workArea.size.width / scale;
+  const workAreaHeight = monitor.workArea.size.height / scale;
+  const designScale = Math.min(
+    workAreaWidth / DESIGN_WINDOW_SIZE.width,
+    workAreaHeight / DESIGN_WINDOW_SIZE.height,
+  );
+  const snappedScale =
+    designScale >= 0.95 && designScale <= 1.08 ? 1 : designScale;
+  const finalScale = clamp(
+    snappedScale,
+    MIN_WINDOW_SIZE.width / DESIGN_WINDOW_SIZE.width,
+    MAX_SCALE,
+  );
+
+  const width = Math.round(
+    clamp(
+      DESIGN_WINDOW_SIZE.width * finalScale,
+      MIN_WINDOW_SIZE.width,
+      workAreaWidth,
+    ),
+  );
+  const height = Math.round(
+    clamp(
+      DESIGN_WINDOW_SIZE.height * finalScale,
+      MIN_WINDOW_SIZE.height,
+      workAreaHeight,
+    ),
+  );
+
+  return { width, height };
+}
+
+async function resolveMonitorBounds(): Promise<WindowSize | null> {
+  const monitor = await currentMonitor();
+  if (!monitor) return null;
+
+  const scale = monitor.scaleFactor || 1;
+  return {
+    width: Math.round(monitor.workArea.size.width / scale),
+    height: Math.round(monitor.workArea.size.height / scale),
+  };
+}
+
+async function resolveWindowSize(): Promise<WindowSize> {
+  const adaptiveSize = await resolveAdaptiveWindowSize();
+  const storedSize = readStoredWindowSize();
+
+  if (!storedSize) {
+    return adaptiveSize;
+  }
+
+  const monitorBounds = await resolveMonitorBounds();
+  const maxWidth = monitorBounds?.width ?? adaptiveSize.width;
+  const maxHeight = monitorBounds?.height ?? adaptiveSize.height;
+
+  return {
+    width: Math.round(
+      clamp(storedSize.width, MIN_WINDOW_SIZE.width, maxWidth),
+    ),
+    height: Math.round(
+      clamp(storedSize.height, MIN_WINDOW_SIZE.height, maxHeight),
+    ),
+  };
+}
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
@@ -83,6 +214,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("vt.sidebarCollapsed") === "1",
   );
+  const [viewportWidth, setViewportWidth] = useState(getViewportWidth);
   const toggleSidebar = () => {
     setSidebarCollapsed((v) => {
       const next = !v;
@@ -149,6 +281,53 @@ function App() {
     localStorage.setItem("vt.firstUseHintShown", "1");
     setShowFirstLaunchHint(false);
   }, []);
+  const layoutTier = getLayoutTier(viewportWidth);
+  const shouldForceCompactSidebar = layoutTier === "compact";
+  const effectiveSidebarCollapsed = shouldForceCompactSidebar
+    ? true
+    : sidebarCollapsed;
+  const mainContentPadding =
+    layoutTier === "compact"
+      ? "16px 18px 20px"
+      : layoutTier === "cozy"
+        ? "18px 22px 24px"
+        : "20px 28px 28px";
+  const mainHeadingSize =
+    layoutTier === "compact" ? 22 : layoutTier === "cozy" ? 23 : 24;
+
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const windowHandle = getCurrentWindow();
+    let unlisten: (() => void) | undefined;
+
+    const bindResizeListener = async () => {
+      unlisten = await windowHandle.onResized(async () => {
+        try {
+          const [size, scaleFactor] = await Promise.all([
+            windowHandle.innerSize(),
+            windowHandle.scaleFactor(),
+          ]);
+          writeStoredWindowSize({
+            width: Math.round(size.width / scaleFactor),
+            height: Math.round(size.height / scaleFactor),
+          });
+        } catch (error) {
+          console.warn("Failed to persist window size:", error);
+        }
+      });
+    };
+
+    void bindResizeListener();
+
+    return () => {
+      unlisten?.();
+    };
+  }, []);
 
   // Auto-dismiss the hint the first time a real transcription fires
   useEffect(() => {
@@ -206,11 +385,13 @@ function App() {
   ]);
 
   useEffect(() => {
-    const target = needsAuthWindow ? AUTH_WINDOW_SIZE : APP_WINDOW_SIZE;
     const resizeWindow = async () => {
       try {
         const window = getCurrentWindow();
-        await window.setMinSize(new LogicalSize(1348, 875));
+        const target = await resolveWindowSize();
+        await window.setMinSize(
+          new LogicalSize(MIN_WINDOW_SIZE.width, MIN_WINDOW_SIZE.height),
+        );
         await window.setSize(new LogicalSize(target.width, target.height));
         await window.center();
       } catch (windowError) {
@@ -361,7 +542,8 @@ function App() {
         }}
       >
         <TitleBar
-          sidebarCollapsed={sidebarCollapsed}
+          sidebarCollapsed={effectiveSidebarCollapsed}
+          layoutTier={layoutTier}
           onToggleSidebar={toggleSidebar}
           session={session}
           isTrialing={isTrialing}
@@ -406,7 +588,8 @@ function App() {
           <Sidebar
             activeSection={currentSection}
             onSectionChange={setCurrentSection}
-            collapsed={sidebarCollapsed}
+            collapsed={effectiveSidebarCollapsed}
+            layoutTier={layoutTier}
           />
 
           <main
@@ -415,7 +598,7 @@ function App() {
               flex: 1,
               overflowY: "auto",
               overflowX: "hidden",
-              padding: "20px 28px 28px",
+              padding: mainContentPadding,
               minWidth: 0,
               minHeight: 0,
               background: "#0f0f0f",
@@ -425,7 +608,7 @@ function App() {
           >
             <h1
               style={{
-                fontSize: 24,
+                fontSize: mainHeadingSize,
                 fontWeight: 600,
                 lineHeight: 1,
                 letterSpacing: "-0.3px",
@@ -437,12 +620,11 @@ function App() {
                 ? t(SECTIONS_CONFIG[currentSection].labelKey)
                 : t(SECTIONS_CONFIG.general.labelKey)}
             </h1>
-            <TranscriptionWarmupBadge />
             {showFirstLaunchHint && (
               <div
                 className="rounded-xl border border-white/10 bg-white/[0.04] text-sm text-text/70"
                 style={{
-                  margin: "0 16px 12px",
+                  margin: layoutTier === "compact" ? "0 0 12px" : "0 16px 12px",
                   padding: "12px 16px",
                   display: "flex",
                   alignItems: "center",

@@ -5,8 +5,7 @@ use crate::context_detector::{
     detect_current_app_context, ActiveAppContextState, AppTranscriptionContext,
 };
 use crate::managers::audio::{
-    AudioInputLevelState, AudioRecordingManager, AudioRuntimeDiagnostics,
-    MicrophonePermissionState,
+    AudioInputLevelState, AudioRecordingManager, AudioRuntimeDiagnostics, MicrophonePermissionState,
 };
 use crate::managers::transcription::TranscriptionManager;
 use crate::parakeet_quality::{ParakeetDiagnosticsSnapshot, ParakeetDiagnosticsState};
@@ -382,7 +381,9 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
     let active_voice_profile_segment = if adaptive_voice_profile_enabled {
         current_model_id
             .as_deref()
-            .and_then(|model_id| current_voice_profile_for_context(app, model_id, &selected_language))
+            .and_then(|model_id| {
+                current_voice_profile_for_context(app, model_id, &selected_language)
+            })
             .filter(|segment| segment.sessions_count > 0)
     } else {
         None

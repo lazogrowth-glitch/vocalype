@@ -30,6 +30,13 @@ type ProductBadge = {
     | "experimental";
 };
 
+const CLOUD_MODEL_IDS = new Set([
+  "gemini-api",
+  "groq-whisper",
+  "mistral-voxtral",
+  "deepgram-nova",
+]);
+
 const getLanguageDisplayText = (
   supportedLanguages: string[],
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -143,6 +150,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const isClickable =
     status === "available" || status === "active" || status === "downloadable";
   const isGemini = model.id === "gemini-api";
+  const isCloudModel = CLOUD_MODEL_IDS.has(model.id);
 
   const displayName = getTranslatedModelName(model, t);
   const displayDescription = getTranslatedModelDescription(model, t);
@@ -234,7 +242,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
                   {badge.label}
                 </Badge>
               ))}
-            {showRecommended && !isGemini ? (
+            {showRecommended && !isCloudModel ? (
               <Badge variant="secondary">
                 {t("modelSelector.badges.localOnly", {
                   defaultValue: "100% local",

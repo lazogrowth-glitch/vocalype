@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/Button";
 import { Dropdown, FeatureGateHint } from "@/components/ui";
 import { GeminiKeyModal } from "./GeminiKeyModal";
 import { CloudSttKeyModal, type CloudSttProvider } from "./CloudSttKeyModal";
-import { ProductModesGrid } from "./ProductModesGrid";
 import { LanguageFilterDropdown } from "./LanguageFilterDropdown";
 
 // check if model supports a language based on its supported_languages list
@@ -61,6 +60,16 @@ const compareModels = (a: ModelInfo, b: ModelInfo): number => {
 
   return a.name.localeCompare(b.name);
 };
+
+const PRIMARY_LOCAL_MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
+const isPrimaryModel = (model: ModelInfo): boolean =>
+  model.id === PRIMARY_LOCAL_MODEL_ID;
+
+const isApiModel = (model: ModelInfo): boolean =>
+  model.id === "gemini-api" ||
+  model.id === "groq-whisper" ||
+  model.id === "mistral-voxtral" ||
+  model.id === "deepgram-nova";
 
 const ProcessingModelsSection: React.FC = () => {
   const { t } = useTranslation();
@@ -468,6 +477,7 @@ export const ModelsSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ModelsTab>("transcription");
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState("all");
+  const [showAdvancedModels, setShowAdvancedModels] = useState(false);
   const [showGeminiKeyDialog, setShowGeminiKeyDialog] = useState(false);
   const [geminiKeyInput, setGeminiKeyInput] = useState("");
   const [showCloudSttKeyDialog, setShowCloudSttKeyDialog] = useState(false);
@@ -625,16 +635,6 @@ export const ModelsSettings: React.FC = () => {
     await downloadModel(modelId);
   };
 
-  const handleProductModeSelect = async (modelId: string) => {
-    const model = models.find((entry) => entry.id === modelId);
-    if (!model) return;
-    if (!model.is_downloaded) {
-      await handleModelDownload(modelId);
-      return;
-    }
-    await handleModelSelect(modelId);
-  };
-
   const handleModelDelete = async (modelId: string) => {
     const model = models.find((m: ModelInfo) => m.id === modelId);
     const modelName = model?.name || modelId;
@@ -770,6 +770,44 @@ export const ModelsSettings: React.FC = () => {
     }));
   }, [adaptiveProfile, models, t]);
 
+  const primaryVisibleModels = useMemo(
+    () =>
+      [...downloadedModels, ...availableModels].filter(
+        (model, index, items) =>
+          items.findIndex((entry) => entry.id === model.id) === index &&
+          model.id !== "parakeet-tdt-0.6b-v3" &&
+          isPrimaryModel(model),
+      ),
+    [downloadedModels, availableModels],
+  );
+
+  const advancedVisibleModels = useMemo(
+    () =>
+      [...downloadedModels, ...availableModels].filter(
+        (model, index, items) =>
+          items.findIndex((entry) => entry.id === model.id) === index &&
+          model.id !== "parakeet-tdt-0.6b-v3" &&
+          !isPrimaryModel(model),
+      ),
+    [downloadedModels, availableModels],
+  );
+
+  const advancedApiVisibleModels = useMemo(
+    () => advancedVisibleModels.filter((model) => isApiModel(model)),
+    [advancedVisibleModels],
+  );
+
+  const advancedLocalVisibleModels = useMemo(
+    () => advancedVisibleModels.filter((model) => !isApiModel(model)),
+    [advancedVisibleModels],
+  );
+
+  const activeAdvancedModel = useMemo(
+    () =>
+      advancedVisibleModels.find((model) => model.id === currentModel) ?? null,
+    [advancedVisibleModels, currentModel],
+  );
+
   if (loading) {
     return (
       <div className="max-w-3xl w-full mx-auto">
@@ -809,33 +847,7 @@ export const ModelsSettings: React.FC = () => {
         <div
           style={{ display: "flex", flexDirection: "column", gap: 10 }}
           role="tabpanel"
-        >
-          {!hasGeminiKey && geminiModel ? (
-            <FeatureGateHint
-              tone="info"
-              title={t("settings.gemini.apiKeyRequired", {
-                defaultValue: "API Key Required",
-              })}
-              description={t("settings.models.geminiUnlockDescription", {
-                defaultValue:
-                  "Gemini cloud transcription is available, but it stays locked until you add a Gemini API key. Once saved, you can select Gemini like any other transcription model.",
-              })}
-              actionLabel={t("settings.models.addGeminiKey", {
-                defaultValue: "Add Gemini API key",
-              })}
-              onAction={() => {
-                setGeminiKeyInput("");
-                setShowGeminiKeyDialog(true);
-              }}
-            />
-          ) : null}
-          <ProductModesGrid
-            productModes={productModes}
-            currentModel={currentModel}
-            adaptiveProfile={adaptiveProfile}
-            onSelect={handleProductModeSelect}
-          />
-        </div>
+        />
       )}
 
       {activeTab === "processing" && (
@@ -864,7 +876,7 @@ export const ModelsSettings: React.FC = () => {
               />
             </div>
 
-            {downloadedModels.map((model: ModelInfo) => (
+            {primaryVisibleModels.map((model: ModelInfo) => (
               <ModelCard
                 key={model.id}
                 model={model}
@@ -884,32 +896,111 @@ export const ModelsSettings: React.FC = () => {
             ))}
           </div>
 
-          {availableModels.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <h2
-                style={{ marginBottom: 4 }}
-                className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25"
+          <div
+            className="rounded-[10px] border border-white/8 bg-white/[0.03]"
+            style={{ padding: "14px 16px" }}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[13px] font-medium text-white">
+                  {t("settings.models.advanced.title", {
+                    defaultValue: "Add an advanced model",
+                  })}
+                </p>
+                <p className="mt-1 text-[11.5px] leading-5 text-white/40">
+                  {t("settings.models.advanced.description", {
+                    defaultValue:
+                      "Older, niche, experimental, and custom models live here. Most people should stay on the main models above.",
+                  })}
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowAdvancedModels((value) => !value)}
+                variant="secondary"
+                size="md"
               >
-                {t("settings.models.availableModels")}
-              </h2>
-              {availableModels.map((model: ModelInfo) => (
-                <ModelCard
-                  key={model.id}
-                  model={model}
-                  status={getModelStatus(model.id)}
-                  onSelect={handleModelSelect}
-                  onDownload={handleModelDownload}
-                  onDelete={handleModelDelete}
-                  onCancel={handleModelCancel}
-                  downloadProgress={getDownloadProgress(model.id)}
-                  downloadSpeed={getDownloadSpeed(model.id)}
-                  showRecommended={true}
-                  copilotOptimized={isCopilotOptimizedParakeet(
-                    adaptiveProfile,
-                    model.id,
-                  )}
+                {showAdvancedModels
+                  ? t("settings.models.advanced.hide", {
+                      defaultValue: "Hide advanced",
+                    })
+                  : t("settings.models.advanced.show", {
+                      defaultValue: "Show advanced",
+                    })}
+              </Button>
+            </div>
+          </div>
+
+          {showAdvancedModels && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {activeAdvancedModel ? (
+                <FeatureGateHint
+                  tone="warning"
+                  title={t("settings.models.advanced.activeTitle", {
+                    defaultValue: "Advanced model currently active",
+                  })}
+                  description={t("settings.models.advanced.activeDescription", {
+                    defaultValue:
+                      "You are currently using {{model}}. It stays available here, but the recommended surface only shows the main models.",
+                    model: activeAdvancedModel.name,
+                  })}
                 />
-              ))}
+              ) : null}
+
+              {advancedApiVisibleModels.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                    {t("settings.models.advanced.apiSection", {
+                      defaultValue: "Advanced API models",
+                    })}
+                  </h2>
+                  {advancedApiVisibleModels.map((model: ModelInfo) => (
+                    <ModelCard
+                      key={model.id}
+                      model={model}
+                      status={getModelStatus(model.id)}
+                      onSelect={handleModelSelect}
+                      onDownload={handleModelDownload}
+                      onDelete={handleModelDelete}
+                      onCancel={handleModelCancel}
+                      downloadProgress={getDownloadProgress(model.id)}
+                      downloadSpeed={getDownloadSpeed(model.id)}
+                      showRecommended={false}
+                      copilotOptimized={isCopilotOptimizedParakeet(
+                        adaptiveProfile,
+                        model.id,
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {advancedLocalVisibleModels.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                    {t("settings.models.advanced.localSection", {
+                      defaultValue: "Advanced local models",
+                    })}
+                  </h2>
+                  {advancedLocalVisibleModels.map((model: ModelInfo) => (
+                    <ModelCard
+                      key={model.id}
+                      model={model}
+                      status={getModelStatus(model.id)}
+                      onSelect={handleModelSelect}
+                      onDownload={handleModelDownload}
+                      onDelete={handleModelDelete}
+                      onCancel={handleModelCancel}
+                      downloadProgress={getDownloadProgress(model.id)}
+                      downloadSpeed={getDownloadSpeed(model.id)}
+                      showRecommended={false}
+                      copilotOptimized={isCopilotOptimizedParakeet(
+                        adaptiveProfile,
+                        model.id,
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

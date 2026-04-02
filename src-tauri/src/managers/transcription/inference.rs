@@ -230,11 +230,8 @@ impl TranscriptionManager {
             &vocabulary_terms,
         )
         .terms;
-        let correction_terms = build_correction_terms(
-            &settings,
-            &session_keyterms,
-            active_model_id.as_deref(),
-        );
+        let correction_terms =
+            build_correction_terms(&settings, &session_keyterms, active_model_id.as_deref());
         let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
             settings.word_correction_threshold.max(0.24)
@@ -845,8 +842,8 @@ impl TranscriptionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parakeet_text::normalize_parakeet_phrase_variants;
     use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
+    use crate::parakeet_text::normalize_parakeet_phrase_variants;
     use crate::session_keyterms::build_session_keyterms;
 
     #[test]

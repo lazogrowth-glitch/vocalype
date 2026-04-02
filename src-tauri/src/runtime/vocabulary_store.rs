@@ -78,7 +78,9 @@ fn scope_keys_for_session(
     }
     if !normalized_model.is_empty() {
         keys.push(format!("model:{normalized_model}"));
-        keys.push(format!("model_language:{normalized_model}:{normalized_language}"));
+        keys.push(format!(
+            "model_language:{normalized_model}:{normalized_language}"
+        ));
     }
     keys
 }
@@ -438,12 +440,8 @@ mod tests {
             vec!["Yassine".to_string(), "Vocalype".to_string()],
         );
 
-        let terms = store.terms_for_session(
-            Some(&context),
-            "parakeet-tdt-0.6b-v3-multilingual",
-            "fr",
-            8,
-        );
+        let terms =
+            store.terms_for_session(Some(&context), "parakeet-tdt-0.6b-v3-multilingual", "fr", 8);
         assert!(terms.iter().any(|term| term == "Yassine"));
         assert!(terms.iter().any(|term| term == "Vocalype"));
     }

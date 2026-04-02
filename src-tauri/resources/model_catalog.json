@@ -240,8 +240,8 @@
     },
     {
       "id": "parakeet-tdt-0.6b-v3-multilingual",
-      "name": "Parakeet V3",
-      "description": "Fast Parakeet profile with one shared model path. The spoken language now comes from the user language setting instead of a separate English-only variant.",
+      "name": "Vocalype Native",
+      "description": "Fast on-device transcription tuned for Vocalype. Uses the shared Parakeet V3 runtime under the hood while keeping language selection in the app.",
       "filename": "parakeet-tdt-0.6b-v3-int8",
       "asset_path": "parakeet-v3-int8.tar.gz",
       "expected_etag": "\"d7a7b2d3f0780d1e0df427e64cff1b32-46\"",

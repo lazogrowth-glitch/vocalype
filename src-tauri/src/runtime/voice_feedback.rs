@@ -182,10 +182,12 @@ pub fn summarize_voice_feedback(
     let mut issues = HashMap::new();
 
     for entry in &entries {
-        if let Some(language) = entry
-            .selected_language
+        if let Some(language) = entry.selected_language.as_ref().or(entry
+            .runtime
+            .parakeet_diagnostics
+            .active_session
             .as_ref()
-            .or(entry.runtime.parakeet_diagnostics.active_session.as_ref().map(|s| &s.selected_language))
+            .map(|s| &s.selected_language))
         {
             *languages.entry(language.to_ascii_lowercase()).or_insert(0) += 1;
         }

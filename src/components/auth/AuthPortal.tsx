@@ -76,6 +76,10 @@ export const AuthPortal = ({
   onRefreshSession,
   onLogout,
 }: AuthPortalProps) => {
+  const viewportWidth =
+    typeof window === "undefined" ? 1348 : window.innerWidth;
+  const isNarrowLayout = viewportWidth < 1180;
+  const isCompactLayout = viewportWidth < 980;
   const [currentStep, setCurrentStep] = useState<AuthStep>("sign-up");
   const [browserBusy, setBrowserBusy] = useState<"signup" | "login" | null>(
     null,
@@ -288,23 +292,23 @@ export const AuthPortal = ({
         style={{
           width: "100%",
           height: "100%",
-          padding: 12,
+          padding: isCompactLayout ? 10 : 12,
           boxSizing: "border-box",
           display: "grid",
-          gridTemplateRows: "84px 1fr",
-          gap: 12,
+          gridTemplateRows: isCompactLayout ? "72px 1fr" : "84px 1fr",
+          gap: isCompactLayout ? 10 : 12,
         }}
       >
         <header
           style={{
-            borderRadius: 26,
+            borderRadius: isCompactLayout ? 20 : 26,
             border: "1px solid rgba(255,255,255,0.08)",
             background:
               "linear-gradient(180deg, rgba(15,14,12,0.94) 0%, rgba(10,9,8,0.98) 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "0 24px",
+            padding: isCompactLayout ? "0 14px" : "0 24px",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
           }}
         >
@@ -319,18 +323,27 @@ export const AuthPortal = ({
           style={{
             minHeight: 0,
             display: "grid",
-            gridTemplateColumns: "480px minmax(0, 1fr)",
-            gap: 12,
+            gridTemplateColumns: isNarrowLayout
+              ? "minmax(0, 1fr)"
+              : "minmax(420px, 480px) minmax(0, 1fr)",
+            gridTemplateRows: isNarrowLayout
+              ? "minmax(0, auto) minmax(320px, 38vh)"
+              : undefined,
+            gap: isCompactLayout ? 10 : 12,
           }}
         >
           <section
             style={{
               minHeight: 0,
-              borderRadius: 34,
+              borderRadius: isCompactLayout ? 24 : 34,
               border: "1px solid rgba(201,168,76,0.14)",
               background:
                 "radial-gradient(circle at top left, rgba(201,168,76,0.12), transparent 34%), #0a0908",
-              padding: "24px 34px 24px",
+              padding: isCompactLayout
+                ? "18px 18px 20px"
+                : isNarrowLayout
+                  ? "22px 24px 22px"
+                  : "24px 34px 24px",
               display: "flex",
               flexDirection: "column",
               position: "relative",
@@ -350,15 +363,17 @@ export const AuthPortal = ({
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
+                alignItems: isCompactLayout ? "flex-start" : "center",
+                flexDirection: isCompactLayout ? "column" : "row",
                 justifyContent: "space-between",
                 marginBottom: 20,
+                gap: isCompactLayout ? 10 : 12,
               }}
             >
               <div
                 style={{
                   fontFamily: "'Syne', sans-serif",
-                  fontSize: 32,
+                  fontSize: isCompactLayout ? 26 : 32,
                   fontWeight: 800,
                   letterSpacing: "-0.04em",
                   color: "#f6efe4",
@@ -369,8 +384,8 @@ export const AuthPortal = ({
               <div
                 style={{
                   borderRadius: 999,
-                  padding: "10px 14px",
-                  fontSize: 12,
+                  padding: isCompactLayout ? "8px 12px" : "10px 14px",
+                  fontSize: isCompactLayout ? 11 : 12,
                   fontWeight: 700,
                   color: "#E7C977",
                   background: "rgba(201,168,76,0.14)",
@@ -399,7 +414,7 @@ export const AuthPortal = ({
                   margin: 0,
                   marginBottom: 12,
                   fontFamily: "'Syne', sans-serif",
-                  fontSize: 44,
+                  fontSize: isCompactLayout ? 32 : isNarrowLayout ? 38 : 44,
                   lineHeight: 0.95,
                   letterSpacing: "-0.05em",
                   color: "#f7f1e7",
@@ -410,10 +425,10 @@ export const AuthPortal = ({
               <p
                 style={{
                   margin: 0,
-                  fontSize: 16,
+                  fontSize: isCompactLayout ? 14 : 16,
                   lineHeight: 1.55,
                   color: "rgba(243,236,223,0.66)",
-                  maxWidth: 372,
+                  maxWidth: isNarrowLayout ? "100%" : 372,
                 }}
               >
                 {session
@@ -459,6 +474,8 @@ export const AuthPortal = ({
                 <div
                   style={{
                     display: "flex",
+                    flexDirection: isCompactLayout ? "column" : "row",
+                    alignItems: isCompactLayout ? "flex-start" : "stretch",
                     justifyContent: "space-between",
                     gap: 14,
                     marginBottom: 10,
@@ -554,6 +571,7 @@ export const AuthPortal = ({
                 <div
                   style={{
                     display: "flex",
+                    flexDirection: isCompactLayout ? "column" : "row",
                     justifyContent: "space-between",
                     gap: 10,
                     marginBottom: 10,
@@ -652,7 +670,7 @@ export const AuthPortal = ({
             )}
           </section>
 
-          <ProductMediaPanel step={activeStep} />
+          <ProductMediaPanel step={activeStep} compact={isNarrowLayout} />
         </div>
       </div>
     </div>

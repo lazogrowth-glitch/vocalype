@@ -12,6 +12,7 @@ type OnboardingStep = "consent" | "accessibility" | "model" | "done";
 
 const CONSENT_STORE_FILE = "auth.store.json";
 const CONSENT_ACCEPTED_KEY = "vocalype.privacy.consent_accepted";
+const DIAGNOSTICS_OPT_IN_KEY = "vocalype.diagnostics.share_opt_in";
 
 async function hasAcceptedConsent(): Promise<boolean> {
   try {
@@ -25,13 +26,16 @@ async function hasAcceptedConsent(): Promise<boolean> {
   }
 }
 
-async function markConsentAccepted(): Promise<void> {
+async function markConsentAccepted(
+  shareDiagnostics: boolean,
+): Promise<void> {
   try {
     const store = await load(CONSENT_STORE_FILE, {
       autoSave: false,
       defaults: {},
     });
     await store.set(CONSENT_ACCEPTED_KEY, true);
+    await store.set(DIAGNOSTICS_OPT_IN_KEY, shareDiagnostics);
     await store.save();
   } catch (e) {
     console.warn("Failed to persist consent flag:", e);
@@ -125,8 +129,8 @@ export function useOnboarding({
     }
   }, [pushStep]);
 
-  const handleConsentAccepted = useCallback(async () => {
-    await markConsentAccepted();
+  const handleConsentAccepted = useCallback(async (shareDiagnostics = false) => {
+    await markConsentAccepted(shareDiagnostics);
     // After consent, proceed to check the rest of the onboarding flow
     try {
       const { isDevFlavor, hasModels, hasSelectedModel, isReturningUser } =

@@ -62,7 +62,10 @@ fn is_stop_word(token: &str, selected_language: &str) -> bool {
             "est" | "une" | "des" | "les" | "que" | "qui" | "sur" | "pas" | "par" | "dans"
         )
     } else {
-        matches!(token.as_str(), "are" | "was" | "were" | "they" | "them" | "your")
+        matches!(
+            token.as_str(),
+            "are" | "was" | "were" | "they" | "them" | "your"
+        )
     }
 }
 
@@ -109,7 +112,11 @@ fn split_identifier_like(text: &str) -> Vec<String> {
     tokens
 }
 
-fn looks_valuable(token: &str, category: Option<AppContextCategory>, selected_language: &str) -> bool {
+fn looks_valuable(
+    token: &str,
+    category: Option<AppContextCategory>,
+    selected_language: &str,
+) -> bool {
     if token.len() < 3 {
         return false;
     }
@@ -143,11 +150,7 @@ fn title_segments(title: &str) -> Vec<String> {
         .collect()
 }
 
-fn score_term(
-    scores: &mut HashMap<String, (String, i32)>,
-    term: &str,
-    score: i32,
-) {
+fn score_term(scores: &mut HashMap<String, (String, i32)>, term: &str, score: i32) {
     let Some(canonical) = canonical_term(term) else {
         return;
     };
@@ -229,7 +232,9 @@ mod tests {
     fn code_context() -> AppTranscriptionContext {
         AppTranscriptionContext {
             process_name: Some("Code.exe".to_string()),
-            window_title: Some("VocalypeSpeech.tsx - vocalype-desktop | GitHub Copilot".to_string()),
+            window_title: Some(
+                "VocalypeSpeech.tsx - vocalype-desktop | GitHub Copilot".to_string(),
+            ),
             category: AppContextCategory::Code,
             detected_at_ms: 1,
         }
@@ -271,6 +276,9 @@ mod tests {
         );
 
         assert!(keyterms.terms.is_empty() || keyterms.terms.iter().all(|term| term.len() >= 3));
-        assert!(!keyterms.terms.iter().any(|term| term.eq_ignore_ascii_case("the")));
+        assert!(!keyterms
+            .terms
+            .iter()
+            .any(|term| term.eq_ignore_ascii_case("the")));
     }
 }

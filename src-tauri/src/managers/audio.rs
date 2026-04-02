@@ -964,15 +964,14 @@ impl AudioRecordingManager {
         let energy_ema = f32::from_bits(self.sr_energy_ema.load(Ordering::Relaxed));
         let peak_energy = f32::from_bits(self.sr_peak_energy.load(Ordering::Relaxed));
 
-        let selected_device_available = if settings.selected_microphone.is_some()
-            || settings.clamshell_microphone.is_some()
-        {
-            self.get_effective_microphone_device(&settings).is_ok()
-        } else {
-            crate::audio_toolkit::get_cpal_host()
-                .default_input_device()
-                .is_some()
-        };
+        let selected_device_available =
+            if settings.selected_microphone.is_some() || settings.clamshell_microphone.is_some() {
+                self.get_effective_microphone_device(&settings).is_ok()
+            } else {
+                crate::audio_toolkit::get_cpal_host()
+                    .default_input_device()
+                    .is_some()
+            };
 
         let permission_state = match last_error.as_deref() {
             Some(message)
@@ -1134,5 +1133,4 @@ impl AudioRecordingManager {
             Some(v)
         }
     }
-
 }

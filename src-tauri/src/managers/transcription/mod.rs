@@ -473,7 +473,6 @@ impl TranscriptionManager {
         })
         .map(|result| result.text)
     }
-
 }
 
 impl Drop for TranscriptionManager {

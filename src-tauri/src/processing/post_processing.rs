@@ -100,7 +100,8 @@ fn build_chunk_cleanup_system_prompt(
         );
     } else {
         rules.push(
-            "(8) Restore natural punctuation when it is clearly implied by the wording.".to_string(),
+            "(8) Restore natural punctuation when it is clearly implied by the wording."
+                .to_string(),
         );
     }
     if let Some(language_hint) = &strategy.selected_language_hint {
@@ -199,12 +200,8 @@ pub(crate) async fn cleanup_assembled_transcription(
     settings: &AppSettings,
     text: &str,
 ) -> Option<String> {
-    cleanup_assembled_transcription_with_strategy(
-        settings,
-        text,
-        &ChunkCleanupStrategy::default(),
-    )
-    .await
+    cleanup_assembled_transcription_with_strategy(settings, text, &ChunkCleanupStrategy::default())
+        .await
 }
 
 pub(crate) async fn post_process_transcription(

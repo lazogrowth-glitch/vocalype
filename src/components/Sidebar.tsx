@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Mic } from "lucide-react";
 import VocalypeLogo from "./icons/VocalypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
 import { useSettings } from "../hooks/useSettings";
@@ -15,6 +14,7 @@ interface SidebarProps {
     section: import("./sections-config").SidebarSection,
   ) => void;
   collapsed?: boolean;
+  layoutTier?: "compact" | "cozy" | "spacious";
 }
 
 function useTrialBadge(trialEndsAt: string | null) {
@@ -32,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
   collapsed = false,
+  layoutTier = "spacious",
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
@@ -57,12 +58,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
     () => allSections.filter((s) => BOTTOM_SECTION_IDS.has(s.id)),
     [allSections],
   );
+  const isCompact = layoutTier === "compact";
+  const isCozy = layoutTier === "cozy";
+  const expandedWidth = isCompact ? 204 : isCozy ? 214 : 224;
+  const collapsedWidth = isCompact ? 52 : 56;
+  const navPaddingX = isCompact ? 14 : 16;
+  const itemGap = isCompact ? 8 : 10;
+  const itemFontSize = isCompact ? 13 : 14;
+  const bottomFontSize = isCompact ? 12 : 14;
 
   return (
     <nav
       aria-label={t("a11y.settingsNav")}
       style={{
-        width: collapsed ? 56 : 224,
+        width: collapsed ? collapsedWidth : expandedWidth,
         flexShrink: 0,
         height: "100%",
         overflow: "hidden",
@@ -74,16 +83,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }}
     >
       {!collapsed && (
-        <div style={{ padding: "32px 16px 16px" }}>
+        <div
+          style={{ padding: isCompact ? "24px 14px 14px" : "32px 16px 16px" }}
+        >
           <div className="flex items-center gap-[10px] min-w-0">
             <img
               src="/icon128.png"
               alt="Vocalype"
-              width={30}
-              height={30}
+              width={isCompact ? 28 : 30}
+              height={isCompact ? 28 : 30}
               className="shrink-0 rounded-[7px]"
             />
-            <VocalypeLogo width={115} />
+            <VocalypeLogo width={isCompact ? 105 : 115} />
           </div>
         </div>
       )}
@@ -142,9 +153,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Main nav */}
       <div
         className="flex flex-1 flex-col overflow-y-auto min-h-0"
-        style={{ paddingTop: collapsed ? 8 : 8, paddingBottom: 8 }}
+        style={{
+          paddingTop: isCompact ? 6 : 8,
+          paddingBottom: isCompact ? 6 : 8,
+        }}
       >
-        {mainSections.map((section, index) => {
+        {mainSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
           // Séparateur entre Config (snippets) et Utilisation (history)
@@ -155,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {showDivider && (
                 <div
                   style={{
-                    margin: "6px 16px",
+                    margin: `6px ${navPaddingX}px`,
                     height: "0.5px",
                     background: "rgba(255,255,255,0.08)",
                   }}
@@ -168,9 +182,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: collapsed ? "center" : "flex-start",
-                  gap: collapsed ? 0 : 10,
-                  padding: collapsed ? "12px 0" : "10px 16px",
-                  fontSize: 14,
+                  gap: collapsed ? 0 : itemGap,
+                  padding: collapsed
+                    ? isCompact
+                      ? "10px 0"
+                      : "12px 0"
+                    : `${isCompact ? 9 : 10}px ${navPaddingX}px`,
+                  fontSize: itemFontSize,
                   width: "100%",
                   cursor: "pointer",
                   transition: "all 0.15s",
@@ -194,15 +212,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Icon
-                    width={16}
-                    height={16}
+                    width={isCompact ? 15 : 16}
+                    height={isCompact ? 15 : 16}
                     className="shrink-0 opacity-70"
                     aria-hidden="true"
                   />
                 </span>
                 {!collapsed && (
                   <span
-                    className="truncate text-[13.5px] font-normal leading-5"
+                    className="truncate font-normal leading-5"
+                    style={{ fontSize: isCompact ? 13 : 13.5 }}
                     title={t(section.labelKey)}
                   >
                     {t(section.labelKey)}
@@ -234,9 +253,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: collapsed ? "center" : "flex-start",
-                gap: collapsed ? 0 : 10,
-                padding: collapsed ? "10px 0" : "9px 16px",
-                fontSize: 14,
+                gap: collapsed ? 0 : itemGap,
+                padding: collapsed
+                  ? isCompact
+                    ? "9px 0"
+                    : "10px 0"
+                  : `${isCompact ? 8 : 9}px ${navPaddingX}px`,
+                fontSize: bottomFontSize,
                 width: "100%",
                 cursor: "pointer",
                 transition: "all 0.15s",
@@ -253,14 +276,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                 <Icon
-                  width={15}
-                  height={15}
+                  width={isCompact ? 14 : 15}
+                  height={isCompact ? 14 : 15}
                   className="shrink-0 opacity-60"
                   aria-hidden="true"
                 />
               </span>
               {!collapsed && (
-                <span className="truncate text-[12.5px] font-normal leading-5">
+                <span
+                  className="truncate font-normal leading-5"
+                  style={{ fontSize: isCompact ? 12 : 12.5 }}
+                >
                   {t(section.labelKey)}
                 </span>
               )}

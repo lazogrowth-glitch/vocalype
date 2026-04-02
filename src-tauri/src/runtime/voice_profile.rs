@@ -336,7 +336,11 @@ impl VoiceProfile {
             .cloned()
     }
 
-    pub fn effective_segment(&self, model_id: &str, selected_language: &str) -> VoiceProfileSegment {
+    pub fn effective_segment(
+        &self,
+        model_id: &str,
+        selected_language: &str,
+    ) -> VoiceProfileSegment {
         self.active_segment(model_id, selected_language)
             .filter(|segment| segment.sessions_count > 0)
             .unwrap_or_else(|| VoiceProfileSegment {

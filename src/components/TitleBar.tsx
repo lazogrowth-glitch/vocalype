@@ -14,6 +14,7 @@ import type { AuthSession } from "@/lib/auth/types";
 
 interface TitleBarProps {
   sidebarCollapsed?: boolean;
+  layoutTier?: "compact" | "cozy" | "spacious";
   onToggleSidebar?: () => void;
   session?: AuthSession | null;
   isTrialing?: boolean;
@@ -24,6 +25,7 @@ interface TitleBarProps {
 
 export const TitleBar = ({
   sidebarCollapsed,
+  layoutTier = "spacious",
   onToggleSidebar,
   session,
   isTrialing,
@@ -59,13 +61,18 @@ export const TitleBar = ({
           ),
         )
       : null;
+  const isCompact = layoutTier === "compact";
+  const isCozy = layoutTier === "cozy";
+  const barHeight = isCompact ? 46 : isCozy ? 49 : 52;
+  const leftPadding = isCompact ? 6 : 8;
+  const menuTop = isCompact ? 40 : 44;
 
   return (
     <div
       data-tauri-drag-region
       style={
         {
-          height: 52,
+          height: barHeight,
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
@@ -85,7 +92,7 @@ export const TitleBar = ({
             display: "flex",
             alignItems: "center",
             gap: 2,
-            paddingLeft: 8,
+            paddingLeft: leftPadding,
             WebkitAppRegion: "no-drag",
           } as React.CSSProperties
         }
@@ -96,7 +103,7 @@ export const TitleBar = ({
             aria-label="Toggle sidebar"
             active={sidebarCollapsed === false}
           >
-            <PanelLeft size={15} strokeWidth={1.8} />
+            <PanelLeft size={isCompact ? 14 : 15} strokeWidth={1.8} />
           </TitleBarBtn>
         )}
 
@@ -107,15 +114,15 @@ export const TitleBar = ({
               aria-label="Account"
               active={showAccountMenu}
             >
-              <User size={15} strokeWidth={1.8} />
+              <User size={isCompact ? 14 : 15} strokeWidth={1.8} />
             </TitleBarBtn>
 
             {showAccountMenu && (
               <div
                 style={{
                   position: "fixed",
-                  top: 44,
-                  left: 8,
+                  top: menuTop,
+                  left: leftPadding,
                   width: 244,
                   background: "#1c1c1c",
                   border: "0.5px solid rgba(255,255,255,0.12)",
@@ -261,21 +268,21 @@ export const TitleBar = ({
           hoverBg="rgba(255,255,255,0.1)"
           aria-label="Minimize"
         >
-          <Minus size={11} strokeWidth={2.5} />
+          <Minus size={isCompact ? 10 : 11} strokeWidth={2.5} />
         </WinBtn>
         <WinBtn
           onClick={() => win.toggleMaximize()}
           hoverBg="rgba(255,255,255,0.1)"
           aria-label="Maximize"
         >
-          <Square size={9} strokeWidth={2.5} />
+          <Square size={isCompact ? 8 : 9} strokeWidth={2.5} />
         </WinBtn>
         <WinBtn
           onClick={() => win.close()}
           hoverBg="rgba(196,43,43,0.85)"
           aria-label="Close"
         >
-          <X size={11} strokeWidth={2.5} />
+          <X size={isCompact ? 10 : 11} strokeWidth={2.5} />
         </WinBtn>
       </div>
     </div>

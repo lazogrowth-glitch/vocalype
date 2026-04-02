@@ -18,9 +18,7 @@ use crate::model_ids::is_parakeet_v3_model_id;
 use crate::parakeet_quality::{
     ParakeetDiagnosticsState, ParakeetSessionCompletion, ParakeetSessionStart,
 };
-use crate::post_processing::{
-    cleanup_assembled_transcription_with_strategy, ChunkCleanupStrategy,
-};
+use crate::post_processing::{cleanup_assembled_transcription_with_strategy, ChunkCleanupStrategy};
 use crate::runtime_observability::{
     emit_runtime_error_with_context, RuntimeErrorStage, TranscriptionLifecycleState,
 };
@@ -874,8 +872,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         {
                             *final_recovery_worker
                                 .lock()
-                                .unwrap_or_else(|e| e.into_inner()) =
-                                Some((idx, pre_filter_text));
+                                .unwrap_or_else(|e| e.into_inner()) = Some((idx, pre_filter_text));
                         }
 
                         if is_parakeet_v3_w {
@@ -1282,7 +1279,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                             .unwrap_or_else(|e| e.into_inner())
                             .clone();
                         if let Some((recovery_idx, recovery_text)) = recovery_candidate {
-                            let recovered = append_recovered_final_chunk(&assembled, &recovery_text);
+                            let recovered =
+                                append_recovered_final_chunk(&assembled, &recovery_text);
                             if recovered != assembled {
                                 tel_assembly.log_finalization_recovery(
                                     session_id,
@@ -1738,7 +1736,13 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                 )),
                             );
                         }
-                        emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
+                        emit_transcription_preview(
+                            &ah,
+                            operation_id,
+                            "processing",
+                            &transcription,
+                            true,
+                        );
                         emit_runtime_error_with_context(
                             &ah,
                             "TRANSCRIPTION_PARTIAL_RECOVERED",
@@ -1776,7 +1780,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                         if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
-                            let _ = c.complete_operation(&ah, operation_id, "partial-result-skipped");
+                            let _ =
+                                c.complete_operation(&ah, operation_id, "partial-result-skipped");
                         }
                         return;
                     }
@@ -1795,7 +1800,13 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                 )),
                             );
                         }
-                        emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
+                        emit_transcription_preview(
+                            &ah,
+                            operation_id,
+                            "processing",
+                            &transcription,
+                            true,
+                        );
                         emit_runtime_error_with_context(
                             &ah,
                             "NO_SPEECH_RECOVERED_FROM_PREVIEW",
@@ -1984,7 +1995,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                     )
                                     .await;
                             });
-                        }) as Box<dyn FnOnce() + Send + 'static>)
+                        })
+                            as Box<dyn FnOnce() + Send + 'static>)
                     } else {
                         None
                     },

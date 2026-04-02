@@ -5,6 +5,7 @@ import "./ProductMediaPanel.css";
 
 interface ProductMediaPanelProps {
   step: AuthStepContent;
+  compact?: boolean;
 }
 
 const renderStepCard = (step: AuthStepContent) => {
@@ -138,9 +139,17 @@ const renderStepCard = (step: AuthStepContent) => {
   }
 };
 
-export const ProductMediaPanel = ({ step }: ProductMediaPanelProps) => {
+export const ProductMediaPanel = ({
+  step,
+  compact = false,
+}: ProductMediaPanelProps) => {
   return (
     <section
+      className={
+        compact
+          ? "vt-media-section vt-media-section-compact"
+          : "vt-media-section"
+      }
       style={{
         minHeight: 0,
         position: "relative",

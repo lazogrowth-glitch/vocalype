@@ -4,8 +4,8 @@ use crate::post_processing::{
     maybe_convert_chinese_variant, post_process_transcription, process_action,
 };
 use crate::utils::show_processing_overlay;
-use crate::voice_profile::VoiceProfileState;
 use crate::vocabulary_store::VocabularyStoreState;
+use crate::voice_profile::VoiceProfileState;
 use crate::TranscriptionCoordinator;
 use log::debug;
 use std::sync::{Arc, Mutex};

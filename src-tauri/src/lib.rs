@@ -43,8 +43,7 @@ pub use runtime::{
     adaptive_runtime, chunking, command_mode, context_detector, model_ids, parakeet_quality,
     parakeet_text, runtime_observability, session_keyterms, startup_warmup, telemetry,
     transcription_confidence, transcription_coordinator, vocabulary_store, voice_feedback,
-    voice_profile,
-    wake_word,
+    voice_profile, wake_word,
 };
 // platform
 pub use platform::signal_handle;
@@ -111,7 +110,61 @@ pub static TRAY_ICON_READY: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_SHOW_MAIN_WINDOW_ON_READY: AtomicBool = AtomicBool::new(false);
 
 const MAIN_WINDOW_WIDTH: f64 = 1348.0;
-const MAIN_WINDOW_HEIGHT: f64 = 846.0;
+const MAIN_WINDOW_HEIGHT: f64 = 875.0;
+const MIN_MAIN_WINDOW_WIDTH: f64 = 960.0;
+const MIN_MAIN_WINDOW_HEIGHT: f64 = 624.0;
+const MAX_MAIN_WINDOW_SCALE: f64 = 1.0;
+
+fn clamp_f64(value: f64, min: f64, max: f64) -> f64 {
+    value.max(min).min(max)
+}
+
+fn resolve_main_window_size(app: &AppHandle) -> (f64, f64) {
+    let fallback = (MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT);
+    let Some(main_window) = app.get_webview_window("main") else {
+        return fallback;
+    };
+
+    let monitor = main_window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| app.primary_monitor().ok().flatten());
+
+    let Some(monitor) = monitor else {
+        return fallback;
+    };
+
+    let scale = monitor.scale_factor().max(1.0);
+    let work_area = monitor.work_area();
+    let work_area_width = work_area.size.width as f64 / scale;
+    let work_area_height = work_area.size.height as f64 / scale;
+    let design_scale =
+        (work_area_width / MAIN_WINDOW_WIDTH).min(work_area_height / MAIN_WINDOW_HEIGHT);
+    let snapped_scale = if (0.95..=1.08).contains(&design_scale) {
+        1.0
+    } else {
+        design_scale
+    };
+    let final_scale = clamp_f64(
+        snapped_scale,
+        MIN_MAIN_WINDOW_WIDTH / MAIN_WINDOW_WIDTH,
+        MAX_MAIN_WINDOW_SCALE,
+    );
+
+    let width = clamp_f64(
+        (MAIN_WINDOW_WIDTH * final_scale).round(),
+        MIN_MAIN_WINDOW_WIDTH,
+        work_area_width,
+    );
+    let height = clamp_f64(
+        (MAIN_WINDOW_HEIGHT * final_scale).round(),
+        MIN_MAIN_WINDOW_HEIGHT,
+        work_area_height,
+    );
+
+    (width, height)
+}
 
 fn level_filter_from_u8(value: u8) -> log::LevelFilter {
     match value {
@@ -149,11 +202,14 @@ fn build_console_filter() -> env_filter::Filter {
 
 pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
+        let (width, height) = resolve_main_window_size(app);
+        let _ = main_window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
+            width: MIN_MAIN_WINDOW_WIDTH,
+            height: MIN_MAIN_WINDOW_HEIGHT,
+        })));
         // Force the window to the correct size regardless of any cached state
-        let _ = main_window.set_size(tauri::Size::Logical(tauri::LogicalSize {
-            width: MAIN_WINDOW_WIDTH,
-            height: MAIN_WINDOW_HEIGHT,
-        }));
+        let _ = main_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+        let _ = main_window.center();
         // First, ensure the window is visible
         if let Err(e) = main_window.show() {
             log::error!("Failed to show window: {}", e);
@@ -229,8 +285,8 @@ fn force_show_native_main_window() -> bool {
             None,
             120,
             120,
-            MAIN_WINDOW_WIDTH as i32,
-            MAIN_WINDOW_HEIGHT as i32,
+            MIN_MAIN_WINDOW_WIDTH as i32,
+            MIN_MAIN_WINDOW_HEIGHT as i32,
             SWP_NOZORDER,
         );
         let _ = BringWindowToTop(hwnd);

@@ -149,10 +149,7 @@ fn refine_parakeet_adjustment(
         overlap += 160;
     }
 
-    (
-        chunk.clamp(8, 14) as u8,
-        overlap.clamp(700, 1600) as u16,
-    )
+    (chunk.clamp(8, 14) as u8, overlap.clamp(700, 1600) as u16)
 }
 
 // ── Chunking functions ───────────────────────────────────────────────────────
@@ -225,27 +222,23 @@ pub(crate) fn chunking_profile_for_model(
                 vad_hangover_frames_delta: 0,
                 reason: None,
             });
-            let (chunk_seconds, overlap_ms) =
-                if let Some(profile) = current_voice_profile_for_context(
-                    app,
-                    &info.id,
+            let (chunk_seconds, overlap_ms) = if let Some(profile) =
+                current_voice_profile_for_context(app, &info.id, &settings.selected_language)
+                    .filter(|p| p.sessions_count > 0)
+            {
+                refine_parakeet_adjustment(
+                    adjusted.adjusted_chunk_seconds,
+                    adjusted.adjusted_overlap_ms,
                     &settings.selected_language,
+                    profile.avg_words_per_minute,
+                    profile.avg_pause_ms,
                 )
-                .filter(|p| p.sessions_count > 0)
-                {
-                    refine_parakeet_adjustment(
-                        adjusted.adjusted_chunk_seconds,
-                        adjusted.adjusted_overlap_ms,
-                        &settings.selected_language,
-                        profile.avg_words_per_minute,
-                        profile.avg_pause_ms,
-                    )
-                } else {
-                    (
-                        adjusted.adjusted_chunk_seconds,
-                        adjusted.adjusted_overlap_ms,
-                    )
-                };
+            } else {
+                (
+                    adjusted.adjusted_chunk_seconds,
+                    adjusted.adjusted_overlap_ms,
+                )
+            };
             Some(ChunkingProfile {
                 interval_samples: usize::from(chunk_seconds) * 16_000,
                 overlap_samples: (usize::from(overlap_ms) * 16_000) / 1000,
@@ -359,8 +352,7 @@ mod tests {
 
     #[test]
     fn adaptive_parakeet_profile_tightens_for_fast_tight_speech() {
-        let (chunk_seconds, overlap_ms) =
-            refine_parakeet_adjustment(12, 1000, "en", 172.0, 140.0);
+        let (chunk_seconds, overlap_ms) = refine_parakeet_adjustment(12, 1000, "en", 172.0, 140.0);
         assert!(chunk_seconds < 12);
         assert!(overlap_ms > 1000);
     }

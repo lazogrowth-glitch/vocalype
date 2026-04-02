@@ -44,6 +44,9 @@
   overflow: hidden;
   color: #f6efe4;
 }
+.vt-media-section-compact {
+  min-height: 320px;
+}
 .vt-media-backdrop {
   position: absolute;
   inset: 0;
@@ -372,4 +375,86 @@
 .vt-profile-row strong {
   color: #f7f1e7;
   font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .vt-media-shell {
+    padding: 28px;
+    gap: 20px;
+  }
+
+  .vt-media-meta {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .vt-media-title {
+    font-size: 40px;
+    max-width: 100%;
+  }
+
+  .vt-media-subtitle {
+    max-width: 100%;
+    font-size: 15px;
+  }
+
+  .vt-media-badges {
+    justify-content: flex-start;
+    max-width: 100%;
+  }
+
+  .vt-media-card {
+    width: min(720px, 100%);
+  }
+}
+
+@media (max-width: 980px) {
+  .vt-media-shell {
+    padding: 20px;
+  }
+
+  .vt-media-title {
+    font-size: 30px;
+  }
+
+  .vt-media-subtitle {
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .vt-media-badge,
+  .vt-chip-cloud span {
+    font-size: 11px;
+    padding: 8px 11px;
+  }
+
+  .vt-media-card,
+  .vt-media-card-signup,
+  .vt-media-card-permissions,
+  .vt-media-card-setup,
+  .vt-media-card-personalize,
+  .vt-media-card-learn {
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .vt-hero-title,
+  .vt-setup-head {
+    font-size: 24px;
+  }
+
+  .vt-hero-note,
+  .vt-message-output {
+    font-size: 14px;
+  }
+
+  .vt-permission-row,
+  .vt-profile-row {
+    padding: 12px 14px;
+  }
+
+  .vt-setup-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

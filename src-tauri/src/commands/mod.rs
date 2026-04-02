@@ -16,13 +16,13 @@ use crate::adaptive_runtime::{
 };
 use crate::context_detector::{detect_current_app_context, AppTranscriptionContext};
 use crate::runtime_observability::{collect_runtime_diagnostics, RuntimeDiagnostics};
+use crate::settings::{get_settings, write_settings, AppSettings, CalibrationPhase, LogLevel};
+use crate::startup_warmup::StartupWarmupStatus;
+use crate::utils::cancel_current_operation;
 use crate::voice_feedback::{
     list_voice_feedback, submit_voice_feedback, summarize_voice_feedback, VoiceFeedbackEntry,
     VoiceFeedbackInput, VoiceFeedbackSummary,
 };
-use crate::settings::{get_settings, write_settings, AppSettings, CalibrationPhase, LogLevel};
-use crate::startup_warmup::StartupWarmupStatus;
-use crate::utils::cancel_current_operation;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::process::Command;

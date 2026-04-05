@@ -13,11 +13,11 @@
 
 .recording-overlay {
   min-height: 32px;
-  width: 175px;
+  width: 156px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 8px 0 10px;
+  gap: 5px;
+  padding: 0 7px 0 9px;
   background: rgba(12, 12, 14, 0.88);
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
@@ -71,7 +71,7 @@
 .overlay-middle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex: 1;
   min-width: 0;
 }
@@ -87,7 +87,7 @@
 .recording-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
 }
 

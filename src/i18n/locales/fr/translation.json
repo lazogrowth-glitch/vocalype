@@ -646,10 +646,6 @@
         "label": "Mettre les médias en pause",
         "description": "Met automatiquement en pause Spotify et autres lecteurs multimédias pendant l'enregistrement, puis les reprend à la fin."
       },
-      "wakeWord": {
-        "label": "Mode mains-libres (dire \"dictate\")",
-        "description": "Dites \"dictate\" pour lancer l'enregistrement sans toucher le clavier. L'enregistrement s'arrête automatiquement quand vous arrêtez de parler."
-      },
       "appendTrailingSpace": {
         "label": "Ajouter un espace final",
         "description": "Ajouter un espace après la transcription collée"
@@ -713,6 +709,10 @@
           "details": "Vocalype utilise Whisper.cpp pour un traitement rapide et local de la parole en texte. Merci au travail incroyable de Georgi Gerganov et des contributeurs."
         }
       }
+    },
+    "wakeWord": {
+      "label": "Mode mains-libres (dire \"dictate\")",
+      "description": "Dites \"dictate\" pour lancer l'enregistrement sans toucher le clavier. L'enregistrement s'arrête automatiquement quand vous arrêtez de parler."
     }
   },
   "footer": {

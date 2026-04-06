@@ -197,7 +197,9 @@ export const GeneralSettings: React.FC = () => {
           />
 
           {/* ── Hands-free / Wake word ────────────────────────────────── */}
-          <WakeWordToggle grouped={false} />
+          <SettingsGroup>
+            <WakeWordToggle grouped={true} descriptionMode="inline" />
+          </SettingsGroup>
 
           <div
             style={{

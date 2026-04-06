@@ -15,12 +15,22 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 use crate::utils::{is_kde_wayland, is_wayland};
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
+fn text_to_html(text: &str) -> String {
+    let escaped = text
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('\n', "<br>");
+    format!("<span>{}</span>", escaped)
+}
+
 fn paste_via_clipboard(
     enigo: &mut Enigo,
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
+    category: AppContextCategory,
 ) -> Result<(), String> {
     info!(
         "[PASTE] paste_via_clipboard: method={:?} text_len={} delay={}ms",
@@ -35,10 +45,19 @@ fn paste_via_clipboard(
         clipboard_content.len()
     );
 
-    // Write text to clipboard first
-    // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
+    // Write text to clipboard first.
+    // For email contexts, write HTML so rich-text editors (e.g. Gmail) paste with
+    // their own default formatting instead of unstyled plain text.
+    // On Wayland, prefer wl-copy for better compatibility (especially with umlauts),
+    // but wl-copy only supports plain text so fall back to the Tauri clipboard API
+    // when HTML is needed.
     #[cfg(target_os = "linux")]
-    let write_result = if is_wayland() && is_wl_copy_available() {
+    let write_result = if category == AppContextCategory::Email {
+        let html = text_to_html(text);
+        clipboard
+            .write_html(html, Some(text.to_string()))
+            .map_err(|e| format!("Failed to write HTML to clipboard: {}", e))
+    } else if is_wayland() && is_wl_copy_available() {
         info!("Using wl-copy for clipboard write on Wayland");
         write_clipboard_via_wl_copy(text)
     } else {
@@ -48,9 +67,16 @@ fn paste_via_clipboard(
     };
 
     #[cfg(not(target_os = "linux"))]
-    let write_result = clipboard
-        .write_text(text)
-        .map_err(|e| format!("Failed to write to clipboard: {}", e));
+    let write_result = if category == AppContextCategory::Email {
+        let html = text_to_html(text);
+        clipboard
+            .write_html(html, Some(text.to_string()))
+            .map_err(|e| format!("Failed to write HTML to clipboard: {}", e))
+    } else {
+        clipboard
+            .write_text(text)
+            .map_err(|e| format!("Failed to write to clipboard: {}", e))
+    };
 
     write_result?;
     info!(
@@ -717,10 +743,15 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     //       - Add leading space if cursor doesn't end with whitespace.
     //       - Capitalize after sentence-ending punctuation or at field start.
     //       - Lowercase after comma / semicolon / colon.
+    let category = if paste_method == PasteMethod::None || paste_method == PasteMethod::CtrlShiftV {
+        AppContextCategory::Unknown
+    } else {
+        get_paste_category(&app_handle)
+    };
+
     let text = if paste_method == PasteMethod::None || paste_method == PasteMethod::CtrlShiftV {
         text
     } else {
-        let category = get_paste_category(&app_handle);
         let ctx = if matches!(category, AppContextCategory::Code) {
             super::cursor_context::CursorContext::unavailable()
         } else {
@@ -757,6 +788,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &app_handle,
                 &paste_method,
                 paste_delay_ms,
+                category,
             )?
         }
         PasteMethod::ExternalScript => {

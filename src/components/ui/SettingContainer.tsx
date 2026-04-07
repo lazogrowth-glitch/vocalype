@@ -53,7 +53,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
     >
       <button
         type="button"
-        className="flex h-[14px] w-[14px] items-center justify-center rounded-full border border-white/[0.18] text-[9px] font-medium text-white/25 transition-colors hover:border-white/30 hover:text-white/45"
+        className="flex h-[16px] w-[16px] items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.02] text-[9px] font-medium text-white/28 transition-colors hover:border-white/20 hover:bg-white/[0.04] hover:text-white/48"
         aria-label={t("common.moreInformation", {
           defaultValue: "More information",
         })}
@@ -72,14 +72,17 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
     return (
       <div
         className="setting-row border-b border-white/[0.05] last:border-b-0"
-        style={{ padding: "16px 18px" }}
+        style={{
+          padding: "17px 20px",
+          transition: "background 0.14s ease",
+        }}
       >
         <div
           style={{
             marginBottom: 12,
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 12,
           }}
         >
           {descriptionMode === "tooltip" ? infoButton : null}
@@ -87,11 +90,12 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
             <h3
               style={{
                 fontSize: 14,
-                fontWeight: 400,
-                lineHeight: "20px",
+                fontWeight: 600,
+                lineHeight: "19px",
+                letterSpacing: "-0.01em",
                 color: disabled
                   ? "rgba(255,255,255,0.35)"
-                  : "rgba(255,255,255,0.88)",
+                  : "rgba(255,255,255,0.94)",
               }}
             >
               {title}
@@ -99,12 +103,12 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
             {descriptionMode === "inline" && description ? (
               <p
                 style={{
-                  marginTop: 2,
-                  fontSize: 12,
+                  marginTop: 5,
+                  fontSize: 12.5,
                   lineHeight: "18px",
                   color: disabled
                     ? "rgba(255,255,255,0.25)"
-                    : "rgba(255,255,255,0.42)",
+                    : "rgba(255,255,255,0.58)",
                 }}
               >
                 {description}
@@ -125,56 +129,58 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
         width: "100%",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 16,
-        minHeight: 52,
-        padding: "13px 18px",
-        transition: "background 0.1s ease",
+        gap: 20,
+        minHeight: 60,
+        padding: "15px 20px",
+        transition: "background 0.14s ease",
       }}
     >
       <div className="min-w-0">
         {descriptionMode === "tooltip" ? (
-          <div className="flex min-w-0 items-center gap-[9px]">
+          <div className="flex min-w-0 items-center gap-[10px]">
             {infoButton}
             <h3
               style={{
                 fontSize: 14,
-                fontWeight: 400,
-                lineHeight: "20px",
+                fontWeight: 600,
+                lineHeight: "19px",
+                letterSpacing: "-0.01em",
                 color: disabled
                   ? "rgba(255,255,255,0.35)"
-                  : "rgba(255,255,255,0.88)",
-                whiteSpace: "nowrap",
+                  : "rgba(255,255,255,0.94)",
+                whiteSpace: "normal",
               }}
             >
               {title}
             </h3>
           </div>
         ) : (
-          <div className="flex min-w-0 items-start gap-[9px]">
+          <div className="flex min-w-0 items-start gap-[10px]">
             {description ? (
               <div style={{ paddingTop: 3 }}>{infoButton}</div>
             ) : null}
             <div className="min-w-0">
               <h3
                 style={{
-                  fontSize: 14,
-                  fontWeight: 400,
+                  fontSize: 14.5,
+                  fontWeight: 600,
                   lineHeight: "20px",
+                  letterSpacing: "-0.01em",
                   color: disabled
                     ? "rgba(255,255,255,0.35)"
-                    : "rgba(255,255,255,0.88)",
+                    : "rgba(255,255,255,0.94)",
                 }}
               >
                 {title}
               </h3>
               <p
                 style={{
-                  marginTop: 2,
-                  fontSize: 12,
+                  marginTop: 5,
+                  fontSize: 12.5,
                   lineHeight: "18px",
                   color: disabled
                     ? "rgba(255,255,255,0.25)"
-                    : "rgba(255,255,255,0.42)",
+                    : "rgba(255,255,255,0.58)",
                 }}
               >
                 {description}

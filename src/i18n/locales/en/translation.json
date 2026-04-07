@@ -20,7 +20,31 @@
     "billing": "Billing",
     "referral": "Referral",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "group": {
+      "config": "Configuration",
+      "usage": "Usage",
+      "advanced": "Advanced"
+    }
+  },
+  "shell": {
+    "workspaceSubtitle": "AI dictation workspace",
+    "sectionDescriptions": {
+      "default": "Adjust your Vocalype workspace with cleaner controls and clearer defaults.",
+      "general": "Tune shortcuts, microphones, and your everyday dictation flow.",
+      "models": "Choose the speech model, language behavior, and quality-performance balance.",
+      "postprocessing": "Control cleanup, formatting, and how transcripts are shaped before insertion.",
+      "snippets": "Create reusable commands and text snippets for faster output.",
+      "history": "Review recent transcriptions, reuse content, and manage saved activity.",
+      "meetings": "Configure meeting capture, recording behavior, and collaboration workflows.",
+      "notes": "Set up note-taking integrations and how Vocalype structures captured thoughts.",
+      "stats": "Track usage, runtime health, and how the app performs over time.",
+      "advanced": "Fine-tune system behavior, startup, experimental toggles, and deeper controls.",
+      "billing": "Manage your plan, limits, and subscription details.",
+      "referral": "Invite others and keep track of referral rewards.",
+      "about": "See app details, release info, support links, and product status.",
+      "debug": "Inspect diagnostics, logging, and internal troubleshooting tools."
+    }
   },
   "onboarding": {
     "title": "Get started",
@@ -970,6 +994,10 @@
     "historyLimited": "History limited to {{limit}} entries on Basic",
     "shortcutsLocked": "Custom shortcuts are a Premium feature",
     "premiumBadge": "Premium"
+  },
+  "plan": {
+    "premium": "Premium",
+    "basic": "Basic"
   },
   "commandMode": {
     "label": "Command Mode",

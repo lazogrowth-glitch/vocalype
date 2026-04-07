@@ -47,11 +47,7 @@ export const GeneralSettings: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div
-        className="flex border-b border-white/[0.08]"
-        style={{ gap: 20 }}
-        role="tablist"
-      >
+      <div className="general-settings-tabs" role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -59,11 +55,8 @@ export const GeneralSettings: React.FC = () => {
             role="tab"
             aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`border-b-2 pb-[11px] pt-[10px] text-[13.5px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
-              activeTab === tab.id
-                ? "border-logo-primary text-logo-primary"
-                : "border-transparent text-white/40 hover:text-white/65"
-            }`}
+            data-active={activeTab === tab.id ? "true" : "false"}
+            className="general-settings-tab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background"
           >
             {tab.label}
           </button>
@@ -74,7 +67,6 @@ export const GeneralSettings: React.FC = () => {
         <div
           role="tabpanel"
           style={{
-            paddingTop: 24,
             display: "flex",
             flexDirection: "column",
             gap: 0,

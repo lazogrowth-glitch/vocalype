@@ -15,12 +15,36 @@
     "notes": "Notes",
     "meetings": "Réunions",
     "history": "Historique",
-    "snippets": "Snippets",
+    "snippets": "Extraits",
     "stats": "Statistiques",
     "billing": "Facturation",
     "referral": "Parrainage",
     "debug": "Débogage",
-    "about": "À propos"
+    "about": "À propos",
+    "group": {
+      "config": "Configuration",
+      "usage": "Utilisation",
+      "advanced": "Avancé"
+    }
+  },
+  "shell": {
+    "workspaceSubtitle": "Espace de dictée IA",
+    "sectionDescriptions": {
+      "default": "Ajustez votre espace Vocalype avec des contrôles plus clairs et une meilleure cohérence.",
+      "general": "Réglez les raccourcis, les microphones et votre flux de dictée quotidien.",
+      "models": "Choisissez le modèle vocal, le comportement linguistique et l'équilibre entre qualité et vitesse.",
+      "postprocessing": "Contrôlez le nettoyage, le formatage et la forme finale des transcriptions avant insertion.",
+      "snippets": "Créez des commandes réutilisables et des extraits de texte pour aller plus vite.",
+      "history": "Relisez les transcriptions récentes, réutilisez du contenu et gérez l'activité enregistrée.",
+      "meetings": "Configurez la capture des réunions, le comportement d'enregistrement et les flux collaboratifs.",
+      "notes": "Réglez les intégrations de notes et la façon dont Vocalype structure les idées capturées.",
+      "stats": "Suivez l'utilisation, l'état du runtime et les performances de l'app dans le temps.",
+      "advanced": "Ajustez le comportement système, le démarrage, les fonctions expérimentales et les réglages avancés.",
+      "billing": "Gérez votre formule, vos limites et les détails de votre abonnement.",
+      "referral": "Invitez d'autres personnes et suivez vos récompenses de parrainage.",
+      "about": "Consultez les détails de l'app, les versions, les liens d'aide et l'état du produit.",
+      "debug": "Inspectez les diagnostics, les journaux et les outils de dépannage internes."
+    }
   },
   "onboarding": {
     "title": "Commencer",
@@ -321,6 +345,9 @@
           "label": "Microphone toujours actif",
           "description": "Le microphone reste ouvert ; la VAD détecte la parole automatiquement"
         }
+      },
+      "categories": {
+        "cloudModels": "Mod?les distants"
       }
     },
     "sound": {
@@ -901,14 +928,14 @@
     "feature3": "Transcriptions illimitées",
     "feature4": "Historique complet",
     "badge": {
-      "neutral": "Trial Premium · {{count}}j restants",
+      "neutral": "Essai Premium · {{count}} j restants",
       "warning": "Plus que {{count}} jours de Premium",
       "urgent": "⚠ Expire dans {{count}} jours",
       "today": "⚠ Expire aujourd'hui",
       "cta": "Passer à Premium →"
     },
     "reminder": {
-      "title": "Ton trial expire bientôt",
+      "title": "Votre essai expire bientôt",
       "desc": "Passe à Premium pour garder l'injection native, tes raccourcis et tes transcriptions illimitées.",
       "cta": "Passer à Premium →"
     }
@@ -934,7 +961,7 @@
     "importMergeSuccess": "Dictionnaire importé (fusionné)."
   },
   "snippets": {
-    "title": "Snippets vocaux",
+    "title": "Extraits vocaux",
     "description": "Dites la phrase déclencheur et Vocalype colle l'expansion à la place.",
     "empty": "Aucun snippet. Ajoutez-en un ci-dessous.",
     "triggerPlaceholder": "Phrase déclencheur…",
@@ -967,9 +994,13 @@
     "quotaExceededDesc": "Passe à Premium pour dicter sans limite.",
     "upgradeCta": "Passer à Premium →",
     "upgrade": "Passer à Premium",
-    "historyLimited": "Historique limité à {{limit}} entrées en Basic",
+    "historyLimited": "Historique limit? ? {{limit}} entr?es en formule Basique",
     "shortcutsLocked": "Raccourcis personnalisés réservés à Premium",
     "premiumBadge": "Premium"
+  },
+  "plan": {
+    "premium": "Premium",
+    "basic": "Basique"
   },
   "commandMode": {
     "label": "Command Mode",

@@ -39,29 +39,24 @@ type NonCreatableProps = {
 
 export type SelectProps = BaseProps & (CreatableProps | NonCreatableProps);
 
-const baseBackground =
-  "color-mix(in srgb, var(--color-mid-gray) 10%, transparent)";
-const hoverBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 12%, transparent)";
-const focusBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 20%, transparent)";
-const neutralBorder =
-  "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)";
-
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
-    minHeight: 40,
-    borderRadius: 6,
-    borderColor: state.isFocused ? "var(--color-logo-primary)" : neutralBorder,
-    boxShadow: state.isFocused ? "0 0 0 1px var(--color-logo-primary)" : "none",
-    backgroundColor: state.isFocused ? focusBackground : baseBackground,
-    fontSize: "0.875rem",
+    minHeight: 42,
+    borderRadius: 12,
+    borderColor: state.isFocused
+      ? "rgba(201,168,76,0.42)"
+      : "rgba(255,255,255,0.1)",
+    boxShadow: state.isFocused ? "0 0 0 1px rgba(201,168,76,0.22)" : "none",
+    backgroundColor: state.isFocused
+      ? "rgba(201,168,76,0.08)"
+      : "rgba(255,255,255,0.035)",
+    fontSize: "0.8125rem",
     color: "var(--color-text)",
     transition: "all 150ms ease",
     ":hover": {
-      borderColor: "var(--color-logo-primary)",
-      backgroundColor: hoverBackground,
+      borderColor: "rgba(255,255,255,0.16)",
+      backgroundColor: "rgba(255,255,255,0.05)",
     },
   }),
   valueContainer: (base) => ({
@@ -96,26 +91,41 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   menu: (provided) => ({
     ...provided,
     zIndex: 30,
-    backgroundColor: "var(--color-background)",
+    backgroundColor: "rgba(14,14,14,0.98)",
     color: "var(--color-text)",
-    border:
-      "1px solid color-mix(in srgb, var(--color-mid-gray) 30%, transparent)",
-    boxShadow: "0 10px 30px rgba(15, 15, 15, 0.2)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 14,
+    boxShadow: "0 18px 40px rgba(0, 0, 0, 0.32)",
+    overflow: "hidden",
+  }),
+  menuList: (base) => ({
+    ...base,
+    padding: 6,
+    backgroundColor: "rgba(14,14,14,0.98)",
   }),
   option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected
-      ? focusBackground
+      ? "rgba(201,168,76,0.13)"
       : state.isFocused
-        ? hoverBackground
+        ? "rgba(255,255,255,0.05)"
         : "transparent",
     color: "var(--color-text)",
+    borderRadius: 10,
+    padding: "10px 12px",
     cursor: state.isDisabled ? "not-allowed" : base.cursor,
     opacity: state.isDisabled ? 0.5 : 1,
+    ":active": {
+      backgroundColor: "rgba(201,168,76,0.18)",
+    },
   }),
   placeholder: (base) => ({
     ...base,
     color: "color-mix(in srgb, var(--color-mid-gray) 65%, transparent)",
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 40,
   }),
 };
 
@@ -160,6 +170,7 @@ export const Select: React.FC<SelectProps> = React.memo(
       onBlur,
       isClearable,
       styles: selectStyles,
+      menuPortalTarget: document.body,
     };
 
     if (isCreatable) {

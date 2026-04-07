@@ -87,21 +87,21 @@ export const RecordingModeSelector: React.FC<RecordingModeSelectorProps> =
         <div style={{ marginBottom: 14 }}>
           <h2
             style={{
-              fontSize: 10,
-              fontWeight: 600,
+              fontSize: 11,
+              fontWeight: 700,
               textTransform: "uppercase",
-              letterSpacing: 1,
-              color: "rgba(255,255,255,0.25)",
+              letterSpacing: 1.4,
+              color: "rgba(255,255,255,0.34)",
             }}
           >
             {t("settings.general.recordingMode.label")}
           </h2>
-          <p className="mt-1 text-[11.5px] leading-5 text-white/40">
+          <p className="mt-1.5 text-[13px] leading-5 text-white/50">
             {t("settings.general.recordingMode.description")}
           </p>
         </div>
 
-        <div className="rounded-[10px] border border-white/8">
+        <div className="rounded-[18px] border border-white/8 bg-white/[0.01]">
           {modes.map(({ id, labelKey, descKey }, index) => {
             const selected = currentMode === id;
             return (
@@ -109,7 +109,7 @@ export const RecordingModeSelector: React.FC<RecordingModeSelectorProps> =
                 key={id}
                 onClick={() => handleSelect(id)}
                 disabled={isBusy}
-                style={{ padding: "14px 20px" }}
+                style={{ padding: "15px 20px" }}
                 className={[
                   "flex w-full items-center gap-3 text-left transition-colors",
                   index !== modes.length - 1
@@ -135,10 +135,10 @@ export const RecordingModeSelector: React.FC<RecordingModeSelectorProps> =
                 </span>
 
                 <span>
-                  <span className="block text-[14px] font-normal leading-5 text-white/85">
+                  <span className="block text-[15px] font-medium leading-5 text-white/92">
                     {t(labelKey)}
                   </span>
-                  <span className="block text-[11.5px] leading-5 text-white/40">
+                  <span className="mt-0.5 block text-[12.5px] leading-[1.45] text-white/52">
                     {t(descKey)}
                   </span>
                 </span>

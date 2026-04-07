@@ -15,46 +15,19 @@ export const SettingsGroup: React.FC<SettingsGroupProps> = ({
   children,
 }) => {
   return (
-    <section style={{ marginBottom: 32 }}>
+    <section className="settings-group">
       {title && (
-        <div style={{ marginBottom: 8 }}>
-          <div className="flex items-center gap-2">
-            <h2
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.50)",
-                letterSpacing: "0.01em",
-              }}
-            >
-              {title}
-            </h2>
+        <div className="settings-group-header">
+          <div className="flex items-center gap-2.5">
+            <h2 className="settings-group-title">{title}</h2>
             {titleBadge}
           </div>
           {description && (
-            <p
-              style={{
-                marginTop: 2,
-                fontSize: 12,
-                color: "rgba(255,255,255,0.35)",
-                lineHeight: "1.5",
-              }}
-            >
-              {description}
-            </p>
+            <p className="settings-group-description">{description}</p>
           )}
         </div>
       )}
-      <div
-        style={{
-          borderRadius: 10,
-          overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.07)",
-          background: "rgba(255,255,255,0.03)",
-        }}
-      >
-        {children}
-      </div>
+      <div className="settings-group-card">{children}</div>
     </section>
   );
 };

@@ -53,6 +53,22 @@ type LayoutTier = "compact" | "cozy" | "spacious";
 
 const WINDOW_SIZE_STORAGE_KEY = "vt.windowSize";
 
+const SECTION_DESCRIPTION_KEYS: Partial<Record<SidebarSection, string>> = {
+  general: "shell.sectionDescriptions.general",
+  models: "shell.sectionDescriptions.models",
+  postprocessing: "shell.sectionDescriptions.postprocessing",
+  snippets: "shell.sectionDescriptions.snippets",
+  history: "shell.sectionDescriptions.history",
+  meetings: "shell.sectionDescriptions.meetings",
+  notes: "shell.sectionDescriptions.notes",
+  stats: "shell.sectionDescriptions.stats",
+  advanced: "shell.sectionDescriptions.advanced",
+  billing: "shell.sectionDescriptions.billing",
+  referral: "shell.sectionDescriptions.referral",
+  about: "shell.sectionDescriptions.about",
+  debug: "shell.sectionDescriptions.debug",
+};
+
 function getViewportWidth() {
   return typeof window === "undefined"
     ? DESIGN_WINDOW_SIZE.width
@@ -329,6 +345,13 @@ function App() {
         : "28px 36px 36px";
   const mainHeadingSize =
     layoutTier === "compact" ? 24 : layoutTier === "cozy" ? 26 : 28;
+  const pageTitle = SECTIONS_CONFIG[currentSection]
+    ? t(SECTIONS_CONFIG[currentSection].labelKey)
+    : t(SECTIONS_CONFIG.general.labelKey);
+  const pageDescription = t(
+    SECTION_DESCRIPTION_KEYS[currentSection] ??
+      "shell.sectionDescriptions.default",
+  );
 
   useEffect(() => {
     const handleResize = () => setViewportWidth(window.innerWidth);
@@ -579,19 +602,7 @@ function App() {
         onStartCheckout: handleStartCheckout,
       }}
     >
-      <div
-        dir={direction}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          width: "100vw",
-          height: "100vh",
-          overflow: "hidden",
-          background: "#0f0f0f",
-          fontFamily: "'Segoe UI', system-ui, sans-serif",
-          color: "inherit",
-        }}
-      >
+      <div dir={direction} className="app-shell">
         <TitleBar
           sidebarCollapsed={effectiveSidebarCollapsed}
           layoutTier={layoutTier}
@@ -627,15 +638,7 @@ function App() {
             },
           }}
         />
-        <div
-          style={{
-            display: "flex",
-            flex: 1,
-            minHeight: 0,
-            overflow: "hidden",
-            background: "#0f0f0f",
-          }}
-        >
+        <div className="app-frame">
           <Sidebar
             activeSection={currentSection}
             onSectionChange={setCurrentSection}
@@ -645,56 +648,50 @@ function App() {
 
           <main
             id="main-content"
+            className="app-main"
             style={{
-              flex: 1,
-              overflowY: "auto",
-              overflowX: "hidden",
               padding: mainContentPadding,
-              minWidth: 0,
-              minHeight: 0,
-              background: "#161616",
-              borderTopLeftRadius: 12,
-              marginTop: -1,
-              borderLeft: "1px solid rgba(255,255,255,0.07)",
+              ["--main-pad-top" as string]:
+                layoutTier === "compact"
+                  ? "20px"
+                  : layoutTier === "cozy"
+                    ? "24px"
+                    : "28px",
+              ["--main-pad-x" as string]:
+                layoutTier === "compact"
+                  ? "22px"
+                  : layoutTier === "cozy"
+                    ? "28px"
+                    : "36px",
             }}
           >
-            <h1
-              style={{
-                fontSize: mainHeadingSize,
-                fontWeight: 700,
-                lineHeight: 1,
-                letterSpacing: "-0.6px",
-                color: "rgba(255,255,255,0.95)",
-                marginBottom: 24,
-              }}
-            >
-              {SECTIONS_CONFIG[currentSection]
-                ? t(SECTIONS_CONFIG[currentSection].labelKey)
-                : t(SECTIONS_CONFIG.general.labelKey)}
-            </h1>
-            {showFirstLaunchHint && (
-              <div
-                className="rounded-xl border border-white/10 bg-white/[0.04] text-sm text-text/70"
-                style={{
-                  margin: layoutTier === "compact" ? "0 0 12px" : "0 16px 12px",
-                  padding: "12px 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                }}
-              >
-                <span>
-                  {t("hints.firstLaunch", {
-                    shortcut:
-                      settings?.bindings?.transcribe?.current_binding ??
-                      "Ctrl+Space",
-                  })}
-                </span>
+            <div className="app-main-inner">
+              <div className="app-header-block">
+                <h1
+                  className="app-page-title"
+                  style={{ fontSize: mainHeadingSize }}
+                >
+                  {pageTitle}
+                </h1>
+                <p className="app-page-subtitle">{pageDescription}</p>
               </div>
-            )}
-            <ErrorBoundary>
-              {renderSettingsContent(currentSection)}
-            </ErrorBoundary>
+
+              {showFirstLaunchHint && (
+                <div className="app-first-launch-hint">
+                  <span>
+                    {t("hints.firstLaunch", {
+                      shortcut:
+                        settings?.bindings?.transcribe?.current_binding ??
+                        "Ctrl+Space",
+                    })}
+                  </span>
+                </div>
+              )}
+
+              <ErrorBoundary>
+                {renderSettingsContent(currentSection)}
+              </ErrorBoundary>
+            </div>
           </main>
         </div>
       </div>

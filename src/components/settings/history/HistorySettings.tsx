@@ -23,6 +23,7 @@ import { useOsType } from "@/hooks/useOsType";
 import { useModelStore } from "@/stores/modelStore";
 import { ConfidenceText } from "./ConfidenceText";
 import { usePlan } from "@/lib/subscription/context";
+import { Button } from "../../ui/Button";
 
 const PAGE_SIZE = 30;
 
@@ -35,14 +36,9 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   onClick,
   label,
 }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="text-[12px] text-white/30 transition-colors hover:text-white/55"
-    title={label}
-  >
+  <Button type="button" onClick={onClick} variant="secondary" size="sm" title={label}>
     {label}
-  </button>
+  </Button>
 );
 
 // ── Export button ─────────────────────────────────────────────────────────────
@@ -92,14 +88,15 @@ const ExportHistoryButton: React.FC = () => {
   };
 
   return (
-    <button
+    <Button
       type="button"
       onClick={handleExport}
       disabled={exporting}
-      style={{ padding: "10px 16px" }}
-      className="flex items-center gap-1.5 rounded-md border border-logo-primary/30 bg-logo-primary/5 text-[12px] text-logo-primary/80 transition-colors hover:bg-logo-primary/10 hover:text-logo-primary disabled:opacity-40"
+      variant="primary-soft"
+      size="sm"
+      className="inline-flex items-center gap-2"
       title={t("settings.history.exportMyData", {
-        defaultValue: "Export my data",
+        defaultValue: "Exporter mes données",
       })}
     >
       {exporting ? (
@@ -107,8 +104,10 @@ const ExportHistoryButton: React.FC = () => {
       ) : (
         <Download size={11} />
       )}
-      {t("settings.history.exportMyData", { defaultValue: "Export my data" })}
-    </button>
+      {t("settings.history.exportMyData", {
+        defaultValue: "Exporter mes données",
+      })}
+    </Button>
   );
 };
 
@@ -127,7 +126,7 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
       await invoke("clear_all_history");
       toast.success(
         t("settings.history.clearAllSuccess", {
-          defaultValue: "All history cleared.",
+          defaultValue: "Historique effacé.",
         }),
       );
       setConfirmDeleteAll(false);
@@ -136,7 +135,7 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
       console.error(e);
       toast.error(
         t("settings.history.clearAllError", {
-          defaultValue: "Failed to clear history.",
+          defaultValue: "Échec de la suppression de l'historique.",
         }),
       );
     } finally {
@@ -158,8 +157,7 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
           autoFocus
           onClick={handleClear}
           disabled={clearing}
-          style={{ padding: "10px 16px" }}
-          className="text-sm text-red-400 hover:text-red-300 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded disabled:opacity-40"
+          className="inline-flex h-9 items-center justify-center rounded-lg bg-red-500/14 px-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20 hover:text-red-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:opacity-40"
         >
           {clearing ? (
             <Loader2 size={11} className="animate-spin" />
@@ -169,8 +167,7 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
         </button>
         <button
           onClick={() => setConfirmDeleteAll(false)}
-          style={{ padding: "10px 16px" }}
-          className="text-sm text-text/60 hover:text-text/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary rounded"
+          className="inline-flex h-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-text/70 transition-colors hover:bg-white/[0.07] hover:text-text/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
         >
           {t("common.cancel")}
         </button>
@@ -179,13 +176,15 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
   }
 
   return (
-    <button
+    <Button
       type="button"
       onClick={() => setConfirmDeleteAll(true)}
       disabled={clearing}
-      className="flex items-center gap-1 text-[12px] text-red-400/60 transition-colors hover:text-red-400 disabled:opacity-40"
+      variant="danger-ghost"
+      size="sm"
+      className="inline-flex items-center gap-2 rounded-xl border border-red-500/18 bg-red-500/[0.04] text-red-300/78 hover:border-red-500/28 hover:bg-red-500/[0.08] hover:text-red-200"
       title={t("settings.history.clearAll", {
-        defaultValue: "Clear all history",
+        defaultValue: "Effacer tout l'historique",
       })}
     >
       {clearing ? (
@@ -193,8 +192,10 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
       ) : (
         <Eraser size={11} />
       )}
-      {t("settings.history.clearAll", { defaultValue: "Clear all history" })}
-    </button>
+      {t("settings.history.clearAll", {
+        defaultValue: "Effacer tout l'historique",
+      })}
+    </Button>
   );
 };
 
@@ -237,11 +238,13 @@ const TranscribeFileButton: React.FC = () => {
   };
 
   return (
-    <button
+    <Button
       type="button"
       onClick={handleTranscribeFile}
       disabled={transcribing}
-      className="flex items-center gap-1 text-[12px] text-white/30 transition-colors hover:text-white/55 disabled:opacity-40"
+      variant="secondary"
+      size="sm"
+      className="inline-flex items-center gap-2"
       title={t("settings.history.transcribeFile", {
         defaultValue: "Transcrire un fichier",
       })}
@@ -254,7 +257,7 @@ const TranscribeFileButton: React.FC = () => {
       {t("settings.history.transcribeFile", {
         defaultValue: "Transcrire un fichier",
       })}
-    </button>
+    </Button>
   );
 };
 
@@ -524,87 +527,105 @@ export const HistorySettings: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {/* Row 1 : titre + actions secondaires */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div>
+          <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/25">
             {t("settings.history.title")}
           </h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <TranscribeFileButton />
-            <ExportHistoryButton />
-            <ClearAllHistoryButton onCleared={loadHistoryEntries} />
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
-          </div>
+          <p className="mt-1 text-[12px] text-white/36">
+            {t("shell.sectionDescriptions.history")}
+          </p>
         </div>
 
-        {/* Row 2 : barre de recherche pleine largeur */}
-        <div style={{ position: "relative" }}>
-          <svg
+        <div className="settings-group-card">
+          <div
             style={{
-              position: "absolute",
-              left: 14,
-              top: "50%",
-              transform: "translateY(-50%)",
-              pointerEvents: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              padding: "14px 18px 16px",
             }}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-white/30"
           >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t("settings.history.search", {
-              defaultValue: "Rechercher une transcription…",
-            })}
-            style={{ padding: "10px 16px 10px 38px", width: "100%" }}
-            className="rounded-[10px] border border-white/10 bg-white/[0.05] text-[13px] text-white/80 placeholder-white/25 outline-none focus:border-logo-primary/40 focus:bg-white/[0.08] transition-all"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <TranscribeFileButton />
+              <ExportHistoryButton />
+              <OpenRecordingsButton
+                onClick={openRecordingsFolder}
+                label={t("settings.history.openFolder")}
+              />
+            </div>
+
+            <div
               style={{
-                position: "absolute",
-                right: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
               }}
-              className="text-white/30 hover:text-white/60 transition-colors"
             >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            </button>
-          )}
+              <div style={{ position: "relative", flex: "1 1 560px", minWidth: 0 }}>
+                <svg
+                  style={{
+                    position: "absolute",
+                    left: 14,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    pointerEvents: "none",
+                  }}
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-white/30"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t("settings.history.search", {
+                    defaultValue: "Rechercher une transcription…",
+                  })}
+                  style={{ padding: "12px 16px 12px 38px", width: "100%" }}
+                  className="rounded-[12px] border border-white/10 bg-black/20 text-[13px] text-white/82 placeholder-white/25 outline-none transition-all focus:border-logo-primary/35 focus:bg-white/[0.06]"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                    }}
+                    className="text-white/30 transition-colors hover:text-white/60"
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    >
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <ClearAllHistoryButton onCleared={loadHistoryEntries} />
+              </div>
+            </div>
+          </div>
         </div>
         <div className="overflow-visible">
           {isBasicTier && historyEntries.length > BASIC_HISTORY_LIMIT && (

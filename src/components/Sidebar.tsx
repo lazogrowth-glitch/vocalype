@@ -60,10 +60,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
   const isCompact = layoutTier === "compact";
   const isCozy = layoutTier === "cozy";
-  const expandedWidth = isCompact ? 204 : isCozy ? 214 : 224;
-  const collapsedWidth = isCompact ? 52 : 56;
+  const expandedWidth = isCompact ? 222 : isCozy ? 236 : 250;
+  const collapsedWidth = isCompact ? 60 : 66;
   const navPaddingX = isCompact ? 14 : 16;
-  const itemGap = isCompact ? 8 : 10;
+  const itemGap = isCompact ? 10 : 11;
   const itemFontSize = isCompact ? 13 : 14;
   const bottomFontSize = isCompact ? 12 : 14;
 
@@ -75,26 +75,67 @@ export const Sidebar: React.FC<SidebarProps> = ({
         flexShrink: 0,
         height: "100%",
         overflow: "hidden",
-        background: "#0f0f0f",
-        borderRight: "1px solid rgba(255,255,255,0.06)",
+        background:
+          "linear-gradient(180deg, rgba(16,16,16,0.98), rgba(10,10,10,0.96))",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: collapsed ? 22 : 24,
+        boxShadow: "0 14px 30px rgba(0,0,0,0.24)",
         display: "flex",
         flexDirection: "column",
-        transition: "width 0.2s ease",
+        transition: "width 0.2s ease, border-radius 0.2s ease",
       }}
     >
       {!collapsed && (
         <div
-          style={{ padding: isCompact ? "24px 14px 14px" : "32px 16px 16px" }}
+          style={{ padding: isCompact ? "18px 14px 10px" : "20px 16px 12px" }}
         >
-          <div className="flex items-center gap-[10px] min-w-0">
-            <img
-              src="/icon128.png"
-              alt="Vocalype"
-              width={isCompact ? 28 : 30}
-              height={isCompact ? 28 : 30}
-              className="shrink-0 rounded-[7px]"
-            />
-            <VocalypeLogo width={isCompact ? 105 : 115} />
+          <div
+            style={{
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 16,
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018))",
+              padding: isCompact ? "11px" : "12px",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
+            }}
+          >
+            <div className="flex items-center gap-[12px] min-w-0">
+              <div
+                style={{
+                    width: isCompact ? 36 : 40,
+                    height: isCompact ? 36 : 40,
+                    borderRadius: 11,
+                  background:
+                    "linear-gradient(180deg, rgba(201,168,76,0.28), rgba(201,168,76,0.16))",
+                  border: "1px solid rgba(201,168,76,0.18)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 10px 20px rgba(0,0,0,0.18)",
+                }}
+              >
+                <img
+                  src="/icon128.png"
+                  alt="Vocalype"
+                    width={isCompact ? 20 : 22}
+                    height={isCompact ? 20 : 22}
+                  className="shrink-0 rounded-[7px]"
+                />
+              </div>
+              <div className="min-w-0">
+                <VocalypeLogo width={isCompact ? 104 : 112} />
+                <p
+                  style={{
+                    marginTop: 3,
+                    fontSize: 11,
+                    lineHeight: "16px",
+                    color: "rgba(255,255,255,0.42)",
+                  }}
+                >
+                  {t("shell.workspaceSubtitle")}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -107,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               .then((url) => url && window.open(url, "_blank"))
               .catch(() => {})
           }
-          className={`w-full border-b px-[18px] py-2.5 text-left transition-opacity hover:opacity-80 ${
+          className={`mx-4 mb-2 rounded-[16px] border px-[16px] py-3 text-left transition-opacity hover:opacity-90 ${
             trialBadge.urgency === "neutral"
               ? "border-logo-primary/15 bg-logo-primary/8"
               : trialBadge.urgency === "warning"
@@ -116,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }`}
         >
           <p
-            className={`text-[11px] font-medium leading-tight ${
+            className={`text-[11px] font-medium leading-tight tracking-[0.01em] ${
               trialBadge.urgency === "neutral"
                 ? "text-logo-primary"
                 : trialBadge.urgency === "warning"
@@ -125,39 +166,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             {trialBadge.urgency === "neutral" &&
-              t("trial.badge.neutral", {
-                count: trialBadge.days,
-                defaultValue: "Trial Premium · {{count}}j restants",
-              })}
+              t("trial.badge.neutral", { count: trialBadge.days })}
             {trialBadge.urgency === "warning" &&
-              t("trial.badge.warning", {
-                count: trialBadge.days,
-                defaultValue: "Plus que {{count}} jours de Premium",
-              })}
+              t("trial.badge.warning", { count: trialBadge.days })}
             {trialBadge.urgency === "urgent" &&
               (trialBadge.days === 0
-                ? t("trial.badge.today", {
-                    defaultValue: "Expire aujourd'hui",
-                  })
-                : t("trial.badge.urgent", {
-                    count: trialBadge.days,
-                    defaultValue: "Expire dans {{count}} jours",
-                  }))}
+                ? t("trial.badge.today")
+                : t("trial.badge.urgent", { count: trialBadge.days }))}
           </p>
-          <p className="mt-1 text-[11px] text-white/42">
-            {t("trial.badge.cta", { defaultValue: "Passer à Premium" })}
+          <p className="mt-1.5 text-[11px] text-white/42">
+            {t("trial.badge.cta")}
           </p>
         </button>
       ) : null}
 
-      {/* Main nav */}
       <div
         className="flex flex-1 flex-col overflow-y-auto min-h-0"
         style={{
-          paddingTop: isCompact ? 6 : 8,
-          paddingBottom: isCompact ? 6 : 8,
-          paddingLeft: 6,
-          paddingRight: 6,
+          paddingTop: isCompact ? 8 : 10,
+          paddingBottom: isCompact ? 8 : 10,
+          paddingLeft: 8,
+          paddingRight: 8,
         }}
       >
         {mainSections.map((section) => {
@@ -171,27 +200,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <React.Fragment key={section.id}>
               {showConfigLabel && (
                 <div className="sidebar-section-label">
-                  {t("sidebar.group.config", { defaultValue: "Configuration" })}
+                  {t("sidebar.group.config")}
                 </div>
               )}
               {showUsageLabel && (
                 <div
                   className="sidebar-section-label"
-                  style={{ paddingTop: 20 }}
+                  style={{ paddingTop: 24 }}
                 >
-                  {t("sidebar.group.usage", { defaultValue: "Utilisation" })}
+                  {t("sidebar.group.usage")}
                 </div>
               )}
               {showAdvancedLabel && (
                 <div
                   className="sidebar-section-label"
-                  style={{ paddingTop: 20 }}
+                  style={{ paddingTop: 24 }}
                 >
-                  {t("sidebar.group.advanced", { defaultValue: "Avancé" })}
+                  {t("sidebar.group.advanced")}
                 </div>
               )}
               <button
-                key={`btn-${section.id}`}
                 type="button"
                 className="sidebar-nav-btn"
                 data-active={isActive ? "true" : undefined}
@@ -202,22 +230,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   gap: collapsed ? 0 : itemGap,
                   padding: collapsed
                     ? isCompact
-                      ? "10px 0"
-                      : "12px 0"
-                    : `${isCompact ? 8 : 9}px ${navPaddingX}px ${isCompact ? 8 : 9}px ${navPaddingX + 6}px`,
+                      ? "12px 0"
+                      : "13px 0"
+                    : `${isCompact ? 10 : 11}px ${navPaddingX}px`,
                   fontSize: itemFontSize,
-                  width: collapsed ? "100%" : "calc(100% - 8px)",
+                  width: "100%",
                   cursor: "pointer",
                   color: isActive
-                    ? "rgba(255,255,255,0.95)"
-                    : "rgba(255,255,255,0.48)",
-                  borderRadius: collapsed ? 0 : "7px",
-                  border: "none",
+                    ? "rgba(255,255,255,0.97)"
+                    : "rgba(255,255,255,0.5)",
+                  borderRadius: collapsed ? 14 : "14px",
+                  border: isActive
+                    ? "1px solid rgba(201,168,76,0.16)"
+                    : "1px solid transparent",
                   background: isActive
-                    ? "rgba(255,255,255,0.06)"
+                    ? "linear-gradient(180deg, rgba(201,168,76,0.18), rgba(201,168,76,0.09))"
                     : "transparent",
                   textAlign: "left",
                   position: "relative",
+                  boxShadow: isActive
+                    ? "inset 0 1px 0 rgba(255,255,255,0.06)"
+                    : "none",
                 }}
                 onClick={() => onSectionChange(section.id)}
                 aria-current={isActive ? "page" : undefined}
@@ -228,13 +261,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span
                     style={{
                       position: "absolute",
-                      left: 0,
+                      left: 8,
                       top: "50%",
                       transform: "translateY(-50%)",
-                      height: 16,
-                      width: 2,
-                      borderRadius: 2,
-                      background: "#c9a84c",
+                      height: 18,
+                      width: 3,
+                      borderRadius: 999,
+                      background: "#f0d080",
+                      boxShadow: "0 0 18px rgba(201,168,76,0.32)",
                       pointerEvents: "none",
                     }}
                   />
@@ -242,18 +276,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span
                   style={{
                     display: "flex",
-                    width: isCompact ? 15 : 16,
-                    height: isCompact ? 15 : 16,
+                    width: isCompact ? 17 : 18,
+                    height: isCompact ? 17 : 18,
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                    opacity: isActive ? 0.9 : 0.45,
+                    opacity: isActive ? 0.92 : 0.52,
                     transition: "opacity 0.15s",
                   }}
                 >
                   <Icon
-                    width={isCompact ? 15 : 16}
-                    height={isCompact ? 15 : 16}
+                    width={isCompact ? 17 : 18}
+                    height={isCompact ? 17 : 18}
                     aria-hidden="true"
                   />
                 </span>
@@ -261,7 +295,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span
                     style={{
                       fontSize: isCompact ? 13 : 13.5,
-                      fontWeight: isActive ? 500 : 400,
+                      fontWeight: isActive ? 600 : 500,
                       lineHeight: "20px",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -278,13 +312,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* Bottom sections — Facturation, Parrainage, À propos */}
       <div
         className="flex flex-col shrink-0"
         style={{
-          borderTop: "0.5px solid rgba(255,255,255,0.08)",
-          paddingTop: 6,
-          paddingBottom: 6,
+          borderTop: "1px solid rgba(255,255,255,0.07)",
+          margin: "4px 8px 0",
+          paddingTop: 10,
+          paddingBottom: 10,
         }}
       >
         {bottomSections.map((section) => {
@@ -303,18 +337,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 gap: collapsed ? 0 : itemGap,
                 padding: collapsed
                   ? isCompact
-                    ? "9px 0"
-                    : "10px 0"
-                  : `${isCompact ? 7 : 8}px ${navPaddingX}px`,
+                    ? "11px 0"
+                    : "12px 0"
+                  : `${isCompact ? 9 : 10}px ${navPaddingX}px`,
                 fontSize: bottomFontSize,
-                width: collapsed ? "100%" : "calc(100% - 8px)",
+                width: "100%",
                 cursor: "pointer",
                 background: isActive ? "rgba(255,255,255,0.06)" : "transparent",
                 color: isActive
                   ? "rgba(255,255,255,0.90)"
-                  : "rgba(255,255,255,0.32)",
-                borderRadius: collapsed ? 0 : "7px",
-                border: "none",
+                  : "rgba(255,255,255,0.34)",
+                borderRadius: collapsed ? 14 : "12px",
+                border: "1px solid transparent",
                 textAlign: "left",
                 position: "relative",
               }}
@@ -359,9 +393,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
 
-        {/* Status bar */}
         {!collapsed && (
-          <div style={{ padding: "6px 16px 2px" }}>
+          <div style={{ padding: "10px 8px 2px" }}>
             <MachineStatusBar variant="sidebar" />
           </div>
         )}

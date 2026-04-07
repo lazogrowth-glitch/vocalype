@@ -47,9 +47,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         >
           <span style={{ fontSize: "18px" }}>⚠</span>
           <span>
-            {i18n.t("error.boundary.sectionMessage", {
-              defaultValue: "Une erreur est survenue dans cette section.",
-            })}
+            {i18n.t("error.boundary.sectionMessage")}
           </span>
           {this.state.error && (
             <span style={{ color: "#888", fontSize: "11px" }}>
@@ -69,7 +67,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               fontSize: "12px",
             }}
           >
-            {i18n.t("error.boundary.retry", { defaultValue: "Réessayer" })}
+            {i18n.t("error.boundary.retry")}
           </button>
         </div>
       );

@@ -215,8 +215,8 @@ const ProcessingModelsSection: React.FC = () => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div
-        className="rounded-[10px] border border-white/8 bg-white/[0.03]"
-        style={{ padding: "16px 20px" }}
+        className="rounded-[12px] border border-white/8 bg-white/[0.03]"
+        style={{ padding: "18px 20px" }}
       >
         <p className="text-[13.5px] font-medium text-white">
           {t("settings.models.processingModels.title")}
@@ -230,19 +230,22 @@ const ProcessingModelsSection: React.FC = () => {
       </div>
 
       {savedModels.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {savedModels.map((model) => (
             <div
               key={model.id}
-              className="flex items-center justify-between rounded-[10px] border border-white/8 bg-white/[0.03]"
-              style={{ padding: "16px 20px" }}
+              className="flex items-center justify-between rounded-[12px] border border-white/8 bg-white/[0.03]"
+              style={{ padding: "16px 18px" }}
             >
               <span className="truncate pr-3 text-[13px] text-text">
                 {model.label}
               </span>
-              <button
+              <Button
+                type="button"
                 onClick={() => handleDelete(model.id)}
-                className="p-1 text-mid-gray/40 hover:text-red-400 transition-colors"
+                variant="ghost"
+                size="sm"
+                className="shrink-0 p-2 text-mid-gray/40 hover:text-red-400"
                 aria-label={t("settings.models.processingModels.delete", {
                   defaultValue: "Delete model",
                 })}
@@ -251,7 +254,7 @@ const ProcessingModelsSection: React.FC = () => {
                 })}
               >
                 <X className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -259,8 +262,8 @@ const ProcessingModelsSection: React.FC = () => {
 
       {savedModels.length === 0 && !isAdding && (
         <div
-          className="rounded-[10px] border border-white/8 bg-white/[0.03]"
-          style={{ padding: "16px 20px" }}
+          className="rounded-[12px] border border-white/8 bg-white/[0.03]"
+          style={{ padding: "18px 20px" }}
         >
           <p className="text-[12.5px] text-mid-gray">
             {t("settings.models.processingModels.noModels")}
@@ -270,12 +273,12 @@ const ProcessingModelsSection: React.FC = () => {
 
       {isAdding && (
         <div
-          className="rounded-[10px] border border-white/8 bg-white/[0.03]"
+          className="rounded-[12px] border border-white/8 bg-white/[0.03]"
           style={{
-            padding: "16px",
+            padding: "18px",
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            gap: 14,
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -379,10 +382,13 @@ const ProcessingModelsSection: React.FC = () => {
                     />
                   )}
                   {providerRequiresApiKey ? (
-                    <button
+                    <Button
+                      type="button"
                       onClick={handleFetchModels}
                       disabled={isFetching || !apiKey.trim()}
-                      className="flex items-center justify-center h-8 w-8 rounded-md bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-40"
+                      variant="secondary"
+                      size="sm"
+                      className="h-10 w-10 shrink-0 px-0"
                       title={t("settings.models.processingModels.fetchModels")}
                       aria-label={t(
                         "settings.models.processingModels.fetchModels",
@@ -392,7 +398,7 @@ const ProcessingModelsSection: React.FC = () => {
                         className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
                         aria-hidden="true"
                       />
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
                 {selectedProvider ? (

@@ -63,9 +63,8 @@ export const TitleBar = ({
       : null;
   const isCompact = layoutTier === "compact";
   const isCozy = layoutTier === "cozy";
-  const barHeight = isCompact ? 46 : isCozy ? 49 : 52;
-  const leftPadding = isCompact ? 6 : 8;
-  const menuTop = isCompact ? 40 : 44;
+  const barHeight = isCompact ? 56 : isCozy ? 60 : 62;
+  const menuTop = isCompact ? 54 : 58;
 
   return (
     <div
@@ -77,7 +76,8 @@ export const TitleBar = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "#0f0f0f",
+          padding: "10px 20px 8px",
+          background: "transparent",
           userSelect: "none",
           WebkitAppRegion: "drag",
           position: "relative",
@@ -85,14 +85,12 @@ export const TitleBar = ({
         } as React.CSSProperties
       }
     >
-      {/* Left: sidebar toggle + account */}
       <div
         style={
           {
             display: "flex",
             alignItems: "center",
-            gap: 2,
-            paddingLeft: leftPadding,
+            gap: 10,
             WebkitAppRegion: "no-drag",
           } as React.CSSProperties
         }
@@ -103,7 +101,7 @@ export const TitleBar = ({
             aria-label="Toggle sidebar"
             active={sidebarCollapsed === false}
           >
-            <PanelLeft size={isCompact ? 14 : 15} strokeWidth={1.8} />
+            <PanelLeft size={isCompact ? 15 : 16} strokeWidth={1.8} />
           </TitleBarBtn>
         )}
 
@@ -122,18 +120,25 @@ export const TitleBar = ({
                 style={{
                   position: "fixed",
                   top: menuTop,
-                  left: leftPadding,
-                  width: 244,
-                  background: "#1c1c1c",
-                  border: "0.5px solid rgba(255,255,255,0.12)",
-                  borderRadius: 10,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
-                  padding: "6px",
+                  left: 20,
+                  width: 264,
+                  background:
+                    "linear-gradient(180deg, rgba(27,27,27,0.98), rgba(18,18,18,0.98))",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 16,
+                  boxShadow: "0 20px 36px rgba(0,0,0,0.38)",
+                  padding: "8px",
                   zIndex: 99999,
                 }}
               >
-                {/* User info */}
-                <div style={{ padding: "10px 12px 10px" }}>
+                <div
+                  style={{
+                    padding: "12px 12px 10px",
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.025)",
+                    border: "1px solid rgba(255,255,255,0.04)",
+                  }}
+                >
                   {session.user.name && (
                     <p
                       style={{
@@ -152,7 +157,7 @@ export const TitleBar = ({
                   <p
                     style={{
                       fontSize: 11,
-                      color: "rgba(255,255,255,0.45)",
+                      color: "rgba(255,255,255,0.48)",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -160,72 +165,33 @@ export const TitleBar = ({
                   >
                     {session.user.email}
                   </p>
-                  <div style={{ marginTop: 8 }}>
+                  <div style={{ marginTop: 10 }}>
                     {isTrialing && trialDaysLeft !== null ? (
-                      <span
-                        style={{
-                          display: "inline-block",
-                          fontSize: 11,
-                          fontWeight: 500,
-                          color: "#c9a84c",
-                          background: "rgba(201,168,76,0.15)",
-                          border: "0.5px solid rgba(201,168,76,0.3)",
-                          borderRadius: 5,
-                          padding: "2px 8px",
-                        }}
-                      >
+                      <span style={pillStyle(true)}>
                         {t("trial.badge.neutral", {
                           count: trialDaysLeft,
-                          defaultValue: "Trial · {{count}}j restants",
                         })}
                       </span>
                     ) : session.subscription?.tier === "premium" ? (
-                      <span
-                        style={{
-                          display: "inline-block",
-                          fontSize: 11,
-                          fontWeight: 500,
-                          color: "#c9a84c",
-                          background: "rgba(201,168,76,0.15)",
-                          border: "0.5px solid rgba(201,168,76,0.3)",
-                          borderRadius: 5,
-                          padding: "2px 8px",
-                        }}
-                      >
-                        {t("plan.premium", { defaultValue: "Premium" })}
-                      </span>
+                      <span style={pillStyle(true)}>{t("plan.premium")}</span>
                     ) : (
-                      <span
-                        style={{
-                          display: "inline-block",
-                          fontSize: 11,
-                          fontWeight: 500,
-                          color: "rgba(255,255,255,0.45)",
-                          background: "rgba(255,255,255,0.07)",
-                          borderRadius: 5,
-                          padding: "2px 8px",
-                        }}
-                      >
-                        {t("plan.basic", { defaultValue: "Basique" })}
-                      </span>
+                      <span style={pillStyle(false)}>{t("plan.basic")}</span>
                     )}
                   </div>
                 </div>
 
                 <div
                   style={{
-                    height: "0.5px",
+                    height: 1,
                     background: "rgba(255,255,255,0.08)",
-                    margin: "2px 0",
+                    margin: "8px 4px",
                   }}
                 />
 
                 {onOpenBillingPortal && (
                   <MenuBtn
                     icon={<CreditCard size={14} />}
-                    label={t("billing.manage", {
-                      defaultValue: "Gérer l'abonnement",
-                    })}
+                    label={t("auth.manageSubscription")}
                     onClick={() => {
                       void onOpenBillingPortal();
                       setShowAccountMenu(false);
@@ -236,9 +202,7 @@ export const TitleBar = ({
                 {onLogout && (
                   <MenuBtn
                     icon={<LogOut size={14} />}
-                    label={t("auth.logout", {
-                      defaultValue: "Se déconnecter",
-                    })}
+                    label={t("auth.logout")}
                     onClick={() => {
                       onLogout();
                       setShowAccountMenu(false);
@@ -252,12 +216,12 @@ export const TitleBar = ({
         )}
       </div>
 
-      {/* Right: window controls */}
       <div
         style={
           {
             display: "flex",
             alignItems: "center",
+            gap: 4,
             height: "100%",
             WebkitAppRegion: "no-drag",
           } as React.CSSProperties
@@ -289,6 +253,19 @@ export const TitleBar = ({
   );
 };
 
+const pillStyle = (premium: boolean): React.CSSProperties => ({
+  display: "inline-block",
+  fontSize: 11,
+  fontWeight: 600,
+  color: premium ? "#c9a84c" : "rgba(255,255,255,0.54)",
+  background: premium ? "rgba(201,168,76,0.14)" : "rgba(255,255,255,0.07)",
+  border: premium
+    ? "1px solid rgba(201,168,76,0.25)"
+    : "1px solid rgba(255,255,255,0.07)",
+  borderRadius: 999,
+  padding: "4px 9px",
+});
+
 const TitleBarBtn = ({
   children,
   onClick,
@@ -306,17 +283,19 @@ const TitleBarBtn = ({
     aria-label={ariaLabel}
     style={
       {
-        width: 32,
-        height: 28,
+        width: 34,
+        height: 32,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: active ? "rgba(255,255,255,0.08)" : "transparent",
-        border: "none",
-        color: "rgba(255,255,255,0.65)",
+        background: active
+          ? "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))"
+          : "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        color: "rgba(255,255,255,0.7)",
         cursor: "pointer",
-        borderRadius: 6,
-        transition: "background 0.12s, color 0.12s",
+        borderRadius: 11,
+        transition: "background 0.12s, color 0.12s, border-color 0.12s",
         padding: 0,
       } as React.CSSProperties
     }
@@ -324,13 +303,17 @@ const TitleBarBtn = ({
       (e.currentTarget as HTMLButtonElement).style.background =
         "rgba(255,255,255,0.1)";
       (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+      (e.currentTarget as HTMLButtonElement).style.borderColor =
+        "rgba(255,255,255,0.1)";
     }}
     onMouseLeave={(e) => {
       (e.currentTarget as HTMLButtonElement).style.background = active
-        ? "rgba(255,255,255,0.08)"
-        : "transparent";
+        ? "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))"
+        : "rgba(255,255,255,0.03)";
       (e.currentTarget as HTMLButtonElement).style.color =
-        "rgba(255,255,255,0.65)";
+        "rgba(255,255,255,0.7)";
+      (e.currentTarget as HTMLButtonElement).style.borderColor =
+        "rgba(255,255,255,0.07)";
     }}
   >
     {children}
@@ -357,30 +340,34 @@ const MenuBtn = ({
         alignItems: "center",
         gap: 10,
         width: "100%",
-        padding: "8px 12px",
+        padding: "10px 12px",
         fontSize: 13,
-        color: danger ? "rgba(255,80,80,0.85)" : "rgba(255,255,255,0.75)",
+        color: danger ? "rgba(255,80,80,0.88)" : "rgba(255,255,255,0.76)",
         background: "transparent",
-        border: "none",
-        borderRadius: 7,
+        border: "1px solid transparent",
+        borderRadius: 12,
         cursor: "pointer",
         textAlign: "left",
-        transition: "background 0.1s, color 0.1s",
+        transition: "background 0.1s, color 0.1s, border-color 0.1s",
       } as React.CSSProperties
     }
     onMouseEnter={(e) => {
       (e.currentTarget as HTMLButtonElement).style.background = danger
         ? "rgba(255,80,80,0.1)"
-        : "rgba(255,255,255,0.07)";
+        : "rgba(255,255,255,0.06)";
       (e.currentTarget as HTMLButtonElement).style.color = danger
         ? "rgba(255,80,80,1)"
         : "#fff";
+      (e.currentTarget as HTMLButtonElement).style.borderColor = danger
+        ? "rgba(255,80,80,0.16)"
+        : "rgba(255,255,255,0.06)";
     }}
     onMouseLeave={(e) => {
       (e.currentTarget as HTMLButtonElement).style.background = "transparent";
       (e.currentTarget as HTMLButtonElement).style.color = danger
-        ? "rgba(255,80,80,0.85)"
-        : "rgba(255,255,255,0.75)";
+        ? "rgba(255,80,80,0.88)"
+        : "rgba(255,255,255,0.76)";
+      (e.currentTarget as HTMLButtonElement).style.borderColor = "transparent";
     }}
   >
     {icon}
@@ -405,29 +392,34 @@ const WinBtn = ({
     aria-label={ariaLabel}
     style={
       {
-        width: 46,
-        height: 38,
+        width: 36,
+        height: 32,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "transparent",
-        border: "none",
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.07)",
         color: "rgba(255,255,255,0.75)",
         cursor: "pointer",
-        transition: "background 0.12s",
+        transition: "background 0.12s, border-color 0.12s",
         padding: 0,
-        borderRadius: 0,
+        borderRadius: 11,
         WebkitAppRegion: "no-drag",
       } as React.CSSProperties
     }
     onMouseEnter={(e) => {
       (e.currentTarget as HTMLButtonElement).style.background = hoverBg;
       (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+      (e.currentTarget as HTMLButtonElement).style.borderColor =
+        "rgba(255,255,255,0.1)";
     }}
     onMouseLeave={(e) => {
-      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+      (e.currentTarget as HTMLButtonElement).style.background =
+        "rgba(255,255,255,0.03)";
       (e.currentTarget as HTMLButtonElement).style.color =
         "rgba(255,255,255,0.75)";
+      (e.currentTarget as HTMLButtonElement).style.borderColor =
+        "rgba(255,255,255,0.07)";
     }}
   >
     {children}

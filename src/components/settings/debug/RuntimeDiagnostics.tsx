@@ -276,7 +276,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                 {adaptiveProfile.npu_name
                   ? ` Â· ${adaptiveProfile.npu_name}`
                   : ""}
-                {" Â· "}
+                {" · "}
                 <span className="text-text/60">
                   {t("settings.debug.runtimeDiagnostics.copilotPlus", {
                     defaultValue: "Copilot+",
@@ -311,7 +311,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                 <span className="font-semibold">
                   {adaptiveProfile.power_mode}
                 </span>
-                {" Â· "}
+                {" · "}
                 <span className="text-text/60">
                   {t("settings.debug.runtimeDiagnostics.battery", {
                     defaultValue: "battery",
@@ -325,7 +325,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                       ? t("common.yes", { defaultValue: "yes" })
                       : t("common.no", { defaultValue: "no" })}
                 </span>
-                {" Â· "}
+                {" · "}
                 <span className="text-text/60">
                   {t("settings.debug.runtimeDiagnostics.thermal", {
                     defaultValue: "thermal",
@@ -369,7 +369,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                     defaultValue: "stream closed",
                   })}
             </span>
-            {" Â· "}
+            {" · "}
             <span className="text-text/60">
               {snapshot.microphone_backend_ready
                 ? t("settings.debug.runtimeDiagnostics.backendReady", {
@@ -379,7 +379,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                     defaultValue: "backend not ready",
                   })}
             </span>
-            {" Â· "}
+            {" · "}
             <span className="text-text/60">
               {snapshot.selected_microphone_available
                 ? t("settings.debug.runtimeDiagnostics.deviceAvailable", {
@@ -395,17 +395,17 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
               defaultValue: "Input level",
             })}
             : <span className="font-semibold">{snapshot.input_level_state}</span>
-            {" Â· "}
+            {" · "}
             <span className="text-text/60">
               ema {snapshot.input_energy_ema.toFixed(4)}
             </span>
-            {" Â· "}
+            {" · "}
             <span className="text-text/60">
               peak {snapshot.input_peak_energy.toFixed(4)}
             </span>
             {snapshot.adaptive_silence_threshold_ms != null && (
               <>
-                {" Â· "}
+                {" · "}
                 <span className="text-text/60">
                   silence {snapshot.adaptive_silence_threshold_ms}ms
                 </span>
@@ -502,9 +502,9 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                   })}
                   :{" "}
                   <span className="font-semibold">{voiceProfileSessions}</span>
-                  {" Â· "}
+                  {" · "}
                   <span className="text-text/60">{voiceProfileWpm}</span>
-                  {" Â· "}
+                  {" · "}
                   <span className="text-text/60">{voiceProfilePauses}</span>
                 </p>
                 {snapshot.active_voice_runtime_adjustment && (
@@ -594,17 +594,17 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                   className="break-words"
                 >
                   {session.model_name || session.model_id}
-                  {" Â· "}
+                  {" · "}
                   {session.selected_language}
-                  {" Â· "}
+                  {" · "}
                   {session.total_chunks} chunks
-                  {" Â· "}
+                  {" · "}
                   {session.retry_chunks} retries
-                  {" Â· "}
+                  {" · "}
                   {session.filtered_chunks} filtered
                   {" Â· risk "}
                   {(session.quality_risk_score * 100).toFixed(0)}%
-                  {" Â· "}
+                  {" · "}
                   {session.estimated_issue}
                   {session.assembled_preview
                     ? ` Â· ${session.assembled_preview}`
@@ -636,3 +636,4 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
     </SettingContainer>
   );
 };
+

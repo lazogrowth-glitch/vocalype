@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mic, Plus, Search, Trash2, Video } from "lucide-react";
 import { commands, type MeetingEntry } from "@/bindings";
+import { Button } from "../../ui/Button";
 
 function formatDate(ms: number): string {
   try {
@@ -17,9 +18,9 @@ function formatDate(ms: number): string {
   }
 }
 
-function meetingTitle(m: MeetingEntry): string {
-  if (m.title && m.title.trim()) return m.title;
-  return "Meeting";
+function meetingTitle(meeting: MeetingEntry): string {
+  if (meeting.title && meeting.title.trim()) return meeting.title;
+  return "Réunion";
 }
 
 export const MeetingsSettings: React.FC = () => {
@@ -39,53 +40,53 @@ export const MeetingsSettings: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadMeetings();
+    void loadMeetings();
     commands.detectActiveMeetingApp().then((res) => {
       setDetectedApp(res);
     });
   }, [loadMeetings]);
 
-  // Real-time segment append via event
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const unlisten: any[] = [];
+    const unlisten: Array<() => void> = [];
+
     import("@tauri-apps/api/event").then(({ listen }) => {
       listen<{ id: number; text: string }>("meeting-segment-added", (event) => {
         const { id, text } = event.payload;
         setMeetings((prev) =>
-          prev.map((m) =>
-            m.id === id
+          prev.map((meeting) =>
+            meeting.id === id
               ? {
-                  ...m,
-                  transcript: m.transcript + text,
+                  ...meeting,
+                  transcript: meeting.transcript + text,
                   updated_at: Date.now(),
                 }
-              : m,
+              : meeting,
           ),
         );
         if (selectedId === id) {
           setEditTranscript((prev) => prev + text);
         }
-        loadMeetings();
-      }).then((u) => unlisten.push(u));
+        void loadMeetings();
+      }).then((dispose) => unlisten.push(dispose));
 
       listen<MeetingEntry>("meeting-created", () => {
-        loadMeetings();
-      }).then((u) => unlisten.push(u));
+        void loadMeetings();
+      }).then((dispose) => unlisten.push(dispose));
     });
+
     return () => {
-      unlisten.forEach((u) => u());
+      unlisten.forEach((dispose) => dispose());
     };
   }, [selectedId, loadMeetings]);
 
-  const selectedMeeting = meetings.find((m) => m.id === selectedId) ?? null;
+  const selectedMeeting = meetings.find((meeting) => meeting.id === selectedId) ?? null;
 
   useEffect(() => {
     if (selectedMeeting) {
       setEditTitle(selectedMeeting.title);
       setEditTranscript(selectedMeeting.transcript);
     }
-  }, [selectedId]); // only re-run when selectedId changes
+  }, [selectedId, selectedMeeting]);
 
   const handleCreate = async () => {
     const app = detectedApp ?? "";
@@ -102,7 +103,7 @@ export const MeetingsSettings: React.FC = () => {
     e.stopPropagation();
     const res = await commands.deleteMeeting(id);
     if (res.status === "ok") {
-      setMeetings((prev) => prev.filter((m) => m.id !== id));
+      setMeetings((prev) => prev.filter((meeting) => meeting.id !== id));
       if (selectedId === id) setSelectedId(null);
     } else {
       toast.error(res.error);
@@ -113,7 +114,7 @@ export const MeetingsSettings: React.FC = () => {
     await commands.closeMeeting();
     toast.success(
       t("meetings.closed", {
-        defaultValue: "Meeting closed — next recording starts a new one",
+        defaultValue: "Réunion terminée — le prochain enregistrement créera une nouvelle réunion",
       }),
     );
   };
@@ -126,10 +127,10 @@ export const MeetingsSettings: React.FC = () => {
         const res = await commands.updateMeeting(id, title, transcript);
         if (res.status === "ok") {
           setMeetings((prev) =>
-            prev.map((m) =>
-              m.id === id
-                ? { ...m, title, transcript, updated_at: Date.now() }
-                : m,
+            prev.map((meeting) =>
+              meeting.id === id
+                ? { ...meeting, title, transcript, updated_at: Date.now() }
+                : meeting,
             ),
           );
         }
@@ -139,73 +140,76 @@ export const MeetingsSettings: React.FC = () => {
     [],
   );
 
-  const handleTitleChange = (v: string) => {
-    setEditTitle(v);
-    if (selectedId !== null) scheduleSave(selectedId, v, editTranscript);
+  const handleTitleChange = (value: string) => {
+    setEditTitle(value);
+    if (selectedId !== null) scheduleSave(selectedId, value, editTranscript);
   };
 
-  const handleTranscriptChange = (v: string) => {
-    setEditTranscript(v);
-    if (selectedId !== null) scheduleSave(selectedId, editTitle, v);
+  const handleTranscriptChange = (value: string) => {
+    setEditTranscript(value);
+    if (selectedId !== null) scheduleSave(selectedId, editTitle, value);
   };
 
-  const handleSearch = async (q: string) => {
-    setSearchQuery(q);
-    if (!q.trim()) {
-      loadMeetings();
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      void loadMeetings();
       return;
     }
-    const res = await commands.searchMeetings(q);
+    const res = await commands.searchMeetings(query);
     if (res.status === "ok") setMeetings(res.data);
   };
 
   return (
     <div className="flex h-full overflow-hidden" style={{ minHeight: 0 }}>
-      {/* Sidebar */}
       <div
-        className="flex w-56 flex-shrink-0 flex-col border-r border-white/8"
+        className="flex w-60 flex-shrink-0 flex-col border-r border-white/8 bg-white/[0.015]"
         style={{ minHeight: 0 }}
       >
-        {/* Detected app badge */}
         {detectedApp && (
           <div
-            style={{ padding: "6px 12px" }}
-            className="flex items-center gap-1.5 border-b border-white/8"
+            style={{ padding: "10px 14px" }}
+            className="flex items-center gap-2 border-b border-white/8 bg-emerald-500/[0.05]"
           >
-            <Video size={11} className="text-green-400/70" />
-            <span className="text-[11px] text-green-400/80">{detectedApp}</span>
+            <Video size={12} className="text-emerald-400/70" />
+            <span className="truncate text-[11px] text-emerald-300/80">
+              {detectedApp}
+            </span>
           </div>
         )}
 
-        {/* Search + New */}
         <div
-          style={{ padding: "8px 12px" }}
-          className="flex items-center gap-1.5 border-b border-white/8"
+          style={{ padding: "12px 14px" }}
+          className="flex items-center gap-2 border-b border-white/8"
         >
           <div className="relative flex-1">
             <Search
-              size={12}
-              className="absolute top-1/2 left-2 -translate-y-1/2 text-white/30"
+              size={13}
+              className="absolute top-1/2 left-3 -translate-y-1/2 text-white/28"
             />
             <input
               type="text"
-              placeholder={t("meetings.search", { defaultValue: "Search…" })}
+              placeholder={t("meetings.search", {
+                defaultValue: "Rechercher...",
+              })}
               value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              style={{ padding: "8px 8px 8px 28px" }}
-              className="w-full rounded bg-white/5 text-[12px] text-white/70 placeholder-white/25 outline-none focus:ring-1 focus:ring-white/15"
+              onChange={(e) => void handleSearch(e.target.value)}
+              style={{ padding: "10px 10px 10px 34px" }}
+              className="w-full rounded-[10px] border border-white/8 bg-white/[0.04] text-[12px] text-white/76 placeholder-white/25 outline-none transition-all focus:border-white/14 focus:bg-white/[0.06]"
             />
           </div>
-          <button
+          <Button
+            type="button"
             onClick={handleCreate}
-            className="flex items-center justify-center rounded p-1 text-white/40 transition-colors hover:bg-white/8 hover:text-white/70"
-            title={t("meetings.new", { defaultValue: "New meeting" })}
+            variant="secondary"
+            size="sm"
+            className="shrink-0 px-3"
+            title={t("meetings.new", { defaultValue: "Nouvelle réunion" })}
           >
             <Plus size={14} />
-          </button>
+          </Button>
         </div>
 
-        {/* Meeting list */}
         <div className="flex-1 overflow-y-auto">
           {meetings.length === 0 && (
             <div
@@ -216,40 +220,41 @@ export const MeetingsSettings: React.FC = () => {
               <p>
                 {t("meetings.empty", {
                   defaultValue:
-                    "No meetings yet.\nPress your meeting key to start.",
+                    "Aucune réunion pour l'instant.\nAppuyez sur votre touche réunion pour commencer.",
                 })}
               </p>
             </div>
           )}
-          {meetings.map((m) => (
+
+          {meetings.map((meeting) => (
             <div
-              key={m.id}
-              onClick={() => setSelectedId(m.id)}
-              style={{ padding: "10px 16px" }}
+              key={meeting.id}
+              onClick={() => setSelectedId(meeting.id)}
+              style={{ padding: "12px 16px" }}
               className={`group flex cursor-pointer items-start justify-between gap-1 transition-colors ${
-                selectedId === m.id
-                  ? "bg-white/8 text-white/90"
-                  : "text-white/55 hover:bg-white/5 hover:text-white/75"
+                selectedId === meeting.id
+                  ? "bg-white/[0.08] text-white/92"
+                  : "text-white/55 hover:bg-white/[0.045] hover:text-white/78"
               }`}
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12px] font-medium">
-                  {meetingTitle(m)}
+                <p className="truncate text-[12.5px] font-medium">
+                  {meetingTitle(meeting)}
                 </p>
-                <div className="flex items-center gap-1.5">
-                  {m.app_name && (
-                    <span className="truncate text-[10px] text-white/25">
-                      {m.app_name}
+                <div className="flex items-center gap-2">
+                  {meeting.app_name && (
+                    <span className="truncate text-[10px] text-white/28">
+                      {meeting.app_name}
                     </span>
                   )}
                   <span className="truncate text-[10px] text-white/20">
-                    {formatDate(m.updated_at)}
+                    {formatDate(meeting.updated_at)}
                   </span>
                 </div>
               </div>
               <button
-                onClick={(e) => handleDelete(m.id, e)}
-                className="mt-0.5 flex-shrink-0 rounded p-0.5 text-white/0 transition-colors hover:text-white/50 group-hover:text-white/20"
+                onClick={(e) => void handleDelete(meeting.id, e)}
+                className="mt-0.5 flex-shrink-0 rounded-md p-1 text-white/0 transition-colors hover:bg-white/[0.06] hover:text-white/60 group-hover:text-white/24"
               >
                 <Trash2 size={11} />
               </button>
@@ -258,64 +263,61 @@ export const MeetingsSettings: React.FC = () => {
         </div>
       </div>
 
-      {/* Editor */}
-      <div
-        className="flex flex-1 flex-col overflow-hidden"
-        style={{ minHeight: 0 }}
-      >
+      <div className="flex flex-1 flex-col overflow-hidden" style={{ minHeight: 0 }}>
         {selectedMeeting === null ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-white/20">
             <Mic size={32} className="opacity-40" />
             <p className="text-[13px]">
               {t("meetings.selectOrCreate", {
                 defaultValue:
-                  "Select a meeting or press your meeting key to start recording",
+                  "Sélectionnez une réunion ou démarrez un enregistrement pour en créer une",
               })}
             </p>
           </div>
         ) : (
           <>
-            {/* Title + close button */}
             <div
-              style={{ padding: "10px 16px" }}
-              className="flex items-center gap-2 border-b border-white/8"
+              style={{ padding: "14px 18px 12px" }}
+              className="flex items-center gap-3 border-b border-white/8 bg-white/[0.015]"
             >
               <div className="flex-1">
                 <input
                   type="text"
                   placeholder={t("meetings.titlePlaceholder", {
-                    defaultValue: "Meeting title",
+                    defaultValue: "Titre de la réunion",
                   })}
                   value={editTitle}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  className="w-full bg-transparent text-[15px] font-semibold text-white/85 placeholder-white/20 outline-none"
+                  className="w-full bg-transparent text-[16px] font-semibold text-white/88 placeholder-white/20 outline-none"
                 />
                 <p className="mt-0.5 text-[10px] text-white/25">
                   {saving
-                    ? t("meetings.saving", { defaultValue: "Saving…" })
+                    ? t("meetings.saving", { defaultValue: "Enregistrement..." })
                     : formatDate(selectedMeeting.updated_at)}
                 </p>
               </div>
-              <button
-                onClick={handleCloseMeeting}
-                style={{ padding: "10px 16px" }}
-                className="rounded text-[11px] text-white/35 transition-colors hover:bg-white/8 hover:text-white/60"
+              <Button
+                type="button"
+                onClick={() => void handleCloseMeeting()}
+                variant="secondary"
+                size="sm"
                 title={t("meetings.closeTitle", {
-                  defaultValue: "End meeting — next recording starts a new one",
+                  defaultValue:
+                    "Terminer la réunion — le prochain enregistrement créera une nouvelle réunion",
                 })}
               >
-                {t("meetings.close", { defaultValue: "End" })}
-              </button>
+                {t("meetings.close", { defaultValue: "Terminer" })}
+              </Button>
             </div>
-            {/* Transcript */}
+
             <textarea
               placeholder={t("meetings.transcriptPlaceholder", {
-                defaultValue: "Transcript will appear here as you speak…",
+                defaultValue: "La transcription apparaîtra ici pendant que vous parlez...",
               })}
               value={editTranscript}
               onChange={(e) => handleTranscriptChange(e.target.value)}
-              style={{ padding: "10px 16px", fontFamily: "inherit" }}
-              className="flex-1 resize-none bg-transparent text-[13px] leading-relaxed text-white/75 placeholder-white/20 outline-none"
+              style={{ padding: "16px 18px", fontFamily: "inherit" }}
+              className="flex-1 resize-none bg-transparent text-[13px] leading-7 text-white/78 placeholder-white/20 outline-none"
             />
           </>
         )}

@@ -87,8 +87,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -96,10 +96,45 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-mid-gray);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-logo-primary);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Sidebar nav items ─────────────────────────────── */
+.sidebar-nav-btn {
+  transition:
+    background 0.1s ease,
+    color 0.1s ease;
+}
+.sidebar-nav-btn:not([data-active="true"]):hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* ── Sidebar section label ─────────────────────────── */
+.sidebar-section-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+  padding: 18px 10px 5px 12px;
+  user-select: none;
+}
+
+/* ── Settings card hover row ───────────────────────── */
+.setting-row:hover {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+/* ── Neutralize link colors in settings descriptions ── */
+.setting-row a,
+.settings-desc a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }

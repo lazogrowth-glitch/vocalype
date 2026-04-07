@@ -75,8 +75,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         flexShrink: 0,
         height: "100%",
         overflow: "hidden",
-        background: "#141414",
-        borderRight: "none",
+        background: "#0f0f0f",
+        borderRight: "1px solid rgba(255,255,255,0.06)",
         display: "flex",
         flexDirection: "column",
         transition: "width 0.2s ease",
@@ -156,28 +156,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
         style={{
           paddingTop: isCompact ? 6 : 8,
           paddingBottom: isCompact ? 6 : 8,
+          paddingLeft: 6,
+          paddingRight: 6,
         }}
       >
         {mainSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
-          // Séparateur entre Config (snippets) et Utilisation (history)
-          const showDivider = !collapsed && section.id === "history";
+          const showConfigLabel = !collapsed && section.id === "general";
+          const showUsageLabel = !collapsed && section.id === "history";
+          const showAdvancedLabel = !collapsed && section.id === "advanced";
 
           return (
             <React.Fragment key={section.id}>
-              {showDivider && (
+              {showConfigLabel && (
+                <div className="sidebar-section-label">
+                  {t("sidebar.group.config", { defaultValue: "Configuration" })}
+                </div>
+              )}
+              {showUsageLabel && (
                 <div
-                  style={{
-                    margin: `6px ${navPaddingX}px`,
-                    height: "0.5px",
-                    background: "rgba(255,255,255,0.08)",
-                  }}
-                />
+                  className="sidebar-section-label"
+                  style={{ paddingTop: 20 }}
+                >
+                  {t("sidebar.group.usage", { defaultValue: "Utilisation" })}
+                </div>
+              )}
+              {showAdvancedLabel && (
+                <div
+                  className="sidebar-section-label"
+                  style={{ paddingTop: 20 }}
+                >
+                  {t("sidebar.group.advanced", { defaultValue: "Avancé" })}
+                </div>
               )}
               <button
                 key={`btn-${section.id}`}
                 type="button"
+                className="sidebar-nav-btn"
+                data-active={isActive ? "true" : undefined}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -187,41 +204,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     ? isCompact
                       ? "10px 0"
                       : "12px 0"
-                    : `${isCompact ? 9 : 10}px ${navPaddingX}px`,
+                    : `${isCompact ? 8 : 9}px ${navPaddingX}px ${isCompact ? 8 : 9}px ${navPaddingX + 6}px`,
                   fontSize: itemFontSize,
-                  width: "100%",
+                  width: collapsed ? "100%" : "calc(100% - 8px)",
                   cursor: "pointer",
-                  transition: "all 0.15s",
-                  borderRight: isActive
-                    ? "2px solid #c9a84c"
-                    : "2px solid transparent",
+                  color: isActive
+                    ? "rgba(255,255,255,0.95)"
+                    : "rgba(255,255,255,0.48)",
+                  borderRadius: collapsed ? 0 : "7px",
+                  border: "none",
                   background: isActive
-                    ? "rgba(201,168,76,0.10)"
+                    ? "rgba(255,255,255,0.06)"
                     : "transparent",
-                  color: isActive ? "#fff" : "rgba(255,255,255,0.55)",
-                  borderRadius: collapsed ? 0 : "0px",
+                  textAlign: "left",
+                  position: "relative",
                 }}
                 onClick={() => onSectionChange(section.id)}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={t(section.labelKey)}
                 title={t(section.labelKey)}
               >
+                {isActive && !collapsed && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      height: 16,
+                      width: 2,
+                      borderRadius: 2,
+                      background: "#c9a84c",
+                      pointerEvents: "none",
+                    }}
+                  />
+                )}
                 <span
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center transition-colors ${
-                    isActive ? "text-white" : "text-current"
-                  }`}
+                  style={{
+                    display: "flex",
+                    width: isCompact ? 15 : 16,
+                    height: isCompact ? 15 : 16,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    opacity: isActive ? 0.9 : 0.45,
+                    transition: "opacity 0.15s",
+                  }}
                 >
                   <Icon
                     width={isCompact ? 15 : 16}
                     height={isCompact ? 15 : 16}
-                    className="shrink-0 opacity-70"
                     aria-hidden="true"
                   />
                 </span>
                 {!collapsed && (
                   <span
-                    className="truncate font-normal leading-5"
-                    style={{ fontSize: isCompact ? 13 : 13.5 }}
+                    style={{
+                      fontSize: isCompact ? 13 : 13.5,
+                      fontWeight: isActive ? 500 : 400,
+                      lineHeight: "20px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
                     title={t(section.labelKey)}
                   >
                     {t(section.labelKey)}
@@ -249,6 +294,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={section.id}
               type="button"
+              className="sidebar-nav-btn"
+              data-active={isActive ? "true" : undefined}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -258,34 +305,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   ? isCompact
                     ? "9px 0"
                     : "10px 0"
-                  : `${isCompact ? 8 : 9}px ${navPaddingX}px`,
+                  : `${isCompact ? 7 : 8}px ${navPaddingX}px`,
                 fontSize: bottomFontSize,
-                width: "100%",
+                width: collapsed ? "100%" : "calc(100% - 8px)",
                 cursor: "pointer",
-                transition: "all 0.15s",
-                borderRight: isActive
-                  ? "2px solid #c9a84c"
-                  : "2px solid transparent",
-                background: isActive ? "rgba(201,168,76,0.10)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.38)",
+                background: isActive ? "rgba(255,255,255,0.06)" : "transparent",
+                color: isActive
+                  ? "rgba(255,255,255,0.90)"
+                  : "rgba(255,255,255,0.32)",
+                borderRadius: collapsed ? 0 : "7px",
+                border: "none",
+                textAlign: "left",
+                position: "relative",
               }}
               onClick={() => onSectionChange(section.id)}
               aria-current={isActive ? "page" : undefined}
               aria-label={t(section.labelKey)}
               title={t(section.labelKey)}
             >
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+              <span
+                style={{
+                  display: "flex",
+                  width: isCompact ? 14 : 15,
+                  height: isCompact ? 14 : 15,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  opacity: isActive ? 0.85 : 0.4,
+                  transition: "opacity 0.15s",
+                }}
+              >
                 <Icon
                   width={isCompact ? 14 : 15}
                   height={isCompact ? 14 : 15}
-                  className="shrink-0 opacity-60"
                   aria-hidden="true"
                 />
               </span>
               {!collapsed && (
                 <span
-                  className="truncate font-normal leading-5"
-                  style={{ fontSize: isCompact ? 12 : 12.5 }}
+                  style={{
+                    fontSize: isCompact ? 12 : 12.5,
+                    fontWeight: isActive ? 500 : 400,
+                    lineHeight: "20px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
                 >
                   {t(section.labelKey)}
                 </span>

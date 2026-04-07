@@ -48,7 +48,7 @@ export const GeneralSettings: React.FC = () => {
   return (
     <div className="w-full">
       <div
-        className="flex border-b border-white/8"
+        className="flex border-b border-white/[0.08]"
         style={{ gap: 20 }}
         role="tablist"
       >
@@ -59,7 +59,7 @@ export const GeneralSettings: React.FC = () => {
             role="tab"
             aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`border-b-2 px-[16px] pb-[10px] pt-[8px] text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
+            className={`border-b-2 pb-[11px] pt-[10px] text-[13.5px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
               activeTab === tab.id
                 ? "border-logo-primary text-logo-primary"
                 : "border-transparent text-white/40 hover:text-white/65"
@@ -74,7 +74,7 @@ export const GeneralSettings: React.FC = () => {
         <div
           role="tabpanel"
           style={{
-            paddingTop: 16,
+            paddingTop: 24,
             display: "flex",
             flexDirection: "column",
             gap: 0,
@@ -177,37 +177,15 @@ export const GeneralSettings: React.FC = () => {
             />
           </SettingsGroup>
 
-          <div
-            style={{
-              height: "0.5px",
-              background: "rgba(255,255,255,0.06)",
-              margin: "28px 0",
-            }}
-          />
-
           {/* ── Recording mode ───────────────────────────────────────── */}
-          <RecordingModeSelector grouped={false} />
-
-          <div
-            style={{
-              height: "0.5px",
-              background: "rgba(255,255,255,0.06)",
-              margin: "28px 0",
-            }}
-          />
+          <div style={{ marginBottom: 28 }}>
+            <RecordingModeSelector grouped={false} />
+          </div>
 
           {/* ── Hands-free / Wake word ────────────────────────────────── */}
           <SettingsGroup>
             <WakeWordToggle grouped={true} descriptionMode="inline" />
           </SettingsGroup>
-
-          <div
-            style={{
-              height: "0.5px",
-              background: "rgba(255,255,255,0.06)",
-              margin: "28px 0",
-            }}
-          />
 
           {/* ── Command Mode ─────────────────────────────────────────── */}
           <SettingsGroup
@@ -225,28 +203,12 @@ export const GeneralSettings: React.FC = () => {
             />
           </SettingsGroup>
 
-          <div
-            style={{
-              height: "0.5px",
-              background: "rgba(255,255,255,0.06)",
-              margin: "28px 0",
-            }}
-          />
-
           {/* ── Whisper Mode ─────────────────────────────────────────── */}
           <SettingsGroup
             title={t("whisperMode.label", { defaultValue: "Whisper Mode" })}
           >
             <ShortcutInput shortcutId="whisper_mode" grouped={true} />
           </SettingsGroup>
-
-          <div
-            style={{
-              height: "0.5px",
-              background: "rgba(255,255,255,0.06)",
-              margin: "28px 0",
-            }}
-          />
 
           {/* ── Agent Key ────────────────────────────────────────────── */}
           <SettingsGroup
@@ -258,14 +220,6 @@ export const GeneralSettings: React.FC = () => {
               disabled={isBasicTier}
             />
           </SettingsGroup>
-
-          <div
-            style={{
-              height: "0.5px",
-              background: "rgba(255,255,255,0.06)",
-              margin: "28px 0",
-            }}
-          />
 
           {/* ── Meeting Key ──────────────────────────────────────────── */}
           <SettingsGroup
@@ -281,7 +235,7 @@ export const GeneralSettings: React.FC = () => {
       )}
 
       {activeTab === "audio" && (
-        <div role="tabpanel" style={{ paddingTop: 16 }}>
+        <div role="tabpanel" style={{ paddingTop: 24 }}>
           <SettingsGroup title={t("settings.general.tabs.audio")}>
             <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
             <MuteWhileRecording descriptionMode="tooltip" grouped={true} />

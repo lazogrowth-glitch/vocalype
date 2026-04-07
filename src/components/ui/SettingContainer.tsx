@@ -53,7 +53,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
     >
       <button
         type="button"
-        className="flex h-[14px] w-[14px] items-center justify-center rounded-full border border-white/20 text-[9px] font-medium text-white/30 transition-colors hover:border-white/28 hover:text-white/45"
+        className="flex h-[14px] w-[14px] items-center justify-center rounded-full border border-white/[0.18] text-[9px] font-medium text-white/25 transition-colors hover:border-white/30 hover:text-white/45"
         aria-label={t("common.moreInformation", {
           defaultValue: "More information",
         })}
@@ -71,8 +71,8 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   if (layout === "stacked") {
     return (
       <div
-        className="border-b border-white/[0.05] last:border-b-0"
-        style={{ padding: "14px 20px" }}
+        className="setting-row border-b border-white/[0.05] last:border-b-0"
+        style={{ padding: "16px 18px" }}
       >
         <div
           style={{
@@ -85,13 +85,27 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
           {descriptionMode === "tooltip" ? infoButton : null}
           <div className="min-w-0">
             <h3
-              className={`text-[14px] font-normal leading-5 text-white/85 ${disabled ? "opacity-50" : ""}`}
+              style={{
+                fontSize: 14,
+                fontWeight: 400,
+                lineHeight: "20px",
+                color: disabled
+                  ? "rgba(255,255,255,0.35)"
+                  : "rgba(255,255,255,0.88)",
+              }}
             >
               {title}
             </h3>
             {descriptionMode === "inline" && description ? (
               <p
-                className={`mt-[2px] text-[11.5px] leading-5 text-text/55 ${disabled ? "opacity-50" : ""}`}
+                style={{
+                  marginTop: 2,
+                  fontSize: 12,
+                  lineHeight: "18px",
+                  color: disabled
+                    ? "rgba(255,255,255,0.25)"
+                    : "rgba(255,255,255,0.42)",
+                }}
               >
                 {description}
               </p>
@@ -105,38 +119,63 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
 
   return (
     <div
-      className="group border-b border-white/[0.05] last:border-b-0"
+      className="setting-row border-b border-white/[0.05] last:border-b-0"
       style={{
         display: "flex",
         width: "100%",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 16,
-        minHeight: 48,
-        padding: "14px 20px",
+        minHeight: 52,
+        padding: "13px 18px",
+        transition: "background 0.1s ease",
       }}
     >
       <div className="min-w-0">
         {descriptionMode === "tooltip" ? (
-          <div className="flex min-w-0 items-center gap-[10px]">
+          <div className="flex min-w-0 items-center gap-[9px]">
             {infoButton}
             <h3
-              className={`whitespace-nowrap text-[14px] font-normal leading-5 text-white/85 ${disabled ? "opacity-50" : ""}`}
+              style={{
+                fontSize: 14,
+                fontWeight: 400,
+                lineHeight: "20px",
+                color: disabled
+                  ? "rgba(255,255,255,0.35)"
+                  : "rgba(255,255,255,0.88)",
+                whiteSpace: "nowrap",
+              }}
             >
               {title}
             </h3>
           </div>
         ) : (
-          <div className="flex min-w-0 items-start gap-[10px]">
-            {description ? <div className="pt-[3px]">{infoButton}</div> : null}
+          <div className="flex min-w-0 items-start gap-[9px]">
+            {description ? (
+              <div style={{ paddingTop: 3 }}>{infoButton}</div>
+            ) : null}
             <div className="min-w-0">
               <h3
-                className={`text-[14px] font-normal leading-5 text-white/85 ${disabled ? "opacity-50" : ""}`}
+                style={{
+                  fontSize: 14,
+                  fontWeight: 400,
+                  lineHeight: "20px",
+                  color: disabled
+                    ? "rgba(255,255,255,0.35)"
+                    : "rgba(255,255,255,0.88)",
+                }}
               >
                 {title}
               </h3>
               <p
-                className={`mt-[2px] text-[11.5px] leading-5 text-text/55 ${disabled ? "opacity-50" : ""}`}
+                style={{
+                  marginTop: 2,
+                  fontSize: 12,
+                  lineHeight: "18px",
+                  color: disabled
+                    ? "rgba(255,255,255,0.25)"
+                    : "rgba(255,255,255,0.42)",
+                }}
               >
                 {description}
               </p>

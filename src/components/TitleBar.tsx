@@ -77,7 +77,7 @@ export const TitleBar = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "#141414",
+          background: "#0f0f0f",
           userSelect: "none",
           WebkitAppRegion: "drag",
           position: "relative",

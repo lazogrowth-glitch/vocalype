@@ -323,12 +323,12 @@ function App() {
     : sidebarCollapsed;
   const mainContentPadding =
     layoutTier === "compact"
-      ? "16px 18px 20px"
+      ? "20px 22px 28px"
       : layoutTier === "cozy"
-        ? "18px 22px 24px"
-        : "20px 28px 28px";
+        ? "24px 28px 32px"
+        : "28px 36px 36px";
   const mainHeadingSize =
-    layoutTier === "compact" ? 22 : layoutTier === "cozy" ? 23 : 24;
+    layoutTier === "compact" ? 24 : layoutTier === "cozy" ? 26 : 28;
 
   useEffect(() => {
     const handleResize = () => setViewportWidth(window.innerWidth);
@@ -633,7 +633,7 @@ function App() {
             flex: 1,
             minHeight: 0,
             overflow: "hidden",
-            background: "#141414",
+            background: "#0f0f0f",
           }}
         >
           <Sidebar
@@ -652,19 +652,20 @@ function App() {
               padding: mainContentPadding,
               minWidth: 0,
               minHeight: 0,
-              background: "#0f0f0f",
-              borderTopLeftRadius: 16,
+              background: "#161616",
+              borderTopLeftRadius: 12,
               marginTop: -1,
+              borderLeft: "1px solid rgba(255,255,255,0.07)",
             }}
           >
             <h1
               style={{
                 fontSize: mainHeadingSize,
-                fontWeight: 600,
+                fontWeight: 700,
                 lineHeight: 1,
-                letterSpacing: "-0.3px",
-                color: "#fff",
-                marginBottom: 20,
+                letterSpacing: "-0.6px",
+                color: "rgba(255,255,255,0.95)",
+                marginBottom: 24,
               }}
             >
               {SECTIONS_CONFIG[currentSection]

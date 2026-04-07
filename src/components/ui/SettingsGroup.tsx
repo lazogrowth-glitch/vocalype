@@ -15,17 +15,16 @@ export const SettingsGroup: React.FC<SettingsGroupProps> = ({
   children,
 }) => {
   return (
-    <section style={{ marginBottom: 16 }}>
+    <section style={{ marginBottom: 32 }}>
       {title && (
-        <div style={{ marginBottom: 14 }}>
-          <div className="flex items-center gap-1.5">
+        <div style={{ marginBottom: 8 }}>
+          <div className="flex items-center gap-2">
             <h2
               style={{
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                color: "rgba(255,255,255,0.25)",
+                color: "rgba(255,255,255,0.50)",
+                letterSpacing: "0.01em",
               }}
             >
               {title}
@@ -33,13 +32,29 @@ export const SettingsGroup: React.FC<SettingsGroupProps> = ({
             {titleBadge}
           </div>
           {description && (
-            <p className="mt-1 max-w-2xl text-[11.5px] leading-5 text-text/40">
+            <p
+              style={{
+                marginTop: 2,
+                fontSize: 12,
+                color: "rgba(255,255,255,0.35)",
+                lineHeight: "1.5",
+              }}
+            >
               {description}
             </p>
           )}
         </div>
       )}
-      <div className="rounded-[10px] border border-white/8">{children}</div>
+      <div
+        style={{
+          borderRadius: 10,
+          overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.07)",
+          background: "rgba(255,255,255,0.03)",
+        }}
+      >
+        {children}
+      </div>
     </section>
   );
 };

@@ -102,24 +102,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center gap-[12px] min-w-0">
               <div
                 style={{
-                    width: isCompact ? 36 : 40,
-                    height: isCompact ? 36 : 40,
-                    borderRadius: 11,
-                  background:
-                    "linear-gradient(180deg, rgba(201,168,76,0.28), rgba(201,168,76,0.16))",
-                  border: "1px solid rgba(201,168,76,0.18)",
+                  width: isCompact ? 36 : 40,
+                  height: isCompact ? 36 : 40,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 10px 20px rgba(0,0,0,0.18)",
                 }}
               >
                 <img
                   src="/icon128.png"
                   alt="Vocalype"
-                    width={isCompact ? 20 : 22}
-                    height={isCompact ? 20 : 22}
-                  className="shrink-0 rounded-[7px]"
+                  width={isCompact ? 36 : 40}
+                  height={isCompact ? 36 : 40}
+                  className="shrink-0"
                 />
               </div>
               <div className="min-w-0">

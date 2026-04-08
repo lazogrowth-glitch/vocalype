@@ -101,7 +101,10 @@ export const MachineStatusBar: React.FC<{ variant?: "banner" | "sidebar" }> = ({
 
   if (variant === "sidebar") {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/[0.05]">
+      <div
+        className="inline-flex items-center gap-1.5"
+        title={modelLabel ?? status.headline}
+      >
         <span className="h-[6px] w-[6px] shrink-0 rounded-full bg-emerald-400" />
         <span className="sr-only" aria-live="polite">
           {status.mode === "optimal"
@@ -111,7 +114,7 @@ export const MachineStatusBar: React.FC<{ variant?: "banner" | "sidebar" }> = ({
               : t("a11y.statusReady")}
         </span>
         <span className="truncate text-[11px] leading-none text-white/40">
-          {modelLabel ?? status.headline}
+          {t("common.active", { defaultValue: "Actif" })}
         </span>
       </div>
     );

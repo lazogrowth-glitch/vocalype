@@ -5,6 +5,16 @@ import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { commands, type VoiceSnippet } from "@/bindings";
 import { Button } from "../../ui/Button";
 
+const snippetPillClassName =
+  "inline-flex items-center rounded-[12px] border border-white/8 bg-white/[0.035] text-[13px] font-medium tracking-[0.01em] text-white/78";
+
+const snippetPillStyle = {
+  minHeight: 36,
+  padding: "9px 14px",
+};
+
+const snippetPillTextClassName = "block w-full leading-[18px]";
+
 interface SnippetModalProps {
   title: string;
   initialTrigger?: string;
@@ -274,14 +284,26 @@ export const SnippetsSettings: React.FC = () => {
                   }}
                   className="flex min-w-0 flex-1 items-center gap-10 text-left"
                 >
-                  <span className="shrink-0 rounded-[7px] bg-white/[0.06] px-2.5 py-1 font-mono text-[12px] text-white/54 transition-colors group-hover:bg-logo-primary/[0.12] group-hover:text-logo-primary">
-                    {example.trigger}
+                  <span
+                    className={`${snippetPillClassName} shrink-0 justify-center transition-colors group-hover:border-logo-primary/18 group-hover:bg-logo-primary/[0.06] group-hover:text-logo-primary`}
+                    style={snippetPillStyle}
+                  >
+                    <span className={snippetPillTextClassName}>
+                      {example.trigger}
+                    </span>
                   </span>
                   <span className="shrink-0 text-[12px] text-white/18 transition-colors group-hover:text-logo-primary/50">
                     →
                   </span>
-                  <span className="min-w-0 truncate rounded-[8px] border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-[12px] italic text-white/34 transition-colors group-hover:border-logo-primary/18 group-hover:bg-logo-primary/[0.06] group-hover:text-logo-primary/70">
-                    {example.expansion}
+                  <span
+                    className={`${snippetPillClassName} min-w-0 transition-colors group-hover:border-logo-primary/18 group-hover:bg-logo-primary/[0.06] group-hover:text-logo-primary/82`}
+                    style={snippetPillStyle}
+                  >
+                    <span
+                      className={`${snippetPillTextClassName} truncate text-white/60`}
+                    >
+                      {example.expansion}
+                    </span>
                   </span>
                 </button>
                 <button
@@ -326,15 +348,27 @@ export const SnippetsSettings: React.FC = () => {
               key={snippet.id}
               style={{ padding: "12px 16px" }}
               className={`group flex items-center gap-3 transition-colors hover:bg-white/[0.03] ${
-                index < snippets.length - 1 ? "border-b border-white/[0.05]" : ""
+                index < snippets.length - 1
+                  ? "border-b border-white/[0.05]"
+                  : ""
               }`}
             >
-              <span className="shrink-0 rounded-[7px] bg-white/[0.07] px-2.5 py-1 font-mono text-[12px] text-white/75">
-                {snippet.trigger}
+              <span
+                className={`${snippetPillClassName} shrink-0 justify-center text-white/84`}
+                style={snippetPillStyle}
+              >
+                <span className={snippetPillTextClassName}>
+                  {snippet.trigger}
+                </span>
               </span>
               <span className="shrink-0 text-[13px] text-white/20">→</span>
-              <span className="min-w-0 flex-1 truncate text-[13px] text-white/54">
-                {snippet.expansion}
+              <span
+                className={`${snippetPillClassName} min-w-0 flex-1 text-white/64`}
+                style={snippetPillStyle}
+              >
+                <span className={`${snippetPillTextClassName} truncate`}>
+                  {snippet.expansion}
+                </span>
               </span>
               <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 <Button

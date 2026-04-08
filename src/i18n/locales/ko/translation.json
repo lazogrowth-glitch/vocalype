@@ -17,7 +17,7 @@
     "history": "히스토리",
     "debug": "디버그",
     "about": "정보",
-    "snippets": "Snippets",
+    "snippets": "스니펫",
     "stats": "통계",
     "billing": "결제",
     "referral": "추천",
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14일",
+      "title": "Vocalype Premium 14일. 무료, 카드 불필요.",
+      "subtitle": "지금 바로 전체 액세스가 시작됩니다. 체험 기간에는 카드가 필요 없습니다.",
+      "cta": "시작하기 →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "모든 앱에 대한 원시 입력",
+    "feature2": "사용자 지정 키보드 단축키",
+    "feature3": "무제한 전사",
+    "feature4": "전체 히스토리",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Premium 체험 · {{count}}일 남음",
+      "warning": "Premium {{count}}일 남음",
+      "urgent": "⚠ {{count}}일 후 만료",
+      "today": "⚠ 오늘 만료",
+      "cta": "Premium으로 업그레이드 →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "체험 기간이 곧 끝납니다",
+      "desc": "원시 입력, 단축키, 무제한 전사를 유지하려면 Premium으로 업그레이드하세요.",
+      "cta": "Premium으로 업그레이드 →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "?? ??? Premium ?????? ??? ? ????.",
-    "seePremium": "Premium ?? ?",
-    "quotaExceeded": "?? ?? ??",
-    "quotaExceededDesc": "?? ?? ????? Premium?? ????????.",
-    "upgradeCta": "Premium?? ????? ?",
-    "upgrade": "Premium?? ?????",
-    "historyLimited": "Basic??? ??? {{limit}}?? ?????",
-    "shortcutsLocked": "??? ?? ???? Premium ?????",
+    "copiedToClipboard": "텍스트가 클립보드에 복사되었습니다",
+    "copiedToClipboardDesc": "기본 삽입은 Premium 요금제에서만 사용할 수 있습니다.",
+    "seePremium": "Premium 보기 →",
+    "quotaExceeded": "주간 한도 도달",
+    "quotaExceededDesc": "제한 없이 받아쓰려면 Premium으로 업그레이드하세요.",
+    "upgradeCta": "Premium으로 업그레이드 →",
+    "upgrade": "Premium으로 업그레이드",
+    "historyLimited": "Basic에서는 기록이 {{limit}}개로 제한됩니다",
+    "shortcutsLocked": "사용자 지정 단축키는 Premium 기능입니다",
     "premiumBadge": "Premium"
   },
   "commandMode": {

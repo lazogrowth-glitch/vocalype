@@ -13,18 +13,18 @@
     "advanced": "Gelişmiş",
     "postProcessing": "Son İşlem",
     "notes": "Notlar",
-    "meetings": "Toplant?lar",
+    "meetings": "Toplantılar",
     "history": "Geçmiş",
-    "debug": "Hata ay?klama",
-    "about": "Hakk?nda",
-    "snippets": "Snippets",
-    "stats": "?statistikler",
+    "debug": "Hata ayıklama",
+    "about": "Hakkında",
+    "snippets": "Parçalar",
+    "stats": "İstatistikler",
     "billing": "Faturalama",
     "referral": "Tavsiye",
     "group": {
-      "config": "Yap?land?rma",
-      "usage": "Kullan?m",
-      "advanced": "Geli?mi?"
+      "config": "Yapılandırma",
+      "usage": "Kullanım",
+      "advanced": "Gelişmiş"
     }
   },
   "onboarding": {
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 gün",
+      "title": "14 gün Vocalype Premium. Ücretsiz, kartsız.",
+      "subtitle": "Tam erişiminiz hemen başlar. Deneme süresinde karta gerek yoktur.",
+      "cta": "Başlayalım →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "Tüm uygulamalarınızda yerel ekleme",
+    "feature2": "Özelleştirilebilir klavye kısayolu",
+    "feature3": "Sınırsız transkripsiyon",
+    "feature4": "Tam geçmiş",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Premium deneme · {{count}} gün kaldı",
+      "warning": "Premium için {{count}} gün kaldı",
+      "urgent": "⚠ {{count}} gün içinde sona eriyor",
+      "today": "⚠ Bugün sona eriyor",
+      "cta": "Premium’a geç →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "Denemeniz yakında sona erecek",
+      "desc": "Yerel ekleme, kısayollar ve sınırsız transkripsiyonları korumak için Premium’a geçin.",
+      "cta": "Premium’a geç →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Yerel ekleme yaln?zca Premium plan?nda kullan?labilir.",
-    "seePremium": "Premium?u g?r ?",
-    "quotaExceeded": "Haftal?k limite ula??ld?",
-    "quotaExceededDesc": "S?n?rs?z dikte i?in Premium?a y?kselt.",
-    "upgradeCta": "Premium?a y?kselt ?",
-    "upgrade": "Premium?a y?kselt",
+    "copiedToClipboard": "Metin panoya kopyalandı",
+    "copiedToClipboardDesc": "Yerel ekleme yalnızca Premium planında kullanılabilir.",
+    "seePremium": "Premium’u gör →",
+    "quotaExceeded": "Haftalık limite ulaşıldı",
+    "quotaExceededDesc": "Sınırsız dikte için Premium’a yükselt.",
+    "upgradeCta": "Premium’a yükselt →",
+    "upgrade": "Premium’a yükselt",
     "historyLimited": "Basic plan?nda ge?mi? {{limit}} kay?tla s?n?rl?d?r",
-    "shortcutsLocked": "?zel k?sayollar Premium ?zelli?idir",
+    "shortcutsLocked": "Özel kısayollar Premium özelliğidir",
     "premiumBadge": "Premium"
   },
   "commandMode": {

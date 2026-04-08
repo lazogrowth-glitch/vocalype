@@ -13,14 +13,14 @@
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "notes": "Notes",
-    "meetings": "R?unions",
+    "meetings": "Réunions",
     "history": "Historique",
     "snippets": "Extraits",
     "stats": "Statistiques",
     "billing": "Facturation",
     "referral": "Parrainage",
-    "debug": "D?bogage",
-    "about": "? propos",
+    "debug": "Débogage",
+    "about": "À propos",
     "group": {
       "config": "Configuration",
       "usage": "Utilisation",
@@ -923,7 +923,7 @@
     },
     "feature1": "Injection native dans toutes vos apps",
     "feature2": "Raccourci clavier personnalisable",
-    "feature3": "Transcriptions illimit?es",
+    "feature3": "Transcriptions illimitées",
     "feature4": "Historique complet",
     "badge": {
       "neutral": "Essai Premium · {{count}} j restants",
@@ -985,7 +985,7 @@
     "refresh": "Actualiser"
   },
   "basic": {
-    "copiedToClipboard": "Texte copié dans le presse-papier",
+    "copiedToClipboard": "Texte copié dans le presse-papiers",
     "copiedToClipboardDesc": "L’injection native est réservée au plan Premium.",
     "seePremium": "Voir Premium →",
     "quotaExceeded": "Limite hebdomadaire atteinte",

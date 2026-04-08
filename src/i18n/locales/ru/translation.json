@@ -17,7 +17,7 @@
     "history": "История",
     "debug": "Отладка",
     "about": "О приложении",
-    "snippets": "Snippets",
+    "snippets": "Фрагменты",
     "stats": "Статистика",
     "billing": "Биллинг",
     "referral": "Рефералы",
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 дней",
+      "title": "14 дней Vocalype Premium. Бесплатно, без карты.",
+      "subtitle": "Полный доступ открыт прямо сейчас. В пробный период карта не нужна.",
+      "cta": "Поехали →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "Нативная вставка во все ваши приложения",
+    "feature2": "Настраиваемое сочетание клавиш",
+    "feature3": "Неограниченные транскрипции",
+    "feature4": "Полная история",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Пробный Premium · осталось {{count}} дн.",
+      "warning": "Осталось {{count}} дней Premium",
+      "urgent": "⚠ Истекает через {{count}} дней",
+      "today": "⚠ Истекает сегодня",
+      "cta": "Перейти на Premium →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "Ваш пробный период скоро закончится",
+      "desc": "Перейдите на Premium, чтобы сохранить нативную вставку, горячие клавиши и неограниченные транскрипции.",
+      "cta": "Перейти на Premium →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "???????? ??????? ???????? ?????? ? ?????? Premium.",
-    "seePremium": "??????? Premium ?",
-    "quotaExceeded": "????????? ????? ?????????",
-    "quotaExceededDesc": "????????? ?? Premium, ????? ????????? ??? ???????????.",
-    "upgradeCta": "??????? ?? Premium ?",
-    "upgrade": "??????? ?? Premium",
-    "historyLimited": "??????? ? Basic ?????????? {{limit}} ????????",
-    "shortcutsLocked": "???????????????? ????????? ?????? ???????? ?????? ? Premium",
+    "copiedToClipboard": "Текст скопирован в буфер обмена",
+    "copiedToClipboardDesc": "Нативная вставка доступна только в тарифе Premium.",
+    "seePremium": "Открыть Premium →",
+    "quotaExceeded": "Достигнут недельный лимит",
+    "quotaExceededDesc": "Перейдите на Premium, чтобы диктовать без ограничений.",
+    "upgradeCta": "Перейти на Premium →",
+    "upgrade": "Перейти на Premium",
+    "historyLimited": "История в Basic ограничена {{limit}} записями",
+    "shortcutsLocked": "Пользовательские сочетания клавиш доступны только в Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {

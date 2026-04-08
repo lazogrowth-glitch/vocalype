@@ -17,7 +17,7 @@
     "history": "Cronologia",
     "debug": "Debug",
     "about": "Informazioni",
-    "snippets": "Snippets",
+    "snippets": "Snippet",
     "stats": "Statistiche",
     "billing": "Fatturazione",
     "referral": "Referral",
@@ -965,7 +965,7 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
+    "copiedToClipboard": "Testo copiato negli appunti",
     "copiedToClipboardDesc": "L’inserimento nativo è riservato al piano Premium.",
     "seePremium": "Vedi Premium →",
     "quotaExceeded": "Limite settimanale raggiunto",

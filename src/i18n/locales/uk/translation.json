@@ -17,7 +17,7 @@
     "history": "Історія",
     "debug": "Налагодження",
     "about": "Про застосунок",
-    "snippets": "Snippets",
+    "snippets": "Фрагменти",
     "stats": "Статистика",
     "billing": "Платежі",
     "referral": "Реферали",
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 днів",
+      "title": "14 днів Vocalype Premium. Безкоштовно, без картки.",
+      "subtitle": "Твій повний доступ вже активний. Під час пробного періоду картка не потрібна.",
+      "cta": "Почати →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "Нативне вставлення в усі ваші застосунки",
+    "feature2": "Налаштовуваний клавіатурний скорочення",
+    "feature3": "Необмежені транскрипції",
+    "feature4": "Повна історія",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Пробний Premium · залишилося {{count}} днів",
+      "warning": "Залишилося {{count}} днів Premium",
+      "urgent": "⚠ Завершиться через {{count}} днів",
+      "today": "⚠ Завершується сьогодні",
+      "cta": "Оновитися до Premium →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "Твій пробний період скоро закінчиться",
+      "desc": "Оновися до Premium, щоб зберегти нативне вставлення, свої скорочення та необмежені транскрипції.",
+      "cta": "Оновитися до Premium →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "??????? ?????????? ???????? ???? ? ?????? Premium.",
-    "seePremium": "??????????? Premium ?",
-    "quotaExceeded": "????????? ????????? ??????",
-    "quotaExceededDesc": "????????? ?? Premium, ??? ????????? ??? ????????.",
-    "upgradeCta": "????????? ?? Premium ?",
-    "upgrade": "????????? ?? Premium",
-    "historyLimited": "??????? ? Basic ???????? {{limit}} ????????",
-    "shortcutsLocked": "????????????? ?????????? ???????? ???? ? Premium",
+    "copiedToClipboard": "Текст скопійовано в буфер обміну",
+    "copiedToClipboardDesc": "Нативне вставлення доступне лише в тарифі Premium.",
+    "seePremium": "Переглянути Premium →",
+    "quotaExceeded": "Досягнуто тижневого ліміту",
+    "quotaExceededDesc": "Оновіться до Premium, щоб диктувати без обмежень.",
+    "upgradeCta": "Оновитися до Premium →",
+    "upgrade": "Оновитися до Premium",
+    "historyLimited": "Історія в Basic обмежена {{limit}} записами",
+    "shortcutsLocked": "Користувацькі скорочення доступні лише в Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {

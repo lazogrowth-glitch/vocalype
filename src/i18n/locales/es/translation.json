@@ -15,14 +15,14 @@
     "notes": "Notas",
     "meetings": "Reuniones",
     "history": "Historial",
-    "debug": "Depuraci?n",
+    "debug": "Depuración",
     "about": "Acerca de",
     "snippets": "Fragmentos",
-    "stats": "Estad?sticas",
+    "stats": "Estadísticas",
     "billing": "Facturación",
     "referral": "Referidos",
     "group": {
-      "config": "Configuraci?n",
+      "config": "Configuración",
       "usage": "Uso",
       "advanced": "Avanzado"
     }
@@ -921,7 +921,7 @@
       "subtitle": "Tu acceso completo empieza ahora. No hace falta tarjeta durante la prueba.",
       "cta": "Empezar →"
     },
-    "feature1": "Inserci?n nativa en todas tus apps",
+    "feature1": "Inserción nativa en todas tus apps",
     "feature2": "Atajo de teclado personalizable",
     "feature3": "Transcripciones ilimitadas",
     "feature4": "Historial completo",
@@ -1033,6 +1033,6 @@
   },
   "plan": {
     "premium": "Premium",
-    "basic": "B?sico"
+    "basic": "Básico"
   }
 }

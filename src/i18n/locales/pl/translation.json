@@ -17,13 +17,13 @@
     "history": "Historia",
     "debug": "Debugowanie",
     "about": "Informacje",
-    "snippets": "Snippets",
+    "snippets": "Fragmenty",
     "stats": "Statystyki",
     "billing": "Płatności",
     "referral": "Polecenia",
     "group": {
       "config": "Konfiguracja",
-      "usage": "U?ycie",
+      "usage": "Użycie",
       "advanced": "Zaawansowane"
     }
   },
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 dni",
+      "title": "14 dni Vocalype Premium. Za darmo, bez karty.",
+      "subtitle": "Pełny dostęp zaczyna się teraz. W czasie okresu próbnego karta nie jest potrzebna.",
+      "cta": "Zaczynajmy →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "Natywne wstawianie do wszystkich twoich aplikacji",
+    "feature2": "Konfigurowalny skrót klawiaturowy",
+    "feature3": "Nieograniczone transkrypcje",
+    "feature4": "Pełna historia",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Okres Premium · zostało {{count}} dni",
+      "warning": "Pozostało {{count}} dni Premium",
+      "urgent": "⚠ Wygasa za {{count}} dni",
+      "today": "⚠ Wygasa dzisiaj",
+      "cta": "Przejdź na Premium →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "Twój okres próbny wkrótce się skończy",
+      "desc": "Przejdź na Premium, aby zachować natywne wstawianie, skróty i nieograniczone transkrypcje.",
+      "cta": "Przejdź na Premium →"
     }
   },
   "dictionary": {
@@ -965,19 +965,19 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Natywne wstawianie jest dost?pne tylko w planie Premium.",
-    "seePremium": "Zobacz Premium ?",
-    "quotaExceeded": "Osi?gni?to tygodniowy limit",
-    "quotaExceededDesc": "Przejd? na Premium, aby dyktowa? bez limit?w.",
-    "upgradeCta": "Przejd? na Premium ?",
-    "upgrade": "Przejd? na Premium",
+    "copiedToClipboard": "Tekst skopiowano do schowka",
+    "copiedToClipboardDesc": "Natywne wstawianie jest dostępne tylko w planie Premium.",
+    "seePremium": "Zobacz Premium →",
+    "quotaExceeded": "Osiągnięto tygodniowy limit",
+    "quotaExceededDesc": "Przejdź na Premium, aby dyktować bez limitów.",
+    "upgradeCta": "Przejdź na Premium →",
+    "upgrade": "Przejdź na Premium",
     "historyLimited": "Historia w planie Basic jest ograniczona do {{limit}} wpis?w",
-    "shortcutsLocked": "W?asne skr?ty klawiaturowe to funkcja Premium",
+    "shortcutsLocked": "Własne skróty klawiaturowe to funkcja Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {
-    "label": "Tryb polece?",
+    "label": "Tryb poleceń",
     "recording": "M?w teraz? ({{count}} s)",
     "processing": "Przetwarzanie?",
     "errorTitle": "Tryb polece? ? b??d"

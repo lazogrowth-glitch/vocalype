@@ -17,7 +17,7 @@
     "debug": "تصحيح",
     "about": "حول",
     "models": "النماذج",
-    "snippets": "Snippets",
+    "snippets": "مقاطع",
     "stats": "إحصاءات",
     "billing": "الفواتير",
     "referral": "الإحالة",
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 يومًا",
+      "title": "14 يومًا من Vocalype Premium. مجانًا وبدون بطاقة.",
+      "subtitle": "يبدأ وصولك الكامل الآن. لا حاجة لبطاقة أثناء التجربة.",
+      "cta": "ابدأ الآن →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "إدراج أصلي في جميع تطبيقاتك",
+    "feature2": "اختصار لوحة مفاتيح قابل للتخصيص",
+    "feature3": "تفريغات غير محدودة",
+    "feature4": "سجل كامل",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "تجربة Premium · باقي {{count}} يوم",
+      "warning": "باقي {{count}} يوم من Premium",
+      "urgent": "⚠ ينتهي خلال {{count}} يوم",
+      "today": "⚠ ينتهي اليوم",
+      "cta": "الترقية إلى Premium →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "تجربتك على وشك الانتهاء",
+      "desc": "قم بالترقية إلى Premium للحفاظ على الإدراج الأصلي، والاختصارات، والتفريغات غير المحدودة.",
+      "cta": "الترقية إلى Premium →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "??????? ?????? ???? ??? ?? ??? Premium.",
-    "seePremium": "??? Premium ?",
-    "quotaExceeded": "?? ???? ???? ????????",
-    "quotaExceededDesc": "?? ???????? ??? Premium ??????? ??? ????.",
-    "upgradeCta": "??????? ??? Premium ?",
-    "upgrade": "??????? ??? Premium",
-    "historyLimited": "??? Basic ????? ??? {{limit}} ???????",
-    "shortcutsLocked": "?????????? ??????? ???? ?? ????? Premium",
+    "copiedToClipboard": "تم نسخ النص إلى الحافظة",
+    "copiedToClipboardDesc": "الإدراج الأصلي متاح فقط في خطة Premium.",
+    "seePremium": "عرض Premium →",
+    "quotaExceeded": "تم بلوغ الحد الأسبوعي",
+    "quotaExceededDesc": "قم بالترقية إلى Premium للإملاء بدون حدود.",
+    "upgradeCta": "الترقية إلى Premium →",
+    "upgrade": "الترقية إلى Premium",
+    "historyLimited": "سجل Basic محدود بـ {{limit}} عنصرًا",
+    "shortcutsLocked": "الاختصارات المخصصة ميزة من ميزات Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {

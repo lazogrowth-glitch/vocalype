@@ -17,7 +17,7 @@
     "history": "Lịch sử",
     "debug": "Gỡ lỗi",
     "about": "Giới thiệu",
-    "snippets": "Snippets",
+    "snippets": "Đoạn mẫu",
     "stats": "Thống kê",
     "billing": "Thanh toán",
     "referral": "Giới thiệu",
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 ngày",
+      "title": "14 ngày Vocalype Premium. Miễn phí, không cần thẻ.",
+      "subtitle": "Quyền truy cập đầy đủ của bạn bắt đầu ngay bây giờ. Không cần thẻ trong thời gian dùng thử.",
+      "cta": "Bắt đầu →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "Chèn gốc vào tất cả ứng dụng của bạn",
+    "feature2": "Phím tắt bàn phím có thể tùy chỉnh",
+    "feature3": "Bản chép không giới hạn",
+    "feature4": "Lịch sử đầy đủ",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Dùng thử Premium · còn {{count}} ngày",
+      "warning": "Còn {{count}} ngày Premium",
+      "urgent": "⚠ Hết hạn sau {{count}} ngày",
+      "today": "⚠ Hết hạn hôm nay",
+      "cta": "Nâng cấp Premium →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "Bản dùng thử của bạn sắp hết hạn",
+      "desc": "Nâng cấp lên Premium để giữ chèn gốc, phím tắt và bản chép không giới hạn.",
+      "cta": "Nâng cấp Premium →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Ch?n g?c ch? d?nh cho g?i Premium.",
-    "seePremium": "Xem Premium ?",
-    "quotaExceeded": "?? ??t gi?i h?n h?ng tu?n",
-    "quotaExceededDesc": "N?ng c?p l?n Premium ?? ??c ch?nh t? kh?ng gi?i h?n.",
-    "upgradeCta": "N?ng c?p l?n Premium ?",
-    "upgrade": "N?ng c?p l?n Premium",
-    "historyLimited": "L?ch s? tr?n Basic b? gi?i h?n ? {{limit}} m?c",
-    "shortcutsLocked": "Ph?m t?t t?y ch?nh l? t?nh n?ng Premium",
+    "copiedToClipboard": "Văn bản đã được sao chép vào bộ nhớ tạm",
+    "copiedToClipboardDesc": "Chèn gốc chỉ dành cho gói Premium.",
+    "seePremium": "Xem Premium →",
+    "quotaExceeded": "Đã đạt giới hạn hàng tuần",
+    "quotaExceededDesc": "Nâng cấp lên Premium để đọc chính tả không giới hạn.",
+    "upgradeCta": "Nâng cấp lên Premium →",
+    "upgrade": "Nâng cấp lên Premium",
+    "historyLimited": "Lịch sử trên Basic bị giới hạn ở {{limit}} mục",
+    "shortcutsLocked": "Phím tắt tùy chỉnh là tính năng Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {

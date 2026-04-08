@@ -965,7 +965,7 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
+    "copiedToClipboard": "Text in die Zwischenablage kopiert",
     "copiedToClipboardDesc": "Native Eingabe ist dem Premium-Tarif vorbehalten.",
     "seePremium": "Premium ansehen →",
     "quotaExceeded": "Wöchentliches Limit erreicht",

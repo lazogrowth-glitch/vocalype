@@ -17,7 +17,7 @@
     "history": "Historie",
     "debug": "Ladění",
     "about": "O aplikaci",
-    "snippets": "Snippets",
+    "snippets": "Úryvky",
     "stats": "Statistiky",
     "billing": "Fakturace",
     "referral": "Doporučení",
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 dní",
+      "title": "14 dní Vocalype Premium. Zdarma, bez karty.",
+      "subtitle": "Plný přístup začíná právě teď. Během zkušební doby není potřeba karta.",
+      "cta": "Začít →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "Nativní vkládání do všech vašich aplikací",
+    "feature2": "Přizpůsobitelná klávesová zkratka",
+    "feature3": "Neomezené přepisy",
+    "feature4": "Plná historie",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Zkušební Premium · zbývá {{count}} dní",
+      "warning": "Do konce Premium zbývá {{count}} dní",
+      "urgent": "⚠ Končí za {{count}} dní",
+      "today": "⚠ Končí dnes",
+      "cta": "Přejít na Premium →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "Zkušební verze brzy skončí",
+      "desc": "Přejděte na Premium, abyste zachovali nativní vkládání, zkratky a neomezené přepisy.",
+      "cta": "Přejít na Premium →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Nativn? vkl?d?n? je vyhrazeno pro tarif Premium.",
-    "seePremium": "Zobrazit Premium ?",
-    "quotaExceeded": "T?denn? limit dosa?en",
-    "quotaExceededDesc": "P?ejdi na Premium pro diktov?n? bez limit?.",
-    "upgradeCta": "P?ej?t na Premium ?",
-    "upgrade": "P?ej?t na Premium",
-    "historyLimited": "Historie je v Basic omezena na {{limit}} polo?ek",
-    "shortcutsLocked": "Vlastn? zkratky jsou funkce Premium",
+    "copiedToClipboard": "Text zkopírován do schránky",
+    "copiedToClipboardDesc": "Nativní vkládání je vyhrazeno pro tarif Premium.",
+    "seePremium": "Zobrazit Premium →",
+    "quotaExceeded": "Týdenní limit dosažen",
+    "quotaExceededDesc": "Přejdi na Premium pro diktování bez limitů.",
+    "upgradeCta": "Přejít na Premium →",
+    "upgrade": "Přejít na Premium",
+    "historyLimited": "Historie je v Basic omezena na {{limit}} položek",
+    "shortcutsLocked": "Vlastní zkratky jsou funkce Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {

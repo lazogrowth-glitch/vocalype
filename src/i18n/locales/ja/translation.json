@@ -17,7 +17,7 @@
     "history": "履歴",
     "debug": "デバッグ",
     "about": "情報",
-    "snippets": "Snippets",
+    "snippets": "スニペット",
     "stats": "統計",
     "billing": "請求",
     "referral": "紹介",
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14日間",
+      "title": "Vocalype Premium を 14日間無料で。カードは不要です。",
+      "subtitle": "すべての機能が今すぐ使えます。試用期間中はカードは必要ありません。",
+      "cta": "はじめる →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "すべてのアプリへのネイティブ入力",
+    "feature2": "カスタマイズ可能なキーボードショートカット",
+    "feature3": "無制限の文字起こし",
+    "feature4": "完全な履歴",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Premium試用 · 残り{{count}}日",
+      "warning": "Premium の残り {{count}}日",
+      "urgent": "⚠ {{count}}日後に期限切れ",
+      "today": "⚠ 本日で期限切れ",
+      "cta": "Premium にアップグレード →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "試用期間がまもなく終わります",
+      "desc": "ネイティブ入力、ショートカット、無制限の文字起こしを維持するには Premium にアップグレードしてください。",
+      "cta": "Premium にアップグレード →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "???????? Premium ????????",
-    "seePremium": "Premium ??? ?",
-    "quotaExceeded": "??????????",
-    "quotaExceededDesc": "???????? Premium ???????????????",
-    "upgradeCta": "Premium ???????? ?",
-    "upgrade": "Premium ????????",
-    "historyLimited": "Basic ????? {{limit}} ?????",
-    "shortcutsLocked": "???????????? Premium ????",
+    "copiedToClipboard": "テキストをクリップボードにコピーしました",
+    "copiedToClipboardDesc": "ネイティブ入力は Premium プラン専用です。",
+    "seePremium": "Premium を見る →",
+    "quotaExceeded": "週間上限に達しました",
+    "quotaExceededDesc": "制限なしで使うには Premium にアップグレードしてください。",
+    "upgradeCta": "Premium にアップグレード →",
+    "upgrade": "Premium にアップグレード",
+    "historyLimited": "Basic では履歴は {{limit}} 件までです",
+    "shortcutsLocked": "カスタムショートカットは Premium 機能です",
     "premiumBadge": "Premium"
   },
   "commandMode": {

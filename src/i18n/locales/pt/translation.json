@@ -13,16 +13,16 @@
     "advanced": "Avançado",
     "postProcessing": "Pós-Processamento",
     "notes": "Notas",
-    "meetings": "Reuni?es",
+    "meetings": "Reuniões",
     "history": "Histórico",
-    "debug": "Depura??o",
+    "debug": "Depuração",
     "about": "Sobre",
     "snippets": "Trechos",
-    "stats": "Estat?sticas",
+    "stats": "Estatísticas",
     "billing": "Faturamento",
     "referral": "Indicação",
     "group": {
-      "config": "Configura??o",
+      "config": "Configuração",
       "usage": "Uso",
       "advanced": "Avan?ado"
     }
@@ -902,10 +902,10 @@
       "subtitle": "Seu acesso completo começa agora. Nenhum cartão é necessário durante o teste.",
       "cta": "Vamos lá →"
     },
-    "feature1": "Inser??o nativa em todos os seus apps",
-    "feature2": "Atalho de teclado personaliz?vel",
-    "feature3": "Transcri??es ilimitadas",
-    "feature4": "Hist?rico completo",
+    "feature1": "Inserção nativa em todos os seus apps",
+    "feature2": "Atalho de teclado personalizável",
+    "feature3": "Transcrições ilimitadas",
+    "feature4": "Histórico completo",
     "badge": {
       "neutral": "Teste Premium · faltam {{count}} dias",
       "warning": "Restam {{count}} dias de Premium",
@@ -966,7 +966,7 @@
     "refresh": "Atualizar"
   },
   "basic": {
-    "copiedToClipboard": "Texto copiado para a ?rea de transfer?ncia",
+    "copiedToClipboard": "Texto copiado para a área de transferência",
     "copiedToClipboardDesc": "A inserção nativa é reservada ao plano Premium.",
     "seePremium": "Ver Premium →",
     "quotaExceeded": "Limite semanal atingido",
@@ -1013,7 +1013,7 @@
     "statusError": "Erro"
   },
   "shell": {
-    "workspaceSubtitle": "Espa?o de ditado com IA",
+    "workspaceSubtitle": "Espaço de ditado com IA",
     "sectionDescriptions": {
       "default": "Ajuste seu espa?o do Vocalype com controles mais claros e uma estrutura mais limpa.",
       "general": "Ajuste atalhos, microfones e seu fluxo di?rio de ditado.",
@@ -1033,6 +1033,6 @@
   },
   "plan": {
     "premium": "Premium",
-    "basic": "B?sico"
+    "basic": "Básico"
   }
 }

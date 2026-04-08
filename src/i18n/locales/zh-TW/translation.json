@@ -17,7 +17,7 @@
     "history": "歷史紀錄",
     "debug": "除錯",
     "about": "關於",
-    "snippets": "Snippets",
+    "snippets": "片段",
     "stats": "統計",
     "billing": "帳單",
     "referral": "推薦",
@@ -896,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 天",
+      "title": "Vocalype Premium 免費試用 14 天，無需信用卡。",
+      "subtitle": "你的完整權限現在已啟用。試用期間無需信用卡。",
+      "cta": "開始使用 →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "在所有 App 中進行原生插入",
+    "feature2": "可自訂的鍵盤快捷鍵",
+    "feature3": "無限轉錄",
+    "feature4": "完整歷史記錄",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Premium 試用 · 剩餘 {{count}} 天",
+      "warning": "Premium 剩餘 {{count}} 天",
+      "urgent": "⚠ 將在 {{count}} 天後到期",
+      "today": "⚠ 今天到期",
+      "cta": "升級到 Premium →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "你的試用即將結束",
+      "desc": "升級到 Premium 以保留原生插入、快捷鍵與無限轉錄。",
+      "cta": "升級到 Premium →"
     }
   },
   "dictionary": {
@@ -965,15 +965,15 @@
     "refresh": "Refresh"
   },
   "basic": {
-    "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "?????? Premium ???",
-    "seePremium": "?? Premium ?",
-    "quotaExceeded": "??????",
-    "quotaExceededDesc": "??? Premium ???????",
-    "upgradeCta": "??? Premium ?",
-    "upgrade": "??? Premium",
-    "historyLimited": "Basic ?????????? {{limit}} ?",
-    "shortcutsLocked": "?????? Premium ??",
+    "copiedToClipboard": "文字已複製到剪貼簿",
+    "copiedToClipboardDesc": "原生插入僅限 Premium 方案。",
+    "seePremium": "查看 Premium →",
+    "quotaExceeded": "已達每週上限",
+    "quotaExceededDesc": "升級到 Premium 以無限制聽寫。",
+    "upgradeCta": "升級到 Premium →",
+    "upgrade": "升級到 Premium",
+    "historyLimited": "Basic 方案的歷史記錄限制為 {{limit}} 筆",
+    "shortcutsLocked": "自訂快捷鍵是 Premium 功能",
     "premiumBadge": "Premium"
   },
   "commandMode": {

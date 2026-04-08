@@ -12,15 +12,20 @@
     "models": "Modelle",
     "advanced": "Erweitert",
     "postProcessing": "Nachbearbeitung",
-    "notes": "Notes",
+    "notes": "Notizen",
     "meetings": "Meetings",
     "history": "Verlauf",
     "debug": "Debug",
     "about": "Info",
     "snippets": "Snippets",
-    "stats": "Stats",
+    "stats": "Statistiken",
     "billing": "Abrechnung",
-    "referral": "Empfehlung"
+    "referral": "Empfehlung",
+    "group": {
+      "config": "Konfiguration",
+      "usage": "Nutzung",
+      "advanced": "Erweitert"
+    }
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
@@ -891,26 +896,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium · 14 days",
-      "title": "14 days of Vocalype Premium. Free, no card.",
-      "subtitle": "Your full access starts now. No card required during the trial.",
-      "cta": "Let's go →"
+      "badge": "Premium · 14 Tage",
+      "title": "14 Tage Vocalype Premium. Kostenlos, keine Karte.",
+      "subtitle": "Dein voller Zugriff startet jetzt. Während der Testphase ist keine Karte nötig.",
+      "cta": "Los geht's →"
     },
-    "feature1": "Native injection into all your apps",
-    "feature2": "Customizable keyboard shortcut",
-    "feature3": "Unlimited transcriptions",
-    "feature4": "Full history",
+    "feature1": "Native Eingabe in all deine Apps",
+    "feature2": "Anpassbarer Tastatur-Shortcut",
+    "feature3": "Unbegrenzte Transkriptionen",
+    "feature4": "Voller Verlauf",
     "badge": {
-      "neutral": "Premium Trial · {{count}}d left",
-      "warning": "{{count}} days of Premium left",
-      "urgent": "⚠ Expires in {{count}} days",
-      "today": "⚠ Expires today",
-      "cta": "Upgrade to Premium →"
+      "neutral": "Premium-Test · noch {{count}} T",
+      "warning": "Noch {{count}} Tage Premium",
+      "urgent": "⚠ Läuft in {{count}} Tagen ab",
+      "today": "⚠ Läuft heute ab",
+      "cta": "Zu Premium wechseln →"
     },
     "reminder": {
-      "title": "Your trial is expiring soon",
-      "desc": "Upgrade to Premium to keep native injection, your shortcuts, and unlimited transcriptions.",
-      "cta": "Upgrade to Premium →"
+      "title": "Deine Testphase endet bald",
+      "desc": "Wechsle zu Premium, um native Eingabe, deine Shortcuts und unbegrenzte Transkriptionen zu behalten.",
+      "cta": "Zu Premium wechseln →"
     }
   },
   "dictionary": {
@@ -961,21 +966,21 @@
   },
   "basic": {
     "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Native injection is reserved for the Premium plan.",
-    "seePremium": "See Premium →",
-    "quotaExceeded": "Weekly limit reached",
-    "quotaExceededDesc": "Upgrade to Premium to dictate without limits.",
-    "upgradeCta": "Upgrade to Premium →",
-    "upgrade": "Upgrade to Premium",
-    "historyLimited": "History limited to {{limit}} entries on Basic",
-    "shortcutsLocked": "Custom shortcuts are a Premium feature",
+    "copiedToClipboardDesc": "Native Eingabe ist dem Premium-Tarif vorbehalten.",
+    "seePremium": "Premium ansehen →",
+    "quotaExceeded": "Wöchentliches Limit erreicht",
+    "quotaExceededDesc": "Wechsle zu Premium, um ohne Limits zu diktieren.",
+    "upgradeCta": "Zu Premium wechseln →",
+    "upgrade": "Zu Premium wechseln",
+    "historyLimited": "Verlauf im Basis-Tarif auf {{limit}} Einträge begrenzt",
+    "shortcutsLocked": "Benutzerdefinierte Shortcuts sind eine Premium-Funktion",
     "premiumBadge": "Premium"
   },
   "commandMode": {
-    "label": "Command Mode",
-    "recording": "Speak now… ({{count}}s)",
-    "processing": "Processing…",
-    "errorTitle": "Command Mode — error"
+    "label": "Befehlsmodus",
+    "recording": "Jetzt sprechen? ({{count}}s)",
+    "processing": "Wird verarbeitet?",
+    "errorTitle": "Befehlsmodus ? Fehler"
   },
   "transcription": {
     "warmup_preparing": "Preparing microphone…",
@@ -1005,5 +1010,28 @@
     "statusReady": "Ready",
     "statusRecording": "Recording",
     "statusError": "Error"
+  },
+  "shell": {
+    "workspaceSubtitle": "KI-Diktierarbeitsbereich",
+    "sectionDescriptions": {
+      "default": "Passe deinen Vocalype-Arbeitsbereich mit klareren Bedienelementen und besseren Standards an.",
+      "general": "Stimme Shortcuts, Mikrofone und deinen t?glichen Diktierablauf ab.",
+      "models": "W?hle das Sprachmodell, das Sprachverhalten und die Balance zwischen Qualit?t und Geschwindigkeit.",
+      "postprocessing": "Steuere Bereinigung, Formatierung und die endg?ltige Form der Transkripte vor dem Einf?gen.",
+      "snippets": "Erstelle wiederverwendbare Befehle und Textbausteine f?r schnellere Ausgaben.",
+      "history": "Pr?fe letzte Transkriptionen, verwende Inhalte erneut und verwalte gespeicherte Aktivit?t.",
+      "meetings": "Konfiguriere Meeting-Erfassung, Aufnahmeverhalten und kollaborative Workflows.",
+      "notes": "Richte Notiz-Integrationen ein und bestimme, wie Vocalype erfasste Gedanken strukturiert.",
+      "stats": "Verfolge Nutzung, Laufzeitstatus und die Leistung der App im Zeitverlauf.",
+      "advanced": "Feinabstimmung f?r Systemverhalten, Start, experimentelle Schalter und tiefere Kontrollen.",
+      "billing": "Verwalte deinen Plan, deine Limits und deine Abo-Details.",
+      "referral": "Lade andere ein und behalte Empfehlungspr?mien im Blick.",
+      "about": "Sieh dir App-Details, Release-Infos, Support-Links und den Produktstatus an.",
+      "debug": "Pr?fe Diagnosen, Logs und interne Werkzeuge zur Fehleranalyse."
+    }
+  },
+  "plan": {
+    "premium": "Premium",
+    "basic": "Basis"
   }
 }

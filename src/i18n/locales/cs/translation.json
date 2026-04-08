@@ -12,15 +12,20 @@
     "models": "Modely",
     "advanced": "Pokročilé",
     "postProcessing": "Následné zpracování",
-    "notes": "Notes",
+    "notes": "Poznámky",
     "meetings": "Schůzky",
     "history": "Historie",
     "debug": "Ladění",
     "about": "O aplikaci",
     "snippets": "Snippets",
-    "stats": "Stats",
+    "stats": "Statistiky",
     "billing": "Fakturace",
-    "referral": "Doporučení"
+    "referral": "Doporučení",
+    "group": {
+      "config": "Konfigurace",
+      "usage": "Použití",
+      "advanced": "Pokročilé"
+    }
   },
   "onboarding": {
     "subtitle": "Pro začátek vyberte model pro přepis",
@@ -961,21 +966,21 @@
   },
   "basic": {
     "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Native injection is reserved for the Premium plan.",
-    "seePremium": "See Premium →",
-    "quotaExceeded": "Weekly limit reached",
-    "quotaExceededDesc": "Upgrade to Premium to dictate without limits.",
-    "upgradeCta": "Upgrade to Premium →",
-    "upgrade": "Upgrade to Premium",
-    "historyLimited": "History limited to {{limit}} entries on Basic",
-    "shortcutsLocked": "Custom shortcuts are a Premium feature",
+    "copiedToClipboardDesc": "Nativn? vkl?d?n? je vyhrazeno pro tarif Premium.",
+    "seePremium": "Zobrazit Premium ?",
+    "quotaExceeded": "T?denn? limit dosa?en",
+    "quotaExceededDesc": "P?ejdi na Premium pro diktov?n? bez limit?.",
+    "upgradeCta": "P?ej?t na Premium ?",
+    "upgrade": "P?ej?t na Premium",
+    "historyLimited": "Historie je v Basic omezena na {{limit}} polo?ek",
+    "shortcutsLocked": "Vlastn? zkratky jsou funkce Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {
-    "label": "Command Mode",
-    "recording": "Speak now… ({{count}}s)",
-    "processing": "Processing…",
-    "errorTitle": "Command Mode — error"
+    "label": "Režim příkazů",
+    "recording": "Mluvte nyn?? ({{count}} s)",
+    "processing": "Zpracov?n??",
+    "errorTitle": "Re?im p??kaz? ? chyba"
   },
   "transcription": {
     "warmup_preparing": "Preparing microphone…",
@@ -1005,5 +1010,28 @@
     "statusReady": "Ready",
     "statusRecording": "Recording",
     "statusError": "Error"
+  },
+  "shell": {
+    "workspaceSubtitle": "Pracovní prostor AI diktování",
+    "sectionDescriptions": {
+      "default": "Upravte si prost?ed? Vocalype pomoc? p?ehledn?j??ch ovl?dac?ch prvk? a jasn?j??ch v?choz?ch nastaven?.",
+      "general": "Nastavte zkratky, mikrofony a sv?j ka?dodenn? pracovn? postup diktov?n?.",
+      "models": "Vyberte model rozpozn?v?n? ?e?i, jazykov? chov?n? a pom?r mezi kvalitou a rychlost?.",
+      "postprocessing": "?i?te ?i?t?n?, form?tov?n? a podobu p?episu p?ed vlo?en?m.",
+      "snippets": "Vytv??ejte znovupou?iteln? p??kazy a textov? ?ryvky pro rychlej?? pr?ci.",
+      "history": "Proch?zejte ned?vn? p?episy, znovu pou??vejte obsah a spravujte ulo?enou aktivitu.",
+      "meetings": "Nastavte zachyt?v?n? sch?zek, chov?n? nahr?v?n? a spolupr?ci.",
+      "notes": "Nastavte integrace pozn?mek a zp?sob, jak Vocalype strukturuje zachycen? my?lenky.",
+      "stats": "Sledujte pou??v?n?, stav b?hu aplikace a v?kon v ?ase.",
+      "advanced": "Dola?te chov?n? syst?mu, spu?t?n?, experiment?ln? p?ep?na?e a hlub?? nastaven?.",
+      "billing": "Spravujte sv?j tarif, limity a ?daje o p?edplatn?m.",
+      "referral": "Pozv?te ostatn? a sledujte odm?ny za doporu?en?.",
+      "about": "Zobrazte detaily aplikace, informace o vyd?n?, odkazy na podporu a stav produktu.",
+      "debug": "Prohl??ejte diagnostiku, logy a intern? n?stroje pro ?e?en? probl?m?."
+    }
+  },
+  "plan": {
+    "premium": "Premium",
+    "basic": "Základní"
   }
 }

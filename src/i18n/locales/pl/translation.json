@@ -12,15 +12,20 @@
     "models": "Modele",
     "advanced": "Zaawansowane",
     "postProcessing": "Postproces",
-    "notes": "Notes",
+    "notes": "Notatki",
     "meetings": "Spotkania",
     "history": "Historia",
     "debug": "Debugowanie",
-    "about": "O programie",
+    "about": "Informacje",
     "snippets": "Snippets",
-    "stats": "Stats",
+    "stats": "Statystyki",
     "billing": "Płatności",
-    "referral": "Polecenia"
+    "referral": "Polecenia",
+    "group": {
+      "config": "Konfiguracja",
+      "usage": "U?ycie",
+      "advanced": "Zaawansowane"
+    }
   },
   "onboarding": {
     "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
@@ -961,21 +966,21 @@
   },
   "basic": {
     "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Native injection is reserved for the Premium plan.",
-    "seePremium": "See Premium →",
-    "quotaExceeded": "Weekly limit reached",
-    "quotaExceededDesc": "Upgrade to Premium to dictate without limits.",
-    "upgradeCta": "Upgrade to Premium →",
-    "upgrade": "Upgrade to Premium",
-    "historyLimited": "History limited to {{limit}} entries on Basic",
-    "shortcutsLocked": "Custom shortcuts are a Premium feature",
+    "copiedToClipboardDesc": "Natywne wstawianie jest dost?pne tylko w planie Premium.",
+    "seePremium": "Zobacz Premium ?",
+    "quotaExceeded": "Osi?gni?to tygodniowy limit",
+    "quotaExceededDesc": "Przejd? na Premium, aby dyktowa? bez limit?w.",
+    "upgradeCta": "Przejd? na Premium ?",
+    "upgrade": "Przejd? na Premium",
+    "historyLimited": "Historia w planie Basic jest ograniczona do {{limit}} wpis?w",
+    "shortcutsLocked": "W?asne skr?ty klawiaturowe to funkcja Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {
-    "label": "Command Mode",
-    "recording": "Speak now… ({{count}}s)",
-    "processing": "Processing…",
-    "errorTitle": "Command Mode — error"
+    "label": "Tryb polece?",
+    "recording": "M?w teraz? ({{count}} s)",
+    "processing": "Przetwarzanie?",
+    "errorTitle": "Tryb polece? ? b??d"
   },
   "transcription": {
     "warmup_preparing": "Preparing microphone…",
@@ -1005,5 +1010,28 @@
     "statusReady": "Ready",
     "statusRecording": "Recording",
     "statusError": "Error"
+  },
+  "shell": {
+    "workspaceSubtitle": "Przestrze? dyktowania AI",
+    "sectionDescriptions": {
+      "default": "Dostosuj przestrze? Vocalype dzi?ki czytelniejszym kontrolkom i lepszym ustawieniom domy?lnym.",
+      "general": "Skonfiguruj skr?ty, mikrofony i codzienny przep?yw pracy z dyktowaniem.",
+      "models": "Wybierz model mowy, zachowanie j?zykowe i r?wnowag? mi?dzy jako?ci? a szybko?ci?.",
+      "postprocessing": "Kontroluj czyszczenie, formatowanie i ostateczny kszta?t transkrypcji przed wstawieniem.",
+      "snippets": "Tw?rz wielokrotnego u?ytku polecenia i fragmenty tekstu, aby pracowa? szybciej.",
+      "history": "Przegl?daj ostatnie transkrypcje, u?ywaj ponownie tre?ci i zarz?dzaj zapisan? aktywno?ci?.",
+      "meetings": "Skonfiguruj przechwytywanie spotka?, zachowanie nagrywania i przep?ywy wsp??pracy.",
+      "notes": "Skonfiguruj integracje notatek i spos?b, w jaki Vocalype porz?dkuje przechwycone my?li.",
+      "stats": "?led? u?ycie, stan dzia?ania aplikacji i wydajno?? w czasie.",
+      "advanced": "Dostr?j zachowanie systemu, uruchamianie, funkcje eksperymentalne i g??bsze ustawienia.",
+      "billing": "Zarz?dzaj planem, limitami i szczeg??ami subskrypcji.",
+      "referral": "Zapraszaj innych i ?led? nagrody za polecenia.",
+      "about": "Zobacz szczeg??y aplikacji, informacje o wydaniu, linki pomocy i stan produktu.",
+      "debug": "Sprawdzaj diagnostyk?, logi i wewn?trzne narz?dzia do rozwi?zywania problem?w."
+    }
+  },
+  "plan": {
+    "premium": "Premium",
+    "basic": "Podstawowy"
   }
 }

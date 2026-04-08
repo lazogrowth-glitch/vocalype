@@ -13,14 +13,14 @@
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "notes": "Notes",
-    "meetings": "Réunions",
+    "meetings": "R?unions",
     "history": "Historique",
     "snippets": "Extraits",
     "stats": "Statistiques",
     "billing": "Facturation",
     "referral": "Parrainage",
-    "debug": "Débogage",
-    "about": "À propos",
+    "debug": "D?bogage",
+    "about": "? propos",
     "group": {
       "config": "Configuration",
       "usage": "Utilisation",
@@ -346,9 +346,7 @@
           "description": "Le microphone reste ouvert ; la VAD détecte la parole automatiquement"
         }
       },
-      "categories": {
-        "cloudModels": "Mod?les distants"
-      }
+      "categories": {}
     },
     "sound": {
       "title": "Son",
@@ -920,12 +918,12 @@
     "welcome": {
       "badge": "Premium · 14 jours",
       "title": "14 jours de Vocalype Premium. Gratuit, sans carte.",
-      "subtitle": "Ton accès complet démarre maintenant. Aucune carte requise.",
+      "subtitle": "Votre accès complet démarre maintenant. Aucune carte n’est requise pendant l'essai.",
       "cta": "C'est parti →"
     },
-    "feature1": "Injection native dans toutes tes apps",
+    "feature1": "Injection native dans toutes vos apps",
     "feature2": "Raccourci clavier personnalisable",
-    "feature3": "Transcriptions illimitées",
+    "feature3": "Transcriptions illimit?es",
     "feature4": "Historique complet",
     "badge": {
       "neutral": "Essai Premium · {{count}} j restants",
@@ -936,7 +934,7 @@
     },
     "reminder": {
       "title": "Votre essai expire bientôt",
-      "desc": "Passe à Premium pour garder l'injection native, tes raccourcis et tes transcriptions illimitées.",
+      "desc": "Passez à Premium pour garder l’injection native, vos raccourcis et les transcriptions illimitées.",
       "cta": "Passer à Premium →"
     }
   },
@@ -988,14 +986,14 @@
   },
   "basic": {
     "copiedToClipboard": "Texte copié dans le presse-papier",
-    "copiedToClipboardDesc": "L'injection directe est réservée au plan Premium.",
+    "copiedToClipboardDesc": "L’injection native est réservée au plan Premium.",
     "seePremium": "Voir Premium →",
-    "quotaExceeded": "Limite atteinte pour cette semaine",
-    "quotaExceededDesc": "Passe à Premium pour dicter sans limite.",
+    "quotaExceeded": "Limite hebdomadaire atteinte",
+    "quotaExceededDesc": "Passez à Premium pour dicter sans limite.",
     "upgradeCta": "Passer à Premium →",
     "upgrade": "Passer à Premium",
-    "historyLimited": "Historique limit? ? {{limit}} entr?es en formule Basique",
-    "shortcutsLocked": "Raccourcis personnalisés réservés à Premium",
+    "historyLimited": "Historique limité à {{limit}} entrées en formule Basique",
+    "shortcutsLocked": "Les raccourcis personnalis?s sont une fonction Premium",
     "premiumBadge": "Premium"
   },
   "plan": {
@@ -1003,10 +1001,10 @@
     "basic": "Basique"
   },
   "commandMode": {
-    "label": "Command Mode",
-    "recording": "Parle maintenant… ({{count}}s)",
-    "processing": "Traitement en cours…",
-    "errorTitle": "Command Mode — erreur"
+    "label": "Mode commande",
+    "recording": "Parlez maintenant? ({{count}} s)",
+    "processing": "Traitement?",
+    "errorTitle": "Mode commande ? erreur"
   },
   "transcription": {
     "warmup_preparing": "Préparation du micro…",

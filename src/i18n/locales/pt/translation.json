@@ -13,9 +13,9 @@
     "advanced": "Avançado",
     "postProcessing": "Pós-Processamento",
     "notes": "Notas",
-    "meetings": "Reuniões",
+    "meetings": "Reuni?es",
     "history": "Histórico",
-    "debug": "Depuração",
+    "debug": "Depura??o",
     "about": "Sobre",
     "snippets": "Trechos",
     "stats": "Estat?sticas",
@@ -264,9 +264,7 @@
           "description": "O microfone permanece aberto; a VAD detecta a fala automaticamente"
         }
       },
-      "categories": {
-        "cloudModels": "Modelos em nuvem"
-      }
+      "categories": {}
     },
     "models": {
       "title": "Modelos de Transcrição",
@@ -704,8 +702,7 @@
       "thresholdLabel": "Limite de dura??o (segundos)",
       "thresholdDescription": "Mude para o modelo de ?udio longo quando a grava??o ultrapassar essa dura??o.",
       "disabled": "Desativado",
-      "seconds": "{{value}}s",
-      "model": "Modelo"
+      "seconds": "{{value}}s"
     },
     "gemini": {
       "title": "Gemini API",
@@ -900,26 +897,26 @@
   },
   "trial": {
     "welcome": {
-      "badge": "Premium ? 14 dias",
-      "title": "14 dias de Vocalype Premium. Gr?tis e sem cart?o.",
-      "subtitle": "Seu acesso completo come?a agora. Nenhum cart?o ? necess?rio durante o teste.",
-      "cta": "Come?ar ?"
+      "badge": "Premium · 14 dias",
+      "title": "14 dias de Vocalype Premium. Grátis e sem cartão.",
+      "subtitle": "Seu acesso completo começa agora. Nenhum cartão é necessário durante o teste.",
+      "cta": "Vamos lá →"
     },
     "feature1": "Inser??o nativa em todos os seus apps",
     "feature2": "Atalho de teclado personaliz?vel",
     "feature3": "Transcri??es ilimitadas",
     "feature4": "Hist?rico completo",
     "badge": {
-      "neutral": "Teste Premium ? faltam {{count}} dias",
+      "neutral": "Teste Premium · faltam {{count}} dias",
       "warning": "Restam {{count}} dias de Premium",
-      "urgent": "? Expira em {{count}} dias",
-      "today": "? Expira hoje",
-      "cta": "Ir para o Premium ?"
+      "urgent": "⚠ Expira em {{count}} dias",
+      "today": "⚠ Expira hoje",
+      "cta": "Ir para o Premium →"
     },
     "reminder": {
-      "title": "Seu teste est? acabando",
-      "desc": "Assine o Premium para manter a inser??o nativa, seus atalhos e as transcri??es ilimitadas.",
-      "cta": "Ir para o Premium ?"
+      "title": "Seu teste vai expirar em breve",
+      "desc": "Assine o Premium para manter a inserção nativa, seus atalhos e as transcrições ilimitadas.",
+      "cta": "Ir para o Premium →"
     }
   },
   "dictionary": {
@@ -970,21 +967,21 @@
   },
   "basic": {
     "copiedToClipboard": "Texto copiado para a ?rea de transfer?ncia",
-    "copiedToClipboardDesc": "A inser??o nativa ? reservada ao plano Premium.",
-    "seePremium": "Ver Premium ?",
+    "copiedToClipboardDesc": "A inserção nativa é reservada ao plano Premium.",
+    "seePremium": "Ver Premium →",
     "quotaExceeded": "Limite semanal atingido",
     "quotaExceededDesc": "Assine o Premium para ditar sem limites.",
-    "upgradeCta": "Ir para o Premium ?",
+    "upgradeCta": "Ir para o Premium →",
     "upgrade": "Assinar Premium",
-    "historyLimited": "Hist?rico limitado a {{limit}} entradas no plano B?sico",
+    "historyLimited": "Histórico limitado a {{limit}} entradas no plano Básico",
     "shortcutsLocked": "Atalhos personalizados s?o um recurso Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {
-    "label": "Modo de comandos",
+    "label": "Modo comando",
     "recording": "Fale agora? ({{count}} s)",
     "processing": "Processando?",
-    "errorTitle": "Modo de comandos ? erro"
+    "errorTitle": "Modo comando ? erro"
   },
   "transcription": {
     "warmup_preparing": "Preparando microfone?",

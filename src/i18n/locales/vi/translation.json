@@ -12,15 +12,20 @@
     "models": "Mô hình",
     "advanced": "Nâng cao",
     "postProcessing": "Xử lý sau",
-    "notes": "Notes",
+    "notes": "Ghi chú",
     "meetings": "Cuộc họp",
     "history": "Lịch sử",
     "debug": "Gỡ lỗi",
     "about": "Giới thiệu",
     "snippets": "Snippets",
-    "stats": "Stats",
+    "stats": "Thống kê",
     "billing": "Thanh toán",
-    "referral": "Giới thiệu"
+    "referral": "Giới thiệu",
+    "group": {
+      "config": "Cấu hình",
+      "usage": "Sử dụng",
+      "advanced": "Nâng cao"
+    }
   },
   "onboarding": {
     "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
@@ -961,21 +966,21 @@
   },
   "basic": {
     "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Native injection is reserved for the Premium plan.",
-    "seePremium": "See Premium →",
-    "quotaExceeded": "Weekly limit reached",
-    "quotaExceededDesc": "Upgrade to Premium to dictate without limits.",
-    "upgradeCta": "Upgrade to Premium →",
-    "upgrade": "Upgrade to Premium",
-    "historyLimited": "History limited to {{limit}} entries on Basic",
-    "shortcutsLocked": "Custom shortcuts are a Premium feature",
+    "copiedToClipboardDesc": "Ch?n g?c ch? d?nh cho g?i Premium.",
+    "seePremium": "Xem Premium ?",
+    "quotaExceeded": "?? ??t gi?i h?n h?ng tu?n",
+    "quotaExceededDesc": "N?ng c?p l?n Premium ?? ??c ch?nh t? kh?ng gi?i h?n.",
+    "upgradeCta": "N?ng c?p l?n Premium ?",
+    "upgrade": "N?ng c?p l?n Premium",
+    "historyLimited": "L?ch s? tr?n Basic b? gi?i h?n ? {{limit}} m?c",
+    "shortcutsLocked": "Ph?m t?t t?y ch?nh l? t?nh n?ng Premium",
     "premiumBadge": "Premium"
   },
   "commandMode": {
-    "label": "Command Mode",
-    "recording": "Speak now… ({{count}}s)",
-    "processing": "Processing…",
-    "errorTitle": "Command Mode — error"
+    "label": "Chế độ lệnh",
+    "recording": "H?y n?i ngay? ({{count}} gi?y)",
+    "processing": "?ang x? l??",
+    "errorTitle": "Ch? ?? l?nh ? l?i"
   },
   "transcription": {
     "warmup_preparing": "Preparing microphone…",
@@ -1005,5 +1010,28 @@
     "statusReady": "Ready",
     "statusRecording": "Recording",
     "statusError": "Error"
+  },
+  "shell": {
+    "workspaceSubtitle": "Không gian đọc chính tả AI",
+    "sectionDescriptions": {
+      "default": "?i?u ch?nh kh?ng gian Vocalype v?i c?c ?i?u khi?n r? r?ng h?n v? thi?t l?p m?c ??nh d? hi?u h?n.",
+      "general": "Tinh ch?nh ph?m t?t, micro v? lu?ng ??c ch?nh t? h?ng ng?y c?a b?n.",
+      "models": "Ch?n m? h?nh gi?ng n?i, c?ch x? l? ng?n ng? v? c?n b?ng gi?a ch?t l??ng v? t?c ??.",
+      "postprocessing": "Ki?m so?t vi?c l?m s?ch, ??nh d?ng v? h?nh th?c cu?i c?ng c?a b?n ch?p tr??c khi ch?n.",
+      "snippets": "T?o l?nh t?i s? d?ng v? ?o?n v?n b?n m?u ?? l?m vi?c nhanh h?n.",
+      "history": "Xem l?i c?c b?n ch?p g?n ??y, t?i s? d?ng n?i dung v? qu?n l? ho?t ??ng ?? l?u.",
+      "meetings": "Thi?t l?p ghi l?i cu?c h?p, h?nh vi ghi ?m v? quy tr?nh c?ng t?c.",
+      "notes": "Thi?t l?p t?ch h?p ghi ch? v? c?ch Vocalype c?u tr?c nh?ng ? t??ng ?? ghi l?i.",
+      "stats": "Theo d?i m?c s? d?ng, t?nh tr?ng runtime v? hi?u n?ng ?ng d?ng theo th?i gian.",
+      "advanced": "Tinh ch?nh h?nh vi h? th?ng, kh?i ??ng, c?c t?y ch?n th? nghi?m v? ?i?u khi?n n?ng cao.",
+      "billing": "Qu?n l? g?i, gi?i h?n v? chi ti?t thu? bao c?a b?n.",
+      "referral": "M?i ng??i kh?c v? theo d?i ph?n th??ng gi?i thi?u.",
+      "about": "Xem chi ti?t ?ng d?ng, th?ng tin ph?t h?nh, li?n k?t h? tr? v? tr?ng th?i s?n ph?m.",
+      "debug": "Ki?m tra ch?n ?o?n, nh?t k? v? c?c c?ng c? kh?c ph?c s? c? n?i b?."
+    }
+  },
+  "plan": {
+    "premium": "Premium",
+    "basic": "Cơ bản"
   }
 }

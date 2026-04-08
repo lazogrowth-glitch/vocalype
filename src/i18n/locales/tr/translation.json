@@ -12,15 +12,20 @@
     "models": "Modeller",
     "advanced": "Gelişmiş",
     "postProcessing": "Son İşlem",
-    "notes": "Notes",
-    "meetings": "Toplantılar",
+    "notes": "Notlar",
+    "meetings": "Toplant?lar",
     "history": "Geçmiş",
-    "debug": "Hata Ayıklama",
-    "about": "Hakkında",
+    "debug": "Hata ay?klama",
+    "about": "Hakk?nda",
     "snippets": "Snippets",
-    "stats": "Stats",
+    "stats": "?statistikler",
     "billing": "Faturalama",
-    "referral": "Tavsiye"
+    "referral": "Tavsiye",
+    "group": {
+      "config": "Yap?land?rma",
+      "usage": "Kullan?m",
+      "advanced": "Geli?mi?"
+    }
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
@@ -961,21 +966,21 @@
   },
   "basic": {
     "copiedToClipboard": "Text copied to clipboard",
-    "copiedToClipboardDesc": "Native injection is reserved for the Premium plan.",
-    "seePremium": "See Premium →",
-    "quotaExceeded": "Weekly limit reached",
-    "quotaExceededDesc": "Upgrade to Premium to dictate without limits.",
-    "upgradeCta": "Upgrade to Premium →",
-    "upgrade": "Upgrade to Premium",
-    "historyLimited": "History limited to {{limit}} entries on Basic",
-    "shortcutsLocked": "Custom shortcuts are a Premium feature",
+    "copiedToClipboardDesc": "Yerel ekleme yaln?zca Premium plan?nda kullan?labilir.",
+    "seePremium": "Premium?u g?r ?",
+    "quotaExceeded": "Haftal?k limite ula??ld?",
+    "quotaExceededDesc": "S?n?rs?z dikte i?in Premium?a y?kselt.",
+    "upgradeCta": "Premium?a y?kselt ?",
+    "upgrade": "Premium?a y?kselt",
+    "historyLimited": "Basic plan?nda ge?mi? {{limit}} kay?tla s?n?rl?d?r",
+    "shortcutsLocked": "?zel k?sayollar Premium ?zelli?idir",
     "premiumBadge": "Premium"
   },
   "commandMode": {
-    "label": "Command Mode",
-    "recording": "Speak now… ({{count}}s)",
-    "processing": "Processing…",
-    "errorTitle": "Command Mode — error"
+    "label": "Komut modu",
+    "recording": "?imdi konu?? ({{count}} sn)",
+    "processing": "??leniyor?",
+    "errorTitle": "Komut modu ? hata"
   },
   "transcription": {
     "warmup_preparing": "Preparing microphone…",
@@ -1005,5 +1010,28 @@
     "statusReady": "Ready",
     "statusRecording": "Recording",
     "statusError": "Error"
+  },
+  "shell": {
+    "workspaceSubtitle": "Yapay zek? dikte ?al??ma alan?",
+    "sectionDescriptions": {
+      "default": "Vocalype ?al??ma alan?n? daha temiz kontroller ve daha net varsay?lanlarla d?zenleyin.",
+      "general": "K?sayollar?, mikrofonlar? ve g?nl?k dikte ak???n?z? ayarlay?n.",
+      "models": "Konu?ma modelini, dil davran???n? ve kalite-h?z dengesini se?in.",
+      "postprocessing": "Eklemeden ?nce temizleme, bi?imlendirme ve metnin son halini kontrol edin.",
+      "snippets": "Daha h?zl? ??kt? almak i?in yeniden kullan?labilir komutlar ve metin par?alar? olu?turun.",
+      "history": "Son transkripsiyonlar? g?zden ge?irin, i?eri?i yeniden kullan?n ve kay?tl? etkinli?i y?netin.",
+      "meetings": "Toplant? yakalama, kay?t davran??? ve i? birli?i ak??lar?n? yap?land?r?n.",
+      "notes": "Not entegrasyonlar?n? ve Vocalype??n yakalanan d???nceleri nas?l yap?land?rd???n? ayarlay?n.",
+      "stats": "Kullan?m?, ?al??ma zaman? sa?l???n? ve uygulama performans?n? zaman i?inde takip edin.",
+      "advanced": "Sistem davran???n?, ba?lang?c?, deneysel anahtarlar? ve daha derin kontrolleri ince ayarlay?n.",
+      "billing": "Plan?n?z?, limitlerinizi ve abonelik ayr?nt?lar?n?z? y?netin.",
+      "referral": "Ba?kalar?n? davet edin ve y?nlendirme ?d?llerini takip edin.",
+      "about": "Uygulama ayr?nt?lar?n?, s?r?m bilgilerini, destek ba?lant?lar?n? ve ?r?n durumunu g?r?n.",
+      "debug": "Tan?lama, g?nl?kler ve dahili sorun giderme ara?lar?n? inceleyin."
+    }
+  },
+  "plan": {
+    "premium": "Premium",
+    "basic": "Temel"
   }
 }

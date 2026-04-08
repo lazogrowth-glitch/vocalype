@@ -131,7 +131,9 @@ export const AppContextSettings: React.FC = () => {
     }
   };
 
-  const overrideMap = new Map(overrides.map((o) => [o.process_name, o.category]));
+  const overrideMap = new Map(
+    overrides.map((o) => [o.process_name, o.category]),
+  );
 
   const handleCategoryChange = async (
     processName: string,
@@ -206,7 +208,9 @@ export const AppContextSettings: React.FC = () => {
         />
       </div>
 
-      <div className={enabled ? "" : "pointer-events-none opacity-40"}>
+      <div
+        className={`${enabled ? "" : "pointer-events-none opacity-40"} flex flex-col gap-3`}
+      >
         <div className="mb-2 flex items-center justify-between">
           <p className="text-[12px] font-medium text-white/50">
             {t("appContext.recentApps", { defaultValue: "Apps récentes" })}
@@ -317,6 +321,8 @@ export const AppContextSettings: React.FC = () => {
           </div>
         </div>
       )}
+
+      <div className="h-3" aria-hidden="true" />
 
       <div
         style={{ padding: "10px 16px" }}

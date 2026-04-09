@@ -69,7 +69,9 @@ jobs:
             target: "x86_64-apple-darwin"
 
     uses: ./.github/workflows/build.yml
-    needs: create-release
+    needs:
+      - create-release
+    if: ${{ always() && (inputs.create-release == false || needs.create-release.result == 'success') }}
     with:
       platform: ${{ matrix.platform }}
       target: ${{ matrix.target }}

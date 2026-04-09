@@ -1306,7 +1306,7 @@ export const MeetingsSettings: React.FC = () => {
                   filter.id as "all" | "pinned" | "recent" | "archived",
                 )
               }
-              className={`rounded-[10px] border px-3 py-2 text-[11px] font-medium transition-all ${
+              className={`inline-flex min-h-9 items-center justify-center rounded-[12px] border px-[14px] py-[9px] text-[11px] leading-none font-medium transition-all ${
                 listFilter === filter.id
                   ? "border-logo-primary/24 bg-logo-primary/10 text-logo-primary/92"
                   : "border-white/8 bg-white/[0.025] text-white/42 hover:bg-white/[0.05] hover:text-white/72"

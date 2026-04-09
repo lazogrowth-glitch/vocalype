@@ -98,6 +98,7 @@ export const BillingSettings: React.FC = () => {
 
   const sub = session?.subscription;
   const isPremium = sub?.tier === "premium";
+  const canManageBilling = sub?.can_manage_billing ?? false;
 
   // Tier label
   const tierLabel = isTrialing
@@ -276,7 +277,7 @@ export const BillingSettings: React.FC = () => {
       <SettingsGroup
         title={t("billing.actions.title", { defaultValue: "Actions" })}
       >
-        {isPremium && (
+        {canManageBilling && (
           <SettingContainer
             title={t("billing.actions.manage.title", {
               defaultValue: "Manage subscription",
@@ -302,13 +303,17 @@ export const BillingSettings: React.FC = () => {
             </Button>
           </SettingContainer>
         )}
-        {isBasicTier && (
+        {!canManageBilling && (
           <SettingContainer
             title={t("billing.actions.upgrade.title", {
-              defaultValue: "Upgrade to Premium",
+              defaultValue: isTrialing
+                ? "Start Premium subscription"
+                : "Upgrade to Premium",
             })}
             description={t("billing.actions.upgrade.description", {
-              defaultValue: "Start your premium subscription via Stripe.",
+              defaultValue: isTrialing
+                ? "Start your paid subscription via Stripe before the trial ends."
+                : "Start your premium subscription via Stripe.",
             })}
             grouped={false}
           >

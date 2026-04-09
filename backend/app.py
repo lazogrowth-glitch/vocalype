@@ -1102,6 +1102,7 @@ def build_user_response(user, token: str, *, refresh_token: str | None = None, s
             "current_period_ends_at": user["period_end"],
             "has_access": True,
             "tier": tier,
+            "can_manage_billing": bool(user["stripe_customer_id"]),
         },
     }
     if tier == "basic":

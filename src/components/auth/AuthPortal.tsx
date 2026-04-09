@@ -96,6 +96,7 @@ export const AuthPortal = ({
   const hasPreviousStep = stepIndex > 0;
   const hasNextStep = stepIndex < AUTH_STEP_ORDER.length - 1;
   const hasAccess = session?.subscription.has_access ?? false;
+  const canManageBilling = session?.subscription.can_manage_billing ?? false;
   const canInteract = !isLoading && !isSubmitting && !refreshBusy;
   const displayError = error?.trim() ?? null;
 
@@ -171,11 +172,15 @@ export const AuthPortal = ({
       }}
       disabled={billingBusy}
       onClick={() =>
-        openBillingLink(hasAccess ? onOpenBillingPortal : onStartCheckout)
+        openBillingLink(
+          hasAccess && canManageBilling ? onOpenBillingPortal : onStartCheckout,
+        )
       }
     >
       {billingBusy ? <Loader2 size={16} className="animate-spin" /> : null}
-      {hasAccess ? "Gerer mon abonnement" : "Debloquer Vocalype"}
+      {hasAccess && canManageBilling
+        ? "Gerer mon abonnement"
+        : "Debloquer Vocalype"}
     </button>
   ) : (
     <button

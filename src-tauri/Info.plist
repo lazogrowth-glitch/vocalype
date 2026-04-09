@@ -3,6 +3,8 @@
 <plist version="1.0">
 <dict>
   <key>NSMicrophoneUsageDescription</key>
-  <string>Request microphone access to transcribe audio locally</string>
+  <string>Vocalype needs microphone access to capture your voice and transcribe audio locally on your Mac.</string>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>Vocalype may need permission to interact with other apps so it can insert dictated text where you are working.</string>
 </dict>
 </plist>

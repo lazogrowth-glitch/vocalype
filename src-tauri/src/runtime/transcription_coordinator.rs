@@ -80,7 +80,7 @@ pub struct TranscriptionCoordinator {
 pub fn is_transcribe_binding(id: &str) -> bool {
     matches!(
         id,
-        "transcribe" | "transcribe_with_post_process" | "agent_key" | "meeting_key"
+        "transcribe" | "transcribe_with_post_process" | "agent_key" | "meeting_key" | "note_key"
     )
 }
 

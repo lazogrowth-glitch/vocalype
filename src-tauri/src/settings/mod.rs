@@ -1330,6 +1330,16 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "".to_string(),
         },
     );
+    bindings.insert(
+        "note_key".to_string(),
+        ShortcutBinding {
+            id: "note_key".to_string(),
+            name: "Note Key".to_string(),
+            description: "Transcribes your speech directly into an active note.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
 
     AppSettings {
         settings_version: CURRENT_SETTINGS_VERSION,

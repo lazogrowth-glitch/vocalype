@@ -223,6 +223,16 @@ export const GeneralSettings: React.FC = () => {
               disabled={isBasicTier}
             />
           </SettingsGroup>
+
+          <SettingsGroup
+            title={t("noteKey.label", { defaultValue: "Note Key" })}
+          >
+            <ShortcutInput
+              shortcutId="note_key"
+              grouped={true}
+              disabled={isBasicTier}
+            />
+          </SettingsGroup>
         </div>
       )}
 

@@ -50,12 +50,18 @@ pub fn handle_meeting_segment(app: &AppHandle, _operation_id: u64, text: &str) {
 
     // Append a newline-separated segment.
     let segment = format!("{}\n", text.trim());
-    match mm.append_segment(meeting_id, &segment) {
-        Ok(()) => {
+    let timestamp_ms = chrono::Utc::now().timestamp_millis();
+    match mm.append_segment(meeting_id, &segment, timestamp_ms) {
+        Ok(segment_entry) => {
             debug!("meeting: appended segment to meeting #{}", meeting_id);
             let _ = app.emit(
                 "meeting-segment-added",
-                serde_json::json!({ "id": meeting_id, "text": segment }),
+                serde_json::json!({
+                    "id": meeting_id,
+                    "text": segment,
+                    "timestamp_ms": segment_entry.timestamp_ms,
+                    "segment_id": segment_entry.id
+                }),
             );
         }
         Err(e) => warn!("meeting: failed to append segment: {}", e),
@@ -66,6 +72,11 @@ pub fn handle_meeting_segment(app: &AppHandle, _operation_id: u64, text: &str) {
 pub fn close_active_meeting() {
     let mut active_id = ACTIVE_MEETING_ID.lock().unwrap_or_else(|e| e.into_inner());
     *active_id = None;
+}
+
+pub fn set_active_meeting(id: Option<i64>) {
+    let mut active_id = ACTIVE_MEETING_ID.lock().unwrap_or_else(|e| e.into_inner());
+    *active_id = id;
 }
 
 fn formatted_now() -> String {

@@ -1,5 +1,6 @@
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use crate::signal_handle;
 use serde::Serialize;
 use specta::Type;
 use std::sync::Arc;
@@ -38,4 +39,16 @@ pub fn unload_model_manually(
     transcription_manager
         .unload_model()
         .map_err(|e| format!("Failed to unload model: {}", e))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn trigger_transcription_binding(app: AppHandle, binding_id: String) -> Result<(), String> {
+    let trimmed = binding_id.trim();
+    if trimmed.is_empty() {
+        return Err("Missing binding id".to_string());
+    }
+
+    signal_handle::send_transcription_input(&app, trimmed, "UI");
+    Ok(())
 }

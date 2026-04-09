@@ -878,6 +878,14 @@ async unloadModelManually() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async triggerTranscriptionBinding(bindingId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("trigger_transcription_binding", { bindingId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getHistoryEntries() : Promise<Result<HistoryEntry[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_history_entries") };
@@ -966,6 +974,14 @@ async transcribeAudioFile(path: string) : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async transcribeAudioFileDetailed(path: string) : Promise<Result<AudioTranscriptionDetail, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_audio_file_detailed", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clearAllHistory() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clear_all_history") };
@@ -990,9 +1006,41 @@ async createNote(title: string, content: string) : Promise<Result<NoteEntry, str
     else return { status: "error", error: e  as any };
 }
 },
+async duplicateNote(id: number) : Promise<Result<NoteEntry, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("duplicate_note", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async updateNote(id: number, title: string, content: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("update_note", { id, title, content }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setNotePinned(id: number, pinned: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_note_pinned", { id, pinned }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setNoteArchived(id: number, archived: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_note_archived", { id, archived }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setNoteCategory(id: number, category: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_note_category", { id, category }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -1014,6 +1062,44 @@ async searchNotes(query: string) : Promise<Result<NoteEntry[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async exportNote(id: number, format: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("export_note", { id, format }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async summarizeNote(id: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("summarize_note", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async extractNoteActions(id: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("extract_note_actions", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async generateNoteTitle(id: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("generate_note_title", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async closeNote() : Promise<void> {
+    await TAURI_INVOKE("close_note");
+},
+async setActiveNote(id: number | null) : Promise<void> {
+    await TAURI_INVOKE("set_active_note", { id });
+},
 async getMeetings() : Promise<Result<MeetingEntry[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_meetings") };
@@ -1030,9 +1116,41 @@ async createMeeting(title: string, appName: string) : Promise<Result<MeetingEntr
     else return { status: "error", error: e  as any };
 }
 },
+async duplicateMeeting(id: number) : Promise<Result<MeetingEntry, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("duplicate_meeting", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async updateMeeting(id: number, title: string, transcript: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("update_meeting", { id, title, transcript }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setMeetingPinned(id: number, pinned: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_meeting_pinned", { id, pinned }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setMeetingArchived(id: number, archived: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_meeting_archived", { id, archived }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setMeetingCategory(id: number, category: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_meeting_category", { id, category }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -1054,6 +1172,46 @@ async searchMeetings(query: string) : Promise<Result<MeetingEntry[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async exportMeeting(id: number, format: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("export_meeting", { id, format }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async summarizeMeeting(id: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("summarize_meeting", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async extractMeetingActions(id: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("extract_meeting_actions", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async generateMeetingTitle(id: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("generate_meeting_title", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async generateMeetingChapterTitles(id: number) : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("generate_meeting_chapter_titles", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
  * Returns the name of the currently running meeting app, or `null` if none detected.
  */
@@ -1065,6 +1223,9 @@ async detectActiveMeetingApp() : Promise<string | null> {
  */
 async closeMeeting() : Promise<void> {
     await TAURI_INVOKE("close_meeting");
+},
+async setActiveMeeting(id: number | null) : Promise<void> {
+    await TAURI_INVOKE("set_active_meeting", { id });
 },
 async getDictionary() : Promise<Result<DictionaryEntry[], string>> {
     try {
@@ -1441,6 +1602,8 @@ process_name: string | null;
 window_title: string | null; category: AppContextCategory; detected_at_ms: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AudioInputLevelState = "unknown" | "silent" | "weak" | "healthy" | "hot"
+export type AudioTranscriptSegment = { start_ms: number; end_ms: number; text: string }
+export type AudioTranscriptionDetail = { text: string; segments: AudioTranscriptSegment[] }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type BenchPhase = "none" | "quick_done" | "full_done"
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
@@ -1473,12 +1636,13 @@ export type MachineScoreDetails = { ram_score?: number; cpu_threads_score?: numb
 export type MachineStatusMode = "optimal" | "battery" | "saver" | "thermal" | "memory_limited" | "fallback" | "calibrating"
 export type MachineStatusSnapshot = { mode: MachineStatusMode; degraded: boolean; headline: string; detail: string; active_model_id: string | null; active_backend: WhisperBackendPreference | null }
 export type MachineTier = "low" | "medium" | "high"
-export type MeetingEntry = { id: number; title: string; app_name: string; transcript: string; created_at: number; updated_at: number }
+export type MeetingEntry = { id: number; title: string; app_name: string; transcript: string; category: string; is_pinned: boolean; is_archived: boolean; summary: string; action_items: string; segments: MeetingSegmentEntry[]; created_at: number; updated_at: number }
+export type MeetingSegmentEntry = { id: number; meeting_id: number; timestamp_ms: number; content: string }
 export type MicrophonePermissionState = "unknown" | "granted" | "denied"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; expected_etag: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; is_custom: boolean; requires_license_key: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"
-export type NoteEntry = { id: number; title: string; content: string; created_at: number; updated_at: number }
+export type NoteEntry = { id: number; title: string; content: string; category: string; is_pinned: boolean; is_archived: boolean; summary: string; action_items: string; created_at: number; updated_at: number }
 export type NpuKind = "none" | "qualcomm" | "intel" | "amd" | "unknown"
 export type OverlayPosition = "none" | "top" | "bottom"
 export type ParakeetDiagnosticsSnapshot = { active_session: ParakeetSessionDiagnostics | null; recent_sessions: ParakeetSessionDiagnostics[] }

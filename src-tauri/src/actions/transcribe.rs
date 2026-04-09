@@ -1865,6 +1865,16 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 return;
             }
 
+            if binding_id == "note_key" {
+                utils::hide_recording_overlay(&ah);
+                change_tray_icon(&ah, TrayIconState::Idle);
+                super::note::handle_note_segment(&ah, operation_id, &transcription);
+                if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
+                    let _ = c.complete_operation(&ah, operation_id, "note-segment");
+                }
+                return;
+            }
+
             if should_auto_paste(effective_status) && !transcription.is_empty() {
                 let outcome = process_transcription_text(
                     &ah,

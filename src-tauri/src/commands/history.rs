@@ -295,6 +295,90 @@ pub async fn transcribe_audio_file(
     Ok(text)
 }
 
+#[derive(Serialize, Deserialize, Type)]
+pub struct AudioTranscriptSegment {
+    pub start_ms: i64,
+    pub end_ms: i64,
+    pub text: String,
+}
+
+#[derive(Serialize, Deserialize, Type)]
+pub struct AudioTranscriptionDetail {
+    pub text: String,
+    pub segments: Vec<AudioTranscriptSegment>,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn transcribe_audio_file_detailed(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    path: String,
+) -> Result<AudioTranscriptionDetail, String> {
+    crate::license::enforce_premium_access(&app, "transcribe_file")?;
+
+    let audio_path = std::path::PathBuf::from(&path);
+    if !audio_path.exists() {
+        return Err(format!("Fichier introuvable : {}", path));
+    }
+
+    let samples = load_external_audio_file(&audio_path).map_err(|e| e.to_string())?;
+
+    let tm = Arc::clone(&*transcription_manager);
+    let output = tokio::task::spawn_blocking(move || {
+        tm.transcribe_detailed_request(crate::managers::transcription::TranscriptionRequest {
+            audio: samples,
+            app_context: None,
+        })
+    })
+    .await
+    .map_err(|e| format!("TÃ¢che annulÃ©e : {}", e))?
+    .map_err(|e| e.to_string())?;
+
+    let text = output.text.trim().to_string();
+    if text.is_empty() {
+        return Err("Aucune transcription produite".to_string());
+    }
+
+    let file_name = audio_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("file")
+        .to_string();
+
+    let _ = history_manager
+        .save_file_transcription(&file_name, &text, output.confidence_payload.as_ref())
+        .await;
+
+    let mut segments = output
+        .segments
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|segment| {
+            let text = segment.text.trim().to_string();
+            if text.is_empty() {
+                return None;
+            }
+            Some(AudioTranscriptSegment {
+                start_ms: (segment.start * 1000.0).round() as i64,
+                end_ms: (segment.end * 1000.0).round() as i64,
+                text,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    if segments.is_empty() {
+        segments.push(AudioTranscriptSegment {
+            start_ms: 0,
+            end_ms: 0,
+            text: text.clone(),
+        });
+    }
+
+    Ok(AudioTranscriptionDetail { text, segments })
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn clear_all_history(

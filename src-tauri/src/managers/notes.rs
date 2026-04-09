@@ -13,11 +13,6 @@ static MIGRATIONS: &[M] = &[
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL DEFAULT '',
         content TEXT NOT NULL DEFAULT '',
-        category TEXT NOT NULL DEFAULT '',
-        is_pinned INTEGER NOT NULL DEFAULT 0,
-        is_archived INTEGER NOT NULL DEFAULT 0,
-        summary TEXT NOT NULL DEFAULT '',
-        action_items TEXT NOT NULL DEFAULT '',
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
     );",
@@ -65,9 +60,65 @@ impl NoteManager {
         #[cfg(debug_assertions)]
         migrations.validate().expect("Invalid notes migrations");
 
+        self.reconcile_migration_version(&conn)?;
         migrations.to_latest(&mut conn)?;
         debug!("Notes database initialized");
         Ok(())
+    }
+
+    fn reconcile_migration_version(&self, conn: &Connection) -> Result<()> {
+        let current_version: i32 =
+            conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        let inferred_version = Self::infer_schema_version(conn)?;
+        if inferred_version > current_version {
+            info!(
+                "Reconciling notes migration version from {} to {} based on existing schema",
+                current_version, inferred_version
+            );
+            conn.pragma_update(None, "user_version", inferred_version)?;
+        }
+        Ok(())
+    }
+
+    fn infer_schema_version(conn: &Connection) -> Result<i32> {
+        if !Self::table_exists(conn, "notes")? {
+            return Ok(0);
+        }
+
+        let version = if Self::column_exists(conn, "notes", "category")? {
+            6
+        } else if Self::column_exists(conn, "notes", "action_items")? {
+            5
+        } else if Self::column_exists(conn, "notes", "summary")? {
+            4
+        } else if Self::column_exists(conn, "notes", "is_archived")? {
+            3
+        } else if Self::column_exists(conn, "notes", "is_pinned")? {
+            2
+        } else {
+            1
+        };
+
+        Ok(version)
+    }
+
+    fn table_exists(conn: &Connection, table: &str) -> Result<bool> {
+        Ok(conn.query_row(
+            "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name = ?1",
+            params![table],
+            |row| row.get(0),
+        )?)
+    }
+
+    fn column_exists(conn: &Connection, table: &str, column: &str) -> Result<bool> {
+        let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+        let columns = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        for existing in columns {
+            if existing? == column {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     fn open(&self) -> Result<Connection> {

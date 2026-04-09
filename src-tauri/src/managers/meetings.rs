@@ -14,11 +14,6 @@ static MIGRATIONS: &[M] = &[
         title TEXT NOT NULL DEFAULT '',
         app_name TEXT NOT NULL DEFAULT '',
         transcript TEXT NOT NULL DEFAULT '',
-        category TEXT NOT NULL DEFAULT '',
-        is_pinned INTEGER NOT NULL DEFAULT 0,
-        is_archived INTEGER NOT NULL DEFAULT 0,
-        summary TEXT NOT NULL DEFAULT '',
-        action_items TEXT NOT NULL DEFAULT '',
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
     );",
@@ -85,9 +80,67 @@ impl MeetingManager {
         #[cfg(debug_assertions)]
         migrations.validate().expect("Invalid meetings migrations");
 
+        self.reconcile_migration_version(&conn)?;
         migrations.to_latest(&mut conn)?;
         debug!("Meetings database initialized");
         Ok(())
+    }
+
+    fn reconcile_migration_version(&self, conn: &Connection) -> Result<()> {
+        let current_version: i32 =
+            conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        let inferred_version = Self::infer_schema_version(conn)?;
+        if inferred_version > current_version {
+            info!(
+                "Reconciling meetings migration version from {} to {} based on existing schema",
+                current_version, inferred_version
+            );
+            conn.pragma_update(None, "user_version", inferred_version)?;
+        }
+        Ok(())
+    }
+
+    fn infer_schema_version(conn: &Connection) -> Result<i32> {
+        if !Self::table_exists(conn, "meetings")? {
+            return Ok(0);
+        }
+
+        let version = if Self::table_exists(conn, "meeting_segments")? {
+            7
+        } else if Self::column_exists(conn, "meetings", "category")? {
+            6
+        } else if Self::column_exists(conn, "meetings", "action_items")? {
+            5
+        } else if Self::column_exists(conn, "meetings", "summary")? {
+            4
+        } else if Self::column_exists(conn, "meetings", "is_archived")? {
+            3
+        } else if Self::column_exists(conn, "meetings", "is_pinned")? {
+            2
+        } else {
+            1
+        };
+
+        Ok(version)
+    }
+
+    fn table_exists(conn: &Connection, table: &str) -> Result<bool> {
+        Ok(conn.query_row(
+            "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name = ?1",
+            params![table],
+            |row| row.get(0),
+        )?)
+    }
+
+    fn column_exists(conn: &Connection, table: &str, column: &str) -> Result<bool> {
+        let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+        let columns = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        for existing in columns {
+            if existing? == column {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     fn open(&self) -> Result<Connection> {

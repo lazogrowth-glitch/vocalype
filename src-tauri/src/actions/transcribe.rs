@@ -714,6 +714,17 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let ah_w = app.clone();
         let operation_id_w = operation_id;
         let worker_handle = std::thread::spawn(move || {
+            let chunk_app_context = if get_settings(&ah_w).app_context_enabled {
+                ah_w.try_state::<ActiveAppContextState>().and_then(|state| {
+                    state
+                        .0
+                        .lock()
+                        .ok()
+                        .and_then(|snapshot| snapshot.active_context_for_binding(&binding_id))
+                })
+            } else {
+                None
+            };
             info!("[worker] started");
             while let Ok(message) = chunk_rx.recv() {
                 // ESC was pressed — discard remaining queued chunks immediately.
@@ -741,7 +752,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 let chunk_start_time = std::time::Instant::now();
                 match tm_s.transcribe_detailed_request(TranscriptionRequest {
                     audio,
-                    app_context: None,
+                    app_context: chunk_app_context.clone(),
                 }) {
                     Ok(output) => {
                         let latency_ms = chunk_start_time.elapsed().as_millis() as u64;
@@ -817,7 +828,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                             }
                                             tm_s.transcribe_detailed_request(TranscriptionRequest {
                                                 audio: non_overlap,
-                                                app_context: None,
+                                                app_context: chunk_app_context.clone(),
                                             })
                                             .map(|o| o.text)
                                             .unwrap_or_default()

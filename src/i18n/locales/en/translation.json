@@ -776,11 +776,6 @@
         "exportSuccess": "Settings exported successfully",
         "importSuccess": "Settings imported successfully"
       },
-      "sourceCode": {
-        "title": "Source Code",
-        "description": "View source code and contribute",
-        "button": "View on GitHub"
-      },
       "privacyPolicy": "Privacy Policy",
       "supportDevelopment": {
         "title": "Support Development",

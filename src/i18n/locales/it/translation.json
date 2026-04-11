@@ -664,11 +664,6 @@
         "title": "Cartella Dati App",
         "description": "Cartella in cui Vocalype salva i dati"
       },
-      "sourceCode": {
-        "title": "Codice Sorgente",
-        "description": "Vedi e contribuisci al codice sorgente",
-        "button": "Vedi su GitHub"
-      },
       "supportDevelopment": {
         "title": "Supporta lo Sviluppo",
         "description": "Aiutaci a sviluppare Vocalype",

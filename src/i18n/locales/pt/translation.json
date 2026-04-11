@@ -665,11 +665,6 @@
         "title": "Diretório de Dados do App",
         "description": "Local onde o Vocalype armazena seus dados"
       },
-      "sourceCode": {
-        "title": "Código Fonte",
-        "description": "Visualizar código fonte e contribuir",
-        "button": "Ver no GitHub"
-      },
       "supportDevelopment": {
         "title": "Apoiar o Desenvolvimento",
         "description": "Ajude-nos a continuar construindo o Vocalype",

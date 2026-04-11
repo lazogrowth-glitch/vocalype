@@ -24,6 +24,21 @@ interface ActionableRuntimeMessage {
   defaultValue: string;
 }
 
+interface RuntimeHintState {
+  count: number;
+  windowStartedAt: number;
+  lastHintAt: number;
+}
+
+interface RuntimeHintMessage {
+  key: string;
+  defaultValue: string;
+}
+
+const RUNTIME_HINT_THRESHOLD = 2;
+const RUNTIME_HINT_WINDOW_MS = 10 * 60 * 1000;
+const RUNTIME_HINT_COOLDOWN_MS = 20 * 60 * 1000;
+
 const ACTIONABLE_RUNTIME_MESSAGES: Record<string, ActionableRuntimeMessage> = {
   no_model_loaded: {
     key: "errors.actionable.noModelLoaded",
@@ -95,6 +110,49 @@ const ACTIONABLE_RUNTIME_MESSAGES: Record<string, ActionableRuntimeMessage> = {
   },
 };
 
+const LIMITED_RUNTIME_HINTS: Record<string, RuntimeHintMessage> = {
+  no_speech_detected: {
+    key: "hints.runtime.noSpeechDetected",
+    defaultValue:
+      "Tip: if this keeps happening, confirm the selected microphone and try one short sentence close to the mic.",
+  },
+  audio_captured_empty_transcript: {
+    key: "hints.runtime.audioCapturedEmptyTranscript",
+    defaultValue:
+      "Tip: Vocalype heard audio, so try a shorter phrase or a more accurate model if this repeats.",
+  },
+  mic_not_found: {
+    key: "hints.runtime.micNotFound",
+    defaultValue:
+      "Tip: reselect your microphone in Settings, especially after unplugging or reconnecting a device.",
+  },
+  mic_open_failed: {
+    key: "hints.runtime.micOpenFailed",
+    defaultValue:
+      "Tip: another app may be holding the microphone. Close meeting or recorder apps, then try again.",
+  },
+  mic_permission_denied: {
+    key: "hints.runtime.micPermissionDenied",
+    defaultValue:
+      "Tip: open system privacy settings and allow Vocalype to use the microphone.",
+  },
+  transcription_partial: {
+    key: "hints.runtime.transcriptionPartial",
+    defaultValue:
+      "Tip: repeated partial results usually improve with shorter dictations or a quality model.",
+  },
+  paste_failed: {
+    key: "hints.runtime.pasteFailed",
+    defaultValue:
+      "Tip: if paste keeps failing in this app, try another paste method in Settings.",
+  },
+  paste_main_thread_dispatch_failed: {
+    key: "hints.runtime.pasteFailed",
+    defaultValue:
+      "Tip: if paste keeps failing in this app, try another paste method in Settings.",
+  },
+};
+
 function getRuntimeActionableMessage(
   t: TranslateFn,
   payload: RuntimeErrorEvent,
@@ -117,6 +175,38 @@ function getRuntimeActionableMessage(
   });
 }
 
+function getLimitedRuntimeHint(
+  t: TranslateFn,
+  payload: RuntimeErrorEvent,
+  hintStateByCode: Record<string, RuntimeHintState>,
+  now: number,
+) {
+  const normalizedCode = payload.code?.toLowerCase();
+  const hint = LIMITED_RUNTIME_HINTS[normalizedCode];
+  if (!hint) {
+    return null;
+  }
+
+  const previous = hintStateByCode[normalizedCode];
+  const state =
+    previous && now - previous.windowStartedAt <= RUNTIME_HINT_WINDOW_MS
+      ? previous
+      : { count: 0, windowStartedAt: now, lastHintAt: 0 };
+
+  state.count += 1;
+  hintStateByCode[normalizedCode] = state;
+
+  if (
+    state.count < RUNTIME_HINT_THRESHOLD ||
+    now - state.lastHintAt < RUNTIME_HINT_COOLDOWN_MS
+  ) {
+    return null;
+  }
+
+  state.lastHintAt = now;
+  return t(hint.key, { defaultValue: hint.defaultValue });
+}
+
 export function useBackendEvents({
   t,
   currentSection: _currentSection,
@@ -125,6 +215,7 @@ export function useBackendEvents({
   updateSetting,
 }: UseBackendEventsProps) {
   const lastRuntimeErrorRef = useRef<{ key: string; at: number } | null>(null);
+  const runtimeHintStateRef = useRef<Record<string, RuntimeHintState>>({});
   const commandModeCountdownRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
   );
@@ -223,18 +314,27 @@ export function useBackendEvents({
       lastRuntimeErrorRef.current = { key: dedupeKey, at: now };
 
       const actionableMessage = getRuntimeActionableMessage(t, payload);
+      const limitedHint = getLimitedRuntimeHint(
+        t,
+        payload,
+        runtimeHintStateRef.current,
+        now,
+      );
+      const description = limitedHint
+        ? `${actionableMessage}\n\n${limitedHint}`
+        : actionableMessage;
 
       if (payload.recoverable) {
         toast.warning(
           t("warnings.runtimeIssue", { defaultValue: "Transcription issue" }),
-          { duration: 8000, description: actionableMessage },
+          { duration: 8000, description },
         );
         return;
       }
 
       toast.error(
         t("warnings.runtimeFailure", { defaultValue: "Transcription failed" }),
-        { duration: 8000, description: actionableMessage },
+        { duration: 8000, description },
       );
     });
     return () => {

@@ -240,6 +240,8 @@ impl TranscriptionManager {
         };
         let initial_prompt = if settings.adaptive_vocabulary_enabled
             || (settings.adaptive_voice_profile_enabled && !voice_terms.is_empty())
+            || app_context.is_some()
+            || !session_keyterms.is_empty()
         {
             if let Some(state) = self.app_handle.try_state::<VocabularyStoreState>() {
                 if let Ok(store) = state.0.lock() {

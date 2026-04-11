@@ -777,11 +777,6 @@
         "exportSuccess": "Paramètres exportés avec succès",
         "importSuccess": "Paramètres importés avec succès"
       },
-      "sourceCode": {
-        "title": "Code source",
-        "description": "Voir le code source et contribuer",
-        "button": "Voir sur GitHub"
-      },
       "privacyPolicy": "Politique de confidentialité",
       "supportDevelopment": {
         "title": "Soutenir le développement",

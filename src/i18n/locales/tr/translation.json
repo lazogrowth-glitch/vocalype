@@ -664,11 +664,6 @@
         "title": "Uygulama Veri Dizini",
         "description": "Vocalype'nin verilerini sakladığı konum"
       },
-      "sourceCode": {
-        "title": "Kaynak Kodu",
-        "description": "Kaynak kodunu görüntüle ve katkıda bulun",
-        "button": "GitHub'da Görüntüle"
-      },
       "supportDevelopment": {
         "title": "Geliştirmeyi Destekle",
         "description": "Vocalype'yi geliştirmeye devam etmemize yardımcı olun",

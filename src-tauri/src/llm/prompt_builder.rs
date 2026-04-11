@@ -48,7 +48,11 @@ pub fn build_whisper_initial_prompt(
     vocabulary_store: &VocabularyStore,
     extra_preferred_terms: &[String],
 ) -> Option<String> {
-    if !settings.adaptive_vocabulary_enabled && extra_preferred_terms.is_empty() {
+    let instruction = context_instruction(settings, context);
+    if !settings.adaptive_vocabulary_enabled
+        && extra_preferred_terms.is_empty()
+        && instruction.is_none()
+    {
         return None;
     }
 
@@ -78,7 +82,6 @@ pub fn build_whisper_initial_prompt(
         }
     }
 
-    let instruction = context_instruction(settings, context);
     if instruction.is_none() && terms.is_empty() {
         return None;
     }
@@ -154,5 +157,22 @@ mod tests {
         assert!(prompt.contains("Vocalype"));
         assert!(prompt.contains("camelCase"));
         assert!(prompt.len() <= MAX_PROMPT_CHARS);
+    }
+
+    #[test]
+    fn builds_context_prompt_when_vocabulary_is_disabled() {
+        let mut settings = get_default_settings();
+        settings.selected_language = "en".to_string();
+
+        let prompt = build_whisper_initial_prompt(
+            &settings,
+            Some(&code_context()),
+            &VocabularyStore::default(),
+            &[],
+        )
+        .expect("context prompt should exist");
+
+        assert!(prompt.contains("Code dictation"));
+        assert!(prompt.contains("camelCase"));
     }
 }

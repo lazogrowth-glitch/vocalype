@@ -50,16 +50,6 @@ export const AboutSettings: React.FC = () => {
           variant="secondary"
           size="md"
           className="inline-flex w-auto"
-          onClick={() =>
-            openUrl("https://github.com/lazogrowth-glitch/vocalype")
-          }
-        >
-          {t("settings.about.sourceCode.button")}
-        </Button>
-        <Button
-          variant="secondary"
-          size="md"
-          className="inline-flex w-auto"
           onClick={() => openUrl("https://vocalype.com/privacy")}
         >
           {t("settings.about.privacyPolicy")}

@@ -664,11 +664,6 @@
         "title": "应用数据目录",
         "description": "Vocalype 存储数据的位置"
       },
-      "sourceCode": {
-        "title": "源代码",
-        "description": "查看源代码并贡献",
-        "button": "在 GitHub 上查看"
-      },
       "supportDevelopment": {
         "title": "支持开发",
         "description": "帮助我们继续开发 Vocalype",

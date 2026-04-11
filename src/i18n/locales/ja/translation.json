@@ -664,11 +664,6 @@
         "title": "アプリデータディレクトリ",
         "description": "Vocalypeがデータを保存する場所"
       },
-      "sourceCode": {
-        "title": "ソースコード",
-        "description": "ソースコードを見て貢献する",
-        "button": "GitHubで見る"
-      },
       "supportDevelopment": {
         "title": "開発を支援",
         "description": "Vocalypeの開発を支援してください",

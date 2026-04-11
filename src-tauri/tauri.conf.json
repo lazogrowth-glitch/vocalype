@@ -28,7 +28,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; connect-src 'self' tauri://localhost https://tauri.localhost http://tauri.localhost http://ipc.localhost https://vocalype.com https://www.vocalype.com https://api.vocalype.com https://api.stripe.com https://checkout.stripe.com https://github.com https://objects.githubusercontent.com; font-src 'self' data:; media-src 'self' asset: https://asset.localhost blob:",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; connect-src 'self' tauri://localhost https://tauri.localhost http://tauri.localhost http://ipc.localhost https://vocalype.com https://www.vocalype.com https://api.vocalype.com https://api.stripe.com https://checkout.stripe.com; font-src 'self' data:; media-src 'self' asset: https://asset.localhost blob:",
       "assetProtocol": {
         "enable": true,
         "scope": {
@@ -86,7 +86,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg0REJCOEY3NTkxQTRFOUEKUldTYVRocFo5N2piaEo4SE1CRUlnYUFqellqeWFEODNadEx0aG5rMlkyWFR4dXY2YXlhRy96MFkK",
       "endpoints": [
-        "https://github.com/lazogrowth-glitch/vocalype/releases/latest/download/latest.json"
+        "https://vocalype.com/release/latest.json"
       ]
     }
   }

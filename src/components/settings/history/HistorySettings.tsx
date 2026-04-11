@@ -12,18 +12,24 @@ import {
   Download,
   FileAudio,
   Eraser,
+  Sparkles,
 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { commands, type HistoryEntry } from "@/bindings";
+import {
+  commands,
+  type HistoryEntry,
+  type PostProcessAction,
+} from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
 import { useModelStore } from "@/stores/modelStore";
 import { ConfidenceText } from "./ConfidenceText";
 import { usePlan } from "@/lib/subscription/context";
 import { Button } from "../../ui/Button";
+import { useSettings } from "@/hooks/useSettings";
 
 const PAGE_SIZE = 30;
 
@@ -36,7 +42,13 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   onClick,
   label,
 }) => (
-  <Button type="button" onClick={onClick} variant="secondary" size="sm" title={label}>
+  <Button
+    type="button"
+    onClick={onClick}
+    variant="secondary"
+    size="sm"
+    title={label}
+  >
     {label}
   </Button>
 );
@@ -267,12 +279,14 @@ export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
   const { isBasicTier, onStartCheckout } = usePlan();
+  const { getSetting } = useSettings();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const postProcessActions = getSetting("post_process_actions") || [];
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -563,7 +577,9 @@ export const HistorySettings: React.FC = () => {
                 flexWrap: "wrap",
               }}
             >
-              <div style={{ position: "relative", flex: "1 1 560px", minWidth: 0 }}>
+              <div
+                style={{ position: "relative", flex: "1 1 560px", minWidth: 0 }}
+              >
                 <svg
                   style={{
                     position: "absolute",
@@ -687,6 +703,8 @@ export const HistorySettings: React.FC = () => {
                   getAudioUrl={getAudioUrl}
                   deleteAudio={deleteAudioEntry}
                   onDeleteWithUndo={handleDeleteWithUndo}
+                  postProcessActions={postProcessActions}
+                  onActionApplied={loadHistoryEntries}
                 />
               ))}
             {searchQuery.trim() &&
@@ -743,6 +761,8 @@ interface HistoryEntryProps {
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
   onDeleteWithUndo?: (entry: HistoryEntry) => void;
+  postProcessActions: PostProcessAction[];
+  onActionApplied: () => Promise<void>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -752,11 +772,17 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   getAudioUrl,
   deleteAudio,
   onDeleteWithUndo,
+  postProcessActions,
+  onActionApplied,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
+  const [processingActionKey, setProcessingActionKey] = useState<number | null>(
+    null,
+  );
+  const [clearingPostProcess, setClearingPostProcess] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   const models = useModelStore((s) => s.models);
 
@@ -798,6 +824,63 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       console.error("Failed to reprocess entry:", error);
     } finally {
       setReprocessing(false);
+    }
+  };
+
+  const handleApplyAction = async (action: PostProcessAction) => {
+    if (processingActionKey !== null) return;
+    setProcessingActionKey(action.key);
+    try {
+      const result = await commands.applyHistoryPostProcessAction(
+        entry.id,
+        action.key,
+      );
+      if (result.status !== "ok") {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(
+        t("settings.history.actionApplied", {
+          defaultValue: "Action appliquée.",
+        }),
+      );
+      await onActionApplied();
+    } catch (error) {
+      console.error("Failed to apply history action:", error);
+      toast.error(
+        t("settings.history.actionFailed", {
+          defaultValue: "Impossible d'appliquer l'action.",
+        }),
+      );
+    } finally {
+      setProcessingActionKey(null);
+    }
+  };
+
+  const handleClearPostProcess = async () => {
+    if (clearingPostProcess) return;
+    setClearingPostProcess(true);
+    try {
+      const result = await commands.clearHistoryPostProcessAction(entry.id);
+      if (result.status !== "ok") {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(
+        t("settings.history.originalRestored", {
+          defaultValue: "Original restauré.",
+        }),
+      );
+      await onActionApplied();
+    } catch (error) {
+      console.error("Failed to clear history post-processing:", error);
+      toast.error(
+        t("settings.history.restoreOriginalFailed", {
+          defaultValue: "Impossible de restaurer l'original.",
+        }),
+      );
+    } finally {
+      setClearingPostProcess(false);
     }
   };
 
@@ -946,6 +1029,20 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                   })}
                 </span>
               )}
+              <button
+                type="button"
+                onClick={() => void handleClearPostProcess()}
+                disabled={clearingPostProcess}
+                className="inline-flex min-h-6 items-center justify-center rounded-[8px] border border-white/8 bg-white/[0.035] px-2 text-[10.5px] font-medium text-white/38 transition-all hover:border-white/12 hover:bg-white/[0.06] hover:text-white/62 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {clearingPostProcess ? (
+                  <Loader2 size={10} className="animate-spin" />
+                ) : (
+                  t("settings.history.restoreOriginal", {
+                    defaultValue: "Original",
+                  })
+                )}
+              </button>
             </div>
             <p className="text-[13.5px] italic text-white/82 select-text cursor-text">
               {entry.post_processed_text}
@@ -968,6 +1065,37 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           confidencePayload={entry.confidence_payload}
           className="pb-2 text-[13.5px] italic text-white/82 select-text cursor-text"
         />
+      )}
+      {postProcessActions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/24">
+            <Sparkles size={11} aria-hidden="true" />
+            {t("settings.history.aiActions", {
+              defaultValue: "Actions IA",
+            })}
+          </span>
+          {[...postProcessActions]
+            .sort((a, b) => a.key - b.key)
+            .map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                onClick={() => void handleApplyAction(action)}
+                disabled={processingActionKey !== null}
+                className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-[10px] border border-white/8 bg-white/[0.035] px-3 text-[11.5px] font-medium text-white/48 transition-all hover:border-logo-primary/18 hover:bg-logo-primary/[0.06] hover:text-logo-primary disabled:cursor-not-allowed disabled:opacity-50"
+                title={action.name}
+              >
+                {processingActionKey === action.key ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <span className="font-mono text-[10px] text-white/30">
+                    {action.key}
+                  </span>
+                )}
+                <span className="max-w-[140px] truncate">{action.name}</span>
+              </button>
+            ))}
+        </div>
       )}
       <AudioPlayer
         onLoadRequest={handleLoadAudio}

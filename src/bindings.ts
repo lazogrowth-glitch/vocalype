@@ -950,6 +950,22 @@ async reprocessHistoryEntry(id: number, modelId: string) : Promise<Result<string
     else return { status: "error", error: e  as any };
 }
 },
+async applyHistoryPostProcessAction(id: number, actionKey: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("apply_history_post_process_action", { id, actionKey }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearHistoryPostProcessAction(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_history_post_process_action", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getHistoryStats() : Promise<Result<HistoryStats, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_history_stats") };

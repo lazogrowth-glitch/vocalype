@@ -1,5 +1,6 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::transcription::TranscriptionManager;
+use crate::processing::post_processing::process_action;
 use hound::WavReader;
 use rubato::{FftFixedIn, Resampler};
 use serde::{Deserialize, Serialize};
@@ -149,6 +150,72 @@ pub async fn reprocess_history_entry(
     }
 
     Ok(new_text)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn apply_history_post_process_action(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+    action_key: u8,
+) -> Result<String, String> {
+    crate::license::enforce_premium_access(&app, "history AI action")?;
+
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "History entry not found".to_string())?;
+
+    let settings = crate::settings::get_settings(&app);
+    let action = settings
+        .post_process_actions
+        .iter()
+        .find(|action| action.key == action_key)
+        .cloned()
+        .ok_or_else(|| "Action not found".to_string())?;
+
+    let source_text = entry
+        .post_processed_text
+        .as_deref()
+        .unwrap_or(&entry.transcription_text)
+        .trim();
+    if source_text.is_empty() {
+        return Err("History entry is empty".to_string());
+    }
+
+    let processed_text = process_action(
+        &settings,
+        source_text,
+        &action.prompt,
+        action.model.as_deref(),
+        action.provider_id.as_deref(),
+    )
+    .await
+    .filter(|text| !text.trim().is_empty())
+    .ok_or_else(|| "Unable to apply action".to_string())?;
+
+    let processed_text = processed_text.trim();
+    history_manager
+        .update_post_processed_text(id, processed_text, Some(&action.prompt), Some(action.key))
+        .map_err(|e| e.to_string())?;
+
+    Ok(processed_text.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn clear_history_post_process_action(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+) -> Result<(), String> {
+    crate::license::enforce_premium_access(&app, "history AI action reset")?;
+
+    history_manager
+        .clear_post_processed_text(id)
+        .map_err(|e| e.to_string())
 }
 
 // ── History Stats ─────────────────────────────────────────────────────────────

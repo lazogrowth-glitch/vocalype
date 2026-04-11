@@ -736,6 +736,8 @@ pub fn run(cli_args: CliArgs) {
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
         commands::history::reprocess_history_entry,
+        commands::history::apply_history_post_process_action,
+        commands::history::clear_history_post_process_action,
         commands::history::get_history_stats,
         commands::history::export_history_entries,
         commands::history::transcribe_audio_file,

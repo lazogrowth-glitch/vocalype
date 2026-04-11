@@ -567,6 +567,49 @@ impl HistoryManager {
         Ok(())
     }
 
+    pub fn update_post_processed_text(
+        &self,
+        id: i64,
+        post_processed_text: &str,
+        post_process_prompt: Option<&str>,
+        post_process_action_key: Option<u8>,
+    ) -> Result<()> {
+        let conn = self.get_connection()?;
+        conn.execute(
+            "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2, post_process_action_key = ?3 WHERE id = ?4",
+            params![
+                post_processed_text,
+                post_process_prompt,
+                post_process_action_key.map(|key| key as i64),
+                id
+            ],
+        )?;
+
+        debug!("Updated post-processed text for entry {}", id);
+
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(())
+    }
+
+    pub fn clear_post_processed_text(&self, id: i64) -> Result<()> {
+        let conn = self.get_connection()?;
+        conn.execute(
+            "UPDATE transcription_history SET post_processed_text = NULL, post_process_prompt = NULL, post_process_action_key = NULL WHERE id = ?1",
+            params![id],
+        )?;
+
+        debug!("Cleared post-processed text for entry {}", id);
+
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(())
+    }
+
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(

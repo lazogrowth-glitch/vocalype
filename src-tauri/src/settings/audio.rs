@@ -53,15 +53,96 @@ pub struct VoiceSnippet {
     pub expansion: String,
 }
 
-/// Apply voice snippets: if `text` (trimmed, lowercase) exactly matches a trigger,
-/// return the corresponding expansion.  Otherwise return `None`.
+fn normalize_snippet_match(value: &str) -> String {
+    let collapsed = value.split_whitespace().collect::<Vec<_>>().join(" ");
+    let trimmed = collapsed.trim();
+    let without_edges = trimmed.trim_matches(|c: char| {
+        c.is_whitespace()
+            || matches!(
+                c,
+                '.' | ','
+                    | '!'
+                    | '?'
+                    | ';'
+                    | ':'
+                    | '"'
+                    | '\''
+                    | '`'
+                    | '…'
+                    | '('
+                    | ')'
+                    | '['
+                    | ']'
+                    | '{'
+                    | '}'
+            )
+    });
+    without_edges.to_lowercase()
+}
+
+/// Apply voice snippets: if `text` matches a trigger after light normalization
+/// (trim, case-fold, collapse inner spaces, ignore surrounding punctuation),
+/// return the corresponding expansion. Otherwise return `None`.
 pub fn apply_voice_snippets(text: &str, snippets: &[VoiceSnippet]) -> Option<String> {
-    let normalized = text.trim().to_lowercase();
+    let normalized = normalize_snippet_match(text);
     if normalized.is_empty() {
         return None;
     }
     snippets
         .iter()
-        .find(|s| s.trigger.trim().to_lowercase() == normalized)
+        .find(|s| normalize_snippet_match(&s.trigger) == normalized)
         .map(|s| s.expansion.clone())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{apply_voice_snippets, VoiceSnippet};
+
+    fn snippet(trigger: &str, expansion: &str) -> VoiceSnippet {
+        VoiceSnippet {
+            id: "test".to_string(),
+            trigger: trigger.to_string(),
+            expansion: expansion.to_string(),
+        }
+    }
+
+    #[test]
+    fn matches_case_insensitively() {
+        let snippets = vec![snippet("faire caca", "replacement")];
+        assert_eq!(
+            apply_voice_snippets("Faire Caca", &snippets),
+            Some("replacement".to_string())
+        );
+    }
+
+    #[test]
+    fn matches_with_terminal_punctuation() {
+        let snippets = vec![snippet("faire caca", "replacement")];
+        assert_eq!(
+            apply_voice_snippets("Faire caca.", &snippets),
+            Some("replacement".to_string())
+        );
+        assert_eq!(
+            apply_voice_snippets("faire caca!", &snippets),
+            Some("replacement".to_string())
+        );
+    }
+
+    #[test]
+    fn matches_with_wrapping_punctuation_and_extra_spaces() {
+        let snippets = vec![snippet("faire caca", "replacement")];
+        assert_eq!(
+            apply_voice_snippets("  \"Faire   caca.\"  ", &snippets),
+            Some("replacement".to_string())
+        );
+    }
+
+    #[test]
+    fn does_not_match_when_extra_words_are_present() {
+        let snippets = vec![snippet("faire caca", "replacement")];
+        assert_eq!(
+            apply_voice_snippets("faire caca maintenant", &snippets),
+            None
+        );
+    }
 }

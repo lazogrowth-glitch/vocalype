@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Check, Copy, Gift, Share2 } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Gift,
+  Linkedin,
+  Mail,
+  MessageCircle,
+  Share2,
+} from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import type { ReferralCode, ReferralStats } from "@/lib/auth/types";
 import { Button } from "../../ui/Button";
@@ -38,6 +46,7 @@ export const ReferralSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [shareExpanded, setShareExpanded] = useState(false);
 
   useEffect(() => {
     const token = authClient.getStoredToken();
@@ -72,10 +81,28 @@ export const ReferralSettings: React.FC = () => {
     }
   }, [code]);
 
-  const handleShare = useCallback(async () => {
-    if (!code?.referral_url) return;
-    await openUrl(code.referral_url);
-  }, [code]);
+  const openShareTarget = useCallback(
+    async (target: "browser" | "email" | "x" | "linkedin" | "whatsapp") => {
+      if (!code?.referral_url) return;
+
+      const link = code.referral_url;
+      const shareText = `Try Vocalype with my referral link: ${link}`;
+
+      const targetUrl =
+        target === "browser"
+          ? link
+          : target === "email"
+            ? `mailto:?subject=${encodeURIComponent("Try Vocalype")}&body=${encodeURIComponent(shareText)}`
+            : target === "x"
+              ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
+              : target === "linkedin"
+                ? `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`
+                : `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
+      await openUrl(targetUrl);
+    },
+    [code],
+  );
 
   const isLoggedOut = !authClient.getStoredToken();
 
@@ -174,15 +201,74 @@ export const ReferralSettings: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => void handleShare()}
+                  onClick={() => setShareExpanded((current) => !current)}
                   className="shrink-0"
-                  title={t("referral.link.openInBrowser", {
-                    defaultValue: "Open in browser",
+                  title={t("referral.link.shareOptions", {
+                    defaultValue: "Share options",
                   })}
                 >
                   <Share2 size={13} />
                 </Button>
               </div>
+              {shareExpanded && (
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <Button
+                    variant="primary-soft"
+                    size="sm"
+                    onClick={() => void openShareTarget("browser")}
+                    className="rounded-xl"
+                  >
+                    <Share2 size={13} className="mr-1" />
+                    {t("referral.link.openInBrowser", {
+                      defaultValue: "Open link",
+                    })}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void openShareTarget("email")}
+                    className="rounded-xl"
+                  >
+                    <Mail size={13} className="mr-1" />
+                    {t("referral.link.shareEmail", {
+                      defaultValue: "Email",
+                    })}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void openShareTarget("x")}
+                    className="rounded-xl"
+                  >
+                    <Share2 size={13} className="mr-1" />
+                    {t("referral.link.shareX", {
+                      defaultValue: "X",
+                    })}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void openShareTarget("linkedin")}
+                    className="rounded-xl"
+                  >
+                    <Linkedin size={13} className="mr-1" />
+                    {t("referral.link.shareLinkedIn", {
+                      defaultValue: "LinkedIn",
+                    })}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void openShareTarget("whatsapp")}
+                    className="rounded-xl"
+                  >
+                    <MessageCircle size={13} className="mr-1" />
+                    {t("referral.link.shareWhatsApp", {
+                      defaultValue: "WhatsApp",
+                    })}
+                  </Button>
+                </div>
+              )}
               <p className="text-[11px] text-white/30">
                 {t("referral.link.codeLabel", {
                   defaultValue: "Your code: {{code}}",
@@ -263,11 +349,11 @@ export const ReferralSettings: React.FC = () => {
         </SettingContainer>
         <SettingContainer
           title={t("referral.howItWorks.step3.title", {
-            defaultValue: "You both earn Premium",
+            defaultValue: "You earn Premium",
           })}
           description={t("referral.howItWorks.step3.description", {
             defaultValue:
-              "You earn one free month of Premium per successful conversion. Your friend gets a discount too.",
+              "You earn one free month of Premium for each successful conversion.",
           })}
           grouped={false}
         >

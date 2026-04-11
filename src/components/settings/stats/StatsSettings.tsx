@@ -95,9 +95,11 @@ const StatLine: React.FC<{ label: string; value: string | number }> = ({
   label,
   value,
 }) => (
-  <div className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.025] px-4 py-3">
-    <span className="text-[12px] text-white/42">{label}</span>
-    <span className="text-[14px] font-semibold text-white/88">{value}</span>
+  <div className="flex min-h-[42px] items-center justify-between gap-4 px-1 py-2.5">
+    <span className="text-[12px] leading-[18px] text-white/46">{label}</span>
+    <span className="shrink-0 text-[14px] font-semibold leading-none text-white/90">
+      {value}
+    </span>
   </div>
 );
 
@@ -317,19 +319,22 @@ export const StatsSettings: React.FC = () => {
             padding: "16px 20px",
             display: "flex",
             flexDirection: "column",
-            gap: 10,
           }}
         >
-          <StatLine
-            label={t("stats.snapshotEntries", {
-              defaultValue: "Sessions totales",
-            })}
-            value={formatNumber(stats.total_entries)}
-          />
-          <StatLine
-            label={t("stats.snapshotWords", { defaultValue: "Mots dictés" })}
-            value={formatNumber(stats.total_words)}
-          />
+          <div className="border-b border-white/[0.06]">
+            <StatLine
+              label={t("stats.snapshotEntries", {
+                defaultValue: "Sessions totales",
+              })}
+              value={formatNumber(stats.total_entries)}
+            />
+          </div>
+          <div className="border-b border-white/[0.06]">
+            <StatLine
+              label={t("stats.snapshotWords", { defaultValue: "Mots dictés" })}
+              value={formatNumber(stats.total_words)}
+            />
+          </div>
           <StatLine
             label={t("stats.snapshotTime", {
               defaultValue: "Temps gagné estimé",

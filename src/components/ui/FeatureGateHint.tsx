@@ -54,43 +54,45 @@ export const FeatureGateHint: React.FC<FeatureGateHintProps> = ({
 
   return (
     <div
-      style={{ padding: "16px 20px" }}
+      style={{ padding: "14px 18px" }}
       className={`rounded-xl border ${style.container} ${className}`.trim()}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <div
-          style={{ marginTop: 2, flexShrink: 0 }}
-          className={`flex h-8 w-8 items-center justify-center rounded-full border ${style.icon}`}
-        >
-          {tone === "premium" && !actionLabel ? (
-            <Lock className="h-4 w-4" />
-          ) : (
-            style.iconNode
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-white/90">{title}</p>
-          <p
-            style={{ marginTop: 4 }}
-            className="text-[12px] leading-5 text-white/60"
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div
+            style={{ marginTop: 1, flexShrink: 0 }}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border ${style.icon}`}
           >
-            {description}
-          </p>
-          {actionLabel && onAction ? (
-            <div style={{ marginTop: 12 }}>
-              <Button
-                type="button"
-                variant={style.buttonVariant}
-                size="sm"
-                onClick={() => {
-                  void onAction();
-                }}
-              >
-                {actionLabel}
-              </Button>
-            </div>
-          ) : null}
+            {tone === "premium" && !actionLabel ? (
+              <Lock className="h-4 w-4" />
+            ) : (
+              style.iconNode
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-medium text-white/90">{title}</p>
+            <p
+              style={{ marginTop: 3 }}
+              className="max-w-[680px] text-[12px] leading-[18px] text-white/56"
+            >
+              {description}
+            </p>
+          </div>
         </div>
+        {actionLabel && onAction ? (
+          <div className="shrink-0">
+            <Button
+              type="button"
+              variant={style.buttonVariant}
+              size="sm"
+              onClick={() => {
+                void onAction();
+              }}
+            >
+              {actionLabel}
+            </Button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

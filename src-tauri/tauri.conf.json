@@ -28,7 +28,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; connect-src 'self' tauri://localhost https://tauri.localhost http://tauri.localhost http://ipc.localhost http://localhost:1420 http://127.0.0.1:1420 https://vocalype.com https://www.vocalype.com https://api.vocalype.com https://*.up.railway.app https://api.stripe.com https://checkout.stripe.com https://github.com https://objects.githubusercontent.com; font-src 'self' data:; media-src 'self' asset: https://asset.localhost blob:",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: blob:; connect-src 'self' tauri://localhost https://tauri.localhost http://tauri.localhost http://ipc.localhost https://vocalype.com https://www.vocalype.com https://api.vocalype.com https://api.stripe.com https://checkout.stripe.com https://github.com https://objects.githubusercontent.com; font-src 'self' data:; media-src 'self' asset: https://asset.localhost blob:",
       "assetProtocol": {
         "enable": true,
         "scope": {

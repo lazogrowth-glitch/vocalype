@@ -120,7 +120,7 @@ impl DictionaryManager {
         let before = compiled.len();
         compiled.retain(|e| e.from.to_lowercase() != from.to_lowercase());
         if compiled.len() == before {
-            return Err(format!("'{}' introuvable dans le dictionnaire", from));
+            return Err(format!("'{}' not found in dictionary", from));
         }
         save_to_file(&self.file_path, &to_raw(&compiled))
     }
@@ -132,7 +132,7 @@ impl DictionaryManager {
         let entry = compiled
             .iter_mut()
             .find(|e| e.from.to_lowercase() == from.to_lowercase())
-            .ok_or_else(|| format!("'{}' introuvable dans le dictionnaire", from))?;
+            .ok_or_else(|| format!("'{}' not found in dictionary", from))?;
         entry.to = to;
         save_to_file(&self.file_path, &to_raw(&compiled))
     }

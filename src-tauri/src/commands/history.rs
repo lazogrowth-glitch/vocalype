@@ -160,13 +160,14 @@ pub async fn apply_history_post_process_action(
     id: i64,
     action_key: u8,
 ) -> Result<String, String> {
-    crate::license::enforce_premium_access(&app, "history AI action")?;
+    crate::license::enforce_premium_access(&app, "history AI action")
+        .map_err(|_| "PREMIUM_REQUIRED".to_string())?;
 
     let entry = history_manager
         .get_entry_by_id(id)
         .await
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "History entry not found".to_string())?;
+        .ok_or_else(|| "HISTORY_ENTRY_NOT_FOUND".to_string())?;
 
     let settings = crate::settings::get_settings(&app);
     let action = settings
@@ -174,15 +175,11 @@ pub async fn apply_history_post_process_action(
         .iter()
         .find(|action| action.key == action_key)
         .cloned()
-        .ok_or_else(|| "Action not found".to_string())?;
+        .ok_or_else(|| "ACTION_NOT_FOUND".to_string())?;
 
-    let source_text = entry
-        .post_processed_text
-        .as_deref()
-        .unwrap_or(&entry.transcription_text)
-        .trim();
+    let source_text = entry.transcription_text.trim();
     if source_text.is_empty() {
-        return Err("History entry is empty".to_string());
+        return Err("EMPTY_HISTORY_ENTRY".to_string());
     }
 
     let processed_text = process_action(
@@ -194,7 +191,7 @@ pub async fn apply_history_post_process_action(
     )
     .await
     .filter(|text| !text.trim().is_empty())
-    .ok_or_else(|| "Unable to apply action".to_string())?;
+    .ok_or_else(|| "NO_AI_MODEL_CONFIGURED".to_string())?;
 
     let processed_text = processed_text.trim();
     history_manager
@@ -211,7 +208,8 @@ pub async fn clear_history_post_process_action(
     history_manager: State<'_, Arc<HistoryManager>>,
     id: i64,
 ) -> Result<(), String> {
-    crate::license::enforce_premium_access(&app, "history AI action reset")?;
+    crate::license::enforce_premium_access(&app, "history AI action reset")
+        .map_err(|_| "PREMIUM_REQUIRED".to_string())?;
 
     history_manager
         .clear_post_processed_text(id)
@@ -275,7 +273,7 @@ pub async fn export_history_entries(
             Ok(out)
         }
         "md" => {
-            let mut out = String::from("# Vocalype — Historique des transcriptions\n\n");
+            let mut out = String::from("# Vocalype — Transcription History\n\n");
             for e in &entries {
                 let ts = chrono::DateTime::from_timestamp(e.timestamp, 0)
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
@@ -287,7 +285,7 @@ pub async fn export_history_entries(
                 out.push('\n');
                 if let Some(pp) = &e.post_processed_text {
                     out.push_str(&format!("{}\n\n", pp));
-                    out.push_str(&format!("*Original :* {}\n\n", e.transcription_text));
+                    out.push_str(&format!("*Original:* {}\n\n", e.transcription_text));
                 } else {
                     out.push_str(&format!("{}\n\n", e.transcription_text));
                 }
@@ -327,7 +325,7 @@ pub async fn transcribe_audio_file(
 
     let audio_path = std::path::PathBuf::from(&path);
     if !audio_path.exists() {
-        return Err(format!("Fichier introuvable : {}", path));
+        return Err(format!("File not found: {}", path));
     }
 
     let samples = load_external_audio_file(&audio_path).map_err(|e| e.to_string())?;
@@ -340,12 +338,12 @@ pub async fn transcribe_audio_file(
         })
     })
     .await
-    .map_err(|e| format!("Tâche annulée : {}", e))?
+    .map_err(|e| format!("Task cancelled: {}", e))?
     .map_err(|e| e.to_string())?;
 
     let text = output.text.trim().to_string();
     if text.is_empty() {
-        return Err("Aucune transcription produite".to_string());
+        return Err("No transcription produced".to_string());
     }
 
     // Save to history so the user can see it
@@ -387,7 +385,7 @@ pub async fn transcribe_audio_file_detailed(
 
     let audio_path = std::path::PathBuf::from(&path);
     if !audio_path.exists() {
-        return Err(format!("Fichier introuvable : {}", path));
+        return Err(format!("File not found: {}", path));
     }
 
     let samples = load_external_audio_file(&audio_path).map_err(|e| e.to_string())?;
@@ -400,12 +398,12 @@ pub async fn transcribe_audio_file_detailed(
         })
     })
     .await
-    .map_err(|e| format!("TÃ¢che annulÃ©e : {}", e))?
+    .map_err(|e| format!("Task cancelled: {}", e))?
     .map_err(|e| e.to_string())?;
 
     let text = output.text.trim().to_string();
     if text.is_empty() {
-        return Err("Aucune transcription produite".to_string());
+        return Err("No transcription produced".to_string());
     }
 
     let file_name = audio_path

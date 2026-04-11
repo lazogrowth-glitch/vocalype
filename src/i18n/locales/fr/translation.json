@@ -159,6 +159,17 @@
     },
     "progress": {
       "stepOf": "Étape {{current}} sur {{total}}"
+    },
+    "mode": {
+      "auto": "Auto",
+      "autoDescription": "Meilleur choix pour cette machine",
+      "fast": "Rapide",
+      "fastDescriptionNPU": "Latence minimale avec le chemin NPU de ce PC",
+      "fastDescription": "Le plus rapide pour une dictée fluide",
+      "balanced": "Équilibré",
+      "balancedDescription": "Un bon compromis entre vitesse et qualité",
+      "quality": "Qualité",
+      "qualityDescription": "La meilleure qualité de texte sur une machine plus puissante"
     }
   },
   "modelSelector": {
@@ -562,7 +573,39 @@
         "save": "Enregistrer",
         "cancel": "Annuler",
         "delete": "Supprimer",
-        "maxActionsReached": "Maximum de 9 actions atteint."
+        "maxActionsReached": "Maximum de 9 actions atteint.",
+        "templates": {
+          "title": "Actions prêtes à l'emploi",
+          "llmBadge": "LLM requis",
+          "readyBadge": "Modèle prêt",
+          "setupBadge": "À configurer",
+          "readyHint": "Les actions utiliseront votre configuration de post-traitement actuelle.",
+          "setupHint": "Ajoutez un modèle IA dans Modèles > Post-traitement pour exécuter ces actions.",
+          "description": "Installez rapidement les actions les plus utiles : correction, résumé, email pro ou traduction.",
+          "llmHint": "Ces actions s'appliquent après la dictée et utilisent le modèle configuré dans Post-traitement. La dictée normale reste inchangée.",
+          "cleanup": {
+            "name": "Corriger",
+            "description": "Nettoie la dictée sans changer le sens.",
+            "prompt": "Corrige la grammaire, la ponctuation et la clarté du texte suivant sans changer son sens. Garde la langue d'origine. Texte : ${output}"
+          },
+          "summary": {
+            "name": "Résumé + actions",
+            "description": "Transforme une dictée longue en points utiles.",
+            "prompt": "Résume le texte suivant en quelques points clairs, puis ajoute une section Actions si des tâches sont mentionnées. Texte : ${output}"
+          },
+          "email": {
+            "name": "Email pro",
+            "description": "Reformate la dictée en email prêt à envoyer.",
+            "prompt": "Transforme le texte suivant en email professionnel, clair et naturel. Ajoute une salutation si nécessaire, structure les paragraphes et garde le message concis. Texte : ${output}"
+          },
+          "translate": {
+            "name": "Traduire en anglais",
+            "description": "Traduit proprement en anglais naturel.",
+            "prompt": "Traduis le texte suivant en anglais naturel et professionnel. Ne rajoute aucun commentaire. Texte : ${output}"
+          }
+        },
+        "llmExecutionHint": "Cette action ne modifie pas la capture vocale. Elle transforme seulement le texte final avec le modèle IA configuré.",
+        "outputPlaceholder": "texte dicté"
       }
     },
     "gemini": {
@@ -612,7 +655,26 @@
       "loadMore": "Charger plus",
       "loadingMore": "Chargement…",
       "confirmDeleteAllMessage": "Supprimer tout l'historique ?",
-      "confirmYes": "Tout supprimer"
+      "confirmYes": "Tout supprimer",
+      "search": "Rechercher une transcription…",
+      "noResults": "Aucun résultat pour « {{query}} »",
+      "noAiActionsHint": "Créez une action dans Post-traitement pour corriger, résumer ou reformater vos anciennes dictées ici.",
+      "configureActions": "Configurer les actions",
+      "actionApplied": "Action appliquée.",
+      "actionFailed": "Impossible d'appliquer l'action.",
+      "actionNeedsPremium": "Cette action nécessite Premium. Passez à Premium pour transformer l'historique.",
+      "actionNeedsModel": "Configurez un modèle IA dans Modèles > Post-traitement pour utiliser cette action.",
+      "actionNotFound": "Cette action n'existe plus. Vérifiez vos actions dans Post-traitement.",
+      "emptyActionSource": "Cette entrée d'historique est vide.",
+      "restoreOriginal": "Original",
+      "originalRestored": "Original restauré.",
+      "restoreOriginalFailed": "Impossible de restaurer l'original.",
+      "aiActions": "Actions IA",
+      "showLessActions": "Moins",
+      "copiedAiResult": "Résultat IA copié.",
+      "copyAiResult": "Copier résultat IA",
+      "copiedOriginal": "Original copié.",
+      "copyOriginal": "Copier original"
     },
     "debug": {
       "title": "Débogage",
@@ -778,7 +840,13 @@
     "noOptionsFound": "Aucune option trouvée",
     "moreInformation": "Plus d'informations",
     "infoGlyph": "i",
-    "back": "Retour"
+    "back": "Retour",
+    "all": "Tout",
+    "pinned": "Épinglés",
+    "recent": "Récents",
+    "archived": "Archivés",
+    "copy": "Copier",
+    "words": "{{count}} mots"
   },
   "accessibility": {
     "permissionsRequired": "Autorisations d'accessibilité requises",
@@ -808,15 +876,30 @@
     "description": "Changer la langue de l'interface de Vocalype"
   },
   "appContext": {
+    "title": "Contexte automatique",
+    "description": "Adapter la dictée selon l'app active",
+    "enableToggle": "Activer le contexte automatique",
+    "enableToggleDescription": "Adapter automatiquement la sortie selon l'app active",
+    "recentApps": "Apps récentes",
+    "noRecentApps": "Aucune app récente",
+    "refresh": "Actualiser",
+    "otherOverrides": "Autres règles forcées",
+    "removeOverride": "Supprimer la règle",
+    "howItWorks": "Comment ça fonctionne",
+    "chatHint": "Style conversationnel, ponctuation légère",
+    "codeHint": "Structure markdown préservée",
+    "emailHint": "Ton formel, ponctuation complète",
+    "notesHint": "Post-processing désactivé, texte injecté tel quel",
+    "tab": "Contexte",
     "categories": {
-      "autoDetected": "Auto (détecté)",
       "code": "Code",
       "email": "E-mail",
       "chat": "Chat",
       "document": "Document",
       "notes": "Notes",
       "browser": "Navigateur",
-      "unknown": "Inconnu"
+      "unknown": "Inconnu",
+      "autoDetected": "Auto (détecté)"
     }
   },
   "bootstrap": {
@@ -905,7 +988,8 @@
       "passwordsDoNotMatch": "Les mots de passe ne correspondent pas.",
       "invalidResetCode": "Code invalide ou expiré.",
       "wrongOldPassword": "Le mot de passe actuel est incorrect."
-    }
+    },
+    "sessionExpiredNotice": "Session expirée — reconnectez-vous pour continuer."
   },
   "warnings": {
     "whisperGpuUnavailable": "GPU indisponible — exécution sur CPU",
@@ -969,7 +1053,13 @@
     "save": "Sauvegarder",
     "cancel": "Annuler",
     "duplicate": "\"{{trigger}}\" existe déjà.",
-    "arrow": "→"
+    "arrow": "→",
+    "addNew": "Ajouter",
+    "addTitle": "Ajouter un snippet",
+    "editTitle": "Modifier le snippet",
+    "addSubmit": "Ajouter",
+    "addFirst": "Créer mon premier snippet",
+    "edit": "Modifier"
   },
   "stats": {
     "title": "Statistiques",
@@ -979,10 +1069,27 @@
     "thisWeek": "Cette semaine",
     "avgWords": "Mots moy.",
     "mostUsedModel": "Modèle le + utilisé",
-    "timeSaved": "Temps économisé",
+    "timeSaved": "≈ {{time}} économisés",
     "timeSavedUnit": "min",
     "noData": "Aucune donnée. Commencez à transcrire pour voir vos stats.",
-    "refresh": "Actualiser"
+    "refresh": "Actualiser",
+    "loading": "Chargement…",
+    "empty": "Aucune donnée disponible.",
+    "subtitle": "Un aperçu simple de votre usage et de vos résultats dans l'app.",
+    "overview": "Vue d'ensemble",
+    "overviewDescription": "Les métriques les plus utiles à lire d'un coup d'oeil.",
+    "totalEntries": "Transcriptions",
+    "totalEntriesSub": "Nombre total de résultats enregistrés.",
+    "transcriptions": "transcriptions",
+    "insights": "Repères",
+    "insightsDescription": "Quelques repères simples pour comprendre votre rythme.",
+    "noModel": "Aucun modèle dominant pour l'instant",
+    "modelSub": "Le moteur que vous utilisez le plus souvent.",
+    "avgWordsSub": "Longueur moyenne de chaque transcription.",
+    "quickRead": "Lecture rapide",
+    "snapshotEntries": "Sessions totales",
+    "snapshotWords": "Mots dictés",
+    "snapshotTime": "Temps gagné estimé"
   },
   "basic": {
     "copiedToClipboard": "Texte copié dans le presse-papiers",
@@ -1034,5 +1141,87 @@
     "statusRecording": "Enregistrement",
     "statusError": "Erreur",
     "skipToMain": "Passer au contenu principal"
+  },
+  "meetings": {
+    "search": "Rechercher...",
+    "new": "Nouvelle réunion",
+    "empty": "Aucune réunion pour l'instant.\nAppuyez sur votre touche réunion pour commencer.",
+    "startCapture": "Démarrer une réunion",
+    "stopCapture": "Arrêter",
+    "importAudio": "Importer un audio",
+    "selectOrCreate": "Sélectionnez une réunion ou démarrez un enregistrement pour en créer une",
+    "titlePlaceholder": "Titre de la réunion",
+    "saving": "Enregistrement...",
+    "titleAi": "Titre IA",
+    "chapters": "Chapitres IA",
+    "category": "Catégorie / dossier",
+    "actions": "Actions",
+    "summarize": "Résumer",
+    "export": "Exporter",
+    "closeTitle": "Terminer la réunion — le prochain enregistrement créera une nouvelle réunion",
+    "close": "Terminer",
+    "captureError": "Impossible de lancer l'enregistrement de réunion",
+    "closed": "Réunion terminée — le prochain enregistrement créera une nouvelle réunion",
+    "exportSuccess": "Réunion exportée.",
+    "exportError": "Impossible d'exporter la réunion",
+    "importingAudio": "Transcription du fichier audio...",
+    "importAudioEmpty": "Aucun texte n'a été extrait du fichier",
+    "importAudioSuccess": "Audio ajouté à la réunion.",
+    "importAudioError": "Impossible d'importer le fichier audio",
+    "copyEmpty": "Aucune transcription à copier",
+    "copySuccess": "Réunion copiée.",
+    "copyError": "Impossible de copier la réunion",
+    "summarizing": "Génération du résumé...",
+    "summarizeSuccess": "Résumé mis à jour.",
+    "summarizeError": "Impossible de générer le résumé",
+    "extractingActions": "Extraction des actions...",
+    "extractActionsSuccess": "Actions mises à jour.",
+    "extractActionsError": "Impossible d'extraire les actions",
+    "generatingTitle": "Génération du titre...",
+    "generateTitleSuccess": "Titre généré.",
+    "generateTitleError": "Impossible de générer le titre",
+    "generatingChapterTitles": "Génération des titres de chapitres...",
+    "generateChapterTitlesSuccess": "Titres de chapitres générés.",
+    "generateChapterTitlesError": "Impossible de générer les titres de chapitres"
+  },
+  "notes": {
+    "search": "Rechercher...",
+    "new": "Nouvelle note",
+    "empty": "Aucune note pour l'instant.\nCliquez sur + pour en créer une.",
+    "startCapture": "Dicter une note",
+    "stopCapture": "Arrêter",
+    "importAudio": "Importer un audio",
+    "selectOrCreate": "Sélectionnez une note ou créez-en une nouvelle",
+    "titlePlaceholder": "Titre",
+    "saving": "Enregistrement...",
+    "titleAi": "Titre IA",
+    "category": "Catégorie / dossier",
+    "actions": "Actions",
+    "summarize": "Résumer",
+    "export": "Exporter",
+    "closeTitle": "Terminer la note — la prochaine dictée créera une nouvelle note",
+    "close": "Nouvelle note",
+    "contentPlaceholder": "Commencez à écrire...",
+    "captureError": "Impossible de lancer la dictée de note",
+    "closed": "Note vocale terminée — la prochaine dictée créera une nouvelle note",
+    "closeError": "Impossible de terminer la note active",
+    "exportSuccess": "Note exportée.",
+    "exportError": "Impossible d'exporter la note",
+    "importingAudio": "Transcription du fichier audio...",
+    "importAudioEmpty": "Aucun texte n'a été extrait du fichier",
+    "importAudioSuccess": "Audio ajouté à la note.",
+    "importAudioError": "Impossible d'importer le fichier audio",
+    "copyEmpty": "Aucun contenu à copier",
+    "copySuccess": "Note copiée.",
+    "copyError": "Impossible de copier la note",
+    "summarizing": "Génération du résumé...",
+    "summarizeSuccess": "Résumé mis à jour.",
+    "summarizeError": "Impossible de générer le résumé",
+    "extractingActions": "Extraction des actions...",
+    "extractActionsSuccess": "Actions mises à jour.",
+    "extractActionsError": "Impossible d'extraire les actions",
+    "generatingTitle": "Génération du titre...",
+    "generateTitleSuccess": "Titre généré.",
+    "generateTitleError": "Impossible de générer le titre"
   }
 }

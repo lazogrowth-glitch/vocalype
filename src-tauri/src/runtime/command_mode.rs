@@ -196,7 +196,7 @@ async fn run_command_mode(app: AppHandle) {
     if !rm.try_start_recording(binding_id) {
         emit_error(
             &app,
-            "Impossible de démarrer l'enregistrement (une dictée est peut-être déjà en cours).",
+            "Failed to start recording (a dictation may already be in progress).",
         );
         return;
     }
@@ -219,7 +219,7 @@ async fn run_command_mode(app: AppHandle) {
     let samples = match rm.stop_recording(binding_id) {
         Some(s) if !s.is_empty() => s,
         _ => {
-            emit_error(&app, "Aucun audio capturé pour la commande.");
+            emit_error(&app, "No audio captured for the command.");
             emit_finished(&app);
             return;
         }
@@ -238,13 +238,13 @@ async fn run_command_mode(app: AppHandle) {
     let command_text = match tokio::task::spawn_blocking(move || tm.transcribe(samples)).await {
         Ok(Ok(text)) if !text.trim().is_empty() => text.trim().to_string(),
         Ok(Ok(_)) => {
-            emit_error(&app, "Commande vocale non reconnue. Essaie à nouveau.");
+            emit_error(&app, "Voice command not recognized. Please try again.");
             emit_finished(&app);
             return;
         }
         Ok(Err(e)) => {
             error!("Command mode transcription error: {}", e);
-            emit_error(&app, "Erreur lors de la transcription de la commande.");
+            emit_error(&app, "Error transcribing the command.");
             emit_finished(&app);
             return;
         }
@@ -263,7 +263,7 @@ async fn run_command_mode(app: AppHandle) {
     let provider = match settings.active_post_process_provider().cloned() {
         Some(p) => p,
         None => {
-            emit_error(&app, "Aucun fournisseur LLM configuré.");
+            emit_error(&app, "No LLM provider configured.");
             emit_finished(&app);
             return;
         }
@@ -278,7 +278,7 @@ async fn run_command_mode(app: AppHandle) {
     if model.trim().is_empty() {
         emit_error(
             &app,
-            "Aucun modèle LLM configuré. Choisis un modèle dans Paramètres → Dictée.",
+            "No LLM model configured. Choose a model in Settings → Dictation.",
         );
         emit_finished(&app);
         return;

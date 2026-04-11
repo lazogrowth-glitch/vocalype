@@ -24,10 +24,10 @@ pub fn add_voice_snippet(
     let expansion = expansion.trim().to_string();
 
     if trigger.is_empty() {
-        return Err("Le déclencheur ne peut pas être vide".to_string());
+        return Err("Trigger cannot be empty".to_string());
     }
     if expansion.is_empty() {
-        return Err("L'expansion ne peut pas être vide".to_string());
+        return Err("Expansion cannot be empty".to_string());
     }
 
     let mut settings = get_settings(&app);
@@ -39,7 +39,7 @@ pub fn add_voice_snippet(
         .any(|s| s.trigger.trim().to_lowercase() == trigger.to_lowercase())
     {
         return Err(format!(
-            "Un snippet avec le déclencheur « {} » existe déjà",
+            "A snippet with trigger '{}' already exists",
             trigger
         ));
     }
@@ -63,7 +63,7 @@ pub fn remove_voice_snippet(app: AppHandle, id: String) -> Result<(), String> {
     let before = settings.voice_snippets.len();
     settings.voice_snippets.retain(|s| s.id != id);
     if settings.voice_snippets.len() == before {
-        return Err(format!("Snippet introuvable : {}", id));
+        return Err(format!("Snippet not found: {}", id));
     }
     write_settings(&app, settings);
     Ok(())
@@ -81,10 +81,10 @@ pub fn update_voice_snippet(
     let expansion = expansion.trim().to_string();
 
     if trigger.is_empty() {
-        return Err("Le déclencheur ne peut pas être vide".to_string());
+        return Err("Trigger cannot be empty".to_string());
     }
     if expansion.is_empty() {
-        return Err("L'expansion ne peut pas être vide".to_string());
+        return Err("Expansion cannot be empty".to_string());
     }
 
     let mut settings = get_settings(&app);
@@ -96,7 +96,7 @@ pub fn update_voice_snippet(
         .any(|s| s.id != id && s.trigger.trim().to_lowercase() == trigger.to_lowercase())
     {
         return Err(format!(
-            "Un snippet avec le déclencheur « {} » existe déjà",
+            "A snippet with trigger '{}' already exists",
             trigger
         ));
     }
@@ -105,7 +105,7 @@ pub fn update_voice_snippet(
         .voice_snippets
         .iter_mut()
         .find(|s| s.id == id)
-        .ok_or_else(|| format!("Snippet introuvable : {}", id))?;
+        .ok_or_else(|| format!("Snippet not found: {}", id))?;
 
     snippet.trigger = trigger;
     snippet.expansion = expansion;

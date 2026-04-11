@@ -192,6 +192,65 @@ fn classify_microphone_start_error(message: &str) -> &'static str {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+struct AudioSignalSummary {
+    duration_seconds: f32,
+    rms: f32,
+    peak: f32,
+}
+
+impl AudioSignalSummary {
+    fn has_captured_signal(self) -> bool {
+        self.duration_seconds >= 1.0 && (self.rms >= 0.003 || self.peak >= 0.02)
+    }
+}
+
+fn summarize_audio_signal(samples: &[f32]) -> AudioSignalSummary {
+    if samples.is_empty() {
+        return AudioSignalSummary {
+            duration_seconds: 0.0,
+            rms: 0.0,
+            peak: 0.0,
+        };
+    }
+
+    let mut sum_squares = 0.0_f32;
+    let mut peak = 0.0_f32;
+    for sample in samples {
+        let magnitude = sample.abs();
+        sum_squares += sample * sample;
+        if magnitude > peak {
+            peak = magnitude;
+        }
+    }
+
+    AudioSignalSummary {
+        duration_seconds: samples.len() as f32 / 16_000.0,
+        rms: (sum_squares / samples.len() as f32).sqrt(),
+        peak,
+    }
+}
+
+fn empty_transcription_error(samples: &[f32]) -> (&'static str, String, &'static str) {
+    let signal = summarize_audio_signal(samples);
+    if signal.has_captured_signal() {
+        (
+            "AUDIO_CAPTURED_EMPTY_TRANSCRIPT",
+            format!(
+                "Audio signal was captured ({:.1}s, rms {:.4}, peak {:.4}), but transcription returned empty output; paste skipped",
+                signal.duration_seconds, signal.rms, signal.peak
+            ),
+            "audio-captured-empty-transcription",
+        )
+    } else {
+        (
+            "NO_SPEECH_DETECTED",
+            "No speech detected in the captured audio; paste skipped".to_string(),
+            "no-speech",
+        )
+    }
+}
+
 fn derive_adaptive_cleanup_strategy(
     selected_language: &str,
     samples: &[f32],
@@ -1818,24 +1877,26 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                             tm.get_current_model(),
                         );
                     } else {
+                        let (error_code, error_message, completion_detail) =
+                            empty_transcription_error(&samples);
                         emit_runtime_error_with_context(
                             &ah,
-                            "NO_SPEECH_DETECTED",
+                            error_code,
                             RuntimeErrorStage::Transcription,
-                            "No speech detected in the captured audio; paste skipped",
+                            error_message,
                             true,
                             Some(operation_id),
                             get_settings(&ah).selected_microphone.clone(),
                             tm.get_current_model(),
                         );
                         if let Ok(mut p) = profiler.lock() {
-                            p.mark_error("NO_SPEECH_DETECTED");
+                            p.mark_error(error_code);
                             p.emit(&ah);
                         }
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                         if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
-                            let _ = c.complete_operation(&ah, operation_id, "no-speech");
+                            let _ = c.complete_operation(&ah, operation_id, completion_detail);
                         }
                         return;
                     }
@@ -2013,11 +2074,13 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 );
             } else {
                 warn!("Empty transcription result; skipping automatic paste");
+                let (error_code, error_message, completion_detail) =
+                    empty_transcription_error(&samples);
                 emit_runtime_error_with_context(
                     &ah,
-                    "NO_SPEECH_DETECTED",
+                    error_code,
                     RuntimeErrorStage::Transcription,
-                    "Transcription produced empty output; paste skipped",
+                    error_message,
                     true,
                     Some(operation_id),
                     get_settings(&ah).selected_microphone.clone(),
@@ -2025,13 +2088,13 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 );
                 if let Ok(mut p) = profiler.lock() {
                     p.set_transcription_chars("");
-                    p.mark_error("NO_SPEECH_DETECTED");
+                    p.mark_error(error_code);
                     p.emit(&ah);
                 }
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
                 if let Some(c) = ah.try_state::<TranscriptionCoordinator>() {
-                    let _ = c.complete_operation(&ah, operation_id, "empty-transcription");
+                    let _ = c.complete_operation(&ah, operation_id, completion_detail);
                 }
             }
         }
@@ -2094,6 +2157,30 @@ mod tests {
             classify_microphone_start_error("Failed to open recorder"),
             "MIC_OPEN_FAILED"
         );
+    }
+
+    #[test]
+    fn empty_transcription_error_distinguishes_silence_from_captured_audio() {
+        let silence = vec![0.0; 16_000];
+        let captured_signal = vec![0.01; 16_000];
+
+        let (silent_code, _, silent_detail) = empty_transcription_error(&silence);
+        let (signal_code, _, signal_detail) = empty_transcription_error(&captured_signal);
+
+        assert_eq!(silent_code, "NO_SPEECH_DETECTED");
+        assert_eq!(silent_detail, "no-speech");
+        assert_eq!(signal_code, "AUDIO_CAPTURED_EMPTY_TRANSCRIPT");
+        assert_eq!(signal_detail, "audio-captured-empty-transcription");
+    }
+
+    #[test]
+    fn short_audio_is_not_classified_as_model_empty_output() {
+        let short_burst = vec![0.2; 8_000];
+
+        let (code, _, detail) = empty_transcription_error(&short_burst);
+
+        assert_eq!(code, "NO_SPEECH_DETECTED");
+        assert_eq!(detail, "no-speech");
     }
 
     #[test]

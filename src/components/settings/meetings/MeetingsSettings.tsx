@@ -152,6 +152,7 @@ function InfoPanel({
   label: string;
   value: string;
 }) {
+  const { t } = useTranslation();
   if (!value.trim()) {
     return null;
   }
@@ -167,7 +168,7 @@ function InfoPanel({
             {label}
           </p>
           <p className="text-[10.5px] text-white/24">
-            {countWords(value)} mots
+            {t("common.words", { count: countWords(value) })}
           </p>
         </div>
       </div>
@@ -878,7 +879,7 @@ export const MeetingsSettings: React.FC = () => {
     }
 
     try {
-      toast.loading("Generation des titres de chapitres...", {
+      toast.loading(t("meetings.generatingChapterTitles"), {
         id: "meetings-chapters-ai",
       });
       const result = await commands.generateMeetingChapterTitles(
@@ -889,11 +890,11 @@ export const MeetingsSettings: React.FC = () => {
         return;
       }
       setAiChapterTitles(result.data);
-      toast.success("Titres de chapitres generes.", {
+      toast.success(t("meetings.generateChapterTitlesSuccess"), {
         id: "meetings-chapters-ai",
       });
     } catch {
-      toast.error("Impossible de generer les titres de chapitres", {
+      toast.error(t("meetings.generateChapterTitlesError"), {
         id: "meetings-chapters-ai",
       });
     }
@@ -1432,7 +1433,7 @@ export const MeetingsSettings: React.FC = () => {
                   )}
                   <span className="truncate text-[10px] text-white/20">
                     {formatDate(meeting.updated_at)} ·{" "}
-                    {countWords(meeting.transcript)} mots
+                    {t("common.words", { count: countWords(meeting.transcript) })}
                   </span>
                 </div>
               </div>
@@ -1521,13 +1522,13 @@ export const MeetingsSettings: React.FC = () => {
                     ? t("meetings.saving", {
                         defaultValue: "Enregistrement...",
                       })
-                    : `${formatDate(selectedMeeting.updated_at)} · ${countWords(editTranscript)} mots`}
+                    : `${formatDate(selectedMeeting.updated_at)} · ${t("common.words", { count: countWords(editTranscript) })}`}
                 </p>
                 <div className="mt-3 max-w-[220px]">
                   <input
                     type="text"
                     list="meeting-categories"
-                    placeholder="Categorie / dossier"
+                    placeholder={t("meetings.category")}
                     value={editCategory}
                     onChange={(e) => void handleCategoryChange(e.target.value)}
                     className="w-full rounded-[12px] border border-white/8 bg-white/[0.04] px-3 py-2 text-[12px] text-white/72 placeholder-white/22 outline-none transition-all focus:border-white/14 focus:bg-white/[0.06]"
@@ -1557,7 +1558,7 @@ export const MeetingsSettings: React.FC = () => {
                 className="mt-1 shrink-0"
               >
                 <Sparkles size={13} />
-                Chapitres IA
+                {t("meetings.chapters")}
               </Button>
               <Button
                 type="button"

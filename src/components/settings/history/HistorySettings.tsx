@@ -288,6 +288,14 @@ export const HistorySettings: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const postProcessActions = getSetting("post_process_actions") || [];
 
+  const handleConfigureActions = () => {
+    window.dispatchEvent(
+      new CustomEvent("vocalype:navigate-settings", {
+        detail: "postprocessing",
+      }),
+    );
+  };
+
   const loadHistoryEntries = useCallback(async () => {
     try {
       const [entries, more] = await invoke<[HistoryEntry[], boolean]>(
@@ -675,6 +683,37 @@ export const HistorySettings: React.FC = () => {
               </button>
             </div>
           )}
+          {postProcessActions.length === 0 && (
+            <div
+              className="mb-3 rounded-xl border border-white/8 bg-white/[0.03] text-[12.5px] leading-6 text-white/42"
+              style={{ padding: "16px 20px" }}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-logo-primary/14 bg-logo-primary/[0.08] text-logo-primary">
+                    <Sparkles size={14} aria-hidden="true" />
+                  </span>
+                  <span className="max-w-[680px]">
+                    {t("settings.history.noAiActionsHint", {
+                      defaultValue:
+                        "Créez une action dans Post-traitement pour corriger, résumer ou reformater vos anciennes dictées ici.",
+                    })}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleConfigureActions}
+                  variant="primary-soft"
+                  size="sm"
+                  className="shrink-0"
+                >
+                  {t("settings.history.configureActions", {
+                    defaultValue: "Configurer les actions",
+                  })}
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="divide-y divide-white/8">
             {(isBasicTier
               ? historyEntries.slice(0, BASIC_HISTORY_LIMIT)
@@ -705,6 +744,7 @@ export const HistorySettings: React.FC = () => {
                   onDeleteWithUndo={handleDeleteWithUndo}
                   postProcessActions={postProcessActions}
                   onActionApplied={loadHistoryEntries}
+                  onStartCheckout={onStartCheckout}
                 />
               ))}
             {searchQuery.trim() &&
@@ -763,6 +803,7 @@ interface HistoryEntryProps {
   onDeleteWithUndo?: (entry: HistoryEntry) => void;
   postProcessActions: PostProcessAction[];
   onActionApplied: () => Promise<void>;
+  onStartCheckout: () => Promise<string | null>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -774,6 +815,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onDeleteWithUndo,
   postProcessActions,
   onActionApplied,
+  onStartCheckout,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
@@ -783,10 +825,19 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     null,
   );
   const [clearingPostProcess, setClearingPostProcess] = useState(false);
+  const [showAllActions, setShowAllActions] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   const models = useModelStore((s) => s.models);
 
   const downloadedModels = models.filter((m) => m.is_downloaded);
+  const sortedPostProcessActions = [...postProcessActions].sort(
+    (a, b) => a.key - b.key,
+  );
+  const visiblePostProcessActions = showAllActions
+    ? sortedPostProcessActions
+    : sortedPostProcessActions.slice(0, 4);
+  const hiddenActionCount =
+    sortedPostProcessActions.length - visiblePostProcessActions.length;
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -800,6 +851,84 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     }
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
+  };
+
+  const handleCopyExplicitText = async (
+    text: string,
+    successMessage: string,
+  ) => {
+    const copied = await copyToClipboardText(text);
+    if (!copied) return;
+    toast.success(successMessage);
+  };
+
+  const copyToClipboardText = async (text: string): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (error) {
+      console.error("Failed to copy explicit history text:", error);
+      toast.error(
+        t("settings.history.copyFailed", {
+          defaultValue: "Failed to copy transcription.",
+        }),
+      );
+      return false;
+    }
+  };
+
+  const showActionError = (error: string) => {
+    const normalized = error.toLowerCase();
+    if (error === "PREMIUM_REQUIRED" || normalized.includes("premium")) {
+      toast.error(
+        t("settings.history.actionNeedsPremium", {
+          defaultValue:
+            "Cette action nécessite Premium. Passez à Premium pour transformer l'historique.",
+        }),
+        {
+          action: {
+            label: t("basic.upgrade", { defaultValue: "Passer à Premium" }),
+            onClick: () =>
+              onStartCheckout().then(
+                (url) => url && window.open(url, "_blank"),
+              ),
+          },
+        },
+      );
+      return;
+    }
+    if (
+      error === "NO_AI_MODEL_CONFIGURED" ||
+      normalized.includes("no provider") ||
+      normalized.includes("no model") ||
+      normalized.includes("api")
+    ) {
+      toast.error(
+        t("settings.history.actionNeedsModel", {
+          defaultValue:
+            "Configurez un modèle IA dans Modèles > Post-traitement pour utiliser cette action.",
+        }),
+      );
+      return;
+    }
+    if (error === "ACTION_NOT_FOUND") {
+      toast.error(
+        t("settings.history.actionNotFound", {
+          defaultValue:
+            "Cette action n'existe plus. Vérifiez vos actions dans Post-traitement.",
+        }),
+      );
+      return;
+    }
+    if (error === "EMPTY_HISTORY_ENTRY") {
+      toast.error(
+        t("settings.history.emptyActionSource", {
+          defaultValue: "Cette entrée d'historique est vide.",
+        }),
+      );
+      return;
+    }
+    toast.error(error);
   };
 
   const handleDeleteEntry = async () => {
@@ -836,7 +965,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         action.key,
       );
       if (result.status !== "ok") {
-        toast.error(result.error);
+        showActionError(result.error);
         return;
       }
       toast.success(
@@ -863,7 +992,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     try {
       const result = await commands.clearHistoryPostProcessAction(entry.id);
       if (result.status !== "ok") {
-        toast.error(result.error);
+        showActionError(result.error);
         return;
       }
       toast.success(
@@ -1029,24 +1158,61 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                   })}
                 </span>
               )}
-              <button
+              <Button
                 type="button"
                 onClick={() => void handleClearPostProcess()}
                 disabled={clearingPostProcess}
-                className="inline-flex min-h-6 items-center justify-center rounded-[8px] border border-white/8 bg-white/[0.035] px-2 text-[10.5px] font-medium text-white/38 transition-all hover:border-white/12 hover:bg-white/[0.06] hover:text-white/62 disabled:cursor-not-allowed disabled:opacity-50"
+                variant="secondary"
+                size="sm"
               >
                 {clearingPostProcess ? (
-                  <Loader2 size={10} className="animate-spin" />
+                  <Loader2 size={11} className="animate-spin" />
                 ) : (
                   t("settings.history.restoreOriginal", {
                     defaultValue: "Original",
                   })
                 )}
-              </button>
+              </Button>
             </div>
             <p className="text-[13.5px] italic text-white/82 select-text cursor-text">
               {entry.post_processed_text}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                onClick={() =>
+                  void handleCopyExplicitText(
+                    entry.post_processed_text ?? "",
+                    t("settings.history.copiedAiResult", {
+                      defaultValue: "Résultat IA copié.",
+                    }),
+                  )
+                }
+                variant="primary-soft"
+                size="sm"
+              >
+                {t("settings.history.copyAiResult", {
+                  defaultValue: "Copier résultat IA",
+                })}
+              </Button>
+              <Button
+                type="button"
+                onClick={() =>
+                  void handleCopyExplicitText(
+                    entry.transcription_text,
+                    t("settings.history.copiedOriginal", {
+                      defaultValue: "Original copié.",
+                    }),
+                  )
+                }
+                variant="secondary"
+                size="sm"
+              >
+                {t("settings.history.copyOriginal", {
+                  defaultValue: "Copier original",
+                })}
+              </Button>
+            </div>
           </div>
           <div>
             <span className="mb-0.5 block text-xs font-medium text-white/40">
@@ -1067,34 +1233,64 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         />
       )}
       {postProcessActions.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/24">
-            <Sparkles size={11} aria-hidden="true" />
-            {t("settings.history.aiActions", {
-              defaultValue: "Actions IA",
-            })}
-          </span>
-          {[...postProcessActions]
-            .sort((a, b) => a.key - b.key)
-            .map((action) => (
-              <button
+        <div
+          className="mt-2 rounded-xl border border-white/8 bg-white/[0.03]"
+          style={{ padding: "16px 20px" }}
+        >
+          <div className="mb-3 flex items-center gap-2">
+            <div className="h-[3px] w-12 rounded-full bg-logo-primary" />
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-widest text-white/30">
+              <Sparkles size={11} aria-hidden="true" />
+              {t("settings.history.aiActions", {
+                defaultValue: "Actions IA",
+              })}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {visiblePostProcessActions.map((action) => (
+              <Button
                 key={action.key}
                 type="button"
                 onClick={() => void handleApplyAction(action)}
                 disabled={processingActionKey !== null}
-                className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-[10px] border border-white/8 bg-white/[0.035] px-3 text-[11.5px] font-medium text-white/48 transition-all hover:border-logo-primary/18 hover:bg-logo-primary/[0.06] hover:text-logo-primary disabled:cursor-not-allowed disabled:opacity-50"
+                variant="secondary"
+                size="sm"
                 title={action.name}
+                className="max-w-[190px]"
               >
                 {processingActionKey === action.key ? (
                   <Loader2 size={11} className="animate-spin" />
                 ) : (
-                  <span className="font-mono text-[10px] text-white/30">
+                  <span className="font-mono text-[10.5px] text-white/34">
                     {action.key}
                   </span>
                 )}
-                <span className="max-w-[140px] truncate">{action.name}</span>
-              </button>
+                <span className="truncate">{action.name}</span>
+              </Button>
             ))}
+            {hiddenActionCount > 0 && (
+              <Button
+                type="button"
+                onClick={() => setShowAllActions(true)}
+                variant="secondary"
+                size="sm"
+              >
+                +{hiddenActionCount}
+              </Button>
+            )}
+            {showAllActions && sortedPostProcessActions.length > 4 && (
+              <Button
+                type="button"
+                onClick={() => setShowAllActions(false)}
+                variant="ghost"
+                size="sm"
+              >
+                {t("settings.history.showLessActions", {
+                  defaultValue: "Moins",
+                })}
+              </Button>
+            )}
+          </div>
         </div>
       )}
       <AudioPlayer

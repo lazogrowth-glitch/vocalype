@@ -79,6 +79,7 @@ function InfoPanel({
   label: string;
   value: string;
 }) {
+  const { t } = useTranslation();
   if (!value.trim()) {
     return null;
   }
@@ -94,7 +95,7 @@ function InfoPanel({
             {label}
           </p>
           <p className="text-[10.5px] text-white/24">
-            {countWords(value)} mots
+            {t("common.words", { count: countWords(value) })}
           </p>
         </div>
       </div>
@@ -1073,14 +1074,13 @@ export const NotesSettings: React.FC = () => {
                   {notePreview(note)}
                 </p>
                 <p className="mt-2 truncate text-[10px] text-white/24">
-                  {formatNoteDate(note.updated_at)} · {countWords(note.content)}{" "}
-                  mots
+                  {formatNoteDate(note.updated_at)} · {t("common.words", { count: countWords(note.content) })}
                 </p>
                 <div className="mt-3 max-w-[220px]">
                   <input
                     type="text"
                     list="note-categories"
-                    placeholder="Categorie / dossier"
+                    placeholder={t("notes.category")}
                     value={editCategory}
                     onChange={(e) => void handleCategoryChange(e.target.value)}
                     className="w-full rounded-[12px] border border-white/8 bg-white/[0.04] px-3 py-2 text-[12px] text-white/72 placeholder-white/22 outline-none transition-all focus:border-white/14 focus:bg-white/[0.06]"
@@ -1176,7 +1176,7 @@ export const NotesSettings: React.FC = () => {
                   <p className="mt-1 text-[10.5px] text-white/25">
                     {saving
                       ? t("notes.saving", { defaultValue: "Enregistrement..." })
-                      : `${formatNoteDate(selectedNote.updated_at)} · ${countWords(editContent)} mots`}
+                      : `${formatNoteDate(selectedNote.updated_at)} · ${t("common.words", { count: countWords(editContent) })}`}
                   </p>
                   <div className="mt-3 max-w-[220px]">
                     <input

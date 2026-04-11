@@ -102,7 +102,7 @@ fn no_model_status(snapshot: &WarmupSnapshot) -> StartupWarmupStatus {
         microphone_ready: !snapshot.always_on_microphone,
         model_ready: false,
         blocking_reason: Some("NO_MODEL_SELECTED".to_string()),
-        message: "Choisissez un modele pour activer la dictee.".to_string(),
+        message: "Select a model to enable dictation.".to_string(),
         detail: None,
         updated_at_ms: 0,
     }
@@ -117,8 +117,8 @@ fn missing_model_status(snapshot: &WarmupSnapshot, model_id: &str) -> StartupWar
         microphone_ready: !snapshot.always_on_microphone,
         model_ready: false,
         blocking_reason: Some("MODEL_NOT_FOUND".to_string()),
-        message: "Impossible de preparer la dictee.".to_string(),
-        detail: Some(format!("Modele introuvable: {}", model_id)),
+        message: "Failed to prepare dictation.".to_string(),
+        detail: Some(format!("Model not found: {}", model_id)),
         updated_at_ms: 0,
     }
 }
@@ -132,8 +132,8 @@ fn not_downloaded_status(snapshot: &WarmupSnapshot, model_name: &str) -> Startup
         microphone_ready: !snapshot.always_on_microphone,
         model_ready: false,
         blocking_reason: Some("MODEL_NOT_DOWNLOADED".to_string()),
-        message: "Telechargez votre modele pour activer la dictee.".to_string(),
-        detail: Some(format!("Le modele '{}' n'est pas telecharge.", model_name)),
+        message: "Download your model to enable dictation.".to_string(),
+        detail: Some(format!("Model '{}' is not downloaded.", model_name)),
         updated_at_ms: 0,
     }
 }
@@ -147,8 +147,8 @@ fn preparing_microphone_status(model_name: &str, model_ready: bool) -> StartupWa
         microphone_ready: false,
         model_ready,
         blocking_reason: Some("PREPARING_MICROPHONE".to_string()),
-        message: "Preparation du micro...".to_string(),
-        detail: Some(format!("Initialisation du microphone pour {}", model_name)),
+        message: "Preparing microphone...".to_string(),
+        detail: Some(format!("Initializing microphone for {}", model_name)),
         updated_at_ms: 0,
     }
 }
@@ -162,8 +162,8 @@ fn preparing_model_status(model_name: &str, microphone_ready: bool) -> StartupWa
         microphone_ready,
         model_ready: false,
         blocking_reason: Some("PREPARING_MODEL".to_string()),
-        message: "Preparation du moteur vocal...".to_string(),
-        detail: Some(format!("Chargement de {}", model_name)),
+        message: "Loading speech engine...".to_string(),
+        detail: Some(format!("Loading {}", model_name)),
         updated_at_ms: 0,
     }
 }
@@ -177,8 +177,8 @@ fn ready_status(model_name: &str, microphone_ready: bool) -> StartupWarmupStatus
         microphone_ready,
         model_ready: true,
         blocking_reason: None,
-        message: "Dictee prete".to_string(),
-        detail: Some(format!("{} est charge.", model_name)),
+        message: "Dictation ready.".to_string(),
+        detail: Some(format!("{} is loaded.", model_name)),
         updated_at_ms: 0,
     }
 }
@@ -192,7 +192,7 @@ fn microphone_error_status(detail: String) -> StartupWarmupStatus {
         microphone_ready: false,
         model_ready: false,
         blocking_reason: Some("MICROPHONE_ERROR".to_string()),
-        message: "Impossible d'initialiser le microphone.".to_string(),
+        message: "Failed to initialize microphone.".to_string(),
         detail: Some(detail),
         updated_at_ms: 0,
     }
@@ -211,7 +211,7 @@ fn model_error_status(
         microphone_ready,
         model_ready: false,
         blocking_reason: Some("MODEL_ERROR".to_string()),
-        message: "Le moteur vocal n'a pas pu etre charge.".to_string(),
+        message: "Speech engine failed to load.".to_string(),
         detail: Some(format!("{} {}", model_name, detail)),
         updated_at_ms: 0,
     }

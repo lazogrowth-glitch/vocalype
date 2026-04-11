@@ -28,6 +28,8 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import { listen } from "@tauri-apps/api/event";
 import { ensureVoiceStateStore } from "@/stores/voiceState";
 
+const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
+
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
 const MIN_WINDOW_SIZE = { width: 960, height: 624 };
 const MAX_SCALE = 1;
@@ -303,8 +305,6 @@ function App() {
   const hasAnyAccess =
     licenseState?.state === "online_valid" ||
     licenseState?.state === "offline_valid";
-  const needsAuthWindow = !session || !hasAnyAccess;
-
   const currentTier = session?.subscription?.tier ?? null;
   const isBasicTier = hasAnyAccess && currentTier === "basic";
   const hasPremiumAccess = hasAnyAccess && currentTier === "premium";
@@ -479,6 +479,22 @@ function App() {
   useEffect(() => {
     ensureVoiceStateStore();
   }, []);
+
+  useEffect(() => {
+    const handleNavigateSettings = (event: Event) => {
+      const section = (event as CustomEvent<SidebarSection>).detail;
+      if (section && SECTIONS_CONFIG[section]) {
+        setCurrentSection(section);
+      }
+    };
+
+    window.addEventListener(NAVIGATE_SETTINGS_EVENT, handleNavigateSettings);
+    return () =>
+      window.removeEventListener(
+        NAVIGATE_SETTINGS_EVENT,
+        handleNavigateSettings,
+      );
+  }, [setCurrentSection]);
 
   if (authLoading) {
     return (

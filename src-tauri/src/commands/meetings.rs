@@ -200,7 +200,7 @@ pub fn export_meeting(
     let meeting = meetings
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Reunion introuvable".to_string())?;
+        .ok_or_else(|| "MEETING_NOT_FOUND".to_string())?;
 
     let title = if meeting.title.trim().is_empty() {
         "Reunion".to_string()
@@ -324,7 +324,7 @@ pub async fn generate_meeting_chapter_titles(
     let meeting = meetings
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Reunion introuvable".to_string())?;
+        .ok_or_else(|| "MEETING_NOT_FOUND".to_string())?;
 
     let chapters = build_meeting_chapters(&meeting);
     if chapters.is_empty() {
@@ -333,7 +333,7 @@ pub async fn generate_meeting_chapter_titles(
 
     let settings = crate::settings::get_settings(&app);
     if settings.active_post_process_provider().is_none() {
-        return Err("Aucun fournisseur IA configure".to_string());
+        return Err("NO_AI_PROVIDER_CONFIGURED".to_string());
     }
 
     let source = chapters
@@ -351,7 +351,7 @@ pub async fn generate_meeting_chapter_titles(
 
     let raw = process_action(&settings, &source, prompt, None, None)
         .await
-        .ok_or_else(|| "Impossible de generer les titres de chapitres".to_string())?;
+        .ok_or_else(|| "Failed to generate chapter titles".to_string())?;
 
     let mut titles = raw
         .lines()
@@ -390,16 +390,16 @@ pub async fn summarize_meeting(
     let meeting = meetings
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Reunion introuvable".to_string())?;
+        .ok_or_else(|| "MEETING_NOT_FOUND".to_string())?;
 
     let transcript = meeting.transcript.trim();
     if transcript.is_empty() {
-        return Err("La reunion est vide".to_string());
+        return Err("MEETING_EMPTY".to_string());
     }
 
     let settings = crate::settings::get_settings(&app);
     if settings.active_post_process_provider().is_none() {
-        return Err("Aucun fournisseur IA configure".to_string());
+        return Err("NO_AI_PROVIDER_CONFIGURED".to_string());
     }
 
     let prompt = if settings.selected_language.starts_with("fr") {
@@ -411,7 +411,7 @@ pub async fn summarize_meeting(
     let summary = process_action(&settings, transcript, prompt, None, None)
         .await
         .filter(|summary| !summary.trim().is_empty())
-        .ok_or_else(|| "Impossible de generer un resume".to_string())?;
+        .ok_or_else(|| "Failed to generate summary".to_string())?;
 
     meeting_manager
         .set_ai_fields(id, Some(summary.trim()), None)
@@ -431,16 +431,16 @@ pub async fn extract_meeting_actions(
     let meeting = meetings
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Reunion introuvable".to_string())?;
+        .ok_or_else(|| "MEETING_NOT_FOUND".to_string())?;
 
     let transcript = meeting.transcript.trim();
     if transcript.is_empty() {
-        return Err("La reunion est vide".to_string());
+        return Err("MEETING_EMPTY".to_string());
     }
 
     let settings = crate::settings::get_settings(&app);
     if settings.active_post_process_provider().is_none() {
-        return Err("Aucun fournisseur IA configure".to_string());
+        return Err("NO_AI_PROVIDER_CONFIGURED".to_string());
     }
 
     let prompt = if settings.selected_language.starts_with("fr") {
@@ -452,7 +452,7 @@ pub async fn extract_meeting_actions(
     let actions = process_action(&settings, transcript, prompt, None, None)
         .await
         .filter(|actions| !actions.trim().is_empty())
-        .ok_or_else(|| "Impossible d'extraire les actions".to_string())?;
+        .ok_or_else(|| "Failed to extract actions".to_string())?;
 
     meeting_manager
         .set_ai_fields(id, None, Some(actions.trim()))
@@ -472,16 +472,16 @@ pub async fn generate_meeting_title(
     let meeting = meetings
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Reunion introuvable".to_string())?;
+        .ok_or_else(|| "MEETING_NOT_FOUND".to_string())?;
 
     let transcript = meeting.transcript.trim();
     if transcript.is_empty() {
-        return Err("La reunion est vide".to_string());
+        return Err("MEETING_EMPTY".to_string());
     }
 
     let settings = crate::settings::get_settings(&app);
     if settings.active_post_process_provider().is_none() {
-        return Err("Aucun fournisseur IA configure".to_string());
+        return Err("NO_AI_PROVIDER_CONFIGURED".to_string());
     }
 
     let prompt = if settings.selected_language.starts_with("fr") {
@@ -500,7 +500,7 @@ pub async fn generate_meeting_title(
                 .to_string()
         })
         .filter(|value| !value.is_empty())
-        .ok_or_else(|| "Impossible de generer un titre".to_string())?;
+        .ok_or_else(|| "Failed to generate title".to_string())?;
 
     meeting_manager
         .update_meeting(id, &title, &meeting.transcript)

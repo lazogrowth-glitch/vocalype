@@ -323,7 +323,7 @@ export const useSettingsStore = create<SettingsStore>()(
         if (settings) {
           set({ settings: { ...settings, [key]: originalValue } });
         }
-        toast.error("Échec de la mise à jour du paramètre.");
+        toast.error("Failed to update setting.");
       } finally {
         setUpdating(updateKey, false);
       }

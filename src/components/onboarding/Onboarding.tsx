@@ -127,11 +127,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
       {
         id: "fast",
         title: t("onboarding.mode.fast", { defaultValue: "Rapide" }),
-        description: t("onboarding.mode.fastDescription", {
-          defaultValue: isCopilotOptimizedParakeet(adaptiveProfile, rapidId)
-            ? "Latence minimale avec le chemin NPU de ce PC"
-            : "Le plus rapide pour une dictée fluide",
-        }),
+        description: isCopilotOptimizedParakeet(adaptiveProfile, rapidId)
+          ? t("onboarding.mode.fastDescriptionNPU", {
+              defaultValue: "Minimum latency using this PC's NPU path",
+            })
+          : t("onboarding.mode.fastDescription", {
+              defaultValue: "Fastest for smooth dictation",
+            }),
         modelId: rapidId,
       },
       {

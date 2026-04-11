@@ -105,7 +105,7 @@ pub fn export_note(
     let note = notes
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Note introuvable".to_string())?;
+        .ok_or_else(|| "NOTE_NOT_FOUND".to_string())?;
 
     let title = if note.title.trim().is_empty() {
         "Sans titre".to_string()
@@ -179,16 +179,16 @@ pub async fn summarize_note(
     let note = notes
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Note introuvable".to_string())?;
+        .ok_or_else(|| "NOTE_NOT_FOUND".to_string())?;
 
     let content = note.content.trim();
     if content.is_empty() {
-        return Err("La note est vide".to_string());
+        return Err("NOTE_EMPTY".to_string());
     }
 
     let settings = crate::settings::get_settings(&app);
     if settings.active_post_process_provider().is_none() {
-        return Err("Aucun fournisseur IA configure".to_string());
+        return Err("NO_AI_PROVIDER_CONFIGURED".to_string());
     }
 
     let prompt = if settings.selected_language.starts_with("fr") {
@@ -200,7 +200,7 @@ pub async fn summarize_note(
     let summary = process_action(&settings, content, prompt, None, None)
         .await
         .filter(|summary| !summary.trim().is_empty())
-        .ok_or_else(|| "Impossible de generer un resume".to_string())?;
+        .ok_or_else(|| "Failed to generate summary".to_string())?;
 
     note_manager
         .set_ai_fields(id, Some(summary.trim()), None)
@@ -220,16 +220,16 @@ pub async fn extract_note_actions(
     let note = notes
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Note introuvable".to_string())?;
+        .ok_or_else(|| "NOTE_NOT_FOUND".to_string())?;
 
     let content = note.content.trim();
     if content.is_empty() {
-        return Err("La note est vide".to_string());
+        return Err("NOTE_EMPTY".to_string());
     }
 
     let settings = crate::settings::get_settings(&app);
     if settings.active_post_process_provider().is_none() {
-        return Err("Aucun fournisseur IA configure".to_string());
+        return Err("NO_AI_PROVIDER_CONFIGURED".to_string());
     }
 
     let prompt = if settings.selected_language.starts_with("fr") {
@@ -241,7 +241,7 @@ pub async fn extract_note_actions(
     let actions = process_action(&settings, content, prompt, None, None)
         .await
         .filter(|actions| !actions.trim().is_empty())
-        .ok_or_else(|| "Impossible d'extraire les actions".to_string())?;
+        .ok_or_else(|| "Failed to extract actions".to_string())?;
 
     note_manager
         .set_ai_fields(id, None, Some(actions.trim()))
@@ -261,16 +261,16 @@ pub async fn generate_note_title(
     let note = notes
         .into_iter()
         .find(|entry| entry.id == id)
-        .ok_or_else(|| "Note introuvable".to_string())?;
+        .ok_or_else(|| "NOTE_NOT_FOUND".to_string())?;
 
     let content = note.content.trim();
     if content.is_empty() {
-        return Err("La note est vide".to_string());
+        return Err("NOTE_EMPTY".to_string());
     }
 
     let settings = crate::settings::get_settings(&app);
     if settings.active_post_process_provider().is_none() {
-        return Err("Aucun fournisseur IA configure".to_string());
+        return Err("NO_AI_PROVIDER_CONFIGURED".to_string());
     }
 
     let prompt = if settings.selected_language.starts_with("fr") {
@@ -289,7 +289,7 @@ pub async fn generate_note_title(
                 .to_string()
         })
         .filter(|value| !value.is_empty())
-        .ok_or_else(|| "Impossible de generer un titre".to_string())?;
+        .ok_or_else(|| "Failed to generate title".to_string())?;
 
     note_manager
         .update_note(id, &title, &note.content)

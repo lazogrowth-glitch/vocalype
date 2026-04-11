@@ -60,7 +60,12 @@ const PostProcessingActionsComponent: React.FC = () => {
     prompt
       .replace(/\s+/g, " ")
       .trim()
-      .replace(/\$\{output\}/g, "texte dicté");
+      .replace(
+        /\$\{output\}/g,
+        t("settings.postProcessing.actions.outputPlaceholder", {
+          defaultValue: "dictated text",
+        }),
+      );
   const templates = [
     {
       id: "cleanup",

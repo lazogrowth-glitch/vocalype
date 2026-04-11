@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { listen } from "@tauri-apps/api/event";
-import type { SidebarSection } from "@/components/Sidebar";
+import type { SidebarSection } from "@/components/sections-config";
 import type { RuntimeErrorEvent } from "@/types/runtimeObservability";
 import type { StartupWarmupStatusSnapshot } from "@/types/startupWarmup";
 import type { AppSettings } from "@/bindings";
@@ -15,6 +15,106 @@ interface UseBackendEventsProps {
     key: K,
     value: AppSettings[K],
   ) => void;
+}
+
+type TranslateFn = UseBackendEventsProps["t"];
+
+interface ActionableRuntimeMessage {
+  key: string;
+  defaultValue: string;
+}
+
+const ACTIONABLE_RUNTIME_MESSAGES: Record<string, ActionableRuntimeMessage> = {
+  no_model_loaded: {
+    key: "errors.actionable.noModelLoaded",
+    defaultValue: "No model is loaded. Go to Models and select one.",
+  },
+  microphone_unavailable: {
+    key: "errors.actionable.microphoneUnavailable",
+    defaultValue:
+      "Microphone could not be accessed. Check your system audio settings.",
+  },
+  mic_not_found: {
+    key: "errors.actionable.microphoneUnavailable",
+    defaultValue:
+      "Vocalype cannot find that microphone. Choose another input in Settings.",
+  },
+  mic_permission_denied: {
+    key: "errors.actionable.microphonePermissionDenied",
+    defaultValue:
+      "Microphone permission is blocked. Allow Vocalype in your system privacy settings, then try again.",
+  },
+  mic_open_failed: {
+    key: "errors.actionable.audioCaptureFailed",
+    defaultValue:
+      "Vocalype could not open the microphone. Try unplugging it or choosing another input in Settings.",
+  },
+  out_of_memory: {
+    key: "errors.actionable.outOfMemory",
+    defaultValue: "Not enough memory. Close other applications and try again.",
+  },
+  audio_capture_failed: {
+    key: "errors.actionable.audioCaptureFailed",
+    defaultValue:
+      "Audio capture failed. Try a different microphone in Settings.",
+  },
+  no_speech_detected: {
+    key: "errors.actionable.noSpeechDetected",
+    defaultValue:
+      "No usable speech was detected. Try again a little closer to the microphone, or check the selected input.",
+  },
+  audio_captured_empty_transcript: {
+    key: "errors.actionable.audioCapturedEmptyTranscript",
+    defaultValue:
+      "The microphone picked up audio, but the model returned no text. Try again with a shorter phrase, or switch to a more accurate model.",
+  },
+  transcription_partial: {
+    key: "errors.actionable.transcriptionPartial",
+    defaultValue:
+      "Only part of the dictation could be recovered. Try a shorter phrase or switch to a more accurate model.",
+  },
+  transcription_partial_recovered: {
+    key: "errors.actionable.transcriptionPartialRecovered",
+    defaultValue:
+      "Vocalype recovered a partial dictation from the live preview. Check the pasted text before continuing.",
+  },
+  no_speech_recovered_from_preview: {
+    key: "errors.actionable.noSpeechRecoveredFromPreview",
+    defaultValue:
+      "Vocalype recovered text from the hidden live preview. Check the pasted text before continuing.",
+  },
+  paste_failed: {
+    key: "warnings.pasteFailedDesc",
+    defaultValue:
+      "The transcription was ready, but Vocalype could not paste it into the active app.",
+  },
+  paste_main_thread_dispatch_failed: {
+    key: "warnings.pasteFailedDesc",
+    defaultValue:
+      "The transcription was ready, but Vocalype could not paste it into the active app.",
+  },
+};
+
+function getRuntimeActionableMessage(
+  t: TranslateFn,
+  payload: RuntimeErrorEvent,
+) {
+  const normalizedCode = payload.code?.toLowerCase();
+  const knownMessage = ACTIONABLE_RUNTIME_MESSAGES[normalizedCode];
+
+  if (knownMessage) {
+    return t(knownMessage.key, {
+      defaultValue: knownMessage.defaultValue,
+      detail: payload.message ?? "",
+      reason: payload.message ?? "",
+    });
+  }
+
+  return t("errors.actionable.generic", {
+    defaultValue:
+      payload.message || "An unexpected transcription issue occurred.",
+    detail: payload.message ?? "",
+  });
 }
 
 export function useBackendEvents({
@@ -122,15 +222,7 @@ export function useBackendEvents({
 
       lastRuntimeErrorRef.current = { key: dedupeKey, at: now };
 
-      const ACTION_MAP: Record<string, string> = {
-        no_model_loaded: t("errors.actionable.noModelLoaded"),
-        microphone_unavailable: t("errors.actionable.microphoneUnavailable"),
-        out_of_memory: t("errors.actionable.outOfMemory"),
-        audio_capture_failed: t("errors.actionable.audioCaptureFailed"),
-      };
-      const actionableMessage =
-        ACTION_MAP[payload.code] ??
-        t("errors.actionable.generic", { detail: payload.message ?? "" });
+      const actionableMessage = getRuntimeActionableMessage(t, payload);
 
       if (payload.recoverable) {
         toast.warning(

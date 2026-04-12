@@ -274,7 +274,7 @@ pub(crate) async fn post_process_transcription(
     // Code context is already blocked upstream; Browser/Unknown produce no hint.
     let context_hint: Option<&'static str> = app_context.and_then(|ctx| match ctx.category {
         AppContextCategory::Email => {
-            Some("Context: email — formal tone, complete punctuation, capitalize names properly.")
+            Some("Context: email — formal tone, complete punctuation, capitalize names properly. Structure the email with proper line breaks: salutation on its own line followed by a blank line, body paragraphs separated by blank lines, closing phrase on its own line.")
         }
         AppContextCategory::Chat => {
             Some("Context: chat message — casual tone, light punctuation, conversational style.")

@@ -27,6 +27,39 @@ static SPACE_BEFORE_PUNCT: Lazy<Regex> = Lazy::new(|| Regex::new(r" +([.!?,;:…
 /// Two or more consecutive space characters.
 static MULTI_SPACE: Lazy<Regex> = Lazy::new(|| Regex::new(r" {2,}").unwrap());
 
+/// Salutation + name word + optional comma + body.
+/// "Bonjour thomas, je…"  /  "Bonjour thomas je…"
+/// The name is captured separately so we can reject subject pronouns in code.
+static EMAIL_SALUTATION_WITH_NAME_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)^(Bonjour|Bonsoir|Salut|Cher|Chère|Madame|Monsieur|Hello|Hi|Dear|Good\s+(?:morning|afternoon|evening))\s+(\w+),?\s+",
+    )
+    .unwrap()
+});
+
+/// Salutation immediately followed by a comma + body (no name).
+/// "Bonjour, je…"
+static EMAIL_SALUTATION_COMMA_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)^(Bonjour|Bonsoir|Salut|Cher|Chère|Madame|Monsieur|Hello|Hi|Dear|Good\s+(?:morning|afternoon|evening)),\s+",
+    )
+    .unwrap()
+});
+
+/// Subject pronouns that are never email recipient names.
+const EMAIL_SUBJECT_PRONOUNS: &[&str] = &[
+    "je", "tu", "vous", "il", "elle", "nous", "ils", "elles", "on", "y", "en",
+    "i", "you", "we", "he", "she", "they", "it",
+];
+
+/// Common email closing phrase preceded by whitespace, at the end of the text.
+static EMAIL_CLOSING_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)\s+(Cordialement|Bien\s+à\s+vous|Bonne\s+journée|À\s+bientôt|Amicalement|Bien\s+cordialement|Best\s+regards|Kind\s+regards|Warm\s+regards|Sincerely(?:\s+yours)?|Yours\s+(?:sincerely|truly)|Regards|Cheers)[,.]?\s*$",
+    )
+    .unwrap()
+});
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /// Apply lightweight punctuation corrections based on the active app category.
@@ -66,6 +99,14 @@ pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
     // ── Rule 4: capitalize first character ────────────────────────────────────
     s = capitalize_first(s);
 
+    // ── Rule 5 (Email only): structure with line breaks ───────────────────────
+    // Detects "Salutation, body" → "Salutation,\n\nBody" and moves a closing
+    // phrase to its own paragraph.  Runs after rules 1–4 so the text is already
+    // trimmed and has terminal punctuation before we re-split it.
+    if matches!(category, AppContextCategory::Email) {
+        s = apply_email_structure(s);
+    }
+
     s
 }
 
@@ -79,6 +120,63 @@ fn has_terminal_punct(text: &str) -> bool {
         // Three-dot ellipsis written as ASCII
         _ => text.ends_with("..."),
     }
+}
+
+/// Add structural line-breaks to email text.
+///
+/// Two transformations are applied in order:
+/// 1. Salutation detected at the start (e.g. "Bonjour Thomas, body…") →
+///    "Bonjour Thomas,\n\nBody…"  (blank line between salutation and body).
+/// 2. Closing phrase at the end preceded by body text →
+///    "…body.\n\nCordialement."  (blank line before closing).
+///
+/// Only fires when both sides of the split are non-empty, so short standalone
+/// salutations ("Bonjour Thomas.") and standalone closings ("Cordialement.")
+/// are left untouched.
+fn apply_email_structure(text: String) -> String {
+    let mut result = text;
+
+    // ── salutation → blank line → body ────────────────────────────────────────
+    // Try "greeting + name" first (rejecting subject pronouns), then "greeting + comma".
+    let sal_end: Option<usize> = EMAIL_SALUTATION_WITH_NAME_RE
+        .captures(&result)
+        .and_then(|caps| {
+            let name = caps.get(2)?.as_str();
+            let is_pronoun = EMAIL_SUBJECT_PRONOUNS
+                .iter()
+                .any(|p| p.eq_ignore_ascii_case(name));
+            if is_pronoun {
+                None
+            } else {
+                EMAIL_SALUTATION_WITH_NAME_RE.find(&result).map(|m| m.end())
+            }
+        })
+        .or_else(|| EMAIL_SALUTATION_COMMA_RE.find(&result).map(|m| m.end()));
+
+    if let Some(end) = sal_end {
+        let sal = result[..end].trim_end().to_string();
+        let sal = if sal.ends_with(',') {
+            sal
+        } else {
+            format!("{},", sal)
+        };
+        let body = result[end..].trim_start().to_string();
+        if !body.is_empty() {
+            result = format!("{}\n\n{}", sal, capitalize_first(body));
+        }
+    }
+
+    // ── body → blank line → closing ───────────────────────────────────────────
+    let snapshot = result.clone();
+    if let Some(m) = EMAIL_CLOSING_RE.find(&snapshot) {
+        let before = snapshot[..m.start()].trim_end();
+        if !before.is_empty() {
+            let closing = capitalize_first(snapshot[m.start()..].trim().to_string());
+            result = format!("{}\n\n{}", before, closing);
+        }
+    }
+
+    result
 }
 
 /// Return `text` with its first Unicode scalar value upper-cased.
@@ -241,13 +339,82 @@ mod tests {
         assert_eq!(fix_punctuation("écoutez bien", DEFAULT), "Écoutez bien.");
     }
 
-    // ── Email context (same rules as DEFAULT) ─────────────────────────────────
+    // ── Email context: basic rules ────────────────────────────────────────────
 
     #[test]
     fn email_adds_period_and_capitalizes() {
         assert_eq!(
             fix_punctuation("merci pour votre message", EMAIL),
             "Merci pour votre message."
+        );
+    }
+
+    // ── Email structure: salutation + body ────────────────────────────────────
+
+    #[test]
+    fn email_salutation_gets_blank_line_before_body() {
+        assert_eq!(
+            fix_punctuation("bonjour thomas, je voulais vous contacter", EMAIL),
+            "Bonjour thomas,\n\nJe voulais vous contacter."
+        );
+    }
+
+    #[test]
+    fn email_salutation_no_name_gets_blank_line() {
+        assert_eq!(
+            fix_punctuation("bonjour, je voulais vous informer", EMAIL),
+            "Bonjour,\n\nJe voulais vous informer."
+        );
+    }
+
+    #[test]
+    fn email_salutation_no_comma_gets_comma_and_blank_line() {
+        // Whisper often omits the comma — we add it automatically.
+        assert_eq!(
+            fix_punctuation("bonjour thomas je voulais vous contacter", EMAIL),
+            "Bonjour thomas,\n\nJe voulais vous contacter."
+        );
+    }
+
+    #[test]
+    fn email_standalone_salutation_unchanged() {
+        // No body → no blank line injected.
+        assert_eq!(
+            fix_punctuation("bonjour thomas", EMAIL),
+            "Bonjour thomas."
+        );
+    }
+
+    #[test]
+    fn email_closing_gets_blank_line_before() {
+        assert_eq!(
+            fix_punctuation("je vous contacte pour notre réunion. cordialement", EMAIL),
+            "Je vous contacte pour notre réunion.\n\nCordialement."
+        );
+    }
+
+    #[test]
+    fn email_full_structure_salutation_body_closing() {
+        assert_eq!(
+            fix_punctuation(
+                "bonjour thomas, je voulais vous contacter au sujet de notre réunion. cordialement",
+                EMAIL
+            ),
+            "Bonjour thomas,\n\nJe voulais vous contacter au sujet de notre réunion.\n\nCordialement."
+        );
+    }
+
+    #[test]
+    fn email_standalone_closing_unchanged() {
+        // No preceding body text → closing not moved to its own paragraph.
+        assert_eq!(fix_punctuation("cordialement", EMAIL), "Cordialement.");
+    }
+
+    #[test]
+    fn email_english_salutation() {
+        assert_eq!(
+            fix_punctuation("hello john, i wanted to follow up on our meeting", EMAIL),
+            "Hello john,\n\nI wanted to follow up on our meeting."
         );
     }
 

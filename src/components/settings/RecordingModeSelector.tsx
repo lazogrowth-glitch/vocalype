@@ -31,7 +31,7 @@ function deriveMode(pushToTalk: boolean, alwaysOn: boolean): RecordingMode {
 }
 
 export const RecordingModeSelector: React.FC<RecordingModeSelectorProps> =
-  React.memo(({ grouped = false }) => {
+  React.memo(() => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 

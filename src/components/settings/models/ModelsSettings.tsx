@@ -539,8 +539,6 @@ export const ModelsSettings: React.FC = () => {
     if (modelId === "deepgram-nova") return "deepgram";
     return null;
   };
-  const geminiModel = models.find((model) => model.id === "gemini-api") ?? null;
-
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in extractingModels) {
       return "extracting";
@@ -729,53 +727,6 @@ export const ModelsSettings: React.FC = () => {
     hasGeminiKey,
   ]);
 
-  const productModes = useMemo(() => {
-    const rapidId = "parakeet-tdt-0.6b-v3-multilingual";
-    const balancedId =
-      adaptiveProfile?.machine_tier === "low" ? "small" : "turbo";
-    return [
-      {
-        id: "auto",
-        label: t("settings.models.modes.auto", { defaultValue: "Auto" }),
-        description: t("settings.models.modes.autoDescription", {
-          defaultValue: "Meilleur choix selon cette machine",
-        }),
-        modelId: adaptiveProfile?.recommended_model_id ?? rapidId,
-      },
-      {
-        id: "fast",
-        label: t("settings.models.modes.fast", { defaultValue: "Rapide" }),
-        description: t("settings.models.modes.fastDescription", {
-          defaultValue: isCopilotOptimizedParakeet(adaptiveProfile, rapidId)
-            ? "Latence minimale avec le chemin NPU sur ce PC"
-            : "Latence minimale pour la dictée courte",
-        }),
-        modelId: rapidId,
-      },
-      {
-        id: "balanced",
-        label: t("settings.models.modes.balanced", {
-          defaultValue: "Équilibré",
-        }),
-        description: t("settings.models.modes.balancedDescription", {
-          defaultValue: "Bon compromis qualité et réactivité",
-        }),
-        modelId: balancedId,
-      },
-      {
-        id: "quality",
-        label: t("settings.models.modes.quality", { defaultValue: "Qualité" }),
-        description: t("settings.models.modes.qualityDescription", {
-          defaultValue: "Meilleure précision sur machines puissantes",
-        }),
-        modelId: "large",
-      },
-    ].map((entry) => ({
-      ...entry,
-      model: models.find((model) => model.id === entry.modelId) ?? null,
-    }));
-  }, [adaptiveProfile, models, t]);
-
   const primaryVisibleModels = useMemo(
     () =>
       [...downloadedModels, ...availableModels].filter(
@@ -953,7 +904,9 @@ export const ModelsSettings: React.FC = () => {
               ) : null}
 
               {advancedApiVisibleModels.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
                   <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
                     {t("settings.models.advanced.apiSection", {
                       defaultValue: "Advanced API models",
@@ -981,7 +934,9 @@ export const ModelsSettings: React.FC = () => {
               )}
 
               {advancedLocalVisibleModels.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
                   <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
                     {t("settings.models.advanced.localSection", {
                       defaultValue: "Advanced local models",

@@ -32,7 +32,6 @@ const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
 
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
 const MIN_WINDOW_SIZE = { width: 960, height: 624 };
-const MAX_SCALE = 1;
 const REFERENCE_SCREEN_SIZE = { width: 1920, height: 1080 };
 const DEFAULT_WIDTH_RATIO =
   DESIGN_WINDOW_SIZE.width / REFERENCE_SCREEN_SIZE.width;

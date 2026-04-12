@@ -18,7 +18,6 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   description,
   children,
   descriptionMode = "tooltip",
-  grouped = false,
   layout = "horizontal",
   disabled = false,
   tooltipPosition = "top",

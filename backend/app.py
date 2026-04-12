@@ -10,6 +10,7 @@ import re
 import time
 import uuid
 import hashlib
+import json
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
@@ -17,6 +18,8 @@ from email.mime.text import MIMEText
 from functools import wraps
 from threading import Lock
 from typing import Optional
+from urllib import error as urlerror
+from urllib import request as urlrequest
 
 import jwt
 import stripe
@@ -1280,8 +1283,9 @@ def send_reset_email(to_email: str, code: str) -> None:
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
     smtp_from = os.environ.get("SMTP_FROM", smtp_user)
+    resend_api_key = os.environ.get("RESEND_API_KEY", smtp_pass)
 
-    if not smtp_host:
+    if not smtp_host and not resend_api_key:
         return
 
     body = (
@@ -1289,6 +1293,37 @@ def send_reset_email(to_email: str, code: str) -> None:
         "This code expires in 1 hour. If you did not request a reset, "
         "you can safely ignore this email."
     )
+
+    if resend_api_key:
+        payload = json.dumps(
+            {
+                "from": smtp_from or "Vocalype <no-reply@vocalype.com>",
+                "to": [to_email],
+                "subject": "Vocalype - Password Reset Code",
+                "text": body,
+            }
+        ).encode("utf-8")
+        req = urlrequest.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urlrequest.urlopen(req, timeout=10) as response:
+                if response.status >= 300:
+                    raise RuntimeError(f"Resend API failed with status {response.status}")
+            return
+        except urlerror.HTTPError as exc:
+            details = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Resend API failed with status {exc.code}: {details}") from exc
+
+    if not smtp_host:
+        return
+
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = "Vocalype - Password Reset Code"
     msg["From"] = smtp_from

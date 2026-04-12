@@ -30,12 +30,17 @@ STRIPE_WEBHOOK_SECRET=
 Email delivery for password reset and trial emails:
 
 ```bash
+RESEND_API_KEY=
 SMTP_HOST=smtp.your-provider.com
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=Vocalype <no-reply@vocalype.com>
 ```
+
+For Resend on Render, prefer `RESEND_API_KEY` because it sends over HTTPS
+instead of SMTP. If `RESEND_API_KEY` is not set, the password reset sender also
+accepts the Resend API key in `SMTP_PASS` for backward compatibility.
 
 If `SMTP_HOST` is empty, `/auth/forgot-password` still returns `{ "ok": true }`
 for privacy, but no email is sent.

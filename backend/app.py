@@ -1294,7 +1294,7 @@ def send_reset_email(to_email: str, code: str) -> None:
     msg["From"] = smtp_from
     msg["To"] = to_email
 
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
         server.ehlo()
         server.starttls()
         if smtp_user and smtp_pass:
@@ -2356,7 +2356,7 @@ def forgot_password():
         try:
             send_reset_email(email, code)
         except Exception:
-            pass
+            app.logger.exception("send_reset_email failed to=%s", email)
 
     log_security_event(
         "forgot_password_requested",

@@ -27,6 +27,19 @@ STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 ```
 
+Email delivery for password reset and trial emails:
+
+```bash
+SMTP_HOST=smtp.your-provider.com
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=Vocalype <no-reply@vocalype.com>
+```
+
+If `SMTP_HOST` is empty, `/auth/forgot-password` still returns `{ "ok": true }`
+for privacy, but no email is sent.
+
 Recommended production additions:
 
 ```bash
@@ -97,6 +110,9 @@ The frontend calls these endpoints:
 POST /auth/register
 POST /auth/login
 GET  /auth/session
+POST /auth/forgot-password
+POST /auth/verify-reset-code
+POST /auth/reset-password
 POST /billing/checkout
 POST /billing/portal
 ```

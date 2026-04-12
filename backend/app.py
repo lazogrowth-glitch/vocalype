@@ -1308,7 +1308,9 @@ def send_reset_email(to_email: str, code: str) -> None:
             data=payload,
             headers={
                 "Authorization": f"Bearer {resend_api_key}",
+                "Accept": "application/json",
                 "Content-Type": "application/json",
+                "User-Agent": "VocalypeBackend/1.0 (https://vocalype.com)",
             },
             method="POST",
         )

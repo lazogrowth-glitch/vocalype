@@ -1288,14 +1288,14 @@ def send_reset_email(to_email: str, code: str) -> None:
     if not smtp_host and not resend_api_key:
         return
 
-    subject = "Code de reinitialisation Vocalype"
+    subject = "Your Vocalype password reset code"
     body = (
-        f"Votre code de reinitialisation Vocalype est : {code}\n\n"
-        "Ce code expire dans 1 heure. Si vous n'avez pas demande cette "
-        "reinitialisation, vous pouvez ignorer cet email."
+        f"Your Vocalype password reset code is: {code}\n\n"
+        "This code expires in 1 hour. If you did not request a password reset, "
+        "you can safely ignore this email."
     )
     html = f"""<!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f5f2ed;font-family:Inter,Arial,sans-serif;color:#171511;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f2ed;padding:32px 16px;">
@@ -1305,20 +1305,20 @@ def send_reset_email(to_email: str, code: str) -> None:
           <tr>
             <td style="padding:28px 32px 18px;border-bottom:1px solid #eee8df;">
               <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0a0a0a;">Vocal<span style="color:#c9a84c;">ype</span></div>
-              <div style="margin-top:8px;font-size:13px;color:#756e66;">Securite du compte</div>
+              <div style="margin-top:8px;font-size:13px;color:#756e66;">Account security</div>
             </td>
           </tr>
           <tr>
             <td style="padding:28px 32px 30px;">
-              <h1 style="margin:0 0 10px;font-size:24px;line-height:1.25;color:#171511;">Votre code de reinitialisation</h1>
-              <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#5e574f;">Utilisez ce code pour choisir un nouveau mot de passe Vocalype. Il expire dans 1 heure.</p>
+              <h1 style="margin:0 0 10px;font-size:24px;line-height:1.25;color:#171511;">Your password reset code</h1>
+              <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#5e574f;">Use this code to choose a new Vocalype password. It expires in 1 hour.</p>
               <div style="margin:0 0 24px;padding:18px 20px;border-radius:10px;background:#0a0a0a;color:#ffffff;text-align:center;font-size:34px;line-height:1.1;font-weight:800;letter-spacing:0.18em;font-family:Consolas,Menlo,monospace;">{code}</div>
-              <p style="margin:0;font-size:13px;line-height:1.6;color:#756e66;">Si vous n'avez pas demande cette reinitialisation, vous pouvez ignorer cet email. Votre mot de passe actuel reste inchange.</p>
+              <p style="margin:0;font-size:13px;line-height:1.6;color:#756e66;">If you did not request a password reset, you can safely ignore this email. Your current password will stay unchanged.</p>
             </td>
           </tr>
           <tr>
             <td style="padding:18px 32px;background:#faf8f4;border-top:1px solid #eee8df;font-size:12px;line-height:1.6;color:#8a8278;">
-              Cet email a ete envoye automatiquement par Vocalype. Ne partagez jamais ce code avec quelqu'un d'autre.
+              This email was sent automatically by Vocalype. Never share this code with anyone else.
             </td>
           </tr>
         </table>

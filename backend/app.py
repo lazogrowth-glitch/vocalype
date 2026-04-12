@@ -1288,19 +1288,54 @@ def send_reset_email(to_email: str, code: str) -> None:
     if not smtp_host and not resend_api_key:
         return
 
+    subject = "Code de reinitialisation Vocalype"
     body = (
-        f"Your Vocalype password reset code is: {code}\n\n"
-        "This code expires in 1 hour. If you did not request a reset, "
-        "you can safely ignore this email."
+        f"Votre code de reinitialisation Vocalype est : {code}\n\n"
+        "Ce code expire dans 1 heure. Si vous n'avez pas demande cette "
+        "reinitialisation, vous pouvez ignorer cet email."
     )
+    html = f"""<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f2ed;font-family:Inter,Arial,sans-serif;color:#171511;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f2ed;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #ded7cc;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="padding:28px 32px 18px;border-bottom:1px solid #eee8df;">
+              <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#0a0a0a;">Vocal<span style="color:#c9a84c;">ype</span></div>
+              <div style="margin-top:8px;font-size:13px;color:#756e66;">Securite du compte</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 32px 30px;">
+              <h1 style="margin:0 0 10px;font-size:24px;line-height:1.25;color:#171511;">Votre code de reinitialisation</h1>
+              <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#5e574f;">Utilisez ce code pour choisir un nouveau mot de passe Vocalype. Il expire dans 1 heure.</p>
+              <div style="margin:0 0 24px;padding:18px 20px;border-radius:10px;background:#0a0a0a;color:#ffffff;text-align:center;font-size:34px;line-height:1.1;font-weight:800;letter-spacing:0.18em;font-family:Consolas,Menlo,monospace;">{code}</div>
+              <p style="margin:0;font-size:13px;line-height:1.6;color:#756e66;">Si vous n'avez pas demande cette reinitialisation, vous pouvez ignorer cet email. Votre mot de passe actuel reste inchange.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 32px;background:#faf8f4;border-top:1px solid #eee8df;font-size:12px;line-height:1.6;color:#8a8278;">
+              Cet email a ete envoye automatiquement par Vocalype. Ne partagez jamais ce code avec quelqu'un d'autre.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
 
     if resend_api_key:
         payload = json.dumps(
             {
                 "from": smtp_from or "Vocalype <no-reply@vocalype.com>",
                 "to": [to_email],
-                "subject": "Vocalype - Password Reset Code",
+                "subject": subject,
                 "text": body,
+                "html": html,
             }
         ).encode("utf-8")
         req = urlrequest.Request(
@@ -1326,10 +1361,12 @@ def send_reset_email(to_email: str, code: str) -> None:
     if not smtp_host:
         return
 
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = "Vocalype - Password Reset Code"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
     msg["From"] = smtp_from
     msg["To"] = to_email
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
 
     with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
         server.ehlo()

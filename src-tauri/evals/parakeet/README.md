@@ -124,3 +124,69 @@ For each new sample:
 - `proper_nouns_002.wav`
 
 Keep names stable so reports can be compared over time.
+
+## External Datasets
+
+Use this to check whether a change generalizes beyond the hand-recorded local
+pack. The generated `external/` folder is ignored by git because public speech
+corpora can get large quickly.
+
+### Common Voice
+
+Download a Common Voice language release from Mozilla, unzip it, then sample a
+bounded eval pack:
+
+```powershell
+python ..\scripts\prepare-external-asr-dataset.py `
+  --dataset common_voice `
+  --source-dir C:\datasets\common_voice `
+  --languages en fr es pt hi `
+  --max-per-language 25 `
+  --output-dir .\evals\parakeet\external\common_voice_smoke
+```
+
+The source folder can either be a single language folder containing
+`validated.tsv` and `clips/`, or a parent folder with one subfolder per language.
+
+### LibriSpeech
+
+LibriSpeech is English-only and useful as a clean baseline:
+
+```powershell
+python ..\scripts\prepare-external-asr-dataset.py `
+  --dataset librispeech `
+  --source-dir C:\datasets\LibriSpeech\test-clean `
+  --languages en `
+  --max-per-language 50 `
+  --output-dir .\evals\parakeet\external\librispeech_test_clean
+```
+
+### FLEURS
+
+FLEURS can be pulled through Hugging Face `datasets` for multilingual smoke
+checks. Install the optional dependency first:
+
+```powershell
+python -m pip install datasets
+python ..\scripts\prepare-external-asr-dataset.py `
+  --dataset fleurs `
+  --languages en fr es pt hi `
+  --max-per-language 20 `
+  --output-dir .\evals\parakeet\external\fleurs_smoke
+```
+
+### Running Parakeet on the External Pack
+
+```powershell
+cd src-tauri
+$model = "$env:APPDATA\com.vocalype.desktop\models\parakeet-tdt-0.6b-v3-int8"
+cargo run --example parakeet_pipeline_eval -- `
+  $model `
+  .\evals\parakeet\external\common_voice_smoke\dataset_manifest_external.json `
+  parakeet-tdt-0.6b-v3-multilingual `
+  .\evals\parakeet\reports\external-common-voice-smoke.json
+```
+
+Treat this as a holdout set: do not add rules that only memorize a specific
+public transcript. Keep changes only when they improve both the local pack and a
+fresh external sample.

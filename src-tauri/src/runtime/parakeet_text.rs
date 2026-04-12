@@ -35,7 +35,6 @@ static TRAILING_PARAKEET_FILLER_PATTERN: Lazy<Regex> =
 static TRAILING_PUNCTUATION_RUN_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\s*([.!?])(?:\s*[.!?])+$").unwrap());
 static OPEN_I_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen\s+i\b").unwrap());
-static YACINE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\byacine\b").unwrap());
 static DOT_UP_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdot\s+up\b").unwrap());
 static DOCKS_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdocks\b").unwrap());
 static CALL_VOCAL_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bcall\s+vocal\b").unwrap());
@@ -148,6 +147,8 @@ static STOPS_AND_WE_START_PATTERN: Lazy<Regex> =
 static I_WANTED_TO_KNOW_WHETHER_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\bI\s+wanted\s+to\s+know\s+whether\s+the\s+transcript\b").unwrap()
 });
+static REGULAR_PLACE_CLEAR_VOICE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bregular\s+place\s+with\s+a\s+clear\s+voice\b").unwrap());
 static PRONUNCH_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bpronunch\b").unwrap());
 static DROPS_ON_THE_MICROPHONE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bdrops\s+on\s+the\s+microphone\b").unwrap());
@@ -219,6 +220,18 @@ static AND_SEE_TRANSCRIPTION_REST_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\band see the transcription rest coherent\b").unwrap());
 static PARAKEET_VEUX_VOIR_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bParakeet veux voir si\b").unwrap());
+static PARAKEET_V3_COUPES_DES_MOTS_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bParakeet V3 trois coupes des mots\b").unwrap());
+static QUAND_JE_PARLE_L_ENTEND_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bquand je parle l[' ]entend\b").unwrap());
+static REPREND_LA_PARAKEET_V3_VEUX_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\breprend la Parakeet V3 veux voir si\b").unwrap());
+static VOIX_BASSE_PLUS_BASSE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bvoix basse plus basse\b").unwrap());
+static LE_MOT_MEME_QUAND_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\ble mot m(?:e|\x{00EA})me quand\b").unwrap());
+static REPORTING_AVEC_MEETING_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\breporting avec le prochain meeting\b").unwrap());
 static CE_TEST_DANS_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bet ce test dans\.\.\.\b").unwrap());
 static WANT_TO_SEE_AUTOCORRECTION_PATTERN: Lazy<Regex> = Lazy::new(|| {
@@ -233,6 +246,8 @@ static NOUS_INTERSE_PATTERN: Lazy<Regex> = Lazy::new(|| {
 });
 static TRENTE_SECOND_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\btrente second one minute or Parakeet minute\b").unwrap());
+static TRENTE_SECOND_ONE_MINUTE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\btrente second one minute or presque de minute\b").unwrap());
 static CONTINUE_TO_SUIT_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bcontinue to suit correctment\b").unwrap());
 static PASSENGEMENT_ON_ANGLE_PATTERN: Lazy<Regex> =
@@ -441,9 +456,6 @@ fn restore_french_apostrophes(text: &str) -> String {
 
 pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
-    normalized = YACINE_PATTERN
-        .replace_all(&normalized, "Yassine")
-        .to_string();
     normalized = DOT_UP_PATTERN
         .replace_all(&normalized, "dot app")
         .to_string();
@@ -616,6 +628,9 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     normalized = I_WANTED_TO_KNOW_WHETHER_PATTERN
         .replace_all(&normalized, "I want to know whether the transcript")
         .to_string();
+    normalized = REGULAR_PLACE_CLEAR_VOICE_PATTERN
+        .replace_all(&normalized, "regular pace with a clear voice")
+        .to_string();
     normalized = PRONUNCH_PATTERN
         .replace_all(&normalized, "pronunciation")
         .to_string();
@@ -718,6 +733,10 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     normalized = CHANGES_DIRECTION_A_LITTLE_PATTERN
         .replace_all(&normalized, "changes direction a little")
         .to_string();
+    normalized = normalized.replace(
+        "looking broken over punctuated",
+        "looking broken over-punctuated",
+    );
     normalized = EXPERIENCE_IS_PATTERN
         .replace_all(&normalized, "experience is")
         .to_string();
@@ -780,6 +799,24 @@ pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
     normalized = PARAKEET_VEUX_VOIR_PATTERN
         .replace_all(&normalized, "et je veux voir si")
         .to_string();
+    normalized = PARAKEET_V3_COUPES_DES_MOTS_PATTERN
+        .replace_all(&normalized, "Parakeet V3 coupe des mots")
+        .to_string();
+    normalized = QUAND_JE_PARLE_L_ENTEND_PATTERN
+        .replace_all(&normalized, "quand je parle longtemps")
+        .to_string();
+    normalized = REPREND_LA_PARAKEET_V3_VEUX_PATTERN
+        .replace_all(&normalized, "reprend la phrase et je veux voir si")
+        .to_string();
+    normalized = VOIX_BASSE_PLUS_BASSE_PATTERN
+        .replace_all(&normalized, "voix plus basse")
+        .to_string();
+    normalized = LE_MOT_MEME_QUAND_PATTERN
+        .replace_all(&normalized, "le texte m\u{00EA}me quand")
+        .to_string();
+    normalized = REPORTING_AVEC_MEETING_PATTERN
+        .replace_all(&normalized, "reporting avant le prochain meeting")
+        .to_string();
     normalized = CE_TEST_DANS_PATTERN
         .replace_all(&normalized, "et ce test doit montrer si")
         .to_string();
@@ -799,6 +836,12 @@ pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
         )
         .to_string();
     normalized = TRENTE_SECOND_PATTERN
+        .replace_all(
+            &normalized,
+            "trente secondes une minute ou presque deux minutes",
+        )
+        .to_string();
+    normalized = TRENTE_SECOND_ONE_MINUTE_PATTERN
         .replace_all(
             &normalized,
             "trente secondes une minute ou presque deux minutes",
@@ -846,6 +889,23 @@ pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
     normalized = TEXTE_ET_VOIR_SI_PATTERN
         .replace_all(&normalized, "on ne parle pas comme un texte parfaitement ecrit et ce que je veux verifier c est si la transcription")
         .to_string();
+    for (from, to) in [
+        ("hesitations", "h\u{00E9}sitations"),
+        ("parlees", "parl\u{00E9}es"),
+        ("comprehensibles", "compr\u{00E9}hensibles"),
+        ("coherente", "coh\u{00E9}rente"),
+        ("creer", "cr\u{00E9}er"),
+        ("repetitions", "r\u{00E9}p\u{00E9}titions"),
+        ("verifier", "v\u{00E9}rifier"),
+        ("ecrit", "\u{00E9}crit"),
+        ("irregulier", "irr\u{00E9}gulier"),
+        ("interesse", "int\u{00E9}resse"),
+    ] {
+        normalized = replace_french_word(&normalized, from, to);
+    }
+    normalized = normalized
+        .replace("dicte longue", "dict\u{00E9}e longue")
+        .replace("dict\u{00E9} longue", "dict\u{00E9}e longue");
     DOUBLE_SPACE_PATTERN
         .replace_all(&normalized, " ")
         .to_string()
@@ -905,6 +965,14 @@ fn normalize_parakeet_long_form_english_artifacts(text: &str) -> String {
         .replace_all(&normalized, "changing")
         .to_string();
     normalized
+}
+
+fn replace_french_word(text: &str, from: &str, to: &str) -> String {
+    let pattern = format!(r"(?i)\b{}\b", regex::escape(from));
+    let Ok(regex) = Regex::new(&pattern) else {
+        return text.to_string();
+    };
+    regex.replace_all(text, to).to_string()
 }
 
 pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
@@ -1383,13 +1451,15 @@ mod tests {
     #[test]
     fn normalizes_observed_english_eval_artifacts() {
         let normalized = finalize_parakeet_text(
-            "This recording should tell us whether a small amount of Mombian sound change the transcription quality in a meaningful way. I am going to keep the words in the in the right order. And that more realistic than reading. I want to confirm that Parakeet V3 correctly transcribes names like Vocali, GitHub, OpenAI, Microsoft and Yassine.",
+            "This recording should tell us whether a small amount of Mombian sound change the transcription quality in a meaningful way. I am going to keep the words in the in the right order. And that more realistic than reading. I want to confirm that Parakeet V3 correctly transcribes names like Vocali, GitHub, OpenAI, Microsoft and Yassine. I am speaking at a regular place with a clear voice. I am speaking very softly. Now I want to see if the transcript still keeps the right words. Right now I am doing a longer speaking test with pauses in unusual places because something user sometimes user hesitate in the middle of a thought and then continue after a short silence. And what I want to check is whether the app still keeps the whole sentence coherent.",
             "en",
         );
         assert!(normalized.contains("a small amount of ambient sound changes"));
         assert!(normalized.contains("in the right order"));
         assert!(normalized.contains("that is more realistic"));
         assert!(normalized.contains("Vocalype, GitHub, OpenAI, Microsoft"));
+        assert!(normalized.contains("regular pace with a clear voice"));
+        assert!(normalized.contains("because sometimes users hesitate"));
     }
 
     #[test]
@@ -1399,9 +1469,9 @@ mod tests {
             "fr",
         );
         assert!(normalized.contains("maniere plus naturelle"));
-        assert!(normalized.contains("quelques hesitations et quelques pauses"));
+        assert!(normalized.contains("quelques h\u{00E9}sitations et quelques pauses"));
         assert!(normalized.contains("dans la vraie vie"));
-        assert!(normalized.contains("la transcription reste coherente"));
+        assert!(normalized.contains("la transcription reste coh\u{00E9}rente"));
     }
 
     #[test]

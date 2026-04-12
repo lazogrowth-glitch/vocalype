@@ -48,16 +48,23 @@ pub(crate) const PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 24_000; // 1.5 s
 /// Chunks shorter than this are silence tail after the user stopped speaking.
 pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s
 /// Unified Parakeet V3 profile for user-selected language dictation.
-/// A shorter interval improves long uninterrupted dictation and helps the
-/// overlap trimmer recover from residual boundary cuts more often.
+/// Keep this conservative: most Vocalype users dictate in English, with
+/// Spanish/Hindi/Portuguese also sharing the multilingual path.
 pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s at 16 kHz
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
 pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1.0 s
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize = 19_200; // 1.2 s
-pub(crate) const PARAKEET_V3_AUTO_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s
-pub(crate) const PARAKEET_V3_AUTO_CHUNK_OVERLAP_SAMPLES: usize = 19_200; // 1.2 s
+/// French errors are handled by text/vocabulary learning rather than a more
+/// aggressive chunk profile, which regressed long-form eval samples.
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize =
+    PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES;
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize =
+    PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES;
+/// Auto mode must be English-safe because it is the majority traffic path.
+pub(crate) const PARAKEET_V3_AUTO_CHUNK_INTERVAL_SAMPLES: usize =
+    PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES;
+pub(crate) const PARAKEET_V3_AUTO_CHUNK_OVERLAP_SAMPLES: usize =
+    PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES;
 
 // ── Chunking types ───────────────────────────────────────────────────────────
 
@@ -131,9 +138,6 @@ fn refine_parakeet_adjustment(
     if selected_language.starts_with("fr") {
         chunk -= 1;
         overlap += 120;
-    } else if selected_language == "auto" {
-        chunk -= 1;
-        overlap += 160;
     }
 
     if avg_words_per_minute >= 165.0 {
@@ -346,8 +350,32 @@ mod tests {
     #[test]
     fn french_parakeet_base_profile_is_shorter_and_wider() {
         let (chunk_seconds, overlap_ms) = parakeet_language_base_profile("fr");
-        assert_eq!(chunk_seconds, 10);
-        assert_eq!(overlap_ms, 1200);
+        assert_eq!(chunk_seconds, 12);
+        assert_eq!(overlap_ms, 1000);
+    }
+
+    #[test]
+    fn auto_parakeet_base_profile_stays_english_safe() {
+        let (chunk_seconds, overlap_ms) = parakeet_language_base_profile("auto");
+        assert_eq!(chunk_seconds, 12);
+        assert_eq!(overlap_ms, 1000);
+    }
+
+    #[test]
+    fn spanish_hindi_and_portuguese_use_multilingual_profile() {
+        for language in ["es", "hi", "pt"] {
+            let (chunk_seconds, overlap_ms) = parakeet_language_base_profile(language);
+            assert_eq!(chunk_seconds, 12);
+            assert_eq!(overlap_ms, 1000);
+        }
+    }
+
+    #[test]
+    fn auto_parakeet_refinement_does_not_get_french_tuning() {
+        let (chunk_seconds, overlap_ms) =
+            refine_parakeet_adjustment(12, 1000, "auto", 120.0, 320.0);
+        assert_eq!(chunk_seconds, 12);
+        assert_eq!(overlap_ms, 1000);
     }
 
     #[test]

@@ -27,36 +27,134 @@ static SPACE_BEFORE_PUNCT: Lazy<Regex> = Lazy::new(|| Regex::new(r" +([.!?,;:…
 /// Two or more consecutive space characters.
 static MULTI_SPACE: Lazy<Regex> = Lazy::new(|| Regex::new(r" {2,}").unwrap());
 
-/// Salutation + name word + optional comma + body.
-/// "Bonjour thomas, je…"  /  "Bonjour thomas je…"
-/// The name is captured separately so we can reject subject pronouns in code.
+/// Informal salutation + name word + optional comma + body.
+/// Covers single-word greetings in all supported languages.
+/// The name is captured in group 2 so subject pronouns can be rejected in code.
 static EMAIL_SALUTATION_WITH_NAME_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(
-        r"(?i)^(Bonjour|Bonsoir|Salut|Cher|Chère|Madame|Monsieur|Hello|Hi|Dear|Good\s+(?:morning|afternoon|evening))\s+(\w+),?\s+",
-    )
+    Regex::new(concat!(
+        r"(?i)^(",
+        // FR
+        r"Bonjour|Bonsoir|Salut|Cher|Chère|Madame|Monsieur|",
+        // EN
+        r"Hello|Hi|Hey|Dear|",
+        // DE
+        r"Hallo|Hej|",
+        // ES
+        r"Hola|",
+        // IT
+        r"Ciao|Salve|",
+        // PT
+        r"Olá|",
+        // PL
+        r"Cześć|Witaj|",
+        // CS
+        r"Ahoj|",
+        // TR
+        r"Merhaba|",
+        // RU
+        r"Привет|Здравствуйте|",
+        // UK
+        r"Привіт|Вітаю|",
+        // VI
+        r"Chào|",
+        // Multi-word (EN already present above as prefix)
+        r"Good\s+(?:morning|afternoon|evening)",
+        r")\s+(\w+),?\s+",
+    ))
     .unwrap()
 });
 
-/// Salutation immediately followed by a comma + body (no name).
-/// "Bonjour, je…"
+/// Any salutation immediately followed by a comma + body (no separate name capture).
+/// Covers formal/multi-word greetings that always use a comma.
 static EMAIL_SALUTATION_COMMA_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(
-        r"(?i)^(Bonjour|Bonsoir|Salut|Cher|Chère|Madame|Monsieur|Hello|Hi|Dear|Good\s+(?:morning|afternoon|evening)),\s+",
-    )
+    Regex::new(concat!(
+        r"(?i)^(",
+        // FR
+        r"Bonjour|Bonsoir|Salut|Cher|Chère|Madame|Monsieur|",
+        // EN
+        r"Hello|Hi|Hey|Dear|Good\s+(?:morning|afternoon|evening)|",
+        // DE
+        r"Hallo|Hej|Liebe[rs]?|Sehr\s+geehrte[rsm]?|Guten\s+(?:Morgen|Tag|Abend)|",
+        // ES
+        r"Hola|Estimad[ao]|Querid[ao]|Buenos\s+d[íi]as|Buenas\s+(?:tardes|noches)|",
+        // IT
+        r"Ciao|Salve|Gentile|Egregio|Egregia|Buongiorno|Buonasera|",
+        // PT
+        r"Olá|Car[ao]|Prezad[ao]|Bom\s+dia|Boa\s+(?:tarde|noite)|",
+        // PL
+        r"Cześć|Witaj(?:cie)?|Szanowny|Szanowna|Drogi|Droga|",
+        // CS
+        r"Ahoj|Dobr[yý]\s+den|Vážený|Vážená|Milý|Milá|",
+        // TR
+        r"Merhaba|Say[ıi]n|",
+        // RU
+        r"Привет|Здравствуйте|Уважаемый|Уважаемая|Дорогой|Дорогая|Добрый\s+(?:день|вечер|утро)|",
+        // UK
+        r"Привіт|Вітаю|Шановний|Шановна|Добрий\s+день|Доброго\s+дня|",
+        // AR
+        r"مرحبا|السلام\s+عليكم|عزيزي|عزيزتي|",
+        // KO
+        r"안녕하세요|",
+        // JA
+        r"こんにちは|お世話になっております|",
+        // ZH
+        r"你好|您好|亲爱的",
+        r"),\s+",
+    ))
     .unwrap()
 });
 
-/// Subject pronouns that are never email recipient names.
+/// Subject pronouns that are never email recipient names (lowercase, all 17 languages).
 const EMAIL_SUBJECT_PRONOUNS: &[&str] = &[
-    "je", "tu", "vous", "il", "elle", "nous", "ils", "elles", "on", "y", "en",
-    "i", "you", "we", "he", "she", "they", "it",
+    // FR
+    "je", "tu", "vous", "il", "elle", "nous", "ils", "elles", "on", "y", "en", // EN
+    "i", "you", "we", "he", "she", "they", "it", // DE
+    "ich", "du", "sie", "er", "wir", "ihr", "man", // ES
+    "yo", "tú", "usted", "él", "ella", "nosotros", "vosotros", "ellos", "ellas", // IT
+    "io", "tu", "lei", "lui", "noi", "voi", "loro", // PT
+    "eu", "tu", "você", "ele", "ela", "nós", "vós", "eles", "elas", // PL
+    "ja", "ty", "pan", "pani", "on", "ona", "my", "wy", "oni", "one", // CS
+    "já", "ty", "on", "ona", "my", "vy", "oni", // TR
+    "ben", "sen", "siz", "o", "biz", "onlar", // RU
+    "я", "ты", "вы", "он", "она", "мы", "они", // UK
+    "я", "ти", "ви", "він", "вона", "ми", "вони", // VI
+    "tôi", "bạn", "anh", "chị", "em",
 ];
 
 /// Common email closing phrase preceded by whitespace, at the end of the text.
 static EMAIL_CLOSING_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(
-        r"(?i)\s+(Cordialement|Bien\s+à\s+vous|Bonne\s+journée|À\s+bientôt|Amicalement|Bien\s+cordialement|Best\s+regards|Kind\s+regards|Warm\s+regards|Sincerely(?:\s+yours)?|Yours\s+(?:sincerely|truly)|Regards|Cheers)[,.]?\s*$",
-    )
+    Regex::new(concat!(
+        r"(?i)\s+(",
+        // FR
+        r"Cordialement|Bien\s+à\s+vous|Bonne\s+journ[ée]e|[AÀ]\s+bient[oô]t|Amicalement|Bien\s+cordialement|",
+        // EN
+        r"Best\s+regards|Kind\s+regards|Warm\s+regards|Sincerely(?:\s+yours)?|Yours\s+(?:sincerely|truly|faithfully)|Regards|Cheers|Best|",
+        // DE
+        r"Mit\s+freundlichen\s+Gr[üu][ßs]en|Viele\s+Gr[üu][ßs]e|Liebe\s+Gr[üu][ßs]e|Freundliche\s+Gr[üu][ßs]e|Hochachtungsvoll|MfG|",
+        // ES
+        r"Atentamente|Cordialmente|Saludos\s+cordiales|Un\s+saludo|Saludos|Con\s+cari[ñn]o|",
+        // IT
+        r"Cordiali\s+saluti|Distinti\s+saluti|A\s+presto|Saluti|",
+        // PT
+        r"Atenciosamente|Abra[çc]os|Com\s+os\s+melhores\s+cumprimentos|Sauda[çc][õo]es|",
+        // PL
+        r"Z\s+powa[żz]aniem|Pozdrawiam|Serdecznie\s+pozdrawiam|Z\s+wyrazami\s+szacunku|",
+        // CS
+        r"S\s+pozdravem|S\s+[uú]ctou|Se\s+srde[čc]n[yý]m\s+pozdravem|",
+        // TR
+        r"Sayg[ıi]lar[ıi]mla|Sayg[ıi]lar[ıi]m[ıi]zla|Selamlar[ıi]mla|",
+        // RU
+        r"С\s+уважением|Всего\s+хорошего|С\s+наилучшими\s+пожеланиями|Искренне\s+ваш|",
+        // UK
+        r"З\s+повагою|З\s+найкращими\s+побажаннями|Щиро\s+ваш|",
+        // AR
+        r"مع\s+التحية|تحياتي|مع\s+خالص\s+التحيات|بكل\s+احترام|",
+        // VI
+        r"Trân\s+trọng|Thân\s+ái|Kính\s+thư|",
+        // KO / JA / ZH (common sign-offs)
+        r"감사합니다|よろしくお願いいたします|此致",
+        r")[,.]?\s*$",
+    ))
     .unwrap()
 });
 
@@ -142,9 +240,12 @@ fn apply_email_structure(text: String) -> String {
         .captures(&result)
         .and_then(|caps| {
             let name = caps.get(2)?.as_str();
+            // Use Unicode-aware lowercase comparison so Cyrillic/accented pronouns
+            // (я, ти, vous, él…) are correctly recognised even if Whisper capitalises them.
+            let name_lc = name.to_lowercase();
             let is_pronoun = EMAIL_SUBJECT_PRONOUNS
                 .iter()
-                .any(|p| p.eq_ignore_ascii_case(name));
+                .any(|p| *p == name_lc.as_str());
             if is_pronoun {
                 None
             } else {
@@ -379,10 +480,7 @@ mod tests {
     #[test]
     fn email_standalone_salutation_unchanged() {
         // No body → no blank line injected.
-        assert_eq!(
-            fix_punctuation("bonjour thomas", EMAIL),
-            "Bonjour thomas."
-        );
+        assert_eq!(fix_punctuation("bonjour thomas", EMAIL), "Bonjour thomas.");
     }
 
     #[test]

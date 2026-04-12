@@ -19,6 +19,7 @@ use crate::runtime_observability::{collect_runtime_diagnostics, RuntimeDiagnosti
 use crate::settings::{get_settings, write_settings, AppSettings, CalibrationPhase, LogLevel};
 use crate::startup_warmup::StartupWarmupStatus;
 use crate::utils::cancel_current_operation;
+use crate::vocabulary_store::VocabularyStoreState;
 use crate::voice_feedback::{
     list_voice_feedback, submit_voice_feedback, summarize_voice_feedback, VoiceFeedbackEntry,
     VoiceFeedbackInput, VoiceFeedbackSummary,
@@ -558,7 +559,41 @@ pub fn submit_voice_feedback_command(
     app: AppHandle,
     input: VoiceFeedbackInput,
 ) -> Result<VoiceFeedbackEntry, String> {
-    submit_voice_feedback(&app, input)
+    let entry = submit_voice_feedback(&app, input)?;
+    let settings = get_settings(&app);
+
+    if settings.adaptive_vocabulary_enabled && !entry.expected_text.trim().is_empty() {
+        if let Some(state) = app.try_state::<VocabularyStoreState>() {
+            if let Ok(mut store) = state.0.lock() {
+                let model_id = entry
+                    .runtime
+                    .loaded_model_id
+                    .as_deref()
+                    .unwrap_or(&entry.runtime.selected_model);
+                let selected_language = entry
+                    .selected_language
+                    .as_deref()
+                    .unwrap_or(&entry.runtime.selected_language);
+                let context = entry
+                    .runtime
+                    .last_transcription_app_context
+                    .as_ref()
+                    .or(entry.runtime.current_app_context.as_ref());
+
+                store.learn_feedback_correction(
+                    context,
+                    model_id,
+                    selected_language,
+                    &entry.expected_text,
+                    &entry.actual_text,
+                    &settings.custom_words,
+                );
+                store.save(&app);
+            }
+        }
+    }
+
+    Ok(entry)
 }
 
 #[specta::specta]

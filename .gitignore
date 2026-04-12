@@ -52,6 +52,7 @@ backend/*.db
 tmp-parakeet-tests/
 src-tauri/evals/parakeet/audio/*.wav
 src-tauri/evals/parakeet/reports/*.json
+src-tauri/evals/parakeet/external/
 
 # Log files
 launch.err

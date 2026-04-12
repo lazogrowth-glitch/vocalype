@@ -775,10 +775,31 @@ impl TranscriptionManager {
 
         // Apply word correction if custom words are configured
         let raw_result = result.text;
-        let corrected_result = if !correction_terms.is_empty() {
-            apply_custom_words(&raw_result, &correction_terms, correction_threshold)
+        let learned_result = if settings.adaptive_vocabulary_enabled {
+            if let (Some(state), Some(model_id)) = (
+                self.app_handle.try_state::<VocabularyStoreState>(),
+                active_model_id.as_deref(),
+            ) {
+                if let Ok(store) = state.0.lock() {
+                    store.apply_learned_corrections(
+                        app_context.as_ref(),
+                        model_id,
+                        &settings.selected_language,
+                        &raw_result,
+                    )
+                } else {
+                    raw_result
+                }
+            } else {
+                raw_result
+            }
         } else {
             raw_result
+        };
+        let corrected_result = if !correction_terms.is_empty() {
+            apply_custom_words(&learned_result, &correction_terms, correction_threshold)
+        } else {
+            learned_result
         };
         let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {

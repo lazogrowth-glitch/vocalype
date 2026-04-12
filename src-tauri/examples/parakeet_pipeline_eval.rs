@@ -78,14 +78,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parent()
         .map(Path::to_path_buf)
         .unwrap_or_else(|| PathBuf::from("."));
-    let profile = profile_for_model(&model_id);
-
     let mut engine = ParakeetTDT::from_pretrained(&model_dir, None)?;
     let mut reports = Vec::new();
 
     for sample in manifest.samples {
         let audio_path = manifest_dir.join(&sample.audio_path);
         let audio = load_wav_mono_16k(&audio_path)?;
+        let profile = profile_for_model_and_language(&model_id, &sample.language);
         let started = Instant::now();
         let (hypothesis_text, chunk_count) =
             run_chunked_pipeline(&mut engine, &audio, profile, &sample.language)?;
@@ -364,8 +363,16 @@ fn parakeet_builtin_correction_terms_legacy(selected_language: &str) -> Vec<Stri
     terms
 }
 
-fn profile_for_model(model_id: &str) -> ChunkProfile {
+fn profile_for_model_and_language(model_id: &str, selected_language: &str) -> ChunkProfile {
     match model_id {
+        PARAKEET_V3_ENGLISH_ID | PARAKEET_V3_MULTILINGUAL_ID | PARAKEET_V3_LEGACY_ID
+            if selected_language.starts_with("fr") =>
+        {
+            ChunkProfile {
+                interval_samples: 12 * 16_000,
+                overlap_samples: 16_000,
+            }
+        }
         PARAKEET_V3_ENGLISH_ID | PARAKEET_V3_MULTILINGUAL_ID | PARAKEET_V3_LEGACY_ID => {
             ChunkProfile {
                 interval_samples: 12 * 16_000,

@@ -25,6 +25,7 @@
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
     "eval:parakeet": "powershell -ExecutionPolicy Bypass -File scripts/run-parakeet-evals.ps1",
+    "eval:prepare-external": "python scripts/prepare-external-asr-dataset.py",
     "prepare": "husky"
   },
   "dependencies": {

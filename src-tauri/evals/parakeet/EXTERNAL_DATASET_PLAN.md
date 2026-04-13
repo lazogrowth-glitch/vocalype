@@ -1,4 +1,4 @@
-# External Dataset Plan
+﻿# External Dataset Plan
 
 Reminder for future work: before scaling the external ASR benchmark, ask whether
 we need to buy storage.
@@ -9,8 +9,8 @@ Do not buy a disk immediately. First run small external benchmark samples with
 the importer:
 
 - LibriSpeech test-clean / test-other
-- FLEURS small sample for en, fr, es, pt, hi
-- Common Voice small sample for en, fr, es, pt, hi
+- FLEURS small sample for en, fr, es, pt
+- Common Voice small sample for en, fr, es, pt
 
 Expected space for phase 1: about 20-50 GB free.
 
@@ -56,4 +56,4 @@ or do not regress:
 - the local Vocalype pack
 - a fresh external sample
 - the main user-language distribution: English first, then Spanish, French,
-  Portuguese, Hindi
+  Portuguese

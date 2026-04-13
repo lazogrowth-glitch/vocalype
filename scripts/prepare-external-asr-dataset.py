@@ -204,6 +204,8 @@ def discover_common_voice_roots(source_dir: Path) -> list[tuple[str, Path]]:
 def load_librispeech(source_dir: Path, languages: set[str]) -> Iterable[Candidate]:
     if "en" not in languages:
         return
+    scenario = infer_librispeech_scenario(source_dir)
+    condition_tag = scenario.removeprefix("librispeech_")
     for transcript_path in sorted(source_dir.rglob("*.trans.txt")):
         with transcript_path.open("r", encoding="utf-8") as handle:
             for line in handle:
@@ -222,9 +224,17 @@ def load_librispeech(source_dir: Path, languages: set[str]) -> Iterable[Candidat
                     source_audio=audio_path,
                     reference_text=text.strip(),
                     source_id=utterance_id,
-                    scenario="librispeech_clean",
-                    tags=["external", "librispeech", "read_speech", "clean"],
+                    scenario=scenario,
+                    tags=["external", "librispeech", "read_speech", condition_tag],
                 )
+
+
+def infer_librispeech_scenario(source_dir: Path) -> str:
+    parts = {part.lower() for part in source_dir.parts}
+    name = source_dir.name.lower()
+    if "test-other" in parts or "dev-other" in parts or "train-other-500" in parts or "other" in name:
+        return "librispeech_other"
+    return "librispeech_clean"
 
 
 def load_fleurs(args: argparse.Namespace, languages: set[str]) -> Iterable[Candidate]:
@@ -241,7 +251,12 @@ def load_fleurs(args: argparse.Namespace, languages: set[str]) -> Iterable[Candi
         language = normalize_language(config)
         if language not in languages:
             continue
-        dataset = load_dataset("google/fleurs", config, split=args.fleurs_split)
+        dataset = load_dataset(
+            "google/fleurs",
+            config,
+            split=args.fleurs_split,
+            trust_remote_code=True,
+        )
         dataset = dataset.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
         for row in dataset:
             transcription = (row.get("transcription") or row.get("raw_transcription") or "").strip()

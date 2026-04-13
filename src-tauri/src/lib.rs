@@ -28,7 +28,7 @@ mod security;
 // continue to resolve without changes.
 
 // processing
-pub use processing::{dictionary, filler, post_processing, punctuation};
+pub use processing::{correction_tracker, dictionary, filler, post_processing, punctuation};
 // security
 pub use security::{integrity, license, model_crypto, secret_store};
 // llm
@@ -386,6 +386,13 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
     );
 
     let t = std::time::Instant::now();
+    let correction_tracker = correction_tracker::CorrectionTracker::new(app_handle);
+    log::info!(
+        "[startup] CorrectionTracker::new — {}ms",
+        t.elapsed().as_millis()
+    );
+
+    let t = std::time::Instant::now();
     let note_manager = Arc::new(
         NoteManager::new(app_handle)
             .map_err(|err| format!("Failed to initialize note manager: {}", err))?,
@@ -408,6 +415,7 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(dictionary_manager);
+    app_handle.manage(correction_tracker);
     app_handle.manage(note_manager);
     app_handle.manage(meeting_manager);
 
@@ -742,6 +750,7 @@ pub fn run(cli_args: CliArgs) {
         commands::history::export_history_entries,
         commands::history::transcribe_audio_file,
         commands::history::transcribe_audio_file_detailed,
+        commands::history::update_history_entry_text,
         commands::history::clear_all_history,
         commands::notes::get_notes,
         commands::notes::create_note,
@@ -782,6 +791,13 @@ pub fn run(cli_args: CliArgs) {
         commands::dictionary::clear_dictionary,
         commands::dictionary::export_dictionary,
         commands::dictionary::import_dictionary,
+        commands::corrections::analyze_correction,
+        commands::corrections::record_correction,
+        commands::corrections::get_learning_stats,
+        commands::corrections::get_user_profile,
+        commands::corrections::sync_dictionary_to_profile,
+        commands::corrections::remove_profile_term,
+        commands::report::get_weekly_report,
         commands::snippets::get_voice_snippets,
         commands::snippets::add_voice_snippet,
         commands::snippets::remove_voice_snippet,

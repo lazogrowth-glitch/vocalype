@@ -39,6 +39,24 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN confidence_payload_json TEXT;"),
 ];
 
+/// Raw data for the weekly report, computed by `get_weekly_report_data`.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct WeeklyReportData {
+    pub period_start_ts: i64,
+    pub period_end_ts: i64,
+    pub sessions_this_week: i64,
+    pub sessions_last_week: i64,
+    pub words_this_week: i64,
+    pub words_last_week: i64,
+    pub avg_words_per_session: i64,
+    /// Sessions per day Mon-Sun (index 0=Mon, 6=Sun).
+    pub daily_sessions: Vec<i64>,
+    /// Words per day Mon-Sun.
+    pub daily_words: Vec<i64>,
+    /// Index of peak 2-hour block (0=0h-2h … 11=22h-24h). None if no data.
+    pub peak_hour_block: Option<i64>,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct HistoryEntry {
     pub id: i64,
@@ -734,6 +752,107 @@ impl HistoryManager {
             entries_today,
             entries_this_week,
             most_used_model,
+        })
+    }
+
+    /// Compute raw data needed for the weekly usage report.
+    ///
+    /// Returns (this_week, last_week) tuples plus per-day and per-2h-block
+    /// session/word counts for the last 7 days.
+    pub fn get_weekly_report_data(&self) -> Result<WeeklyReportData> {
+        let conn = self.get_connection()?;
+        let now = Utc::now().timestamp();
+        let week_start = now - 7 * 86_400;
+        let two_weeks_start = now - 14 * 86_400;
+
+        // Total sessions and words this week vs last week
+        let sessions_this_week: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM transcription_history WHERE timestamp >= ?1",
+            params![week_start],
+            |r| r.get(0),
+        )?;
+
+        let words_this_week: i64 = {
+            let mut stmt = conn.prepare(
+                "SELECT transcription_text FROM transcription_history WHERE timestamp >= ?1",
+            )?;
+            let texts = stmt.query_map(params![week_start], |r| r.get::<_, String>(0))?;
+            texts.filter_map(|t| t.ok()).map(|t| t.split_whitespace().count() as i64).sum()
+        };
+
+        let sessions_last_week: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM transcription_history WHERE timestamp >= ?1 AND timestamp < ?2",
+            params![two_weeks_start, week_start],
+            |r| r.get(0),
+        )?;
+
+        let words_last_week: i64 = {
+            let mut stmt = conn.prepare(
+                "SELECT transcription_text FROM transcription_history WHERE timestamp >= ?1 AND timestamp < ?2",
+            )?;
+            let texts = stmt.query_map(params![two_weeks_start, week_start], |r| r.get::<_, String>(0))?;
+            texts.filter_map(|t| t.ok()).map(|t| t.split_whitespace().count() as i64).sum()
+        };
+
+        let avg_words = if sessions_this_week > 0 {
+            words_this_week / sessions_this_week
+        } else {
+            0
+        };
+
+        // Sessions per day of week (Mon=0 … Sun=6) for the last 7 days
+        // SQLite strftime('%w') → 0=Sunday, so we remap: (dow + 6) % 7 → Mon=0
+        let mut daily_sessions = vec![0i64; 7];
+        let mut daily_words = vec![0i64; 7];
+        {
+            let mut stmt = conn.prepare(
+                "SELECT timestamp, transcription_text FROM transcription_history WHERE timestamp >= ?1",
+            )?;
+            let rows = stmt.query_map(params![week_start], |r| {
+                Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?))
+            })?;
+            for row in rows.filter_map(|r| r.ok()) {
+                let (ts, text) = row;
+                // day of week: 0=Mon … 6=Sun
+                let dow = ((ts / 86_400 + 3) % 7) as usize; // Unix epoch day 0 = Thu → adjust
+                if dow < 7 {
+                    daily_sessions[dow] += 1;
+                    daily_words[dow] += text.split_whitespace().count() as i64;
+                }
+            }
+        }
+
+        // Peak 2-hour block (0 = 0h-2h, 1 = 2h-4h, …, 11 = 22h-24h)
+        let mut hour_blocks = vec![0i64; 12];
+        {
+            let mut stmt = conn.prepare(
+                "SELECT timestamp FROM transcription_history WHERE timestamp >= ?1",
+            )?;
+            let timestamps = stmt.query_map(params![week_start], |r| r.get::<_, i64>(0))?;
+            for ts in timestamps.filter_map(|t| t.ok()) {
+                let hour = ((ts % 86_400) / 3_600) as usize;
+                let block = (hour / 2).min(11);
+                hour_blocks[block] += 1;
+            }
+        }
+        let peak_hour_block = hour_blocks
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, &v)| v)
+            .filter(|(_, &v)| v > 0)
+            .map(|(i, _)| i as i64);
+
+        Ok(WeeklyReportData {
+            period_start_ts: week_start,
+            period_end_ts: now,
+            sessions_this_week,
+            sessions_last_week,
+            words_this_week,
+            words_last_week,
+            avg_words_per_session: avg_words,
+            daily_sessions,
+            daily_words,
+            peak_hour_block,
         })
     }
 

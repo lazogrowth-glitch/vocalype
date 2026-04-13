@@ -86,8 +86,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let audio = load_wav_mono_16k(&audio_path)?;
         let profile = profile_for_model_and_language(&model_id, &sample.language);
         let started = Instant::now();
-        let (hypothesis_text, chunk_count) =
-            run_chunked_pipeline(&mut engine, &audio, profile, &sample.language)?;
+        let (hypothesis_text, chunk_count) = run_chunked_pipeline(
+            &mut engine,
+            &audio,
+            profile,
+            &sample.language,
+            &sample.sample_id,
+        )?;
         let latency_ms = started.elapsed().as_millis();
         let metrics = compute_metrics(&sample.reference_text, &hypothesis_text);
 
@@ -140,10 +145,14 @@ fn run_chunked_pipeline(
     audio: &[f32],
     profile: ChunkProfile,
     selected_language: &str,
+    sample_id: &str,
 ) -> Result<(String, usize), Box<dyn std::error::Error>> {
     let mut results: Vec<String> = Vec::new();
     let mut last_committed = 0usize;
     let mut next_idx = 0usize;
+    let debug_sample = std::env::var("VOCALYPE_EVAL_DEBUG_SAMPLE")
+        .ok()
+        .filter(|wanted| wanted == sample_id);
 
     while audio.len().saturating_sub(last_committed) >= profile.interval_samples {
         let actual_overlap = last_committed.min(profile.overlap_samples);
@@ -152,6 +161,12 @@ fn run_chunked_pipeline(
         let chunk = audio[chunk_start..chunk_end].to_vec();
         let cutoff_secs = actual_overlap as f32 / SAMPLE_RATE as f32;
         let text = transcribe_parakeet_chunk(engine, chunk, cutoff_secs)?;
+        if debug_sample.is_some() {
+            eprintln!(
+                "[debug:{sample_id}] chunk={next_idx} start={chunk_start} end={chunk_end} cutoff={cutoff_secs:.3}s text={:?}",
+                text
+            );
+        }
         results.push(text);
         last_committed = chunk_end;
         next_idx += 1;
@@ -166,11 +181,35 @@ fn run_chunked_pipeline(
             remaining,
             actual_overlap as f32 / SAMPLE_RATE as f32,
         )?;
+        if debug_sample.is_some() {
+            eprintln!(
+                "[debug:{sample_id}] chunk={next_idx} start={overlap_start} end={} cutoff={:.3}s text={:?}",
+                audio.len(),
+                actual_overlap as f32 / SAMPLE_RATE as f32,
+                text
+            );
+        }
         results.push(text);
         next_idx += 1;
     }
 
-    let assembled = assemble_parakeet_results(&results);
+    let mut assembled = assemble_parakeet_results(&results);
+    if should_attempt_full_audio_recovery(&results, audio.len(), &assembled) {
+        let recovered = transcribe_parakeet_chunk(engine, audio.to_vec(), 0.0)?;
+        if should_promote_full_audio_recovery(&assembled, &recovered, audio.len()) {
+            if debug_sample.is_some() {
+                eprintln!(
+                    "[debug:{sample_id}] promoted full-audio recovery: {} -> {} words",
+                    assembled.split_whitespace().count(),
+                    recovered.split_whitespace().count()
+                );
+            }
+            assembled = recovered;
+        }
+    }
+    if debug_sample.is_some() {
+        eprintln!("[debug:{sample_id}] assembled={assembled:?}");
+    }
     let corrected = apply_custom_words(
         &assembled,
         &parakeet_builtin_correction_terms(selected_language),
@@ -299,6 +338,38 @@ fn assemble_parakeet_results(results: &[String]) -> String {
     out
 }
 
+fn should_attempt_full_audio_recovery(
+    results: &[String],
+    sample_count: usize,
+    assembled: &str,
+) -> bool {
+    let duration_secs = sample_count as f32 / SAMPLE_RATE as f32;
+    let assembled_words_per_sec =
+        assembled.split_whitespace().count() as f32 / duration_secs.max(0.1);
+    results
+        .iter()
+        .take(results.len().saturating_sub(1))
+        .any(|text| text.trim().is_empty())
+        && (8.0..=45.0).contains(&duration_secs)
+        && assembled_words_per_sec <= 1.45
+}
+
+fn should_promote_full_audio_recovery(
+    assembled: &str,
+    recovered: &str,
+    sample_count: usize,
+) -> bool {
+    let assembled_words = assembled.split_whitespace().count();
+    let recovered_words = recovered.split_whitespace().count();
+    let duration_secs = sample_count as f32 / SAMPLE_RATE as f32;
+    let recovered_words_per_sec = recovered_words as f32 / duration_secs.max(0.1);
+
+    recovered_words >= assembled_words + 5
+        && (recovered_words as f32) >= (assembled_words as f32 * 1.25)
+        && (0.4..=5.5).contains(&recovered_words_per_sec)
+        && recovered.chars().filter(|ch| ch.is_alphabetic()).count() >= 12
+}
+
 fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
     if samples.is_empty() {
         return (0.0, 0.0);
@@ -364,6 +435,15 @@ fn parakeet_builtin_correction_terms_legacy(selected_language: &str) -> Vec<Stri
 }
 
 fn profile_for_model_and_language(model_id: &str, selected_language: &str) -> ChunkProfile {
+    if let Ok(chunk_seconds) = std::env::var("VOCALYPE_EVAL_CHUNK_SECONDS") {
+        if let Ok(chunk_seconds) = chunk_seconds.parse::<usize>() {
+            return ChunkProfile {
+                interval_samples: chunk_seconds.max(1) * 16_000,
+                overlap_samples: 16_000,
+            };
+        }
+    }
+
     match model_id {
         PARAKEET_V3_ENGLISH_ID | PARAKEET_V3_MULTILINGUAL_ID | PARAKEET_V3_LEGACY_ID
             if selected_language.starts_with("fr") =>

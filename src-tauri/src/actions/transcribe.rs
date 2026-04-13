@@ -167,6 +167,35 @@ fn append_recovered_final_chunk(assembled: &str, recovered: &str) -> String {
     }
 }
 
+fn should_attempt_full_audio_recovery(
+    summary: &ParakeetSessionCompletion,
+    sample_count: usize,
+    assembled: &str,
+) -> bool {
+    let duration_secs = sample_count as f32 / 16_000.0;
+    let assembled_words_per_sec =
+        assembled.split_whitespace().count() as f32 / duration_secs.max(0.1);
+    summary.empty_nonfinal_chunks > 0
+        && (8.0..=45.0).contains(&duration_secs)
+        && assembled_words_per_sec <= 1.45
+}
+
+fn should_promote_full_audio_recovery(
+    assembled: &str,
+    recovered: &str,
+    sample_count: usize,
+) -> bool {
+    let assembled_words = assembled.split_whitespace().count();
+    let recovered_words = recovered.split_whitespace().count();
+    let duration_secs = sample_count as f32 / 16_000.0;
+    let recovered_words_per_sec = recovered_words as f32 / duration_secs.max(0.1);
+
+    recovered_words >= assembled_words + 5
+        && (recovered_words as f32) >= (assembled_words as f32 * 1.25)
+        && (0.4..=5.5).contains(&recovered_words_per_sec)
+        && is_viable_preview_rescue_candidate(recovered)
+}
+
 fn is_operation_active(app: &AppHandle, operation_id: u64) -> bool {
     app.try_state::<TranscriptionCoordinator>()
         .map(|coordinator| coordinator.is_operation_active(operation_id))
@@ -956,6 +985,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 };
                                 if text.trim().is_empty() {
                                     counters.empty_chunks += 1;
+                                    if !is_final_chunk {
+                                        counters.empty_nonfinal_chunks += 1;
+                                    }
                                 }
                                 if !used_word_timestamps {
                                     counters.chunks_without_word_timestamps += 1;
@@ -1186,7 +1218,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             let tel_assembly = Arc::clone(&ch.tel);
             let tel_quality = Arc::clone(&ch.tel);
             let session_id = ch.session_id;
-            let (assembled, chunk_count, failed_chunk_count, all_samples, parakeet_summary) =
+            let (mut assembled, chunk_count, failed_chunk_count, all_samples, mut parakeet_summary) =
                 tokio::task::spawn_blocking(move || {
                     let _ = ch.sampler_handle.join();
 
@@ -1399,6 +1431,61 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 })
                 .await
                 .unwrap_or_else(|_| (String::new(), 0, 0, Vec::new(), None));
+            if is_operation_active(&ah, operation_id) {
+                if let Some(summary) = parakeet_summary.as_mut() {
+                    if should_attempt_full_audio_recovery(summary, all_samples.len(), &assembled) {
+                        let recovery_started = Instant::now();
+                        match tm.transcribe_detailed_request(TranscriptionRequest {
+                            audio: all_samples.clone(),
+                            app_context: active_app_context.clone(),
+                        }) {
+                            Ok(recovery_output)
+                                if should_promote_full_audio_recovery(
+                                    &assembled,
+                                    &recovery_output.text,
+                                    all_samples.len(),
+                                ) =>
+                            {
+                                info!(
+                                    "Promoting Parakeet full-audio recovery after empty chunk: {} -> {} words",
+                                    assembled.split_whitespace().count(),
+                                    recovery_output.text.split_whitespace().count()
+                                );
+                                summary.finalization_recoveries += 1;
+                                summary.output_words =
+                                    recovery_output.text.split_whitespace().count();
+                                assembled = recovery_output.text;
+                                if let Ok(mut p) = profiler.lock() {
+                                    p.push_step_since(
+                                        "parakeet_full_audio_recovery",
+                                        recovery_started,
+                                        Some("promoted".to_string()),
+                                    );
+                                }
+                            }
+                            Ok(_) => {
+                                if let Ok(mut p) = profiler.lock() {
+                                    p.push_step_since(
+                                        "parakeet_full_audio_recovery",
+                                        recovery_started,
+                                        Some("rejected".to_string()),
+                                    );
+                                }
+                            }
+                            Err(err) => {
+                                warn!("Parakeet full-audio recovery failed: {}", err);
+                                if let Ok(mut p) = profiler.lock() {
+                                    p.push_step_since(
+                                        "parakeet_full_audio_recovery",
+                                        recovery_started,
+                                        Some("failed".to_string()),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             if let Ok(mut p) = profiler.lock() {
                 p.push_step_since(
                     "chunk_finalize_and_assemble",

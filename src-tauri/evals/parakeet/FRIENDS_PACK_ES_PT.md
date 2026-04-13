@@ -1,7 +1,7 @@
-# Friends Voice Pack
+﻿# Friends Voice Pack
 
 This pack is designed to collect real-world speech samples from friends for
-Spanish, Hindi, and Portuguese.
+Spanish and Portuguese.
 
 The goal is simple:
 
@@ -123,100 +123,6 @@ How to say it:
 Lo que quiero entender es si la aplicacion sigue sintiendose bien cuando hablo de manera natural porque normalmente no hablo con frases perfectas sino mientras voy pensando.
 ```
 
-## Hindi Pack
-
-### 1. normal_hi_001.wav
-
-How to say it:
-- normal voice
-- quiet room
-
-```text
-आज मैं एक सामान्य हिंदी वाक्य बोलकर देखना चाहता हूं ताकि पता चले कि ट्रांसक्रिप्शन साफ और प्राकृतिक लगता है या नहीं।
-```
-
-### 2. long_no_pause_hi_001.wav
-
-How to say it:
-- natural voice
-- almost no real pause
-
-```text
-मैं एक लंबा वाक्य बिना रुके बोलकर यह देखना चाहता हूं कि क्या एप अंत तक सभी शब्द सही रखती है या बीच में कुछ छोड़ देती है।
-```
-
-### 3. fast_dictation_hi_001.wav
-
-How to say it:
-- slightly faster than normal
-
-```text
-मैं अब थोड़ी तेज गति से बोलूंगा ताकि पता चले कि मॉडल तेज बोलने पर भी शब्दों को सही क्रम में पकड़ पाता है या नहीं।
-```
-
-### 4. low_volume_hi_001.wav
-
-How to say it:
-- quieter voice
-
-```text
-मैं जानबूझकर थोड़ी धीमी आवाज में बोल रहा हूं ताकि देखा जा सके कि कम वॉल्यूम होने पर भी ट्रांसक्रिप्शन सही रहती है या नहीं।
-```
-
-### 5. light_noise_hi_001.wav
-
-How to say it:
-- with a little background noise if possible
-
-```text
-मैं यह वाक्य हल्के बैकग्राउंड शोर के साथ बोल रहा हूं ताकि पता चले कि वास्तविक माहौल में भी ऐप ठीक काम करती है या नहीं।
-```
-
-### 6. proper_nouns_hi_001.wav
-
-How to say it:
-- normal voice
-
-```text
-कल मुझे GitHub पर Vocalype देखना है और उसके बाद OpenAI और Microsoft के लिए कुछ नोट्स तैयार करने हैं।
-```
-
-### 7. email_url_hi_001.wav
-
-How to say it:
-- clearly
-
-```text
-सारांश support at vocalype dot app पर भेजो और फिर github dot com slash vocalype slash desktop खोलो।
-```
-
-### 8. self_correct_hi_001.wav
-
-How to say it:
-- natural correction
-
-```text
-मुझे कल रिपोर्ट सपोर्ट को भेजनी है नहीं रुको पहले प्रोडक्ट टीम को भेजनी है और उसके बाद जरूरत हो तो सपोर्ट को।
-```
-
-### 9. pause_heavy_hi_001.wav
-
-How to say it:
-- make real pauses
-
-```text
-मैं ऐसे बोलकर देखना चाहता हूं जिसमें स्वाभाविक रुकावटें हों क्योंकि असली बातचीत में लोग रुकते हैं सोचते हैं और फिर आगे बोलते हैं।
-```
-
-### 10. free_form_hi_001.wav
-
-How to say it:
-- conversational tone
-
-```text
-मैं यह समझना चाहता हूं कि जब मैं बिल्कुल सामान्य तरीके से बोलता हूं तब क्या ऐप उतनी ही अच्छी लगती है क्योंकि रोजमर्रा की बातचीत हमेशा साफ और तैयार वाक्यों जैसी नहीं होती।
-```
-
 ## Portuguese Pack
 
 ### 1. normal_pt_001.wav
@@ -310,3 +216,4 @@ How to say it:
 ```text
 O que eu quero entender e se o aplicativo continua parecendo bom quando eu falo de um jeito natural porque no dia a dia eu nao falo em frases perfeitas.
 ```
+

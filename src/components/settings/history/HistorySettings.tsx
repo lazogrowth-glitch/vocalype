@@ -13,6 +13,8 @@ import {
   FileAudio,
   Eraser,
   Sparkles,
+  Pencil,
+  X,
 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -32,6 +34,61 @@ import { Button } from "../../ui/Button";
 import { useSettings } from "@/hooks/useSettings";
 
 const PAGE_SIZE = 30;
+
+// ── Correction types ──────────────────────────────────────────────────────────
+
+interface CorrectionSuggestion {
+  from: string;
+  to: string;
+  count: number;
+  already_in_dict: boolean;
+  auto_add: boolean;
+}
+
+// ── Correction suggestion banner ──────────────────────────────────────────────
+
+const CorrectionBanner: React.FC<{
+  suggestions: CorrectionSuggestion[];
+  onConfirm: (s: CorrectionSuggestion) => void;
+  onDismiss: (s: CorrectionSuggestion) => void;
+}> = ({ suggestions, onConfirm, onDismiss }) => {
+  const { t } = useTranslation();
+  if (suggestions.length === 0) return null;
+  return (
+    <div className="mt-2 flex flex-col gap-1.5">
+      {suggestions.map((s) => (
+        <div
+          key={s.from}
+          className="flex items-center justify-between gap-3 rounded-lg border border-logo-primary/20 bg-logo-primary/[0.06] px-3 py-2"
+        >
+          <span className="text-[12px] text-white/70">
+            {t("settings.history.correctionSuggestion", {
+              defaultValue: 'Toujours remplacer "{{from}}" par "{{to}}" ?',
+              from: s.from,
+              to: s.to,
+            })}
+          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onConfirm(s)}
+              className="rounded-md bg-logo-primary/20 px-2.5 py-1 text-[11px] font-medium text-logo-primary transition-colors hover:bg-logo-primary/30"
+            >
+              {t("settings.history.correctionYes", { defaultValue: "Oui" })}
+            </button>
+            <button
+              type="button"
+              onClick={() => onDismiss(s)}
+              className="rounded-md px-2 py-1 text-[11px] text-white/40 transition-colors hover:text-white/60"
+            >
+              {t("settings.history.correctionNo", { defaultValue: "Ignorer" })}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -827,6 +884,99 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const [clearingPostProcess, setClearingPostProcess] = useState(false);
   const [showAllActions, setShowAllActions] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+
+  // ── Inline edit state ────────────────────────────────────────────────────
+  const [editMode, setEditMode] = useState(false);
+  const [editText, setEditText] = useState(entry.transcription_text);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [correctionSuggestions, setCorrectionSuggestions] = useState<
+    CorrectionSuggestion[]
+  >([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleStartEdit = () => {
+    setEditText(entry.transcription_text);
+    setCorrectionSuggestions([]);
+    setEditMode(true);
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setCorrectionSuggestions([]);
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === entry.transcription_text) {
+      setEditMode(false);
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await invoke("update_history_entry_text", {
+        id: entry.id,
+        newText: trimmed,
+      });
+
+      // Analyse what changed and show suggestions
+      const suggestions = await invoke<CorrectionSuggestion[]>(
+        "analyze_correction",
+        {
+          original: entry.transcription_text,
+          corrected: trimmed,
+        },
+      );
+      const actionable = suggestions.filter((s) => !s.already_in_dict);
+      if (actionable.length > 0) {
+        setCorrectionSuggestions(actionable);
+      }
+      setEditMode(false);
+    } catch (e) {
+      console.error("Failed to save edit:", e);
+      toast.error(
+        t("settings.history.editSaveFailed", {
+          defaultValue: "Impossible de sauvegarder la correction.",
+        }),
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleConfirmSuggestion = async (s: CorrectionSuggestion) => {
+    try {
+      await invoke("record_correction", {
+        from: s.from,
+        to: s.to,
+        addToDict: true,
+      });
+      setCorrectionSuggestions((prev) => prev.filter((x) => x.from !== s.from));
+      toast.success(
+        t("settings.history.correctionAdded", {
+          defaultValue: '"{{from}}" → "{{to}}" ajouté au dictionnaire.',
+          from: s.from,
+          to: s.to,
+        }),
+      );
+    } catch (e) {
+      console.error("Failed to add dictionary entry:", e);
+    }
+  };
+
+  const handleDismissSuggestion = async (s: CorrectionSuggestion) => {
+    try {
+      // Still record the correction count — may auto-add later
+      await invoke("record_correction", {
+        from: s.from,
+        to: s.to,
+        addToDict: false,
+      });
+    } catch {
+      // Best-effort
+    }
+    setCorrectionSuggestions((prev) => prev.filter((x) => x.from !== s.from));
+  };
   const models = useModelStore((s) => s.models);
 
   const downloadedModels = models.filter((m) => m.is_downloaded);
@@ -1048,6 +1198,15 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           )}
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={handleStartEdit}
+            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70"
+            title={t("settings.history.editTranscription", {
+              defaultValue: "Modifier la transcription",
+            })}
+          >
+            <Pencil width={14} height={14} />
+          </button>
           <div className="relative" ref={pickerRef}>
             <button
               onClick={() =>
@@ -1225,12 +1384,63 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             />
           </div>
         </div>
+      ) : editMode ? (
+        <div className="flex flex-col gap-2 pb-2">
+          <textarea
+            ref={textareaRef}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            rows={3}
+            className="w-full resize-none rounded-[10px] border border-logo-primary/30 bg-white/[0.06] px-3 py-2 text-[13.5px] italic text-white/82 outline-none focus:border-logo-primary/50"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") handleCancelEdit();
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                void handleSaveEdit();
+              }
+            }}
+          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void handleSaveEdit()}
+              disabled={savingEdit}
+              className="inline-flex items-center gap-1.5 rounded-md bg-logo-primary/20 px-3 py-1.5 text-[12px] font-medium text-logo-primary transition-colors hover:bg-logo-primary/30 disabled:opacity-50"
+            >
+              {savingEdit ? (
+                <Loader2 size={11} className="animate-spin" />
+              ) : (
+                <Check size={12} />
+              )}
+              {t("settings.history.saveEdit", { defaultValue: "Sauvegarder" })}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[12px] text-white/40 transition-colors hover:text-white/60"
+            >
+              <X size={12} />
+              {t("settings.history.cancelEdit", { defaultValue: "Annuler" })}
+            </button>
+            <span className="ml-auto text-[10.5px] text-white/25">
+              {t("settings.history.editHint", {
+                defaultValue: "Ctrl+Entrée pour sauvegarder",
+              })}
+            </span>
+          </div>
+        </div>
       ) : (
-        <ConfidenceText
-          text={entry.transcription_text}
-          confidencePayload={entry.confidence_payload}
-          className="pb-2 text-[13.5px] italic text-white/82 select-text cursor-text"
-        />
+        <>
+          <ConfidenceText
+            text={entry.transcription_text}
+            confidencePayload={entry.confidence_payload}
+            className="pb-2 text-[13.5px] italic text-white/82 select-text cursor-text"
+          />
+          <CorrectionBanner
+            suggestions={correctionSuggestions}
+            onConfirm={(s) => void handleConfirmSuggestion(s)}
+            onDismiss={(s) => void handleDismissSuggestion(s)}
+          />
+        </>
       )}
       {postProcessActions.length > 0 && (
         <div

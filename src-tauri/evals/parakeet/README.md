@@ -1,4 +1,4 @@
-# Parakeet Eval Dataset
+﻿# Parakeet Eval Dataset
 
 This folder holds the local evaluation corpus used to diagnose and improve
 `Parakeet V3` in realistic dictation scenarios.
@@ -47,9 +47,8 @@ This folder holds the local evaluation corpus used to diagnose and improve
 - `dataset_manifest_english_20.json`: clean English benchmark
 - `dataset_manifest_natural_24.json`: more realistic English benchmark
 - `NATURAL_PACK_24.md`: recording guidance for the realistic pack
-- `FRIENDS_PACK_ES_HI_PT.md`: shareable pack for Spanish, Hindi, and Portuguese friends
+- `FRIENDS_PACK_ES_PT.md`: shareable pack for Spanish and Portuguese friends
 - `dataset_manifest_spanish_10.json`: Spanish starter benchmark
-- `dataset_manifest_hindi_10.json`: Hindi starter benchmark
 - `dataset_manifest_portuguese_10.json`: Portuguese starter benchmark
 
 ## Run the Text-Hypothesis Evaluator
@@ -140,7 +139,7 @@ bounded eval pack:
 python ..\scripts\prepare-external-asr-dataset.py `
   --dataset common_voice `
   --source-dir C:\datasets\common_voice `
-  --languages en fr es pt hi `
+  --languages en fr es pt `
   --max-per-language 25 `
   --output-dir .\evals\parakeet\external\common_voice_smoke
 ```
@@ -170,7 +169,7 @@ checks. Install the optional dependency first:
 python -m pip install datasets
 python ..\scripts\prepare-external-asr-dataset.py `
   --dataset fleurs `
-  --languages en fr es pt hi `
+  --languages en fr es pt `
   --max-per-language 20 `
   --output-dir .\evals\parakeet\external\fleurs_smoke
 ```

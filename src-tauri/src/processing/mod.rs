@@ -15,6 +15,7 @@
 //! and add your step to the relevant position in `actions/post_processing.rs`.
 #![allow(dead_code)]
 
+pub mod correction_tracker;
 pub mod dictionary;
 pub mod filler;
 pub mod post_processing;

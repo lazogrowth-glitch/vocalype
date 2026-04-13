@@ -2,7 +2,10 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 static PARAKEET_V3_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\bparak(?:eet|et|ate|it|eat|aet)?\s+v\s*(?:3|three|tree|trois)\b").unwrap()
+    Regex::new(
+        r"(?i)\bparak(?:eet|et|ate|it|eat|aet|id)?\s+(?:de\s+)?(?:v\s*(?:3|three|tree|trois)|vit(?:ry|ri))\b",
+    )
+    .unwrap()
 });
 static PARAKEET_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bparak(?:eet|et|ate|it|eat|aet)?\b").unwrap());
@@ -31,7 +34,12 @@ static OPENAI_SPLIT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen\
 static VOCALYPE_VARIANT_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bvocal(?:i|ipe|ype|type)\b").unwrap());
 static TRAILING_PARAKEET_FILLER_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)([.!?])\s+(?:and|et|mais|donc|alors)\s*[.!?]*$").unwrap());
+    Lazy::new(|| {
+        Regex::new(
+            r"(?i)([.!?])\s+(?:and|et|mais|donc|alors|yeah|yep|gracias|thanks|thank you)\s*[.!?]*$",
+        )
+        .unwrap()
+    });
 static TRAILING_PUNCTUATION_RUN_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\s*([.!?])(?:\s*[.!?])+$").unwrap());
 static OPEN_I_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen\s+i\b").unwrap());
@@ -373,7 +381,7 @@ pub fn parakeet_chunk_ends_sentence(previous: &str, next: &str) -> bool {
 }
 
 pub fn parakeet_builtin_correction_terms(selected_language: &str) -> Vec<String> {
-    let mut terms = vec!["Parakeet V3".to_string(), "Vocalype".to_string()];
+    let mut terms = vec!["Vocalype".to_string()];
 
     if selected_language == "en" {
         terms.push("Yassine".to_string());
@@ -1400,6 +1408,22 @@ mod tests {
         assert!(normalized.contains("GitHub"));
         assert!(normalized.contains("OpenAI"));
         assert!(normalized.contains("Vocalype"));
+    }
+
+    #[test]
+    fn removes_multilingual_trailing_parakeet_fillers() {
+        assert_eq!(
+            finalize_parakeet_text("Le texte est correct. Yeah.", "fr"),
+            "Le texte est correct."
+        );
+        assert_eq!(
+            finalize_parakeet_text("El texto esta completo. Gracias.", "es"),
+            "El texto esta completo."
+        );
+        assert_eq!(
+            finalize_parakeet_text("The transcript is done. Thank you.", "en"),
+            "The transcript is done."
+        );
     }
 
     #[test]

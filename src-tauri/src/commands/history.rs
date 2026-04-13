@@ -1,12 +1,13 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::transcription::TranscriptionManager;
 use crate::processing::post_processing::process_action;
+use crate::vocabulary_store::VocabularyStoreState;
 use hound::WavReader;
 use rubato::{FftFixedIn, Resampler};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 
 #[tauri::command]
 #[specta::specta]
@@ -482,6 +483,50 @@ pub async fn update_recording_retention_period(
     history_manager
         .cleanup_old_entries()
         .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+/// Update only the transcription text of a history entry (user manual edit).
+/// Also feeds the correction into the adaptive VocabularyStore so future
+/// transcriptions of the same words benefit immediately.
+#[tauri::command]
+#[specta::specta]
+pub async fn update_history_entry_text(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+    new_text: String,
+) -> Result<(), String> {
+    // Fetch the old text and model name before overwriting
+    let old_entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    history_manager
+        .update_transcription_text(id, &new_text, None, None)
+        .map_err(|e| e.to_string())?;
+
+    // Feed the correction into the adaptive vocabulary store so the model
+    // learns this correction for future sessions.
+    if let Some(entry) = old_entry {
+        if let Some(vocab_state) = app.try_state::<VocabularyStoreState>() {
+            if let Ok(mut store) = vocab_state.0.lock() {
+                let settings = crate::settings::get_settings(&app);
+                let model_id = entry.model_name.as_deref().unwrap_or("");
+                store.learn_feedback_correction(
+                    None, // no per-entry app context stored
+                    model_id,
+                    "auto",
+                    &new_text,           // expected (corrected by user)
+                    &entry.transcription_text, // actual (what model produced)
+                    &settings.custom_words,
+                );
+                store.save(&app);
+            }
+        }
+    }
 
     Ok(())
 }

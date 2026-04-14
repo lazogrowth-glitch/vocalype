@@ -194,8 +194,11 @@ fn run_chunked_pipeline(
     }
 
     let mut assembled = assemble_parakeet_results(&results);
-    if should_attempt_full_audio_recovery(&results, audio.len(), &assembled) {
-        let recovered = transcribe_parakeet_chunk(engine, audio.to_vec(), 0.0)?;
+    if should_attempt_full_audio_recovery(&results, audio.len(), profile, &assembled) {
+        // Add 0.25s of silence so the model can cleanly decode the last word
+        let mut recovery_audio = audio.to_vec();
+        recovery_audio.extend(std::iter::repeat(0.0f32).take(4_000));
+        let recovered = transcribe_parakeet_chunk(engine, recovery_audio, 0.0)?;
         if should_promote_full_audio_recovery(&assembled, &recovered, audio.len()) {
             if debug_sample.is_some() {
                 eprintln!(
@@ -341,17 +344,61 @@ fn assemble_parakeet_results(results: &[String]) -> String {
 fn should_attempt_full_audio_recovery(
     results: &[String],
     sample_count: usize,
+    profile: ChunkProfile,
     assembled: &str,
 ) -> bool {
     let duration_secs = sample_count as f32 / SAMPLE_RATE as f32;
-    let assembled_words_per_sec =
-        assembled.split_whitespace().count() as f32 / duration_secs.max(0.1);
-    results
+    if !(6.0..=45.0).contains(&duration_secs) {
+        return false;
+    }
+
+    let assembled_words = assembled.split_whitespace().count();
+    let assembled_words_per_sec = assembled_words as f32 / duration_secs.max(0.1);
+    let empty_boundary = results
         .iter()
         .take(results.len().saturating_sub(1))
         .any(|text| text.trim().is_empty())
-        && (8.0..=45.0).contains(&duration_secs)
-        && assembled_words_per_sec <= 1.45
+        && assembled_words_per_sec <= 1.45;
+    let severe_low_density = assembled_words_per_sec <= 1.05 && duration_secs >= 12.0;
+
+    let final_chunk_secs = estimate_final_chunk_secs(sample_count, results.len(), profile);
+    let final_chunk_words = results
+        .last()
+        .map(|text| text.split_whitespace().count())
+        .unwrap_or(0);
+    let final_chunk_words_per_sec = final_chunk_words as f32 / final_chunk_secs.max(0.1);
+    let short_final_chunk = final_chunk_secs >= 1.0
+        && final_chunk_secs <= 6.0
+        && final_chunk_words <= 2
+        && assembled_words_per_sec <= 2.5;
+    let sparse_final_chunk = final_chunk_secs >= 3.0
+        && final_chunk_words_per_sec <= 0.35
+        && assembled_words_per_sec <= 2.0;
+    let empty_final_chunk =
+        final_chunk_words == 0 && final_chunk_secs >= 2.0 && assembled_words_per_sec <= 2.5;
+
+    empty_boundary
+        || severe_low_density
+        || short_final_chunk
+        || sparse_final_chunk
+        || empty_final_chunk
+}
+
+fn estimate_final_chunk_secs(
+    sample_count: usize,
+    result_count: usize,
+    profile: ChunkProfile,
+) -> f32 {
+    if result_count <= 1 {
+        return sample_count as f32 / SAMPLE_RATE as f32;
+    }
+
+    let full_background_chunks = result_count.saturating_sub(1);
+    let last_committed = full_background_chunks * profile.interval_samples;
+    let actual_overlap = last_committed.min(profile.overlap_samples);
+    let final_chunk_samples =
+        sample_count.saturating_sub(last_committed.saturating_sub(actual_overlap));
+    final_chunk_samples as f32 / SAMPLE_RATE as f32
 }
 
 fn should_promote_full_audio_recovery(
@@ -364,8 +411,8 @@ fn should_promote_full_audio_recovery(
     let duration_secs = sample_count as f32 / SAMPLE_RATE as f32;
     let recovered_words_per_sec = recovered_words as f32 / duration_secs.max(0.1);
 
-    recovered_words >= assembled_words + 5
-        && (recovered_words as f32) >= (assembled_words as f32 * 1.25)
+    recovered_words >= assembled_words + 3
+        && (recovered_words as f32) >= (assembled_words as f32 * 1.15)
         && (0.4..=5.5).contains(&recovered_words_per_sec)
         && recovered.chars().filter(|ch| ch.is_alphabetic()).count() >= 12
 }

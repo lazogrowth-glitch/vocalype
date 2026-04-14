@@ -60,8 +60,8 @@ fn hash_backend_device_id(device_id: &str) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-fn load_license_bundle() -> Result<Option<StoredLicenseBundle>, String> {
-    let raw = crate::secret_store::get_license_bundle()?;
+fn load_license_bundle(app: &AppHandle) -> Result<Option<StoredLicenseBundle>, String> {
+    let raw = crate::secret_store::get_license_bundle(app)?;
     match raw {
         Some(value) if !value.trim().is_empty() => {
             serde_json::from_str::<StoredLicenseBundle>(&value)
@@ -73,7 +73,7 @@ fn load_license_bundle() -> Result<Option<StoredLicenseBundle>, String> {
 }
 
 pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, String> {
-    let Some(bundle) = load_license_bundle()? else {
+    let Some(bundle) = load_license_bundle(app)? else {
         return Ok(LicenseRuntimeState {
             state: LicenseState::Expired,
             reason: Some("No stored license bundle".to_string()),
@@ -168,8 +168,8 @@ pub fn current_license_state(app: &AppHandle) -> Result<LicenseRuntimeState, Str
 }
 
 /// Returns the plan from the stored license bundle ("premium", "basic", or None).
-pub fn current_plan(_app: &AppHandle) -> Option<String> {
-    load_license_bundle().ok()?.map(|b| b.plan)
+pub fn current_plan(app: &AppHandle) -> Option<String> {
+    load_license_bundle(app).ok()?.map(|b| b.plan)
 }
 
 /// Allows any authenticated user with a valid license (premium or basic).

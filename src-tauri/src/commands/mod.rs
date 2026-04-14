@@ -647,3 +647,18 @@ pub fn recalibrate_whisper_model_command(
     recalibrate_whisper_model(&app, model_manager.inner().clone(), &model_id, phase);
     Ok(())
 }
+
+/// Called by the frontend just before opening the browser for OAuth login.
+/// Records that a login flow is in progress so the deep-link handler will accept
+/// the returning token. Without this, any app or URL can hijack the session via
+/// a crafted `vocalype://auth-callback?token=...` link (deep-link CSRF).
+#[specta::specta]
+#[tauri::command]
+pub fn start_browser_auth(_app: AppHandle) -> Result<(), String> {
+    if let Ok(mut guard) = crate::PENDING_AUTH_NONCE.lock() {
+        *guard = Some(std::time::Instant::now());
+        Ok(())
+    } else {
+        Err("Failed to record auth flow start".to_string())
+    }
+}

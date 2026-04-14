@@ -1,5 +1,6 @@
+use crate::bundle_signing;
 use keyring::Entry;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 const SERVICE_NAME: &str = "com.vocalype.desktop";
 
@@ -70,30 +71,43 @@ pub fn clear_auth_session() -> Result<(), String> {
     delete_secret_value(AUTH_SESSION_ACCOUNT)
 }
 
-fn license_bundle_path() -> Result<std::path::PathBuf, String> {
-    let app_data = std::env::var("APPDATA").map_err(|_| "APPDATA not set".to_string())?;
-    let dir = std::path::PathBuf::from(app_data).join("com.vocalype.desktop");
+fn license_bundle_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create app dir: {}", e))?;
     Ok(dir.join("license.bundle.json"))
 }
 
-pub fn get_license_bundle() -> Result<Option<String>, String> {
-    let path = license_bundle_path()?;
+pub fn get_license_bundle(app: &AppHandle) -> Result<Option<String>, String> {
+    let path = license_bundle_path(app)?;
     if !path.exists() {
         return Ok(None);
     }
     let data = std::fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read license bundle: {}", e))?;
+    // Re-verify on every read: detects on-disk tampering after initial write.
+    bundle_signing::verify_bundle_signature(&data)?;
     Ok(Some(data))
 }
 
-pub fn set_license_bundle(bundle_json: &str) -> Result<(), String> {
-    let path = license_bundle_path()?;
-    std::fs::write(&path, bundle_json).map_err(|e| format!("Failed to write license bundle: {}", e))
+pub fn set_license_bundle(app: &AppHandle, bundle_json: &str) -> Result<(), String> {
+    let parsed: serde_json::Value = serde_json::from_str(bundle_json)
+        .map_err(|e| format!("Invalid license bundle JSON: {}", e))?;
+    if !parsed.is_object() {
+        return Err("License bundle must be a JSON object".to_string());
+    }
+    // Verify the Ed25519 signature before persisting.
+    // Rejects tampered or hand-crafted bundles.
+    bundle_signing::verify_bundle_signature(bundle_json)?;
+    let path = license_bundle_path(app)?;
+    std::fs::write(&path, bundle_json)
+        .map_err(|e| format!("Failed to write license bundle: {}", e))
 }
 
-pub fn clear_license_bundle() -> Result<(), String> {
-    let path = license_bundle_path()?;
+pub fn clear_license_bundle(app: &AppHandle) -> Result<(), String> {
+    let path = license_bundle_path(app)?;
     if path.exists() {
         std::fs::remove_file(&path)
             .map_err(|e| format!("Failed to delete license bundle: {}", e))?;
@@ -219,22 +233,22 @@ pub fn clear_secure_auth_session(_app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_secure_license_bundle(_app: AppHandle) -> Result<Option<String>, String> {
-    get_license_bundle()
+pub fn get_secure_license_bundle(app: AppHandle) -> Result<Option<String>, String> {
+    get_license_bundle(&app)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn set_secure_license_bundle(_app: AppHandle, bundle_json: String) -> Result<(), String> {
+pub fn set_secure_license_bundle(app: AppHandle, bundle_json: String) -> Result<(), String> {
     if bundle_json.trim().is_empty() {
-        clear_license_bundle()
+        clear_license_bundle(&app)
     } else {
-        set_license_bundle(&bundle_json)
+        set_license_bundle(&app, &bundle_json)
     }
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn clear_secure_license_bundle(_app: AppHandle) -> Result<(), String> {
-    clear_license_bundle()
+pub fn clear_secure_license_bundle(app: AppHandle) -> Result<(), String> {
+    clear_license_bundle(&app)
 }

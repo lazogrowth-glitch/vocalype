@@ -219,12 +219,21 @@ pub fn get_available_output_devices() -> Result<Vec<AudioDevice>, String> {
 #[tauri::command]
 #[specta::specta]
 pub fn set_selected_output_device(app: AppHandle, device_name: String) -> Result<(), String> {
-    let mut settings = get_settings(&app);
-    settings.selected_output_device = if device_name == "default" {
+    let resolved = if device_name == "default" {
         None
     } else {
+        let devices =
+            list_output_devices().map_err(|e| format!("Failed to list output devices: {}", e))?;
+        if !devices.iter().any(|d| d.index == device_name || d.name == device_name) {
+            return Err(format!(
+                "Output device '{}' not found",
+                device_name
+            ));
+        }
         Some(device_name)
     };
+    let mut settings = get_settings(&app);
+    settings.selected_output_device = resolved;
     write_settings(&app, settings);
     Ok(())
 }

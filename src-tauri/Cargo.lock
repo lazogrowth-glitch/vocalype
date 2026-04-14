@@ -8035,6 +8035,7 @@ dependencies = [
  "rdev 0.5.0-2",
  "regex",
  "reqwest 0.12.28",
+ "ring",
  "rodio",
  "rubato",
  "rusqlite",

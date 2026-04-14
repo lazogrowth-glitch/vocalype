@@ -410,12 +410,35 @@ pub(crate) async fn post_process_transcription(
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
-    debug!("Processed prompt length: {} chars", processed_prompt.len());
+    // Legacy mode: isolate instructions from user data to prevent prompt injection.
+    // The transcription is sent as a separate user message; the prompt template
+    // becomes the system message so injected text cannot override instructions.
+    let (system_msg, user_content) = if prompt.contains("${output}") {
+        let instruction = prompt.replace("${output}", "");
+        let instruction = instruction.trim();
+        if instruction.is_empty() {
+            (None, transcription.to_string())
+        } else {
+            (Some(instruction.to_string()), transcription.to_string())
+        }
+    } else {
+        (Some(prompt.to_string()), transcription.to_string())
+    };
+    debug!(
+        "Processed prompt — system: {} chars, user: {} chars",
+        system_msg.as_deref().map_or(0, |s| s.len()),
+        user_content.len()
+    );
 
-    match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
-        .await
+    match crate::llm_client::send_chat_completion_with_schema(
+        &provider,
+        api_key,
+        &model,
+        user_content,
+        system_msg,
+        None,
+    )
+    .await
     {
         Ok(Some(content)) => {
             let content = strip_invisible_chars(&content);
@@ -475,17 +498,26 @@ pub(crate) async fn process_action(
         .or_else(|| settings.post_process_models.get(&provider.id).cloned())
         .unwrap_or_default();
 
-    let full_prompt = if prompt.contains("${output}") {
-        prompt.replace("${output}", transcription)
+    // Separate instructions from data to prevent prompt injection:
+    // instructions go to the system role, transcription to the user role.
+    let (action_system, action_user) = if prompt.contains("${output}") {
+        let instruction = prompt.replace("${output}", "");
+        let instruction = instruction.trim();
+        if instruction.is_empty() {
+            (None, transcription.to_string())
+        } else {
+            (Some(instruction.to_string()), transcription.to_string())
+        }
     } else {
-        format!("{}\n\n{}", prompt, transcription)
+        (Some(prompt.to_string()), transcription.to_string())
     };
 
     debug!(
-        "Starting action processing with provider '{}', model '{}', prompt length: {}",
+        "Starting action processing with provider '{}', model '{}', system: {} chars, user: {} chars",
         provider.id,
         model,
-        full_prompt.len()
+        action_system.as_deref().map_or(0, |s| s.len()),
+        action_user.len()
     );
 
     // Handle Apple Intelligence via native Swift APIs
@@ -497,8 +529,9 @@ pub(crate) async fn process_action(
                 return None;
             }
             let token_limit = model.trim().parse::<i32>().unwrap_or(0);
+            let apple_instruction = action_system.as_deref().unwrap_or("");
             return match apple_intelligence::process_text_with_system_prompt(
-                &full_prompt,
+                apple_instruction,
                 transcription,
                 token_limit,
             ) {
@@ -542,13 +575,18 @@ pub(crate) async fn process_action(
         .cloned()
         .unwrap_or_default();
 
-    let system_prompt = "You are a text processing assistant. Output ONLY the final processed text. Do not add any explanation, commentary, preamble, or formatting such as markdown code blocks. Just output the raw result text, nothing else.".to_string();
+    // Base system prompt enforces output format; user's action instruction is appended.
+    let base_system = "You are a text processing assistant. Output ONLY the final processed text. Do not add any explanation, commentary, preamble, or formatting such as markdown code blocks. Just output the raw result text, nothing else.";
+    let system_prompt = match &action_system {
+        Some(instruction) => format!("{}\n\n{}", base_system, instruction),
+        None => base_system.to_string(),
+    };
 
     match crate::llm_client::send_chat_completion_with_schema(
         &provider,
         api_key,
         &model,
-        full_prompt,
+        action_user,
         Some(system_prompt),
         None,
     )

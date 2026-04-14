@@ -90,6 +90,7 @@ Note: global `git diff --check` may fail due to unrelated generated `src/binding
 | 2026-04-13 | Recovery v3 suspicion: retry full-audio when word density is very low or final chunk is suspiciously short/sparse | 0.525 / 1.443 / 0.462 / 0.458 / 1.071 | 7.778 / 5.302 / 6.473 / 6.288 / 31.376 | keep | Improves FLEURS without local regression. FLEURS EN 8.962 -> 8.308, ES 6.359 -> 6.088, FR/PT unchanged. Reports: `parakeet-pipeline-eval-20260413-local70-recovery-v3-suspicion.json`, `external-fleurs-supported-400-no-hi-recovery-v3-suspicion.json`. |
 | 2026-04-13 | Recovery v4 aggressive thresholds: low density 1.45 -> 1.60, severe 1.05 -> 1.20, promotion +5/1.25 -> +3/1.15 | 0.525 / 1.443 / 0.462 / 0.458 / 1.071 | 7.778 / 5.302 / 6.473 / 6.288 / 31.376 | reject as neutral | Produced identical hypotheses to v3 on local 70 and FLEURS 400. Reverted to v3 thresholds to avoid extra risk. Reports: `parakeet-pipeline-eval-20260413-local70-recovery-v4-aggressive.json`, `external-fleurs-supported-400-no-hi-recovery-v4-aggressive.json`. |
 | 2026-04-14 | v5 synced: ES/PT mojibake fix, Mm-hmm hallucination removal, eval recovery thresholds matched to transcribe.rs (6.0s min, empty_final_chunk, +3/1.15x promote, 0.25s trailing silence) | 0.525 / 1.443 / 0.462 / 0.458 / 1.071 | 7.488 / 5.196 / 6.369 / 6.073 / 30.417 | keep | All metrics improved. EN 8.308→8.015, ES 6.088→5.527 (large), FR 9.596→9.527, PT 7.120→6.883. No local regression. Reports: `parakeet-pipeline-eval-20260414-local70-recovery-v5-synced.json`, `external-fleurs-supported-400-no-hi-recovery-v5-synced.json`. |
+| 2026-04-14 | WiFi word-form patterns: `eight zero two point one one [A/B/G/N]` → `802.11x`, `two point four/five point zero GHC` → `2.4/5.0GHz` | 0.525 / 1.443 / 0.462 / 0.458 / 1.071 | 7.212 / 5.115 / 6.288 / 5.895 / 30.152 | keep | EN WER 8.015→6.911 (-1.10pp). Model outputs 802.11 standards and GHz as spoken words, not digits. No local regression, ES/FR/PT unchanged. Reports: `parakeet-pipeline-eval-20260414-local70-wifi-word.json`, `external-fleurs-supported-400-no-hi-wifi-word.json`. |
 
 ## Current Best Known Setup
 
@@ -98,6 +99,7 @@ Keep:
 - Recovery v5: 6.0s min duration, empty_final_chunk trigger, +3/1.15x promotion, 0.25s trailing silence.
 - ES/PT mojibake normalization (shared safe cleanup in `finalize_parakeet_text` else branch).
 - Mm-hmm/uh-huh hallucination removal via `TRAILING_MM_HMM_PATTERN`.
+- WiFi word-form patterns: `eight zero two point one one [A/B/G/N]` → `802.11x`, `two point four/five point zero GHC` → `2.4/5.0GHz`.
 - Targeted Parakeet phrase variants instead of broad `Parakeet V3` builtin correction.
 - Hindi removed from Parakeet evals.
 - Safe dedup/fillers v1.

@@ -21,8 +21,12 @@ from typing import Optional
 from urllib import error as urlerror
 from urllib import request as urlrequest
 
+import base64
+
 import jwt
 import stripe
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -119,6 +123,38 @@ APP_RETURN_URL = os.environ.get(
     os.environ.get("FRONTEND_URL", "https://vocalype.com"),
 )
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+# Ed25519 private key for signing license bundles.
+# Set LICENSE_SIGNING_KEY in Railway env vars (base64-encoded 32-byte seed).
+# If missing, bundles are issued unsigned (clients in enforcement mode will reject them).
+_LICENSE_SIGNING_KEY_B64 = os.environ.get("LICENSE_SIGNING_KEY", "")
+_LICENSE_PRIVATE_KEY: Ed25519PrivateKey | None = None
+if _LICENSE_SIGNING_KEY_B64:
+    try:
+        _seed = base64.b64decode(_LICENSE_SIGNING_KEY_B64)
+        _LICENSE_PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(_seed)
+    except Exception as _e:
+        print(f"[WARN] Failed to load LICENSE_SIGNING_KEY: {_e}", flush=True)
+
+
+def _sign_bundle(bundle: dict) -> dict:
+    """Add an Ed25519 bundle_signature field to a license bundle dict.
+
+    The signature covers the bundle JSON with all keys sorted alphabetically
+    and no spaces — this must exactly match the Rust client's sorted_json_string().
+    If no private key is configured, the bundle is returned unsigned.
+    """
+    if _LICENSE_PRIVATE_KEY is None:
+        return bundle
+
+    # Remove any existing signature before signing.
+    clean = {k: v for k, v in bundle.items() if k != "bundle_signature"}
+
+    # Deterministic serialisation — must match Rust's sorted_json_string().
+    payload = json.dumps(clean, sort_keys=True, separators=(",", ":"))
+
+    signature = _LICENSE_PRIVATE_KEY.sign(payload.encode("utf-8"))
+    return {**clean, "bundle_signature": base64.b64encode(signature).decode("utf-8")}
 TRUST_X_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "").strip().lower() in {
     "1",
     "true",
@@ -826,7 +862,7 @@ def build_license_payloads(user, entitlement, *, device_id: str, integrity_evalu
         "model_unlock_key": model_unlock_key,
     }
 
-    return {
+    bundle = {
         "state": "online_valid" if entitlements else "expired",
         "issued_at": issued_at_iso,
         "grant_token": issue_signed_token(grant_payload, grant_expires_at),
@@ -843,6 +879,8 @@ def build_license_payloads(user, entitlement, *, device_id: str, integrity_evalu
         "build_binding_sha256": (integrity_evaluation or {}).get("binary_sha256"),
         "integrity_anomalies": (integrity_evaluation or {}).get("anomalies", []),
     }
+    # Sign the bundle so the desktop client can verify it wasn't tampered with.
+    return _sign_bundle(bundle)
 
 
 def build_license_status_response(user, entitlement, *, device_id: str):

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "sonner";
+import { commands } from "@/bindings";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
 import {
   AUTH_STEP_ORDER,
@@ -103,6 +104,9 @@ export const AuthPortal = ({
   const openBrowserAuth = async (intent: "signup" | "login") => {
     setBrowserBusy(intent);
     try {
+      // Register the auth flow so the deep-link handler accepts the returning token.
+      // Without this, any app can hijack the session via a crafted vocalype:// URL.
+      await commands.startBrowserAuth();
       await openUrl(intent === "signup" ? AUTH_SIGNUP_URL : AUTH_LOGIN_URL);
     } catch (openError) {
       const message =

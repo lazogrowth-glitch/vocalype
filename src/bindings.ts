@@ -1599,6 +1599,16 @@ async isLaptop() : Promise<Result<boolean, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/** Record that a browser-based login flow is starting. Must be called before
+ *  opening the OAuth URL so the deep-link handler accepts the returning token. */
+async startBrowserAuth() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_browser_auth") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 

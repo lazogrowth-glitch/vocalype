@@ -33,15 +33,16 @@ static GITHUB_SPLIT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bgit\s
 static OPENAI_SPLIT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen\s*ai\b").unwrap());
 static VOCALYPE_VARIANT_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bvocal(?:i|ipe|ype|type)\b").unwrap());
-static TRAILING_PARAKEET_FILLER_PATTERN: Lazy<Regex> =
-    Lazy::new(|| {
-        Regex::new(
-            r"(?i)([.!?])\s+(?:and|et|mais|donc|alors|yeah|yep|gracias|thanks|thank you)\s*[.!?]*$",
-        )
-        .unwrap()
-    });
+static TRAILING_PARAKEET_FILLER_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)([.!?])\s+(?:and|et|mais|donc|alors|yeah|yep|gracias|thanks|thank you)\s*[.!?]*$",
+    )
+    .unwrap()
+});
 static TRAILING_PUNCTUATION_RUN_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\s*([.!?])(?:\s*[.!?])+$").unwrap());
+static TRAILING_MM_HMM_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)[,.]?\s*\b(?:mm-hmm|uh-huh|mhm|mmhmm)\b\s*[.!?,]*$").unwrap());
 static OPEN_I_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen\s+i\b").unwrap());
 static DOT_UP_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdot\s+up\b").unwrap());
 static DOCKS_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdocks\b").unwrap());
@@ -99,8 +100,9 @@ static APRIL_BROKEN_2026_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bApril 3 twenty si twenty twenty six\b").unwrap());
 static STANDALONE_FILLER_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)(^|[\s,.;!?])(?:uh|um|erm|hmm|mm)([\s,.;!?]|$)").unwrap());
-static MULTILINGUAL_STANDALONE_FILLER_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)(^|[\s,.;!?])(?:uh|euh|heu|eh|ah|hmm|mhm)([\s,.;!?]|$)").unwrap());
+static MULTILINGUAL_STANDALONE_FILLER_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)(^|[\s,.;!?])(?:uh|euh|heu|eh|ah|hmm|mhm)([\s,.;!?]|$)").unwrap()
+});
 static CHEN_KING_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bchen\s+king\b").unwrap());
 static BINDER_EYES_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bbinder\s+eyes\b").unwrap());
@@ -428,8 +430,9 @@ pub fn cleanup_parakeet_tail_artifacts(text: &str) -> String {
         return String::new();
     }
 
-    let mut cleaned = TRAILING_PARAKEET_FILLER_PATTERN
-        .replace(trimmed, "$1")
+    let mut cleaned = TRAILING_MM_HMM_PATTERN.replace(trimmed, "").to_string();
+    cleaned = TRAILING_PARAKEET_FILLER_PATTERN
+        .replace(cleaned.trim(), "$1")
         .to_string();
     cleaned = TRAILING_PUNCTUATION_RUN_PATTERN
         .replace(&cleaned, "$1")
@@ -999,6 +1002,24 @@ pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
     } else if selected_language == "fr" {
         normalized = normalize_parakeet_french_artifacts(&normalized);
         normalized = restore_french_apostrophes(&normalized);
+    } else {
+        // ES, PT and other languages: apply shared safe normalization
+        normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
+        normalized = MOJIBAKE_E_ACUTE_PATTERN
+            .replace_all(&normalized, "\u{00e9}")
+            .to_string();
+        normalized = MOJIBAKE_E_GRAVE_PATTERN
+            .replace_all(&normalized, "\u{00e8}")
+            .to_string();
+        normalized = MOJIBAKE_A_GRAVE_PATTERN
+            .replace_all(&normalized, "\u{00e0}")
+            .to_string();
+        normalized = MOJIBAKE_APOS_PATTERN
+            .replace_all(&normalized, "'")
+            .to_string();
+        normalized = PUNCT_SPACE_PATTERN
+            .replace_all(&normalized, "$1")
+            .to_string();
     }
     normalized = remove_multilingual_standalone_fillers(&normalized);
     normalized = cleanup_parakeet_tail_artifacts(&normalized);

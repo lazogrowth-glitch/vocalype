@@ -1463,8 +1463,11 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 if let Some(summary) = parakeet_summary.as_mut() {
                     if should_attempt_full_audio_recovery(summary, all_samples.len(), &assembled) {
                         let recovery_started = Instant::now();
+                        // Add 0.25s of silence so the model can cleanly decode the last word
+                        let mut recovery_audio = all_samples.clone();
+                        recovery_audio.extend(std::iter::repeat(0.0f32).take(4_000));
                         match tm.transcribe_detailed_request(TranscriptionRequest {
-                            audio: all_samples.clone(),
+                            audio: recovery_audio,
                             app_context: active_app_context.clone(),
                         }) {
                             Ok(recovery_output)

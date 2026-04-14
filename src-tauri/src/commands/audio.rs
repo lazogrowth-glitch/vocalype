@@ -224,11 +224,11 @@ pub fn set_selected_output_device(app: AppHandle, device_name: String) -> Result
     } else {
         let devices =
             list_output_devices().map_err(|e| format!("Failed to list output devices: {}", e))?;
-        if !devices.iter().any(|d| d.index == device_name || d.name == device_name) {
-            return Err(format!(
-                "Output device '{}' not found",
-                device_name
-            ));
+        if !devices
+            .iter()
+            .any(|d| d.index == device_name || d.name == device_name)
+        {
+            return Err(format!("Output device '{}' not found", device_name));
         }
         Some(device_name)
     };

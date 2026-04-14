@@ -1,4 +1,4 @@
-/* eslint-disable i18next/no-literal-string */
+﻿/* eslint-disable i18next/no-literal-string */
 import { useMemo, useState, type CSSProperties } from "react";
 import {
   ArrowRight,
@@ -37,6 +37,13 @@ const AUTH_SIGNUP_URL = "https://vocalype.com/signup?source=desktop";
 const AUTH_LOGIN_URL = "https://vocalype.com/login?source=desktop";
 const PRIVACY_URL = "https://vocalype.com/privacy";
 const TERMS_URL = "https://vocalype.com/terms";
+
+const buildBrowserAuthUrl = (intent: "signup" | "login", state: string) => {
+  const url = new URL(intent === "signup" ? AUTH_SIGNUP_URL : AUTH_LOGIN_URL);
+  url.searchParams.set("source", "desktop");
+  url.searchParams.set("state", state);
+  return url.toString();
+};
 
 const accessLabelForSession = (session: AuthSession | null) => {
   if (!session) return "Aucune session detectee";
@@ -106,8 +113,11 @@ export const AuthPortal = ({
     try {
       // Register the auth flow so the deep-link handler accepts the returning token.
       // Without this, any app can hijack the session via a crafted vocalype:// URL.
-      await commands.startBrowserAuth();
-      await openUrl(intent === "signup" ? AUTH_SIGNUP_URL : AUTH_LOGIN_URL);
+      const result = await commands.startBrowserAuth();
+      if (result.status !== "ok") {
+        throw new Error(result.error);
+      }
+      await openUrl(buildBrowserAuthUrl(intent, result.data));
     } catch (openError) {
       const message =
         openError instanceof Error

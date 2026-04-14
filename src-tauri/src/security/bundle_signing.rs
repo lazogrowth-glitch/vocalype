@@ -34,8 +34,8 @@
 /// bundle.bundle_signature = sig.toString('base64');
 /// ```
 use base64::Engine as _;
-use ring::signature::{UnparsedPublicKey, ED25519};
 use log::warn;
+use ring::signature::{UnparsedPublicKey, ED25519};
 
 /// Ed25519 public key — 32 raw bytes.
 /// Replace with your real public key once you generate your keypair.
@@ -49,10 +49,8 @@ use log::warn;
 /// LICENSE_SIGNING_KEY (base64-encoded 32-byte Ed25519 seed).
 /// It is never committed to git or shipped with the app.
 const LICENSE_PUBLIC_KEY: &[u8] = &[
-    0x14, 0xec, 0x3b, 0x4a, 0x8c, 0x9f, 0xeb, 0x33,
-    0xe6, 0x6a, 0x08, 0x71, 0x54, 0xb9, 0x64, 0xfe,
-    0x12, 0xe2, 0xae, 0x66, 0xc9, 0x98, 0x41, 0x7c,
-    0x5e, 0x06, 0x6e, 0xac, 0xb7, 0xfe, 0xbc, 0x48,
+    0x14, 0xec, 0x3b, 0x4a, 0x8c, 0x9f, 0xeb, 0x33, 0xe6, 0x6a, 0x08, 0x71, 0x54, 0xb9, 0x64, 0xfe,
+    0x12, 0xe2, 0xae, 0x66, 0xc9, 0x98, 0x41, 0x7c, 0x5e, 0x06, 0x6e, 0xac, 0xb7, 0xfe, 0xbc, 0x48,
 ];
 
 /// `true` = bundles without a valid signature are rejected.
@@ -83,11 +81,9 @@ pub fn verify_bundle_signature(bundle_json: &str) -> Result<(), String> {
     match signature_b64 {
         None => {
             if ENFORCE_BUNDLE_SIGNATURE {
-                return Err(
-                    "License bundle is missing required signature. \
+                return Err("License bundle is missing required signature. \
                      Please re-authenticate to get a signed bundle."
-                        .to_string(),
-                );
+                    .to_string());
             }
             warn!(
                 "[license] Bundle has no signature — enforcement not yet active. \
@@ -135,8 +131,7 @@ fn sorted_json_string(value: &serde_json::Value) -> Result<String, serde_json::E
 fn sort_json_value(value: &serde_json::Value) -> serde_json::Value {
     match value {
         serde_json::Value::Object(map) => {
-            let mut sorted: serde_json::Map<String, serde_json::Value> =
-                serde_json::Map::new();
+            let mut sorted: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
             let mut keys: Vec<&String> = map.keys().collect();
             keys.sort();
             for key in keys {
@@ -158,7 +153,10 @@ mod tests {
     /// Test that bundles without a signature are rejected when enforcement is on.
     #[test]
     fn unsigned_bundle_rejected_when_enforced() {
-        assert!(ENFORCE_BUNDLE_SIGNATURE, "Update this test if enforcement is disabled");
+        assert!(
+            ENFORCE_BUNDLE_SIGNATURE,
+            "Update this test if enforcement is disabled"
+        );
         let bundle = r#"{"plan":"premium","entitlements":["premium"]}"#;
         assert!(verify_bundle_signature(bundle).is_err());
     }
@@ -175,6 +173,9 @@ mod tests {
     fn json_sort_is_stable() {
         let a: serde_json::Value = serde_json::json!({"z": 1, "a": 2, "m": 3});
         let b: serde_json::Value = serde_json::json!({"a": 2, "m": 3, "z": 1});
-        assert_eq!(sorted_json_string(&a).unwrap(), sorted_json_string(&b).unwrap());
+        assert_eq!(
+            sorted_json_string(&a).unwrap(),
+            sorted_json_string(&b).unwrap()
+        );
     }
 }

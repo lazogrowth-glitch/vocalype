@@ -6,8 +6,11 @@ use hound::WavReader;
 use rubato::{FftFixedIn, Resampler};
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, State};
+
+const MAX_IMPORTABLE_AUDIO_BYTES: u64 = 512 * 1024 * 1024;
 
 #[tauri::command]
 #[specta::specta]
@@ -324,10 +327,7 @@ pub async fn transcribe_audio_file(
 ) -> Result<String, String> {
     crate::license::enforce_premium_access(&app, "transcribe_file")?;
 
-    let audio_path = std::path::PathBuf::from(&path);
-    if !audio_path.exists() {
-        return Err(format!("File not found: {}", path));
-    }
+    let audio_path = validate_importable_audio_path(&path)?;
 
     let samples = load_external_audio_file(&audio_path).map_err(|e| e.to_string())?;
 
@@ -384,10 +384,7 @@ pub async fn transcribe_audio_file_detailed(
 ) -> Result<AudioTranscriptionDetail, String> {
     crate::license::enforce_premium_access(&app, "transcribe_file")?;
 
-    let audio_path = std::path::PathBuf::from(&path);
-    if !audio_path.exists() {
-        return Err(format!("File not found: {}", path));
-    }
+    let audio_path = validate_importable_audio_path(&path)?;
 
     let samples = load_external_audio_file(&audio_path).map_err(|e| e.to_string())?;
 
@@ -533,7 +530,7 @@ pub async fn update_history_entry_text(
 
 /// Load an external audio file (WAV) as 16 kHz mono f32 samples.
 /// Handles arbitrary sample rates and channel counts via resampling.
-fn load_external_audio_file(path: &std::path::Path) -> anyhow::Result<Vec<f32>> {
+fn load_external_audio_file(path: &Path) -> anyhow::Result<Vec<f32>> {
     let reader = WavReader::open(path)?;
     let spec = reader.spec();
     let num_channels = spec.channels as usize;
@@ -590,4 +587,91 @@ fn load_external_audio_file(path: &std::path::Path) -> anyhow::Result<Vec<f32>> 
     }
 
     Ok(out)
+}
+
+fn validate_importable_audio_path(path: &str) -> Result<PathBuf, String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err("Audio file path is empty".to_string());
+    }
+
+    let candidate = PathBuf::from(trimmed);
+    if !candidate.is_absolute() {
+        return Err("Audio file path must be absolute".to_string());
+    }
+
+    let canonical = candidate.canonicalize().map_err(|err| {
+        format!(
+            "Failed to resolve audio file path '{}': {}",
+            candidate.display(),
+            err
+        )
+    })?;
+
+    let metadata = std::fs::metadata(&canonical).map_err(|err| {
+        format!(
+            "Failed to read audio file metadata '{}': {}",
+            canonical.display(),
+            err
+        )
+    })?;
+    if !metadata.is_file() {
+        return Err(format!(
+            "Audio import '{}' must point to a file",
+            canonical.display()
+        ));
+    }
+    if metadata.len() > MAX_IMPORTABLE_AUDIO_BYTES {
+        return Err(format!(
+            "Audio import '{}' exceeds the {} byte limit",
+            canonical.display(),
+            MAX_IMPORTABLE_AUDIO_BYTES
+        ));
+    }
+
+    let extension = canonical
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.to_ascii_lowercase());
+    if !matches!(extension.as_deref(), Some("wav") | Some("wave")) {
+        return Err(format!(
+            "Audio import '{}' must be a WAV file",
+            canonical.display()
+        ));
+    }
+
+    Ok(canonical)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_importable_audio_path;
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[test]
+    fn validate_importable_audio_path_rejects_relative_paths() {
+        let err = validate_importable_audio_path("clip.wav").unwrap_err();
+        assert!(err.contains("must be absolute"));
+    }
+
+    #[test]
+    fn validate_importable_audio_path_rejects_non_wav_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let audio_path = temp_dir.path().join("clip.mp3");
+        fs::write(&audio_path, b"not-a-wav").unwrap();
+
+        let err = validate_importable_audio_path(audio_path.to_str().unwrap()).unwrap_err();
+        assert!(err.contains("must be a WAV file"));
+    }
+
+    #[test]
+    fn validate_importable_audio_path_accepts_wav_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let audio_path = temp_dir.path().join("clip.wav");
+        fs::write(&audio_path, b"RIFF....WAVEfmt ").unwrap();
+
+        let validated = validate_importable_audio_path(audio_path.to_str().unwrap()).unwrap();
+        assert_eq!(validated, audio_path.canonicalize().unwrap());
+    }
 }

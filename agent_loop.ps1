@@ -1,5 +1,5 @@
 # ============================================================
-# agent_loop.ps1 - Boucle amelioration ASR Parakeet V3 (v2)
+# agent_loop.ps1 - Boucle amelioration ASR Parakeet V3 (v3)
 # Usage: .\agent_loop.ps1 [-MaxIterations 40] [-SkipBaseline]
 # ============================================================
 
@@ -18,16 +18,55 @@ $MANIFEST_FLEURS = "$REPO\src-tauri\evals\parakeet\external\fleurs_supported_400
 $REPORTS_DIR     = "$REPO\src-tauri\evals\parakeet\reports"
 $AIDER           = "C:\Users\ziani\.local\bin\aider.exe"
 
-# Baselines connues (Recovery V2)
+# Baselines mises a jour (2026-04-14 apres ameliorations Claude)
 $BASELINE_LOCAL_WER  = 0.525
-$BASELINE_FLEURS_WER = 8.009
+$BASELINE_FLEURS_WER = 7.145
+
+# ---- Compactage contexte (evite overflow 32K tokens du modele 7B) ----
+# Garde les N dernieres entrees en detail, compacte les plus anciennes en 1 ligne
+$MAX_FULL_HISTORY   = 5    # nb d'entrees recentes gardees en detail dans le prompt
+$compactedSummary   = ""   # accumule le resume des entrees compactees
+$compactedIterCount = 0    # nb total d'iterations deja compactees
 
 if (-not (Test-Path $REPORTS_DIR)) {
     New-Item -ItemType Directory -Path $REPORTS_DIR | Out-Null
 }
 
-# Historique complet des tentatives
+# Historique des tentatives (taille bornee par le compactage)
 $history = [System.Collections.Generic.List[string]]::new()
+
+# Compacte les entrees history au-dela de MAX_FULL_HISTORY en 1 ligne resumee.
+# Appele avant chaque construction de prompt pour garder le contexte borne.
+function Invoke-HistoryCompaction() {
+    if ($script:history.Count -le $script:MAX_FULL_HISTORY) { return }
+
+    # Retirer les entrees les plus vieilles jusqu'a garder MAX_FULL_HISTORY
+    $toCompact = [System.Collections.Generic.List[string]]::new()
+    while ($script:history.Count -gt $script:MAX_FULL_HISTORY) {
+        $toCompact.Add($script:history[0])
+        $script:history.RemoveAt(0)
+    }
+
+    $nAccepted = ($toCompact | Where-Object { $_ -match "ACCEPTE" }).Count
+    $nRejected = ($toCompact | Where-Object { $_ -match "REJETE" }).Count
+    $nNoChange = ($toCompact | Where-Object { $_ -match "Aucune|NO_CHANGE" }).Count
+    $script:compactedIterCount += $toCompact.Count
+
+    # Extraire les WER si present (ex: "local 0.525%->0.520%")
+    $werLine = ""
+    $lastAccepted = $toCompact | Where-Object { $_ -match "ACCEPTE" } | Select-Object -Last 1
+    if ($lastAccepted -and $lastAccepted -match "local ([\d.]+)%->") {
+        $werLine = " | dernier WER local accepte: $($Matches[1])%"
+    }
+
+    $compactLine = "[Iters $($script:compactedIterCount - $toCompact.Count + 1)-$($script:compactedIterCount) resumees: $nAccepted ok / $nRejected ko / $nNoChange inchanges$werLine]"
+
+    if ($script:compactedSummary) {
+        $script:compactedSummary += "`n" + $compactLine
+    } else {
+        $script:compactedSummary = $compactLine
+    }
+}
 
 function Write-Step($msg) {
     Write-Host ""
@@ -162,9 +201,10 @@ IMPORTANT: Modifie UNIQUEMENT $targetFile.
 # ============================================================
 
 Write-Host ""
-Write-Host "  Vocalype ASR Agent Loop v2 - Parakeet V3" -ForegroundColor Magenta
-Write-Host "  Max iterations : $MaxIterations" -ForegroundColor Gray
-Write-Host "  Baselines      : Local WER ${BASELINE_LOCAL_WER}% | FLEURS WER ${BASELINE_FLEURS_WER}%" -ForegroundColor Gray
+Write-Host "  Vocalype ASR Agent Loop v3 - Parakeet V3" -ForegroundColor Magenta
+Write-Host "  Max iterations  : $MaxIterations" -ForegroundColor Gray
+Write-Host "  Baselines       : Local WER ${BASELINE_LOCAL_WER}% | FLEURS WER ${BASELINE_FLEURS_WER}%" -ForegroundColor Gray
+Write-Host "  Context compaction : garder ${MAX_FULL_HISTORY} iters en detail, compacter le reste" -ForegroundColor Gray
 Write-Host ""
 
 # ============================================================
@@ -229,12 +269,20 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-Host "  Analyse des rapports en cours..." -ForegroundColor Gray
     $analysis = Run-Analysis $currentLocalReport $currentFleursReport $i
 
-    # Historique format compact
-    $historyText = if ($history.Count -eq 0) {
+    # Historique: resume compacte des anciennes iters + detail des N dernieres
+    $historyText = ""
+    if ($compactedSummary) {
+        $historyText += "=== Historique compacte (anciennes iterations) ===`n$compactedSummary`n`n"
+    }
+    $historyText += "=== Dernieres iterations (detail) ===`n"
+    $historyText += if ($history.Count -eq 0) {
         "Aucune tentative precedente."
     } else {
         $history -join "`n"
     }
+
+    # Compacter l'historique si trop long avant de construire le prompt
+    Invoke-HistoryCompaction
 
     # Prompt pour l'agent
     $prompt = Build-Prompt $i $analysis $historyText

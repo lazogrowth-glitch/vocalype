@@ -248,13 +248,19 @@ mod tests {
 
     #[test]
     fn single_word_substitution() {
-        let c = candidates("tremblan appelle moi ce soir", "Tremblay appelle moi ce soir");
+        let c = candidates(
+            "tremblan appelle moi ce soir",
+            "Tremblay appelle moi ce soir",
+        );
         assert_eq!(c, vec![("tremblan".to_string(), "Tremblay".to_string())]);
     }
 
     #[test]
     fn multi_word_to_single() {
-        let c = candidates("j'utilise vocal type au quotidien", "j'utilise Vocalype au quotidien");
+        let c = candidates(
+            "j'utilise vocal type au quotidien",
+            "j'utilise Vocalype au quotidien",
+        );
         assert_eq!(c, vec![("vocal type".to_string(), "Vocalype".to_string())]);
     }
 
@@ -275,7 +281,11 @@ mod tests {
     fn two_substitutions() {
         let c = candidates("tremblan appelle se soir", "Tremblay appelle ce soir");
         // "tremblan"→"Tremblay" and "se"→"ce" — but "se" is only 2 chars, filtered
-        assert!(c.iter().any(|(f, _)| f == "tremblan"), "missing tremblan: {:?}", c);
+        assert!(
+            c.iter().any(|(f, _)| f == "tremblan"),
+            "missing tremblan: {:?}",
+            c
+        );
     }
 
     #[test]

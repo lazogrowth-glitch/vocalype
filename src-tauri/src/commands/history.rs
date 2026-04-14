@@ -519,7 +519,7 @@ pub async fn update_history_entry_text(
                     None, // no per-entry app context stored
                     model_id,
                     "auto",
-                    &new_text,           // expected (corrected by user)
+                    &new_text,                 // expected (corrected by user)
                     &entry.transcription_text, // actual (what model produced)
                     &settings.custom_words,
                 );

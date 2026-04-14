@@ -1,6 +1,4 @@
-use crate::processing::correction_tracker::{
-    diff_words, CorrectionTracker, AUTO_ADD_THRESHOLD,
-};
+use crate::processing::correction_tracker::{diff_words, CorrectionTracker, AUTO_ADD_THRESHOLD};
 use crate::processing::dictionary::DictionaryManager;
 use crate::settings::{get_settings, write_settings};
 use serde::{Deserialize, Serialize};
@@ -44,7 +42,10 @@ pub fn get_learning_stats(
 
     let total_corrections_recorded: u32 = counts.values().sum();
     let distinct_corrections = counts.len();
-    let auto_learned_pairs = counts.values().filter(|&&c| c >= AUTO_ADD_THRESHOLD).count();
+    let auto_learned_pairs = counts
+        .values()
+        .filter(|&&c| c >= AUTO_ADD_THRESHOLD)
+        .count();
 
     let mut top: Vec<TopCorrection> = counts
         .iter()

@@ -125,10 +125,7 @@ fn build_insights(
         } else if pct <= -10.0 {
             insights.push(WeeklyInsight {
                 kind: "decline".to_string(),
-                message: format!(
-                    "{:.0}% de sessions de moins que la semaine dernière.",
-                    pct
-                ),
+                message: format!("{:.0}% de sessions de moins que la semaine dernière.", pct),
                 value: Some(pct),
             });
         }
@@ -149,17 +146,16 @@ fn build_insights(
                 kind: "peak_time".to_string(),
                 message: format!(
                     "Tu dictes le plus le {} entre {}h et {}h.",
-                    day_name, start, start + 2
+                    day_name,
+                    start,
+                    start + 2
                 ),
                 value: Some(start as f32),
             });
         } else {
             insights.push(WeeklyInsight {
                 kind: "peak_time".to_string(),
-                message: format!(
-                    "Ton heure de pointe : {}h – {}h.",
-                    start, start + 2
-                ),
+                message: format!("Ton heure de pointe : {}h – {}h.", start, start + 2),
                 value: Some(start as f32),
             });
         }
@@ -228,7 +224,9 @@ fn build_insights(
 }
 
 fn peak_day_name(daily_sessions: &[i64]) -> Option<&'static str> {
-    let days = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+    let days = [
+        "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche",
+    ];
     daily_sessions
         .iter()
         .enumerate()

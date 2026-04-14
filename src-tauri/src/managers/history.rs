@@ -777,7 +777,10 @@ impl HistoryManager {
                 "SELECT transcription_text FROM transcription_history WHERE timestamp >= ?1",
             )?;
             let texts = stmt.query_map(params![week_start], |r| r.get::<_, String>(0))?;
-            texts.filter_map(|t| t.ok()).map(|t| t.split_whitespace().count() as i64).sum()
+            texts
+                .filter_map(|t| t.ok())
+                .map(|t| t.split_whitespace().count() as i64)
+                .sum()
         };
 
         let sessions_last_week: i64 = conn.query_row(
@@ -790,8 +793,13 @@ impl HistoryManager {
             let mut stmt = conn.prepare(
                 "SELECT transcription_text FROM transcription_history WHERE timestamp >= ?1 AND timestamp < ?2",
             )?;
-            let texts = stmt.query_map(params![two_weeks_start, week_start], |r| r.get::<_, String>(0))?;
-            texts.filter_map(|t| t.ok()).map(|t| t.split_whitespace().count() as i64).sum()
+            let texts = stmt.query_map(params![two_weeks_start, week_start], |r| {
+                r.get::<_, String>(0)
+            })?;
+            texts
+                .filter_map(|t| t.ok())
+                .map(|t| t.split_whitespace().count() as i64)
+                .sum()
         };
 
         let avg_words = if sessions_this_week > 0 {
@@ -825,9 +833,8 @@ impl HistoryManager {
         // Peak 2-hour block (0 = 0h-2h, 1 = 2h-4h, …, 11 = 22h-24h)
         let mut hour_blocks = vec![0i64; 12];
         {
-            let mut stmt = conn.prepare(
-                "SELECT timestamp FROM transcription_history WHERE timestamp >= ?1",
-            )?;
+            let mut stmt =
+                conn.prepare("SELECT timestamp FROM transcription_history WHERE timestamp >= ?1")?;
             let timestamps = stmt.query_map(params![week_start], |r| r.get::<_, i64>(0))?;
             for ts in timestamps.filter_map(|t| t.ok()) {
                 let hour = ((ts % 86_400) / 3_600) as usize;

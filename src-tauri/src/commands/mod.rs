@@ -6,10 +6,10 @@ pub mod corrections;
 pub mod dictionary;
 pub mod gemini;
 pub mod history;
-pub mod report;
 pub mod meetings;
 pub mod models;
 pub mod notes;
+pub mod report;
 pub mod snippets;
 pub mod transcription;
 

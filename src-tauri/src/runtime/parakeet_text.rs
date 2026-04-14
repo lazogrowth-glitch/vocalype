@@ -43,6 +43,12 @@ static TRAILING_PUNCTUATION_RUN_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\s*([.!?])(?:\s*[.!?])+$").unwrap());
 static TRAILING_MM_HMM_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)[,.]?\s*\b(?:mm-hmm|uh-huh|mhm|mmhmm)\b\s*[.!?,]*$").unwrap());
+// WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" consistently
+static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
+// GHz: model outputs "G H C", "GHC", "G.H.Z" instead of "GHz"
+static GHZ_MISREAD_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\b(\d+(?:\.\d+)?)\s*(?:g\s*h\s*[czCZ]|g\.h\.z\.?)\b").unwrap());
 static OPEN_I_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen\s+i\b").unwrap());
 static DOT_UP_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdot\s+up\b").unwrap());
 static DOCKS_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdocks\b").unwrap());
@@ -486,6 +492,12 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
         .to_string();
     normalized = ALEX_DOT_MARTIN_PATTERN
         .replace_all(&normalized, "alex dot martin")
+        .to_string();
+    normalized = WIFI_802_MISREAD_PATTERN
+        .replace_all(&normalized, "802.11$1")
+        .to_string();
+    normalized = GHZ_MISREAD_PATTERN
+        .replace_all(&normalized, "${1}GHz")
         .to_string();
     normalized = DOCKS_PATTERN.replace_all(&normalized, "docs").to_string();
     normalized = CALL_VOCAL_PATTERN
@@ -1564,6 +1576,25 @@ mod tests {
         assert!(normalized.contains("several clauses"));
         assert!(normalized.contains("and see whether the app begins"));
         assert!(normalized.contains("lose words duplicate little sections"));
+    }
+
+    #[test]
+    fn normalizes_wifi_and_ghz_artifacts() {
+        let t1 = finalize_parakeet_text(
+            "The eight oh 2.11 in standard operates on both the 2.4 G H C and 5.0 GHC frequencies.",
+            "en",
+        );
+        assert!(t1.contains("2.4GHz"), "expected 2.4GHz in: {t1}");
+        assert!(t1.contains("5.0GHz"), "expected 5.0GHz in: {t1}");
+
+        let t2 = finalize_parakeet_text(
+            "This will allow it to be backwards compatible with 10.2 A, 10.2 B and 10.2 G, provided that the base station has dual radios.",
+            "en",
+        );
+        assert!(
+            t2.contains("802.11A") || t2.contains("802.11a"),
+            "expected 802.11a in: {t2}"
+        );
     }
 
     #[test]

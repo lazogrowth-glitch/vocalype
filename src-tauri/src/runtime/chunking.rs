@@ -354,7 +354,10 @@ mod tests {
 
     #[test]
     fn test_deduplicate_boundary_ignores_punctuation_only_overlap() {
-        assert_eq!(deduplicate_boundary_n("hello ...", "... world", 3), "... world");
+        assert_eq!(
+            deduplicate_boundary_n("hello ...", "... world", 3),
+            "... world"
+        );
     }
 
     #[test]

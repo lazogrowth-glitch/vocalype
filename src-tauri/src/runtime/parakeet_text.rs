@@ -1043,6 +1043,10 @@ pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
     } else if selected_language == "fr" {
         normalized = normalize_parakeet_french_artifacts(&normalized);
         normalized = restore_french_apostrophes(&normalized);
+        // Remove spaces that the model inserts before punctuation (e.g. "802 .11n" → "802.11n")
+        normalized = PUNCT_SPACE_PATTERN
+            .replace_all(&normalized, "$1")
+            .to_string();
     } else {
         // ES, PT and other languages: apply shared safe normalization
         normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();

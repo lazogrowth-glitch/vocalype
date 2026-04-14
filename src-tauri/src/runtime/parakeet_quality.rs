@@ -85,6 +85,8 @@ pub struct ParakeetSessionCompletion {
     pub total_chunks: usize,
     pub empty_chunks: usize,
     pub empty_nonfinal_chunks: usize,
+    pub final_chunk_words: usize,
+    pub final_chunk_samples: usize,
     pub retry_chunks: usize,
     pub filtered_chunks: usize,
     pub trimmed_words_total: usize,

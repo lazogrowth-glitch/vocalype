@@ -1,139 +1,159 @@
 # ============================================================
-# agent_loop.ps1 — Boucle d'amélioration ASR Parakeet V3
-# Usage: .\agent_loop.ps1 [-MaxIterations 10] [-SkipBaseline]
+# agent_loop.ps1 - Boucle amelioration ASR Parakeet V3 (v2)
+# Usage: .\agent_loop.ps1 [-MaxIterations 40] [-SkipBaseline]
 # ============================================================
 
 param(
-    [int]$MaxIterations = 20,
+    [int]$MaxIterations = 15,
     [switch]$SkipBaseline
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
+$env:OLLAMA_API_BASE = "http://localhost:11434"
+$env:PYTHONUTF8 = "1"
 $REPO = "C:\developer\sas\vocalype"
 $MODEL_PATH = "$env:APPDATA\com.vocalype.desktop\models\parakeet-tdt-0.6b-v3-int8"
-$MANIFEST_LOCAL = "$REPO\src-tauri\evals\parakeet\dataset_manifest_combined_current.json"
+$MANIFEST_LOCAL  = "$REPO\src-tauri\evals\parakeet\dataset_manifest_combined_current.json"
 $MANIFEST_FLEURS = "$REPO\src-tauri\evals\parakeet\external\fleurs_supported_400\dataset_manifest_external.json"
-$REPORTS_DIR = "$REPO\src-tauri\evals\parakeet\reports"
-$AIDER = "C:\Users\ziani\.local\bin\aider.exe"
-$CARGO = "cargo"
+$REPORTS_DIR     = "$REPO\src-tauri\evals\parakeet\reports"
+$AIDER           = "C:\Users\ziani\.local\bin\aider.exe"
 
 # Baselines connues (Recovery V2)
-$BASELINE_LOCAL_WER = 0.525
+$BASELINE_LOCAL_WER  = 0.525
 $BASELINE_FLEURS_WER = 8.009
 
 if (-not (Test-Path $REPORTS_DIR)) {
     New-Item -ItemType Directory -Path $REPORTS_DIR | Out-Null
 }
 
+# Historique complet des tentatives
+$history = [System.Collections.Generic.List[string]]::new()
+
 function Write-Step($msg) {
-    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
     Write-Host " $msg" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
 }
 
-function Run-Eval($manifest, $reportPath, $label) {
-    Write-Step "Eval: $label"
+function Run-Eval($manifest, $label) {
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $report = "$REPORTS_DIR\$label-$timestamp.json"
 
     Push-Location $REPO
-    try {
-        & $CARGO run --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval -- `
-            "$MODEL_PATH" "$manifest" parakeet_v3_multilingual "$report" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "ERREUR eval $label (code $LASTEXITCODE)" -ForegroundColor Red
-            return $null
-        }
-    } finally {
-        Pop-Location
+    # Piper via Write-Host pour que la sortie aille a l'ecran sans etre capturee par PowerShell
+    cargo run --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval -- `
+        "$MODEL_PATH" "$manifest" parakeet_v3_multilingual "$report" 2>&1 | ForEach-Object { Write-Host $_ }
+    $evalExit = $LASTEXITCODE
+    Pop-Location
+
+    if ($evalExit -ne 0) {
+        Write-Host "ERREUR eval $label (code $evalExit)" -ForegroundColor Red
+        return $null
     }
 
-    # Extraire WER du rapport JSON
     if (Test-Path $report) {
-        $data = Get-Content $report | ConvertFrom-Json
-        $wer = $data.overall.wer_percent
-        $cer = $data.overall.cer_percent
-        $omissions = $data.overall.omission_rate
-        $hallucinations = $data.overall.hallucination_rate
-        Write-Host "  WER: $wer%  CER: $cer%  Omissions: $omissions%  Hallucinations: $hallucinations%" -ForegroundColor Yellow
-        return @{ wer=$wer; cer=$cer; omissions=$omissions; hallucinations=$hallucinations; path=$report }
+        return $report
     }
     return $null
 }
 
-function Run-CargoCheck() {
-    Write-Step "Cargo check + tests"
-    Push-Location $REPO
-    try {
-        & $CARGO check --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval 2>&1
-        if ($LASTEXITCODE -ne 0) { return $false }
-        & $CARGO test --manifest-path .\src-tauri\Cargo.toml "runtime::parakeet_text::tests" --lib 2>&1
-        if ($LASTEXITCODE -ne 0) { return $false }
-        return $true
-    } finally {
-        Pop-Location
+function Get-StatsFromAnalysis($analysisOutput) {
+    # Extraire le JSON de stats depuis la sortie Python
+    $inStats = $false
+    $jsonLine = ""
+    foreach ($line in ($analysisOutput -split "`n")) {
+        if ($line -match "JSON_STATS_START") { $inStats = $true; continue }
+        if ($line -match "JSON_STATS_END") { break }
+        if ($inStats) { $jsonLine += $line }
     }
+    if ($jsonLine) {
+        try { return $jsonLine | ConvertFrom-Json } catch { return $null }
+    }
+    return $null
 }
 
-function Run-GitDiff() {
+function Run-Analysis($localReport, $fleursReport, $iteration) {
+    $argsFile = "$REPO\agent_args_temp.txt"
+    $output = @()
+    try {
+        $content = "$localReport`n$MANIFEST_LOCAL`n$iteration"
+        if ($fleursReport) { $content += "`n$fleursReport`n$MANIFEST_FLEURS" }
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($argsFile, $content, $utf8NoBom)
+        Push-Location $REPO
+        $output = python agent_analyze_args.py 2>&1
+        Pop-Location
+    } finally {
+        Remove-Item $argsFile -Force -ErrorAction SilentlyContinue
+    }
+    return ($output -join "`n")
+}
+
+function Run-CargoCheck() {
+    Write-Step "Cargo check + tests unitaires"
     Push-Location $REPO
-    $diff = & git diff --stat 2>&1
-    $changes = & git diff --name-only 2>&1
+    cargo check --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval 2>&1
+    $checkCode = $LASTEXITCODE
+    if ($checkCode -ne 0) { Pop-Location; return $false }
+    cargo test --manifest-path .\src-tauri\Cargo.toml "runtime::parakeet_text::tests" --lib 2>&1
+    $testCode = $LASTEXITCODE
     Pop-Location
-    return @{ diff=$diff; files=$changes }
+    return ($testCode -eq 0)
 }
 
 function Revert-Changes($files) {
-    Write-Host "Revert des changements..." -ForegroundColor Red
+    Write-Host "Revert automatique des changements..." -ForegroundColor Red
     Push-Location $REPO
     foreach ($f in $files) {
-        & git checkout -- $f 2>&1
+        if ($f -and $f.Trim()) {
+            git checkout -- $f 2>&1 | Out-Null
+        }
     }
     Pop-Location
 }
 
-function Build-AgentPrompt($iteration, $localResult, $fleursResult, $previousAttempt) {
-    $date = Get-Date -Format "yyyy-MM-dd HH:mm"
-    $prevSection = if ($previousAttempt) { "## Tentative précédente (rejetée)\n$previousAttempt" } else { "" }
+function Build-Prompt($iteration, $analysis, $historyText) {
+
+    # Taches assignees par iteration (rotation sur 5 taches)
+    $tasks = @(
+        "Ajoute ou ameliore la normalisation des NOMBRES: convertis les chiffres en mots pour les langues ES/FR/PT (ex: '3' -> 'tres'/'trois'/'tres'). EN: laisser les chiffres. Sois conservatif, ne touche qu'aux cas simples et non ambigus.",
+        "Ameliore la DEDUPLICATION de mots entre chunks: quand deux chunks consecutifs se terminent/commencent par le meme mot, supprime le doublon. Regarde les exemples HYP dans l'analyse pour identifier les patterns.",
+        "Ajoute des FILLERS manquants ou ameliore les existants: cherche dans les HYP des fillers non catches (euh, um, hmm, uh, eh, ah). Ajoute-les a la liste de nettoyage de fin de phrase.",
+        "Ajoute des CORRECTIONS CIBLEES basees sur les exemples REF vs HYP de l'analyse: identifie les substitutions les plus frequentes et ajoute des regles de correction pour les cas non ambigus.",
+        "Ameliore la PONCTUATION ou la CAPITALISATION: supprime les virgules/points superflus en debut/fin de chunk, corrige les majuscules inappropriees en milieu de phrase."
+    )
+    $taskIndex = ($iteration - 1) % $tasks.Count
+    $assignedTask = $tasks[$taskIndex]
+
+    if ($iteration -le 10) { $phase = "PHASE 1 -- fichier: parakeet_text.rs (corrections texte post-ASR)" }
+    else                   { $phase = "PHASE 2 -- fichier: transcribe.rs (pipeline recovery, assemblage chunks)" }
 
     return @"
-Date: $date | Iteration: $iteration/$MaxIterations
+Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Iteration: ${iteration}/$MaxIterations
+Phase: $phase
 
-Tu es un expert en ASR (Automatic Speech Recognition) améliorant le pipeline Parakeet V3 de Vocalype.
-Consulte le fichier AGENT_MISSION.md pour le contexte complet, les règles, et les baselines.
+Consulte AGENT_MISSION.md pour les regles completes et les baselines.
 
-## Résultats actuels
+$analysis
 
-### Local 70 vocaux
-- WER: $($localResult.wer)% (baseline: ${BASELINE_LOCAL_WER}%)
-- CER: $($localResult.cer)%
-- Omissions: $($localResult.omissions)%
-- Hallucinations: $($localResult.hallucinations)%
+## Historique des tentatives precedentes
+$historyText
 
-### FLEURS 400 (EN/ES/FR/PT sans Hindi)
-- WER: $($fleursResult.wer)% (baseline: ${BASELINE_FLEURS_WER}%)
-- CER: $($fleursResult.cer)%
-- Omissions: $($fleursResult.omissions)%
-- Hallucinations: $($fleursResult.hallucinations)%
+## TA TACHE OBLIGATOIRE pour l'iteration ${iteration}
 
-$prevSection
+$assignedTask
 
-## Ta mission pour cette itération
+INSTRUCTIONS:
+- Tu DOIS implementer cette tache dans $targetFile. Ce n'est pas optionnel.
+- Si la tache est deja implementee: ameliore l'implementation existante (plus de cas, meilleure logique).
+- Si vraiment impossible dans ce fichier: explique pourquoi en 1 ligne puis implemente la tache la plus similaire possible.
+- NE PAS changer la taille de chunk globalement (prouve regressif).
+- NE PAS introduire Hindi.
+- NE PAS faire git reset ou revert.
+- Changement CONSERVATIF: ne casse pas ce qui marche.
 
-Propose et implémente UNE seule amélioration ciblée qui pourrait réduire WER/CER/omissions/hallucinations.
-Règles strictes:
-1. NE PAS changer la taille de chunk globalement
-2. NE PAS introduire Hindi
-3. NE PAS faire git reset
-4. Toute amélioration doit être conservative (ne pas casser ce qui marche)
-5. Si tu ne vois pas d'amélioration sûre, écris "NO_CHANGE" sans toucher aux fichiers
-
-Fichiers à modifier si pertinent:
-- src-tauri/src/actions/transcribe.rs
-- src-tauri/src/runtime/parakeet_text.rs
-- src-tauri/src/runtime/parakeet_quality.rs
-
-Implémente directement le changement dans le code.
+IMPORTANT: Modifie UNIQUEMENT $targetFile.
 "@
 }
 
@@ -141,162 +161,251 @@ Implémente directement le changement dans le code.
 # MAIN
 # ============================================================
 
-Write-Host @"
+Write-Host ""
+Write-Host "  Vocalype ASR Agent Loop v2 - Parakeet V3" -ForegroundColor Magenta
+Write-Host "  Max iterations : $MaxIterations" -ForegroundColor Gray
+Write-Host "  Baselines      : Local WER ${BASELINE_LOCAL_WER}% | FLEURS WER ${BASELINE_FLEURS_WER}%" -ForegroundColor Gray
+Write-Host ""
 
-  ___  ____  ____     _
- / _ \/ ___||  _ \   | |    ___   ___  _ __
-| | | \___ \| |_) |  | |   / _ \ / _ \| '_ \
-| |_| |___) |  _ <   | |__| (_) | (_) | |_) |
- \___/|____/|_| \_\  |_____\___/ \___/| .__/
-                                       |_|
+# ============================================================
+# BASELINE
+# ============================================================
+$currentLocalReport  = $null
+$currentFleursReport = $null
 
-Vocalype ASR Agent Loop — Parakeet V3 Improvement
-"@ -ForegroundColor Magenta
-
-Write-Host "Max iterations: $MaxIterations" -ForegroundColor Gray
-Write-Host "Baselines: Local WER ${BASELINE_LOCAL_WER}% | FLEURS WER ${BASELINE_FLEURS_WER}%`n" -ForegroundColor Gray
-
-# Eval baseline initiale
 if (-not $SkipBaseline) {
     Write-Step "Eval baseline initiale"
-    $baseLocal = Run-Eval $MANIFEST_LOCAL "baseline_local" "baseline-local70"
-    $baseFleurs = Run-Eval $MANIFEST_FLEURS "baseline_fleurs" "baseline-fleurs400"
 
-    if (-not $baseLocal -or -not $baseFleurs) {
-        Write-Host "ERREUR: Impossible de lancer les evals baseline. Vérifier le modèle et les manifests." -ForegroundColor Red
+    Write-Step "Eval: baseline-local70"
+    $currentLocalReport = Run-Eval $MANIFEST_LOCAL "baseline-local70"
+
+    Write-Step "Eval: baseline-fleurs400"
+    $currentFleursReport = Run-Eval $MANIFEST_FLEURS "baseline-fleurs400"
+
+    if (-not $currentLocalReport -or -not $currentFleursReport) {
+        Write-Host "ERREUR: Evals baseline ont echoue. Verifier modele et manifests." -ForegroundColor Red
         exit 1
     }
-
-    $currentLocal = $baseLocal
-    $currentFleurs = $baseFleurs
 } else {
-    Write-Host "Baseline skippée — utilisation des baselines hardcodées" -ForegroundColor Yellow
-    $currentLocal = @{ wer=$BASELINE_LOCAL_WER; cer=1.443; omissions=0; hallucinations=0 }
-    $currentFleurs = @{ wer=$BASELINE_FLEURS_WER; cer=5.523; omissions=6.728; hallucinations=6.353 }
+    Write-Host "Baseline skippee - en attente du premier run pour avoir les rapports..." -ForegroundColor Yellow
+    # Prendre les derniers rapports existants si disponibles
+    $lastLocal = Get-ChildItem "$REPORTS_DIR\*local70*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+    $lastFleurs = Get-ChildItem "$REPORTS_DIR\*fleurs400*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+    if ($lastLocal)  { $currentLocalReport  = $lastLocal.FullName;  Write-Host "Rapport local  : $currentLocalReport"  -ForegroundColor Gray }
+    if ($lastFleurs) { $currentFleursReport = $lastFleurs.FullName; Write-Host "Rapport FLEURS : $currentFleursReport" -ForegroundColor Gray }
+
+    if (-not $currentLocalReport -or -not $currentFleursReport) {
+        Write-Host "ERREUR: -SkipBaseline utilise mais aucun rapport existant. Relancer sans -SkipBaseline." -ForegroundColor Red
+        exit 1
+    }
 }
 
-$bestLocal = $currentLocal.wer
-$bestFleurs = $currentFleurs.wer
-$previousAttempt = $null
+# Analyse initiale
+Write-Step "Analyse baseline"
+$baselineAnalysis = Run-Analysis $currentLocalReport $currentFleursReport 0
+$baseStats = Get-StatsFromAnalysis $baselineAnalysis
+
+$bestLocalWer  = if ($baseStats -and $baseStats.local)  { $baseStats.local.wer }  else { $BASELINE_LOCAL_WER }
+$bestFleursWer = if ($baseStats -and $baseStats.fleurs) { $baseStats.fleurs.wer } else { $BASELINE_FLEURS_WER }
+$currentLocalWer  = $bestLocalWer
+$currentFleursWer = $bestFleursWer
+
+Write-Host $baselineAnalysis -ForegroundColor Gray
+Write-Host ""
+Write-Host "  WER Local  : $bestLocalWer%  (baseline: ${BASELINE_LOCAL_WER}%)" -ForegroundColor Yellow
+Write-Host "  WER FLEURS : $bestFleursWer%  (baseline: ${BASELINE_FLEURS_WER}%)" -ForegroundColor Yellow
+
 $improvements = 0
 
 # ============================================================
 # BOUCLE PRINCIPALE
 # ============================================================
 for ($i = 1; $i -le $MaxIterations; $i++) {
-    Write-Step "ITERATION $i / $MaxIterations"
-    Write-Host "Meilleur local WER: $bestLocal% | Meilleur FLEURS WER: $bestFleurs%" -ForegroundColor Green
 
-    # Snapshot des fichiers avant modification
-    $gitStatus = & git -C $REPO diff --name-only 2>&1
+    Write-Step "ITERATION ${i} / $MaxIterations"
+    Write-Host "  WER local: $currentLocalWer%  |  WER FLEURS: $currentFleursWer%  |  Ameliorations: $improvements" -ForegroundColor Green
 
-    # Construire le prompt
-    $prompt = Build-AgentPrompt $i $currentLocal $currentFleurs $previousAttempt
+    # Analyse detaillee des rapports actuels
+    Write-Host "  Analyse des rapports en cours..." -ForegroundColor Gray
+    $analysis = Run-Analysis $currentLocalReport $currentFleursReport $i
 
-    # Créer un fichier prompt temporaire
+    # Historique format compact
+    $historyText = if ($history.Count -eq 0) {
+        "Aucune tentative precedente."
+    } else {
+        $history -join "`n"
+    }
+
+    # Prompt pour l'agent
+    $prompt = Build-Prompt $i $analysis $historyText
     $promptFile = "$REPO\agent_prompt_temp.txt"
-    $prompt | Out-File -FilePath $promptFile -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($promptFile, $prompt, $utf8NoBom)
 
-    Write-Step "Lancement de l'agent Aider"
+    # Snapshot avant
+    Push-Location $REPO
+    $filesBefore = (git diff --name-only 2>$null) | Where-Object { $_ -match "^src-tauri/" }
+    Pop-Location
+
+    # parakeet_text.rs = corrections texte = impact direct sur WER
+    # transcribe.rs = pipeline/recovery = impact sur omissions/hallucinations
+    $targetFile = "src-tauri/src/runtime/parakeet_text.rs"     # iter 1-10
+    if ($i -gt 10) { $targetFile = "src-tauri/src/actions/transcribe.rs" }  # iter 11+
+
+    Write-Host "  Fichier cible: $targetFile" -ForegroundColor Gray
+
+    # Creer .aiderignore temporaire pour empecher l'auto-ajout des gros fichiers
+    $aiderIgnore = "$REPO\.aiderignore"
+    $ignoreContent = "src-tauri/src/actions/transcribe.rs`nsrc-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs"
+    if ($targetFile -match "transcribe") {
+        $ignoreContent = "src-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs`nsrc-tauri/src/runtime/parakeet_text.rs"
+    } elseif ($targetFile -match "parakeet_quality") {
+        $ignoreContent = "src-tauri/src/actions/transcribe.rs`nsrc-tauri/src/runtime/chunking.rs`nsrc-tauri/src/runtime/parakeet_text.rs"
+    }
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($aiderIgnore, $ignoreContent, $utf8NoBom)
+
+    # Lancer Aider
+    Write-Step "Aider - iteration ${i}"
     Push-Location $REPO
     try {
         & $AIDER `
             --model ollama/qwen2.5-coder:7b-instruct-q8_0 `
+            --edit-format diff `
             --no-auto-commits `
             --yes-always `
+            --no-show-model-warnings `
+            --no-browser `
+            --no-gui `
+            --map-tokens 0 `
             --read AGENT_MISSION.md `
-            --file src-tauri/src/actions/transcribe.rs `
-            --file src-tauri/src/runtime/parakeet_text.rs `
-            --file src-tauri/src/runtime/parakeet_quality.rs `
-            --message-file agent_prompt_temp.txt `
-            2>&1
+            --file $targetFile `
+            --message-file agent_prompt_temp.txt
     } finally {
         Pop-Location
+        Remove-Item $aiderIgnore  -Force -ErrorAction SilentlyContinue
+        Remove-Item $promptFile   -Force -ErrorAction SilentlyContinue
     }
 
-    Remove-Item $promptFile -Force -ErrorAction SilentlyContinue
+    # Verifier modifications (filtrer les warnings git, garder seulement src-tauri/)
+    Push-Location $REPO
+    $filesAfter = (git diff --name-only 2>$null) | Where-Object { $_ -match "^src-tauri/" }
+    Pop-Location
+    $changedFiles = $filesAfter | Where-Object { $filesBefore -notcontains $_ }
 
-    # Vérifier si l'agent a modifié des fichiers
-    $newChanges = & git -C $REPO diff --name-only 2>&1
-    $changedFiles = $newChanges | Where-Object { $_ -ne "" }
-
-    if (-not $changedFiles -or ($changedFiles | Out-String).Contains("NO_CHANGE")) {
-        Write-Host "Agent: aucune modification proposée." -ForegroundColor Yellow
-        $previousAttempt = "Iteration $i: Agent n'a pas proposé de changement."
+    if (-not $changedFiles -or ($changedFiles.Count -eq 0)) {
+        $msg = "Iter ${i}: Aucune modification (NO_CHANGE ou rien propose)."
+        Write-Host "  $msg" -ForegroundColor Yellow
+        $history.Add($msg)
         continue
     }
 
-    Write-Host "Fichiers modifiés: $($changedFiles -join ', ')" -ForegroundColor Cyan
+    Write-Host "  Fichiers modifies: $($changedFiles -join ', ')" -ForegroundColor Cyan
 
     # Cargo check
-    Write-Step "Validation compilation"
     $compileOk = Run-CargoCheck
     if (-not $compileOk) {
-        Write-Host "COMPILATION ECHOUEE — Revert" -ForegroundColor Red
+        $msg = "Iter ${i}: REJETE - ne compile pas. Fichiers: $($changedFiles -join ', ')"
+        Write-Host "  $msg" -ForegroundColor Red
+        $history.Add($msg)
         Revert-Changes $changedFiles
-        $previousAttempt = "Iteration $i: Changement rejeté — ne compile pas."
         continue
     }
 
-    # Evals après changement
+    # Evals apres changement
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $newLocal = Run-Eval $MANIFEST_LOCAL "local70" "iter$i-local70-$timestamp"
-    $newFleurs = Run-Eval $MANIFEST_FLEURS "fleurs400" "iter$i-fleurs400-$timestamp"
 
-    if (-not $newLocal -or -not $newFleurs) {
-        Write-Host "ERREUR eval — Revert" -ForegroundColor Red
+    Write-Step "Eval local70 - iter ${i}"
+    $newLocalReport = Run-Eval $MANIFEST_LOCAL "iter${i}-local70-$timestamp"
+
+    Write-Step "Eval fleurs400 - iter ${i}"
+    $newFleursReport = Run-Eval $MANIFEST_FLEURS "iter${i}-fleurs400-$timestamp"
+
+    if (-not $newLocalReport -or -not $newFleursReport) {
+        $msg = "Iter ${i}: REJETE - eval a echoue."
+        Write-Host "  $msg" -ForegroundColor Red
+        $history.Add($msg)
         Revert-Changes $changedFiles
-        $previousAttempt = "Iteration $i: Eval a échoué."
         continue
     }
 
-    # Décision: accepter ou rejeter
-    $localImproved = $newLocal.wer -le ($currentLocal.wer + 0.1)    # tolérance 0.1%
-    $fleursImproved = $newFleurs.wer -le ($currentFleurs.wer + 0.3)  # tolérance 0.3%
-    $localBetter = $newLocal.wer -lt $currentLocal.wer
-    $fleursBetter = $newFleurs.wer -lt $currentFleurs.wer
+    # Analyse resultats
+    $newAnalysis = Run-Analysis $newLocalReport $newFleursReport $i
+    $newStats = Get-StatsFromAnalysis $newAnalysis
 
-    Write-Host "`nComparaison:" -ForegroundColor White
-    Write-Host "  Local 70:   $($currentLocal.wer)% -> $($newLocal.wer)%  $(if($localBetter){'✓ MIEUX'}elseif($localImproved){'~ OK'}else{'✗ RÉGRESSION'})" -ForegroundColor $(if($localBetter){'Green'}elseif($localImproved){'Yellow'}else{'Red'})
-    Write-Host "  FLEURS 400: $($currentFleurs.wer)% -> $($newFleurs.wer)%  $(if($fleursBetter){'✓ MIEUX'}elseif($fleursImproved){'~ OK'}else{'✗ RÉGRESSION'})" -ForegroundColor $(if($fleursBetter){'Green'}elseif($fleursImproved){'Yellow'}else{'Red'})
+    $newLocalWer  = if ($newStats -and $newStats.local)  { $newStats.local.wer }  else { 999 }
+    $newFleursWer = if ($newStats -and $newStats.fleurs) { $newStats.fleurs.wer } else { 999 }
 
-    if ($localImproved -and $fleursImproved) {
-        Write-Host "`nCHANGEMENT ACCEPTÉ" -ForegroundColor Green
+    # Decision
+    $localOk  = $newLocalWer  -le ($currentLocalWer  + 0.1)
+    $fleursOk = $newFleursWer -le ($currentFleursWer + 0.3)
+    $localDelta  = [math]::Round($newLocalWer  - $currentLocalWer,  3)
+    $fleursDelta = [math]::Round($newFleursWer - $currentFleursWer, 3)
 
-        # Commit
-        $commitMsg = "agent: iter$i — local WER $($newLocal.wer)% FLEURS WER $($newFleurs.wer)%"
-        & git -C $REPO add -p 2>&1 | Out-Null
+    Write-Host ""
+    Write-Host "  Resultats:" -ForegroundColor White
+    $lc = if ($newLocalWer  -lt $currentLocalWer)  { 'Green' } elseif ($localOk)  { 'Yellow' } else { 'Red' }
+    $fc = if ($newFleursWer -lt $currentFleursWer) { 'Green' } elseif ($fleursOk) { 'Yellow' } else { 'Red' }
+    Write-Host "    Local  70 : $currentLocalWer%  ->  $newLocalWer%   (delta: $localDelta%)"  -ForegroundColor $lc
+    Write-Host "    FLEURS 400: $currentFleursWer% ->  $newFleursWer%  (delta: $fleursDelta%)" -ForegroundColor $fc
+
+    if ($localOk -and $fleursOk) {
+        Write-Host ""
+        Write-Host "  >>> CHANGEMENT ACCEPTE <<<" -ForegroundColor Green
+
         Push-Location $REPO
-        & git add src-tauri/src/actions/transcribe.rs src-tauri/src/runtime/parakeet_text.rs src-tauri/src/runtime/parakeet_quality.rs 2>&1 | Out-Null
-        & git commit -m $commitMsg 2>&1 | Out-Null
+        $commitMsg = "agent iter${i}: local=$newLocalWer% fleurs=$newFleursWer% files=$($changedFiles -join ',')"
+        foreach ($cf in $changedFiles) { git add $cf 2>&1 | Out-Null }
+        git commit -m $commitMsg 2>&1 | Out-Null
         Pop-Location
 
-        $currentLocal = $newLocal
-        $currentFleurs = $newFleurs
+        $msg = "Iter ${i}: ACCEPTE - local $currentLocalWer%->$newLocalWer% FLEURS $currentFleursWer%->$newFleursWer%"
+        $history.Add($msg)
 
-        if ($newLocal.wer -lt $bestLocal) { $bestLocal = $newLocal.wer }
-        if ($newFleurs.wer -lt $bestFleurs) { $bestFleurs = $newFleurs.wer }
+        $currentLocalReport  = $newLocalReport
+        $currentFleursReport = $newFleursReport
+        $currentLocalWer     = $newLocalWer
+        $currentFleursWer    = $newFleursWer
+
+        if ($newLocalWer  -lt $bestLocalWer)  { $bestLocalWer  = $newLocalWer  }
+        if ($newFleursWer -lt $bestFleursWer) { $bestFleursWer = $newFleursWer }
         $improvements++
-        $previousAttempt = $null
 
     } else {
-        Write-Host "`nCHANGEMENT REJETÉ — Revert" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "  >>> CHANGEMENT REJETE <<<" -ForegroundColor Red
         $reason = ""
-        if (-not $localImproved) { $reason += "Local 70 régresse ($($currentLocal.wer)% -> $($newLocal.wer)%). " }
-        if (-not $fleursImproved) { $reason += "FLEURS régresse ($($currentFleurs.wer)% -> $($newFleurs.wer)%). " }
+        if (-not $localOk)  { $reason += "Local regresse ($localDelta%). "  }
+        if (-not $fleursOk) { $reason += "FLEURS regresse ($fleursDelta%). " }
+        $msg = "Iter ${i}: REJETE - $reason"
+        $history.Add($msg)
         Revert-Changes $changedFiles
-        $previousAttempt = "Iteration $i rejetée: $reason"
     }
 
-    # Résumé itération
-    Write-Host "`n[Iter $i] Améliorations acceptées: $improvements | Best local: $bestLocal% | Best FLEURS: $bestFleurs%" -ForegroundColor Magenta
+    Write-Host ""
+    Write-Host "  [Iter ${i}] Ameliorations: $improvements | Best local: $bestLocalWer% | Best FLEURS: $bestFleursWer%" -ForegroundColor Magenta
 }
 
 # ============================================================
-# RÉSUMÉ FINAL
+# RESUME FINAL
 # ============================================================
-Write-Step "RÉSUMÉ FINAL"
-Write-Host "Iterations: $MaxIterations | Améliorations: $improvements" -ForegroundColor White
-Write-Host "Baseline local WER:  ${BASELINE_LOCAL_WER}% -> $bestLocal% (delta: $([math]::Round($bestLocal - $BASELINE_LOCAL_WER, 3))%)" -ForegroundColor $(if($bestLocal -lt $BASELINE_LOCAL_WER){'Green'}else{'Yellow'})
-Write-Host "Baseline FLEURS WER: ${BASELINE_FLEURS_WER}% -> $bestFleurs% (delta: $([math]::Round($bestFleurs - $BASELINE_FLEURS_WER, 3))%)" -ForegroundColor $(if($bestFleurs -lt $BASELINE_FLEURS_WER){'Green'}else{'Yellow'})
-Write-Host "`nRapports dans: $REPORTS_DIR" -ForegroundColor Gray
+Write-Step "RESUME FINAL"
+
+$deltaLocal  = [math]::Round($bestLocalWer  - $BASELINE_LOCAL_WER,  3)
+$deltaFleurs = [math]::Round($bestFleursWer - $BASELINE_FLEURS_WER, 3)
+
+Write-Host ""
+Write-Host "  Iterations       : $MaxIterations" -ForegroundColor White
+Write-Host "  Ameliorations    : $improvements" -ForegroundColor White
+Write-Host ""
+
+$cl = if ($bestLocalWer  -lt $BASELINE_LOCAL_WER)  { 'Green' } else { 'Yellow' }
+$cf = if ($bestFleursWer -lt $BASELINE_FLEURS_WER) { 'Green' } else { 'Yellow' }
+Write-Host "  Local  70  : ${BASELINE_LOCAL_WER}% -> $bestLocalWer%   (delta: $deltaLocal%)"  -ForegroundColor $cl
+Write-Host "  FLEURS 400 : ${BASELINE_FLEURS_WER}% -> $bestFleursWer%  (delta: $deltaFleurs%)" -ForegroundColor $cf
+Write-Host ""
+Write-Host "  Historique des tentatives:" -ForegroundColor Gray
+foreach ($h in $history) { Write-Host "    $h" -ForegroundColor Gray }
+Write-Host ""
+Write-Host "  Rapports : $REPORTS_DIR" -ForegroundColor Gray
+Write-Host "  Commits  : git log --oneline -$MaxIterations" -ForegroundColor Gray

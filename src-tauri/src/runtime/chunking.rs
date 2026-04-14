@@ -286,25 +286,23 @@ pub fn deduplicate_boundary_n(prev: &str, next: &str, max_words: usize) -> Strin
     for n in (1..=max_overlap).rev() {
         let prev_suffix: Vec<String> = prev_words[prev_words.len() - n..]
             .iter()
-            .map(|w| {
-                w.to_lowercase()
-                    .trim_matches(|c: char| !c.is_alphanumeric())
-                    .to_string()
-            })
+            .map(|w| boundary_word_key(w))
             .collect();
         let next_prefix: Vec<String> = next_words[..n]
             .iter()
-            .map(|w| {
-                w.to_lowercase()
-                    .trim_matches(|c: char| !c.is_alphanumeric())
-                    .to_string()
-            })
+            .map(|w| boundary_word_key(w))
             .collect();
-        if prev_suffix == next_prefix {
+        if prev_suffix.iter().all(|w| !w.is_empty()) && prev_suffix == next_prefix {
             return next_words[n..].join(" ");
         }
     }
     next.to_string()
+}
+
+fn boundary_word_key(word: &str) -> String {
+    word.to_lowercase()
+        .trim_matches(|c: char| !c.is_alphanumeric())
+        .to_string()
 }
 
 #[cfg(test)]
@@ -345,6 +343,18 @@ mod tests {
         let prev = "Hello World";
         let next = "hello world nice day";
         assert_eq!(deduplicate_boundary(prev, next), "nice day");
+    }
+
+    #[test]
+    fn test_deduplicate_boundary_with_three_word_overlap() {
+        let prev = "je vais faire";
+        let next = "vais faire un test";
+        assert_eq!(deduplicate_boundary_n(prev, next, 3), "un test");
+    }
+
+    #[test]
+    fn test_deduplicate_boundary_ignores_punctuation_only_overlap() {
+        assert_eq!(deduplicate_boundary_n("hello ...", "... world", 3), "... world");
     }
 
     #[test]

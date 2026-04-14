@@ -99,6 +99,8 @@ static APRIL_BROKEN_2026_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bApril 3 twenty si twenty twenty six\b").unwrap());
 static STANDALONE_FILLER_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)(^|[\s,.;!?])(?:uh|um|erm|hmm|mm)([\s,.;!?]|$)").unwrap());
+static MULTILINGUAL_STANDALONE_FILLER_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)(^|[\s,.;!?])(?:uh|euh|heu|eh|ah|hmm|mhm)([\s,.;!?]|$)").unwrap());
 static CHEN_KING_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bchen\s+king\b").unwrap());
 static BINDER_EYES_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bbinder\s+eyes\b").unwrap());
@@ -433,6 +435,12 @@ pub fn cleanup_parakeet_tail_artifacts(text: &str) -> String {
         .replace(&cleaned, "$1")
         .to_string();
     cleaned.trim().to_string()
+}
+
+fn remove_multilingual_standalone_fillers(text: &str) -> String {
+    MULTILINGUAL_STANDALONE_FILLER_PATTERN
+        .replace_all(text, "$1$2")
+        .to_string()
 }
 
 fn restore_french_apostrophes(text: &str) -> String {
@@ -992,6 +1000,7 @@ pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
         normalized = normalize_parakeet_french_artifacts(&normalized);
         normalized = restore_french_apostrophes(&normalized);
     }
+    normalized = remove_multilingual_standalone_fillers(&normalized);
     normalized = cleanup_parakeet_tail_artifacts(&normalized);
     DOUBLE_SPACE_PATTERN
         .replace_all(normalized.trim(), " ")
@@ -1423,6 +1432,30 @@ mod tests {
         assert_eq!(
             finalize_parakeet_text("The transcript is done. Thank you.", "en"),
             "The transcript is done."
+        );
+    }
+
+    #[test]
+    fn removes_multilingual_standalone_fillers() {
+        assert_eq!(
+            finalize_parakeet_text("Je vais euh lancer le test.", "fr"),
+            "Je vais lancer le test."
+        );
+        assert_eq!(
+            finalize_parakeet_text("Voy a eh lanzar la prueba.", "es"),
+            "Voy a lanzar la prueba."
+        );
+        assert_eq!(
+            finalize_parakeet_text("Vou ah iniciar o teste.", "pt"),
+            "Vou iniciar o teste."
+        );
+    }
+
+    #[test]
+    fn preserves_portuguese_um_word() {
+        assert_eq!(
+            finalize_parakeet_text("Vou fazer um teste agora.", "pt"),
+            "Vou fazer um teste agora."
         );
     }
 

@@ -173,11 +173,34 @@ fn should_attempt_full_audio_recovery(
     assembled: &str,
 ) -> bool {
     let duration_secs = sample_count as f32 / 16_000.0;
-    let assembled_words_per_sec =
-        assembled.split_whitespace().count() as f32 / duration_secs.max(0.1);
-    summary.empty_nonfinal_chunks > 0
-        && (8.0..=45.0).contains(&duration_secs)
-        && assembled_words_per_sec <= 1.45
+    if !(6.0..=45.0).contains(&duration_secs) {
+        return false;
+    }
+
+    let assembled_words = assembled.split_whitespace().count();
+    let assembled_words_per_sec = assembled_words as f32 / duration_secs.max(0.1);
+    let final_chunk_secs = summary.final_chunk_samples as f32 / 16_000.0;
+    let final_chunk_words_per_sec = summary.final_chunk_words as f32 / final_chunk_secs.max(0.1);
+
+    let low_density = assembled_words_per_sec <= 1.45;
+    let severe_low_density = assembled_words_per_sec <= 1.05 && duration_secs >= 12.0;
+    let empty_boundary = summary.empty_nonfinal_chunks > 0 && low_density;
+    let short_final_chunk = final_chunk_secs >= 1.0
+        && final_chunk_secs <= 6.0
+        && summary.final_chunk_words <= 2
+        && assembled_words_per_sec <= 2.5;
+    let sparse_final_chunk = final_chunk_secs >= 3.0
+        && final_chunk_words_per_sec <= 0.35
+        && assembled_words_per_sec <= 2.0;
+    // Empty final chunk with any density: ending was likely cut
+    let empty_final_chunk =
+        summary.final_chunk_words == 0 && final_chunk_secs >= 2.0 && assembled_words_per_sec <= 2.5;
+
+    empty_boundary
+        || severe_low_density
+        || short_final_chunk
+        || sparse_final_chunk
+        || empty_final_chunk
 }
 
 fn should_promote_full_audio_recovery(
@@ -190,8 +213,8 @@ fn should_promote_full_audio_recovery(
     let duration_secs = sample_count as f32 / 16_000.0;
     let recovered_words_per_sec = recovered_words as f32 / duration_secs.max(0.1);
 
-    recovered_words >= assembled_words + 5
-        && (recovered_words as f32) >= (assembled_words as f32 * 1.25)
+    recovered_words >= assembled_words + 3
+        && (recovered_words as f32) >= (assembled_words as f32 * 1.15)
         && (0.4..=5.5).contains(&recovered_words_per_sec)
         && is_viable_preview_rescue_candidate(recovered)
 }
@@ -977,9 +1000,14 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         if is_parakeet_v3_w {
                             if let Ok(mut counters) = counters_worker.lock() {
                                 counters.total_chunks += 1;
-                                counters.output_words += text.split_whitespace().count();
+                                let text_words = text.split_whitespace().count();
+                                counters.output_words += text_words;
+                                if is_final_chunk {
+                                    counters.final_chunk_words = text_words;
+                                    counters.final_chunk_samples = chunk_samples;
+                                }
                                 counters.trimmed_words_total += if used_word_timestamps {
-                                    word_count.saturating_sub(text.split_whitespace().count())
+                                    word_count.saturating_sub(text_words)
                                 } else {
                                     0
                                 };

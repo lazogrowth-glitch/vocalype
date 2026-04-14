@@ -998,6 +998,19 @@ async transcribeAudioFileDetailed(path: string) : Promise<Result<AudioTranscript
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Update only the transcription text of a history entry (user manual edit).
+ * Also feeds the correction into the adaptive VocabularyStore so future
+ * transcriptions of the same words benefit immediately.
+ */
+async updateHistoryEntryText(id: number, newText: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_history_entry_text", { id, newText }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clearAllHistory() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clear_all_history") };
@@ -1294,6 +1307,94 @@ async exportDictionary() : Promise<Result<string, string>> {
 async importDictionary(json: string, replace: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("import_dictionary", { json, replace }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Analyse the difference between an original transcription and a user correction.
+ * Returns word-level substitution candidates enriched with dictionary state and counts.
+ * Does NOT record the correction — call `record_correction` separately.
+ */
+async analyzeCorrection(original: string, corrected: string) : Promise<Result<CorrectionSuggestion[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("analyze_correction", { original, corrected }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Record a correction and optionally add it to the dictionary.
+ * 
+ * - If `add_to_dict` is true, the entry is added immediately.
+ * - If the running count reaches `AUTO_ADD_THRESHOLD`, the entry is added automatically.
+ * 
+ * When the `to` value is a single proper-noun word, it is also added to
+ * `custom_words` so the transcription model is aware of it in future sessions.
+ * 
+ * Returns the new count for this correction pair.
+ */
+async recordCorrection(from: string, to: string, addToDict: boolean) : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("record_correction", { from, to, addToDict }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Return aggregated learning stats for the current user.
+ */
+async getLearningStats() : Promise<Result<LearningStats, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_learning_stats") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Return the current user profile (learned terms + metadata).
+ */
+async getUserProfile() : Promise<Result<UserProfile, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_user_profile") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Scan every dictionary `to` value and promote single-word proper-looking
+ * terms into `custom_words` so the model is aware of them during transcription.
+ * 
+ * Safe to call multiple times — duplicates are skipped.
+ * Returns the number of new terms added.
+ */
+async syncDictionaryToProfile() : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("sync_dictionary_to_profile") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Remove a term from the user's learned profile (custom_words).
+ */
+async removeProfileTerm(term: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("remove_profile_term", { term }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getWeeklyReport() : Promise<Result<WeeklyReport, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_weekly_report") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -1627,6 +1728,30 @@ export type CalibrationPhase = "none" | "quick" | "full"
 export type CalibrationStatusSnapshot = { model_id: string; phase: CalibrationPhase; state: AdaptiveCalibrationState; detail: string | null; updated_at_ms: number }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type ConfidenceWord = { text: string; confidence: number }
+/**
+ * A suggested dictionary entry derived from a user correction.
+ */
+export type CorrectionSuggestion = { 
+/**
+ * The original (wrong) word or phrase.
+ */
+from: string; 
+/**
+ * The corrected word or phrase.
+ */
+to: string; 
+/**
+ * How many times this exact correction has been recorded (including this one, if `record` was called).
+ */
+count: number; 
+/**
+ * True if `from` is already in the dictionary.
+ */
+already_in_dict: boolean; 
+/**
+ * True if the count has reached the auto-add threshold.
+ */
+auto_add: boolean }
 export type CustomSounds = { start: boolean; stop: boolean }
 export type DictionaryEntry = { from: string; to: string }
 export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GeminiApi" | "GroqWhisper" | "MistralVoxtral" | "Deepgram"
@@ -1644,6 +1769,30 @@ reset_bindings: string[] }
 export type IntegritySnapshot = { release_build: boolean; binary_sha256: string | null; tamper_flags: string[]; executable_path: string | null }
 export type KeyboardImplementation = "tauri" | "native_shortcut_capture"
 export type LLMPrompt = { id: string; name: string; prompt: string }
+/**
+ * Aggregated stats about what Vocalype has learned from user corrections.
+ */
+export type LearningStats = { 
+/**
+ * Total number of correction events recorded (may include repeated pairs).
+ */
+total_corrections_recorded: number; 
+/**
+ * Number of distinct (from, to) pairs seen at least once.
+ */
+distinct_corrections: number; 
+/**
+ * Total entries in the user dictionary (manual + auto-learned).
+ */
+dictionary_entries: number; 
+/**
+ * Pairs that have reached the auto-add threshold (≥ AUTO_ADD_THRESHOLD).
+ */
+auto_learned_pairs: number; 
+/**
+ * Top 5 most-corrected pairs, sorted by count descending.
+ */
+top_corrections: TopCorrection[] }
 export type LicenseRuntimeState = { state: LicenseState; reason: string | null; device_id: string | null; grant_expires_at: string | null; offline_expires_at: string | null; grace_until: string | null; entitlement_status: string | null; last_refreshed_at: string | null; integrity_anomalies: string[] }
 export type LicenseState = "online_valid" | "offline_valid" | "expired"
 export type LifecycleStateEvent = { state: TranscriptionLifecycleState; operation_id: number | null; binding_id: string | null; detail: string | null; recoverable: boolean; timestamp_ms: number }
@@ -1714,10 +1863,26 @@ export type SoundTheme = "marimba" | "pop" | "custom"
 export type StartupWarmupPhase = "idle" | "preparing" | "ready" | "failed"
 export type StartupWarmupReason = "no_model_selected" | "model_not_downloaded" | "preparing_microphone" | "preparing_model" | "ready" | "microphone_error" | "model_error"
 export type StartupWarmupStatus = { phase: StartupWarmupPhase; reason: StartupWarmupReason; can_record: boolean; microphone_checked: boolean; microphone_ready: boolean; model_ready: boolean; blocking_reason: string | null; message: string; detail: string | null; updated_at_ms: number }
+/**
+ * A single entry in the top-corrections list.
+ */
+export type TopCorrection = { from: string; to: string; count: number }
 export type TranscriptionConfidencePayload = { engine: string; overall_confidence: number; mapping_stable: boolean; words: ConfidenceWord[] }
 export type TranscriptionLifecycleState = "idle" | "preparing_microphone" | "recording" | "paused" | "stopping" | "transcribing" | "processing" | "pasting" | "completed" | "cancelled" | "error"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type UnsafeBackendRecord = { backend: WhisperBackendPreference; unsafe_until_ms: number; reason: string; failed_at_ms: number }
+/**
+ * The user's learned vocabulary profile.
+ */
+export type UserProfile = { 
+/**
+ * Words the model knows to look for (custom_words in settings).
+ */
+learned_terms: string[]; 
+/**
+ * How many of those were synced automatically from the dictionary.
+ */
+auto_synced_count: number }
 export type VoiceFeedbackEntry = { id: string; created_at_ms: number; expected_text: string; actual_text: string; notes: string | null; selected_language: string | null; tags: string[]; keep_audio_reference: boolean; runtime: RuntimeDiagnostics }
 export type VoiceFeedbackInput = { expected_text: string; actual_text: string; notes?: string | null; selected_language?: string | null; tags?: string[]; keep_audio_reference?: boolean }
 export type VoiceFeedbackSummary = { total_entries: number; top_languages: ([string, number])[]; top_tags: ([string, number])[]; top_input_levels: ([string, number])[]; top_issues: ([string, number])[] }
@@ -1729,6 +1894,28 @@ export type VoiceRuntimeAdjustment = { adjusted_chunk_seconds: number; adjusted_
  * trimmed), it is replaced by `expansion` before being pasted.
  */
 export type VoiceSnippet = { id: string; trigger: string; expansion: string }
+/**
+ * A single actionable insight derived from the weekly data.
+ */
+export type WeeklyInsight = { 
+/**
+ * Machine-readable category: "peak_time" | "growth" | "decline" |
+ * "learning" | "habit" | "milestone"
+ */
+kind: string; 
+/**
+ * Human-readable message body (in French, localized in the Rust layer
+ * so the frontend just renders it).
+ */
+message: string; 
+/**
+ * Optional numeric value powering the message (e.g. "+23%", "9h").
+ */
+value: number | null }
+/**
+ * Full weekly report returned to the frontend.
+ */
+export type WeeklyReport = { period_start_ts: number; period_end_ts: number; sessions_this_week: number; sessions_last_week: number; words_this_week: number; words_last_week: number; avg_words_per_session: number; daily_sessions: number[]; peak_hour_label: string | null; corrections_total: number; profile_terms: number; dictionary_entries: number; insights: WeeklyInsight[] }
 export type WhisperAdaptiveProfile = { small: WhisperModelAdaptiveConfig; medium: WhisperModelAdaptiveConfig; turbo: WhisperModelAdaptiveConfig; large: WhisperModelAdaptiveConfig }
 export type WhisperBackendPreference = "auto" | "cpu" | "gpu"
 export type WhisperModelAdaptiveConfig = { backend: WhisperBackendPreference; threads: number; chunk_seconds: number; overlap_ms: number; active_backend?: WhisperBackendPreference; active_threads?: number; active_chunk_seconds?: number; active_overlap_ms?: number; short_latency_ms?: number; medium_latency_ms?: number; long_latency_ms?: number; stability_score?: number; overall_score?: number; failure_count?: number; calibrated_phase?: CalibrationPhase; unsafe_backends?: UnsafeBackendRecord[]; unsafe_until?: number | null; last_failure_reason?: string | null; last_failure_at?: number | null; last_quick_bench_at?: number | null; last_full_bench_at?: number | null; backend_decision_reason?: string | null; config_decision_reason?: string | null }

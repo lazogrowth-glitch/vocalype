@@ -135,7 +135,7 @@ Model outputs "thirty percent" instead of "30%". Context: percentages in EN.
 - Add static regex: `r"(?i)\bthirty\s+per\s*cent\b"` → `"30%"` — only if consistent with EN eval
 - Evidence: fleurs_en_0060 (OMIT: percent, thirty; HALL: 30, has)
 
-### B05 [ ] Time range: eleven thirty → 11:30
+### B05 [DONE v] Time range: eleven thirty → 11:30
 Extend A11 pattern to cover half-hour marks.
 - Add static regex: `r"(?i)\beleven\s+thirty\s+(a\.?m\.?|p\.?m\.?)\b"` → `"11:30 $1"`
 

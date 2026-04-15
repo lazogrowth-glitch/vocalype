@@ -152,49 +152,117 @@ function Revert-Changes($files) {
     Pop-Location
 }
 
-function Build-Prompt($iteration, $analysis, $historyText) {
+$TASK_LIST_FILE = "$REPO\src-tauri\evals\parakeet\ROBOT_TASK_LIST.md"
 
-    # Taches assignees par iteration (rotation sur 5 taches)
-    $tasks = @(
-        "Ajoute ou ameliore la normalisation des NOMBRES: convertis les chiffres en mots pour les langues ES/FR/PT (ex: '3' -> 'tres'/'trois'/'tres'). EN: laisser les chiffres. Sois conservatif, ne touche qu'aux cas simples et non ambigus.",
-        "Ameliore la DEDUPLICATION de mots entre chunks: quand deux chunks consecutifs se terminent/commencent par le meme mot, supprime le doublon. Regarde les exemples HYP dans l'analyse pour identifier les patterns.",
-        "Ajoute des FILLERS manquants ou ameliore les existants: cherche dans les HYP des fillers non catches (euh, um, hmm, uh, eh, ah). Ajoute-les a la liste de nettoyage de fin de phrase.",
-        "Ajoute des CORRECTIONS CIBLEES basees sur les exemples REF vs HYP de l'analyse: identifie les substitutions les plus frequentes et ajoute des regles de correction pour les cas non ambigus.",
-        "Ameliore la PONCTUATION ou la CAPITALISATION: supprime les virgules/points superflus en debut/fin de chunk, corrige les majuscules inappropriees en milieu de phrase."
-    )
-    $taskIndex = ($iteration - 1) % $tasks.Count
-    $assignedTask = $tasks[$taskIndex]
+# Lit la prochaine tache non faite dans ROBOT_TASK_LIST.md
+# Retourne un objet avec .id, .title, .body, .lineIndex
+function Get-NextTask() {
+    if (-not (Test-Path $TASK_LIST_FILE)) {
+        return $null
+    }
+    $lines = Get-Content $TASK_LIST_FILE -Encoding UTF8
+    $inTask = $false
+    $taskId = ""
+    $taskTitle = ""
+    $taskBody = [System.Collections.Generic.List[string]]::new()
+    $startLine = -1
 
-    if ($iteration -le 10) { $phase = "PHASE 1 -- fichier: parakeet_text.rs (corrections texte post-ASR)" }
-    else                   { $phase = "PHASE 2 -- fichier: transcribe.rs (pipeline recovery, assemblage chunks)" }
+    for ($li = 0; $li -lt $lines.Count; $li++) {
+        $line = $lines[$li]
+
+        # Detect task header: "### X00 [ ] Title"
+        if ($line -match "^###\s+([\w\d]+)\s+\[ \]\s+(.+)$") {
+            $taskId    = $Matches[1]
+            $taskTitle = $Matches[2].Trim()
+            $startLine = $li
+            $inTask    = $true
+            $taskBody.Clear()
+            continue
+        }
+
+        # Stop collecting at next header at same or higher level
+        if ($inTask -and $line -match "^#{1,3}\s+") {
+            break
+        }
+
+        if ($inTask) {
+            $taskBody.Add($line)
+        }
+    }
+
+    if ($taskId -eq "") { return $null }
+
+    return [PSCustomObject]@{
+        Id        = $taskId
+        Title     = $taskTitle
+        Body      = ($taskBody -join "`n").Trim()
+        LineIndex = $startLine
+    }
+}
+
+# Marque la tache courante comme DONE ou REJECTED dans la liste
+function Set-TaskStatus($taskId, $status) {
+    # status: "DONE" -> "[DONE v]", "REJECTED" -> "[REJECTED x]", "SKIPPED" -> "[SKIPPED -]"
+    $marker = switch ($status) {
+        "DONE"     { "[DONE v]" }
+        "REJECTED" { "[REJECTED x]" }
+        "SKIPPED"  { "[SKIPPED -]" }
+        default    { "[DONE v]" }
+    }
+    $content = Get-Content $TASK_LIST_FILE -Raw -Encoding UTF8
+    # Replace "### ID [ ]" with "### ID MARKER"
+    $content = $content -replace "(?m)^(###\s+$([regex]::Escape($taskId))\s+)\[ \]", "`${1}$marker"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($TASK_LIST_FILE, $content, $utf8NoBom)
+}
+
+function Build-Prompt($iteration, $analysis, $historyText, $task) {
+
+    # Determine target file from task group
+    $targetFileForTask = "src-tauri/src/runtime/parakeet_text.rs"
+    if ($task -and $task.Id -match "^H") {
+        $targetFileForTask = "src-tauri/src/actions/transcribe.rs"
+    }
+
+    $taskSection = if ($task) {
+        @"
+## TACHE ASSIGNEE: $($task.Id) — $($task.Title)
+
+$($task.Body)
+
+INSTRUCTIONS D'IMPLEMENTATION:
+- Implemente EXACTEMENT le regex/remplacement decrit dans la tache ci-dessus.
+- Ajoute un static Lazy<Regex> dans la section des statics (debut du fichier).
+- Applique le remplacement dans la bonne fonction (indiquee dans la tache, generalement normalize_parakeet_english_artifacts, normalize_parakeet_french_artifacts, ou la branche ES/PT dans finalize_parakeet_text).
+- Sois CONSERVATIF: si la tache dit CAUTION ou RISKY, ajoute le regex mais seulement dans le contexte precis decrit.
+- NE PAS modifier d'autres parties du fichier.
+- NE PAS changer la taille de chunk globalement.
+- NE PAS introduire Hindi.
+"@
+    } else {
+        "TOUTES LES TACHES DE LA LISTE SONT COMPLETES. Verifie EXPERIMENT_HISTORY.md et ROBOT_TASK_LIST.md."
+    }
 
     return @"
 Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Iteration: ${iteration}/$MaxIterations
-Phase: $phase
 
 Consulte AGENT_MISSION.md pour les regles completes et les baselines.
+Le fichier cible est: $targetFileForTask
 
 $analysis
 
 ## Historique des tentatives precedentes
 $historyText
 
-## TA TACHE OBLIGATOIRE pour l'iteration ${iteration}
+$taskSection
 
-$assignedTask
-
-INSTRUCTIONS:
-- Tu DOIS implementer cette tache dans $targetFile. Ce n'est pas optionnel.
-- Si la tache est deja implementee: ameliore l'implementation existante (plus de cas, meilleure logique).
-- Si vraiment impossible dans ce fichier: explique pourquoi en 1 ligne puis implemente la tache la plus similaire possible.
-- NE PAS changer la taille de chunk globalement (prouve regressif).
-- NE PAS introduire Hindi.
-- NE PAS faire git reset ou revert.
-- Changement CONSERVATIF: ne casse pas ce qui marche.
-
-IMPORTANT: Modifie UNIQUEMENT $targetFile.
+RAPPEL: Modifie UNIQUEMENT $targetFileForTask. Une seule tache par iteration. Ne pas bundler.
 "@
 }
+
+
+# Expose targetFile pour la boucle principale (sera override par la tache)
+$targetFile = "src-tauri/src/runtime/parakeet_text.rs"
 
 # ============================================================
 # MAIN
@@ -265,6 +333,18 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-Step "ITERATION ${i} / $MaxIterations"
     Write-Host "  WER local: $currentLocalWer%  |  WER FLEURS: $currentFleursWer%  |  Ameliorations: $improvements" -ForegroundColor Green
 
+    # Lire la prochaine tache depuis la liste
+    $currentTask = Get-NextTask
+    if ($null -eq $currentTask) {
+        Write-Host "  TOUTES LES TACHES SONT COMPLETES. Fin de la boucle." -ForegroundColor Green
+        break
+    }
+    Write-Host "  Tache: [$($currentTask.Id)] $($currentTask.Title)" -ForegroundColor Cyan
+
+    # Determine fichier cible selon groupe de tache
+    $targetFile = "src-tauri/src/runtime/parakeet_text.rs"
+    if ($currentTask.Id -match "^H") { $targetFile = "src-tauri/src/actions/transcribe.rs" }
+
     # Analyse detaillee des rapports actuels
     Write-Host "  Analyse des rapports en cours..." -ForegroundColor Gray
     $analysis = Run-Analysis $currentLocalReport $currentFleursReport $i
@@ -285,7 +365,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Invoke-HistoryCompaction
 
     # Prompt pour l'agent
-    $prompt = Build-Prompt $i $analysis $historyText
+    $prompt = Build-Prompt $i $analysis $historyText $currentTask
     $promptFile = "$REPO\agent_prompt_temp.txt"
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($promptFile, $prompt, $utf8NoBom)
@@ -295,20 +375,16 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     $filesBefore = (git diff --name-only 2>$null) | Where-Object { $_ -match "^src-tauri/" }
     Pop-Location
 
-    # parakeet_text.rs = corrections texte = impact direct sur WER
-    # transcribe.rs = pipeline/recovery = impact sur omissions/hallucinations
-    $targetFile = "src-tauri/src/runtime/parakeet_text.rs"     # iter 1-10
-    if ($i -gt 10) { $targetFile = "src-tauri/src/actions/transcribe.rs" }  # iter 11+
-
     Write-Host "  Fichier cible: $targetFile" -ForegroundColor Gray
 
     # Creer .aiderignore temporaire pour empecher l'auto-ajout des gros fichiers
     $aiderIgnore = "$REPO\.aiderignore"
-    $ignoreContent = "src-tauri/src/actions/transcribe.rs`nsrc-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs"
+    # Ignore tout sauf le fichier cible
     if ($targetFile -match "transcribe") {
         $ignoreContent = "src-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs`nsrc-tauri/src/runtime/parakeet_text.rs"
-    } elseif ($targetFile -match "parakeet_quality") {
-        $ignoreContent = "src-tauri/src/actions/transcribe.rs`nsrc-tauri/src/runtime/chunking.rs`nsrc-tauri/src/runtime/parakeet_text.rs"
+    } else {
+        # default: parakeet_text.rs
+        $ignoreContent = "src-tauri/src/actions/transcribe.rs`nsrc-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs"
     }
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($aiderIgnore, $ignoreContent, $utf8NoBom)
@@ -342,9 +418,11 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     $changedFiles = $filesAfter | Where-Object { $filesBefore -notcontains $_ }
 
     if (-not $changedFiles -or ($changedFiles.Count -eq 0)) {
-        $msg = "Iter ${i}: Aucune modification (NO_CHANGE ou rien propose)."
+        $msg = "Iter ${i} [$($currentTask.Id)]: Aucune modification (NO_CHANGE). Tache marquee SKIPPED."
         Write-Host "  $msg" -ForegroundColor Yellow
         $history.Add($msg)
+        # Marquer comme SKIPPED pour passer a la suivante (pas bloque sur la meme tache)
+        if ($currentTask) { Set-TaskStatus $currentTask.Id "SKIPPED" }
         continue
     }
 
@@ -353,9 +431,10 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     # Cargo check
     $compileOk = Run-CargoCheck
     if (-not $compileOk) {
-        $msg = "Iter ${i}: REJETE - ne compile pas. Fichiers: $($changedFiles -join ', ')"
+        $msg = "Iter ${i} [$($currentTask.Id)]: REJETE - ne compile pas. Fichiers: $($changedFiles -join ', ')"
         Write-Host "  $msg" -ForegroundColor Red
         $history.Add($msg)
+        if ($currentTask) { Set-TaskStatus $currentTask.Id "REJECTED" }
         Revert-Changes $changedFiles
         continue
     }
@@ -401,13 +480,18 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         Write-Host ""
         Write-Host "  >>> CHANGEMENT ACCEPTE <<<" -ForegroundColor Green
 
+        # Marquer la tache comme DONE dans la liste
+        if ($currentTask) { Set-TaskStatus $currentTask.Id "DONE" }
+
         Push-Location $REPO
-        $commitMsg = "agent iter${i}: local=$newLocalWer% fleurs=$newFleursWer% files=$($changedFiles -join ',')"
+        $taskLabel = if ($currentTask) { "[$($currentTask.Id)] $($currentTask.Title)" } else { "unknown" }
+        $commitMsg = "agent $($currentTask.Id): local=$newLocalWer% fleurs=$newFleursWer% | $taskLabel"
         foreach ($cf in $changedFiles) { git add $cf 2>&1 | Out-Null }
+        git add "src-tauri/evals/parakeet/ROBOT_TASK_LIST.md" 2>&1 | Out-Null
         git commit -m $commitMsg 2>&1 | Out-Null
         Pop-Location
 
-        $msg = "Iter ${i}: ACCEPTE - local $currentLocalWer%->$newLocalWer% FLEURS $currentFleursWer%->$newFleursWer%"
+        $msg = "Iter ${i} [$($currentTask.Id)]: ACCEPTE - local $currentLocalWer%->$newLocalWer% FLEURS $currentFleursWer%->$newFleursWer%"
         $history.Add($msg)
 
         $currentLocalReport  = $newLocalReport
@@ -425,7 +509,11 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         $reason = ""
         if (-not $localOk)  { $reason += "Local regresse ($localDelta%). "  }
         if (-not $fleursOk) { $reason += "FLEURS regresse ($fleursDelta%). " }
-        $msg = "Iter ${i}: REJETE - $reason"
+
+        # Marquer la tache comme REJECTED dans la liste
+        if ($currentTask) { Set-TaskStatus $currentTask.Id "REJECTED" }
+
+        $msg = "Iter ${i} [$($currentTask.Id)]: REJETE - $reason"
         $history.Add($msg)
         Revert-Changes $changedFiles
     }

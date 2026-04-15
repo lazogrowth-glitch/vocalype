@@ -1,0 +1,584 @@
+# Robot Task List — Parakeet ASR Targeted Improvements
+
+Compiled 2026-04-14 from FLEURS 400 + Local 70 error analysis.
+Each task is a specific, safe, testable code change.
+The robot must implement ONE task at a time, run both evals, then record the result.
+
+## Rules
+
+- Implement ONE item. Run `cargo check`. Run Local 70. Run FLEURS 400.
+- If Local 70 regresses → REVERT immediately, mark REJECTED, move to next.
+- If FLEURS 400 regresses → REVERT immediately, mark REJECTED, move to next.
+- If both evals are equal or better → mark ACCEPTED, commit, move to next.
+- Update EXPERIMENT_HISTORY.md after every accepted change.
+- Do NOT bundle multiple tasks into one commit.
+- Mark each task below with [DONE ✓], [REJECTED ✗], or [SKIPPED —] as you go.
+
+## Eval commands
+
+```powershell
+# Local 70
+cargo run --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval -- "$env:APPDATA\com.vocalype.desktop\models\parakeet-tdt-0.6b-v3-int8" .\src-tauri\evals\parakeet\dataset_manifest_combined_current.json parakeet_v3_multilingual .\src-tauri\evals\parakeet\ROBOT_LOCAL_REPORT.json
+
+# FLEURS 400
+cargo run --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval -- "$env:APPDATA\com.vocalype.desktop\models\parakeet-tdt-0.6b-v3-int8" .\src-tauri\evals\parakeet\external\fleurs_supported_400\dataset_manifest_external.json parakeet_v3_multilingual .\src-tauri\evals\parakeet\ROBOT_FLEURS_REPORT.json
+```
+
+## Baselines (as of 2026-04-14, fr-punct report)
+
+- Local 70:  WER=0.525 / CER=1.443 / OMIT=0.462 / HALL=0.458 / END=1.071
+- FLEURS 400: WER=7.145 / CER=5.109 / OMIT=6.254 / HALL=5.838 / END=30.152
+
+---
+
+## GROUP A — English: Proper nouns & technical terms
+*File: `src-tauri/src/runtime/parakeet_text.rs`, function: `normalize_parakeet_english_artifacts`*
+
+### A01 [ ] Scotturb split
+Model outputs "Scott Turb" instead of "Scotturb" (Portuguese bus company).
+- Add static regex: `r"(?i)\bscott\s+turb\b"` → `"Scotturb"`
+- Evidence: fleurs_en_0083 WER=0.417
+
+### A02 [ ] SANParks split (EN)
+Model outputs "Sand Parks" instead of "SANParks" (South African national parks).
+- Add static regex: `r"(?i)\bsand\s+parks\b"` → `"SANParks"`
+- Evidence: fleurs_en_0094 WER=0.182
+
+### A03 [ ] Vichy French
+Model outputs "V C French" instead of "Vichy French".
+- Add static regex: `r"(?i)\bv\.?\s*c\.?\s+french\b"` → `"Vichy French"`
+- Evidence: fleurs_en_0062 WER=0.172
+
+### A04 [ ] U.S. Corps of Engineers
+Model outputs "US Courts of Engineers" instead of "U.S. Corps of Engineers".
+- Add static regex: `r"(?i)\bu\.?\s*s\.?\s+courts\s+of\s+(?:the\s+)?engineers\b"` → `"U.S. Corps of Engineers"`
+- Evidence: fleurs_en_0063 WER=0.176
+
+### A05 [ ] Rachis mispronunciation
+Model outputs "rachie" or "raikis" instead of "rachis" (paleontology feather shaft term).
+- Add static regex: `r"(?i)\bra(?:chie|kis)\b"` → `"rachis"`
+- Evidence: fleurs_en_0080, fleurs_fr_0270
+
+### A06 [ ] Kundalini mispronunciation
+Model outputs "kudali" instead of "kundalini".
+- Add static regex: `r"(?i)\bkudali\b"` → `"kundalini"`
+- Evidence: omitted_terms across multiple EN/FR samples (freq=4)
+
+### A07 [ ] 802.11n extra letter
+Model outputs "802.11in" (inserts extra 'i') instead of "802.11n".
+- Add static regex: `r"(?i)\b802\.11in\b"` → `"802.11n"`
+- Evidence: hallucinated_terms list
+
+### A08 [ ] Barbules mispronunciation
+Model outputs "barpus" instead of "barbules" (feather anatomy).
+- Add static regex: `r"(?i)\bbarpus\b"` → `"barbules"`
+- Evidence: fleurs_en_0080
+
+### A09 [ ] Nineteen forty → 1940
+Model speaks year as "nineteen forty" instead of "1940".
+- Add static regex: `r"(?i)\bnineteen\s+forty\b"` → `"1940"`
+- Evidence: fleurs_en_0062 (OMIT: 1940, HALL: forty, nineteen)
+
+### A10 [ ] Nineteen eighty-eight → 1988 (EN)
+Model speaks year as "nineteen eighty-eight" instead of "1988".
+- Add static regex: `r"(?i)\bnineteen\s+eighty[\s-]eight\b"` → `"1988"`
+- Related to fr_0237 pattern (same audio content, different language)
+
+### A11 [ ] Time word form: eleven thirty-five
+Model speaks "eleven thirty-five p.m." instead of "11:35 p.m." / "11:35 PM".
+- Add static regex: `r"(?i)\beleven\s+thirty[\s-]five\s+(a\.?m\.?|p\.?m\.?)\b"` → `"11:35 $1"`
+- Evidence: fleurs_en_0057 WER=0.400
+
+### A12 [ ] Digit + space + percent
+Model outputs "30 %" (with space) instead of "30%".
+- Add to `normalize_parakeet_english_artifacts`: `r"(\d+)\s+%"` → `"$1%"`
+- Evidence: fleurs_en_0060, fleurs_fr_0257
+
+### A13 [ ] Levees vs leaves
+Model outputs "leaves" instead of "levees" (flood barrier).
+- Add static regex: `r"(?i)\bdamaged\s+leaves\b"` → `"damaged levees"` — NOTE: conditional on "damaged" to avoid false positives
+- Evidence: fleurs_en_0063 (OMIT: levees, HALL: leaves)
+
+### A14 [ ] Mau movement
+Model outputs "Mao movement" instead of "Mau movement" (Samoan independence movement). 
+CAUTION: Only replace when followed by "movement" to avoid changing "Mao Zedong".
+- Add static regex: `r"(?i)\bMao\s+movement\b"` → `"Mau movement"`
+- Evidence: fleurs_en_0048 WER=0.250
+
+### A15 [ ] Superpredator (EN)
+Model outputs "super predator" (split) instead of "superpredator".
+- Add static regex: `r"(?i)\bsuper\s+predator\b"` → `"superpredator"`
+- Evidence: fleurs_en_0048 parallel to FR sample
+
+---
+
+## GROUP B — English: Number/year patterns
+*File: `src-tauri/src/runtime/parakeet_text.rs`, function: `normalize_parakeet_english_artifacts`*
+
+### B01 [ ] Nineteen + decade year pattern (general)
+Model speaks years as "nineteen + [decade word]". Extend to common years:
+- `"nineteen thirty"` → `"1930"`, `"nineteen fifty"` → `"1950"`, etc.
+- Add static regex: `r"(?i)\bnineteen\s+(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b"` → map each to digit year
+- Evidence: fleurs_en_0056 (sixty years), fleurs_en_0081 (twenty-five to thirty)
+
+### B02 [ ] Twenty-five to thirty years
+Model outputs "twenty-five to thirty year" instead of "25 to 30 years".
+- Add static regex: `r"(?i)\btwenty[\s-]five\s+to\s+thirty\s+years?\b"` → `"25 to 30 years"`
+- Evidence: fleurs_en_0081 WER=0.158 (OMIT: 25, 30)
+
+### B03 [ ] One hundred + thousand large numbers
+Model outputs "one hundred thousand" etc. Risky globally — skip unless specific pattern found in data.
+- SKIPPED — insufficient evidence, too risky to generalize
+
+### B04 [ ] Thirty percent word form
+Model outputs "thirty percent" instead of "30%". Context: percentages in EN.
+- Add static regex: `r"(?i)\bthirty\s+per\s*cent\b"` → `"30%"` — only if consistent with EN eval
+- Evidence: fleurs_en_0060 (OMIT: percent, thirty; HALL: 30, has)
+
+### B05 [ ] Time range: eleven thirty → 11:30
+Extend A11 pattern to cover half-hour marks.
+- Add static regex: `r"(?i)\beleven\s+thirty\s+(a\.?m\.?|p\.?m\.?)\b"` → `"11:30 $1"`
+
+---
+
+## GROUP C — Spanish: Proper nouns & technical terms
+*File: `src-tauri/src/runtime/parakeet_text.rs`, add new function `normalize_parakeet_spanish_artifacts` or add to ES branch in `finalize_parakeet_text`*
+
+### C01 [ ] Scotturb split (ES)
+Model outputs "Scottuur" instead of "Scotturb" in Spanish.
+- In ES branch: add regex `r"(?i)\bScottuur\b"` → `"Scotturb"`
+- Evidence: fleurs_es_0140 WER=0.353
+
+### C02 [ ] 802.11 digit transposition (ES)
+Model outputs "800.11N" instead of "802.11N" — transposes 0 and 2 digits.
+- In ES branch: add regex `r"(?i)\b800\.11([abgnABGN])\b"` → `"802.11$1"`
+- Evidence: fleurs_es_0117 WER=0.273
+
+### C03 [ ] GHz suffix missing: 5.0z (ES)
+Model outputs "5.0z" instead of "5.0GHz" — drops the "GH" part.
+- In ES branch: add regex `r"(?i)\b5\.0z\b"` → `"5.0GHz"` and `r"(?i)\b2\.4z\b"` → `"2.4GHz"`
+- Evidence: fleurs_es_0117 (OMIT: 5.0ghz, 2.4ghz; HALL: 5.0z, 2.4)
+
+### C04 [ ] Space before colon in times (ES)
+Model outputs "11 :35" (space before colon) instead of "11:35".
+- In ES branch (or globally): add regex `r"(\d+)\s+:\s*(\d{2})\b"` → `"$1:$2"`
+- Evidence: fleurs_es_0169 WER=0.286 (OMIT: 11:35; HALL: 11, 35)
+
+### C05 [ ] Brzezinski mispronunciation (ES)
+Model outputs "Bresinski" instead of "Brzezinski" (political advisor).
+- In ES branch: add regex `r"(?i)\bBresinski\b"` → `"Brzezinski"`
+- Evidence: fleurs_es_0137 WER=0.167
+
+### C06 [ ] Lyndon B. Johnson (ES)
+Model outputs "Lydon V. Johnson" instead of "Lyndon B. Johnson".
+- In ES branch: add regex `r"(?i)\blydon\s+v\.?\s+johnson\b"` → `"Lyndon B. Johnson"`
+- Evidence: fleurs_es_0137
+
+### C07 [ ] FTIR vs FTER (ES)
+Model outputs "FTER" instead of "FTIR" (Fourier-transform infrared spectroscopy).
+- In ES branch: add regex `r"(?i)\bFTER\b"` → `"FTIR"`
+- Evidence: fleurs_es_0131 WER=0.161
+
+### C08 [ ] Apia (capital of Samoa)
+Model outputs "Appia" instead of "Apia".
+- In ES branch: add regex `r"(?i)\bAppia\b"` → `"Apia"`
+- Evidence: fleurs_es_0138 WER=0.217
+
+### C09 [ ] Upolu island (ES)
+Model outputs "Opolu" instead of "Upolu" (island in Samoa).
+- In ES branch: add regex `r"(?i)\bOpolu\b"` → `"Upolu"`
+- Evidence: fleurs_es_0138
+
+### C10 [ ] El Amazonas (ES)
+Model outputs "lo amazonas" instead of "el Amazonas".
+- In ES branch: add regex `r"(?i)\blo\s+amazonas\b"` → `"el Amazonas"`
+- Evidence: fleurs_es_0162 WER=0.182
+
+### C11 [ ] Lantagne (ES)
+Model outputs "Lataña" instead of "Lantagne" (UN health specialist).
+- In ES branch: add regex `r"(?i)\bLata[ñn]a\b"` → `"Lantagne"`
+- Evidence: fleurs_es_0146 WER=0.160
+
+### C12 [ ] Sintra (ES)
+Model outputs "Intra" instead of "Sintra" (Portuguese town).
+- In ES branch: add regex `r"(?i)\bIntra\b"` → `"Sintra"` — CAUTION: "intra" is a prefix. Make boundary strict: only standalone word.
+- Evidence: fleurs_es_0140
+
+### C13 [ ] Digit-space-percent (ES)
+Same as A12 but ensure applied in ES context too. If A12 is in a shared location (before language branch), no extra work needed. Otherwise add to ES branch.
+- Confirm `r"(\d+)\s+%"` → `"$1%"` runs for ES samples
+- Evidence: fleurs_es_0162 "20 %"
+
+### C14 [ ] Martelly name (ES)
+Model outputs "Martelli" instead of "Martelly" (Haitian president).
+- In ES branch: add regex `r"(?i)\bMartelli\b"` → `"Martelly"`
+- Evidence: omitted_terms ES freq=3
+
+### C15 [ ] Espectroscopia accent (ES)
+Model outputs "espectroscopía" (with accent) while reference has "espectroscopia" — both valid but consistent with reference.
+- In ES branch: add regex `r"\bespectroscopía\b"` → `"espectroscopia"` — VERY LOW PRIORITY, minor accent issue
+
+---
+
+## GROUP D — French: Proper nouns & technical terms
+*File: `src-tauri/src/runtime/parakeet_text.rs`, function: `normalize_parakeet_french_artifacts`*
+
+### D01 [ ] Sundarbans garbled (FR)
+Model outputs "Seines d'arbans" instead of "Sundarbans" (mangrove forest, UNESCO site).
+- Add regex: `r"(?i)\bseines?\s+d['']?\s*arbans?\b"` → `"Sundarbans"`
+- Evidence: fleurs_fr_0221 WER=0.250
+
+### D02 [ ] Sundarbans alternate garble (FR)
+Model also outputs "Sundarmans" — different hallucination of same proper noun.
+- Add regex: `r"(?i)\bSundarmans?\b"` → `"Sundarbans"`
+- Evidence: hallucinated_terms FR freq=2
+
+### D03 [ ] Mosasaure (FR)
+Model outputs "mosasure" instead of "mosasaure".
+- Add regex: `r"(?i)\bmosasure\b"` → `"mosasaure"`
+- Evidence: fleurs_fr_0244 WER=0.250
+
+### D04 [ ] Mosasaures plural (FR)
+Model outputs "mosasores" instead of "mosasaures".
+- Add regex: `r"(?i)\bmosasores\b"` → `"mosasaures"`
+- Evidence: fleurs_fr_0244
+
+### D05 [ ] Superprédateur compound (FR)
+Model outputs "super prédateur" (split) instead of "superprédateur".
+- Add regex: `r"(?i)\bsuper\s+pr[eé]dateur\b"` → `"superprédateur"`
+- Evidence: fleurs_fr_0244
+
+### D06 [ ] l'UE from LEUP (FR)
+Model outputs "LEUP" instead of "l'UE" (l'Union Européenne).
+- Add regex: `r"(?i)\bLEUP\b"` → `"l'UE"`
+- Evidence: fleurs_fr_0290 WER=0.179
+
+### D07 [ ] Kundalini FR garble
+Model outputs "kundalani" instead of "kundalini" in French.
+- Add regex: `r"(?i)\bkundalani\b"` → `"kundalini"`
+- Evidence: hallucinated_terms FR freq=2
+
+### D08 [ ] Rachis FR variants
+Model outputs "rachide" or "rachie" instead of "rachis" in French.
+- Add regex: `r"(?i)\brachi(?:de|e)\b"` → `"rachis"`
+- Evidence: fleurs_fr_0270 WER=0.163
+
+### D09 [ ] Noor / Nours (FR)
+Model outputs "Nours" instead of "Noor" (Cave of Hira on Mount Noor).
+- Add regex: `r"(?i)\bNours\b"` → `"Noor"`
+- Evidence: fleurs_fr_0205 WER=0.171
+
+### D10 [ ] Muhammad vs Mohammad (FR)
+Model outputs "Mohammad" (Persian spelling) instead of "Muhammad" (Arabic/standard).
+- Add regex: `r"(?i)\bMohammad\b"` → `"Muhammad"` — LOW PRIORITY: regional usage varies. Test carefully.
+- Evidence: fleurs_fr_0205
+
+### D11 [ ] Les années vingt → les années 20 (FR)
+Model outputs "les années vingt" (word form) instead of "les années 20" (digit form).
+- Add regex: `r"(?i)\bles ann[eé]es\s+vingt\b"` → `"les années 20"`
+- Evidence: fleurs_fr_0225 WER=0.200
+
+### D12 [ ] Time format 23h35 → 23 h 35 (FR)
+Model outputs compact "23h35" while French reference uses spaced "23 h 35".
+- Add regex: `r"\b(\d{1,2})h(\d{2})\b"` → `"$1 h $2"` in FR branch
+- Evidence: fleurs_fr_0231 WER=0.286
+
+### D13 [ ] GMT time garble (FR)
+Model outputs "douze heures Gm D" instead of "12 h 00 GMT".
+- Add regex: `r"(?i)\bdouze\s+heures?\s+Gm\s*D\b"` → `"12 h 00 GMT"`
+- Evidence: fleurs_fr_0280 WER=0.200
+
+### D14 [ ] Appelat → appelé (FR)
+Model outputs "appelat" (non-word) instead of "appelé" (called).
+- Add regex: `r"(?i)\bappelat\b"` → `"appelé"`
+- Evidence: fleurs_fr_0256 WER=0.389
+
+### D15 [ ] 1988 word form (FR)
+Model outputs "mille neuf cent quatre-vingt-huit" instead of "1988".
+- Add regex: `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]huit\b"` → `"1988"`
+- Evidence: fleurs_fr_0237 WER=0.293
+
+### D16 [ ] Digit + space + percent (FR)
+Same as A12 applied in FR — confirm "30 %" → "30%" runs in FR branch.
+- Evidence: fleurs_fr_0257
+
+### D17 [ ] The soir → ce soir (FR)
+Model inserts English "the" before French "soir" — language mixing.
+- Add regex: `r"(?i)\bthe\s+soir\b"` → `"ce soir"` in FR branch
+- Evidence: fleurs_fr_0273 WER=0.327
+
+### D18 [ ] And + French verb → et + verb (FR)
+Model inserts English "and" before French verb — language mixing.
+- Add regex: `r"(?i)\band\s+(d[eé]terminer|d[eé]cider|pr[eé]senter|[eé]valuer|continuer|rester)\b"` → `"et $1"` in FR branch
+- Evidence: fleurs_fr_0273
+
+### D19 [ ] "the" before French article → suppress (FR)
+Model inserts English "the" before French articles — language mixing.
+- Add regex: `r"(?i)\bthe\s+(la|le|les|un|une|des|du)\b"` → `"$1"` in FR branch
+- Evidence: fleurs_fr_0245 WER=0.420 (HALL: the, and, of appearing in FR text)
+- CAUTION: Test carefully; some FR texts legitimately cite English phrases.
+
+### D20 [ ] Rougissement → rugissement (FR)
+Model outputs "rougissement" (blushing) instead of "rugissement" (roar).
+- Add regex: `r"(?i)\brougissement\b"` → `"rugissement"` in FR branch — CAUTION: "rougissement" is a real FR word. Only valid near "tigre/lion". Mark as RISKY.
+- Evidence: fleurs_fr_0206 WER=0.154
+
+---
+
+## GROUP E — Portuguese: Proper nouns & artifacts
+*File: `src-tauri/src/runtime/parakeet_text.rs`, add to PT branch in `finalize_parakeet_text`*
+
+### E01 [ ] Casablanca split (PT)
+Model outputs "Casa Blanca" (two words) instead of "Casablanca".
+- In PT branch: add regex `r"(?i)\bcasa\s+blanca\b"` → `"Casablanca"`
+- Evidence: fleurs_pt_0374 WER=0.208 (omitted_terms: casablanca, freq=3 globally)
+
+### E02 [ ] SANParks in PT
+Model outputs "Sem Parks" instead of "SANParks".
+- In PT branch: add regex `r"(?i)\bsem\s+parks\b"` → `"SANParks"`
+- Evidence: fleurs_pt_0334 WER=0.182
+
+### E03 [ ] Mosassauro (PT)
+Model outputs "mosasauro" instead of "mosassauro" (double-s spelling in PT).
+- In PT branch: add regex `r"(?i)\bmosasauro\b"` → `"mosassauro"`
+- Evidence: fleurs_pt_0303 WER=0.158
+
+### E04 [ ] Mosassauros plural (PT)
+Model outputs "mosasaurus" instead of "mosassauros".
+- In PT branch: add regex `r"(?i)\bmosasaurus\b"` → `"mosassauros"`
+- Evidence: fleurs_pt_0303
+
+### E05 [ ] Pirâmide de Gizé (PT)
+Model outputs "pirâmide de Zé" instead of "Pirâmide de Gizé".
+- In PT branch: add regex `r"(?i)\bpirâmide\s+de\s+Zé\b"` → `"Pirâmide de Gizé"`
+- Evidence: fleurs_pt_0337 WER=0.167
+
+### E06 [ ] Addenbrooke's hospital (PT)
+Model outputs "Alden Brooks Hospital" instead of "Addenbrooke's Hospital".
+- In PT branch: add regex `r"(?i)\bAlden\s+Brooks\s+Hospital\b"` → `"Addenbrooke's Hospital"`
+- Evidence: fleurs_pt_0351 WER=0.182
+
+### E07 [ ] Oldřich Jelínek (PT)
+Model outputs "Aldritch Jelinek" instead of "Oldřich Jelínek" (Czech Paralympic athlete).
+- In PT branch: add regex `r"(?i)\bAldritch\s+Jelinek\b"` → `"Oldřich Jelínek"`
+- Evidence: fleurs_pt_0320 WER=0.200
+
+### E08 [ ] Trailing "Okay" in PT
+Model appends "Okay." as hallucination at end of PT transcription.
+- In PT branch: add regex `r"(?i)[,.]?\s*\bokay\b\s*[.!?,]*$"` → `""` (remove trailing "Okay")
+- Evidence: fleurs_pt_0322 WER=0.167 (HALL: okay, freq=2 in PT)
+- NOTE: PT word "um" is already protected. "okay" in PT context is always hallucination.
+
+### E09 [ ] Áreotas → áreas remotas (PT)
+Model outputs "áreotas" (nonword) instead of "áreas remotas" (remote areas).
+- In PT branch: add regex `r"(?i)\báreotas\b"` → `"áreas remotas"`
+- Evidence: fleurs_pt_0322
+
+### E10 [ ] Presença → fix presenha (PT)
+Model outputs "presenha" instead of "presença".
+- In PT branch: add regex `r"(?i)\bpresenha\b"` → `"presença"`
+- Evidence: fleurs_pt_0354 WER=0.286
+
+### E11 [ ] Hóquei no gelo (PT)
+Model outputs "ó, no gelo" instead of "hóquei no gelo" (ice hockey).
+- In PT branch: add regex `r"(?i)\bó\s*,?\s*no\s+gelo\b"` → `"hóquei no gelo"`
+- Evidence: fleurs_pt_0324 WER=0.318
+
+### E12 [ ] Hóquei em patins (PT)
+Model outputs "Oken empatins" instead of "hóquei em patins" (roller hockey).
+- In PT branch: add regex `r"(?i)\boken\s+empatins\b"` → `"hóquei em patins"`
+- Evidence: fleurs_pt_0324
+
+### E13 [ ] Empatins → em patins (PT)
+Model outputs "empatins" instead of "em patins" (on skates).
+- In PT branch: add regex `r"(?i)\bempatins\b"` → `"em patins"`
+- Evidence: fleurs_pt_0324
+
+### E14 [ ] Mitchell Gourley (PT)
+Model outputs "Mitchell Gurley" instead of "Mitchell Gourley" (Australian Paralympic skier).
+- In PT branch: add regex `r"(?i)\bGurley\b"` → `"Gourley"` — LOW PRIORITY (Gurley is also a real surname)
+- Evidence: fleurs_pt_0320
+
+### E15 [ ] Martelly (PT)
+Model outputs "Marteli" instead of "Martelly" (Haitian president).
+- In PT branch: add regex `r"(?i)\bMarteli\b"` → `"Martelly"`
+- Evidence: omitted_terms PT
+
+---
+
+## GROUP F — All languages: Number / unit normalization
+*Apply in shared section of `finalize_parakeet_text` BEFORE language branch, or per-language as noted*
+
+### F01 [ ] Digit + space + percent (global)
+Applies to all languages. Remove space between digit and `%`.
+- Add BEFORE language branch: `r"(\d+)\s+%"` → `"$1%"`
+- Evidence: EN en_0060, FR fr_0257, ES es_0162
+
+### F02 [ ] Time colon spacing (global)
+Remove space before/after colon in times like "11 : 35" → "11:35".
+- Add BEFORE language branch: `r"(\d{1,2})\s+:\s*(\d{2})\b"` → `"$1:$2"`
+- Evidence: ES es_0169
+
+### F03 [ ] Ordinal suffix: 11o / 16o → 11º / 16º (PT)
+Model outputs ASCII "o" instead of ordinal superscript "º".
+- In PT branch: add regex `r"(\d+)o\b"` → `"$1º"` — CAUTION: only apply to short numbers (1-99). Use `r"\b(\d{1,2})o\b"` → `"$1º"`
+- Evidence: fleurs_pt_0320
+
+### F04 [ ] FR year: mille neuf cent quatre-vingt (general)
+Extend D15 to cover more years. Add:
+- `"mille neuf cent quatre-vingt-dix"` → `"1990"`
+- `"mille neuf cent soixante"` → `"1960"`
+- `"mille neuf cent quatre-vingt"` → `"1980"`
+- Evidence: general FR number patterns
+
+### F05 [ ] 802.11 space variants (already partially covered)
+Ensure `"802 .11"` (space before dot) normalizes to `"802.11"`. The existing PUNCT_SPACE_PATTERN in FR covers this. Verify it also runs in EN branch.
+- Add `PUNCT_SPACE_PATTERN` application in EN branch if not already present.
+- Evidence: fleurs_fr results improved after FR punct fix
+
+---
+
+## GROUP G — Compound words & hyphenation
+*File: `src-tauri/src/runtime/parakeet_text.rs`, per-language function*
+
+### G01 [ ] Anti-incendios → antincendios (ES)
+Model outputs "antiincendios" instead of "antincendios".
+- In ES branch: add regex `r"(?i)\bantiincendios\b"` → `"antincendios"`
+- Evidence: fleurs_es_0169
+
+### G02 [ ] Micro. Cru → microexpressões (PT)
+Model breaks "microexpressões" into "micro. Cru expressões".
+- In PT branch: add regex `r"(?i)\bmicro\.\s*cru\s+express[oõ]es\b"` → `"microexpressões"`
+- Evidence: fleurs_pt_0370 WER=0.316
+
+### G03 [ ] Microexpressões split (PT)
+Model outputs "micro" + "expressões" (split without "cru") instead of "microexpressões".
+- In PT branch: add regex `r"(?i)\bmicro\s+express[oõ]es\b"` → `"microexpressões"`
+- Evidence: fleurs_pt_0370
+
+### G04 [ ] Superprédateur (FR) — already in D05
+Same concept, already covered.
+
+### G05 [ ] TBUR / TB UR acronym (FR)
+Model outputs "TBUR" as one word; reference has "TB-UR" or similar. Low priority — leave for now.
+
+---
+
+## GROUP H — Recovery threshold experiments
+*File: `src-tauri/examples/parakeet_pipeline_eval.rs` AND `src-tauri/src/actions/transcribe.rs`*
+*These require changing BOTH files and running full evals.*
+
+### H01 [ ] End-truncation recovery: add END score trigger
+When assembled `end_truncation_score > 0.7`, also trigger full-audio recovery attempt.
+- Add condition in `should_attempt_full_audio_recovery`: `|| end_truncation_score > 0.7`
+- Must sync change in both eval and transcribe.rs
+- Evidence: 30% of FLEURS samples have END > 0.5
+
+### H02 [ ] Lower promote threshold for high-END samples
+When `end_score > 0.7`, use lower promote threshold: +2 words / 1.10x (instead of +3 / 1.15x).
+- Add conditional path in `should_promote_full_audio_recovery`
+- Evidence: many END-high samples could benefit from easier promotion
+
+### H03 [ ] Density suspicion: words-per-second floor
+Current threshold: 1.45 wps. Test lowering to 1.35 wps for low-density suspicion.
+- Change `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35` in suspicion check
+- Run both evals, revert if regression
+
+### H04 [ ] Min duration for recovery: 5.0s instead of 6.0s
+Test if catching more short audio with recovery helps.
+- Change `6.0` → `5.0` in `if !(6.0..=45.0).contains(&duration_secs)`
+- Run both evals, revert if regression
+
+### H05 [ ] Max duration for recovery: 50s instead of 45s
+Allow recovery for slightly longer samples.
+- Change `45.0` → `50.0` in duration range check
+- Run both evals, revert if regression
+
+---
+
+## GROUP I — Spanish: Additional proper nouns (round 2)
+*File: `src-tauri/src/runtime/parakeet_text.rs`, ES branch*
+
+### I01 [ ] Danielle Lantagne (ES)
+Model drops double-l in "Danielle" → "Daniel". Only fix if next to Lantagne.
+- In ES branch: add regex `r"(?i)\bDaniel\s+Lantagne\b"` → `"Danielle Lantagne"`
+- Evidence: fleurs_es_0146
+
+### I02 [ ] Glen → Glenn disambiguation (EN)
+Model hallucinated "Glenn" (double-n) when reference has "Glen". 
+SKIP — too risky (Glenn is a valid proper name too).
+
+### I03 [ ] Erdoğan pronunciation (ES)
+Model outputs "Norgan" instead of "Erdoğan". Very specific to Turkish name.
+- In ES branch: add regex `r"(?i)\bNorgan\b"` → `"Erdoğan"`
+- Evidence: fleurs_es_0150 WER=0.200 — but low frequency, mark low priority
+
+### I04 [ ] Recep Tayyip (ES)
+Model outputs "Recep Tayib" instead of "Recep Tayyip".
+- In ES branch: add regex `r"(?i)\bTayib\b"` → `"Tayyip"`
+- Evidence: fleurs_es_0150
+
+### I05 [ ] Carpanedo (ES)
+Model outputs "Carbaneo" instead of "Carpanedo" (Italian Paralympic athlete).
+- In ES branch: add regex `r"(?i)\bCarbaneo\b"` → `"Carpanedo"`
+- Evidence: omitted_terms ES
+
+---
+
+## GROUP J — French: Additional patterns (round 2)
+*File: `src-tauri/src/runtime/parakeet_text.rs`, FR branch*
+
+### J01 [ ] Duvall → Duval disambiguation (FR)
+Model drops one 'l' → "Duval" instead of "Duvall".
+- In FR branch: add regex `r"(?i)\bDuval\b"` → `"Duvall"` — RISKY: "Duval" is a common French surname. SKIP.
+
+### J02 [ ] Mau → Mau in FR context
+Model says "Mouvement Mao" for "mouvement Mau". Same fix as A14 but for FR.
+- In FR branch: add regex `r"(?i)\bMao\s+mouvement\b"` → `"Mau mouvement"`
+
+### J03 [ ] Kundalini yoga (FR)
+Model omits "kundalini" frequently — already addressed in D07.
+
+### J04 [ ] Martelly (FR)
+Model outputs "manwin" (hallucination). Too vague to fix.
+
+### J05 [ ] Vaccination/infection numbers (FR)
+Model splits "330 000" as "trois cent trente mille" → digits better.
+- In FR branch: add regex `r"(?i)\btrois\s+cent\s+trente\s+mille\b"` → `"330 000"`
+- Evidence: fleurs_fr_0253 WER=0.231
+
+---
+
+## Summary Stats
+
+| Group | Items | Type |
+|-------|-------|------|
+| A | 15 | EN proper nouns + numbers |
+| B | 5 | EN number word forms |
+| C | 15 | ES proper nouns + technical |
+| D | 20 | FR proper nouns + artifacts |
+| E | 15 | PT proper nouns + artifacts |
+| F | 5 | Global number/unit |
+| G | 5 | Compound words |
+| H | 5 | Recovery strategies |
+| I | 5 | ES round 2 |
+| J | 5 | FR round 2 |
+| **Total** | **95** | — |
+
+---
+
+## How to Use This List
+
+The robot should:
+1. Pick the next unchecked item `[ ]`
+2. Implement the exact regex described
+3. Run `cargo check --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval`
+4. Run Local 70 eval → save as `ROBOT_LOCAL_REPORT.json`
+5. Run FLEURS 400 eval → save as `ROBOT_FLEURS_REPORT.json`
+6. Compare WER to baselines above
+7. If no regression: mark `[DONE ✓]`, commit, add row to EXPERIMENT_HISTORY.md
+8. If regression: mark `[REJECTED ✗]`, revert, do NOT commit
+9. Move to next item
+
+Recovery experiments (GROUP H) should be done LAST — they are higher risk.
+Items marked RISKY or CAUTION need extra care when checking per-language WER breakdown.

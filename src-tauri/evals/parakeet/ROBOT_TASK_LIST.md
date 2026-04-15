@@ -79,17 +79,17 @@ Model speaks year as "nineteen forty" instead of "1940".
 - Add static regex: `r"(?i)\bnineteen\s+forty\b"` → `"1940"`
 - Evidence: fleurs_en_0062 (OMIT: 1940, HALL: forty, nineteen)
 
-### A10 [ ] Nineteen eighty-eight → 1988 (EN)
+### A10 [DONE v] Nineteen eighty-eight → 1988 (EN)
 Model speaks year as "nineteen eighty-eight" instead of "1988".
 - Add static regex: `r"(?i)\bnineteen\s+eighty[\s-]eight\b"` → `"1988"`
 - Related to fr_0237 pattern (same audio content, different language)
 
-### A11 [ ] Time word form: eleven thirty-five
+### A11 [SKIPPED -] Time word form: eleven thirty-five
 Model speaks "eleven thirty-five p.m." instead of "11:35 p.m." / "11:35 PM".
 - Add static regex: `r"(?i)\beleven\s+thirty[\s-]five\s+(a\.?m\.?|p\.?m\.?)\b"` → `"11:35 $1"`
 - Evidence: fleurs_en_0057 WER=0.400
 
-### A12 [ ] Digit + space + percent
+### A12 [DONE v] Digit + space + percent
 Model outputs "30 %" (with space) instead of "30%".
 - Add to `normalize_parakeet_english_artifacts`: `r"(\d+)\s+%"` → `"$1%"`
 - Evidence: fleurs_en_0060, fleurs_fr_0257

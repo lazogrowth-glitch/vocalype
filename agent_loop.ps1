@@ -170,19 +170,19 @@ function Get-NextTask() {
     for ($li = 0; $li -lt $lines.Count; $li++) {
         $line = $lines[$li]
 
-        # Detect task header: "### X00 [ ] Title"
-        if ($line -match "^###\s+([\w\d]+)\s+\[ \]\s+(.+)$") {
+        # Stop collecting body when we hit any header (after already finding the task)
+        if ($inTask -and $line -match "^#{1,3}\s+") {
+            break
+        }
+
+        # Detect task header: "### A01 [ ] Title" — only if we haven't found one yet
+        if (-not $inTask -and $line -match "^###\s+([\w\d]+)\s+\[ \]\s+(.+)$") {
             $taskId    = $Matches[1]
             $taskTitle = $Matches[2].Trim()
             $startLine = $li
             $inTask    = $true
             $taskBody.Clear()
             continue
-        }
-
-        # Stop collecting at next header at same or higher level
-        if ($inTask -and $line -match "^#{1,3}\s+") {
-            break
         }
 
         if ($inTask) {

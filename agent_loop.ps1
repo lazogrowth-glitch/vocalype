@@ -216,81 +216,127 @@ function Set-TaskStatus($taskId, $status) {
     [System.IO.File]::WriteAllText($TASK_LIST_FILE, $content, $utf8NoBom)
 }
 
-function Build-Prompt($iteration, $analysis, $historyText, $task) {
+# ---------------------------------------------------------------
+# Apply-RegexTask: applique directement un task regex dans le
+# fichier Rust sans passer par Aider. 100% fiable pour A-G.
+# Retourne $true si modifie, $false sinon.
+# ---------------------------------------------------------------
+function Apply-RegexTask($task) {
+    $body = $task.Body
+    $rustFile = "$REPO\src-tauri\src\runtime\parakeet_text.rs"
 
-    # Determine target file from task group
-    $targetFileForTask = "src-tauri/src/runtime/parakeet_text.rs"
-    if ($task -and $task.Id -match "^H") {
-        $targetFileForTask = "src-tauri/src/actions/transcribe.rs"
+    # -- Extraire le pattern regex depuis: `r"..."` ou r"..."
+    $patMatch = [regex]::Match($body, 'r"([^"]+)"')
+    if (-not $patMatch.Success) {
+        Write-Host "  Apply-RegexTask: pas de pattern trouve dans la tache $($task.Id)" -ForegroundColor Yellow
+        return $false
+    }
+    $pattern = $patMatch.Groups[1].Value
+
+    # -- Extraire le remplacement depuis: -> `"..."` ou -> "..."
+    # La ligne contient typiquement: regex" -> "Replacement"
+    $replLine = ($body -split "`n") | Where-Object { $_ -match 'r"[^"]+"' } | Select-Object -First 1
+    $replMatch = [regex]::Match($replLine, '->.*?"([^"]+)"')
+    if (-not $replMatch.Success) {
+        # Essai avec fleche unicode
+        $replMatch = [regex]::Match($replLine, '[^\x00-\x7F]+\s*`?"?([A-Za-z0-9 .\-_/]+)`?"?')
+    }
+    if (-not $replMatch.Success) {
+        Write-Host "  Apply-RegexTask: pas de remplacement trouve pour $($task.Id)" -ForegroundColor Yellow
+        return $false
+    }
+    $replacement = $replMatch.Groups[1].Value.Trim()
+
+    # -- Determiner fonction cible
+    $funcAnchor = "pub fn normalize_parakeet_english_artifacts"
+    $insertAfterAnchor = "let mut normalized = OPEN_I_PATTERN"
+    if ($body -match "french_artifacts|FR branch") {
+        $funcAnchor = "pub fn normalize_parakeet_french_artifacts"
+        $insertAfterAnchor = "let mut normalized ="
+    } elseif ($body -match "ES branch") {
+        $funcAnchor = 'selected_language == "es"'
+        $insertAfterAnchor = 'normalize_parakeet_spanish_artifacts\|let mut normalized\|normalized = normalize'
+    } elseif ($body -match "PT branch") {
+        $funcAnchor = 'selected_language == "pt"'
+        $insertAfterAnchor = "let mut normalized ="
     }
 
-    $taskSection = if ($task) {
-        $body = $task.Body
+    # -- Nom de la variable statique
+    $staticName = ($task.Id -replace '[^A-Za-z0-9]', '_').ToUpper() + "_PATTERN"
 
-        # Extract first regex pattern from task body: r"pattern"
-        $regexMatch = [regex]::Match($body, 'r\"([^\"]+)\"')
-        $pattern = if ($regexMatch.Success) { $regexMatch.Groups[1].Value } else { "VOIR_TACHE" }
+    # -- Lire le fichier
+    $content = Get-Content $rustFile -Raw -Encoding UTF8
 
-        # Extract replacement: text after the arrow symbol (-> or the unicode arrow)
-        $replMatch = [regex]::Match($body, '(?:->|[=\-]>|`"([^`"]+)`"[^`"]*`"([^`"]+)`")')
-        # Simpler: grab the quoted string after the last arrow
-        $replMatch2 = [regex]::Match($body, '"([^"]+)"\s*$', [System.Text.RegularExpressions.RegexOptions]::Multiline)
-        $replacement = if ($replMatch2.Success) { $replMatch2.Groups[1].Value.Trim() } else { "VOIR_TACHE" }
+    # Verifier que le pattern n'existe pas deja
+    if ($content -match [regex]::Escape($staticName)) {
+        Write-Host "  Apply-RegexTask: $staticName deja present, skip" -ForegroundColor Yellow
+        return $false
+    }
 
-        # Determine target function
-        $funcName = "normalize_parakeet_english_artifacts"
-        if ($body -match "french_artifacts|FR branch") { $funcName = "normalize_parakeet_french_artifacts" }
-        if ($body -match "ES branch") { $funcName = "finalize_parakeet_text, ES branch" }
-        if ($body -match "PT branch") { $funcName = "finalize_parakeet_text, PT branch" }
+    # -- ETAPE 1: inserer le static avant le commentaire "// WiFi standard:" (ancre stable)
+    $staticDecl = "// $($task.Id): $($task.Title)`nstatic ${staticName}: Lazy<Regex> =`n    Lazy::new(|| Regex::new(r`"$pattern`").unwrap());`n"
+    $anchor1 = "// WiFi standard: model hears"
+    if ($content -notmatch [regex]::Escape($anchor1)) {
+        # Fallback: inserer avant la premiere static WIFI
+        $anchor1 = "static WIFI_802_MISREAD_PATTERN"
+    }
+    $content = $content -replace [regex]::Escape($anchor1), ($staticDecl + $anchor1)
 
-        # Static var name from task id
-        $staticName = ($task.Id -replace '[^A-Za-z0-9]', '_').ToUpper() + "_PATTERN"
+    # -- ETAPE 2: inserer l'appel dans la bonne fonction
+    # Chercher la fonction puis la premiere ligne "let mut normalized ="
+    $applyLine = "    normalized = ${staticName}.replace_all(" + '&' + "normalized, `"$replacement`").to_string();"
 
-        # Build the two Rust snippets as plain strings (no heredoc to avoid interpolation issues)
-        $rustStatic = "static " + $staticName + ": Lazy<Regex> = Lazy::new(|| Regex::new(r`"" + $pattern + "`").unwrap());"
-        $rustApply  = "    normalized = " + $staticName + ".replace_all(" + [char]0x26 + "normalized, `"" + $replacement + "`").to_string();"
-
-        $lines = @(
-            "## TACHE ASSIGNEE: $($task.Id) -- $($task.Title)",
-            "",
-            $body,
-            "",
-            "------",
-            "## EXACTEMENT CE QUE TU DOIS FAIRE:",
-            "",
-            "ETAPE 1 - Ajoute dans la section des statics (apres le dernier static ... PATTERN):",
-            $rustStatic,
-            "",
-            "ETAPE 2 - Ajoute dans la fonction [$funcName], apres la ligne [let mut normalized =]:",
-            $rustApply,
-            "",
-            "REGLES: Fais UNIQUEMENT ces deux ajouts. Rien d'autre.",
-            "NE PAS changer chunk size. NE PAS introduire Hindi."
-        )
-        $lines -join "`n"
+    # Approche: trouver "let mut normalized = OPEN_I_PATTERN" et inserer apres cette ligne complete
+    $insertAfter = "let mut normalized = OPEN_I_PATTERN.replace_all(text, `"OpenAI`").to_string();"
+    if ($body -match "french_artifacts|FR branch") {
+        $insertAfter = "pub fn normalize_parakeet_french_artifacts"
+        # Trouver la ligne "let mut normalized =" dans cette fonction
+        $fnIdx = $content.IndexOf("pub fn normalize_parakeet_french_artifacts")
+        if ($fnIdx -ge 0) {
+            $afterFn = $content.Substring($fnIdx)
+            $nmIdx = $afterFn.IndexOf("let mut normalized =")
+            if ($nmIdx -ge 0) {
+                $lineEnd = $afterFn.IndexOf("`n", $nmIdx)
+                $insertPos = $fnIdx + $nmIdx + $lineEnd + 1
+                $content = $content.Substring(0, $insertPos) + "    " + $applyLine + "`n" + $content.Substring($insertPos)
+            }
+        }
+    } elseif ($content -match [regex]::Escape($insertAfter)) {
+        $content = $content -replace [regex]::Escape($insertAfter), ($insertAfter + "`n" + $applyLine)
     } else {
-        "TOUTES LES TACHES SONT COMPLETES."
+        Write-Host "  Apply-RegexTask: ancre d'insertion fonction introuvable pour $($task.Id)" -ForegroundColor Yellow
+        return $false
     }
+
+    # -- Ecrire le fichier
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($rustFile, $content, $utf8NoBom)
+    Write-Host "  Apply-RegexTask: $($task.Id) applique (pattern=$pattern -> $replacement)" -ForegroundColor Green
+    return $true
+}
+
+# Build-Prompt: uniquement pour les taches H (recovery) qui passent encore par Aider
+function Build-Prompt($iteration, $analysis, $historyText, $task) {
+    $targetFileForTask = "src-tauri/src/actions/transcribe.rs"
+
+    $taskDesc = if ($task) { "## TACHE: $($task.Id) -- $($task.Title)`n`n$($task.Body)" } else { "TOUTES LES TACHES SONT COMPLETES." }
 
     return @"
 Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Iteration: ${iteration}/$MaxIterations
-
-Consulte AGENT_MISSION.md pour les regles completes et les baselines.
-Le fichier cible est: $targetFileForTask
+Fichier cible: $targetFileForTask
 
 $analysis
 
-## Historique des tentatives precedentes
+## Historique
 $historyText
 
-$taskSection
+$taskDesc
 
-RAPPEL: Modifie UNIQUEMENT $targetFileForTask. Une seule tache par iteration. Ne pas bundler.
+REGLES: Modifie UNIQUEMENT $targetFileForTask. NE PAS changer chunk size global. NE PAS introduire Hindi.
 "@
 }
 
-
-# Expose targetFile pour la boucle principale (sera override par la tache)
+# Expose targetFile
 $targetFile = "src-tauri/src/runtime/parakeet_text.rs"
 
 # ============================================================
@@ -374,73 +420,52 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     $targetFile = "src-tauri/src/runtime/parakeet_text.rs"
     if ($currentTask.Id -match "^H") { $targetFile = "src-tauri/src/actions/transcribe.rs" }
 
-    # Analyse detaillee des rapports actuels
-    Write-Host "  Analyse des rapports en cours..." -ForegroundColor Gray
-    $analysis = Run-Analysis $currentLocalReport $currentFleursReport $i
+    Write-Host "  Fichier cible: $targetFile" -ForegroundColor Gray
 
-    # Historique: resume compacte des anciennes iters + detail des N dernieres
-    $historyText = ""
-    if ($compactedSummary) {
-        $historyText += "=== Historique compacte (anciennes iterations) ===`n$compactedSummary`n`n"
-    }
-    $historyText += "=== Dernieres iterations (detail) ===`n"
-    $historyText += if ($history.Count -eq 0) {
-        "Aucune tentative precedente."
-    } else {
-        $history -join "`n"
-    }
-
-    # Compacter l'historique si trop long avant de construire le prompt
-    Invoke-HistoryCompaction
-
-    # Prompt pour l'agent
-    $prompt = Build-Prompt $i $analysis $historyText $currentTask
-    $promptFile = "$REPO\agent_prompt_temp.txt"
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($promptFile, $prompt, $utf8NoBom)
-
-    # Snapshot avant
+    # Snapshot avant modification
     Push-Location $REPO
     $filesBefore = (git diff --name-only 2>$null) | Where-Object { $_ -match "^src-tauri/" }
     Pop-Location
 
-    Write-Host "  Fichier cible: $targetFile" -ForegroundColor Gray
-
-    # Creer .aiderignore temporaire pour empecher l'auto-ajout des gros fichiers
-    $aiderIgnore = "$REPO\.aiderignore"
-    # Ignore tout sauf le fichier cible
-    if ($targetFile -match "transcribe") {
-        $ignoreContent = "src-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs`nsrc-tauri/src/runtime/parakeet_text.rs"
+    # ---- Appliquer la tache ----
+    # Groupes A-G: insertion directe en PowerShell (pas d'Aider, 100% fiable)
+    # Groupe H:    changements complexes, passe par Aider
+    if ($currentTask.Id -match "^[A-GI-J]") {
+        Write-Step "Application directe (PowerShell) - $($currentTask.Id)"
+        $applied = Apply-RegexTask $currentTask
+        if (-not $applied) {
+            $msg = "Iter ${i} [$($currentTask.Id)]: SKIPPED - Apply-RegexTask n'a pas pu appliquer."
+            Write-Host "  $msg" -ForegroundColor Yellow
+            $history.Add($msg)
+            Set-TaskStatus $currentTask.Id "SKIPPED"
+            continue
+        }
     } else {
-        # default: parakeet_text.rs
-        $ignoreContent = "src-tauri/src/actions/transcribe.rs`nsrc-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs"
-    }
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($aiderIgnore, $ignoreContent, $utf8NoBom)
-
-    # Lancer Aider
-    Write-Step "Aider - iteration ${i}"
-    Push-Location $REPO
-    try {
-        & $AIDER `
-            --model ollama/qwen2.5-coder:7b-instruct-q8_0 `
-            --edit-format diff `
-            --no-auto-commits `
-            --yes-always `
-            --no-show-model-warnings `
-            --no-browser `
-            --no-gui `
-            --map-tokens 0 `
-            --read AGENT_MISSION.md `
-            --file $targetFile `
-            --message-file agent_prompt_temp.txt
-    } finally {
-        Pop-Location
-        Remove-Item $aiderIgnore  -Force -ErrorAction SilentlyContinue
-        Remove-Item $promptFile   -Force -ErrorAction SilentlyContinue
+        # Groupe H: Aider
+        $analysis = Run-Analysis $currentLocalReport $currentFleursReport $i
+        $historyText = ""
+        if ($compactedSummary) { $historyText += "=== Historique compacte ===`n$compactedSummary`n`n" }
+        $historyText += "=== Dernieres iterations ===`n"
+        $historyText += if ($history.Count -eq 0) { "Aucune." } else { $history -join "`n" }
+        Invoke-HistoryCompaction
+        $prompt = Build-Prompt $i $analysis $historyText $currentTask
+        $promptFile = "$REPO\agent_prompt_temp.txt"
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($promptFile, $prompt, $utf8NoBom)
+        $aiderIgnore = "$REPO\.aiderignore"
+        [System.IO.File]::WriteAllText($aiderIgnore, "src-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs`nsrc-tauri/src/runtime/parakeet_text.rs", $utf8NoBom)
+        Write-Step "Aider - iteration ${i} (groupe H)"
+        Push-Location $REPO
+        try {
+            & $AIDER --model ollama/qwen2.5-coder:7b-instruct-q8_0 --edit-format diff --no-auto-commits --yes-always --no-show-model-warnings --no-browser --no-gui --map-tokens 0 --read AGENT_MISSION.md --file $targetFile --message-file agent_prompt_temp.txt
+        } finally {
+            Pop-Location
+            Remove-Item $aiderIgnore -Force -ErrorAction SilentlyContinue
+            Remove-Item $promptFile  -Force -ErrorAction SilentlyContinue
+        }
     }
 
-    # Verifier modifications (filtrer les warnings git, garder seulement src-tauri/)
+    # Verifier modifications
     Push-Location $REPO
     $filesAfter = (git diff --name-only 2>$null) | Where-Object { $_ -match "^src-tauri/" }
     Pop-Location
@@ -450,7 +475,6 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         $msg = "Iter ${i} [$($currentTask.Id)]: Aucune modification (NO_CHANGE). Tache marquee SKIPPED."
         Write-Host "  $msg" -ForegroundColor Yellow
         $history.Add($msg)
-        # Marquer comme SKIPPED pour passer a la suivante (pas bloque sur la meme tache)
         if ($currentTask) { Set-TaskStatus $currentTask.Id "SKIPPED" }
         continue
     }

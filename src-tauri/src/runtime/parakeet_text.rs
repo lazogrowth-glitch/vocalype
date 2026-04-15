@@ -63,6 +63,9 @@ static A07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b802\.11in\b").
 static A08_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bbarpus\b").unwrap());
 // A09: Nineteen forty → 1940
 static A09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+forty\b").unwrap());
+// A10: Nineteen eighty-eight → 1988 (EN)
+static A10_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+eighty[\s-]eight\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -519,6 +522,7 @@ fn restore_french_apostrophes(text: &str) -> String {
 pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
     normalized = A09_PATTERN.replace_all(&normalized, "1940").to_string();
+    normalized = A10_PATTERN.replace_all(&normalized, "1988").to_string();
     normalized = A08_PATTERN.replace_all(&normalized, "barbules").to_string();
     normalized = A07_PATTERN.replace_all(&normalized, "802.11n").to_string();
     normalized = A06_PATTERN

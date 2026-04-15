@@ -64,17 +64,17 @@ Model outputs "kudali" instead of "kundalini".
 - Add static regex: `r"(?i)\bkudali\b"` → `"kundalini"`
 - Evidence: omitted_terms across multiple EN/FR samples (freq=4)
 
-### A07 [ ] 802.11n extra letter
+### A07 [DONE v] 802.11n extra letter
 Model outputs "802.11in" (inserts extra 'i') instead of "802.11n".
 - Add static regex: `r"(?i)\b802\.11in\b"` → `"802.11n"`
 - Evidence: hallucinated_terms list
 
-### A08 [ ] Barbules mispronunciation
+### A08 [DONE v] Barbules mispronunciation
 Model outputs "barpus" instead of "barbules" (feather anatomy).
 - Add static regex: `r"(?i)\bbarpus\b"` → `"barbules"`
 - Evidence: fleurs_en_0080
 
-### A09 [ ] Nineteen forty → 1940
+### A09 [DONE v] Nineteen forty → 1940
 Model speaks year as "nineteen forty" instead of "1940".
 - Add static regex: `r"(?i)\bnineteen\s+forty\b"` → `"1940"`
 - Evidence: fleurs_en_0062 (OMIT: 1940, HALL: forty, nineteen)

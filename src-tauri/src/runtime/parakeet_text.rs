@@ -57,6 +57,12 @@ static A04_PATTERN: Lazy<Regex> =
 static A05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bra(?:chie|kis)\b").unwrap());
 // A06: Kundalini mispronunciation
 static A06_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bkudali\b").unwrap());
+// A07: 802.11n extra letter
+static A07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b802\.11in\b").unwrap());
+// A08: Barbules mispronunciation
+static A08_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bbarpus\b").unwrap());
+// A09: Nineteen forty → 1940
+static A09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+forty\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -512,6 +518,9 @@ fn restore_french_apostrophes(text: &str) -> String {
 
 pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
+    normalized = A09_PATTERN.replace_all(&normalized, "1940").to_string();
+    normalized = A08_PATTERN.replace_all(&normalized, "barbules").to_string();
+    normalized = A07_PATTERN.replace_all(&normalized, "802.11n").to_string();
     normalized = A06_PATTERN
         .replace_all(&normalized, "kundalini")
         .to_string();
@@ -1061,6 +1070,18 @@ fn replace_french_word(text: &str, from: &str, to: &str) -> String {
     regex.replace_all(text, to).to_string()
 }
 
+pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
+    let mut normalized = text.to_string();
+    // Robot inserts ES artifact corrections here
+    normalized
+}
+
+pub fn normalize_parakeet_portuguese_artifacts(text: &str) -> String {
+    let mut normalized = text.to_string();
+    // Robot inserts PT artifact corrections here
+    normalized
+}
+
 pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
     let mut normalized = normalize_parakeet_phrase_variants(text, selected_language);
     if selected_language == "en" {
@@ -1073,8 +1094,32 @@ pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
         normalized = PUNCT_SPACE_PATTERN
             .replace_all(&normalized, "$1")
             .to_string();
+    } else if selected_language == "es" {
+        normalized = normalize_parakeet_spanish_artifacts(&normalized);
+        normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
+        normalized = MOJIBAKE_E_ACUTE_PATTERN
+            .replace_all(&normalized, "\u{00e9}")
+            .to_string();
+        normalized = MOJIBAKE_APOS_PATTERN
+            .replace_all(&normalized, "'")
+            .to_string();
+        normalized = PUNCT_SPACE_PATTERN
+            .replace_all(&normalized, "$1")
+            .to_string();
+    } else if selected_language == "pt" {
+        normalized = normalize_parakeet_portuguese_artifacts(&normalized);
+        normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
+        normalized = MOJIBAKE_E_ACUTE_PATTERN
+            .replace_all(&normalized, "\u{00e9}")
+            .to_string();
+        normalized = MOJIBAKE_APOS_PATTERN
+            .replace_all(&normalized, "'")
+            .to_string();
+        normalized = PUNCT_SPACE_PATTERN
+            .replace_all(&normalized, "$1")
+            .to_string();
     } else {
-        // ES, PT and other languages: apply shared safe normalization
+        // Other languages: apply shared safe normalization
         normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
         normalized = MOJIBAKE_E_ACUTE_PATTERN
             .replace_all(&normalized, "\u{00e9}")

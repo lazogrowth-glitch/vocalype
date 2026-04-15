@@ -222,96 +222,109 @@ function Set-TaskStatus($taskId, $status) {
 # Retourne $true si modifie, $false sinon.
 # ---------------------------------------------------------------
 function Apply-RegexTask($task) {
-    $body = $task.Body
+    $body    = $task.Body
+    $taskId  = $task.Id
     $rustFile = "$REPO\src-tauri\src\runtime\parakeet_text.rs"
 
-    # -- Extraire le pattern regex depuis: `r"..."` ou r"..."
-    $patMatch = [regex]::Match($body, 'r"([^"]+)"')
+    # ---------------------------------------------------------------
+    # BUG FIX 1: Extraire UNIQUEMENT depuis la ligne "- Add regex:"
+    # L'ancienne methode matchait r" au milieu des descriptions
+    # (ex: "super predateur" → r" a la fin de prédateur + guillemet)
+    # ---------------------------------------------------------------
+    $addLine = ($body -split "`n") | Where-Object { $_ -match '^\s*-\s+Add' } | Select-Object -First 1
+    if (-not $addLine) {
+        Write-Host "  Apply-RegexTask: pas de ligne '- Add' dans $taskId" -ForegroundColor Yellow
+        return $false
+    }
+
+    # Extraire le pattern: premier r"..." dans la ligne Add
+    $patMatch = [regex]::Match($addLine, 'r"([^"]+)"')
     if (-not $patMatch.Success) {
-        Write-Host "  Apply-RegexTask: pas de pattern trouve dans la tache $($task.Id)" -ForegroundColor Yellow
+        Write-Host "  Apply-RegexTask: pas de pattern r`"...`" dans: $addLine" -ForegroundColor Yellow
         return $false
     }
     $pattern = $patMatch.Groups[1].Value
 
-    # -- Extraire le remplacement depuis: -> `"..."` ou -> "..."
-    # La ligne contient typiquement: regex" -> "Replacement"
-    $replLine = ($body -split "`n") | Where-Object { $_ -match 'r"[^"]+"' } | Select-Object -First 1
-    $replMatch = [regex]::Match($replLine, '->.*?"([^"]+)"')
-    if (-not $replMatch.Success) {
-        # Essai avec fleche unicode
-        $replMatch = [regex]::Match($replLine, '[^\x00-\x7F]+\s*`?"?([A-Za-z0-9 .\-_/]+)`?"?')
-    }
-    if (-not $replMatch.Success) {
-        Write-Host "  Apply-RegexTask: pas de remplacement trouve pour $($task.Id)" -ForegroundColor Yellow
+    # ---------------------------------------------------------------
+    # BUG FIX 2: Extraire le remplacement = DERNIER "..." dans la ligne
+    # L'ancienne methode utilisait [A-Za-z0-9] qui stoppait sur é, ó, etc.
+    # ---------------------------------------------------------------
+    $allQuoted = [regex]::Matches($addLine, '"([^"]+)"')
+    if ($allQuoted.Count -lt 2) {
+        Write-Host "  Apply-RegexTask: pas assez de guillemets dans: $addLine" -ForegroundColor Yellow
         return $false
     }
-    $replacement = $replMatch.Groups[1].Value.Trim()
+    $replacement = $allQuoted[$allQuoted.Count - 1].Groups[1].Value.Trim()
 
-    # -- Determiner fonction cible
-    $funcAnchor = "pub fn normalize_parakeet_english_artifacts"
-    $insertAfterAnchor = "let mut normalized = OPEN_I_PATTERN"
-    if ($body -match "french_artifacts|FR branch") {
-        $funcAnchor = "pub fn normalize_parakeet_french_artifacts"
-        $insertAfterAnchor = "let mut normalized ="
-    } elseif ($body -match "ES branch") {
-        $funcAnchor = 'selected_language == "es"'
-        $insertAfterAnchor = 'normalize_parakeet_spanish_artifacts\|let mut normalized\|normalized = normalize'
-    } elseif ($body -match "PT branch") {
-        $funcAnchor = 'selected_language == "pt"'
-        $insertAfterAnchor = "let mut normalized ="
+    # ---------------------------------------------------------------
+    # BUG FIX 3: Routing langue base sur le PREFIXE de l'ID de tache
+    # L'ancienne methode cherchait "FR branch" dans le body (absent)
+    # ---------------------------------------------------------------
+    $groupLetter = $taskId[0]
+    $targetFuncName = switch ($groupLetter) {
+        'D' { "normalize_parakeet_french_artifacts" }
+        'C' { "normalize_parakeet_spanish_artifacts" }
+        'E' { "normalize_parakeet_portuguese_artifacts" }
+        default { "normalize_parakeet_english_artifacts" }
     }
 
     # -- Nom de la variable statique
-    $staticName = ($task.Id -replace '[^A-Za-z0-9]', '_').ToUpper() + "_PATTERN"
+    $staticName = ($taskId -replace '[^A-Za-z0-9]', '_').ToUpper() + "_PATTERN"
 
     # -- Lire le fichier
     $content = Get-Content $rustFile -Raw -Encoding UTF8
 
     # Verifier que le pattern n'existe pas deja
-    if ($content -match [regex]::Escape($staticName)) {
+    if ($content.Contains($staticName)) {
         Write-Host "  Apply-RegexTask: $staticName deja present, skip" -ForegroundColor Yellow
         return $false
     }
 
-    # -- ETAPE 1: inserer le static avant le commentaire "// WiFi standard:" (ancre stable)
-    $staticDecl = "// $($task.Id): $($task.Title)`nstatic ${staticName}: Lazy<Regex> =`n    Lazy::new(|| Regex::new(r`"$pattern`").unwrap());`n"
+    # -- ETAPE 1: inserer le static avant "// WiFi standard:" (ancre stable globale)
+    $staticDecl = "// $taskId`: $($task.Title)`nstatic ${staticName}: Lazy<Regex> =`n    Lazy::new(|| Regex::new(r`"$pattern`").unwrap());`n"
     $anchor1 = "// WiFi standard: model hears"
-    if ($content -notmatch [regex]::Escape($anchor1)) {
-        # Fallback: inserer avant la premiere static WIFI
+    if (-not $content.Contains($anchor1)) {
         $anchor1 = "static WIFI_802_MISREAD_PATTERN"
     }
-    $content = $content -replace [regex]::Escape($anchor1), ($staticDecl + $anchor1)
+    if (-not $content.Contains($anchor1)) {
+        Write-Host "  Apply-RegexTask: ancre statique introuvable pour $taskId" -ForegroundColor Yellow
+        return $false
+    }
+    $content = $content.Replace($anchor1, ($staticDecl + $anchor1))
 
     # -- ETAPE 2: inserer l'appel dans la bonne fonction
-    # Chercher la fonction puis la premiere ligne "let mut normalized ="
+    # Strategie: trouver la fonction cible, puis inserer apres sa premiere ligne "let mut normalized ="
     $applyLine = "    normalized = ${staticName}.replace_all(" + '&' + "normalized, `"$replacement`").to_string();"
 
-    # Approche: trouver "let mut normalized = OPEN_I_PATTERN" et inserer apres cette ligne complete
-    $insertAfter = "let mut normalized = OPEN_I_PATTERN.replace_all(text, `"OpenAI`").to_string();"
-    if ($body -match "french_artifacts|FR branch") {
-        $insertAfter = "pub fn normalize_parakeet_french_artifacts"
-        # Trouver la ligne "let mut normalized =" dans cette fonction
-        $fnIdx = $content.IndexOf("pub fn normalize_parakeet_french_artifacts")
-        if ($fnIdx -ge 0) {
-            $afterFn = $content.Substring($fnIdx)
-            $nmIdx = $afterFn.IndexOf("let mut normalized =")
-            if ($nmIdx -ge 0) {
-                $lineEnd = $afterFn.IndexOf("`n", $nmIdx)
-                $insertPos = $fnIdx + $nmIdx + $lineEnd + 1
-                $content = $content.Substring(0, $insertPos) + "    " + $applyLine + "`n" + $content.Substring($insertPos)
-            }
-        }
-    } elseif ($content -match [regex]::Escape($insertAfter)) {
-        $content = $content -replace [regex]::Escape($insertAfter), ($insertAfter + "`n" + $applyLine)
-    } else {
-        Write-Host "  Apply-RegexTask: ancre d'insertion fonction introuvable pour $($task.Id)" -ForegroundColor Yellow
+    $fnIdx = $content.IndexOf("pub fn $targetFuncName")
+    if ($fnIdx -lt 0) {
+        Write-Host "  Apply-RegexTask: fonction '$targetFuncName' introuvable pour $taskId" -ForegroundColor Yellow
+        return $false
+    }
+    $afterFn   = $content.Substring($fnIdx)
+    $nmIdx     = $afterFn.IndexOf("let mut normalized =")
+    if ($nmIdx -lt 0) {
+        Write-Host "  Apply-RegexTask: 'let mut normalized' introuvable dans $targetFuncName" -ForegroundColor Yellow
+        return $false
+    }
+    $lineEnd   = $afterFn.IndexOf("`n", $nmIdx)
+    if ($lineEnd -lt 0) { $lineEnd = $afterFn.Length - 1 }
+    $insertPos = $fnIdx + $nmIdx + $lineEnd + 1
+    $content   = $content.Substring(0, $insertPos) + "    " + $applyLine + "`n" + $content.Substring($insertPos)
+
+    # -- Verifier que le contenu a bien change
+    $originalContent = Get-Content $rustFile -Raw -Encoding UTF8
+    if ($content -eq $originalContent) {
+        Write-Host "  Apply-RegexTask: contenu inchange apres insertion pour $taskId" -ForegroundColor Yellow
         return $false
     }
 
     # -- Ecrire le fichier
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($rustFile, $content, $utf8NoBom)
-    Write-Host "  Apply-RegexTask: $($task.Id) applique (pattern=$pattern -> $replacement)" -ForegroundColor Green
+    Write-Host "  Apply-RegexTask: $taskId applique -> $targetFuncName" -ForegroundColor Green
+    Write-Host "    pattern     : $pattern" -ForegroundColor DarkGray
+    Write-Host "    replacement : $replacement" -ForegroundColor DarkGray
     return $true
 }
 

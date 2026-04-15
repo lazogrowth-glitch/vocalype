@@ -315,6 +315,79 @@ function Apply-RegexTask($task) {
     return $true
 }
 
+# ---------------------------------------------------------------
+# Apply-ParamTask: applique directement un changement de parametre
+# dans un fichier Rust (chunking.rs, audio.rs, transcribe.rs).
+# Lit la ligne "- Apply: `OLD` -> `NEW`" dans le body de la tache.
+# Retourne $true si modifie, $false sinon.
+# ---------------------------------------------------------------
+function Apply-ParamTask($task) {
+    $body = $task.Body
+    $id   = $task.Id
+
+    # Determiner le fichier cible selon la lettre du groupe
+    $groupLetter = $id[0]
+    $rustFile = switch ($groupLetter) {
+        'K' { "$REPO\src-tauri\src\runtime\chunking.rs" }
+        'L' { "$REPO\src-tauri\src\runtime\chunking.rs" }
+        'M' { "$REPO\src-tauri\src\managers\audio.rs" }
+        'N' { "$REPO\src-tauri\src\managers\audio.rs" }
+        'P' { "$REPO\src-tauri\src\runtime\chunking.rs" }
+        'Q' { "$REPO\src-tauri\src\actions\transcribe.rs" }
+        'R' { "$REPO\src-tauri\src\actions\transcribe.rs" }
+        'S' { "$REPO\src-tauri\src\actions\transcribe.rs" }
+        'T' { "$REPO\src-tauri\src\managers\audio.rs" }
+        'U' { "$REPO\src-tauri\src\runtime\chunking.rs" }
+        default { $null }
+    }
+
+    if (-not $rustFile) {
+        Write-Host "  Apply-ParamTask: groupe inconnu pour $id" -ForegroundColor Yellow
+        return $false
+    }
+
+    # Chercher la ligne "- Apply: `OLD` -> `NEW`" ou "- Apply: `OLD` → `NEW`"
+    $applyLine = ($body -split "`n") | Where-Object { $_ -match '^\s*-\s*Apply:' } | Select-Object -First 1
+    if (-not $applyLine) {
+        Write-Host "  Apply-ParamTask: pas de ligne '- Apply:' dans $id" -ForegroundColor Yellow
+        return $false
+    }
+
+    # Extraire les valeurs entre backticks
+    $btMatches = [regex]::Matches($applyLine, '`([^`]+)`')
+    if ($btMatches.Count -lt 2) {
+        Write-Host "  Apply-ParamTask: format Apply invalide pour $id : $applyLine" -ForegroundColor Yellow
+        return $false
+    }
+
+    $oldValue = $btMatches[0].Groups[1].Value
+    $newValue = $btMatches[1].Groups[1].Value
+
+    # Lire le fichier
+    $content = Get-Content $rustFile -Raw -Encoding UTF8
+
+    # Verifier que la valeur ancienne existe
+    if ($content.IndexOf($oldValue) -lt 0) {
+        Write-Host "  Apply-ParamTask: '$oldValue' non trouve dans $([System.IO.Path]::GetFileName($rustFile))" -ForegroundColor Yellow
+        return $false
+    }
+
+    # Remplacer (premiere occurrence seulement pour etre sur)
+    $newContent = $content.Replace($oldValue, $newValue)
+
+    if ($newContent -eq $content) {
+        Write-Host "  Apply-ParamTask: aucun changement effectue pour $id" -ForegroundColor Yellow
+        return $false
+    }
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($rustFile, $newContent, $utf8NoBom)
+    Write-Host "  Apply-ParamTask: $id applique" -ForegroundColor Green
+    Write-Host "    OLD: $oldValue" -ForegroundColor DarkGray
+    Write-Host "    NEW: $newValue" -ForegroundColor DarkGray
+    return $true
+}
+
 # Build-Prompt: uniquement pour les taches H (recovery) qui passent encore par Aider
 function Build-Prompt($iteration, $analysis, $historyText, $task) {
     $targetFileForTask = "src-tauri/src/actions/transcribe.rs"
@@ -419,8 +492,18 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-Host "  Tache: [$($currentTask.Id)] $($currentTask.Title)" -ForegroundColor Cyan
 
     # Determine fichier cible selon groupe de tache
-    $targetFile = "src-tauri/src/runtime/parakeet_text.rs"
-    if ($currentTask.Id -match "^H") { $targetFile = "src-tauri/src/actions/transcribe.rs" }
+    $gLetter = $currentTask.Id[0]
+    $targetFile = if ($gLetter -in @('A','B','C','D','E','F','G','I','J')) {
+        "src-tauri/src/runtime/parakeet_text.rs"
+    } elseif ($gLetter -in @('K','L','P','U')) {
+        "src-tauri/src/runtime/chunking.rs"
+    } elseif ($gLetter -in @('M','N','T')) {
+        "src-tauri/src/managers/audio.rs"
+    } elseif ($gLetter -in @('H','Q','R','S')) {
+        "src-tauri/src/actions/transcribe.rs"
+    } else {
+        "src-tauri/src/runtime/parakeet_text.rs"
+    }
 
     Write-Host "  Fichier cible: $targetFile" -ForegroundColor Gray
 
@@ -430,13 +513,24 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Pop-Location
 
     # ---- Appliquer la tache ----
-    # Groupes A-G: insertion directe en PowerShell (pas d'Aider, 100% fiable)
-    # Groupe H:    changements complexes, passe par Aider
+    # Groupes A-G, I-J : insertion regex directe dans parakeet_text.rs (Apply-RegexTask)
+    # Groupes K-U      : remplacement de parametre dans fichier Rust  (Apply-ParamTask)
+    # Groupe H         : changements complexes multi-fichier           (Aider)
     if ($currentTask.Id -match "^[A-GI-J]") {
-        Write-Step "Application directe (PowerShell) - $($currentTask.Id)"
+        Write-Step "Application directe regex (PowerShell) - $($currentTask.Id)"
         $applied = Apply-RegexTask $currentTask
         if (-not $applied) {
             $msg = "Iter ${i} [$($currentTask.Id)]: SKIPPED - Apply-RegexTask n'a pas pu appliquer."
+            Write-Host "  $msg" -ForegroundColor Yellow
+            $history.Add($msg)
+            Set-TaskStatus $currentTask.Id "SKIPPED"
+            continue
+        }
+    } elseif ($currentTask.Id -match "^[K-U]") {
+        Write-Step "Application directe parametre (PowerShell) - $($currentTask.Id)"
+        $applied = Apply-ParamTask $currentTask
+        if (-not $applied) {
+            $msg = "Iter ${i} [$($currentTask.Id)]: SKIPPED - Apply-ParamTask n'a pas pu appliquer."
             Write-Host "  $msg" -ForegroundColor Yellow
             $history.Add($msg)
             Set-TaskStatus $currentTask.Id "SKIPPED"

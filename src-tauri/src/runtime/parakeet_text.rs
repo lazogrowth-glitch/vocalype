@@ -43,6 +43,20 @@ static TRAILING_PUNCTUATION_RUN_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\s*([.!?])(?:\s*[.!?])+$").unwrap());
 static TRAILING_MM_HMM_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)[,.]?\s*\b(?:mm-hmm|uh-huh|mhm|mmhmm)\b\s*[.!?,]*$").unwrap());
+// A01: Scotturb split
+static A01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bscott\s+turb\b").unwrap());
+// A02: SANParks split (EN)
+static A02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bsand\s+parks\b").unwrap());
+// A03: Vichy French
+static A03_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bv\.?\s*c\.?\s+french\b").unwrap());
+// A04: U.S. Corps of Engineers
+static A04_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bu\.?\s*s\.?\s+courts\s+of\s+(?:the\s+)?engineers\b").unwrap());
+// A05: Rachis mispronunciation
+static A05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bra(?:chie|kis)\b").unwrap());
+// A06: Kundalini mispronunciation
+static A06_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bkudali\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -498,6 +512,18 @@ fn restore_french_apostrophes(text: &str) -> String {
 
 pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
+    normalized = A06_PATTERN
+        .replace_all(&normalized, "kundalini")
+        .to_string();
+    normalized = A05_PATTERN.replace_all(&normalized, "rachis").to_string();
+    normalized = A04_PATTERN
+        .replace_all(&normalized, "U.S. Corps of Engineers")
+        .to_string();
+    normalized = A03_PATTERN
+        .replace_all(&normalized, "Vichy French")
+        .to_string();
+    normalized = A02_PATTERN.replace_all(&normalized, "SANParks").to_string();
+    normalized = A01_PATTERN.replace_all(&normalized, "Scotturb").to_string();
     normalized = DOT_UP_PATTERN
         .replace_all(&normalized, "dot app")
         .to_string();

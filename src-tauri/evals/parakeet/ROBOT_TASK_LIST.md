@@ -34,27 +34,27 @@ cargo run --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eva
 ## GROUP A — English: Proper nouns & technical terms
 *File: `src-tauri/src/runtime/parakeet_text.rs`, function: `normalize_parakeet_english_artifacts`*
 
-### A01 [ ] Scotturb split
+### A01 [DONE v] Scotturb split
 Model outputs "Scott Turb" instead of "Scotturb" (Portuguese bus company).
 - Add static regex: `r"(?i)\bscott\s+turb\b"` → `"Scotturb"`
 - Evidence: fleurs_en_0083 WER=0.417
 
-### A02 [ ] SANParks split (EN)
+### A02 [DONE v] SANParks split (EN)
 Model outputs "Sand Parks" instead of "SANParks" (South African national parks).
 - Add static regex: `r"(?i)\bsand\s+parks\b"` → `"SANParks"`
 - Evidence: fleurs_en_0094 WER=0.182
 
-### A03 [ ] Vichy French
+### A03 [DONE v] Vichy French
 Model outputs "V C French" instead of "Vichy French".
 - Add static regex: `r"(?i)\bv\.?\s*c\.?\s+french\b"` → `"Vichy French"`
 - Evidence: fleurs_en_0062 WER=0.172
 
-### A04 [ ] U.S. Corps of Engineers
+### A04 [DONE v] U.S. Corps of Engineers
 Model outputs "US Courts of Engineers" instead of "U.S. Corps of Engineers".
 - Add static regex: `r"(?i)\bu\.?\s*s\.?\s+courts\s+of\s+(?:the\s+)?engineers\b"` → `"U.S. Corps of Engineers"`
 - Evidence: fleurs_en_0063 WER=0.176
 
-### A05 [ ] Rachis mispronunciation
+### A05 [DONE v] Rachis mispronunciation
 Model outputs "rachie" or "raikis" instead of "rachis" (paleontology feather shaft term).
 - Add static regex: `r"(?i)\bra(?:chie|kis)\b"` → `"rachis"`
 - Evidence: fleurs_en_0080, fleurs_fr_0270
@@ -549,6 +549,303 @@ Model splits "330 000" as "trois cent trente mille" → digits better.
 
 ---
 
+## GROUP K — Chunk size experiments
+*File: `src-tauri/src/runtime/chunking.rs`, constant: `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES`*
+*Current value: `12 * 16_000` (12 seconds). Change ONE value, run evals, revert if worse.*
+*Type: Apply-ParamTask — simple constant replacement, no LLM needed.*
+
+### K01 [ ] Chunk 12s → 8s
+Shorter chunks = less audio context lost at boundaries, faster first-word latency.
+- Apply: `12 * 16_000; // 12 s at 16 kHz` → `8 * 16_000; // 8 s at 16 kHz`
+- Hypothesis: boundary words currently cut off on 12s chunks get a second chance sooner
+
+### K02 [ ] Chunk 12s → 10s
+Moderate reduction. Compromise between boundary accuracy and context length.
+- Apply: `12 * 16_000; // 12 s at 16 kHz` → `10 * 16_000; // 10 s at 16 kHz`
+
+### K03 [ ] Chunk 12s → 15s
+Longer chunks = more context for the model, may improve proper noun recognition.
+- Apply: `12 * 16_000; // 12 s at 16 kHz` → `15 * 16_000; // 15 s at 16 kHz`
+- Hypothesis: model sees more context around technical terms, fewer truncation hallucinations
+
+### K04 [ ] Chunk 12s → 18s
+Even longer chunks. High risk of truncation at boundaries but model context is large.
+- Apply: `12 * 16_000; // 12 s at 16 kHz` → `18 * 16_000; // 18 s at 16 kHz`
+
+### K05 [ ] Chunk 12s → 20s
+Maximum context. Risk: if someone talks 20s with one long sentence, the whole thing lives or dies on one chunk.
+- Apply: `12 * 16_000; // 12 s at 16 kHz` → `20 * 16_000; // 20 s at 16 kHz`
+
+---
+
+## GROUP L — Overlap between chunks
+*File: `src-tauri/src/runtime/chunking.rs`, constant: `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES`*
+*Current value: `16_000` (1.0 second overlap). This is the audio repeated at the start of each chunk.*
+*Overlap = boundary words get decoded twice → deduplication picks best result.*
+*Type: Apply-ParamTask — simple constant replacement.*
+
+### L01 [ ] Overlap 1.0s → 0.5s
+Less overlap = less redundancy, faster throughput.
+- Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s`
+- Test if current 1.0s overlap is actually helping or neutral
+
+### L02 [ ] Overlap 1.0s → 1.5s
+More overlap = boundary words decoded in 2 full contexts.
+- Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 24_000; // 1.5 s`
+- Hypothesis: words at chunk boundary get better context from previous sentence
+
+### L03 [ ] Overlap 1.0s → 2.0s
+2 second overlap = significant context from previous chunk. Best for fast speech.
+- Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 32_000; // 2.0 s`
+- Hypothesis: if someone speaks fast (like 12s monologue), boundary transitions are smoother
+
+### L04 [ ] Overlap 1.0s → 2.5s
+Maximum overlap test. Trade-off: more compute, but boundary words almost always have context.
+- Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 40_000; // 2.5 s`
+
+### L05 [ ] Overlap 1.0s → 0.75s
+Slight reduction. May save time with minimal quality loss.
+- Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 12_000; // 0.75 s`
+
+---
+
+## GROUP M — VAD threshold (voice activity detection sensitivity)
+*File: `src-tauri/src/managers/audio.rs`, in `create_audio_recorder()` Parakeet V3 branch.*
+*Current value: `vad_threshold = 0.24`. Lower = catches more speech (less aggressive cut). Higher = stricter.*
+*Type: Apply-ParamTask — simple float replacement.*
+
+### M01 [ ] VAD 0.24 → 0.18
+More sensitive: catches speech that currently gets cut as silence. Risk: false starts.
+- Apply: `(0.24, 20, 20, 1)` → `(0.18, 20, 20, 1)`
+- Hypothesis: words at start of utterance currently eaten by VAD, especially soft-spoken first words
+
+### M02 [ ] VAD 0.24 → 0.20
+Slight sensitivity increase. Conservative improvement.
+- Apply: `(0.24, 20, 20, 1)` → `(0.20, 20, 20, 1)`
+
+### M03 [ ] VAD 0.24 → 0.22
+Minimal sensitivity increase. Safest test.
+- Apply: `(0.24, 20, 20, 1)` → `(0.22, 20, 20, 1)`
+
+### M04 [ ] VAD 0.24 → 0.26
+Slightly more restrictive: less background noise triggers recording.
+- Apply: `(0.24, 20, 20, 1)` → `(0.26, 20, 20, 1)`
+
+### M05 [ ] VAD 0.24 → 0.28
+More restrictive: reduces false activations in noisy environments.
+- Apply: `(0.24, 20, 20, 1)` → `(0.28, 20, 20, 1)`
+
+---
+
+## GROUP N — VAD hangover and prefill frames
+*File: `src-tauri/src/managers/audio.rs`, Parakeet V3 voice profile.*
+*Current: prefill_frames=20, hangover_frames=20, onset_frames=1.*
+*Prefill = audio kept before speech starts. Hangover = audio kept after speech stops.*
+*Type: Apply-ParamTask.*
+
+### N01 [ ] Hangover frames 20 → 40
+Large hangover. Model sees more trailing audio → cleaner sentence-end detection.
+- Apply: `(0.24, 20, 20, 1)` → `(0.24, 20, 40, 1)`
+- This directly targets END score which is currently 30.152 (very high). END = speech cut before end of sentence.
+
+### N02 [ ] Hangover frames 20 → 30
+Moderate hangover increase. Balanced between END score fix and latency.
+- Apply: `(0.24, 20, 20, 1)` → `(0.24, 20, 30, 1)`
+
+### N03 [ ] Prefill frames 20 → 30
+More audio before speech onset = less chance of cutting the first syllable.
+- Apply: `(0.24, 20, 20, 1)` → `(0.24, 30, 20, 1)`
+- Hypothesis: "the Corps of Engineers" → model currently misses "the" if VAD triggers late
+
+### N04 [ ] Prefill frames 20 → 15
+Less pre-roll = tighter start. Test if current 20 is excessive.
+- Apply: `(0.24, 20, 20, 1)` → `(0.24, 15, 20, 1)`
+
+### N05 [ ] Onset frames 1 → 2
+Require 2 consecutive speech frames before triggering. Reduces false starts.
+- Apply: `(0.24, 20, 20, 1)` → `(0.24, 20, 20, 2)`
+
+---
+
+## GROUP P — VAD flush silence window
+*File: `src-tauri/src/runtime/chunking.rs`.*
+*`VAD_FLUSH_SILENCE_SAMPLES = 8_000` (500ms): window scanned for sentence-end silence.*
+*`VAD_FLUSH_MIN_CONTENT_SAMPLES = 16_000` (1.0s): minimum before a flush can happen.*
+*Type: Apply-ParamTask.*
+
+### P01 [ ] Flush silence 500ms → 400ms
+Shorter window = detects sentence ends faster. Risk: splits sentences mid-breath.
+- Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms`
+
+### P02 [ ] Flush silence 500ms → 600ms
+Longer window = waits more before deciding "sentence done". Fewer false splits.
+- Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms`
+- Hypothesis: speakers who breathe between clauses currently get split into 2 chunks
+
+### P03 [ ] Flush silence 500ms → 750ms
+Even longer. Good for slower speakers or those with pauses mid-sentence.
+- Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 12_000; // 750 ms`
+
+### P04 [ ] Flush min content 1.0s → 0.5s
+Allow flush on shorter content. Good for single-word dictation ("delete", "enter", etc.)
+- Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 8_000; // 0.5 s`
+- Hypothesis: short commands currently don't flush cleanly because 1s minimum is too long
+
+### P05 [ ] Flush min content 1.0s → 1.5s
+Require more content before flush. Prevents spurious sub-second chunks.
+- Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 24_000; // 1.5 s`
+
+---
+
+## GROUP Q — Low-density suspicion thresholds (word density)
+*File: `src-tauri/src/actions/transcribe.rs`, function `should_attempt_full_audio_recovery()`.*
+*Current: low_density ≤ 1.45 wps, severe ≤ 1.05 wps (requires duration ≥ 12s).*
+*These control WHEN the robot re-processes the full audio instead of using chunked output.*
+*Type: Apply-ParamTask — float replacement.*
+
+### Q01 [ ] Low density 1.45 → 1.35 wps
+Less aggressive: only trigger recovery on clearly bad transcriptions.
+- Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35`
+- Test if current threshold over-triggers recovery on good transcriptions
+
+### Q02 [ ] Low density 1.45 → 1.55 wps
+More aggressive: catch more borderline transcriptions for recovery.
+- Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.55`
+- Hypothesis: some 1.5 wps transcriptions with END issues would benefit from full-audio retry
+
+### Q03 [ ] Low density 1.45 → 1.65 wps
+Very aggressive recovery trigger. Many more samples get full-audio attempt.
+- Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.65`
+
+### Q04 [ ] Severe density 1.05 → 0.95 wps
+Raise the bar for "severe" — only trigger severe path on truly sparse output.
+- Apply: `assembled_words_per_sec <= 1.05 && duration_secs >= 12.0` → `assembled_words_per_sec <= 0.95 && duration_secs >= 12.0`
+
+### Q05 [ ] Severe density min duration 12s → 8s
+Currently severe recovery only triggers if audio ≥ 12s. Lower to 8s to catch medium clips.
+- Apply: `assembled_words_per_sec <= 1.05 && duration_secs >= 12.0` → `assembled_words_per_sec <= 1.05 && duration_secs >= 8.0`
+- Hypothesis: 10-second clips with low density also benefit from full-audio re-process
+
+---
+
+## GROUP R — Recovery promote thresholds
+*File: `src-tauri/src/actions/transcribe.rs`, function `should_promote_full_audio_recovery()`.*
+*Current: require +3 words AND ×1.15 gain to promote recovered output over chunked output.*
+*Type: Apply-ParamTask.*
+
+### R01 [ ] Promote min gain +3 words → +2 words
+Easier to promote recovery. Accept recovery if it adds just 2 more words.
+- Apply: `recovered_words >= assembled_words + 3` → `recovered_words >= assembled_words + 2`
+- Hypothesis: some good recoveries get discarded because they only add 2 words
+
+### R02 [ ] Promote min gain +3 words → +4 words
+Harder to promote. Only replace chunked output if recovery is clearly better.
+- Apply: `recovered_words >= assembled_words + 3` → `recovered_words >= assembled_words + 4`
+
+### R03 [ ] Promote ratio 1.15× → 1.10×
+Lower ratio threshold. Accept recovery if it has 10% more words instead of 15%.
+- Apply: `assembled_words as f32 * 1.15)` → `assembled_words as f32 * 1.10)`
+
+### R04 [ ] Promote ratio 1.15× → 1.20×
+Higher ratio requirement. Only clearly superior recoveries get promoted.
+- Apply: `assembled_words as f32 * 1.15)` → `assembled_words as f32 * 1.20)`
+
+### R05 [ ] Recovery density range: floor 0.4 → 0.3 wps
+Allow recovery output that has slightly lower density. Useful for slow speakers.
+- Apply: `(0.4..=5.5).contains` → `(0.3..=5.5).contains`
+- Hypothesis: slow speakers get recoveries rejected because output density < 0.4
+
+---
+
+## GROUP S — Sparse / empty final chunk thresholds
+*File: `src-tauri/src/actions/transcribe.rs`.*
+*Current: final chunk triggers recovery if ≤0.35 wps AND assembled ≤2.0 wps.*
+*The "12 seconds of speech, one word stuck" case: sparse final chunk with low density.*
+*Type: Apply-ParamTask.*
+
+### S01 [ ] Final chunk sparse floor 0.35 → 0.45 wps
+Catch more sparse final chunks. If final chunk has < 0.45 wps → try full audio.
+- Apply: `final_chunk_words_per_sec <= 0.35` → `final_chunk_words_per_sec <= 0.45`
+- Directly targets: "someone speaks 12s but the last chunk only transcribed 1 word"
+
+### S02 [ ] Final chunk sparse floor 0.35 → 0.25 wps
+Less aggressive — only trigger if final chunk is truly empty.
+- Apply: `final_chunk_words_per_sec <= 0.35` → `final_chunk_words_per_sec <= 0.25`
+
+### S03 [ ] Final chunk short: max 2 words → max 3 words
+Currently triggers recovery if final chunk (1–6s) has ≤2 words. Extend to ≤3 words.
+- Apply: `summary.final_chunk_words <= 2` → `summary.final_chunk_words <= 3`
+- Hypothesis: "okay thank you" (3 words) in a final chunk is suspicious on a 4s audio
+
+### S04 [ ] Final chunk short: max 6s → max 8s
+Currently only applies to final chunks ≤6s long. Extend to ≤8s.
+- Apply: `final_chunk_secs <= 6.0` → `final_chunk_secs <= 8.0`
+- Hypothesis: 7s final chunk with only 2 words should also trigger recovery
+
+### S05 [ ] Min final chunk samples 0.5s → 1.0s
+Currently discards final chunks < 0.5s (8_000 samples). Raise to 1.0s.
+- Apply: `MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s` → `MIN_FINAL_CHUNK_SAMPLES: usize = 16_000; // 1.0 s`
+- Hypothesis: sub-1-second trailing chunks are almost always just noise/trailing breath
+
+---
+
+## GROUP T — Speaking rate / adaptive silence tuning
+*File: `src-tauri/src/managers/audio.rs`.*
+*Current: silence multiplier = 1.8 (threshold = median_pause × 1.8). Min=400ms, Max=3000ms.*
+*This controls how long the app waits after speech stops before finalizing the transcription.*
+*Type: Apply-ParamTask.*
+
+### T01 [ ] Silence multiplier 1.8 → 1.5
+Faster auto-stop: app finishes sooner after speech ends. Risk: cuts off trailing words.
+- Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 1.5;`
+
+### T02 [ ] Silence multiplier 1.8 → 2.0
+Slower auto-stop: waits longer to make sure speech is done. Safer for natural pauses.
+- Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 2.0;`
+- Hypothesis: thinkers who pause mid-sentence currently get cut before finishing
+
+### T03 [ ] Silence multiplier 1.8 → 2.2
+Generous wait time. Best for complex sentences with thinking pauses.
+- Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 2.2;`
+
+### T04 [ ] Min silence threshold 400ms → 300ms
+Start adapting to silence patterns after shorter pauses. More responsive.
+- Apply: `SR_MIN_THRESHOLD_MS: u64 = 400;` → `SR_MIN_THRESHOLD_MS: u64 = 300;`
+
+### T05 [ ] Max silence threshold 3000ms → 2500ms
+Don't wait more than 2.5s after speech. Balances responsiveness with completeness.
+- Apply: `SR_MAX_THRESHOLD_MS: u64 = 3_000;` → `SR_MAX_THRESHOLD_MS: u64 = 2_500;`
+
+---
+
+## GROUP U — Single-word hallucination guard
+*File: `src-tauri/src/runtime/chunking.rs`.*
+*`PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD = 24_000` (1.5s): if chunk < 1.5s AND output is 1 word → discard (hallucination).*
+*Type: Apply-ParamTask.*
+
+### U01 [ ] Min samples for single word 1.5s → 2.0s
+Require 2s of audio before accepting a 1-word result. Reduces single-word hallucinations.
+- Apply: `PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 24_000; // 1.5 s` → `PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 32_000; // 2.0 s`
+- Hypothesis: very short chunks often hallucinate "okay", "right", "yeah" as single words
+
+### U02 [ ] Min samples for single word 1.5s → 1.0s
+Allow 1-word results on shorter audio. Better for single-word commands ("delete", "save").
+- Apply: `PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 24_000; // 1.5 s` → `PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 16_000; // 1.0 s`
+
+### U03 [ ] Min samples for single word 1.5s → 2.5s
+Strict: require 2.5s to trust a single-word output. Very conservative.
+- Apply: `PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 24_000; // 1.5 s` → `PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 40_000; // 2.5 s`
+
+### U04 [ ] Max pending background chunks 1 → 2
+Allow 2 chunks to queue instead of 1. May reduce dropped audio when model is slow.
+- Apply: `MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;` → `MAX_PENDING_BACKGROUND_CHUNKS: usize = 2;`
+
+### U05 [ ] Chunk sampler poll 200ms → 100ms
+Check for ready chunks twice as often. Reduces latency for short utterances.
+- Apply: `CHUNK_SAMPLER_POLL_MS: u64 = 200;` → `CHUNK_SAMPLER_POLL_MS: u64 = 100;`
+
+---
+
 ## Summary Stats
 
 | Group | Items | Type |
@@ -563,7 +860,17 @@ Model splits "330 000" as "trois cent trente mille" → digits better.
 | H | 5 | Recovery strategies |
 | I | 5 | ES round 2 |
 | J | 5 | FR round 2 |
-| **Total** | **95** | — |
+| K | 5 | Chunk size (12s baseline) |
+| L | 5 | Chunk overlap (1.0s baseline) |
+| M | 5 | VAD threshold (0.24 baseline) |
+| N | 5 | VAD hangover/prefill frames |
+| P | 5 | VAD flush silence window |
+| Q | 5 | Low-density recovery trigger |
+| R | 5 | Recovery promote thresholds |
+| S | 5 | Sparse/empty final chunk |
+| T | 5 | Adaptive silence multiplier |
+| U | 5 | Single-word hallucination guard |
+| **Total** | **145** | — |
 
 ---
 
@@ -571,7 +878,7 @@ Model splits "330 000" as "trois cent trente mille" → digits better.
 
 The robot should:
 1. Pick the next unchecked item `[ ]`
-2. Implement the exact regex described
+2. Implement the exact change described
 3. Run `cargo check --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval`
 4. Run Local 70 eval → save as `ROBOT_LOCAL_REPORT.json`
 5. Run FLEURS 400 eval → save as `ROBOT_FLEURS_REPORT.json`
@@ -579,6 +886,11 @@ The robot should:
 7. If no regression: mark `[DONE ✓]`, commit, add row to EXPERIMENT_HISTORY.md
 8. If regression: mark `[REJECTED ✗]`, revert, do NOT commit
 9. Move to next item
+
+**Task types:**
+- **Apply-RegexTask**: Groups A-G, I, J → direct text insertion in `parakeet_text.rs`
+- **Apply-ParamTask**: Groups K-U → single constant/float replacement in specified file
+- **Aider**: Group H → multi-file logic changes
 
 Recovery experiments (GROUP H) should be done LAST — they are higher risk.
 Items marked RISKY or CAUTION need extra care when checking per-language WER breakdown.

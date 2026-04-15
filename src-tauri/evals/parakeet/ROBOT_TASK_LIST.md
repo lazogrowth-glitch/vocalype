@@ -94,7 +94,7 @@ Model outputs "30 %" (with space) instead of "30%".
 - Add to `normalize_parakeet_english_artifacts`: `r"(\d+)\s+%"` → `"$1%"`
 - Evidence: fleurs_en_0060, fleurs_fr_0257
 
-### A13 [ ] Levees vs leaves
+### A13 [DONE v] Levees vs leaves
 Model outputs "leaves" instead of "levees" (flood barrier).
 - Add static regex: `r"(?i)\bdamaged\s+leaves\b"` → `"damaged levees"` — NOTE: conditional on "damaged" to avoid false positives
 - Evidence: fleurs_en_0063 (OMIT: levees, HALL: leaves)

@@ -126,11 +126,11 @@ Model outputs "twenty-five to thirty year" instead of "25 to 30 years".
 - Add static regex: `r"(?i)\btwenty[\s-]five\s+to\s+thirty\s+years?\b"` → `"25 to 30 years"`
 - Evidence: fleurs_en_0081 WER=0.158 (OMIT: 25, 30)
 
-### B03 [ ] One hundred + thousand large numbers
+### B03 [SKIPPED -] One hundred + thousand large numbers
 Model outputs "one hundred thousand" etc. Risky globally — skip unless specific pattern found in data.
 - SKIPPED — insufficient evidence, too risky to generalize
 
-### B04 [ ] Thirty percent word form
+### B04 [DONE v] Thirty percent word form
 Model outputs "thirty percent" instead of "30%". Context: percentages in EN.
 - Add static regex: `r"(?i)\bthirty\s+per\s*cent\b"` → `"30%"` — only if consistent with EN eval
 - Evidence: fleurs_en_0060 (OMIT: percent, thirty; HALL: 30, has)

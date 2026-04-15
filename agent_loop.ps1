@@ -356,8 +356,15 @@ Write-Host ""
 $currentLocalReport  = $null
 $currentFleursReport = $null
 
-if (-not $SkipBaseline) {
-    Write-Step "Eval baseline initiale"
+# Auto-skip baseline si des rapports recents (< 8h) existent deja
+$recentCutoff = (Get-Date).AddHours(-8)
+$lastLocal  = Get-ChildItem "$REPORTS_DIR\*local70*.json"  -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+$lastFleurs = Get-ChildItem "$REPORTS_DIR\*fleurs400*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+$hasRecentLocal  = $lastLocal  -and $lastLocal.LastWriteTime  -gt $recentCutoff
+$hasRecentFleurs = $lastFleurs -and $lastFleurs.LastWriteTime -gt $recentCutoff
+
+if (-not $SkipBaseline -and -not ($hasRecentLocal -and $hasRecentFleurs)) {
+    Write-Step "Eval baseline initiale (aucun rapport recent trouve)"
 
     Write-Step "Eval: baseline-local70"
     $currentLocalReport = Run-Eval $MANIFEST_LOCAL "baseline-local70"
@@ -370,17 +377,12 @@ if (-not $SkipBaseline) {
         exit 1
     }
 } else {
-    Write-Host "Baseline skippee - en attente du premier run pour avoir les rapports..." -ForegroundColor Yellow
-    # Prendre les derniers rapports existants si disponibles
-    $lastLocal = Get-ChildItem "$REPORTS_DIR\*local70*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
-    $lastFleurs = Get-ChildItem "$REPORTS_DIR\*fleurs400*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
-    if ($lastLocal)  { $currentLocalReport  = $lastLocal.FullName;  Write-Host "Rapport local  : $currentLocalReport"  -ForegroundColor Gray }
-    if ($lastFleurs) { $currentFleursReport = $lastFleurs.FullName; Write-Host "Rapport FLEURS : $currentFleursReport" -ForegroundColor Gray }
-
-    if (-not $currentLocalReport -or -not $currentFleursReport) {
-        Write-Host "ERREUR: -SkipBaseline utilise mais aucun rapport existant. Relancer sans -SkipBaseline." -ForegroundColor Red
-        exit 1
-    }
+    $currentLocalReport  = $lastLocal.FullName
+    $currentFleursReport = $lastFleurs.FullName
+    $age = [math]::Round(((Get-Date) - $lastLocal.LastWriteTime).TotalMinutes)
+    Write-Host "  Baseline skippee - rapports recents utilises (il y a ${age} min)" -ForegroundColor Yellow
+    Write-Host "  Local  : $currentLocalReport"  -ForegroundColor Gray
+    Write-Host "  FLEURS : $currentFleursReport" -ForegroundColor Gray
 }
 
 # Analyse initiale

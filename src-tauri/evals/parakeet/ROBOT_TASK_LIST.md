@@ -99,7 +99,7 @@ Model outputs "leaves" instead of "levees" (flood barrier).
 - Add static regex: `r"(?i)\bdamaged\s+leaves\b"` → `"damaged levees"` — NOTE: conditional on "damaged" to avoid false positives
 - Evidence: fleurs_en_0063 (OMIT: levees, HALL: leaves)
 
-### A14 [ ] Mau movement
+### A14 [DONE v] Mau movement
 Model outputs "Mao movement" instead of "Mau movement" (Samoan independence movement). 
 CAUTION: Only replace when followed by "movement" to avoid changing "Mao Zedong".
 - Add static regex: `r"(?i)\bMao\s+movement\b"` → `"Mau movement"`

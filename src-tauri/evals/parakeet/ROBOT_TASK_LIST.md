@@ -105,7 +105,7 @@ CAUTION: Only replace when followed by "movement" to avoid changing "Mao Zedong"
 - Add static regex: `r"(?i)\bMao\s+movement\b"` → `"Mau movement"`
 - Evidence: fleurs_en_0048 WER=0.250
 
-### A15 [ ] Superpredator (EN)
+### A15 [DONE v] Superpredator (EN)
 Model outputs "super predator" (split) instead of "superpredator".
 - Add static regex: `r"(?i)\bsuper\s+predator\b"` → `"superpredator"`
 - Evidence: fleurs_en_0048 parallel to FR sample

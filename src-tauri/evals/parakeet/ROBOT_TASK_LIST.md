@@ -115,13 +115,13 @@ Model outputs "super predator" (split) instead of "superpredator".
 ## GROUP B — English: Number/year patterns
 *File: `src-tauri/src/runtime/parakeet_text.rs`, function: `normalize_parakeet_english_artifacts`*
 
-### B01 [ ] Nineteen + decade year pattern (general)
+### B01 [SKIPPED -] Nineteen + decade year pattern (general)
 Model speaks years as "nineteen + [decade word]". Extend to common years:
 - `"nineteen thirty"` → `"1930"`, `"nineteen fifty"` → `"1950"`, etc.
 - Add static regex: `r"(?i)\bnineteen\s+(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b"` → map each to digit year
 - Evidence: fleurs_en_0056 (sixty years), fleurs_en_0081 (twenty-five to thirty)
 
-### B02 [ ] Twenty-five to thirty years
+### B02 [DONE v] Twenty-five to thirty years
 Model outputs "twenty-five to thirty year" instead of "25 to 30 years".
 - Add static regex: `r"(?i)\btwenty[\s-]five\s+to\s+thirty\s+years?\b"` → `"25 to 30 years"`
 - Evidence: fleurs_en_0081 WER=0.158 (OMIT: 25, 30)

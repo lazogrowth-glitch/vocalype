@@ -225,49 +225,51 @@ function Build-Prompt($iteration, $analysis, $historyText, $task) {
     }
 
     $taskSection = if ($task) {
-        # Extract regex pattern and replacement from task body
         $body = $task.Body
-        $regexMatch = [regex]::Match($body, 'r"([^"]+)"')
-        $replMatch  = [regex]::Match($body, '→\s*`?"?([^"`\n]+)`?"?')
-        $pattern    = if ($regexMatch.Success) { $regexMatch.Groups[1].Value } else { "VOIR TACHE" }
-        $replacement = if ($replMatch.Success) { $replMatch.Groups[1].Value.Trim() } else { "VOIR TACHE" }
 
-        # Determine target function name from task body
+        # Extract first regex pattern from task body: r"pattern"
+        $regexMatch = [regex]::Match($body, 'r\"([^\"]+)\"')
+        $pattern = if ($regexMatch.Success) { $regexMatch.Groups[1].Value } else { "VOIR_TACHE" }
+
+        # Extract replacement: text after the arrow symbol (-> or the unicode arrow)
+        $replMatch = [regex]::Match($body, '(?:->|[=\-]>|`"([^`"]+)`"[^`"]*`"([^`"]+)`")')
+        # Simpler: grab the quoted string after the last arrow
+        $replMatch2 = [regex]::Match($body, '"([^"]+)"\s*$', [System.Text.RegularExpressions.RegexOptions]::Multiline)
+        $replacement = if ($replMatch2.Success) { $replMatch2.Groups[1].Value.Trim() } else { "VOIR_TACHE" }
+
+        # Determine target function
         $funcName = "normalize_parakeet_english_artifacts"
-        if ($body -match "normalize_parakeet_french_artifacts|FR branch|branche FR") { $funcName = "normalize_parakeet_french_artifacts" }
-        if ($body -match "ES branch|branche ES|finalize.*es\b") { $funcName = "finalize_parakeet_text (ES branch)" }
-        if ($body -match "PT branch|branche PT|finalize.*pt\b") { $funcName = "finalize_parakeet_text (PT branch)" }
+        if ($body -match "french_artifacts|FR branch") { $funcName = "normalize_parakeet_french_artifacts" }
+        if ($body -match "ES branch") { $funcName = "finalize_parakeet_text, ES branch" }
+        if ($body -match "PT branch") { $funcName = "finalize_parakeet_text, PT branch" }
 
-        # Derive a clean static name from task id
-        $staticName = ($task.Id -replace '[^A-Za-z0-9]','_').ToUpper() + "_PATTERN"
+        # Static var name from task id
+        $staticName = ($task.Id -replace '[^A-Za-z0-9]', '_').ToUpper() + "_PATTERN"
 
-        @"
-## TACHE ASSIGNEE: $($task.Id) — $($task.Title)
+        # Build the two Rust snippets as plain strings (no heredoc to avoid interpolation issues)
+        $rustStatic = "static " + $staticName + ": Lazy<Regex> = Lazy::new(|| Regex::new(r`"" + $pattern + "`").unwrap());"
+        $rustApply  = "    normalized = " + $staticName + ".replace_all(" + [char]0x26 + "normalized, `"" + $replacement + "`").to_string();"
 
-$body
-
----
-## EXACTEMENT CE QUE TU DOIS FAIRE (copie-colle ces blocs):
-
-### ETAPE 1 — Ajoute cette ligne dans la section des statics (apres la derniere ligne `static ... PATTERN`):
-
-```rust
-static ${staticName}: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"$pattern").unwrap());
-```
-
-### ETAPE 2 — Ajoute cette ligne dans la fonction `$funcName`, apres la premiere ligne `let mut normalized =`:
-
-```rust
-    normalized = ${staticName}.replace_all(&normalized, "$replacement").to_string();
-```
-
-REGLES:
-- Fais UNIQUEMENT ces deux modifications. Rien d'autre.
-- NE PAS changer de chunk size. NE PAS introduire Hindi. NE PAS modifier d'autres fonctions.
-"@
+        $lines = @(
+            "## TACHE ASSIGNEE: $($task.Id) -- $($task.Title)",
+            "",
+            $body,
+            "",
+            "------",
+            "## EXACTEMENT CE QUE TU DOIS FAIRE:",
+            "",
+            "ETAPE 1 - Ajoute dans la section des statics (apres le dernier static ... PATTERN):",
+            $rustStatic,
+            "",
+            "ETAPE 2 - Ajoute dans la fonction [$funcName], apres la ligne [let mut normalized =]:",
+            $rustApply,
+            "",
+            "REGLES: Fais UNIQUEMENT ces deux ajouts. Rien d'autre.",
+            "NE PAS changer chunk size. NE PAS introduire Hindi."
+        )
+        $lines -join "`n"
     } else {
-        "TOUTES LES TACHES DE LA LISTE SONT COMPLETES. Verifie EXPERIMENT_HISTORY.md et ROBOT_TASK_LIST.md."
+        "TOUTES LES TACHES SONT COMPLETES."
     }
 
     return @"

@@ -144,77 +144,77 @@ Extend A11 pattern to cover half-hour marks.
 ## GROUP C — Spanish: Proper nouns & technical terms
 *File: `src-tauri/src/runtime/parakeet_text.rs`, add new function `normalize_parakeet_spanish_artifacts` or add to ES branch in `finalize_parakeet_text`*
 
-### C01 [ ] Scotturb split (ES)
+### C01 [SKIPPED -] Scotturb split (ES)
 Model outputs "Scottuur" instead of "Scotturb" in Spanish.
 - In ES branch: add regex `r"(?i)\bScottuur\b"` → `"Scotturb"`
 - Evidence: fleurs_es_0140 WER=0.353
 
-### C02 [ ] 802.11 digit transposition (ES)
+### C02 [SKIPPED -] 802.11 digit transposition (ES)
 Model outputs "800.11N" instead of "802.11N" — transposes 0 and 2 digits.
 - In ES branch: add regex `r"(?i)\b800\.11([abgnABGN])\b"` → `"802.11$1"`
 - Evidence: fleurs_es_0117 WER=0.273
 
-### C03 [ ] GHz suffix missing: 5.0z (ES)
+### C03 [SKIPPED -] GHz suffix missing: 5.0z (ES)
 Model outputs "5.0z" instead of "5.0GHz" — drops the "GH" part.
 - In ES branch: add regex `r"(?i)\b5\.0z\b"` → `"5.0GHz"` and `r"(?i)\b2\.4z\b"` → `"2.4GHz"`
 - Evidence: fleurs_es_0117 (OMIT: 5.0ghz, 2.4ghz; HALL: 5.0z, 2.4)
 
-### C04 [ ] Space before colon in times (ES)
+### C04 [SKIPPED -] Space before colon in times (ES)
 Model outputs "11 :35" (space before colon) instead of "11:35".
 - In ES branch (or globally): add regex `r"(\d+)\s+:\s*(\d{2})\b"` → `"$1:$2"`
 - Evidence: fleurs_es_0169 WER=0.286 (OMIT: 11:35; HALL: 11, 35)
 
-### C05 [ ] Brzezinski mispronunciation (ES)
+### C05 [SKIPPED -] Brzezinski mispronunciation (ES)
 Model outputs "Bresinski" instead of "Brzezinski" (political advisor).
 - In ES branch: add regex `r"(?i)\bBresinski\b"` → `"Brzezinski"`
 - Evidence: fleurs_es_0137 WER=0.167
 
-### C06 [ ] Lyndon B. Johnson (ES)
+### C06 [SKIPPED -] Lyndon B. Johnson (ES)
 Model outputs "Lydon V. Johnson" instead of "Lyndon B. Johnson".
 - In ES branch: add regex `r"(?i)\blydon\s+v\.?\s+johnson\b"` → `"Lyndon B. Johnson"`
 - Evidence: fleurs_es_0137
 
-### C07 [ ] FTIR vs FTER (ES)
+### C07 [SKIPPED -] FTIR vs FTER (ES)
 Model outputs "FTER" instead of "FTIR" (Fourier-transform infrared spectroscopy).
 - In ES branch: add regex `r"(?i)\bFTER\b"` → `"FTIR"`
 - Evidence: fleurs_es_0131 WER=0.161
 
-### C08 [ ] Apia (capital of Samoa)
+### C08 [SKIPPED -] Apia (capital of Samoa)
 Model outputs "Appia" instead of "Apia".
 - In ES branch: add regex `r"(?i)\bAppia\b"` → `"Apia"`
 - Evidence: fleurs_es_0138 WER=0.217
 
-### C09 [ ] Upolu island (ES)
+### C09 [SKIPPED -] Upolu island (ES)
 Model outputs "Opolu" instead of "Upolu" (island in Samoa).
 - In ES branch: add regex `r"(?i)\bOpolu\b"` → `"Upolu"`
 - Evidence: fleurs_es_0138
 
-### C10 [ ] El Amazonas (ES)
+### C10 [SKIPPED -] El Amazonas (ES)
 Model outputs "lo amazonas" instead of "el Amazonas".
 - In ES branch: add regex `r"(?i)\blo\s+amazonas\b"` → `"el Amazonas"`
 - Evidence: fleurs_es_0162 WER=0.182
 
-### C11 [ ] Lantagne (ES)
+### C11 [SKIPPED -] Lantagne (ES)
 Model outputs "Lataña" instead of "Lantagne" (UN health specialist).
 - In ES branch: add regex `r"(?i)\bLata[ñn]a\b"` → `"Lantagne"`
 - Evidence: fleurs_es_0146 WER=0.160
 
-### C12 [ ] Sintra (ES)
+### C12 [SKIPPED -] Sintra (ES)
 Model outputs "Intra" instead of "Sintra" (Portuguese town).
 - In ES branch: add regex `r"(?i)\bIntra\b"` → `"Sintra"` — CAUTION: "intra" is a prefix. Make boundary strict: only standalone word.
 - Evidence: fleurs_es_0140
 
-### C13 [ ] Digit-space-percent (ES)
+### C13 [SKIPPED -] Digit-space-percent (ES)
 Same as A12 but ensure applied in ES context too. If A12 is in a shared location (before language branch), no extra work needed. Otherwise add to ES branch.
 - Confirm `r"(\d+)\s+%"` → `"$1%"` runs for ES samples
 - Evidence: fleurs_es_0162 "20 %"
 
-### C14 [ ] Martelly name (ES)
+### C14 [SKIPPED -] Martelly name (ES)
 Model outputs "Martelli" instead of "Martelly" (Haitian president).
 - In ES branch: add regex `r"(?i)\bMartelli\b"` → `"Martelly"`
 - Evidence: omitted_terms ES freq=3
 
-### C15 [ ] Espectroscopia accent (ES)
+### C15 [SKIPPED -] Espectroscopia accent (ES)
 Model outputs "espectroscopía" (with accent) while reference has "espectroscopia" — both valid but consistent with reference.
 - In ES branch: add regex `r"\bespectroscopía\b"` → `"espectroscopia"` — VERY LOW PRIORITY, minor accent issue
 
@@ -223,7 +223,7 @@ Model outputs "espectroscopía" (with accent) while reference has "espectroscopi
 ## GROUP D — French: Proper nouns & technical terms
 *File: `src-tauri/src/runtime/parakeet_text.rs`, function: `normalize_parakeet_french_artifacts`*
 
-### D01 [ ] Sundarbans garbled (FR)
+### D01 [DONE v] Sundarbans garbled (FR)
 Model outputs "Seines d'arbans" instead of "Sundarbans" (mangrove forest, UNESCO site).
 - Add regex: `r"(?i)\bseines?\s+d['']?\s*arbans?\b"` → `"Sundarbans"`
 - Evidence: fleurs_fr_0221 WER=0.250

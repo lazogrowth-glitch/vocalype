@@ -59,7 +59,7 @@ Model outputs "rachie" or "raikis" instead of "rachis" (paleontology feather sha
 - Add static regex: `r"(?i)\bra(?:chie|kis)\b"` → `"rachis"`
 - Evidence: fleurs_en_0080, fleurs_fr_0270
 
-### A06 [ ] Kundalini mispronunciation
+### A06 [DONE v] Kundalini mispronunciation
 Model outputs "kudali" instead of "kundalini".
 - Add static regex: `r"(?i)\bkudali\b"` → `"kundalini"`
 - Evidence: omitted_terms across multiple EN/FR samples (freq=4)

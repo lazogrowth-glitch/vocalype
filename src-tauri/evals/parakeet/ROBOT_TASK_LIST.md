@@ -258,7 +258,7 @@ Model outputs "kundalani" instead of "kundalini" in French.
 - Add regex: `r"(?i)\bkundalani\b"` → `"kundalini"`
 - Evidence: hallucinated_terms FR freq=2
 
-### D08 [ ] Rachis FR variants
+### D08 [DONE v] Rachis FR variants
 Model outputs "rachide" or "rachie" instead of "rachis" in French.
 - Add regex: `r"(?i)\brachi(?:de|e)\b"` → `"rachis"`
 - Evidence: fleurs_fr_0270 WER=0.163

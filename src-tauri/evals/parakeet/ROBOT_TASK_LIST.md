@@ -253,7 +253,7 @@ Model outputs "LEUP" instead of "l'UE" (l'Union Européenne).
 - Add regex: `r"(?i)\bLEUP\b"` → `"l'UE"`
 - Evidence: fleurs_fr_0290 WER=0.179
 
-### D07 [ ] Kundalini FR garble
+### D07 [DONE v] Kundalini FR garble
 Model outputs "kundalani" instead of "kundalini" in French.
 - Add regex: `r"(?i)\bkundalani\b"` → `"kundalini"`
 - Evidence: hallucinated_terms FR freq=2

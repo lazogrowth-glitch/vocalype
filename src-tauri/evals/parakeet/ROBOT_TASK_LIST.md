@@ -174,7 +174,7 @@ Model outputs "Lydon V. Johnson" instead of "Lyndon B. Johnson".
 - Add regex: `r"(?i)\blydon\s+v\.?\s+johnson\b"` → `"Lyndon B. Johnson"`
 - Evidence: fleurs_es_0137
 
-### C07 [ ] FTIR vs FTER (ES)
+### C07 [DONE v] FTIR vs FTER (ES)
 Model outputs "FTER" instead of "FTIR" (Fourier-transform infrared spectroscopy).
 - Add regex: `r"(?i)\bFTER\b"` → `"FTIR"`
 - Evidence: fleurs_es_0131 WER=0.161

@@ -768,21 +768,21 @@ Catch more sparse final chunks. If final chunk has < 0.45 wps → try full audio
 - Apply: `final_chunk_words_per_sec <= 0.35` → `final_chunk_words_per_sec <= 0.45`
 - Directly targets: "someone speaks 12s but the last chunk only transcribed 1 word"
 
-### S02 [ ] Final chunk sparse floor 0.35 → 0.25 wps
+### S02 [SKIPPED -] Final chunk sparse floor 0.35 → 0.25 wps
 Less aggressive — only trigger if final chunk is truly empty.
 - Apply: `final_chunk_words_per_sec <= 0.35` → `final_chunk_words_per_sec <= 0.25`
 
-### S03 [ ] Final chunk short: max 2 words → max 3 words
+### S03 [SKIPPED -] Final chunk short: max 2 words → max 3 words
 Currently triggers recovery if final chunk (1–6s) has ≤2 words. Extend to ≤3 words.
 - Apply: `summary.final_chunk_words <= 2` → `summary.final_chunk_words <= 3`
 - Hypothesis: "okay thank you" (3 words) in a final chunk is suspicious on a 4s audio
 
-### S04 [ ] Final chunk short: max 6s → max 8s
+### S04 [SKIPPED -] Final chunk short: max 6s → max 8s
 Currently only applies to final chunks ≤6s long. Extend to ≤8s.
 - Apply: `final_chunk_secs <= 6.0` → `final_chunk_secs <= 8.0`
 - Hypothesis: 7s final chunk with only 2 words should also trigger recovery
 
-### S05 [ ] Min final chunk samples 0.5s → 1.0s
+### S05 [SKIPPED -] Min final chunk samples 0.5s → 1.0s
 Currently discards final chunks < 0.5s (8_000 samples). Raise to 1.0s.
 - Apply: `MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s` → `MIN_FINAL_CHUNK_SAMPLES: usize = 16_000; // 1.0 s`
 - Hypothesis: sub-1-second trailing chunks are almost always just noise/trailing breath
@@ -795,7 +795,7 @@ Currently discards final chunks < 0.5s (8_000 samples). Raise to 1.0s.
 *This controls how long the app waits after speech stops before finalizing the transcription.*
 *Type: Apply-ParamTask.*
 
-### T01 [ ] Silence multiplier 1.8 → 1.5
+### T01 [DONE v] Silence multiplier 1.8 → 1.5
 Faster auto-stop: app finishes sooner after speech ends. Risk: cuts off trailing words.
 - Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 1.5;`
 

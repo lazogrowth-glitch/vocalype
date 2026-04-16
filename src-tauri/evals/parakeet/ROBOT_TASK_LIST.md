@@ -263,7 +263,7 @@ Model outputs "rachide" or "rachie" instead of "rachis" in French.
 - Add regex: `r"(?i)\brachi(?:de|e)\b"` → `"rachis"`
 - Evidence: fleurs_fr_0270 WER=0.163
 
-### D09 [ ] Noor / Nours (FR)
+### D09 [DONE v] Noor / Nours (FR)
 Model outputs "Nours" instead of "Noor" (Cave of Hira on Mount Noor).
 - Add regex: `r"(?i)\bNours\b"` → `"Noor"`
 - Evidence: fleurs_fr_0205 WER=0.171

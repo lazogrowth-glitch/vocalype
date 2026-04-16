@@ -708,16 +708,16 @@ Less aggressive: only trigger recovery on clearly bad transcriptions.
 - Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35`
 - Test if current threshold over-triggers recovery on good transcriptions
 
-### Q02 [ ] Low density 1.45 → 1.55 wps
+### Q02 [SKIPPED -] Low density 1.45 → 1.55 wps
 More aggressive: catch more borderline transcriptions for recovery.
 - Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.55`
 - Hypothesis: some 1.5 wps transcriptions with END issues would benefit from full-audio retry
 
-### Q03 [ ] Low density 1.45 → 1.65 wps
+### Q03 [SKIPPED -] Low density 1.45 → 1.65 wps
 Very aggressive recovery trigger. Many more samples get full-audio attempt.
 - Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.65`
 
-### Q04 [ ] Severe density 1.05 → 0.95 wps
+### Q04 [DONE v] Severe density 1.05 → 0.95 wps
 Raise the bar for "severe" — only trigger severe path on truly sparse output.
 - Apply: `assembled_words_per_sec <= 1.05 && duration_secs >= 12.0` → `assembled_words_per_sec <= 0.95 && duration_secs >= 12.0`
 

@@ -126,7 +126,7 @@ Model outputs "twenty-five to thirty year" instead of "25 to 30 years".
 - Add static regex: `r"(?i)\btwenty[\s-]five\s+to\s+thirty\s+years?\b"` → `"25 to 30 years"`
 - Evidence: fleurs_en_0081 WER=0.158 (OMIT: 25, 30)
 
-### B03 [ ] One hundred + thousand large numbers
+### B03 [DONE v] One hundred + thousand large numbers
 Model outputs "one hundred thousand" etc. Risky globally — skip unless specific pattern found in data.
 - SKIPPED — insufficient evidence, too risky to generalize
 
@@ -154,7 +154,7 @@ Model outputs "800.11N" instead of "802.11N" — transposes 0 and 2 digits.
 - Add regex: `r"(?i)\b800\.11([abgnABGN])\b"` → `"802.11$1"`
 - Evidence: fleurs_es_0117 WER=0.273
 
-### C03 [ ] GHz suffix missing: 5.0z (ES)
+### C03 [DONE v] GHz suffix missing: 5.0z (ES)
 Model outputs "5.0z" instead of "5.0GHz" — drops the "GH" part.
 - Add regex: `r"(?i)\b5\.0z\b"` → `"5.0GHz"` and `r"(?i)\b2\.4z\b"` → `"2.4GHz"`
 - Evidence: fleurs_es_0117 (OMIT: 5.0ghz, 2.4ghz; HALL: 5.0z, 2.4)

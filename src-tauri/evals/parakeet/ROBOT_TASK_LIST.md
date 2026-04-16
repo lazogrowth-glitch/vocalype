@@ -209,7 +209,7 @@ Same as A12 but ensure applied in ES context too. If A12 is in a shared location
 - Add regex: `r"(\d+)\s+%"` → `"$1%"`
 - Evidence: fleurs_es_0162 "20 %"
 
-### C14 [ ] Martelly name (ES)
+### C14 [DONE v] Martelly name (ES)
 Model outputs "Martelli" instead of "Martelly" (Haitian president).
 - Add regex: `r"(?i)\bMartelli\b"` → `"Martelly"`
 - Evidence: omitted_terms ES freq=3

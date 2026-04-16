@@ -293,7 +293,7 @@ Model outputs "appelat" (non-word) instead of "appelé" (called).
 - Add regex: `r"(?i)\bappelat\b"` → `"appelé"`
 - Evidence: fleurs_fr_0256 WER=0.389
 
-### D15 [ ] 1988 word form (FR)
+### D15 [DONE v] 1988 word form (FR)
 Model outputs "mille neuf cent quatre-vingt-huit" instead of "1988".
 - Add regex: `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]huit\b"` → `"1988"`
 - Evidence: fleurs_fr_0237 WER=0.293

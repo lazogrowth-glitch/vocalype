@@ -127,6 +127,9 @@ static D18_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\band\s+(d[eé]terminer|d[eé]cider|pr[eé]senter|[eé]valuer|continuer|rester)\b")
         .unwrap()
 });
+// D19: "the" before French article → suppress (FR)
+static D19_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bthe\s+(la|le|les|un|une|des|du)\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -927,6 +930,7 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
 
 pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = D19_PATTERN.replace_all(&normalized, "$1").to_string();
     normalized = D18_PATTERN.replace_all(&normalized, "et $1").to_string();
     normalized = D17_PATTERN.replace_all(&normalized, "ce soir").to_string();
     normalized = D15_PATTERN.replace_all(&normalized, "1988").to_string();

@@ -312,7 +312,7 @@ Model inserts English "and" before French verb — language mixing.
 - Add regex: `r"(?i)\band\s+(d[eé]terminer|d[eé]cider|pr[eé]senter|[eé]valuer|continuer|rester)\b"` → `"et $1"` in FR branch
 - Evidence: fleurs_fr_0273
 
-### D19 [ ] "the" before French article → suppress (FR)
+### D19 [DONE v] "the" before French article → suppress (FR)
 Model inserts English "the" before French articles — language mixing.
 - Add regex: `r"(?i)\bthe\s+(la|le|les|un|une|des|du)\b"` → `"$1"` in FR branch
 - Evidence: fleurs_fr_0245 WER=0.420 (HALL: the, and, of appearing in FR text)

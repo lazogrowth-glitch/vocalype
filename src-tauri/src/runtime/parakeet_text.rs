@@ -140,6 +140,23 @@ static F02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d{1,2})\s+:\s*(\d{
 static C01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bScottuur\b").unwrap());
 // C02: 802.11 digit transposition (ES)
 static C02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b800\.11([abgnABGN])\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_1: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+twenty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_2: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+thirty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_3: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+forty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_4: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+fifty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_5: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+sixty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_6: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+seventy\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_7: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+eighty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_8: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+ninety\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -595,6 +612,14 @@ fn restore_french_apostrophes(text: &str) -> String {
 
 pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
+    normalized = B01_PATTERN_1.replace_all(&normalized, "1920").to_string();
+    normalized = B01_PATTERN_2.replace_all(&normalized, "1930").to_string();
+    normalized = B01_PATTERN_3.replace_all(&normalized, "1940").to_string();
+    normalized = B01_PATTERN_4.replace_all(&normalized, "1950").to_string();
+    normalized = B01_PATTERN_5.replace_all(&normalized, "1960").to_string();
+    normalized = B01_PATTERN_6.replace_all(&normalized, "1970").to_string();
+    normalized = B01_PATTERN_7.replace_all(&normalized, "1980").to_string();
+    normalized = B01_PATTERN_8.replace_all(&normalized, "1990").to_string();
     normalized = F02_PATTERN.replace_all(&normalized, "$1:$2").to_string();
     normalized = F01_PATTERN.replace_all(&normalized, "$1%").to_string();
     normalized = B05_PATTERN.replace_all(&normalized, "11:30 $1").to_string();

@@ -84,7 +84,7 @@ Model speaks year as "nineteen eighty-eight" instead of "1988".
 - Add static regex: `r"(?i)\bnineteen\s+eighty[\s-]eight\b"` → `"1988"`
 - Related to fr_0237 pattern (same audio content, different language)
 
-### A11 [SKIPPED -] Time word form: eleven thirty-five
+### A11 [DONE v] Time word form: eleven thirty-five
 Model speaks "eleven thirty-five p.m." instead of "11:35 p.m." / "11:35 PM".
 - Add static regex: `r"(?i)\beleven\s+thirty[\s-]five\s+(a\.?m\.?|p\.?m\.?)\b"` → `"11:35 $1"`
 - Evidence: fleurs_en_0057 WER=0.400
@@ -115,10 +115,10 @@ Model outputs "super predator" (split) instead of "superpredator".
 ## GROUP B — English: Number/year patterns
 *File: `src-tauri/src/runtime/parakeet_text.rs`, function: `normalize_parakeet_english_artifacts`*
 
-### B01 [SKIPPED -] Nineteen + decade year pattern (general)
+### B01 [DONE v] Nineteen + decade year pattern (general)
 Model speaks years as "nineteen + [decade word]". Extend to common years:
 - `"nineteen thirty"` → `"1930"`, `"nineteen fifty"` → `"1950"`, etc.
-- Add static regex: `r"(?i)\bnineteen\s+(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b"` → map each to digit year
+- Add static regex: `r"(?i)\bnineteen\s+twenty\b"` → `"1920"` and `r"(?i)\bnineteen\s+thirty\b"` → `"1930"` and `r"(?i)\bnineteen\s+forty\b"` → `"1940"` and `r"(?i)\bnineteen\s+fifty\b"` → `"1950"` and `r"(?i)\bnineteen\s+sixty\b"` → `"1960"` and `r"(?i)\bnineteen\s+seventy\b"` → `"1970"` and `r"(?i)\bnineteen\s+eighty\b"` → `"1980"` and `r"(?i)\bnineteen\s+ninety\b"` → `"1990"`
 - Evidence: fleurs_en_0056 (sixty years), fleurs_en_0081 (twenty-five to thirty)
 
 ### B02 [DONE v] Twenty-five to thirty years
@@ -126,7 +126,7 @@ Model outputs "twenty-five to thirty year" instead of "25 to 30 years".
 - Add static regex: `r"(?i)\btwenty[\s-]five\s+to\s+thirty\s+years?\b"` → `"25 to 30 years"`
 - Evidence: fleurs_en_0081 WER=0.158 (OMIT: 25, 30)
 
-### B03 [SKIPPED -] One hundred + thousand large numbers
+### B03 [ ] One hundred + thousand large numbers
 Model outputs "one hundred thousand" etc. Risky globally — skip unless specific pattern found in data.
 - SKIPPED — insufficient evidence, too risky to generalize
 
@@ -298,7 +298,7 @@ Model outputs "mille neuf cent quatre-vingt-huit" instead of "1988".
 - Add regex: `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]huit\b"` → `"1988"`
 - Evidence: fleurs_fr_0237 WER=0.293
 
-### D16 [SKIPPED -] Digit + space + percent (FR)
+### D16 [ ] Digit + space + percent (FR)
 Same as A12 applied in FR — confirm "30 %" → "30%" runs in FR branch.
 - Evidence: fleurs_fr_0257
 
@@ -419,21 +419,22 @@ Remove space before/after colon in times like "11 : 35" → "11:35".
 - Add BEFORE language branch: `r"(\d{1,2})\s+:\s*(\d{2})\b"` → `"$1:$2"`
 - Evidence: ES es_0169
 
-### F03 [SKIPPED -] Ordinal suffix: 11o / 16o → 11º / 16º (PT)
+### F03 [ ] Ordinal suffix: 11o / 16o → 11º / 16º (PT)
 Model outputs ASCII "o" instead of ordinal superscript "º".
-- In PT branch: add regex `r"(\d+)o\b"` → `"$1º"` — CAUTION: only apply to short numbers (1-99). Use `r"\b(\d{1,2})o\b"` → `"$1º"`
+- In PT branch: add regex `r"\b(\d{1,2})o\b"` → `"$1º"`
 - Evidence: fleurs_pt_0320
 
-### F04 [SKIPPED -] FR year: mille neuf cent quatre-vingt (general)
+### F04 [ ] FR year: mille neuf cent quatre-vingt (general)
 Extend D15 to cover more years. Add:
 - `"mille neuf cent quatre-vingt-dix"` → `"1990"`
 - `"mille neuf cent soixante"` → `"1960"`
 - `"mille neuf cent quatre-vingt"` → `"1980"`
+- Add regex: `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]dix\b"` → `"1990"` and `r"(?i)\bmille\s+neuf\s+cent\s+soixante\b"` → `"1960"` and `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt\b"` → `"1980"`
 - Evidence: general FR number patterns
 
-### F05 [SKIPPED -] 802.11 space variants (already partially covered)
+### F05 [ ] 802.11 space variants (already partially covered)
 Ensure `"802 .11"` (space before dot) normalizes to `"802.11"`. The existing PUNCT_SPACE_PATTERN in FR covers this. Verify it also runs in EN branch.
-- Add `PUNCT_SPACE_PATTERN` application in EN branch if not already present.
+- Add regex: `r"\b802\s+\.\s*11\b"` → `"802.11"`
 - Evidence: fleurs_fr results improved after FR punct fix
 
 ---
@@ -456,10 +457,10 @@ Model outputs "micro" + "expressões" (split without "cru") instead of "microexp
 - Add regex: `r"(?i)\bmicro\s+express[oõ]es\b"` → `"microexpressões"`
 - Evidence: fleurs_pt_0370
 
-### G04 [SKIPPED -] Superprédateur (FR) — already in D05
+### G04 [ ] Superprédateur (FR) — already in D05
 Same concept, already covered.
 
-### G05 [SKIPPED -] TBUR / TB UR acronym (FR)
+### G05 [ ] TBUR / TB UR acronym (FR)
 Model outputs "TBUR" as one word; reference has "TB-UR" or similar. Low priority — leave for now.
 
 ---
@@ -468,28 +469,28 @@ Model outputs "TBUR" as one word; reference has "TB-UR" or similar. Low priority
 *File: `src-tauri/examples/parakeet_pipeline_eval.rs` AND `src-tauri/src/actions/transcribe.rs`*
 *These require changing BOTH files and running full evals.*
 
-### H01 [SKIPPED -] End-truncation recovery: add END score trigger
+### H01 [ ] End-truncation recovery: add END score trigger
 When assembled `end_truncation_score > 0.7`, also trigger full-audio recovery attempt.
 - Add condition in `should_attempt_full_audio_recovery`: `|| end_truncation_score > 0.7`
 - Must sync change in both eval and transcribe.rs
 - Evidence: 30% of FLEURS samples have END > 0.5
 
-### H02 [SKIPPED -] Lower promote threshold for high-END samples
+### H02 [ ] Lower promote threshold for high-END samples
 When `end_score > 0.7`, use lower promote threshold: +2 words / 1.10x (instead of +3 / 1.15x).
 - Add conditional path in `should_promote_full_audio_recovery`
 - Evidence: many END-high samples could benefit from easier promotion
 
-### H03 [SKIPPED -] Density suspicion: words-per-second floor
+### H03 [ ] Density suspicion: words-per-second floor
 Current threshold: 1.45 wps. Test lowering to 1.35 wps for low-density suspicion.
 - Change `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35` in suspicion check
 - Run both evals, revert if regression
 
-### H04 [SKIPPED -] Min duration for recovery: 5.0s instead of 6.0s
+### H04 [ ] Min duration for recovery: 5.0s instead of 6.0s
 Test if catching more short audio with recovery helps.
 - Change `6.0` → `5.0` in `if !(6.0..=45.0).contains(&duration_secs)`
 - Run both evals, revert if regression
 
-### H05 [SKIPPED -] Max duration for recovery: 50s instead of 45s
+### H05 [ ] Max duration for recovery: 50s instead of 45s
 Allow recovery for slightly longer samples.
 - Change `45.0` → `50.0` in duration range check
 - Run both evals, revert if regression
@@ -504,7 +505,7 @@ Model drops double-l in "Danielle" → "Daniel". Only fix if next to Lantagne.
 - Add regex: `r"(?i)\bDaniel\s+Lantagne\b"` → `"Danielle Lantagne"`
 - Evidence: fleurs_es_0146
 
-### I02 [SKIPPED -] Glen → Glenn disambiguation (EN)
+### I02 [ ] Glen → Glenn disambiguation (EN)
 Model hallucinated "Glenn" (double-n) when reference has "Glen". 
 SKIP — too risky (Glenn is a valid proper name too).
 
@@ -528,21 +529,21 @@ Model outputs "Carbaneo" instead of "Carpanedo" (Italian Paralympic athlete).
 ## GROUP J — French: Additional patterns (round 2)
 *File: `src-tauri/src/runtime/parakeet_text.rs`, FR branch*
 
-### J01 [SKIPPED -] Duvall → Duval disambiguation (FR)
+### J01 [ ] Duvall → Duval disambiguation (FR)
 Model drops one 'l' → "Duval" instead of "Duvall".
 - In FR branch: add regex `r"(?i)\bDuval\b"` → `"Duvall"` — RISKY: "Duval" is a common French surname. SKIP.
 
-### J02 [SKIPPED -] Mau → Mau in FR context
+### J02 [ ] Mau → Mau in FR context
 Model says "Mouvement Mao" for "mouvement Mau". Same fix as A14 but for FR.
 - In FR branch: add regex `r"(?i)\bMao\s+mouvement\b"` → `"Mau mouvement"`
 
-### J03 [SKIPPED -] Kundalini yoga (FR)
+### J03 [ ] Kundalini yoga (FR)
 Model omits "kundalini" frequently — already addressed in D07.
 
-### J04 [SKIPPED -] Martelly (FR)
+### J04 [ ] Martelly (FR)
 Model outputs "manwin" (hallucination). Too vague to fix.
 
-### J05 [SKIPPED -] Vaccination/infection numbers (FR)
+### J05 [ ] Vaccination/infection numbers (FR)
 Model splits "330 000" as "trois cent trente mille" → digits better.
 - In FR branch: add regex `r"(?i)\btrois\s+cent\s+trente\s+mille\b"` → `"330 000"`
 - Evidence: fleurs_fr_0253 WER=0.231
@@ -559,20 +560,20 @@ Shorter chunks = less audio context lost at boundaries, faster first-word latenc
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `8 * 16_000; // 8 s at 16 kHz`
 - Hypothesis: boundary words currently cut off on 12s chunks get a second chance sooner
 
-### K02 [SKIPPED -] Chunk 12s → 10s
+### K02 [ ] Chunk 12s → 10s
 Moderate reduction. Compromise between boundary accuracy and context length.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `10 * 16_000; // 10 s at 16 kHz`
 
-### K03 [SKIPPED -] Chunk 12s → 15s
+### K03 [ ] Chunk 12s → 15s
 Longer chunks = more context for the model, may improve proper noun recognition.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `15 * 16_000; // 15 s at 16 kHz`
 - Hypothesis: model sees more context around technical terms, fewer truncation hallucinations
 
-### K04 [SKIPPED -] Chunk 12s → 18s
+### K04 [ ] Chunk 12s → 18s
 Even longer chunks. High risk of truncation at boundaries but model context is large.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `18 * 16_000; // 18 s at 16 kHz`
 
-### K05 [SKIPPED -] Chunk 12s → 20s
+### K05 [ ] Chunk 12s → 20s
 Maximum context. Risk: if someone talks 20s with one long sentence, the whole thing lives or dies on one chunk.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `20 * 16_000; // 20 s at 16 kHz`
 
@@ -589,21 +590,21 @@ Less overlap = less redundancy, faster throughput.
 - Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s`
 - Test if current 1.0s overlap is actually helping or neutral
 
-### L02 [SKIPPED -] Overlap 1.0s → 1.5s
+### L02 [ ] Overlap 1.0s → 1.5s
 More overlap = boundary words decoded in 2 full contexts.
 - Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 24_000; // 1.5 s`
 - Hypothesis: words at chunk boundary get better context from previous sentence
 
-### L03 [SKIPPED -] Overlap 1.0s → 2.0s
+### L03 [ ] Overlap 1.0s → 2.0s
 2 second overlap = significant context from previous chunk. Best for fast speech.
 - Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 32_000; // 2.0 s`
 - Hypothesis: if someone speaks fast (like 12s monologue), boundary transitions are smoother
 
-### L04 [SKIPPED -] Overlap 1.0s → 2.5s
+### L04 [ ] Overlap 1.0s → 2.5s
 Maximum overlap test. Trade-off: more compute, but boundary words almost always have context.
 - Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 40_000; // 2.5 s`
 
-### L05 [SKIPPED -] Overlap 1.0s → 0.75s
+### L05 [ ] Overlap 1.0s → 0.75s
 Slight reduction. May save time with minimal quality loss.
 - Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 12_000; // 0.75 s`
 
@@ -619,19 +620,19 @@ More sensitive: catches speech that currently gets cut as silence. Risk: false s
 - Apply: `(0.24, 20, 20, 1)` → `(0.18, 20, 20, 1)`
 - Hypothesis: words at start of utterance currently eaten by VAD, especially soft-spoken first words
 
-### M02 [SKIPPED -] VAD 0.24 → 0.20
+### M02 [ ] VAD 0.24 → 0.20
 Slight sensitivity increase. Conservative improvement.
 - Apply: `(0.24, 20, 20, 1)` → `(0.20, 20, 20, 1)`
 
-### M03 [SKIPPED -] VAD 0.24 → 0.22
+### M03 [ ] VAD 0.24 → 0.22
 Minimal sensitivity increase. Safest test.
 - Apply: `(0.24, 20, 20, 1)` → `(0.22, 20, 20, 1)`
 
-### M04 [SKIPPED -] VAD 0.24 → 0.26
+### M04 [ ] VAD 0.24 → 0.26
 Slightly more restrictive: less background noise triggers recording.
 - Apply: `(0.24, 20, 20, 1)` → `(0.26, 20, 20, 1)`
 
-### M05 [SKIPPED -] VAD 0.24 → 0.28
+### M05 [ ] VAD 0.24 → 0.28
 More restrictive: reduces false activations in noisy environments.
 - Apply: `(0.24, 20, 20, 1)` → `(0.28, 20, 20, 1)`
 
@@ -643,25 +644,25 @@ More restrictive: reduces false activations in noisy environments.
 *Prefill = audio kept before speech starts. Hangover = audio kept after speech stops.*
 *Type: Apply-ParamTask.*
 
-### N01 [SKIPPED -] Hangover frames 20 → 40
+### N01 [ ] Hangover frames 20 → 40
 Large hangover. Model sees more trailing audio → cleaner sentence-end detection.
 - Apply: `(0.24, 20, 20, 1)` → `(0.24, 20, 40, 1)`
 - This directly targets END score which is currently 30.152 (very high). END = speech cut before end of sentence.
 
-### N02 [SKIPPED -] Hangover frames 20 → 30
+### N02 [ ] Hangover frames 20 → 30
 Moderate hangover increase. Balanced between END score fix and latency.
 - Apply: `(0.24, 20, 20, 1)` → `(0.24, 20, 30, 1)`
 
-### N03 [SKIPPED -] Prefill frames 20 → 30
+### N03 [ ] Prefill frames 20 → 30
 More audio before speech onset = less chance of cutting the first syllable.
 - Apply: `(0.24, 20, 20, 1)` → `(0.24, 30, 20, 1)`
 - Hypothesis: "the Corps of Engineers" → model currently misses "the" if VAD triggers late
 
-### N04 [SKIPPED -] Prefill frames 20 → 15
+### N04 [ ] Prefill frames 20 → 15
 Less pre-roll = tighter start. Test if current 20 is excessive.
 - Apply: `(0.24, 20, 20, 1)` → `(0.24, 15, 20, 1)`
 
-### N05 [SKIPPED -] Onset frames 1 → 2
+### N05 [ ] Onset frames 1 → 2
 Require 2 consecutive speech frames before triggering. Reduces false starts.
 - Apply: `(0.24, 20, 20, 1)` → `(0.24, 20, 20, 2)`
 
@@ -677,12 +678,12 @@ Require 2 consecutive speech frames before triggering. Reduces false starts.
 Shorter window = detects sentence ends faster. Risk: splits sentences mid-breath.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms`
 
-### P02 [SKIPPED -] Flush silence 500ms → 600ms
+### P02 [ ] Flush silence 500ms → 600ms
 Longer window = waits more before deciding "sentence done". Fewer false splits.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms`
 - Hypothesis: speakers who breathe between clauses currently get split into 2 chunks
 
-### P03 [SKIPPED -] Flush silence 500ms → 750ms
+### P03 [ ] Flush silence 500ms → 750ms
 Even longer. Good for slower speakers or those with pauses mid-sentence.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 12_000; // 750 ms`
 
@@ -691,7 +692,7 @@ Allow flush on shorter content. Good for single-word dictation ("delete", "enter
 - Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 8_000; // 0.5 s`
 - Hypothesis: short commands currently don't flush cleanly because 1s minimum is too long
 
-### P05 [SKIPPED -] Flush min content 1.0s → 1.5s
+### P05 [ ] Flush min content 1.0s → 1.5s
 Require more content before flush. Prevents spurious sub-second chunks.
 - Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 24_000; // 1.5 s`
 
@@ -708,12 +709,12 @@ Less aggressive: only trigger recovery on clearly bad transcriptions.
 - Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35`
 - Test if current threshold over-triggers recovery on good transcriptions
 
-### Q02 [SKIPPED -] Low density 1.45 → 1.55 wps
+### Q02 [ ] Low density 1.45 → 1.55 wps
 More aggressive: catch more borderline transcriptions for recovery.
 - Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.55`
 - Hypothesis: some 1.5 wps transcriptions with END issues would benefit from full-audio retry
 
-### Q03 [SKIPPED -] Low density 1.45 → 1.65 wps
+### Q03 [ ] Low density 1.45 → 1.65 wps
 Very aggressive recovery trigger. Many more samples get full-audio attempt.
 - Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.65`
 
@@ -721,7 +722,7 @@ Very aggressive recovery trigger. Many more samples get full-audio attempt.
 Raise the bar for "severe" — only trigger severe path on truly sparse output.
 - Apply: `assembled_words_per_sec <= 1.05 && duration_secs >= 12.0` → `assembled_words_per_sec <= 0.95 && duration_secs >= 12.0`
 
-### Q05 [SKIPPED -] Severe density min duration 12s → 8s
+### Q05 [ ] Severe density min duration 12s → 8s
 Currently severe recovery only triggers if audio ≥ 12s. Lower to 8s to catch medium clips.
 - Apply: `assembled_words_per_sec <= 1.05 && duration_secs >= 12.0` → `assembled_words_per_sec <= 1.05 && duration_secs >= 8.0`
 - Hypothesis: 10-second clips with low density also benefit from full-audio re-process
@@ -738,7 +739,7 @@ Easier to promote recovery. Accept recovery if it adds just 2 more words.
 - Apply: `recovered_words >= assembled_words + 3` → `recovered_words >= assembled_words + 2`
 - Hypothesis: some good recoveries get discarded because they only add 2 words
 
-### R02 [SKIPPED -] Promote min gain +3 words → +4 words
+### R02 [ ] Promote min gain +3 words → +4 words
 Harder to promote. Only replace chunked output if recovery is clearly better.
 - Apply: `recovered_words >= assembled_words + 3` → `recovered_words >= assembled_words + 4`
 
@@ -746,7 +747,7 @@ Harder to promote. Only replace chunked output if recovery is clearly better.
 Lower ratio threshold. Accept recovery if it has 10% more words instead of 15%.
 - Apply: `assembled_words as f32 * 1.15)` → `assembled_words as f32 * 1.10)`
 
-### R04 [SKIPPED -] Promote ratio 1.15× → 1.20×
+### R04 [ ] Promote ratio 1.15× → 1.20×
 Higher ratio requirement. Only clearly superior recoveries get promoted.
 - Apply: `assembled_words as f32 * 1.15)` → `assembled_words as f32 * 1.20)`
 
@@ -768,21 +769,21 @@ Catch more sparse final chunks. If final chunk has < 0.45 wps → try full audio
 - Apply: `final_chunk_words_per_sec <= 0.35` → `final_chunk_words_per_sec <= 0.45`
 - Directly targets: "someone speaks 12s but the last chunk only transcribed 1 word"
 
-### S02 [SKIPPED -] Final chunk sparse floor 0.35 → 0.25 wps
+### S02 [ ] Final chunk sparse floor 0.35 → 0.25 wps
 Less aggressive — only trigger if final chunk is truly empty.
 - Apply: `final_chunk_words_per_sec <= 0.35` → `final_chunk_words_per_sec <= 0.25`
 
-### S03 [SKIPPED -] Final chunk short: max 2 words → max 3 words
+### S03 [ ] Final chunk short: max 2 words → max 3 words
 Currently triggers recovery if final chunk (1–6s) has ≤2 words. Extend to ≤3 words.
 - Apply: `summary.final_chunk_words <= 2` → `summary.final_chunk_words <= 3`
 - Hypothesis: "okay thank you" (3 words) in a final chunk is suspicious on a 4s audio
 
-### S04 [SKIPPED -] Final chunk short: max 6s → max 8s
+### S04 [ ] Final chunk short: max 6s → max 8s
 Currently only applies to final chunks ≤6s long. Extend to ≤8s.
 - Apply: `final_chunk_secs <= 6.0` → `final_chunk_secs <= 8.0`
 - Hypothesis: 7s final chunk with only 2 words should also trigger recovery
 
-### S05 [SKIPPED -] Min final chunk samples 0.5s → 1.0s
+### S05 [ ] Min final chunk samples 0.5s → 1.0s
 Currently discards final chunks < 0.5s (8_000 samples). Raise to 1.0s.
 - Apply: `MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s` → `MIN_FINAL_CHUNK_SAMPLES: usize = 16_000; // 1.0 s`
 - Hypothesis: sub-1-second trailing chunks are almost always just noise/trailing breath
@@ -799,12 +800,12 @@ Currently discards final chunks < 0.5s (8_000 samples). Raise to 1.0s.
 Faster auto-stop: app finishes sooner after speech ends. Risk: cuts off trailing words.
 - Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 1.5;`
 
-### T02 [SKIPPED -] Silence multiplier 1.8 → 2.0
+### T02 [ ] Silence multiplier 1.8 → 2.0
 Slower auto-stop: waits longer to make sure speech is done. Safer for natural pauses.
 - Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 2.0;`
 - Hypothesis: thinkers who pause mid-sentence currently get cut before finishing
 
-### T03 [SKIPPED -] Silence multiplier 1.8 → 2.2
+### T03 [ ] Silence multiplier 1.8 → 2.2
 Generous wait time. Best for complex sentences with thinking pauses.
 - Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 2.2;`
 

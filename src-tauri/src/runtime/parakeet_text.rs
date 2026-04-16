@@ -161,6 +161,8 @@ static B01_PATTERN_8: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+n
 static C03_PATTERN_1: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b5\.0z\b").unwrap());
 // C03: GHz suffix missing: 5.0z (ES)
 static C03_PATTERN_2: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b2\.4z\b").unwrap());
+// C04: Space before colon in times (ES)
+static C04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+:\s*(\d{2})\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1233,6 +1235,7 @@ fn replace_french_word(text: &str, from: &str, to: &str) -> String {
 #[allow(unused_mut)]
 pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = C04_PATTERN.replace_all(&normalized, "$1:$2").to_string();
     normalized = C03_PATTERN_1.replace_all(&normalized, "5.0GHz").to_string();
     normalized = C03_PATTERN_2.replace_all(&normalized, "2.4GHz").to_string();
     normalized = C02_PATTERN.replace_all(&normalized, "802.11$1").to_string();

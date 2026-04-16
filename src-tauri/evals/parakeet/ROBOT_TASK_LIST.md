@@ -159,7 +159,7 @@ Model outputs "5.0z" instead of "5.0GHz" — drops the "GH" part.
 - Add regex: `r"(?i)\b5\.0z\b"` → `"5.0GHz"` and `r"(?i)\b2\.4z\b"` → `"2.4GHz"`
 - Evidence: fleurs_es_0117 (OMIT: 5.0ghz, 2.4ghz; HALL: 5.0z, 2.4)
 
-### C04 [ ] Space before colon in times (ES)
+### C04 [DONE v] Space before colon in times (ES)
 Model outputs "11 :35" (space before colon) instead of "11:35".
 - Add regex: `r"(\d+)\s+:\s*(\d{2})\b"` → `"$1:$2"`
 - Evidence: fleurs_es_0169 WER=0.286 (OMIT: 11:35; HALL: 11, 35)

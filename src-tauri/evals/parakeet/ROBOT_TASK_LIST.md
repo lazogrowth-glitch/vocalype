@@ -414,7 +414,7 @@ Applies to all languages. Remove space between digit and `%`.
 - Add BEFORE language branch: `r"(\d+)\s+%"` → `"$1%"`
 - Evidence: EN en_0060, FR fr_0257, ES es_0162
 
-### F02 [ ] Time colon spacing (global)
+### F02 [DONE v] Time colon spacing (global)
 Remove space before/after colon in times like "11 : 35" → "11:35".
 - Add BEFORE language branch: `r"(\d{1,2})\s+:\s*(\d{2})\b"` → `"$1:$2"`
 - Evidence: ES es_0169

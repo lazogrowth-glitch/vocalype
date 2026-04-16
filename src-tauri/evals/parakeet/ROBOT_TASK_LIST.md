@@ -214,7 +214,7 @@ Model outputs "Martelli" instead of "Martelly" (Haitian president).
 - Add regex: `r"(?i)\bMartelli\b"` → `"Martelly"`
 - Evidence: omitted_terms ES freq=3
 
-### C15 [ ] Espectroscopia accent (ES)
+### C15 [DONE v] Espectroscopia accent (ES)
 Model outputs "espectroscopía" (with accent) while reference has "espectroscopia" — both valid but consistent with reference.
 - Add regex: `r"\bespectroscopía\b"` → `"espectroscopia"` — VERY LOW PRIORITY, minor accent issue
 

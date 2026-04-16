@@ -189,7 +189,7 @@ Model outputs "Opolu" instead of "Upolu" (island in Samoa).
 - Add regex: `r"(?i)\bOpolu\b"` → `"Upolu"`
 - Evidence: fleurs_es_0138
 
-### C10 [ ] El Amazonas (ES)
+### C10 [DONE v] El Amazonas (ES)
 Model outputs "lo amazonas" instead of "el Amazonas".
 - Add regex: `r"(?i)\blo\s+amazonas\b"` → `"el Amazonas"`
 - Evidence: fleurs_es_0162 WER=0.182

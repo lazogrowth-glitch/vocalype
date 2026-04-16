@@ -164,7 +164,7 @@ Model outputs "11 :35" (space before colon) instead of "11:35".
 - Add regex: `r"(\d+)\s+:\s*(\d{2})\b"` → `"$1:$2"`
 - Evidence: fleurs_es_0169 WER=0.286 (OMIT: 11:35; HALL: 11, 35)
 
-### C05 [ ] Brzezinski mispronunciation (ES)
+### C05 [DONE v] Brzezinski mispronunciation (ES)
 Model outputs "Bresinski" instead of "Brzezinski" (political advisor).
 - Add regex: `r"(?i)\bBresinski\b"` → `"Brzezinski"`
 - Evidence: fleurs_es_0137 WER=0.167

@@ -32,7 +32,7 @@ pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = 200;
 pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;
 /// Minimum new samples required before a VAD-triggered flush can fire (1 s at 16 kHz).
 /// Prevents spurious flushes at the very start of an utterance.
-pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s
+pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 8_000; // 0.5 s
 /// Width of the silence window scanned for VAD-triggered flush (500 ms at 16 kHz).
 /// 500 ms filters out inter-word hesitation pauses (typically 100-400 ms) while
 /// still catching genuine sentence-ending pauses (≥ 500 ms).

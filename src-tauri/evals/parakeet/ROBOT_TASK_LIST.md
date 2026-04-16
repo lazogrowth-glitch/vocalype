@@ -677,16 +677,16 @@ Require 2 consecutive speech frames before triggering. Reduces false starts.
 Shorter window = detects sentence ends faster. Risk: splits sentences mid-breath.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms`
 
-### P02 [ ] Flush silence 500ms → 600ms
+### P02 [SKIPPED -] Flush silence 500ms → 600ms
 Longer window = waits more before deciding "sentence done". Fewer false splits.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms`
 - Hypothesis: speakers who breathe between clauses currently get split into 2 chunks
 
-### P03 [ ] Flush silence 500ms → 750ms
+### P03 [SKIPPED -] Flush silence 500ms → 750ms
 Even longer. Good for slower speakers or those with pauses mid-sentence.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms` → `FLUSH_SILENCE_SAMPLES: usize = 12_000; // 750 ms`
 
-### P04 [ ] Flush min content 1.0s → 0.5s
+### P04 [DONE v] Flush min content 1.0s → 0.5s
 Allow flush on shorter content. Good for single-word dictation ("delete", "enter", etc.)
 - Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 8_000; // 0.5 s`
 - Hypothesis: short commands currently don't flush cleanly because 1s minimum is too long

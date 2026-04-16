@@ -298,11 +298,11 @@ Model outputs "mille neuf cent quatre-vingt-huit" instead of "1988".
 - Add regex: `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]huit\b"` → `"1988"`
 - Evidence: fleurs_fr_0237 WER=0.293
 
-### D16 [ ] Digit + space + percent (FR)
+### D16 [SKIPPED -] Digit + space + percent (FR)
 Same as A12 applied in FR — confirm "30 %" → "30%" runs in FR branch.
 - Evidence: fleurs_fr_0257
 
-### D17 [ ] The soir → ce soir (FR)
+### D17 [DONE v] The soir → ce soir (FR)
 Model inserts English "the" before French "soir" — language mixing.
 - Add regex: `r"(?i)\bthe\s+soir\b"` → `"ce soir"` in FR branch
 - Evidence: fleurs_fr_0273 WER=0.327

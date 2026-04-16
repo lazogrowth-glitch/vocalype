@@ -204,7 +204,7 @@ Model outputs "Intra" instead of "Sintra" (Portuguese town).
 - Add regex: `r"(?i)\bIntra\b"` → `"Sintra"` — CAUTION: "intra" is a prefix. Make boundary strict: only standalone word.
 - Evidence: fleurs_es_0140
 
-### C13 [ ] Digit-space-percent (ES)
+### C13 [DONE v] Digit-space-percent (ES)
 Same as A12 but ensure applied in ES context too. If A12 is in a shared location (before language branch), no extra work needed. Otherwise add to ES branch.
 - Add regex: `r"(\d+)\s+%"` → `"$1%"`
 - Evidence: fleurs_es_0162 "20 %"

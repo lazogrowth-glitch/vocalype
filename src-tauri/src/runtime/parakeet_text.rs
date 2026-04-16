@@ -180,6 +180,8 @@ static C10_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\blo\s+amazonas\
 static C11_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bLata[ñn]a\b").unwrap());
 // C12: Sintra (ES)
 static C12_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bIntra\b").unwrap());
+// C13: Digit-space-percent (ES)
+static C13_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+%").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1252,6 +1254,7 @@ fn replace_french_word(text: &str, from: &str, to: &str) -> String {
 #[allow(unused_mut)]
 pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = C13_PATTERN.replace_all(&normalized, "$1%").to_string();
     normalized = C12_PATTERN.replace_all(&normalized, "Sintra").to_string();
     normalized = C11_PATTERN.replace_all(&normalized, "Lantagne").to_string();
     normalized = C10_PATTERN

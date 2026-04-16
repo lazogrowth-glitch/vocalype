@@ -149,7 +149,7 @@ Model outputs "Scottuur" instead of "Scotturb" in Spanish.
 - Add regex: `r"(?i)\bScottuur\b"` → `"Scotturb"`
 - Evidence: fleurs_es_0140 WER=0.353
 
-### C02 [ ] 802.11 digit transposition (ES)
+### C02 [DONE v] 802.11 digit transposition (ES)
 Model outputs "800.11N" instead of "802.11N" — transposes 0 and 2 digits.
 - Add regex: `r"(?i)\b800\.11([abgnABGN])\b"` → `"802.11$1"`
 - Evidence: fleurs_es_0117 WER=0.273

@@ -138,6 +138,8 @@ static F01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+%").unwrap()
 static F02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d{1,2})\s+:\s*(\d{2})\b").unwrap());
 // C01: Scotturb split (ES)
 static C01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bScottuur\b").unwrap());
+// C02: 802.11 digit transposition (ES)
+static C02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b800\.11([abgnABGN])\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1202,6 +1204,7 @@ fn replace_french_word(text: &str, from: &str, to: &str) -> String {
 #[allow(unused_mut)]
 pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = C02_PATTERN.replace_all(&normalized, "802.11$1").to_string();
     normalized = C01_PATTERN.replace_all(&normalized, "Scotturb").to_string();
     // Robot inserts ES artifact corrections here
     normalized

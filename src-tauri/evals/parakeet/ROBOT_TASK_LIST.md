@@ -721,7 +721,7 @@ Very aggressive recovery trigger. Many more samples get full-audio attempt.
 Raise the bar for "severe" — only trigger severe path on truly sparse output.
 - Apply: `assembled_words_per_sec <= 1.05 && duration_secs >= 12.0` → `assembled_words_per_sec <= 0.95 && duration_secs >= 12.0`
 
-### Q05 [ ] Severe density min duration 12s → 8s
+### Q05 [SKIPPED -] Severe density min duration 12s → 8s
 Currently severe recovery only triggers if audio ≥ 12s. Lower to 8s to catch medium clips.
 - Apply: `assembled_words_per_sec <= 1.05 && duration_secs >= 12.0` → `assembled_words_per_sec <= 1.05 && duration_secs >= 8.0`
 - Hypothesis: 10-second clips with low density also benefit from full-audio re-process
@@ -733,7 +733,7 @@ Currently severe recovery only triggers if audio ≥ 12s. Lower to 8s to catch m
 *Current: require +3 words AND ×1.15 gain to promote recovered output over chunked output.*
 *Type: Apply-ParamTask.*
 
-### R01 [ ] Promote min gain +3 words → +2 words
+### R01 [DONE v] Promote min gain +3 words → +2 words
 Easier to promote recovery. Accept recovery if it adds just 2 more words.
 - Apply: `recovered_words >= assembled_words + 3` → `recovered_words >= assembled_words + 2`
 - Hypothesis: some good recoveries get discarded because they only add 2 words

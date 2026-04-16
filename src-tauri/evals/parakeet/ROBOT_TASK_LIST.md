@@ -318,7 +318,7 @@ Model inserts English "the" before French articles — language mixing.
 - Evidence: fleurs_fr_0245 WER=0.420 (HALL: the, and, of appearing in FR text)
 - CAUTION: Test carefully; some FR texts legitimately cite English phrases.
 
-### D20 [ ] Rougissement → rugissement (FR)
+### D20 [DONE v] Rougissement → rugissement (FR)
 Model outputs "rougissement" (blushing) instead of "rugissement" (roar).
 - Add regex: `r"(?i)\brougissement\b"` → `"rugissement"` in FR branch — CAUTION: "rougissement" is a real FR word. Only valid near "tigre/lion". Mark as RISKY.
 - Evidence: fleurs_fr_0206 WER=0.154

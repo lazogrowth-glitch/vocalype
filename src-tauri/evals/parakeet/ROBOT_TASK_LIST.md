@@ -199,7 +199,7 @@ Model outputs "Lataña" instead of "Lantagne" (UN health specialist).
 - Add regex: `r"(?i)\bLata[ñn]a\b"` → `"Lantagne"`
 - Evidence: fleurs_es_0146 WER=0.160
 
-### C12 [ ] Sintra (ES)
+### C12 [DONE v] Sintra (ES)
 Model outputs "Intra" instead of "Sintra" (Portuguese town).
 - Add regex: `r"(?i)\bIntra\b"` → `"Sintra"` — CAUTION: "intra" is a prefix. Make boundary strict: only standalone word.
 - Evidence: fleurs_es_0140

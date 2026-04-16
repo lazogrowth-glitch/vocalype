@@ -238,7 +238,7 @@ Model outputs "mosasure" instead of "mosasaure".
 - Add regex: `r"(?i)\bmosasure\b"` → `"mosasaure"`
 - Evidence: fleurs_fr_0244 WER=0.250
 
-### D04 [ ] Mosasaures plural (FR)
+### D04 [DONE v] Mosasaures plural (FR)
 Model outputs "mosasores" instead of "mosasaures".
 - Add regex: `r"(?i)\bmosasores\b"` → `"mosasaures"`
 - Evidence: fleurs_fr_0244

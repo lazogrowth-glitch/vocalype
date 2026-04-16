@@ -333,7 +333,7 @@ Model outputs "Casa Blanca" (two words) instead of "Casablanca".
 - Add regex: `r"(?i)\bcasa\s+blanca\b"` → `"Casablanca"`
 - Evidence: fleurs_pt_0374 WER=0.208 (omitted_terms: casablanca, freq=3 globally)
 
-### E02 [ ] SANParks in PT
+### E02 [DONE v] SANParks in PT
 Model outputs "Sem Parks" instead of "SANParks".
 - Add regex: `r"(?i)\bsem\s+parks\b"` → `"SANParks"`
 - Evidence: fleurs_pt_0334 WER=0.182

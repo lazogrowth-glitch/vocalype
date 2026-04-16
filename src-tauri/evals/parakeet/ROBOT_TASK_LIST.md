@@ -691,7 +691,7 @@ Allow flush on shorter content. Good for single-word dictation ("delete", "enter
 - Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 8_000; // 0.5 s`
 - Hypothesis: short commands currently don't flush cleanly because 1s minimum is too long
 
-### P05 [ ] Flush min content 1.0s → 1.5s
+### P05 [SKIPPED -] Flush min content 1.0s → 1.5s
 Require more content before flush. Prevents spurious sub-second chunks.
 - Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 24_000; // 1.5 s`
 
@@ -703,7 +703,7 @@ Require more content before flush. Prevents spurious sub-second chunks.
 *These control WHEN the robot re-processes the full audio instead of using chunked output.*
 *Type: Apply-ParamTask — float replacement.*
 
-### Q01 [ ] Low density 1.45 → 1.35 wps
+### Q01 [DONE v] Low density 1.45 → 1.35 wps
 Less aggressive: only trigger recovery on clearly bad transcriptions.
 - Apply: `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35`
 - Test if current threshold over-triggers recovery on good transcriptions

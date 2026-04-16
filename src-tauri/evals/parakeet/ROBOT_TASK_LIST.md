@@ -746,11 +746,11 @@ Harder to promote. Only replace chunked output if recovery is clearly better.
 Lower ratio threshold. Accept recovery if it has 10% more words instead of 15%.
 - Apply: `assembled_words as f32 * 1.15)` → `assembled_words as f32 * 1.10)`
 
-### R04 [ ] Promote ratio 1.15× → 1.20×
+### R04 [SKIPPED -] Promote ratio 1.15× → 1.20×
 Higher ratio requirement. Only clearly superior recoveries get promoted.
 - Apply: `assembled_words as f32 * 1.15)` → `assembled_words as f32 * 1.20)`
 
-### R05 [ ] Recovery density range: floor 0.4 → 0.3 wps
+### R05 [DONE v] Recovery density range: floor 0.4 → 0.3 wps
 Allow recovery output that has slightly lower density. Useful for slow speakers.
 - Apply: `(0.4..=5.5).contains` → `(0.3..=5.5).contains`
 - Hypothesis: slow speakers get recoveries rejected because output density < 0.4

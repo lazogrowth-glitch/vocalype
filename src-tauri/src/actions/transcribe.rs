@@ -215,7 +215,7 @@ fn should_promote_full_audio_recovery(
 
     recovered_words >= assembled_words + 2
         && (recovered_words as f32) >= (assembled_words as f32 * 1.10)
-        && (0.4..=5.5).contains(&recovered_words_per_sec)
+        && (0.3..=5.5).contains(&recovered_words_per_sec)
         && is_viable_preview_rescue_candidate(recovered)
 }
 

@@ -144,77 +144,77 @@ Extend A11 pattern to cover half-hour marks.
 ## GROUP C — Spanish: Proper nouns & technical terms
 *File: `src-tauri/src/runtime/parakeet_text.rs`, add new function `normalize_parakeet_spanish_artifacts` or add to ES branch in `finalize_parakeet_text`*
 
-### C01 [SKIPPED -] Scotturb split (ES)
+### C01 [ ] Scotturb split (ES)
 Model outputs "Scottuur" instead of "Scotturb" in Spanish.
-- In ES branch: add regex `r"(?i)\bScottuur\b"` → `"Scotturb"`
+- Add regex: `r"(?i)\bScottuur\b"` → `"Scotturb"`
 - Evidence: fleurs_es_0140 WER=0.353
 
-### C02 [SKIPPED -] 802.11 digit transposition (ES)
+### C02 [ ] 802.11 digit transposition (ES)
 Model outputs "800.11N" instead of "802.11N" — transposes 0 and 2 digits.
 - In ES branch: add regex `r"(?i)\b800\.11([abgnABGN])\b"` → `"802.11$1"`
 - Evidence: fleurs_es_0117 WER=0.273
 
-### C03 [SKIPPED -] GHz suffix missing: 5.0z (ES)
+### C03 [ ] GHz suffix missing: 5.0z (ES)
 Model outputs "5.0z" instead of "5.0GHz" — drops the "GH" part.
 - In ES branch: add regex `r"(?i)\b5\.0z\b"` → `"5.0GHz"` and `r"(?i)\b2\.4z\b"` → `"2.4GHz"`
 - Evidence: fleurs_es_0117 (OMIT: 5.0ghz, 2.4ghz; HALL: 5.0z, 2.4)
 
-### C04 [SKIPPED -] Space before colon in times (ES)
+### C04 [ ] Space before colon in times (ES)
 Model outputs "11 :35" (space before colon) instead of "11:35".
 - In ES branch (or globally): add regex `r"(\d+)\s+:\s*(\d{2})\b"` → `"$1:$2"`
 - Evidence: fleurs_es_0169 WER=0.286 (OMIT: 11:35; HALL: 11, 35)
 
-### C05 [SKIPPED -] Brzezinski mispronunciation (ES)
+### C05 [ ] Brzezinski mispronunciation (ES)
 Model outputs "Bresinski" instead of "Brzezinski" (political advisor).
 - In ES branch: add regex `r"(?i)\bBresinski\b"` → `"Brzezinski"`
 - Evidence: fleurs_es_0137 WER=0.167
 
-### C06 [SKIPPED -] Lyndon B. Johnson (ES)
+### C06 [ ] Lyndon B. Johnson (ES)
 Model outputs "Lydon V. Johnson" instead of "Lyndon B. Johnson".
 - In ES branch: add regex `r"(?i)\blydon\s+v\.?\s+johnson\b"` → `"Lyndon B. Johnson"`
 - Evidence: fleurs_es_0137
 
-### C07 [SKIPPED -] FTIR vs FTER (ES)
+### C07 [ ] FTIR vs FTER (ES)
 Model outputs "FTER" instead of "FTIR" (Fourier-transform infrared spectroscopy).
 - In ES branch: add regex `r"(?i)\bFTER\b"` → `"FTIR"`
 - Evidence: fleurs_es_0131 WER=0.161
 
-### C08 [SKIPPED -] Apia (capital of Samoa)
+### C08 [ ] Apia (capital of Samoa)
 Model outputs "Appia" instead of "Apia".
 - In ES branch: add regex `r"(?i)\bAppia\b"` → `"Apia"`
 - Evidence: fleurs_es_0138 WER=0.217
 
-### C09 [SKIPPED -] Upolu island (ES)
+### C09 [ ] Upolu island (ES)
 Model outputs "Opolu" instead of "Upolu" (island in Samoa).
 - In ES branch: add regex `r"(?i)\bOpolu\b"` → `"Upolu"`
 - Evidence: fleurs_es_0138
 
-### C10 [SKIPPED -] El Amazonas (ES)
+### C10 [ ] El Amazonas (ES)
 Model outputs "lo amazonas" instead of "el Amazonas".
 - In ES branch: add regex `r"(?i)\blo\s+amazonas\b"` → `"el Amazonas"`
 - Evidence: fleurs_es_0162 WER=0.182
 
-### C11 [SKIPPED -] Lantagne (ES)
+### C11 [ ] Lantagne (ES)
 Model outputs "Lataña" instead of "Lantagne" (UN health specialist).
 - In ES branch: add regex `r"(?i)\bLata[ñn]a\b"` → `"Lantagne"`
 - Evidence: fleurs_es_0146 WER=0.160
 
-### C12 [SKIPPED -] Sintra (ES)
+### C12 [ ] Sintra (ES)
 Model outputs "Intra" instead of "Sintra" (Portuguese town).
 - In ES branch: add regex `r"(?i)\bIntra\b"` → `"Sintra"` — CAUTION: "intra" is a prefix. Make boundary strict: only standalone word.
 - Evidence: fleurs_es_0140
 
-### C13 [SKIPPED -] Digit-space-percent (ES)
+### C13 [ ] Digit-space-percent (ES)
 Same as A12 but ensure applied in ES context too. If A12 is in a shared location (before language branch), no extra work needed. Otherwise add to ES branch.
 - Confirm `r"(\d+)\s+%"` → `"$1%"` runs for ES samples
 - Evidence: fleurs_es_0162 "20 %"
 
-### C14 [SKIPPED -] Martelly name (ES)
+### C14 [ ] Martelly name (ES)
 Model outputs "Martelli" instead of "Martelly" (Haitian president).
 - In ES branch: add regex `r"(?i)\bMartelli\b"` → `"Martelly"`
 - Evidence: omitted_terms ES freq=3
 
-### C15 [SKIPPED -] Espectroscopia accent (ES)
+### C15 [ ] Espectroscopia accent (ES)
 Model outputs "espectroscopía" (with accent) while reference has "espectroscopia" — both valid but consistent with reference.
 - In ES branch: add regex `r"\bespectroscopía\b"` → `"espectroscopia"` — VERY LOW PRIORITY, minor accent issue
 
@@ -328,78 +328,78 @@ Model outputs "rougissement" (blushing) instead of "rugissement" (roar).
 ## GROUP E — Portuguese: Proper nouns & artifacts
 *File: `src-tauri/src/runtime/parakeet_text.rs`, add to PT branch in `finalize_parakeet_text`*
 
-### E01 [SKIPPED -] Casablanca split (PT)
+### E01 [ ] Casablanca split (PT)
 Model outputs "Casa Blanca" (two words) instead of "Casablanca".
 - In PT branch: add regex `r"(?i)\bcasa\s+blanca\b"` → `"Casablanca"`
 - Evidence: fleurs_pt_0374 WER=0.208 (omitted_terms: casablanca, freq=3 globally)
 
-### E02 [SKIPPED -] SANParks in PT
+### E02 [ ] SANParks in PT
 Model outputs "Sem Parks" instead of "SANParks".
 - In PT branch: add regex `r"(?i)\bsem\s+parks\b"` → `"SANParks"`
 - Evidence: fleurs_pt_0334 WER=0.182
 
-### E03 [SKIPPED -] Mosassauro (PT)
+### E03 [ ] Mosassauro (PT)
 Model outputs "mosasauro" instead of "mosassauro" (double-s spelling in PT).
 - In PT branch: add regex `r"(?i)\bmosasauro\b"` → `"mosassauro"`
 - Evidence: fleurs_pt_0303 WER=0.158
 
-### E04 [SKIPPED -] Mosassauros plural (PT)
+### E04 [ ] Mosassauros plural (PT)
 Model outputs "mosasaurus" instead of "mosassauros".
 - In PT branch: add regex `r"(?i)\bmosasaurus\b"` → `"mosassauros"`
 - Evidence: fleurs_pt_0303
 
-### E05 [SKIPPED -] Pirâmide de Gizé (PT)
+### E05 [ ] Pirâmide de Gizé (PT)
 Model outputs "pirâmide de Zé" instead of "Pirâmide de Gizé".
 - In PT branch: add regex `r"(?i)\bpirâmide\s+de\s+Zé\b"` → `"Pirâmide de Gizé"`
 - Evidence: fleurs_pt_0337 WER=0.167
 
-### E06 [SKIPPED -] Addenbrooke's hospital (PT)
+### E06 [ ] Addenbrooke's hospital (PT)
 Model outputs "Alden Brooks Hospital" instead of "Addenbrooke's Hospital".
 - In PT branch: add regex `r"(?i)\bAlden\s+Brooks\s+Hospital\b"` → `"Addenbrooke's Hospital"`
 - Evidence: fleurs_pt_0351 WER=0.182
 
-### E07 [SKIPPED -] Oldřich Jelínek (PT)
+### E07 [ ] Oldřich Jelínek (PT)
 Model outputs "Aldritch Jelinek" instead of "Oldřich Jelínek" (Czech Paralympic athlete).
 - In PT branch: add regex `r"(?i)\bAldritch\s+Jelinek\b"` → `"Oldřich Jelínek"`
 - Evidence: fleurs_pt_0320 WER=0.200
 
-### E08 [SKIPPED -] Trailing "Okay" in PT
+### E08 [ ] Trailing "Okay" in PT
 Model appends "Okay." as hallucination at end of PT transcription.
 - In PT branch: add regex `r"(?i)[,.]?\s*\bokay\b\s*[.!?,]*$"` → `""` (remove trailing "Okay")
 - Evidence: fleurs_pt_0322 WER=0.167 (HALL: okay, freq=2 in PT)
 - NOTE: PT word "um" is already protected. "okay" in PT context is always hallucination.
 
-### E09 [SKIPPED -] Áreotas → áreas remotas (PT)
+### E09 [ ] Áreotas → áreas remotas (PT)
 Model outputs "áreotas" (nonword) instead of "áreas remotas" (remote areas).
 - In PT branch: add regex `r"(?i)\báreotas\b"` → `"áreas remotas"`
 - Evidence: fleurs_pt_0322
 
-### E10 [SKIPPED -] Presença → fix presenha (PT)
+### E10 [ ] Presença → fix presenha (PT)
 Model outputs "presenha" instead of "presença".
 - In PT branch: add regex `r"(?i)\bpresenha\b"` → `"presença"`
 - Evidence: fleurs_pt_0354 WER=0.286
 
-### E11 [SKIPPED -] Hóquei no gelo (PT)
+### E11 [ ] Hóquei no gelo (PT)
 Model outputs "ó, no gelo" instead of "hóquei no gelo" (ice hockey).
 - In PT branch: add regex `r"(?i)\bó\s*,?\s*no\s+gelo\b"` → `"hóquei no gelo"`
 - Evidence: fleurs_pt_0324 WER=0.318
 
-### E12 [SKIPPED -] Hóquei em patins (PT)
+### E12 [ ] Hóquei em patins (PT)
 Model outputs "Oken empatins" instead of "hóquei em patins" (roller hockey).
 - In PT branch: add regex `r"(?i)\boken\s+empatins\b"` → `"hóquei em patins"`
 - Evidence: fleurs_pt_0324
 
-### E13 [SKIPPED -] Empatins → em patins (PT)
+### E13 [ ] Empatins → em patins (PT)
 Model outputs "empatins" instead of "em patins" (on skates).
 - In PT branch: add regex `r"(?i)\bempatins\b"` → `"em patins"`
 - Evidence: fleurs_pt_0324
 
-### E14 [SKIPPED -] Mitchell Gourley (PT)
+### E14 [ ] Mitchell Gourley (PT)
 Model outputs "Mitchell Gurley" instead of "Mitchell Gourley" (Australian Paralympic skier).
 - In PT branch: add regex `r"(?i)\bGurley\b"` → `"Gourley"` — LOW PRIORITY (Gurley is also a real surname)
 - Evidence: fleurs_pt_0320
 
-### E15 [SKIPPED -] Martelly (PT)
+### E15 [ ] Martelly (PT)
 Model outputs "Marteli" instead of "Martelly" (Haitian president).
 - In PT branch: add regex `r"(?i)\bMarteli\b"` → `"Martelly"`
 - Evidence: omitted_terms PT
@@ -812,7 +812,7 @@ Generous wait time. Best for complex sentences with thinking pauses.
 Start adapting to silence patterns after shorter pauses. More responsive.
 - Apply: `SR_MIN_THRESHOLD_MS: u64 = 400;` → `SR_MIN_THRESHOLD_MS: u64 = 300;`
 
-### T05 [ ] Max silence threshold 3000ms → 2500ms
+### T05 [DONE v] Max silence threshold 3000ms → 2500ms
 Don't wait more than 2.5s after speech. Balances responsiveness with completeness.
 - Apply: `SR_MAX_THRESHOLD_MS: u64 = 3_000;` → `SR_MAX_THRESHOLD_MS: u64 = 2_500;`
 

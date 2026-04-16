@@ -233,7 +233,7 @@ Model also outputs "Sundarmans" — different hallucination of same proper noun.
 - Add regex: `r"(?i)\bSundarmans?\b"` → `"Sundarbans"`
 - Evidence: hallucinated_terms FR freq=2
 
-### D03 [ ] Mosasaure (FR)
+### D03 [DONE v] Mosasaure (FR)
 Model outputs "mosasure" instead of "mosasaure".
 - Add regex: `r"(?i)\bmosasure\b"` → `"mosasaure"`
 - Evidence: fleurs_fr_0244 WER=0.250

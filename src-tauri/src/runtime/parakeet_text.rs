@@ -165,6 +165,9 @@ static C03_PATTERN_2: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b2\.4z\b").un
 static C04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+:\s*(\d{2})\b").unwrap());
 // C05: Brzezinski mispronunciation (ES)
 static C05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bBresinski\b").unwrap());
+// C06: Lyndon B. Johnson (ES)
+static C06_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\blydon\s+v\.?\s+johnson\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1237,6 +1240,9 @@ fn replace_french_word(text: &str, from: &str, to: &str) -> String {
 #[allow(unused_mut)]
 pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = C06_PATTERN
+        .replace_all(&normalized, "Lyndon B. Johnson")
+        .to_string();
     normalized = C05_PATTERN
         .replace_all(&normalized, "Brzezinski")
         .to_string();

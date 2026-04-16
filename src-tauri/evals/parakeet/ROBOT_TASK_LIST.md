@@ -169,7 +169,7 @@ Model outputs "Bresinski" instead of "Brzezinski" (political advisor).
 - Add regex: `r"(?i)\bBresinski\b"` → `"Brzezinski"`
 - Evidence: fleurs_es_0137 WER=0.167
 
-### C06 [ ] Lyndon B. Johnson (ES)
+### C06 [DONE v] Lyndon B. Johnson (ES)
 Model outputs "Lydon V. Johnson" instead of "Lyndon B. Johnson".
 - Add regex: `r"(?i)\blydon\s+v\.?\s+johnson\b"` → `"Lyndon B. Johnson"`
 - Evidence: fleurs_es_0137

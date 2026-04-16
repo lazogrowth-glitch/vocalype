@@ -268,7 +268,7 @@ Model outputs "Nours" instead of "Noor" (Cave of Hira on Mount Noor).
 - Add regex: `r"(?i)\bNours\b"` → `"Noor"`
 - Evidence: fleurs_fr_0205 WER=0.171
 
-### D10 [ ] Muhammad vs Mohammad (FR)
+### D10 [DONE v] Muhammad vs Mohammad (FR)
 Model outputs "Mohammad" (Persian spelling) instead of "Muhammad" (Arabic/standard).
 - Add regex: `r"(?i)\bMohammad\b"` → `"Muhammad"` — LOW PRIORITY: regional usage varies. Test carefully.
 - Evidence: fleurs_fr_0205

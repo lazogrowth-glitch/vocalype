@@ -243,7 +243,7 @@ Model outputs "mosasores" instead of "mosasaures".
 - Add regex: `r"(?i)\bmosasores\b"` → `"mosasaures"`
 - Evidence: fleurs_fr_0244
 
-### D05 [ ] Superprédateur compound (FR)
+### D05 [DONE v] Superprédateur compound (FR)
 Model outputs "super prédateur" (split) instead of "superprédateur".
 - Add regex: `r"(?i)\bsuper\s+pr[eé]dateur\b"` → `"superprédateur"`
 - Evidence: fleurs_fr_0244

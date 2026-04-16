@@ -419,19 +419,19 @@ Remove space before/after colon in times like "11 : 35" → "11:35".
 - Add BEFORE language branch: `r"(\d{1,2})\s+:\s*(\d{2})\b"` → `"$1:$2"`
 - Evidence: ES es_0169
 
-### F03 [ ] Ordinal suffix: 11o / 16o → 11º / 16º (PT)
+### F03 [SKIPPED -] Ordinal suffix: 11o / 16o → 11º / 16º (PT)
 Model outputs ASCII "o" instead of ordinal superscript "º".
 - In PT branch: add regex `r"(\d+)o\b"` → `"$1º"` — CAUTION: only apply to short numbers (1-99). Use `r"\b(\d{1,2})o\b"` → `"$1º"`
 - Evidence: fleurs_pt_0320
 
-### F04 [ ] FR year: mille neuf cent quatre-vingt (general)
+### F04 [SKIPPED -] FR year: mille neuf cent quatre-vingt (general)
 Extend D15 to cover more years. Add:
 - `"mille neuf cent quatre-vingt-dix"` → `"1990"`
 - `"mille neuf cent soixante"` → `"1960"`
 - `"mille neuf cent quatre-vingt"` → `"1980"`
 - Evidence: general FR number patterns
 
-### F05 [ ] 802.11 space variants (already partially covered)
+### F05 [SKIPPED -] 802.11 space variants (already partially covered)
 Ensure `"802 .11"` (space before dot) normalizes to `"802.11"`. The existing PUNCT_SPACE_PATTERN in FR covers this. Verify it also runs in EN branch.
 - Add `PUNCT_SPACE_PATTERN` application in EN branch if not already present.
 - Evidence: fleurs_fr results improved after FR punct fix
@@ -441,25 +441,25 @@ Ensure `"802 .11"` (space before dot) normalizes to `"802.11"`. The existing PUN
 ## GROUP G — Compound words & hyphenation
 *File: `src-tauri/src/runtime/parakeet_text.rs`, per-language function*
 
-### G01 [ ] Anti-incendios → antincendios (ES)
+### G01 [SKIPPED -] Anti-incendios → antincendios (ES)
 Model outputs "antiincendios" instead of "antincendios".
 - In ES branch: add regex `r"(?i)\bantiincendios\b"` → `"antincendios"`
 - Evidence: fleurs_es_0169
 
-### G02 [ ] Micro. Cru → microexpressões (PT)
+### G02 [SKIPPED -] Micro. Cru → microexpressões (PT)
 Model breaks "microexpressões" into "micro. Cru expressões".
 - In PT branch: add regex `r"(?i)\bmicro\.\s*cru\s+express[oõ]es\b"` → `"microexpressões"`
 - Evidence: fleurs_pt_0370 WER=0.316
 
-### G03 [ ] Microexpressões split (PT)
+### G03 [SKIPPED -] Microexpressões split (PT)
 Model outputs "micro" + "expressões" (split without "cru") instead of "microexpressões".
 - In PT branch: add regex `r"(?i)\bmicro\s+express[oõ]es\b"` → `"microexpressões"`
 - Evidence: fleurs_pt_0370
 
-### G04 [ ] Superprédateur (FR) — already in D05
+### G04 [SKIPPED -] Superprédateur (FR) — already in D05
 Same concept, already covered.
 
-### G05 [ ] TBUR / TB UR acronym (FR)
+### G05 [SKIPPED -] TBUR / TB UR acronym (FR)
 Model outputs "TBUR" as one word; reference has "TB-UR" or similar. Low priority — leave for now.
 
 ---
@@ -468,28 +468,28 @@ Model outputs "TBUR" as one word; reference has "TB-UR" or similar. Low priority
 *File: `src-tauri/examples/parakeet_pipeline_eval.rs` AND `src-tauri/src/actions/transcribe.rs`*
 *These require changing BOTH files and running full evals.*
 
-### H01 [ ] End-truncation recovery: add END score trigger
+### H01 [SKIPPED -] End-truncation recovery: add END score trigger
 When assembled `end_truncation_score > 0.7`, also trigger full-audio recovery attempt.
 - Add condition in `should_attempt_full_audio_recovery`: `|| end_truncation_score > 0.7`
 - Must sync change in both eval and transcribe.rs
 - Evidence: 30% of FLEURS samples have END > 0.5
 
-### H02 [ ] Lower promote threshold for high-END samples
+### H02 [SKIPPED -] Lower promote threshold for high-END samples
 When `end_score > 0.7`, use lower promote threshold: +2 words / 1.10x (instead of +3 / 1.15x).
 - Add conditional path in `should_promote_full_audio_recovery`
 - Evidence: many END-high samples could benefit from easier promotion
 
-### H03 [ ] Density suspicion: words-per-second floor
+### H03 [SKIPPED -] Density suspicion: words-per-second floor
 Current threshold: 1.45 wps. Test lowering to 1.35 wps for low-density suspicion.
 - Change `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35` in suspicion check
 - Run both evals, revert if regression
 
-### H04 [ ] Min duration for recovery: 5.0s instead of 6.0s
+### H04 [SKIPPED -] Min duration for recovery: 5.0s instead of 6.0s
 Test if catching more short audio with recovery helps.
 - Change `6.0` → `5.0` in `if !(6.0..=45.0).contains(&duration_secs)`
 - Run both evals, revert if regression
 
-### H05 [ ] Max duration for recovery: 50s instead of 45s
+### H05 [SKIPPED -] Max duration for recovery: 50s instead of 45s
 Allow recovery for slightly longer samples.
 - Change `45.0` → `50.0` in duration range check
 - Run both evals, revert if regression
@@ -499,26 +499,26 @@ Allow recovery for slightly longer samples.
 ## GROUP I — Spanish: Additional proper nouns (round 2)
 *File: `src-tauri/src/runtime/parakeet_text.rs`, ES branch*
 
-### I01 [ ] Danielle Lantagne (ES)
+### I01 [SKIPPED -] Danielle Lantagne (ES)
 Model drops double-l in "Danielle" → "Daniel". Only fix if next to Lantagne.
 - In ES branch: add regex `r"(?i)\bDaniel\s+Lantagne\b"` → `"Danielle Lantagne"`
 - Evidence: fleurs_es_0146
 
-### I02 [ ] Glen → Glenn disambiguation (EN)
+### I02 [SKIPPED -] Glen → Glenn disambiguation (EN)
 Model hallucinated "Glenn" (double-n) when reference has "Glen". 
 SKIP — too risky (Glenn is a valid proper name too).
 
-### I03 [ ] Erdoğan pronunciation (ES)
+### I03 [SKIPPED -] Erdoğan pronunciation (ES)
 Model outputs "Norgan" instead of "Erdoğan". Very specific to Turkish name.
 - In ES branch: add regex `r"(?i)\bNorgan\b"` → `"Erdoğan"`
 - Evidence: fleurs_es_0150 WER=0.200 — but low frequency, mark low priority
 
-### I04 [ ] Recep Tayyip (ES)
+### I04 [SKIPPED -] Recep Tayyip (ES)
 Model outputs "Recep Tayib" instead of "Recep Tayyip".
 - In ES branch: add regex `r"(?i)\bTayib\b"` → `"Tayyip"`
 - Evidence: fleurs_es_0150
 
-### I05 [ ] Carpanedo (ES)
+### I05 [SKIPPED -] Carpanedo (ES)
 Model outputs "Carbaneo" instead of "Carpanedo" (Italian Paralympic athlete).
 - In ES branch: add regex `r"(?i)\bCarbaneo\b"` → `"Carpanedo"`
 - Evidence: omitted_terms ES
@@ -528,21 +528,21 @@ Model outputs "Carbaneo" instead of "Carpanedo" (Italian Paralympic athlete).
 ## GROUP J — French: Additional patterns (round 2)
 *File: `src-tauri/src/runtime/parakeet_text.rs`, FR branch*
 
-### J01 [ ] Duvall → Duval disambiguation (FR)
+### J01 [SKIPPED -] Duvall → Duval disambiguation (FR)
 Model drops one 'l' → "Duval" instead of "Duvall".
 - In FR branch: add regex `r"(?i)\bDuval\b"` → `"Duvall"` — RISKY: "Duval" is a common French surname. SKIP.
 
-### J02 [ ] Mau → Mau in FR context
+### J02 [SKIPPED -] Mau → Mau in FR context
 Model says "Mouvement Mao" for "mouvement Mau". Same fix as A14 but for FR.
 - In FR branch: add regex `r"(?i)\bMao\s+mouvement\b"` → `"Mau mouvement"`
 
-### J03 [ ] Kundalini yoga (FR)
+### J03 [SKIPPED -] Kundalini yoga (FR)
 Model omits "kundalini" frequently — already addressed in D07.
 
-### J04 [ ] Martelly (FR)
+### J04 [SKIPPED -] Martelly (FR)
 Model outputs "manwin" (hallucination). Too vague to fix.
 
-### J05 [ ] Vaccination/infection numbers (FR)
+### J05 [SKIPPED -] Vaccination/infection numbers (FR)
 Model splits "330 000" as "trois cent trente mille" → digits better.
 - In FR branch: add regex `r"(?i)\btrois\s+cent\s+trente\s+mille\b"` → `"330 000"`
 - Evidence: fleurs_fr_0253 WER=0.231
@@ -554,7 +554,7 @@ Model splits "330 000" as "trois cent trente mille" → digits better.
 *Current value: `12 * 16_000` (12 seconds). Change ONE value, run evals, revert if worse.*
 *Type: Apply-ParamTask — simple constant replacement, no LLM needed.*
 
-### K01 [ ] Chunk 12s → 8s
+### K01 [DONE v] Chunk 12s → 8s
 Shorter chunks = less audio context lost at boundaries, faster first-word latency.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `8 * 16_000; // 8 s at 16 kHz`
 - Hypothesis: boundary words currently cut off on 12s chunks get a second chance sooner

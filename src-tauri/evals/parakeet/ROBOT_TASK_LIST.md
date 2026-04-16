@@ -283,7 +283,7 @@ Model outputs compact "23h35" while French reference uses spaced "23 h 35".
 - Add regex: `r"\b(\d{1,2})h(\d{2})\b"` → `"$1 h $2"` in FR branch
 - Evidence: fleurs_fr_0231 WER=0.286
 
-### D13 [ ] GMT time garble (FR)
+### D13 [DONE v] GMT time garble (FR)
 Model outputs "douze heures Gm D" instead of "12 h 00 GMT".
 - Add regex: `r"(?i)\bdouze\s+heures?\s+Gm\s*D\b"` → `"12 h 00 GMT"`
 - Evidence: fleurs_fr_0280 WER=0.200

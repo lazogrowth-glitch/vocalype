@@ -194,7 +194,7 @@ Model outputs "lo amazonas" instead of "el Amazonas".
 - Add regex: `r"(?i)\blo\s+amazonas\b"` → `"el Amazonas"`
 - Evidence: fleurs_es_0162 WER=0.182
 
-### C11 [ ] Lantagne (ES)
+### C11 [DONE v] Lantagne (ES)
 Model outputs "Lataña" instead of "Lantagne" (UN health specialist).
 - Add regex: `r"(?i)\bLata[ñn]a\b"` → `"Lantagne"`
 - Evidence: fleurs_es_0146 WER=0.160

@@ -88,6 +88,8 @@ static B05_PATTERN: Lazy<Regex> =
 // D01: Sundarbans garbled (FR)
 static D01_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bseines?\s+d['']?\s*arbans?\b").unwrap());
+// D02: Sundarbans alternate garble (FR)
+static D02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bSundarmans?\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -888,6 +890,9 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
 
 pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = D02_PATTERN
+        .replace_all(&normalized, "Sundarbans")
+        .to_string();
     normalized = D01_PATTERN
         .replace_all(&normalized, "Sundarbans")
         .to_string();

@@ -228,7 +228,7 @@ Model outputs "Seines d'arbans" instead of "Sundarbans" (mangrove forest, UNESCO
 - Add regex: `r"(?i)\bseines?\s+d['']?\s*arbans?\b"` → `"Sundarbans"`
 - Evidence: fleurs_fr_0221 WER=0.250
 
-### D02 [ ] Sundarbans alternate garble (FR)
+### D02 [DONE v] Sundarbans alternate garble (FR)
 Model also outputs "Sundarmans" — different hallucination of same proper noun.
 - Add regex: `r"(?i)\bSundarmans?\b"` → `"Sundarbans"`
 - Evidence: hallucinated_terms FR freq=2

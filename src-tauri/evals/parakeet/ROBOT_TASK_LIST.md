@@ -184,7 +184,7 @@ Model outputs "Appia" instead of "Apia".
 - Add regex: `r"(?i)\bAppia\b"` → `"Apia"`
 - Evidence: fleurs_es_0138 WER=0.217
 
-### C09 [ ] Upolu island (ES)
+### C09 [DONE v] Upolu island (ES)
 Model outputs "Opolu" instead of "Upolu" (island in Samoa).
 - Add regex: `r"(?i)\bOpolu\b"` → `"Upolu"`
 - Evidence: fleurs_es_0138

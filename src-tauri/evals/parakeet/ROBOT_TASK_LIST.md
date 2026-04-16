@@ -248,7 +248,7 @@ Model outputs "super prédateur" (split) instead of "superprédateur".
 - Add regex: `r"(?i)\bsuper\s+pr[eé]dateur\b"` → `"superprédateur"`
 - Evidence: fleurs_fr_0244
 
-### D06 [ ] l'UE from LEUP (FR)
+### D06 [DONE v] l'UE from LEUP (FR)
 Model outputs "LEUP" instead of "l'UE" (l'Union Européenne).
 - Add regex: `r"(?i)\bLEUP\b"` → `"l'UE"`
 - Evidence: fleurs_fr_0290 WER=0.179

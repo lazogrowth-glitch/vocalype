@@ -799,16 +799,16 @@ Currently discards final chunks < 0.5s (8_000 samples). Raise to 1.0s.
 Faster auto-stop: app finishes sooner after speech ends. Risk: cuts off trailing words.
 - Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 1.5;`
 
-### T02 [ ] Silence multiplier 1.8 → 2.0
+### T02 [SKIPPED -] Silence multiplier 1.8 → 2.0
 Slower auto-stop: waits longer to make sure speech is done. Safer for natural pauses.
 - Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 2.0;`
 - Hypothesis: thinkers who pause mid-sentence currently get cut before finishing
 
-### T03 [ ] Silence multiplier 1.8 → 2.2
+### T03 [SKIPPED -] Silence multiplier 1.8 → 2.2
 Generous wait time. Best for complex sentences with thinking pauses.
 - Apply: `SR_PAUSE_MULTIPLIER: f64 = 1.8;` → `SR_PAUSE_MULTIPLIER: f64 = 2.2;`
 
-### T04 [ ] Min silence threshold 400ms → 300ms
+### T04 [DONE v] Min silence threshold 400ms → 300ms
 Start adapting to silence patterns after shorter pauses. More responsive.
 - Apply: `SR_MIN_THRESHOLD_MS: u64 = 400;` → `SR_MIN_THRESHOLD_MS: u64 = 300;`
 

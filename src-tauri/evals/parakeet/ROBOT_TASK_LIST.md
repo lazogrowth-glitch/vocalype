@@ -298,7 +298,7 @@ Model outputs "mille neuf cent quatre-vingt-huit" instead of "1988".
 - Add regex: `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]huit\b"` → `"1988"`
 - Evidence: fleurs_fr_0237 WER=0.293
 
-### D16 [ ] Digit + space + percent (FR)
+### D16 [DONE v] Digit + space + percent (FR)
 Same as A12 applied in FR — confirm "30 %" → "30%" runs in FR branch.
 - Evidence: fleurs_fr_0257
 
@@ -328,7 +328,7 @@ Model outputs "rougissement" (blushing) instead of "rugissement" (roar).
 ## GROUP E — Portuguese: Proper nouns & artifacts
 *File: `src-tauri/src/runtime/parakeet_text.rs`, add to PT branch in `finalize_parakeet_text`*
 
-### E01 [ ] Casablanca split (PT)
+### E01 [DONE v] Casablanca split (PT)
 Model outputs "Casa Blanca" (two words) instead of "Casablanca".
 - Add regex: `r"(?i)\bcasa\s+blanca\b"` → `"Casablanca"`
 - Evidence: fleurs_pt_0374 WER=0.208 (omitted_terms: casablanca, freq=3 globally)

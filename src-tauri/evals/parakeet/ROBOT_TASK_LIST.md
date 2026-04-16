@@ -738,11 +738,11 @@ Easier to promote recovery. Accept recovery if it adds just 2 more words.
 - Apply: `recovered_words >= assembled_words + 3` → `recovered_words >= assembled_words + 2`
 - Hypothesis: some good recoveries get discarded because they only add 2 words
 
-### R02 [ ] Promote min gain +3 words → +4 words
+### R02 [SKIPPED -] Promote min gain +3 words → +4 words
 Harder to promote. Only replace chunked output if recovery is clearly better.
 - Apply: `recovered_words >= assembled_words + 3` → `recovered_words >= assembled_words + 4`
 
-### R03 [ ] Promote ratio 1.15× → 1.10×
+### R03 [DONE v] Promote ratio 1.15× → 1.10×
 Lower ratio threshold. Accept recovery if it has 10% more words instead of 15%.
 - Apply: `assembled_words as f32 * 1.15)` → `assembled_words as f32 * 1.10)`
 

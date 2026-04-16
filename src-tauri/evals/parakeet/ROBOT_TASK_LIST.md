@@ -307,7 +307,7 @@ Model inserts English "the" before French "soir" — language mixing.
 - Add regex: `r"(?i)\bthe\s+soir\b"` → `"ce soir"` in FR branch
 - Evidence: fleurs_fr_0273 WER=0.327
 
-### D18 [ ] And + French verb → et + verb (FR)
+### D18 [DONE v] And + French verb → et + verb (FR)
 Model inserts English "and" before French verb — language mixing.
 - Add regex: `r"(?i)\band\s+(d[eé]terminer|d[eé]cider|pr[eé]senter|[eé]valuer|continuer|rester)\b"` → `"et $1"` in FR branch
 - Evidence: fleurs_fr_0273

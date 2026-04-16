@@ -559,20 +559,20 @@ Shorter chunks = less audio context lost at boundaries, faster first-word latenc
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `8 * 16_000; // 8 s at 16 kHz`
 - Hypothesis: boundary words currently cut off on 12s chunks get a second chance sooner
 
-### K02 [ ] Chunk 12s → 10s
+### K02 [SKIPPED -] Chunk 12s → 10s
 Moderate reduction. Compromise between boundary accuracy and context length.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `10 * 16_000; // 10 s at 16 kHz`
 
-### K03 [ ] Chunk 12s → 15s
+### K03 [SKIPPED -] Chunk 12s → 15s
 Longer chunks = more context for the model, may improve proper noun recognition.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `15 * 16_000; // 15 s at 16 kHz`
 - Hypothesis: model sees more context around technical terms, fewer truncation hallucinations
 
-### K04 [ ] Chunk 12s → 18s
+### K04 [SKIPPED -] Chunk 12s → 18s
 Even longer chunks. High risk of truncation at boundaries but model context is large.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `18 * 16_000; // 18 s at 16 kHz`
 
-### K05 [ ] Chunk 12s → 20s
+### K05 [SKIPPED -] Chunk 12s → 20s
 Maximum context. Risk: if someone talks 20s with one long sentence, the whole thing lives or dies on one chunk.
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `20 * 16_000; // 20 s at 16 kHz`
 
@@ -584,7 +584,7 @@ Maximum context. Risk: if someone talks 20s with one long sentence, the whole th
 *Overlap = boundary words get decoded twice → deduplication picks best result.*
 *Type: Apply-ParamTask — simple constant replacement.*
 
-### L01 [ ] Overlap 1.0s → 0.5s
+### L01 [DONE v] Overlap 1.0s → 0.5s
 Less overlap = less redundancy, faster throughput.
 - Apply: `OVERLAP_SAMPLES: usize = 16_000; // 1.0 s` → `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s`
 - Test if current 1.0s overlap is actually helping or neutral

@@ -179,7 +179,7 @@ Model outputs "FTER" instead of "FTIR" (Fourier-transform infrared spectroscopy)
 - Add regex: `r"(?i)\bFTER\b"` → `"FTIR"`
 - Evidence: fleurs_es_0131 WER=0.161
 
-### C08 [ ] Apia (capital of Samoa)
+### C08 [DONE v] Apia (capital of Samoa)
 Model outputs "Appia" instead of "Apia".
 - Add regex: `r"(?i)\bAppia\b"` → `"Apia"`
 - Evidence: fleurs_es_0138 WER=0.217

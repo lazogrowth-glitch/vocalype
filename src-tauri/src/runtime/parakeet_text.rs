@@ -170,6 +170,8 @@ static C06_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\blydon\s+v\.?\s+johnson\b").unwrap());
 // C07: FTIR vs FTER (ES)
 static C07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bFTER\b").unwrap());
+// C08: Apia (capital of Samoa)
+static C08_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bAppia\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1242,6 +1244,7 @@ fn replace_french_word(text: &str, from: &str, to: &str) -> String {
 #[allow(unused_mut)]
 pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = C08_PATTERN.replace_all(&normalized, "Apia").to_string();
     normalized = C07_PATTERN.replace_all(&normalized, "FTIR").to_string();
     normalized = C06_PATTERN
         .replace_all(&normalized, "Lyndon B. Johnson")

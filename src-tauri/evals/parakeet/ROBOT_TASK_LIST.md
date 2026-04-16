@@ -273,7 +273,7 @@ Model outputs "Mohammad" (Persian spelling) instead of "Muhammad" (Arabic/standa
 - Add regex: `r"(?i)\bMohammad\b"` → `"Muhammad"` — LOW PRIORITY: regional usage varies. Test carefully.
 - Evidence: fleurs_fr_0205
 
-### D11 [ ] Les années vingt → les années 20 (FR)
+### D11 [DONE v] Les années vingt → les années 20 (FR)
 Model outputs "les années vingt" (word form) instead of "les années 20" (digit form).
 - Add regex: `r"(?i)\bles ann[eé]es\s+vingt\b"` → `"les années 20"`
 - Evidence: fleurs_fr_0225 WER=0.200

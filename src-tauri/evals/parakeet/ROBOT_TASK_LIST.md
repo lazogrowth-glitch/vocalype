@@ -288,7 +288,7 @@ Model outputs "douze heures Gm D" instead of "12 h 00 GMT".
 - Add regex: `r"(?i)\bdouze\s+heures?\s+Gm\s*D\b"` → `"12 h 00 GMT"`
 - Evidence: fleurs_fr_0280 WER=0.200
 
-### D14 [ ] Appelat → appelé (FR)
+### D14 [DONE v] Appelat → appelé (FR)
 Model outputs "appelat" (non-word) instead of "appelé" (called).
 - Add regex: `r"(?i)\bappelat\b"` → `"appelé"`
 - Evidence: fleurs_fr_0256 WER=0.389

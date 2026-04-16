@@ -278,7 +278,7 @@ Model outputs "les années vingt" (word form) instead of "les années 20" (digit
 - Add regex: `r"(?i)\bles ann[eé]es\s+vingt\b"` → `"les années 20"`
 - Evidence: fleurs_fr_0225 WER=0.200
 
-### D12 [ ] Time format 23h35 → 23 h 35 (FR)
+### D12 [DONE v] Time format 23h35 → 23 h 35 (FR)
 Model outputs compact "23h35" while French reference uses spaced "23 h 35".
 - Add regex: `r"\b(\d{1,2})h(\d{2})\b"` → `"$1 h $2"` in FR branch
 - Evidence: fleurs_fr_0231 WER=0.286

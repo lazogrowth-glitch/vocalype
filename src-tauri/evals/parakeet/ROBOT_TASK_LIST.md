@@ -328,78 +328,78 @@ Model outputs "rougissement" (blushing) instead of "rugissement" (roar).
 ## GROUP E — Portuguese: Proper nouns & artifacts
 *File: `src-tauri/src/runtime/parakeet_text.rs`, add to PT branch in `finalize_parakeet_text`*
 
-### E01 [ ] Casablanca split (PT)
+### E01 [SKIPPED -] Casablanca split (PT)
 Model outputs "Casa Blanca" (two words) instead of "Casablanca".
 - In PT branch: add regex `r"(?i)\bcasa\s+blanca\b"` → `"Casablanca"`
 - Evidence: fleurs_pt_0374 WER=0.208 (omitted_terms: casablanca, freq=3 globally)
 
-### E02 [ ] SANParks in PT
+### E02 [SKIPPED -] SANParks in PT
 Model outputs "Sem Parks" instead of "SANParks".
 - In PT branch: add regex `r"(?i)\bsem\s+parks\b"` → `"SANParks"`
 - Evidence: fleurs_pt_0334 WER=0.182
 
-### E03 [ ] Mosassauro (PT)
+### E03 [SKIPPED -] Mosassauro (PT)
 Model outputs "mosasauro" instead of "mosassauro" (double-s spelling in PT).
 - In PT branch: add regex `r"(?i)\bmosasauro\b"` → `"mosassauro"`
 - Evidence: fleurs_pt_0303 WER=0.158
 
-### E04 [ ] Mosassauros plural (PT)
+### E04 [SKIPPED -] Mosassauros plural (PT)
 Model outputs "mosasaurus" instead of "mosassauros".
 - In PT branch: add regex `r"(?i)\bmosasaurus\b"` → `"mosassauros"`
 - Evidence: fleurs_pt_0303
 
-### E05 [ ] Pirâmide de Gizé (PT)
+### E05 [SKIPPED -] Pirâmide de Gizé (PT)
 Model outputs "pirâmide de Zé" instead of "Pirâmide de Gizé".
 - In PT branch: add regex `r"(?i)\bpirâmide\s+de\s+Zé\b"` → `"Pirâmide de Gizé"`
 - Evidence: fleurs_pt_0337 WER=0.167
 
-### E06 [ ] Addenbrooke's hospital (PT)
+### E06 [SKIPPED -] Addenbrooke's hospital (PT)
 Model outputs "Alden Brooks Hospital" instead of "Addenbrooke's Hospital".
 - In PT branch: add regex `r"(?i)\bAlden\s+Brooks\s+Hospital\b"` → `"Addenbrooke's Hospital"`
 - Evidence: fleurs_pt_0351 WER=0.182
 
-### E07 [ ] Oldřich Jelínek (PT)
+### E07 [SKIPPED -] Oldřich Jelínek (PT)
 Model outputs "Aldritch Jelinek" instead of "Oldřich Jelínek" (Czech Paralympic athlete).
 - In PT branch: add regex `r"(?i)\bAldritch\s+Jelinek\b"` → `"Oldřich Jelínek"`
 - Evidence: fleurs_pt_0320 WER=0.200
 
-### E08 [ ] Trailing "Okay" in PT
+### E08 [SKIPPED -] Trailing "Okay" in PT
 Model appends "Okay." as hallucination at end of PT transcription.
 - In PT branch: add regex `r"(?i)[,.]?\s*\bokay\b\s*[.!?,]*$"` → `""` (remove trailing "Okay")
 - Evidence: fleurs_pt_0322 WER=0.167 (HALL: okay, freq=2 in PT)
 - NOTE: PT word "um" is already protected. "okay" in PT context is always hallucination.
 
-### E09 [ ] Áreotas → áreas remotas (PT)
+### E09 [SKIPPED -] Áreotas → áreas remotas (PT)
 Model outputs "áreotas" (nonword) instead of "áreas remotas" (remote areas).
 - In PT branch: add regex `r"(?i)\báreotas\b"` → `"áreas remotas"`
 - Evidence: fleurs_pt_0322
 
-### E10 [ ] Presença → fix presenha (PT)
+### E10 [SKIPPED -] Presença → fix presenha (PT)
 Model outputs "presenha" instead of "presença".
 - In PT branch: add regex `r"(?i)\bpresenha\b"` → `"presença"`
 - Evidence: fleurs_pt_0354 WER=0.286
 
-### E11 [ ] Hóquei no gelo (PT)
+### E11 [SKIPPED -] Hóquei no gelo (PT)
 Model outputs "ó, no gelo" instead of "hóquei no gelo" (ice hockey).
 - In PT branch: add regex `r"(?i)\bó\s*,?\s*no\s+gelo\b"` → `"hóquei no gelo"`
 - Evidence: fleurs_pt_0324 WER=0.318
 
-### E12 [ ] Hóquei em patins (PT)
+### E12 [SKIPPED -] Hóquei em patins (PT)
 Model outputs "Oken empatins" instead of "hóquei em patins" (roller hockey).
 - In PT branch: add regex `r"(?i)\boken\s+empatins\b"` → `"hóquei em patins"`
 - Evidence: fleurs_pt_0324
 
-### E13 [ ] Empatins → em patins (PT)
+### E13 [SKIPPED -] Empatins → em patins (PT)
 Model outputs "empatins" instead of "em patins" (on skates).
 - In PT branch: add regex `r"(?i)\bempatins\b"` → `"em patins"`
 - Evidence: fleurs_pt_0324
 
-### E14 [ ] Mitchell Gourley (PT)
+### E14 [SKIPPED -] Mitchell Gourley (PT)
 Model outputs "Mitchell Gurley" instead of "Mitchell Gourley" (Australian Paralympic skier).
 - In PT branch: add regex `r"(?i)\bGurley\b"` → `"Gourley"` — LOW PRIORITY (Gurley is also a real surname)
 - Evidence: fleurs_pt_0320
 
-### E15 [ ] Martelly (PT)
+### E15 [SKIPPED -] Martelly (PT)
 Model outputs "Marteli" instead of "Martelly" (Haitian president).
 - In PT branch: add regex `r"(?i)\bMarteli\b"` → `"Martelly"`
 - Evidence: omitted_terms PT
@@ -409,7 +409,7 @@ Model outputs "Marteli" instead of "Martelly" (Haitian president).
 ## GROUP F — All languages: Number / unit normalization
 *Apply in shared section of `finalize_parakeet_text` BEFORE language branch, or per-language as noted*
 
-### F01 [ ] Digit + space + percent (global)
+### F01 [DONE v] Digit + space + percent (global)
 Applies to all languages. Remove space between digit and `%`.
 - Add BEFORE language branch: `r"(\d+)\s+%"` → `"$1%"`
 - Evidence: EN en_0060, FR fr_0257, ES es_0162

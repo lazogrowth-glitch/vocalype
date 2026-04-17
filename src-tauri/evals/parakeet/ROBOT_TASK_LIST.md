@@ -621,15 +621,15 @@ More sensitive: catches speech that currently gets cut as silence. Risk: false s
 Slight sensitivity increase. Conservative improvement.
 - Apply: `(0.18, 20, 20, 1)` → `(0.20, 20, 20, 1)`
 
-### M03 [ ] VAD 0.24 → 0.22
+### M03 [SKIPPED -] VAD 0.24 → 0.22
 Minimal sensitivity increase. Safest test.
 - Apply: `(0.18, 20, 20, 1)` → `(0.22, 20, 20, 1)`
 
-### M04 [ ] VAD 0.24 → 0.26
+### M04 [SKIPPED -] VAD 0.24 → 0.26
 Slightly more restrictive: less background noise triggers recording.
 - Apply: `(0.18, 20, 20, 1)` → `(0.26, 20, 20, 1)`
 
-### M05 [ ] VAD 0.24 → 0.28
+### M05 [SKIPPED -] VAD 0.24 → 0.28
 More restrictive: reduces false activations in noisy environments.
 - Apply: `(0.18, 20, 20, 1)` → `(0.28, 20, 20, 1)`
 
@@ -641,25 +641,25 @@ More restrictive: reduces false activations in noisy environments.
 *Prefill = audio kept before speech starts. Hangover = audio kept after speech stops.*
 *Type: Apply-ParamTask.*
 
-### N01 [ ] Hangover frames 20 → 40
+### N01 [SKIPPED -] Hangover frames 20 → 40
 Large hangover. Model sees more trailing audio → cleaner sentence-end detection.
 - Apply: `(0.18, 20, 20, 1)` → `(0.18, 20, 40, 1)`
 - This directly targets END score which is currently 30.152 (very high). END = speech cut before end of sentence.
 
-### N02 [ ] Hangover frames 20 → 30
+### N02 [SKIPPED -] Hangover frames 20 → 30
 Moderate hangover increase. Balanced between END score fix and latency.
 - Apply: `(0.18, 20, 20, 1)` → `(0.18, 20, 30, 1)`
 
-### N03 [ ] Prefill frames 20 → 30
+### N03 [SKIPPED -] Prefill frames 20 → 30
 More audio before speech onset = less chance of cutting the first syllable.
 - Apply: `(0.18, 20, 20, 1)` → `(0.18, 30, 20, 1)`
 - Hypothesis: "the Corps of Engineers" → model currently misses "the" if VAD triggers late
 
-### N04 [ ] Prefill frames 20 → 15
+### N04 [SKIPPED -] Prefill frames 20 → 15
 Less pre-roll = tighter start. Test if current 20 is excessive.
 - Apply: `(0.18, 20, 20, 1)` → `(0.18, 15, 20, 1)`
 
-### N05 [ ] Onset frames 1 → 2
+### N05 [SKIPPED -] Onset frames 1 → 2
 Require 2 consecutive speech frames before triggering. Reduces false starts.
 - Apply: `(0.18, 20, 20, 1)` → `(0.18, 20, 20, 2)`
 
@@ -675,7 +675,7 @@ Require 2 consecutive speech frames before triggering. Reduces false starts.
 Shorter window = detects sentence ends faster. Risk: splits sentences mid-breath.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms` → `FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms`
 
-### P02 [ ] Flush silence 500ms → 600ms
+### P02 [DONE v] Flush silence 500ms → 600ms
 Longer window = waits more before deciding "sentence done". Fewer false splits.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms` → `FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms`
 - Hypothesis: speakers who breathe between clauses currently get split into 2 chunks

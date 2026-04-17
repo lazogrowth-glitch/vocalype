@@ -36,7 +36,7 @@ pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 8_000; // 0.5 s
 /// Width of the silence window scanned for VAD-triggered flush (500 ms at 16 kHz).
 /// 500 ms filters out inter-word hesitation pauses (typically 100-400 ms) while
 /// still catching genuine sentence-ending pauses (≥ 500 ms).
-pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms
+pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms
 /// Mean-squared energy threshold — windows below this are considered silent.
 /// 1e-5 ≈ RMS 0.003, well below conversational speech (~0.02–0.1 RMS).
 pub(crate) const VAD_FLUSH_ENERGY_THRESHOLD: f32 = 1e-5;

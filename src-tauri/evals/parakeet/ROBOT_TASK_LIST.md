@@ -597,11 +597,11 @@ More overlap = boundary words decoded in 2 full contexts.
 - Apply: `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s` → `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 32_000; // 2.0 s`
 - Hypothesis: if someone speaks fast (like 12s monologue), boundary transitions are smoother
 
-### L04 [ ] Overlap 1.5s → 2.5s
+### L04 [DONE v] Overlap 1.5s → 2.5s
 Maximum overlap test. Trade-off: more compute, but boundary words almost always have context.
 - Apply: `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s` → `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 40_000; // 2.5 s`
 
-### L05 [ ] Overlap 1.5s → 0.75s
+### L05 [DONE v] Overlap 1.5s → 0.75s
 Slight reduction. May save time with minimal quality loss.
 - Apply: `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s` → `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s`
 
@@ -621,7 +621,7 @@ More sensitive: catches speech that currently gets cut as silence. Risk: false s
 Slight sensitivity increase. Conservative improvement.
 - Apply: `(0.18, 20, 20, 1)` → `(0.20, 20, 20, 1)`
 
-### M03 [ ] VAD 0.20 → 0.22
+### M03 [DONE v] VAD 0.20 → 0.22
 Minimal sensitivity increase. Safest test.
 - Apply: `(0.20, 20, 20, 1)` → `(0.22, 20, 20, 1)`
 

@@ -498,7 +498,7 @@ Allow recovery for slightly longer samples.
 ## GROUP I — Spanish: Additional proper nouns (round 2)
 *File: `src-tauri/src/runtime/parakeet_text.rs`, ES branch*
 
-### I01 [ ] Danielle Lantagne (ES)
+### I01 [DONE v] Danielle Lantagne (ES)
 Model drops double-l in "Danielle" → "Daniel". Only fix if next to Lantagne.
 - Add regex: `r"(?i)\bDaniel\s+Lantagne\b"` → `"Danielle Lantagne"`
 - Evidence: fleurs_es_0146

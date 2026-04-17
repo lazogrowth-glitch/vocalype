@@ -182,8 +182,8 @@ fn should_attempt_full_audio_recovery(
     let final_chunk_secs = summary.final_chunk_samples as f32 / 16_000.0;
     let final_chunk_words_per_sec = summary.final_chunk_words as f32 / final_chunk_secs.max(0.1);
 
-    let low_density = assembled_words_per_sec <= 1.65;
-    let severe_low_density = assembled_words_per_sec <= 0.95 && duration_secs >= 8.0;
+    let low_density = assembled_words_per_sec <= 1.35;
+    let severe_low_density = assembled_words_per_sec <= 0.95 && duration_secs >= 12.0;
     let empty_boundary = summary.empty_nonfinal_chunks > 0 && low_density;
     let short_final_chunk = final_chunk_secs >= 1.0
         && final_chunk_secs <= 6.0

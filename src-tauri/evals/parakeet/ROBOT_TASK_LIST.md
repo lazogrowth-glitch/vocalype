@@ -527,7 +527,7 @@ Model outputs "Carbaneo" instead of "Carpanedo" (Italian Paralympic athlete).
 ## GROUP J — French: Additional patterns (round 2)
 *File: `src-tauri/src/runtime/parakeet_text.rs`, FR branch*
 
-### J01 [ ] Duvall → Duval disambiguation (FR)
+### J01 [DONE v] Duvall → Duval disambiguation (FR)
 Model drops one 'l' → "Duval" instead of "Duvall".
 - In FR branch: add regex `r"(?i)\bDuval\b"` → `"Duvall"` — RISKY: "Duval" is a common French surname. SKIP.
 

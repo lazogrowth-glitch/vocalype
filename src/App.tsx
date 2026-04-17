@@ -1,13 +1,9 @@
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { TitleBar } from "./components/TitleBar";
 import { useTranslation } from "react-i18next";
-import {
-  LogicalSize,
-  currentMonitor,
-  getCurrentWindow,
-} from "@tauri-apps/api/window";
+import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
 import Onboarding, {
@@ -26,18 +22,12 @@ import { PlanContext } from "@/lib/subscription/context";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { ensureVoiceStateStore } from "@/stores/voiceState";
 
 const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
 
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
-const MIN_WINDOW_SIZE = { width: 760, height: 540 };
-const REFERENCE_SCREEN_SIZE = { width: 1920, height: 1080 };
-const DEFAULT_WIDTH_RATIO =
-  DESIGN_WINDOW_SIZE.width / REFERENCE_SCREEN_SIZE.width;
-const DEFAULT_HEIGHT_RATIO =
-  DESIGN_WINDOW_SIZE.height / REFERENCE_SCREEN_SIZE.height;
 
 type WindowSize = {
   width: number;
@@ -83,82 +73,9 @@ function getLayoutTier(width: number): LayoutTier {
   return "spacious";
 }
 
-function readStoredWindowSize(): StoredWindowSize | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(WINDOW_SIZE_STORAGE_KEY);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<StoredWindowSize>;
-    if (
-      typeof parsed.width === "number" &&
-      typeof parsed.height === "number" &&
-      Number.isFinite(parsed.width) &&
-      Number.isFinite(parsed.height)
-    ) {
-      return {
-        width: Math.round(parsed.width),
-        height: Math.round(parsed.height),
-        widthRatio:
-          typeof parsed.widthRatio === "number" &&
-          Number.isFinite(parsed.widthRatio)
-            ? parsed.widthRatio
-            : undefined,
-        heightRatio:
-          typeof parsed.heightRatio === "number" &&
-          Number.isFinite(parsed.heightRatio)
-            ? parsed.heightRatio
-            : undefined,
-        screenWidth:
-          typeof parsed.screenWidth === "number" &&
-          Number.isFinite(parsed.screenWidth)
-            ? Math.round(parsed.screenWidth)
-            : undefined,
-        screenHeight:
-          typeof parsed.screenHeight === "number" &&
-          Number.isFinite(parsed.screenHeight)
-            ? Math.round(parsed.screenHeight)
-            : undefined,
-      };
-    }
-  } catch {
-    window.localStorage.removeItem(WINDOW_SIZE_STORAGE_KEY);
-  }
-
-  return null;
-}
-
 function writeStoredWindowSize(size: StoredWindowSize) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(WINDOW_SIZE_STORAGE_KEY, JSON.stringify(size));
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-async function resolveAdaptiveWindowSize(): Promise<WindowSize> {
-  const monitorBounds = await resolveMonitorBounds();
-  if (!monitorBounds) {
-    return DESIGN_WINDOW_SIZE;
-  }
-
-  return {
-    width: Math.round(
-      clamp(
-        monitorBounds.width * DEFAULT_WIDTH_RATIO,
-        Math.min(MIN_WINDOW_SIZE.width, monitorBounds.width),
-        monitorBounds.width,
-      ),
-    ),
-    height: Math.round(
-      clamp(
-        monitorBounds.height * DEFAULT_HEIGHT_RATIO,
-        Math.min(MIN_WINDOW_SIZE.height, monitorBounds.height),
-        monitorBounds.height,
-      ),
-    ),
-  };
 }
 
 async function resolveMonitorBounds(): Promise<WindowSize | null> {
@@ -169,47 +86,6 @@ async function resolveMonitorBounds(): Promise<WindowSize | null> {
   return {
     width: Math.round(monitor.workArea.size.width / scale),
     height: Math.round(monitor.workArea.size.height / scale),
-  };
-}
-
-async function resolveWindowSize(): Promise<WindowSize> {
-  const storedSize = readStoredWindowSize();
-  const monitorBounds = await resolveMonitorBounds();
-
-  if (!monitorBounds) {
-    return DESIGN_WINDOW_SIZE;
-  }
-
-  if (!storedSize) {
-    return resolveAdaptiveWindowSize();
-  }
-
-  const widthRatio =
-    storedSize.widthRatio ??
-    (storedSize.screenWidth && storedSize.screenWidth > 0
-      ? storedSize.width / storedSize.screenWidth
-      : DEFAULT_WIDTH_RATIO);
-  const heightRatio =
-    storedSize.heightRatio ??
-    (storedSize.screenHeight && storedSize.screenHeight > 0
-      ? storedSize.height / storedSize.screenHeight
-      : DEFAULT_HEIGHT_RATIO);
-
-  return {
-    width: Math.round(
-      clamp(
-        monitorBounds.width * widthRatio,
-        Math.min(MIN_WINDOW_SIZE.width, monitorBounds.width),
-        monitorBounds.width,
-      ),
-    ),
-    height: Math.round(
-      clamp(
-        monitorBounds.height * heightRatio,
-        Math.min(MIN_WINDOW_SIZE.height, monitorBounds.height),
-        monitorBounds.height,
-      ),
-    ),
   };
 }
 
@@ -267,6 +143,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("vt.sidebarCollapsed") === "1",
   );
+  const lastDeepLinkTokenRef = useRef<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth);
   const toggleSidebar = () => {
     setSidebarCollapsed((v) => {
@@ -442,8 +319,14 @@ function App() {
   useEffect(() => {
     const unlisten = listen<string>("deep-link-auth", async (event) => {
       const token = event.payload;
-      if (token) {
+      if (token && lastDeepLinkTokenRef.current !== token) {
+        lastDeepLinkTokenRef.current = token;
         await handleDeepLinkAuth(token);
+        try {
+          await emit("desktop-auth-ready");
+        } catch (error) {
+          console.warn("Failed to notify desktop auth completion:", error);
+        }
       }
     });
     return () => {
@@ -499,32 +382,6 @@ function App() {
       if (timer) window.clearTimeout(timer);
     };
   }, [isActivationPending, refreshSession]);
-
-  useEffect(() => {
-    const initializeWindowSize = async () => {
-      try {
-        const window = getCurrentWindow();
-        const monitorBounds = await resolveMonitorBounds();
-        const minWidth = monitorBounds
-          ? Math.min(MIN_WINDOW_SIZE.width, monitorBounds.width)
-          : MIN_WINDOW_SIZE.width;
-        const minHeight = monitorBounds
-          ? Math.min(MIN_WINDOW_SIZE.height, monitorBounds.height)
-          : MIN_WINDOW_SIZE.height;
-        await window.setMinSize(new LogicalSize(minWidth, minHeight));
-
-        const target = await resolveWindowSize();
-        await window.setSize(new LogicalSize(target.width, target.height));
-        if (readStoredWindowSize() === null) {
-          await window.center();
-        }
-      } catch (windowError) {
-        console.warn("Failed to initialize main window size:", windowError);
-      }
-    };
-
-    void initializeWindowSize();
-  }, []);
 
   useEffect(() => {
     ensureVoiceStateStore();

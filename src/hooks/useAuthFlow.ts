@@ -272,6 +272,7 @@ export function useAuthFlow(
         console.error("Deep link auth failed:", error);
         setAuthError(error instanceof Error ? error.message : "Auth failed");
       } finally {
+        setAuthLoading(false);
         setAuthSubmitting(false);
       }
     },

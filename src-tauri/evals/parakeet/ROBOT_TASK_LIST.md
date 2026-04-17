@@ -562,15 +562,15 @@ Shorter chunks = less audio context lost at boundaries, faster first-word latenc
 Moderate increase from current 8s baseline.
 - Apply: `8 * 16_000; // 8 s at 16 kHz` → `10 * 16_000; // 10 s at 16 kHz`
 
-### K03 [ ] Chunk 8s → 15s
+### K03 [DONE v] Chunk 8s → 15s
 Longer chunks = more context for the model.
 - Apply: `8 * 16_000; // 8 s at 16 kHz` → `15 * 16_000; // 15 s at 16 kHz`
 
-### K04 [ ] Chunk 8s → 18s
+### K04 [SKIPPED -] Chunk 8s → 18s
 Even longer chunks. High risk of truncation at boundaries.
 - Apply: `8 * 16_000; // 8 s at 16 kHz` → `18 * 16_000; // 18 s at 16 kHz`
 
-### K05 [ ] Chunk 8s → 20s
+### K05 [SKIPPED -] Chunk 8s → 20s
 Maximum context.
 - Apply: `8 * 16_000; // 8 s at 16 kHz` → `20 * 16_000; // 20 s at 16 kHz`
 
@@ -587,7 +587,7 @@ Less overlap = less redundancy, faster throughput.
 - Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s`
 - Test if current 1.0s overlap is actually helping or neutral
 
-### L02 [ ] Overlap 1.0s → 1.5s
+### L02 [DONE v] Overlap 1.0s → 1.5s
 More overlap = boundary words decoded in 2 full contexts.
 - Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 24_000; // 1.5 s`
 - Hypothesis: words at chunk boundary get better context from previous sentence

@@ -13,16 +13,16 @@ use tauri::AppHandle;
 /// Accumulate this many speech samples before sending a chunk for background transcription.
 pub(crate) const DEFAULT_CHUNK_INTERVAL_SAMPLES: usize = 15 * 16_000; // 15 s at 16 kHz
 /// Overlap kept at the START of each new chunk to avoid cutting words at boundaries.
-pub(crate) const DEFAULT_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const DEFAULT_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// Whisper Small benchmarks best with slightly larger chunks on weak PCs.
 pub(crate) const WHISPER_SMALL_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s
-pub(crate) const WHISPER_SMALL_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const WHISPER_SMALL_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// Whisper Medium tuned for latency while staying conservative on slow machines.
 pub(crate) const WHISPER_MEDIUM_CHUNK_INTERVAL_SAMPLES: usize = 6 * 16_000; // 6 s
-pub(crate) const WHISPER_MEDIUM_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const WHISPER_MEDIUM_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// Whisper Turbo: larger chunks reduce tail assembly overhead on low-end hardware.
 pub(crate) const WHISPER_TURBO_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s
-pub(crate) const WHISPER_TURBO_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const WHISPER_TURBO_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// Whisper Large: quality-oriented but avoids all-work-after-key-up behaviour.
 pub(crate) const WHISPER_LARGE_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; // 8 s
 pub(crate) const WHISPER_LARGE_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s
@@ -53,7 +53,7 @@ pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s
 pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s at 16 kHz
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// French errors are handled by text/vocabulary learning rather than a more
 /// aggressive chunk profile, which regressed long-form eval samples.
 pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize =

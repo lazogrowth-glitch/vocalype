@@ -384,7 +384,7 @@ Model outputs "ó, no gelo" instead of "hóquei no gelo" (ice hockey).
 - Add regex: `r"(?i)\bó\s*,?\s*no\s+gelo\b"` → `"hóquei no gelo"`
 - Evidence: fleurs_pt_0324 WER=0.318
 
-### E12 [ ] Hóquei em patins (PT)
+### E12 [DONE v] Hóquei em patins (PT)
 Model outputs "Oken empatins" instead of "hóquei em patins" (roller hockey).
 - Add regex: `r"(?i)\boken\s+empatins\b"` → `"hóquei em patins"`
 - Evidence: fleurs_pt_0324

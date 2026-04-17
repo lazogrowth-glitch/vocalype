@@ -369,7 +369,7 @@ Model appends "Okay." as hallucination at end of PT transcription.
 - Evidence: fleurs_pt_0322 WER=0.167 (HALL: okay, freq=2 in PT)
 - NOTE: PT word "um" is already protected. "okay" in PT context is always hallucination.
 
-### E09 [ ] Áreotas → áreas remotas (PT)
+### E09 [DONE v] Áreotas → áreas remotas (PT)
 Model outputs "áreotas" (nonword) instead of "áreas remotas" (remote areas).
 - Add regex: `r"(?i)\báreotas\b"` → `"áreas remotas"`
 - Evidence: fleurs_pt_0322

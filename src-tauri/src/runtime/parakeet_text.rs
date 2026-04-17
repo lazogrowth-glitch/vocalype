@@ -204,6 +204,8 @@ static E07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bAldritch\s+Jel
 // E08: Trailing "Okay" in PT
 static E08_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)[,.]?\s*\bokay\b\s*[.!?,]*$").unwrap());
+// E09: Áreotas → áreas remotas (PT)
+static E09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\báreotas\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1307,6 +1309,9 @@ pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
 #[allow(unused_mut)]
 pub fn normalize_parakeet_portuguese_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = E09_PATTERN
+        .replace_all(&normalized, "áreas remotas")
+        .to_string();
     normalized = E08_PATTERN.replace_all(&normalized, "").to_string();
     normalized = E07_PATTERN
         .replace_all(&normalized, "Oldřich Jelínek")

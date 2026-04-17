@@ -558,7 +558,7 @@ Shorter chunks = less audio context lost at boundaries, faster first-word latenc
 - Apply: `12 * 16_000; // 12 s at 16 kHz` → `8 * 16_000; // 8 s at 16 kHz`
 - Hypothesis: boundary words currently cut off on 12s chunks get a second chance sooner
 
-### K02 [DONE v] Chunk 8s → 10s
+### K02 [REJECTED x] Chunk 8s → 10s
 Moderate increase from current 8s baseline.
 - Apply: `8 * 16_000; // 8 s at 16 kHz` → `10 * 16_000; // 10 s at 16 kHz`
 

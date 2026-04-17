@@ -9,6 +9,7 @@ pub mod history;
 pub mod meetings;
 pub mod models;
 pub mod notes;
+pub mod ollama;
 pub mod report;
 pub mod snippets;
 pub mod transcription;

@@ -564,6 +564,14 @@ pub struct AppSettings {
     /// Automatically pause media players (Spotify, etc.) during recording.
     #[serde(default)]
     pub auto_pause_media: bool,
+    /// When true, dictation in code editors is sent to a local LLM (Ollama)
+    /// and the result is pasted as formatted code instead of raw text.
+    #[serde(default)]
+    pub voice_to_code_enabled: bool,
+    /// Model name to use for Voice-to-Code (e.g. "devstral", "ministral-3:8b").
+    /// Applies to the "ollama" provider.
+    #[serde(default)]
+    pub voice_to_code_model: String,
 }
 
 fn default_model() -> String {
@@ -766,6 +774,15 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         base_url: "https://generativelanguage.googleapis.com/v1beta".to_string(),
         allow_base_url_edit: false,
         models_endpoint: None,
+        supports_structured_output: false,
+    });
+
+    providers.push(PostProcessProvider {
+        id: "ollama".to_string(),
+        label: "Ollama (Local)".to_string(),
+        base_url: "http://localhost:11434/v1".to_string(),
+        allow_base_url_edit: false,
+        models_endpoint: Some("/models".to_string()),
         supports_structured_output: false,
     });
 
@@ -1409,6 +1426,8 @@ pub fn get_default_settings() -> AppSettings {
         mistral_stt_api_key: None,
         deepgram_api_key: None,
         speaking_rate_pauses: Vec::new(),
+        voice_to_code_enabled: false,
+        voice_to_code_model: String::new(),
     }
 }
 

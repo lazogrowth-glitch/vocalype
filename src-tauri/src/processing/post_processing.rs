@@ -615,6 +615,80 @@ pub(crate) async fn process_action(
     }
 }
 
+/// System prompt for Voice-to-Code mode. Instructs the LLM to return only raw
+/// code — no markdown fences, no explanation — ready to be pasted into an editor.
+const VOICE_TO_CODE_SYSTEM_PROMPT: &str = "\
+You are an expert senior full-stack developer. \
+The user dictates naturally in French or English. \
+Transform the phrase into clean, well-indented, modern, professional code.\n\
+\n\
+Rules:\n\
+- Automatically detect the programming language (TypeScript, Python, Rust, JavaScript, etc.) \
+from context clues in the request.\n\
+- Follow best practices for the detected language.\n\
+- Add comments only when they genuinely help understanding.\n\
+- Return ONLY the raw code block — no explanation before or after, no markdown fences. \
+The output will be pasted directly into the editor.\n\
+- Preserve proper indentation (2-space or 4-space as appropriate for the language).\n\
+- If the request mentions refactoring or modifying existing code, adapt to the surrounding style.\
+";
+
+/// Send a voice dictation to a local Ollama model and return generated code.
+/// Falls back silently (returns `None`) if Ollama is unreachable or not configured.
+pub(crate) async fn voice_to_code_completion(
+    settings: &AppSettings,
+    transcription: &str,
+) -> Option<String> {
+    let model = settings.voice_to_code_model.trim().to_string();
+    if model.is_empty() {
+        debug!("Voice-to-Code skipped: no model configured");
+        return None;
+    }
+
+    let provider = settings
+        .post_process_provider("ollama")
+        .cloned()
+        .or_else(|| settings.post_process_provider("custom").cloned())?;
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    debug!(
+        "Voice-to-Code: sending {} chars to {} / {}",
+        transcription.len(),
+        provider.id,
+        model
+    );
+
+    match crate::llm_client::send_chat_completion_with_schema(
+        &provider,
+        api_key,
+        &model,
+        transcription.to_string(),
+        Some(VOICE_TO_CODE_SYSTEM_PROMPT.to_string()),
+        None,
+    )
+    .await
+    {
+        Ok(Some(content)) if !content.trim().is_empty() => {
+            let code = strip_invisible_chars(&content);
+            debug!("Voice-to-Code completed. Output: {} chars", code.len());
+            Some(code)
+        }
+        Ok(_) => {
+            debug!("Voice-to-Code: LLM returned empty response");
+            None
+        }
+        Err(e) => {
+            debug!("Voice-to-Code failed ({}), using raw transcription", e);
+            None
+        }
+    }
+}
+
 pub(crate) async fn maybe_convert_chinese_variant(
     settings: &AppSettings,
     transcription: &str,

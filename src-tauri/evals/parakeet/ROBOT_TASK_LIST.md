@@ -389,7 +389,7 @@ Model outputs "Oken empatins" instead of "hóquei em patins" (roller hockey).
 - Add regex: `r"(?i)\boken\s+empatins\b"` → `"hóquei em patins"`
 - Evidence: fleurs_pt_0324
 
-### E13 [ ] Empatins → em patins (PT)
+### E13 [DONE v] Empatins → em patins (PT)
 Model outputs "empatins" instead of "em patins" (on skates).
 - Add regex: `r"(?i)\bempatins\b"` → `"em patins"`
 - Evidence: fleurs_pt_0324

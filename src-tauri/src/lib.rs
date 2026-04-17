@@ -889,6 +889,7 @@ pub fn run(cli_args: CliArgs) {
         secret_store::clear_secure_license_bundle,
         helpers::clamshell::is_laptop,
         commands::start_browser_auth,
+        commands::ollama::check_ollama_status,
     ]);
 
     #[cfg(debug_assertions)]

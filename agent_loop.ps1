@@ -476,6 +476,28 @@ function Apply-ParamTask($task) {
                 }
             }
         }
+        # Fallback 2: ancre sur le prefixe commun (pour constantes Rust: NOM = OLD_VAL → NOM = NEW_VAL)
+        if (-not $fuzzyApplied) {
+            $cpLen = 0
+            $minL = [Math]::Min($oldValue.Length, $newValue.Length)
+            for ($j = 0; $j -lt $minL; $j++) {
+                if ($oldValue[$j] -eq $newValue[$j]) { $cpLen++ } else { break }
+            }
+            if ($cpLen -ge 5) {
+                $prefix  = $oldValue.Substring(0, $cpLen)
+                $newRest = $newValue.Substring($cpLen)
+                $pidx    = $content.IndexOf($prefix)
+                if ($pidx -ge 0) {
+                    $after       = $content.Substring($pidx + $prefix.Length)
+                    $lineEnd     = $after.IndexOf("`n")
+                    if ($lineEnd -lt 0) { $lineEnd = $after.Length }
+                    $currentRest = $after.Substring(0, $lineEnd)
+                    $content     = $content.Substring(0, $pidx) + $prefix + $newRest + $content.Substring($pidx + $prefix.Length + $currentRest.Length)
+                    $fuzzyApplied = $true
+                    Write-Host "  Apply-ParamTask: prefix anchor match utilise pour $id" -ForegroundColor Cyan
+                }
+            }
+        }
         if (-not $fuzzyApplied) {
             Write-Host "  Apply-ParamTask: '$oldValue' non trouve dans $([System.IO.Path]::GetFileName($rustFile))" -ForegroundColor Yellow
             return $false

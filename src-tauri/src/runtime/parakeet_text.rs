@@ -220,6 +220,15 @@ static E14_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bGurley\b").unw
 static E15_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMarteli\b").unwrap());
 // F03: Ordinal suffix: 11o / 16o → 11º / 16º (PT)
 static F03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b(\d{1,2})o\b").unwrap());
+// F04: FR year: mille neuf cent quatre-vingt (general)
+static F04_PATTERN_1: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]dix\b").unwrap());
+// F04: FR year: mille neuf cent quatre-vingt (general)
+static F04_PATTERN_2: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+soixante\b").unwrap());
+// F04: FR year: mille neuf cent quatre-vingt (general)
+static F04_PATTERN_3: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1030,6 +1039,9 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
 
 pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = F04_PATTERN_1.replace_all(&normalized, "1990").to_string();
+    normalized = F04_PATTERN_2.replace_all(&normalized, "1960").to_string();
+    normalized = F04_PATTERN_3.replace_all(&normalized, "1980").to_string();
     normalized = D20_PATTERN
         .replace_all(&normalized, "tigre/lion")
         .to_string();

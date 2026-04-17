@@ -424,7 +424,7 @@ Model outputs ASCII "o" instead of ordinal superscript "º".
 - In PT branch: add regex `r"\b(\d{1,2})o\b"` → `"$1º"`
 - Evidence: fleurs_pt_0320
 
-### F04 [ ] FR year: mille neuf cent quatre-vingt (general)
+### F04 [DONE v] FR year: mille neuf cent quatre-vingt (general)
 Extend D15 to cover more years. Add:
 - `"mille neuf cent quatre-vingt-dix"` → `"1990"`
 - `"mille neuf cent soixante"` → `"1960"`

@@ -452,7 +452,7 @@ Model breaks "microexpressões" into "micro. Cru expressões".
 - Add regex: `r"(?i)\bmicro\.\s*cru\s+express[oõ]es\b"` → `"microexpressões"`
 - Evidence: fleurs_pt_0370 WER=0.316
 
-### G03 [ ] Microexpressões split (PT)
+### G03 [DONE v] Microexpressões split (PT)
 Model outputs "micro" + "expressões" (split without "cru") instead of "microexpressões".
 - Add regex: `r"(?i)\bmicro\s+express[oõ]es\b"` → `"microexpressões"`
 - Evidence: fleurs_pt_0370

@@ -236,6 +236,9 @@ static G01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bantiincendios\
 // G02: Micro. Cru → microexpressões (PT)
 static G02_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bmicro\.\s*cru\s+express[oõ]es\b").unwrap());
+// G03: Microexpressões split (PT)
+static G03_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmicro\s+express[oõ]es\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1346,6 +1349,9 @@ pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
 #[allow(unused_mut)]
 pub fn normalize_parakeet_portuguese_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = G03_PATTERN
+        .replace_all(&normalized, "microexpressões")
+        .to_string();
     normalized = G02_PATTERN
         .replace_all(&normalized, "microexpressões")
         .to_string();

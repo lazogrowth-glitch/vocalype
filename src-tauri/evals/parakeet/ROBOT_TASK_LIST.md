@@ -512,7 +512,7 @@ Model outputs "Norgan" instead of "Erdoğan". Very specific to Turkish name.
 - Add regex: `r"(?i)\bNorgan\b"` → `"Erdoğan"`
 - Evidence: fleurs_es_0150 WER=0.200 — but low frequency, mark low priority
 
-### I04 [ ] Recep Tayyip (ES)
+### I04 [DONE v] Recep Tayyip (ES)
 Model outputs "Recep Tayib" instead of "Recep Tayyip".
 - Add regex: `r"(?i)\bTayib\b"` → `"Tayyip"`
 - Evidence: fleurs_es_0150

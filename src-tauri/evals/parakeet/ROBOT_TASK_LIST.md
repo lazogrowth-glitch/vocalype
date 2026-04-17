@@ -379,7 +379,7 @@ Model outputs "presenha" instead of "presença".
 - Add regex: `r"(?i)\bpresenha\b"` → `"presença"`
 - Evidence: fleurs_pt_0354 WER=0.286
 
-### E11 [ ] Hóquei no gelo (PT)
+### E11 [DONE v] Hóquei no gelo (PT)
 Model outputs "ó, no gelo" instead of "hóquei no gelo" (ice hockey).
 - Add regex: `r"(?i)\bó\s*,?\s*no\s+gelo\b"` → `"hóquei no gelo"`
 - Evidence: fleurs_pt_0324 WER=0.318

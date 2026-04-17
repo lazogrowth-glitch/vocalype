@@ -517,7 +517,7 @@ Model outputs "Recep Tayib" instead of "Recep Tayyip".
 - Add regex: `r"(?i)\bTayib\b"` → `"Tayyip"`
 - Evidence: fleurs_es_0150
 
-### I05 [ ] Carpanedo (ES)
+### I05 [DONE v] Carpanedo (ES)
 Model outputs "Carbaneo" instead of "Carpanedo" (Italian Paralympic athlete).
 - Add regex: `r"(?i)\bCarbaneo\b"` → `"Carpanedo"`
 - Evidence: omitted_terms ES

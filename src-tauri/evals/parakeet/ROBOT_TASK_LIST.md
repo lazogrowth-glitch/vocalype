@@ -711,7 +711,7 @@ More aggressive: catch more borderline transcriptions for recovery.
 - Apply: `assembled_words_per_sec <= 1.35` → `assembled_words_per_sec <= 1.55`
 - Hypothesis: some 1.5 wps transcriptions with END issues would benefit from full-audio retry
 
-### Q03 [ ] Low density 1.45 → 1.65 wps
+### Q03 [DONE v] Low density 1.45 → 1.65 wps
 Very aggressive recovery trigger. Many more samples get full-audio attempt.
 - Apply: `assembled_words_per_sec <= 1.55` → `assembled_words_per_sec <= 1.65`
 

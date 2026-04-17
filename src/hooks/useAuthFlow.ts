@@ -119,10 +119,30 @@ export function useAuthFlow(
     try {
       const nextSession = await authClient.getSession(token);
       applySession(nextSession);
-      await syncLicenseForSession(nextSession, {
-        mode: "refresh",
-        allowOfflineFallback: true,
-      });
+      try {
+        await syncLicenseForSession(nextSession, {
+          mode: "refresh",
+          allowOfflineFallback: true,
+        });
+      } catch (licenseError) {
+        console.warn(
+          "License sync failed after session refresh:",
+          licenseError,
+        );
+        setAuthError(
+          licenseError instanceof Error
+            ? licenseError.message
+            : "Activation failed",
+        );
+        try {
+          setLicenseState(await licenseClient.getRuntimeState());
+        } catch {
+          setLicenseState({
+            state: "expired",
+            reason: "Activation failed",
+          });
+        }
+      }
     } catch (error) {
       const status = authClient.getErrorStatus(error);
 
@@ -226,8 +246,28 @@ export function useAuthFlow(
       try {
         await authClient.setStoredToken(token);
         const nextSession = await authClient.getSession(token);
-        await syncLicenseForSession(nextSession, { mode: "issue" });
         applySession(nextSession);
+        try {
+          await syncLicenseForSession(nextSession, { mode: "issue" });
+        } catch (licenseError) {
+          console.warn(
+            "License issue failed after deep-link auth:",
+            licenseError,
+          );
+          setAuthError(
+            licenseError instanceof Error
+              ? licenseError.message
+              : "Activation failed",
+          );
+          try {
+            setLicenseState(await licenseClient.getRuntimeState());
+          } catch {
+            setLicenseState({
+              state: "expired",
+              reason: "Activation failed",
+            });
+          }
+        }
       } catch (error) {
         console.error("Deep link auth failed:", error);
         setAuthError(error instanceof Error ? error.message : "Auth failed");

@@ -15,6 +15,7 @@ import Onboarding, {
   ConsentStep,
 } from "./components/onboarding";
 import { TrialWelcomeModal } from "./components/onboarding/TrialWelcomeModal";
+import { VoiceToCodeOnboarding } from "./components/settings/app-context/VoiceToCodeOnboarding";
 import { Sidebar } from "./components/Sidebar";
 import { SidebarSection, SECTIONS_CONFIG } from "./components/sections-config";
 import { useSettings } from "./hooks/useSettings";
@@ -304,9 +305,12 @@ function App() {
   const hasAnyAccess =
     licenseState?.state === "online_valid" ||
     licenseState?.state === "offline_valid";
+  const hasAccountAccess = session?.subscription.has_access === true;
+  const canEnterApp = hasAnyAccess || hasAccountAccess;
+  const isActivationPending = hasAccountAccess && !hasAnyAccess;
   const currentTier = session?.subscription?.tier ?? null;
-  const isBasicTier = hasAnyAccess && currentTier === "basic";
-  const hasPremiumAccess = hasAnyAccess && currentTier === "premium";
+  const isBasicTier = canEnterApp && currentTier === "basic";
+  const hasPremiumAccess = canEnterApp && currentTier === "premium";
   const isTrialing =
     session?.subscription?.status === "trialing" && hasPremiumAccess;
   const trialEndsAt = isTrialing
@@ -321,8 +325,11 @@ function App() {
     handleGoBack,
   } = useOnboarding({
     authLoading,
-    hasAnyAccess,
+    hasAnyAccess: canEnterApp,
   });
+
+  const [showVoiceToCodeOnboarding, setShowVoiceToCodeOnboarding] =
+    useState(false);
 
   const [showFirstLaunchHint, setShowFirstLaunchHint] = useState(
     () => !localStorage.getItem("vt.firstUseHintShown"),
@@ -416,6 +423,16 @@ function App() {
     updateSetting,
   });
 
+  // Show Voice-to-Code discovery prompt the first time user dictates in a code editor
+  useEffect(() => {
+    const unlisten = listen("voice-to-code-onboarding", () => {
+      setShowVoiceToCodeOnboarding(true);
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
   // Initialize RTL direction when language changes
   useEffect(() => {
     initializeRTL(i18n.language);
@@ -453,6 +470,35 @@ function App() {
     refreshOutputDevices,
     hasCompletedPostOnboardingInit,
   ]);
+
+  useEffect(() => {
+    if (!isActivationPending) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    let timer: number | undefined;
+
+    const refreshPendingActivation = async () => {
+      if (cancelled || attempts >= 12) return;
+      attempts += 1;
+      try {
+        await refreshSession();
+      } catch (error) {
+        console.warn("Pending activation refresh failed:", error);
+      }
+
+      if (!cancelled && attempts < 12) {
+        timer = window.setTimeout(refreshPendingActivation, 5000);
+      }
+    };
+
+    void refreshPendingActivation();
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [isActivationPending, refreshSession]);
 
   useEffect(() => {
     const initializeWindowSize = async () => {
@@ -519,7 +565,7 @@ function App() {
     );
   }
 
-  if (!session || !hasAnyAccess) {
+  if (!session || !canEnterApp) {
     return (
       <div
         style={{
@@ -633,6 +679,15 @@ function App() {
           onLogout={handleLogout}
           onOpenBillingPortal={handleOpenBillingPortal}
         />
+        {isActivationPending ? (
+          <div className="activation-banner" role="status">
+            <span className="activation-banner-dot" />
+            <span>
+              Activation du compte en arriere-plan. Vous pouvez deja entrer dans
+              Vocalype.
+            </span>
+          </div>
+        ) : null}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-text focus:rounded-lg focus:ring-2 focus:ring-logo-primary focus:outline-none text-sm font-medium"
@@ -714,6 +769,15 @@ function App() {
             </div>
           </main>
         </div>
+      {showVoiceToCodeOnboarding && (
+        <VoiceToCodeOnboarding
+          onDismiss={() => setShowVoiceToCodeOnboarding(false)}
+          onOpenSettings={(section) => {
+            setCurrentSection(section as SidebarSection);
+            setShowVoiceToCodeOnboarding(false);
+          }}
+        />
+      )}
       </div>
     </PlanContext.Provider>
   );

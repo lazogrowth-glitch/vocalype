@@ -11,7 +11,7 @@ use crate::TranscriptionCoordinator;
 use log::debug;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 pub(super) struct PostProcessOutcome {
     pub final_text: String,
@@ -144,6 +144,14 @@ pub(super) async fn process_transcription_text(
         .as_ref()
         .map(|ctx| ctx.category.skip_post_processing())
         .unwrap_or(false);
+
+    // First time the user dictates in a code editor → show the discovery prompt.
+    if is_code_context && !settings.voice_to_code_onboarding_done {
+        let _ = app.emit("voice-to-code-onboarding", ());
+        let mut s = crate::settings::get_settings(app);
+        s.voice_to_code_onboarding_done = true;
+        crate::settings::write_settings(app, s);
+    }
 
     let mode = decide_post_process_mode(
         snippet_matched,

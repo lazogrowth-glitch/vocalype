@@ -639,16 +639,31 @@ pub(crate) async fn voice_to_code_completion(
     settings: &AppSettings,
     transcription: &str,
 ) -> Option<String> {
-    let model = settings.voice_to_code_model.trim().to_string();
-    if model.is_empty() {
-        debug!("Voice-to-Code skipped: no model configured");
+    // Use the active post-process provider so no extra setup is needed.
+    // voice_to_code_model is an optional override; falls back to the
+    // provider's already-configured model.
+    let provider = settings.active_post_process_provider().cloned()?;
+
+    let model = {
+        let override_model = settings.voice_to_code_model.trim().to_string();
+        if override_model.is_empty() {
+            settings
+                .post_process_models
+                .get(&provider.id)
+                .cloned()
+                .unwrap_or_default()
+        } else {
+            override_model
+        }
+    };
+
+    if model.trim().is_empty() {
+        debug!(
+            "Voice-to-Code skipped: no model configured for provider '{}'",
+            provider.id
+        );
         return None;
     }
-
-    let provider = settings
-        .post_process_provider("ollama")
-        .cloned()
-        .or_else(|| settings.post_process_provider("custom").cloned())?;
 
     let api_key = settings
         .post_process_api_keys

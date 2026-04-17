@@ -11,6 +11,7 @@ import type {
 import { useSettings } from "../../../hooks/useSettings";
 import { ToggleSwitch } from "../../ui/ToggleSwitch";
 import { Button } from "../../ui/Button";
+import { VoiceToCode } from "./VoiceToCode";
 
 const CATEGORY_OPTIONS: AppContextCategory[] = [
   "code",
@@ -374,6 +375,10 @@ export const AppContextSettings: React.FC = () => {
             })}
           </li>
         </ul>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <VoiceToCode />
       </div>
     </div>
   );

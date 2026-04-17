@@ -399,7 +399,7 @@ Model outputs "Mitchell Gurley" instead of "Mitchell Gourley" (Australian Paraly
 - Add regex: `r"(?i)\bGurley\b"` → `"Gourley"` — LOW PRIORITY (Gurley is also a real surname)
 - Evidence: fleurs_pt_0320
 
-### E15 [ ] Martelly (PT)
+### E15 [DONE v] Martelly (PT)
 Model outputs "Marteli" instead of "Martelly" (Haitian president).
 - Add regex: `r"(?i)\bMarteli\b"` → `"Martelly"`
 - Evidence: omitted_terms PT

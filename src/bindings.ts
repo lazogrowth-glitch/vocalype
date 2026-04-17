@@ -586,6 +586,12 @@ async checkAppleIntelligenceAvailable() : Promise<boolean> {
     return await TAURI_INVOKE("check_apple_intelligence_available");
 },
 /**
+ * Check whether Ollama is running locally and return the list of available models.
+ */
+async checkOllamaStatus() : Promise<OllamaStatus> {
+    return await TAURI_INVOKE("check_ollama_status");
+},
+/**
  * Try to initialize Enigo (keyboard/mouse simulation).
  * On macOS, this will return an error if accessibility permissions are not granted.
  */
@@ -1718,7 +1724,20 @@ auto_learn_dictionary?: boolean;
 /**
  * Automatically pause media players (Spotify, etc.) during recording.
  */
-auto_pause_media?: boolean }
+auto_pause_media?: boolean;
+/**
+ * When true, dictation in code editors is sent to a local LLM (Ollama)
+ * and the result is pasted as formatted code instead of raw text.
+ */
+voice_to_code_enabled?: boolean;
+/**
+ * Model name to use for Voice-to-Code (e.g. "devstral", "ministral-3:8b").
+ */
+voice_to_code_model?: string;
+/**
+ * Set to true after the Voice-to-Code discovery prompt has been shown once.
+ */
+voice_to_code_onboarding_done?: boolean }
 export type AppTranscriptionContext = { 
 /**
  * Stable process identifier: `.exe` filename on Windows (e.g. `"code.exe"`).
@@ -1820,6 +1839,7 @@ export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"
 export type NoteEntry = { id: number; title: string; content: string; category: string; is_pinned: boolean; is_archived: boolean; summary: string; action_items: string; created_at: number; updated_at: number }
 export type NpuKind = "none" | "qualcomm" | "intel" | "amd" | "unknown"
+export type OllamaStatus = { available: boolean; models: string[] }
 export type OverlayPosition = "none" | "top" | "bottom"
 export type ParakeetDiagnosticsSnapshot = { active_session: ParakeetSessionDiagnostics | null; recent_sessions: ParakeetSessionDiagnostics[] }
 export type ParakeetFailureMode = "healthy" | "underchunking_long_utterance" | "overtrim_overlap" | "missing_word_timestamps" | "retry_recovered_chunk" | "final_chunk_hallucination" | "low_audio_density" | "boundary_word_loss"

@@ -183,6 +183,29 @@ body {
   background: transparent;
 }
 
+.activation-banner {
+  margin: 0 14px 10px;
+  border: 1px solid rgba(213, 180, 91, 0.2);
+  border-radius: 8px;
+  background: rgba(213, 180, 91, 0.09);
+  color: rgba(247, 241, 231, 0.82);
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.activation-banner-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #d5b45b;
+  box-shadow: 0 0 0 4px rgba(213, 180, 91, 0.12);
+  flex: 0 0 auto;
+}
+
 .app-main {
   position: relative;
   flex: 1;

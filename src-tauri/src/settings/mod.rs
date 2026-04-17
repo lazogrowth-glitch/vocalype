@@ -572,6 +572,10 @@ pub struct AppSettings {
     /// Applies to the "ollama" provider.
     #[serde(default)]
     pub voice_to_code_model: String,
+    /// Set to true after the Voice-to-Code discovery prompt has been shown
+    /// once, so it never appears again.
+    #[serde(default)]
+    pub voice_to_code_onboarding_done: bool,
 }
 
 fn default_model() -> String {
@@ -1428,6 +1432,7 @@ pub fn get_default_settings() -> AppSettings {
         speaking_rate_pauses: Vec::new(),
         voice_to_code_enabled: false,
         voice_to_code_model: String::new(),
+        voice_to_code_onboarding_done: false,
     }
 }
 

@@ -75,6 +75,15 @@ function Write-Step($msg) {
     Write-Host "========================================" -ForegroundColor Cyan
 }
 
+function Get-SrcTauriDiffSnapshot() {
+    Push-Location $REPO
+    try {
+        return (git diff -- src-tauri 2>$null) -join "`n"
+    } finally {
+        Pop-Location
+    }
+}
+
 function Run-Eval($manifest, $label) {
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $report = "$REPORTS_DIR\$label-$timestamp.json"
@@ -200,14 +209,14 @@ function Get-NextTask() {
     }
 }
 
-# Marque la tache courante comme DONE ou REJECTED dans la liste
+# Marque la tache courante comme DONE ou REJECTED dans la liste.
+# On ne marque plus SKIPPED: si une tache bloque, elle reste ouverte.
 function Set-TaskStatus($taskId, $status) {
-    # status: "DONE" -> "[DONE v]", "REJECTED" -> "[REJECTED x]", "SKIPPED" -> "[SKIPPED -]"
+    # status: "DONE" -> "[DONE v]", "REJECTED" -> "[REJECTED x]"
     $marker = switch ($status) {
         "DONE"     { "[DONE v]" }
         "REJECTED" { "[REJECTED x]" }
-        "SKIPPED"  { "[SKIPPED -]" }
-        default    { "[DONE v]" }
+        default    { "[ ]" }
     }
     $content = Get-Content $TASK_LIST_FILE -Raw -Encoding UTF8
     # Replace "### ID [ ]" with "### ID MARKER"
@@ -231,57 +240,104 @@ function Apply-RegexTask($task) {
     # L'ancienne methode matchait r" au milieu des descriptions
     # (ex: "super predateur" → r" a la fin de prédateur + guillemet)
     # ---------------------------------------------------------------
-    $addLine = ($body -split "`n") | Where-Object { $_ -match '^\s*-\s+Add' } | Select-Object -First 1
+    $addLine = ($body -split "`n") | Where-Object {
+        $_ -match '^\s*-\s+(Add|In\s+\w+\s+branch:\s+add\s+regex)'
+    } | Select-Object -First 1
     if (-not $addLine) {
+        if ($body -match '(?i)\b(SKIP|too risky|too vague|already|covered|addressed|low priority|leave for now|same as)\b') {
+            Write-Host "  Apply-RegexTask: $taskId est note comme deja couvert/non-actionnable, marque DONE" -ForegroundColor Yellow
+            return "ALREADY"
+        }
         Write-Host "  Apply-RegexTask: pas de ligne '- Add' dans $taskId" -ForegroundColor Yellow
         return $false
     }
 
-    # Extraire le pattern: premier r"..." dans la ligne Add
-    $patMatch = [regex]::Match($addLine, 'r"([^"]+)"')
-    if (-not $patMatch.Success) {
+    # Extraire chaque paire r"pattern" -> "replacement" depuis la ligne Add.
+    # Certaines taches (ex: C03) contiennent deux regex sur la meme ligne.
+    $patternMatches = [regex]::Matches($addLine, 'r"([^"]+)"')
+    if ($patternMatches.Count -lt 1) {
+        if ($body -match '(?i)\b(SKIP|too risky|too vague|already|covered|addressed|low priority|leave for now|same as|verify)\b') {
+            Write-Host "  Apply-RegexTask: $taskId est note comme deja couvert/non-actionnable, marque DONE" -ForegroundColor Yellow
+            return "ALREADY"
+        }
         Write-Host "  Apply-RegexTask: pas de pattern r`"...`" dans: $addLine" -ForegroundColor Yellow
         return $false
     }
-    $pattern = $patMatch.Groups[1].Value
 
-    # ---------------------------------------------------------------
-    # BUG FIX 2: Extraire le remplacement = DERNIER "..." dans la ligne
-    # L'ancienne methode utilisait [A-Za-z0-9] qui stoppait sur é, ó, etc.
-    # ---------------------------------------------------------------
-    $allQuoted = [regex]::Matches($addLine, '"([^"]+)"')
-    if ($allQuoted.Count -lt 2) {
-        Write-Host "  Apply-RegexTask: pas assez de guillemets dans: $addLine" -ForegroundColor Yellow
-        return $false
+    $regexPairs = @()
+    foreach ($patMatch in $patternMatches) {
+        $tail = $addLine.Substring($patMatch.Index + $patMatch.Length)
+        $replacementMatch = [regex]::Match($tail, '"([^"]*)"')
+        if (-not $replacementMatch.Success) {
+            if ($body -match '(?i)\b(SKIP|too risky|too vague|already|covered|addressed|low priority|leave for now|same as)\b') {
+                Write-Host "  Apply-RegexTask: $taskId est note comme deja couvert/non-actionnable, marque DONE" -ForegroundColor Yellow
+                return "ALREADY"
+            }
+            Write-Host "  Apply-RegexTask: pas de remplacement pour pattern $($patMatch.Groups[1].Value) dans: $addLine" -ForegroundColor Yellow
+            return $false
+        }
+        $regexPairs += [pscustomobject]@{
+            Pattern = $patMatch.Groups[1].Value
+            Replacement = $replacementMatch.Groups[1].Value.Trim()
+        }
     }
-    $replacement = $allQuoted[$allQuoted.Count - 1].Groups[1].Value.Trim()
-
-    # ---------------------------------------------------------------
-    # BUG FIX 3: Routing langue base sur le PREFIXE de l'ID de tache
-    # L'ancienne methode cherchait "FR branch" dans le body (absent)
     # ---------------------------------------------------------------
     $groupLetter = $taskId[0]
     $targetFuncName = switch ($groupLetter) {
         'D' { "normalize_parakeet_french_artifacts" }
+        'J' { "normalize_parakeet_french_artifacts" }
         'C' { "normalize_parakeet_spanish_artifacts" }
+        'I' { "normalize_parakeet_spanish_artifacts" }
         'E' { "normalize_parakeet_portuguese_artifacts" }
+        'F' {
+            $taskNum = [int]($taskId -replace '[^0-9]', '')
+            if ($taskNum -eq 3) { "normalize_parakeet_portuguese_artifacts" }
+            elseif ($taskNum -eq 4) { "normalize_parakeet_french_artifacts" }
+            else { "normalize_parakeet_english_artifacts" }
+        }
+        'G' {
+            # G01=ES, G02/G03=PT, G04/G05 already skipped
+            $taskNum = [int]($taskId -replace '[^0-9]', '')
+            if ($taskNum -eq 1) { "normalize_parakeet_spanish_artifacts" }
+            else { "normalize_parakeet_portuguese_artifacts" }
+        }
         default { "normalize_parakeet_english_artifacts" }
     }
 
-    # -- Nom de la variable statique
-    $staticName = ($taskId -replace '[^A-Za-z0-9]', '_').ToUpper() + "_PATTERN"
+    # -- Noms des variables statiques
+    $baseStaticName = ($taskId -replace '[^A-Za-z0-9]', '_').ToUpper() + "_PATTERN"
+    $staticNames = @()
+    for ($idx = 0; $idx -lt $regexPairs.Count; $idx++) {
+        if ($regexPairs.Count -eq 1) {
+            $staticNames += $baseStaticName
+        } else {
+            $staticNames += "${baseStaticName}_$($idx + 1)"
+        }
+    }
 
     # -- Lire le fichier
     $content = Get-Content $rustFile -Raw -Encoding UTF8
 
-    # Verifier que le pattern n'existe pas deja
-    if ($content.Contains($staticName)) {
-        Write-Host "  Apply-RegexTask: $staticName deja present, skip" -ForegroundColor Yellow
-        return $false
+    # Verifier que les statics n'existent pas deja
+    $allStaticsAlreadyPresent = $true
+    foreach ($staticName in $staticNames) {
+        if (-not $content.Contains($staticName)) {
+            $allStaticsAlreadyPresent = $false
+            break
+        }
+    }
+    if ($allStaticsAlreadyPresent) {
+        Write-Host "  Apply-RegexTask: statics deja presents pour $taskId, deja fait" -ForegroundColor Yellow
+        return "ALREADY"
     }
 
     # -- ETAPE 1: inserer le static avant "// WiFi standard:" (ancre stable globale)
-    $staticDecl = "// $taskId`: $($task.Title)`nstatic ${staticName}: Lazy<Regex> =`n    Lazy::new(|| Regex::new(r`"$pattern`").unwrap());`n"
+    $staticDecl = ""
+    for ($idx = 0; $idx -lt $regexPairs.Count; $idx++) {
+        $staticName = $staticNames[$idx]
+        $pattern = $regexPairs[$idx].Pattern
+        $staticDecl += "// $taskId`: $($task.Title)`nstatic ${staticName}: Lazy<Regex> =`n    Lazy::new(|| Regex::new(r`"$pattern`").unwrap());`n"
+    }
     $anchor1 = "// WiFi standard: model hears"
     if (-not $content.Contains($anchor1)) {
         $anchor1 = "static WIFI_802_MISREAD_PATTERN"
@@ -294,7 +350,12 @@ function Apply-RegexTask($task) {
 
     # -- ETAPE 2: inserer l'appel dans la bonne fonction
     # Strategie: trouver la fonction cible, puis inserer apres sa premiere ligne "let mut normalized ="
-    $applyLine = "    normalized = ${staticName}.replace_all(" + '&' + "normalized, `"$replacement`").to_string();"
+    $applyLines = ""
+    for ($idx = 0; $idx -lt $regexPairs.Count; $idx++) {
+        $staticName = $staticNames[$idx]
+        $replacement = $regexPairs[$idx].Replacement
+        $applyLines += "    normalized = ${staticName}.replace_all(" + '&' + "normalized, `"$replacement`").to_string();`n"
+    }
 
     $fnIdx = $content.IndexOf("pub fn $targetFuncName")
     if ($fnIdx -lt 0) {
@@ -307,10 +368,13 @@ function Apply-RegexTask($task) {
         Write-Host "  Apply-RegexTask: 'let mut normalized' introuvable dans $targetFuncName" -ForegroundColor Yellow
         return $false
     }
+    # $lineEnd est la position du \n dans $afterFn (absolu depuis debut de la fn)
+    # $insertPos = debut_fn + lineEnd + 1  (juste apres le \n de la ligne normalized)
+    # BUG PRECEDENT: $fnIdx + $nmIdx + $lineEnd comptait $nmIdx deux fois
     $lineEnd   = $afterFn.IndexOf("`n", $nmIdx)
     if ($lineEnd -lt 0) { $lineEnd = $afterFn.Length - 1 }
-    $insertPos = $fnIdx + $nmIdx + $lineEnd + 1
-    $content   = $content.Substring(0, $insertPos) + "    " + $applyLine + "`n" + $content.Substring($insertPos)
+    $insertPos = $fnIdx + $lineEnd + 1
+    $content   = $content.Substring(0, $insertPos) + $applyLines + $content.Substring($insertPos)
 
     # -- Verifier que le contenu a bien change
     $originalContent = Get-Content $rustFile -Raw -Encoding UTF8
@@ -323,9 +387,11 @@ function Apply-RegexTask($task) {
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($rustFile, $content, $utf8NoBom)
     Write-Host "  Apply-RegexTask: $taskId applique -> $targetFuncName" -ForegroundColor Green
-    Write-Host "    pattern     : $pattern" -ForegroundColor DarkGray
-    Write-Host "    replacement : $replacement" -ForegroundColor DarkGray
-    return $true
+    foreach ($pair in $regexPairs) {
+        Write-Host "    pattern     : $($pair.Pattern)" -ForegroundColor DarkGray
+        Write-Host "    replacement : $($pair.Replacement)" -ForegroundColor DarkGray
+    }
+    return "APPLIED"
 }
 
 # ---------------------------------------------------------------
@@ -381,6 +447,10 @@ function Apply-ParamTask($task) {
 
     # Verifier que la valeur ancienne existe
     if ($content.IndexOf($oldValue) -lt 0) {
+        if ($content.IndexOf($newValue) -ge 0) {
+            Write-Host "  Apply-ParamTask: '$newValue' deja present dans $([System.IO.Path]::GetFileName($rustFile)), deja fait" -ForegroundColor Yellow
+            return "ALREADY"
+        }
         Write-Host "  Apply-ParamTask: '$oldValue' non trouve dans $([System.IO.Path]::GetFileName($rustFile))" -ForegroundColor Yellow
         return $false
     }
@@ -398,12 +468,16 @@ function Apply-ParamTask($task) {
     Write-Host "  Apply-ParamTask: $id applique" -ForegroundColor Green
     Write-Host "    OLD: $oldValue" -ForegroundColor DarkGray
     Write-Host "    NEW: $newValue" -ForegroundColor DarkGray
-    return $true
+    return "APPLIED"
 }
 
 # Build-Prompt: uniquement pour les taches H (recovery) qui passent encore par Aider
 function Build-Prompt($iteration, $analysis, $historyText, $task) {
-    $targetFileForTask = "src-tauri/src/actions/transcribe.rs"
+    $targetFileForTask = if ($task -and $task.Id -match "^H") {
+        "src-tauri/src/actions/transcribe.rs et src-tauri/examples/parakeet_pipeline_eval.rs"
+    } else {
+        "src-tauri/src/actions/transcribe.rs"
+    }
 
     $taskDesc = if ($task) { "## TACHE: $($task.Id) -- $($task.Title)`n`n$($task.Body)" } else { "TOUTES LES TACHES SONT COMPLETES." }
 
@@ -520,10 +594,10 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
 
     Write-Host "  Fichier cible: $targetFile" -ForegroundColor Gray
 
-    # Snapshot avant modification
-    Push-Location $REPO
-    $filesBefore = (git diff --name-only 2>$null) | Where-Object { $_ -match "^src-tauri/" }
-    Pop-Location
+    # Snapshot avant modification. Compare le diff complet, pas seulement les
+    # noms de fichiers, sinon une nouvelle modif dans un fichier deja dirty
+    # peut etre classee NO_CHANGE par erreur.
+    $diffBefore = Get-SrcTauriDiffSnapshot
 
     # ---- Appliquer la tache ----
     # Groupes A-G, I-J : insertion regex directe dans parakeet_text.rs (Apply-RegexTask)
@@ -532,22 +606,34 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     if ($currentTask.Id -match "^[A-GI-J]") {
         Write-Step "Application directe regex (PowerShell) - $($currentTask.Id)"
         $applied = Apply-RegexTask $currentTask
-        if (-not $applied) {
-            $msg = "Iter ${i} [$($currentTask.Id)]: SKIPPED - Apply-RegexTask n'a pas pu appliquer."
+        if ($applied -eq "ALREADY") {
+            $msg = "Iter ${i} [$($currentTask.Id)]: DEJA FAIT - marque DONE."
             Write-Host "  $msg" -ForegroundColor Yellow
             $history.Add($msg)
-            Set-TaskStatus $currentTask.Id "SKIPPED"
+            Set-TaskStatus $currentTask.Id "DONE"
             continue
+        }
+        if (-not $applied) {
+            $msg = "Iter ${i} [$($currentTask.Id)]: BLOQUE - Apply-RegexTask n'a pas pu appliquer. Tache gardee ouverte."
+            Write-Host "  $msg" -ForegroundColor Yellow
+            $history.Add($msg)
+            break
         }
     } elseif ($currentTask.Id -match "^[K-U]") {
         Write-Step "Application directe parametre (PowerShell) - $($currentTask.Id)"
         $applied = Apply-ParamTask $currentTask
-        if (-not $applied) {
-            $msg = "Iter ${i} [$($currentTask.Id)]: SKIPPED - Apply-ParamTask n'a pas pu appliquer."
+        if ($applied -eq "ALREADY") {
+            $msg = "Iter ${i} [$($currentTask.Id)]: DEJA FAIT - marque DONE."
             Write-Host "  $msg" -ForegroundColor Yellow
             $history.Add($msg)
-            Set-TaskStatus $currentTask.Id "SKIPPED"
+            Set-TaskStatus $currentTask.Id "DONE"
             continue
+        }
+        if (-not $applied) {
+            $msg = "Iter ${i} [$($currentTask.Id)]: BLOQUE - Apply-ParamTask n'a pas pu appliquer. Tache gardee ouverte."
+            Write-Host "  $msg" -ForegroundColor Yellow
+            $history.Add($msg)
+            break
         }
     } else {
         # Groupe H: Aider
@@ -564,9 +650,13 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         $aiderIgnore = "$REPO\.aiderignore"
         [System.IO.File]::WriteAllText($aiderIgnore, "src-tauri/src/runtime/parakeet_quality.rs`nsrc-tauri/src/runtime/chunking.rs`nsrc-tauri/src/runtime/parakeet_text.rs", $utf8NoBom)
         Write-Step "Aider - iteration ${i} (groupe H)"
+        $aiderFiles = @("--file", $targetFile)
+        if ($currentTask.Id -match "^H") {
+            $aiderFiles += @("--file", "src-tauri/examples/parakeet_pipeline_eval.rs")
+        }
         Push-Location $REPO
         try {
-            & $AIDER --model ollama/qwen2.5-coder:7b-instruct-q8_0 --edit-format diff --no-auto-commits --yes-always --no-show-model-warnings --no-browser --no-gui --map-tokens 0 --read AGENT_MISSION.md --file $targetFile --message-file agent_prompt_temp.txt
+            & $AIDER --model ollama/qwen2.5-coder:7b-instruct-q8_0 --edit-format diff --no-auto-commits --yes-always --no-show-model-warnings --no-browser --no-gui --map-tokens 0 --read AGENT_MISSION.md @aiderFiles --message-file agent_prompt_temp.txt
         } finally {
             Pop-Location
             Remove-Item $aiderIgnore -Force -ErrorAction SilentlyContinue
@@ -575,17 +665,16 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     }
 
     # Verifier modifications
+    $diffAfter = Get-SrcTauriDiffSnapshot
     Push-Location $REPO
-    $filesAfter = (git diff --name-only 2>$null) | Where-Object { $_ -match "^src-tauri/" }
+    $changedFiles = (git diff --name-only -- src-tauri 2>$null) | Where-Object { $_ -match "^src-tauri/" }
     Pop-Location
-    $changedFiles = $filesAfter | Where-Object { $filesBefore -notcontains $_ }
 
-    if (-not $changedFiles -or ($changedFiles.Count -eq 0)) {
-        $msg = "Iter ${i} [$($currentTask.Id)]: Aucune modification (NO_CHANGE). Tache marquee SKIPPED."
+    if ($diffAfter -eq $diffBefore) {
+        $msg = "Iter ${i} [$($currentTask.Id)]: Aucune modification (NO_CHANGE). Tache gardee ouverte."
         Write-Host "  $msg" -ForegroundColor Yellow
         $history.Add($msg)
-        if ($currentTask) { Set-TaskStatus $currentTask.Id "SKIPPED" }
-        continue
+        break
     }
 
     Write-Host "  Fichiers modifies: $($changedFiles -join ', ')" -ForegroundColor Cyan

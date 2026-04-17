@@ -680,7 +680,7 @@ Longer window = waits more before deciding "sentence done". Fewer false splits.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms` → `FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms`
 - Hypothesis: speakers who breathe between clauses currently get split into 2 chunks
 
-### P03 [ ] Flush silence 500ms → 750ms
+### P03 [SKIPPED -] Flush silence 500ms → 750ms
 Even longer. Good for slower speakers or those with pauses mid-sentence.
 - Apply: `FLUSH_SILENCE_SAMPLES: usize = 6_400; // 400 ms` → `FLUSH_SILENCE_SAMPLES: usize = 12_000; // 750 ms`
 
@@ -689,7 +689,7 @@ Allow flush on shorter content. Good for single-word dictation ("delete", "enter
 - Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 8_000; // 0.5 s`
 - Hypothesis: short commands currently don't flush cleanly because 1s minimum is too long
 
-### P05 [ ] Flush min content 1.0s → 1.5s
+### P05 [DONE v] Flush min content 1.0s → 1.5s
 Require more content before flush. Prevents spurious sub-second chunks.
 - Apply: `FLUSH_MIN_CONTENT_SAMPLES: usize = 8_000; // 0.5 s` → `FLUSH_MIN_CONTENT_SAMPLES: usize = 24_000; // 1.5 s`
 
@@ -706,7 +706,7 @@ Less aggressive: only trigger recovery on clearly bad transcriptions.
 - Apply: `assembled_words_per_sec <= 1.35` → `assembled_words_per_sec <= 1.35`
 - Test if current threshold over-triggers recovery on good transcriptions
 
-### Q02 [ ] Low density 1.45 → 1.55 wps
+### Q02 [DONE v] Low density 1.45 → 1.55 wps
 More aggressive: catch more borderline transcriptions for recovery.
 - Apply: `assembled_words_per_sec <= 1.35` → `assembled_words_per_sec <= 1.55`
 - Hypothesis: some 1.5 wps transcriptions with END issues would benefit from full-audio retry

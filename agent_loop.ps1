@@ -412,6 +412,7 @@ function Apply-ParamTask($task) {
         'M' { "$REPO\src-tauri\src\managers\audio.rs" }
         'N' { "$REPO\src-tauri\src\managers\audio.rs" }
         'P' { "$REPO\src-tauri\src\runtime\chunking.rs" }
+        'H' { "$REPO\src-tauri\src\actions\transcribe.rs" }
         'Q' { "$REPO\src-tauri\src\actions\transcribe.rs" }
         'R' { "$REPO\src-tauri\src\actions\transcribe.rs" }
         'S' { "$REPO\src-tauri\src\actions\transcribe.rs" }
@@ -601,8 +602,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
 
     # ---- Appliquer la tache ----
     # Groupes A-G, I-J : insertion regex directe dans parakeet_text.rs (Apply-RegexTask)
-    # Groupes K-U      : remplacement de parametre dans fichier Rust  (Apply-ParamTask)
-    # Groupe H         : changements complexes multi-fichier           (Aider)
+    # Groupes K-U + H04/H05 : remplacement de parametre dans fichier Rust (Apply-ParamTask)
     if ($currentTask.Id -match "^[A-GI-J]") {
         Write-Step "Application directe regex (PowerShell) - $($currentTask.Id)"
         $applied = Apply-RegexTask $currentTask
@@ -619,7 +619,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
             $history.Add($msg)
             break
         }
-    } elseif ($currentTask.Id -match "^[K-U]") {
+    } elseif ($currentTask.Id -match "^[HK-U]") {
         Write-Step "Application directe parametre (PowerShell) - $($currentTask.Id)"
         $applied = Apply-ParamTask $currentTask
         if ($applied -eq "ALREADY") {

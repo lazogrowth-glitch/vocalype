@@ -447,14 +447,44 @@ function Apply-ParamTask($task) {
     # Lire le fichier
     $content = Get-Content $rustFile -Raw -Encoding UTF8
 
-    # Verifier que la valeur ancienne existe
+    # Verifier que la valeur ancienne existe — avec fallback fuzzy pour les tuples (a, b, c, d)
     if ($content.IndexOf($oldValue) -lt 0) {
         if ($content.IndexOf($newValue) -ge 0) {
             Write-Host "  Apply-ParamTask: '$newValue' deja present dans $([System.IO.Path]::GetFileName($rustFile)), deja fait" -ForegroundColor Yellow
             return "ALREADY"
         }
-        Write-Host "  Apply-ParamTask: '$oldValue' non trouve dans $([System.IO.Path]::GetFileName($rustFile))" -ForegroundColor Yellow
-        return $false
+        # Fallback fuzzy: si old/new sont des tuples, construire un pattern qui ignore le champ qui change
+        $fuzzyApplied = $false
+        if ($oldValue -match '^\((.+)\)$' -and $newValue -match '^\((.+)\)$') {
+            $oldParts = $Matches[1] -split ',\s*'
+            $newInner = ([regex]::Match($newValue, '^\((.+)\)$')).Groups[1].Value
+            $newParts = $newInner -split ',\s*'
+            if ($oldParts.Count -eq $newParts.Count) {
+                $patternParts = @()
+                for ($j = 0; $j -lt $oldParts.Count; $j++) {
+                    if ($oldParts[$j].Trim() -eq $newParts[$j].Trim()) {
+                        $patternParts += [regex]::Escape($oldParts[$j].Trim())
+                    } else {
+                        $patternParts += '[0-9.]+'
+                    }
+                }
+                $fuzzyPattern = '\(' + ($patternParts -join ',\s*') + '\)'
+                if ($content -match $fuzzyPattern) {
+                    $content = $content -replace $fuzzyPattern, $newValue
+                    $fuzzyApplied = $true
+                    Write-Host "  Apply-ParamTask: fuzzy tuple match utilise pour $id" -ForegroundColor Cyan
+                }
+            }
+        }
+        if (-not $fuzzyApplied) {
+            Write-Host "  Apply-ParamTask: '$oldValue' non trouve dans $([System.IO.Path]::GetFileName($rustFile))" -ForegroundColor Yellow
+            return $false
+        }
+        # Ecrire le fichier avec le fuzzy match
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($rustFile, $content, $utf8NoBom)
+        Write-Host "  Apply-ParamTask: $id applique (fuzzy)" -ForegroundColor Green
+        return $true
     }
 
     # Remplacer (premiere occurrence seulement pour etre sur)

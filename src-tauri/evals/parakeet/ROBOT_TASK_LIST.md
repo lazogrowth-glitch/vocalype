@@ -485,7 +485,7 @@ Current threshold: 1.45 wps. Test lowering to 1.35 wps for low-density suspicion
 - Change `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35` in suspicion check
 - Run both evals, revert if regression
 
-### H04 [ ] Min duration for recovery: 5.0s instead of 6.0s
+### H04 [DONE v] Min duration for recovery: 5.0s instead of 6.0s
 Test if catching more short audio with recovery helps.
 - Apply: `!(6.0..=45.0).contains(&duration_secs)` → `!(5.0..=45.0).contains(&duration_secs)`
 

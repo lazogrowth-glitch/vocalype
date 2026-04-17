@@ -766,7 +766,7 @@ Catch more sparse final chunks. If final chunk has < 0.45 wps → try full audio
 - Apply: `final_chunk_words_per_sec <= 0.35` → `final_chunk_words_per_sec <= 0.45`
 - Directly targets: "someone speaks 12s but the last chunk only transcribed 1 word"
 
-### S02 [ ] Final chunk sparse floor 0.35 → 0.25 wps
+### S02 [DONE v] Final chunk sparse floor 0.35 → 0.25 wps
 Less aggressive — only trigger if final chunk is truly empty.
 - Apply: `final_chunk_words_per_sec <= 0.45` → `final_chunk_words_per_sec <= 0.25`
 

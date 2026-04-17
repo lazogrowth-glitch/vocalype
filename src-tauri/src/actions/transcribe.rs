@@ -190,7 +190,7 @@ fn should_attempt_full_audio_recovery(
         && summary.final_chunk_words <= 2
         && assembled_words_per_sec <= 2.5;
     let sparse_final_chunk = final_chunk_secs >= 3.0
-        && final_chunk_words_per_sec <= 0.45
+        && final_chunk_words_per_sec <= 0.25
         && assembled_words_per_sec <= 2.0;
     // Empty final chunk with any density: ending was likely cut
     let empty_final_chunk =

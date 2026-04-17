@@ -338,7 +338,7 @@ Model outputs "Sem Parks" instead of "SANParks".
 - Add regex: `r"(?i)\bsem\s+parks\b"` → `"SANParks"`
 - Evidence: fleurs_pt_0334 WER=0.182
 
-### E03 [ ] Mosassauro (PT)
+### E03 [DONE v] Mosassauro (PT)
 Model outputs "mosasauro" instead of "mosassauro" (double-s spelling in PT).
 - Add regex: `r"(?i)\bmosasauro\b"` → `"mosassauro"`
 - Evidence: fleurs_pt_0303 WER=0.158

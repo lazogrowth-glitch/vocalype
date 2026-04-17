@@ -122,8 +122,8 @@ pub static SHOULD_SHOW_MAIN_WINDOW_ON_READY: AtomicBool = AtomicBool::new(false)
 
 const MAIN_WINDOW_WIDTH: f64 = 1348.0;
 const MAIN_WINDOW_HEIGHT: f64 = 875.0;
-const MIN_MAIN_WINDOW_WIDTH: f64 = 960.0;
-const MIN_MAIN_WINDOW_HEIGHT: f64 = 624.0;
+const MIN_MAIN_WINDOW_WIDTH: f64 = 760.0;
+const MIN_MAIN_WINDOW_HEIGHT: f64 = 540.0;
 const MAX_MAIN_WINDOW_SCALE: f64 = 1.0;
 
 fn create_browser_auth_state() -> String {
@@ -168,8 +168,13 @@ fn clamp_f64(value: f64, min: f64, max: f64) -> f64 {
     value.max(min).min(max)
 }
 
-fn resolve_main_window_size(app: &AppHandle) -> (f64, f64) {
-    let fallback = (MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT);
+fn resolve_main_window_size(app: &AppHandle) -> (f64, f64, f64, f64) {
+    let fallback = (
+        MAIN_WINDOW_WIDTH,
+        MAIN_WINDOW_HEIGHT,
+        MIN_MAIN_WINDOW_WIDTH,
+        MIN_MAIN_WINDOW_HEIGHT,
+    );
     let Some(main_window) = app.get_webview_window("main") else {
         return fallback;
     };
@@ -195,24 +200,23 @@ fn resolve_main_window_size(app: &AppHandle) -> (f64, f64) {
     } else {
         design_scale
     };
-    let final_scale = clamp_f64(
-        snapped_scale,
-        MIN_MAIN_WINDOW_WIDTH / MAIN_WINDOW_WIDTH,
-        MAX_MAIN_WINDOW_SCALE,
-    );
+    let min_width = MIN_MAIN_WINDOW_WIDTH.min(work_area_width).max(1.0);
+    let min_height = MIN_MAIN_WINDOW_HEIGHT.min(work_area_height).max(1.0);
+    let min_scale = (min_width / MAIN_WINDOW_WIDTH).min(min_height / MAIN_WINDOW_HEIGHT);
+    let final_scale = clamp_f64(snapped_scale, min_scale, MAX_MAIN_WINDOW_SCALE);
 
     let width = clamp_f64(
         (MAIN_WINDOW_WIDTH * final_scale).round(),
-        MIN_MAIN_WINDOW_WIDTH,
+        min_width,
         work_area_width,
     );
     let height = clamp_f64(
         (MAIN_WINDOW_HEIGHT * final_scale).round(),
-        MIN_MAIN_WINDOW_HEIGHT,
+        min_height,
         work_area_height,
     );
 
-    (width, height)
+    (width, height, min_width, min_height)
 }
 
 fn level_filter_from_u8(value: u8) -> log::LevelFilter {
@@ -251,14 +255,7 @@ fn build_console_filter() -> env_filter::Filter {
 
 pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
-        let (width, height) = resolve_main_window_size(app);
-        let _ = main_window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
-            width: MIN_MAIN_WINDOW_WIDTH,
-            height: MIN_MAIN_WINDOW_HEIGHT,
-        })));
-        // Force the window to the correct size regardless of any cached state
-        let _ = main_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
-        let _ = main_window.center();
+        prepare_main_window_bounds(app, &main_window);
         // First, ensure the window is visible
         if let Err(e) = main_window.show() {
             log::error!("Failed to show window: {}", e);
@@ -276,6 +273,22 @@ pub(crate) fn show_main_window(app: &AppHandle) {
         }
     } else {
         log::error!("Main window not found.");
+    }
+}
+
+fn prepare_main_window_bounds(app: &AppHandle, main_window: &tauri::WebviewWindow) {
+    let (width, height, min_width, min_height) = resolve_main_window_size(app);
+    let _ = main_window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
+        width: min_width,
+        height: min_height,
+    })));
+    let _ = main_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+    let _ = main_window.center();
+}
+
+fn prepare_main_window_before_show(app: &AppHandle) {
+    if let Some(main_window) = app.get_webview_window("main") {
+        prepare_main_window_bounds(app, &main_window);
     }
 }
 
@@ -980,9 +993,9 @@ pub fn run(cli_args: CliArgs) {
             if payload.event() == tauri::webview::PageLoadEvent::Finished {
                 if SHOULD_SHOW_MAIN_WINDOW_ON_READY.load(Ordering::Relaxed) {
                     log::info!(
-                        "Main webview finished loading before frontend-ready; showing the main window so startup HTML is visible"
+                        "Main webview finished loading before frontend-ready; preparing main window bounds"
                     );
-                    show_main_window(&webview.app_handle());
+                    prepare_main_window_before_show(&webview.app_handle());
                 }
 
                 #[cfg(debug_assertions)]
@@ -1193,7 +1206,7 @@ pub fn run(cli_args: CliArgs) {
             }
             if !should_hide || !tray_available {
                 SHOULD_SHOW_MAIN_WINDOW_ON_READY.store(true, Ordering::Relaxed);
-                show_main_window(&app_handle);
+                prepare_main_window_before_show(&app_handle);
 
                 #[cfg(target_os = "windows")]
                 if main_window_needs_native_recovery(&app_handle) {

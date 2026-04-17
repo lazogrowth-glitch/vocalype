@@ -348,7 +348,7 @@ Model outputs "mosasaurus" instead of "mosassauros".
 - Add regex: `r"(?i)\bmosasaurus\b"` → `"mosassauros"`
 - Evidence: fleurs_pt_0303
 
-### E05 [ ] Pirâmide de Gizé (PT)
+### E05 [DONE v] Pirâmide de Gizé (PT)
 Model outputs "pirâmide de Zé" instead of "Pirâmide de Gizé".
 - Add regex: `r"(?i)\bpirâmide\s+de\s+Zé\b"` → `"Pirâmide de Gizé"`
 - Evidence: fleurs_pt_0337 WER=0.167

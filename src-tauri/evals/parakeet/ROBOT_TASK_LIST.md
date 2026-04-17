@@ -353,7 +353,7 @@ Model outputs "pirâmide de Zé" instead of "Pirâmide de Gizé".
 - Add regex: `r"(?i)\bpirâmide\s+de\s+Zé\b"` → `"Pirâmide de Gizé"`
 - Evidence: fleurs_pt_0337 WER=0.167
 
-### E06 [ ] Addenbrooke's hospital (PT)
+### E06 [DONE v] Addenbrooke's hospital (PT)
 Model outputs "Alden Brooks Hospital" instead of "Addenbrooke's Hospital".
 - Add regex: `r"(?i)\bAlden\s+Brooks\s+Hospital\b"` → `"Addenbrooke's Hospital"`
 - Evidence: fleurs_pt_0351 WER=0.182

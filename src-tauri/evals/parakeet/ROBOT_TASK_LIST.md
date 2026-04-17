@@ -713,7 +713,7 @@ More aggressive: catch more borderline transcriptions for recovery.
 
 ### Q03 [ ] Low density 1.45 → 1.65 wps
 Very aggressive recovery trigger. Many more samples get full-audio attempt.
-- Apply: `assembled_words_per_sec <= 1.35` → `assembled_words_per_sec <= 1.65`
+- Apply: `assembled_words_per_sec <= 1.55` → `assembled_words_per_sec <= 1.65`
 
 ### Q04 [DONE v] Severe density 1.05 → 0.95 wps
 Raise the bar for "severe" — only trigger severe path on truly sparse output.

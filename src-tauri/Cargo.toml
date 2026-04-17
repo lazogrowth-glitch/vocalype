@@ -1,6 +1,6 @@
 [package]
 name = "vocalype"
-version = "0.7.21"
+version = "0.7.22"
 description = "vocalype"
 authors = ["cjpais"]
 edition = "2021"

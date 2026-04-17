@@ -374,7 +374,7 @@ Model outputs "áreotas" (nonword) instead of "áreas remotas" (remote areas).
 - Add regex: `r"(?i)\báreotas\b"` → `"áreas remotas"`
 - Evidence: fleurs_pt_0322
 
-### E10 [ ] Presença → fix presenha (PT)
+### E10 [DONE v] Presença → fix presenha (PT)
 Model outputs "presenha" instead of "presença".
 - Add regex: `r"(?i)\bpresenha\b"` → `"presença"`
 - Evidence: fleurs_pt_0354 WER=0.286

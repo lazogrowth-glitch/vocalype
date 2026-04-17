@@ -1,5 +1,5 @@
 ﻿/* eslint-disable i18next/no-literal-string */
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   ArrowRight,
   ExternalLink,
@@ -74,6 +74,23 @@ const buttonBaseStyle: CSSProperties = {
   transition: "transform 160ms ease, opacity 160ms ease, background 160ms ease",
 };
 
+const useViewportSize = () => {
+  const [size, setSize] = useState(() => ({
+    width: typeof window === "undefined" ? 1348 : window.innerWidth,
+    height: typeof window === "undefined" ? 875 : window.innerHeight,
+  }));
+
+  useEffect(() => {
+    const handleResize = () =>
+      setSize({ width: window.innerWidth, height: window.innerHeight });
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return size;
+};
+
 export const AuthPortal = ({
   isLoading,
   isSubmitting,
@@ -84,10 +101,11 @@ export const AuthPortal = ({
   onRefreshSession,
   onLogout,
 }: AuthPortalProps) => {
-  const viewportWidth =
-    typeof window === "undefined" ? 1348 : window.innerWidth;
-  const isNarrowLayout = viewportWidth < 1180;
-  const isCompactLayout = viewportWidth < 980;
+  const viewport = useViewportSize();
+  const isNarrowLayout = viewport.width < 1180;
+  const isCompactLayout = viewport.width < 980 || viewport.height < 720;
+  const isShortLayout = viewport.height < 700;
+  const showMediaPanel = !isShortLayout;
   const [currentStep, setCurrentStep] = useState<AuthStep>("sign-up");
   const [browserBusy, setBrowserBusy] = useState<"signup" | "login" | null>(
     null,
@@ -311,11 +329,11 @@ export const AuthPortal = ({
         style={{
           width: "100%",
           height: "100%",
-          padding: isCompactLayout ? 10 : 12,
+          padding: isCompactLayout ? 8 : 12,
           boxSizing: "border-box",
           display: "grid",
-          gridTemplateRows: isCompactLayout ? "72px 1fr" : "84px 1fr",
-          gap: isCompactLayout ? 10 : 12,
+          gridTemplateRows: isCompactLayout ? "56px 1fr" : "84px 1fr",
+          gap: isCompactLayout ? 8 : 12,
         }}
       >
         <header
@@ -345,10 +363,12 @@ export const AuthPortal = ({
             gridTemplateColumns: isNarrowLayout
               ? "minmax(0, 1fr)"
               : "minmax(420px, 480px) minmax(0, 1fr)",
-            gridTemplateRows: isNarrowLayout
-              ? "minmax(0, auto) minmax(320px, 38vh)"
-              : undefined,
+            gridTemplateRows:
+              showMediaPanel && isNarrowLayout
+                ? "minmax(0, auto) minmax(320px, 38vh)"
+                : undefined,
             gap: isCompactLayout ? 10 : 12,
+            overflow: "hidden",
           }}
         >
           <section
@@ -359,7 +379,7 @@ export const AuthPortal = ({
               background:
                 "radial-gradient(circle at top left, rgba(201,168,76,0.12), transparent 34%), #0a0908",
               padding: isCompactLayout
-                ? "18px 18px 20px"
+                ? "14px 16px 16px"
                 : isNarrowLayout
                   ? "22px 24px 22px"
                   : "24px 34px 24px",
@@ -385,14 +405,14 @@ export const AuthPortal = ({
                 alignItems: isCompactLayout ? "flex-start" : "center",
                 flexDirection: isCompactLayout ? "column" : "row",
                 justifyContent: "space-between",
-                marginBottom: 20,
+                marginBottom: isCompactLayout ? 12 : 20,
                 gap: isCompactLayout ? 10 : 12,
               }}
             >
               <div
                 style={{
                   fontFamily: "'Syne', sans-serif",
-                  fontSize: isCompactLayout ? 26 : 32,
+                  fontSize: isCompactLayout ? 24 : 32,
                   fontWeight: 800,
                   letterSpacing: "-0.04em",
                   color: "#f6efe4",
@@ -418,7 +438,7 @@ export const AuthPortal = ({
             <div style={{ marginBottom: 16 }}>
               <div
                 style={{
-                  marginBottom: 12,
+                  marginBottom: isCompactLayout ? 8 : 12,
                   fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: "0.22em",
@@ -433,7 +453,7 @@ export const AuthPortal = ({
                   margin: 0,
                   marginBottom: 12,
                   fontFamily: "'Syne', sans-serif",
-                  fontSize: isCompactLayout ? 32 : isNarrowLayout ? 38 : 44,
+                  fontSize: isCompactLayout ? 28 : isNarrowLayout ? 38 : 44,
                   lineHeight: 0.95,
                   letterSpacing: "-0.05em",
                   color: "#f7f1e7",
@@ -444,8 +464,8 @@ export const AuthPortal = ({
               <p
                 style={{
                   margin: 0,
-                  fontSize: isCompactLayout ? 14 : 16,
-                  lineHeight: 1.55,
+                  fontSize: isCompactLayout ? 13 : 16,
+                  lineHeight: isCompactLayout ? 1.45 : 1.55,
                   color: "rgba(243,236,223,0.66)",
                   maxWidth: isNarrowLayout ? "100%" : 372,
                 }}
@@ -556,7 +576,7 @@ export const AuthPortal = ({
             ) : (
               <div
                 style={{
-                  marginBottom: 22,
+                  marginBottom: isCompactLayout ? 14 : 22,
                   display: "flex",
                   flexWrap: "wrap",
                   gap: 10,
@@ -593,7 +613,7 @@ export const AuthPortal = ({
                     flexDirection: isCompactLayout ? "column" : "row",
                     justifyContent: "space-between",
                     gap: 10,
-                    marginBottom: 10,
+                    marginBottom: isCompactLayout ? 6 : 10,
                   }}
                 >
                   <button
@@ -636,8 +656,8 @@ export const AuthPortal = ({
                 <p
                   style={{
                     margin: "auto 0 0",
-                    fontSize: 13,
-                    lineHeight: 1.7,
+                    fontSize: isCompactLayout ? 12 : 13,
+                    lineHeight: isCompactLayout ? 1.55 : 1.7,
                     color: "rgba(243,236,223,0.42)",
                   }}
                 >
@@ -689,7 +709,9 @@ export const AuthPortal = ({
             )}
           </section>
 
-          <ProductMediaPanel step={activeStep} compact={isNarrowLayout} />
+          {showMediaPanel ? (
+            <ProductMediaPanel step={activeStep} compact={isNarrowLayout} />
+          ) : null}
         </div>
       </div>
     </div>

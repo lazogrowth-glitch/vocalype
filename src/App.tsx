@@ -183,7 +183,7 @@ function App() {
     licenseState?.state === "online_valid" ||
     licenseState?.state === "offline_valid";
   const hasAccountAccess = session?.subscription.has_access === true;
-  const canEnterApp = hasAnyAccess || hasAccountAccess;
+  const canEnterApp = hasAnyAccess;
   const isActivationPending = hasAccountAccess && !hasAnyAccess;
   const currentTier = session?.subscription?.tier ?? null;
   const isBasicTier = canEnterApp && currentTier === "basic";

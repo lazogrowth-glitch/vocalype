@@ -343,7 +343,7 @@ Model outputs "mosasauro" instead of "mosassauro" (double-s spelling in PT).
 - Add regex: `r"(?i)\bmosasauro\b"` → `"mosassauro"`
 - Evidence: fleurs_pt_0303 WER=0.158
 
-### E04 [ ] Mosassauros plural (PT)
+### E04 [DONE v] Mosassauros plural (PT)
 Model outputs "mosasaurus" instead of "mosassauros".
 - Add regex: `r"(?i)\bmosasaurus\b"` → `"mosassauros"`
 - Evidence: fleurs_pt_0303

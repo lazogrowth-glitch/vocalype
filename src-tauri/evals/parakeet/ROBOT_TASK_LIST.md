@@ -432,7 +432,7 @@ Extend D15 to cover more years. Add:
 - Add regex: `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]dix\b"` → `"1990"` and `r"(?i)\bmille\s+neuf\s+cent\s+soixante\b"` → `"1960"` and `r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt\b"` → `"1980"`
 - Evidence: general FR number patterns
 
-### F05 [ ] 802.11 space variants (already partially covered)
+### F05 [DONE v] 802.11 space variants (already partially covered)
 Ensure `"802 .11"` (space before dot) normalizes to `"802.11"`. The existing PUNCT_SPACE_PATTERN in FR covers this. Verify it also runs in EN branch.
 - Add regex: `r"\b802\s+\.\s*11\b"` → `"802.11"`
 - Evidence: fleurs_fr results improved after FR punct fix

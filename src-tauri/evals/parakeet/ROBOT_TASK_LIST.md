@@ -489,7 +489,7 @@ Current threshold: 1.45 wps. Test lowering to 1.35 wps for low-density suspicion
 Test if catching more short audio with recovery helps.
 - Apply: `!(6.0..=45.0).contains(&duration_secs)` → `!(5.0..=45.0).contains(&duration_secs)`
 
-### H05 [ ] Max duration for recovery: 50s instead of 45s
+### H05 [DONE v] Max duration for recovery: 50s instead of 45s
 Allow recovery for slightly longer samples.
 - Apply: `!(5.0..=45.0).contains(&duration_secs)` → `!(5.0..=50.0).contains(&duration_secs)`
 

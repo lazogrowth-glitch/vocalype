@@ -173,7 +173,7 @@ fn should_attempt_full_audio_recovery(
     assembled: &str,
 ) -> bool {
     let duration_secs = sample_count as f32 / 16_000.0;
-    if !(5.0..=45.0).contains(&duration_secs) {
+    if !(5.0..=50.0).contains(&duration_secs) {
         return false;
     }
 

@@ -213,7 +213,7 @@ fn should_promote_full_audio_recovery(
     let duration_secs = sample_count as f32 / 16_000.0;
     let recovered_words_per_sec = recovered_words as f32 / duration_secs.max(0.1);
 
-    recovered_words >= assembled_words + 2
+    recovered_words >= assembled_words + 4
         && (recovered_words as f32) >= (assembled_words as f32 * 1.10)
         && (0.3..=5.5).contains(&recovered_words_per_sec)
         && is_viable_preview_rescue_candidate(recovered)

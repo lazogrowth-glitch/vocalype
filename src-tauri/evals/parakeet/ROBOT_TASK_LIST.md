@@ -736,7 +736,7 @@ Easier to promote recovery. Accept recovery if it adds just 2 more words.
 - Apply: `recovered_words >= assembled_words + 3` → `recovered_words >= assembled_words + 2`
 - Hypothesis: some good recoveries get discarded because they only add 2 words
 
-### R02 [ ] Promote min gain +3 words → +4 words
+### R02 [DONE v] Promote min gain +3 words → +4 words
 Harder to promote. Only replace chunked output if recovery is clearly better.
 - Apply: `recovered_words >= assembled_words + 2` → `recovered_words >= assembled_words + 4`
 

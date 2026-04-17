@@ -363,7 +363,7 @@ Model outputs "Aldritch Jelinek" instead of "Oldřich Jelínek" (Czech Paralympi
 - Add regex: `r"(?i)\bAldritch\s+Jelinek\b"` → `"Oldřich Jelínek"`
 - Evidence: fleurs_pt_0320 WER=0.200
 
-### E08 [ ] Trailing "Okay" in PT
+### E08 [DONE v] Trailing "Okay" in PT
 Model appends "Okay." as hallucination at end of PT transcription.
 - Add regex: `r"(?i)[,.]?\s*\bokay\b\s*[.!?,]*$"` → `""` (remove trailing "Okay")
 - Evidence: fleurs_pt_0322 WER=0.167 (HALL: okay, freq=2 in PT)

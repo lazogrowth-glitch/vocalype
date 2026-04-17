@@ -419,7 +419,7 @@ Remove space before/after colon in times like "11 : 35" → "11:35".
 - Add BEFORE language branch: `r"(\d{1,2})\s+:\s*(\d{2})\b"` → `"$1:$2"`
 - Evidence: ES es_0169
 
-### F03 [ ] Ordinal suffix: 11o / 16o → 11º / 16º (PT)
+### F03 [DONE v] Ordinal suffix: 11o / 16o → 11º / 16º (PT)
 Model outputs ASCII "o" instead of ordinal superscript "º".
 - In PT branch: add regex `r"\b(\d{1,2})o\b"` → `"$1º"`
 - Evidence: fleurs_pt_0320

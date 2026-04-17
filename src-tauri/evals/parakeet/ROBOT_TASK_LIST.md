@@ -535,13 +535,13 @@ Model drops one 'l' → "Duval" instead of "Duvall".
 Model says "Mouvement Mao" for "mouvement Mau". Same fix as A14 but for FR.
 - In FR branch: add regex `r"(?i)\bMao\s+mouvement\b"` → `"Mau mouvement"`
 
-### J03 [ ] Kundalini yoga (FR)
+### J03 [DONE v] Kundalini yoga (FR)
 Model omits "kundalini" frequently — already addressed in D07.
 
-### J04 [ ] Martelly (FR)
+### J04 [DONE v] Martelly (FR)
 Model outputs "manwin" (hallucination). Too vague to fix.
 
-### J05 [ ] Vaccination/infection numbers (FR)
+### J05 [DONE v] Vaccination/infection numbers (FR)
 Model splits "330 000" as "trois cent trente mille" → digits better.
 - In FR branch: add regex `r"(?i)\btrois\s+cent\s+trente\s+mille\b"` → `"330 000"`
 - Evidence: fleurs_fr_0253 WER=0.231

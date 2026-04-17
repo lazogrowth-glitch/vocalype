@@ -54,6 +54,9 @@ const getStatusText = (session: AuthSession | null, isRefreshing: boolean) => {
   return "Compte detecte. Finalisez l'abonnement dans le navigateur.";
 };
 
+const isExpectedMissingLicenseMessage = (value: string | null) =>
+  value?.toLowerCase().includes("no stored license bundle") ?? false;
+
 export const AuthPortal = ({
   isLoading,
   isSubmitting,
@@ -73,7 +76,8 @@ export const AuthPortal = ({
   const hasAccess = session?.subscription.has_access ?? false;
   const canInteract =
     !isLoading && !isSubmitting && !autoRefreshBusy && browserBusy === null;
-  const displayError = error?.trim() ?? null;
+  const displayError =
+    error && !isExpectedMissingLicenseMessage(error) ? error.trim() : null;
 
   useEffect(() => {
     if (!session) {

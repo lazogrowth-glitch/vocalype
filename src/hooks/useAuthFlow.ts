@@ -7,6 +7,12 @@ import { licenseClient } from "@/lib/license/client";
 import type { LicenseRuntimeState } from "@/lib/license/types";
 import { useSessionRefresh } from "./useSessionRefresh";
 
+const isExpectedMissingLicenseMessage = (value: unknown) => {
+  const message =
+    value instanceof Error ? value.message : typeof value === "string" ? value : "";
+  return message.toLowerCase().includes("no stored license bundle");
+};
+
 export function useAuthFlow(
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
@@ -129,11 +135,13 @@ export function useAuthFlow(
           "License sync failed after session refresh:",
           licenseError,
         );
-        setAuthError(
-          licenseError instanceof Error
-            ? licenseError.message
-            : "Activation failed",
-        );
+        if (!isExpectedMissingLicenseMessage(licenseError)) {
+          setAuthError(
+            licenseError instanceof Error
+              ? licenseError.message
+              : "Activation failed",
+          );
+        }
         try {
           setLicenseState(await licenseClient.getRuntimeState());
         } catch {
@@ -254,11 +262,13 @@ export function useAuthFlow(
             "License issue failed after deep-link auth:",
             licenseError,
           );
-          setAuthError(
-            licenseError instanceof Error
-              ? licenseError.message
-              : "Activation failed",
-          );
+          if (!isExpectedMissingLicenseMessage(licenseError)) {
+            setAuthError(
+              licenseError instanceof Error
+                ? licenseError.message
+                : "Activation failed",
+            );
+          }
           try {
             setLicenseState(await licenseClient.getRuntimeState());
           } catch {

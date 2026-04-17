@@ -491,7 +491,7 @@ Test if catching more short audio with recovery helps.
 
 ### H05 [ ] Max duration for recovery: 50s instead of 45s
 Allow recovery for slightly longer samples.
-- Apply: `!(6.0..=45.0).contains(&duration_secs)` → `!(6.0..=50.0).contains(&duration_secs)`
+- Apply: `!(5.0..=45.0).contains(&duration_secs)` → `!(5.0..=50.0).contains(&duration_secs)`
 
 ---
 

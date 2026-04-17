@@ -614,10 +614,11 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
             continue
         }
         if (-not $applied) {
-            $msg = "Iter ${i} [$($currentTask.Id)]: BLOQUE - Apply-RegexTask n'a pas pu appliquer. Tache gardee ouverte."
+            $msg = "Iter ${i} [$($currentTask.Id)]: BLOQUE - Apply-RegexTask n'a pas pu appliquer. Marque SKIPPED."
             Write-Host "  $msg" -ForegroundColor Yellow
             $history.Add($msg)
-            break
+            Set-TaskStatus $currentTask.Id "SKIPPED"
+            continue
         }
     } elseif ($currentTask.Id -match "^[HK-U]") {
         Write-Step "Application directe parametre (PowerShell) - $($currentTask.Id)"
@@ -630,10 +631,11 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
             continue
         }
         if (-not $applied) {
-            $msg = "Iter ${i} [$($currentTask.Id)]: BLOQUE - Apply-ParamTask n'a pas pu appliquer. Tache gardee ouverte."
+            $msg = "Iter ${i} [$($currentTask.Id)]: BLOQUE - Apply-ParamTask n'a pas pu appliquer. Marque SKIPPED."
             Write-Host "  $msg" -ForegroundColor Yellow
             $history.Add($msg)
-            break
+            Set-TaskStatus $currentTask.Id "SKIPPED"
+            continue
         }
     } else {
         # Groupe H: Aider
@@ -671,10 +673,11 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Pop-Location
 
     if ($diffAfter -eq $diffBefore) {
-        $msg = "Iter ${i} [$($currentTask.Id)]: Aucune modification (NO_CHANGE). Tache gardee ouverte."
+        $msg = "Iter ${i} [$($currentTask.Id)]: Aucune modification (NO_CHANGE). Marque SKIPPED."
         Write-Host "  $msg" -ForegroundColor Yellow
         $history.Add($msg)
-        break
+        Set-TaskStatus $currentTask.Id "SKIPPED"
+        continue
     }
 
     Write-Host "  Fichiers modifies: $($changedFiles -join ', ')" -ForegroundColor Cyan

@@ -447,7 +447,7 @@ Model outputs "antiincendios" instead of "antincendios".
 - Add regex: `r"(?i)\bantiincendios\b"` → `"antincendios"`
 - Evidence: fleurs_es_0169
 
-### G02 [ ] Micro. Cru → microexpressões (PT)
+### G02 [DONE v] Micro. Cru → microexpressões (PT)
 Model breaks "microexpressões" into "micro. Cru expressões".
 - Add regex: `r"(?i)\bmicro\.\s*cru\s+express[oõ]es\b"` → `"microexpressões"`
 - Evidence: fleurs_pt_0370 WER=0.316

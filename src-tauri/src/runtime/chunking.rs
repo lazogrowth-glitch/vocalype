@@ -50,10 +50,10 @@ pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s
 /// Unified Parakeet V3 profile for user-selected language dictation.
 /// Keep this conservative: most Vocalype users dictate in English, with
 /// Spanish/Hindi/Portuguese also sharing the multilingual path.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 15 * 16_000; // 15 s at 16 kHz
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 20 * 16_000; // 20 s at 16 kHz * 16_000; // 18 s at 16 kHz * 16_000; // 15 s at 16 kHz
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 32_000; // 2.0 s
 /// French errors are handled by text/vocabulary learning rather than a more
 /// aggressive chunk profile, which regressed long-form eval samples.
 pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize =

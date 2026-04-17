@@ -566,11 +566,11 @@ Moderate increase from current 8s baseline.
 Longer chunks = more context for the model.
 - Apply: `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s at 16 kHz` → `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 15 * 16_000; // 15 s at 16 kHz`
 
-### K04 [ ] Chunk 10s → 18s
+### K04 [DONE v] Chunk 10s → 18s
 Even longer chunks. High risk of truncation at boundaries.
 - Apply: `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s at 16 kHz` → `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 18 * 16_000; // 18 s at 16 kHz`
 
-### K05 [ ] Chunk 10s → 20s
+### K05 [DONE v] Chunk 10s → 20s
 Maximum context.
 - Apply: `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s at 16 kHz` → `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 20 * 16_000; // 20 s at 16 kHz`
 
@@ -592,7 +592,7 @@ More overlap = boundary words decoded in 2 full contexts.
 - Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 24_000; // 1.5 s`
 - Hypothesis: words at chunk boundary get better context from previous sentence
 
-### L03 [ ] Overlap 1.5s → 2.0s
+### L03 [DONE v] Overlap 1.5s → 2.0s
 2 second overlap = significant context from previous chunk. Best for fast speech.
 - Apply: `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s` → `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 32_000; // 2.0 s`
 - Hypothesis: if someone speaks fast (like 12s monologue), boundary transitions are smoother

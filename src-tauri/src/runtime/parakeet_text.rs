@@ -249,6 +249,8 @@ static I04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bTayib\b").unwr
 static I05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bCarbaneo\b").unwrap());
 // J01: Duvall → Duval disambiguation (FR)
 static J01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bDuval\b").unwrap());
+// J02: Mau → Mau in FR context
+static J02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMao\s+mouvement\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1060,6 +1062,9 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
 
 pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = J02_PATTERN
+        .replace_all(&normalized, "Mau mouvement")
+        .to_string();
     normalized = J01_PATTERN.replace_all(&normalized, "Duvall").to_string();
     normalized = F04_PATTERN_1.replace_all(&normalized, "1990").to_string();
     normalized = F04_PATTERN_2.replace_all(&normalized, "1960").to_string();

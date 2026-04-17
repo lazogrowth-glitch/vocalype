@@ -531,7 +531,7 @@ Model outputs "Carbaneo" instead of "Carpanedo" (Italian Paralympic athlete).
 Model drops one 'l' → "Duval" instead of "Duvall".
 - In FR branch: add regex `r"(?i)\bDuval\b"` → `"Duvall"` — RISKY: "Duval" is a common French surname. SKIP.
 
-### J02 [ ] Mau → Mau in FR context
+### J02 [DONE v] Mau → Mau in FR context
 Model says "Mouvement Mao" for "mouvement Mau". Same fix as A14 but for FR.
 - In FR branch: add regex `r"(?i)\bMao\s+mouvement\b"` → `"Mau mouvement"`
 

@@ -683,8 +683,10 @@ function App() {
           <div className="activation-banner" role="status">
             <span className="activation-banner-dot" />
             <span>
-              Activation du compte en arriere-plan. Vous pouvez deja entrer dans
-              Vocalype.
+              {t("auth.activationPending", {
+                defaultValue:
+                  "Activation du compte en arrière-plan. Vous pouvez déjà entrer dans Vocalype.",
+              })}
             </span>
           </div>
         ) : null}

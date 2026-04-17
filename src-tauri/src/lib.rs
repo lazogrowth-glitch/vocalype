@@ -119,6 +119,7 @@ static PENDING_AUTH_FLOW: std::sync::Mutex<Option<PendingAuthFlow>> = std::sync:
 pub static TRAY_ICON_ENABLED: AtomicBool = AtomicBool::new(true);
 pub static TRAY_ICON_READY: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_SHOW_MAIN_WINDOW_ON_READY: AtomicBool = AtomicBool::new(false);
+static FRONTEND_UI_READY: AtomicBool = AtomicBool::new(false);
 
 const MAIN_WINDOW_WIDTH: f64 = 1348.0;
 const MAIN_WINDOW_HEIGHT: f64 = 875.0;
@@ -945,13 +946,18 @@ pub fn run(cli_args: CliArgs) {
                         show_main_window(app);
                         return;
                     }
-                    log::info!("Deep link auth via single-instance, showing app");
-                    show_main_window(app);
-                    // Store as backup in case frontend listener isn't ready yet
-                    if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
-                        *guard = Some(token.clone());
+                    log::info!("Deep link auth via single-instance, forwarding token before showing app");
+                    // Store as backup only if the frontend listener may not be ready yet.
+                    if !FRONTEND_UI_READY.load(Ordering::Relaxed) {
+                        if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
+                            *guard = Some(token.clone());
+                        }
                     }
-                    let _ = app.emit("deep-link-auth", token);
+                    if app.emit("deep-link-auth", token.clone()).is_err() {
+                        if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
+                            *guard = Some(token);
+                        }
+                    }
                     return;
                 }
                 show_main_window(app);
@@ -1068,18 +1074,21 @@ pub fn run(cli_args: CliArgs) {
 
             let app_handle_for_ready = app_handle.clone();
             app_handle.listen("desktop-ui-ready", move |_| {
-                if SHOULD_SHOW_MAIN_WINDOW_ON_READY.swap(false, Ordering::Relaxed) {
-                    log::info!("Frontend reported ready; showing main window");
-                    show_main_window(&app_handle_for_ready);
-                }
+                FRONTEND_UI_READY.store(true, Ordering::Relaxed);
 
                 // Flush any deep-link token that arrived before the frontend was ready
-                if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
-                    if let Some(token) = guard.take() {
-                        log::info!("Flushing pending deep-link auth token to frontend");
-                        show_main_window(&app_handle_for_ready);
-                        let _ = app_handle_for_ready.emit("deep-link-auth", token);
-                    }
+                let pending_deep_link_token = PENDING_DEEP_LINK_TOKEN
+                    .lock()
+                    .ok()
+                    .and_then(|mut guard| guard.take());
+
+                if let Some(token) = pending_deep_link_token {
+                    SHOULD_SHOW_MAIN_WINDOW_ON_READY.store(false, Ordering::Relaxed);
+                    log::info!("Flushing pending deep-link auth token to frontend");
+                    let _ = app_handle_for_ready.emit("deep-link-auth", token);
+                } else if SHOULD_SHOW_MAIN_WINDOW_ON_READY.swap(false, Ordering::Relaxed) {
+                    log::info!("Frontend reported ready; showing main window");
+                    show_main_window(&app_handle_for_ready);
                 }
 
                 startup_warmup::ensure_startup_warmup(&app_handle_for_ready, "desktop-ui-ready");
@@ -1092,6 +1101,12 @@ pub fn run(cli_args: CliArgs) {
                     crate::platform::agent_overlay::create_agent_overlay(&app_h);
                     log::info!("[startup] overlays created (deferred)");
                 });
+            });
+
+            let app_handle_for_auth_ready = app_handle.clone();
+            app_handle.listen("desktop-auth-ready", move |_| {
+                log::info!("Frontend completed desktop auth; showing main window");
+                show_main_window(&app_handle_for_auth_ready);
             });
 
             let t = std::time::Instant::now();
@@ -1140,15 +1155,14 @@ pub fn run(cli_args: CliArgs) {
                                     show_main_window(&handle_for_deeplink);
                                     break;
                                 }
-                                log::info!("Deep link auth received");
-                                show_main_window(&handle_for_deeplink);
+                                log::info!("Deep link auth received; forwarding token before showing app");
                                 // Try to emit immediately (app already running case).
                                 // If the frontend isn't ready yet, store for later flush.
                                 if handle_for_deeplink.emit("deep-link-auth", token.clone()).is_err() {
                                     if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {
                                         *guard = Some(token);
                                     }
-                                } else {
+                                } else if !FRONTEND_UI_READY.load(Ordering::Relaxed) {
                                     // emit succeeded but frontend might still miss it if
                                     // it hasn't set up its listener â€” store as backup too.
                                     if let Ok(mut guard) = PENDING_DEEP_LINK_TOKEN.lock() {

@@ -562,17 +562,17 @@ Shorter chunks = less audio context lost at boundaries, faster first-word latenc
 Moderate increase from current 8s baseline.
 - Apply: `8 * 16_000; // 8 s at 16 kHz` → `10 * 16_000; // 10 s at 16 kHz`
 
-### K03 [DONE v] Chunk 8s → 15s
+### K03 [DONE v] Chunk 10s → 15s
 Longer chunks = more context for the model.
-- Apply: `8 * 16_000; // 8 s at 16 kHz` → `15 * 16_000; // 15 s at 16 kHz`
+- Apply: `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s at 16 kHz` → `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 15 * 16_000; // 15 s at 16 kHz`
 
-### K04 [SKIPPED -] Chunk 8s → 18s
+### K04 [ ] Chunk 10s → 18s
 Even longer chunks. High risk of truncation at boundaries.
-- Apply: `8 * 16_000; // 8 s at 16 kHz` → `18 * 16_000; // 18 s at 16 kHz`
+- Apply: `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s at 16 kHz` → `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 18 * 16_000; // 18 s at 16 kHz`
 
-### K05 [SKIPPED -] Chunk 8s → 20s
+### K05 [ ] Chunk 10s → 20s
 Maximum context.
-- Apply: `8 * 16_000; // 8 s at 16 kHz` → `20 * 16_000; // 20 s at 16 kHz`
+- Apply: `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 10 * 16_000; // 10 s at 16 kHz` → `PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 20 * 16_000; // 20 s at 16 kHz`
 
 ---
 
@@ -592,18 +592,18 @@ More overlap = boundary words decoded in 2 full contexts.
 - Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 24_000; // 1.5 s`
 - Hypothesis: words at chunk boundary get better context from previous sentence
 
-### L03 [SKIPPED -] Overlap 1.0s → 2.0s
+### L03 [ ] Overlap 1.5s → 2.0s
 2 second overlap = significant context from previous chunk. Best for fast speech.
-- Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 32_000; // 2.0 s`
+- Apply: `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s` → `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 32_000; // 2.0 s`
 - Hypothesis: if someone speaks fast (like 12s monologue), boundary transitions are smoother
 
-### L04 [SKIPPED -] Overlap 1.0s → 2.5s
+### L04 [ ] Overlap 1.5s → 2.5s
 Maximum overlap test. Trade-off: more compute, but boundary words almost always have context.
-- Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 40_000; // 2.5 s`
+- Apply: `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s` → `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 40_000; // 2.5 s`
 
-### L05 [DONE v] Overlap 1.0s → 0.75s
+### L05 [ ] Overlap 1.5s → 0.75s
 Slight reduction. May save time with minimal quality loss.
-- Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 12_000; // 0.75 s`
+- Apply: `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s` → `PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s`
 
 ---
 
@@ -621,17 +621,17 @@ More sensitive: catches speech that currently gets cut as silence. Risk: false s
 Slight sensitivity increase. Conservative improvement.
 - Apply: `(0.18, 20, 20, 1)` → `(0.20, 20, 20, 1)`
 
-### M03 [SKIPPED -] VAD 0.24 → 0.22
+### M03 [ ] VAD 0.20 → 0.22
 Minimal sensitivity increase. Safest test.
-- Apply: `(0.18, 20, 20, 1)` → `(0.22, 20, 20, 1)`
+- Apply: `(0.20, 20, 20, 1)` → `(0.22, 20, 20, 1)`
 
-### M04 [SKIPPED -] VAD 0.24 → 0.26
+### M04 [ ] VAD 0.20 → 0.26
 Slightly more restrictive: less background noise triggers recording.
-- Apply: `(0.18, 20, 20, 1)` → `(0.26, 20, 20, 1)`
+- Apply: `(0.20, 20, 20, 1)` → `(0.26, 20, 20, 1)`
 
-### M05 [SKIPPED -] VAD 0.24 → 0.28
+### M05 [ ] VAD 0.20 → 0.28
 More restrictive: reduces false activations in noisy environments.
-- Apply: `(0.18, 20, 20, 1)` → `(0.28, 20, 20, 1)`
+- Apply: `(0.20, 20, 20, 1)` → `(0.28, 20, 20, 1)`
 
 ---
 
@@ -641,27 +641,27 @@ More restrictive: reduces false activations in noisy environments.
 *Prefill = audio kept before speech starts. Hangover = audio kept after speech stops.*
 *Type: Apply-ParamTask.*
 
-### N01 [SKIPPED -] Hangover frames 20 → 40
+### N01 [ ] Hangover frames 20 → 40
 Large hangover. Model sees more trailing audio → cleaner sentence-end detection.
-- Apply: `(0.18, 20, 20, 1)` → `(0.18, 20, 40, 1)`
+- Apply: `(0.20, 20, 20, 1)` → `(0.20, 20, 40, 1)`
 - This directly targets END score which is currently 30.152 (very high). END = speech cut before end of sentence.
 
-### N02 [SKIPPED -] Hangover frames 20 → 30
+### N02 [ ] Hangover frames 20 → 30
 Moderate hangover increase. Balanced between END score fix and latency.
-- Apply: `(0.18, 20, 20, 1)` → `(0.18, 20, 30, 1)`
+- Apply: `(0.20, 20, 20, 1)` → `(0.20, 20, 30, 1)`
 
-### N03 [SKIPPED -] Prefill frames 20 → 30
+### N03 [ ] Prefill frames 20 → 30
 More audio before speech onset = less chance of cutting the first syllable.
-- Apply: `(0.18, 20, 20, 1)` → `(0.18, 30, 20, 1)`
+- Apply: `(0.20, 20, 20, 1)` → `(0.20, 30, 20, 1)`
 - Hypothesis: "the Corps of Engineers" → model currently misses "the" if VAD triggers late
 
-### N04 [SKIPPED -] Prefill frames 20 → 15
+### N04 [ ] Prefill frames 20 → 15
 Less pre-roll = tighter start. Test if current 20 is excessive.
-- Apply: `(0.18, 20, 20, 1)` → `(0.18, 15, 20, 1)`
+- Apply: `(0.20, 20, 20, 1)` → `(0.20, 15, 20, 1)`
 
-### N05 [SKIPPED -] Onset frames 1 → 2
+### N05 [ ] Onset frames 1 → 2
 Require 2 consecutive speech frames before triggering. Reduces false starts.
-- Apply: `(0.18, 20, 20, 1)` → `(0.18, 20, 20, 2)`
+- Apply: `(0.20, 20, 20, 1)` → `(0.20, 20, 20, 2)`
 
 ---
 

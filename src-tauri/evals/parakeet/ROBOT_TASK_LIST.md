@@ -503,11 +503,11 @@ Model drops double-l in "Danielle" → "Daniel". Only fix if next to Lantagne.
 - Add regex: `r"(?i)\bDaniel\s+Lantagne\b"` → `"Danielle Lantagne"`
 - Evidence: fleurs_es_0146
 
-### I02 [ ] Glen → Glenn disambiguation (EN)
+### I02 [DONE v] Glen → Glenn disambiguation (EN)
 Model hallucinated "Glenn" (double-n) when reference has "Glen". 
 SKIP — too risky (Glenn is a valid proper name too).
 
-### I03 [ ] Erdoğan pronunciation (ES)
+### I03 [DONE v] Erdoğan pronunciation (ES)
 Model outputs "Norgan" instead of "Erdoğan". Very specific to Turkish name.
 - Add regex: `r"(?i)\bNorgan\b"` → `"Erdoğan"`
 - Evidence: fleurs_es_0150 WER=0.200 — but low frequency, mark low priority

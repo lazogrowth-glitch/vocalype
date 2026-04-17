@@ -255,7 +255,7 @@ fn create_audio_recorder(
     let (vad_threshold, prefill_frames, mut hangover_frames, onset_frames) = if is_parakeet_v3 {
         // Parakeet V3 is sensitive to clipped speech on short dictation.
         // Use a less aggressive profile to reduce dropped words.
-        (0.18, 20, 20, 1)
+        (0.20, 20, 20, 1)
     } else {
         (0.30, 15, 15, 2)
     };

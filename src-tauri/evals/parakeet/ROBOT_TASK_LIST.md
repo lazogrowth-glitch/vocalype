@@ -592,16 +592,16 @@ More overlap = boundary words decoded in 2 full contexts.
 - Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 24_000; // 1.5 s`
 - Hypothesis: words at chunk boundary get better context from previous sentence
 
-### L03 [ ] Overlap 1.0s → 2.0s
+### L03 [SKIPPED -] Overlap 1.0s → 2.0s
 2 second overlap = significant context from previous chunk. Best for fast speech.
 - Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 32_000; // 2.0 s`
 - Hypothesis: if someone speaks fast (like 12s monologue), boundary transitions are smoother
 
-### L04 [ ] Overlap 1.0s → 2.5s
+### L04 [SKIPPED -] Overlap 1.0s → 2.5s
 Maximum overlap test. Trade-off: more compute, but boundary words almost always have context.
 - Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 40_000; // 2.5 s`
 
-### L05 [ ] Overlap 1.0s → 0.75s
+### L05 [DONE v] Overlap 1.0s → 0.75s
 Slight reduction. May save time with minimal quality loss.
 - Apply: `OVERLAP_SAMPLES: usize = 8_000; // 0.5 s` → `OVERLAP_SAMPLES: usize = 12_000; // 0.75 s`
 
@@ -617,7 +617,7 @@ More sensitive: catches speech that currently gets cut as silence. Risk: false s
 - Apply: `(0.18, 20, 20, 1)` → `(0.18, 20, 20, 1)`
 - Hypothesis: words at start of utterance currently eaten by VAD, especially soft-spoken first words
 
-### M02 [ ] VAD 0.24 → 0.20
+### M02 [DONE v] VAD 0.24 → 0.20
 Slight sensitivity increase. Conservative improvement.
 - Apply: `(0.18, 20, 20, 1)` → `(0.20, 20, 20, 1)`
 

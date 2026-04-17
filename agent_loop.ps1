@@ -216,6 +216,7 @@ function Set-TaskStatus($taskId, $status) {
     $marker = switch ($status) {
         "DONE"     { "[DONE v]" }
         "REJECTED" { "[REJECTED x]" }
+        "SKIPPED"  { "[SKIPPED -]" }
         default    { "[ ]" }
     }
     $content = Get-Content $TASK_LIST_FILE -Raw -Encoding UTF8

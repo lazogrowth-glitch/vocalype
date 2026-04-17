@@ -457,10 +457,10 @@ Model outputs "micro" + "expressões" (split without "cru") instead of "microexp
 - Add regex: `r"(?i)\bmicro\s+express[oõ]es\b"` → `"microexpressões"`
 - Evidence: fleurs_pt_0370
 
-### G04 [ ] Superprédateur (FR) — already in D05
+### G04 [DONE v] Superprédateur (FR) — already in D05
 Same concept, already covered.
 
-### G05 [ ] TBUR / TB UR acronym (FR)
+### G05 [DONE v] TBUR / TB UR acronym (FR)
 Model outputs "TBUR" as one word; reference has "TB-UR" or similar. Low priority — leave for now.
 
 ---
@@ -469,28 +469,28 @@ Model outputs "TBUR" as one word; reference has "TB-UR" or similar. Low priority
 *File: `src-tauri/examples/parakeet_pipeline_eval.rs` AND `src-tauri/src/actions/transcribe.rs`*
 *These require changing BOTH files and running full evals.*
 
-### H01 [ ] End-truncation recovery: add END score trigger
+### H01 [SKIPPED -] End-truncation recovery: add END score trigger
 When assembled `end_truncation_score > 0.7`, also trigger full-audio recovery attempt.
 - Add condition in `should_attempt_full_audio_recovery`: `|| end_truncation_score > 0.7`
 - Must sync change in both eval and transcribe.rs
 - Evidence: 30% of FLEURS samples have END > 0.5
 
-### H02 [ ] Lower promote threshold for high-END samples
+### H02 [SKIPPED -] Lower promote threshold for high-END samples
 When `end_score > 0.7`, use lower promote threshold: +2 words / 1.10x (instead of +3 / 1.15x).
 - Add conditional path in `should_promote_full_audio_recovery`
 - Evidence: many END-high samples could benefit from easier promotion
 
-### H03 [ ] Density suspicion: words-per-second floor
+### H03 [SKIPPED -] Density suspicion: words-per-second floor
 Current threshold: 1.45 wps. Test lowering to 1.35 wps for low-density suspicion.
 - Change `assembled_words_per_sec <= 1.45` → `assembled_words_per_sec <= 1.35` in suspicion check
 - Run both evals, revert if regression
 
-### H04 [ ] Min duration for recovery: 5.0s instead of 6.0s
+### H04 [SKIPPED -] Min duration for recovery: 5.0s instead of 6.0s
 Test if catching more short audio with recovery helps.
 - Change `6.0` → `5.0` in `if !(6.0..=45.0).contains(&duration_secs)`
 - Run both evals, revert if regression
 
-### H05 [ ] Max duration for recovery: 50s instead of 45s
+### H05 [SKIPPED -] Max duration for recovery: 50s instead of 45s
 Allow recovery for slightly longer samples.
 - Change `45.0` → `50.0` in duration range check
 - Run both evals, revert if regression

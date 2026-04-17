@@ -358,7 +358,7 @@ Model outputs "Alden Brooks Hospital" instead of "Addenbrooke's Hospital".
 - Add regex: `r"(?i)\bAlden\s+Brooks\s+Hospital\b"` → `"Addenbrooke's Hospital"`
 - Evidence: fleurs_pt_0351 WER=0.182
 
-### E07 [ ] Oldřich Jelínek (PT)
+### E07 [DONE v] Oldřich Jelínek (PT)
 Model outputs "Aldritch Jelinek" instead of "Oldřich Jelínek" (Czech Paralympic athlete).
 - Add regex: `r"(?i)\bAldritch\s+Jelinek\b"` → `"Oldřich Jelínek"`
 - Evidence: fleurs_pt_0320 WER=0.200

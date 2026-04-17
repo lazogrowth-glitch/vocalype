@@ -394,7 +394,7 @@ Model outputs "empatins" instead of "em patins" (on skates).
 - Add regex: `r"(?i)\bempatins\b"` → `"em patins"`
 - Evidence: fleurs_pt_0324
 
-### E14 [ ] Mitchell Gourley (PT)
+### E14 [DONE v] Mitchell Gourley (PT)
 Model outputs "Mitchell Gurley" instead of "Mitchell Gourley" (Australian Paralympic skier).
 - Add regex: `r"(?i)\bGurley\b"` → `"Gourley"` — LOW PRIORITY (Gurley is also a real surname)
 - Evidence: fleurs_pt_0320

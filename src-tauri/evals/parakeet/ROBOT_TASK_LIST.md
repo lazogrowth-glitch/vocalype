@@ -442,7 +442,7 @@ Ensure `"802 .11"` (space before dot) normalizes to `"802.11"`. The existing PUN
 ## GROUP G — Compound words & hyphenation
 *File: `src-tauri/src/runtime/parakeet_text.rs`, per-language function*
 
-### G01 [ ] Anti-incendios → antincendios (ES)
+### G01 [DONE v] Anti-incendios → antincendios (ES)
 Model outputs "antiincendios" instead of "antincendios".
 - Add regex: `r"(?i)\bantiincendios\b"` → `"antincendios"`
 - Evidence: fleurs_es_0169

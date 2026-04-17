@@ -231,6 +231,8 @@ static F04_PATTERN_3: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt\b").unwrap());
 // F05: 802.11 space variants (already partially covered)
 static F05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b802\s+\.\s*11\b").unwrap());
+// G01: Anti-incendios → antincendios (ES)
+static G01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bantiincendios\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -1307,6 +1309,9 @@ fn replace_french_word(text: &str, from: &str, to: &str) -> String {
 #[allow(unused_mut)]
 pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = G01_PATTERN
+        .replace_all(&normalized, "antincendios")
+        .to_string();
     normalized = C15_PATTERN
         .replace_all(&normalized, "espectroscopia")
         .to_string();

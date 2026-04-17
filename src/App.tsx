@@ -31,7 +31,7 @@ import { ensureVoiceStateStore } from "@/stores/voiceState";
 const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
 
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
-const MIN_WINDOW_SIZE = { width: 960, height: 624 };
+const MIN_WINDOW_SIZE = { width: 760, height: 540 };
 const REFERENCE_SCREEN_SIZE = { width: 1920, height: 1080 };
 const DEFAULT_WIDTH_RATIO =
   DESIGN_WINDOW_SIZE.width / REFERENCE_SCREEN_SIZE.width;
@@ -146,14 +146,14 @@ async function resolveAdaptiveWindowSize(): Promise<WindowSize> {
     width: Math.round(
       clamp(
         monitorBounds.width * DEFAULT_WIDTH_RATIO,
-        MIN_WINDOW_SIZE.width,
+        Math.min(MIN_WINDOW_SIZE.width, monitorBounds.width),
         monitorBounds.width,
       ),
     ),
     height: Math.round(
       clamp(
         monitorBounds.height * DEFAULT_HEIGHT_RATIO,
-        MIN_WINDOW_SIZE.height,
+        Math.min(MIN_WINDOW_SIZE.height, monitorBounds.height),
         monitorBounds.height,
       ),
     ),
@@ -198,14 +198,14 @@ async function resolveWindowSize(): Promise<WindowSize> {
     width: Math.round(
       clamp(
         monitorBounds.width * widthRatio,
-        MIN_WINDOW_SIZE.width,
+        Math.min(MIN_WINDOW_SIZE.width, monitorBounds.width),
         monitorBounds.width,
       ),
     ),
     height: Math.round(
       clamp(
         monitorBounds.height * heightRatio,
-        MIN_WINDOW_SIZE.height,
+        Math.min(MIN_WINDOW_SIZE.height, monitorBounds.height),
         monitorBounds.height,
       ),
     ),
@@ -458,9 +458,14 @@ function App() {
     const initializeWindowSize = async () => {
       try {
         const window = getCurrentWindow();
-        await window.setMinSize(
-          new LogicalSize(MIN_WINDOW_SIZE.width, MIN_WINDOW_SIZE.height),
-        );
+        const monitorBounds = await resolveMonitorBounds();
+        const minWidth = monitorBounds
+          ? Math.min(MIN_WINDOW_SIZE.width, monitorBounds.width)
+          : MIN_WINDOW_SIZE.width;
+        const minHeight = monitorBounds
+          ? Math.min(MIN_WINDOW_SIZE.height, monitorBounds.height)
+          : MIN_WINDOW_SIZE.height;
+        await window.setMinSize(new LogicalSize(minWidth, minHeight));
 
         const target = await resolveWindowSize();
         await window.setSize(new LogicalSize(target.width, target.height));

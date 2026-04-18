@@ -3,8 +3,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { ModelInfo } from "@/bindings";
-import type { ModelCardStatus } from "./ModelCard";
-import ModelCard from "./ModelCard";
 import VocalypeLogo from "../icons/VocalypeLogo";
 import { useModelStore } from "../../stores/modelStore";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
@@ -25,23 +23,6 @@ const isCopilotOptimizedParakeet = (
   !!profile?.npu_detected &&
   (profile.npu_kind === "qualcomm" || profile.npu_kind === "intel");
 
-const getOnboardingRank = (model: ModelInfo): number => {
-  if (model.id === "parakeet-tdt-0.6b-v3-multilingual") return 1000;
-  if (model.id === "large") return 950;
-  if (model.id === "turbo") return 900;
-  if (model.id === "parakeet-tdt-0.6b-v2") return 850;
-  if (model.id === "medium") return 800;
-  if (model.id === "small") return 700;
-  if (model.id === "sense-voice-int8") return 650;
-  if (model.id === "breeze-asr") return 640;
-  if (model.id === "moonshine-medium-streaming-en") return 560;
-  if (model.id === "moonshine-small-streaming-en") return 540;
-  if (model.id === "moonshine-base") return 520;
-  if (model.id === "moonshine-tiny-streaming-en") return 500;
-  if (model.id === "gemini-api") return 200;
-  return Math.round(model.accuracy_score * 1000 + model.speed_score * 100);
-};
-
 interface OnboardingProps {
   onModelSelected: () => void;
   onBack?: () => void;
@@ -55,8 +36,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
     selectModel,
     downloadingModels,
     extractingModels,
-    downloadProgress,
-    downloadStats,
   } = useModelStore();
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [adaptiveProfile, setAdaptiveProfile] =
@@ -102,13 +81,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
       setSelectedModelId(null);
     }
   };
-
-  const getModelStatus = (modelId: string): ModelCardStatus =>
-    modelId in extractingModels
-      ? "extracting"
-      : modelId in downloadingModels
-        ? "downloading"
-        : "downloadable";
 
   const modeCards = (() => {
     const rapidId = "parakeet-tdt-0.6b-v3-multilingual";
@@ -212,7 +184,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3 pb-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {modeCards.map(({ id, title, description, modelId, model }) => (
             <button
               key={id}
@@ -235,56 +207,23 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected, onBack }) => {
                 ) : null}
               </div>
               <p className="mt-3 text-[12px] text-text/48">
-                {model ? getTranslatedModelName(model, t) : modelId}
+                {model
+                  ? getTranslatedModelName(model as ModelInfo, t)
+                  : modelId}
               </p>
             </button>
           ))}
         </div>
-
-        <div className="flex-1 overflow-y-auto pr-1">
-          <div className="flex flex-col gap-4 pb-3">
-            {models
-              .filter((m) => !m.is_downloaded)
-              .filter((m) => m.is_recommended)
-              .map((model) => (
-                <ModelCard
-                  key={model.id}
-                  model={model}
-                  variant="featured"
-                  status={getModelStatus(model.id)}
-                  disabled={isDownloading}
-                  onSelect={handleDownloadModel}
-                  onDownload={handleDownloadModel}
-                  downloadProgress={downloadProgress[model.id]?.percentage}
-                  downloadSpeed={downloadStats[model.id]?.speed}
-                  copilotOptimized={isCopilotOptimizedParakeet(
-                    adaptiveProfile,
-                    model.id,
-                  )}
-                />
-              ))}
-            {models
-              .filter((m) => !m.is_downloaded)
-              .filter((m) => !m.is_recommended)
-              .sort((a, b) => getOnboardingRank(b) - getOnboardingRank(a))
-              .map((model) => (
-                <ModelCard
-                  key={model.id}
-                  model={model}
-                  status={getModelStatus(model.id)}
-                  disabled={isDownloading}
-                  onSelect={handleDownloadModel}
-                  onDownload={handleDownloadModel}
-                  downloadProgress={downloadProgress[model.id]?.percentage}
-                  downloadSpeed={downloadStats[model.id]?.speed}
-                  copilotOptimized={isCopilotOptimizedParakeet(
-                    adaptiveProfile,
-                    model.id,
-                  )}
-                />
-              ))}
-          </div>
-        </div>
+        <p className="mt-5 text-center text-[13px] leading-6 text-text/50">
+          {selectedModelId
+            ? t("onboarding.modelSetup", {
+                defaultValue: "Preparation du modele en cours...",
+              })
+            : t("onboarding.modelChangeLater", {
+                defaultValue:
+                  "Vous pourrez changer de modele plus tard dans l'app.",
+              })}
+        </p>
       </div>
     </div>
   );

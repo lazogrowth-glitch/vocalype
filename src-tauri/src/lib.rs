@@ -1098,7 +1098,6 @@ pub fn run(cli_args: CliArgs) {
                 let app_h = app_handle_for_ready.clone();
                 let _ = app_handle_for_ready.run_on_main_thread(move || {
                     utils::create_recording_overlay(&app_h);
-                    crate::platform::agent_overlay::create_agent_overlay(&app_h);
                     log::info!("[startup] overlays created (deferred)");
                 });
             });
@@ -1118,15 +1117,6 @@ pub fn run(cli_args: CliArgs) {
             // est dÃ©jÃ  chargÃ© ou en cours de chargement â†’ l'app s'affiche prÃªte immÃ©diatement.
             startup_warmup::ensure_startup_warmup(&app_handle, "early-startup");
             log::info!("[startup] model pre-warm launched");
-
-            // Wake-word detection â€” kept alive as managed state for the lifetime
-            // of the app.  Starts immediately; only polls inference when
-            // `settings.wake_word_enabled == true` and no recording is active.
-            let t = std::time::Instant::now();
-            app.manage(Arc::new(wake_word::WakeWordManager::new(
-                app_handle.clone(),
-            )));
-            log::info!("[startup] WakeWordManager::new â€” {}ms", t.elapsed().as_millis());
 
             // Register vocalype:// URL scheme (needed on Windows/Linux in dev)
             #[cfg(not(target_os = "macos"))]

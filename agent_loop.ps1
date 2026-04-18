@@ -455,10 +455,11 @@ function Apply-ParamTask($task) {
         }
         # Fallback fuzzy: si old/new sont des tuples, construire un pattern qui ignore le champ qui change
         $fuzzyApplied = $false
-        if ($oldValue -match '^\((.+)\)$' -and $newValue -match '^\((.+)\)$') {
-            $oldParts = $Matches[1] -split ',\s*'
-            $newInner = ([regex]::Match($newValue, '^\((.+)\)$')).Groups[1].Value
-            $newParts = $newInner -split ',\s*'
+        $oldTupleMatch = [regex]::Match($oldValue, '^\((.+)\)$')
+        $newTupleMatch = [regex]::Match($newValue, '^\((.+)\)$')
+        if ($oldTupleMatch.Success -and $newTupleMatch.Success) {
+            $oldParts = $oldTupleMatch.Groups[1].Value -split ',\s*'
+            $newParts = $newTupleMatch.Groups[1].Value -split ',\s*'
             if ($oldParts.Count -eq $newParts.Count) {
                 $patternParts = @()
                 for ($j = 0; $j -lt $oldParts.Count; $j++) {
@@ -488,13 +489,18 @@ function Apply-ParamTask($task) {
                 $newRest = $newValue.Substring($cpLen)
                 $pidx    = $content.IndexOf($prefix)
                 if ($pidx -ge 0) {
-                    $after       = $content.Substring($pidx + $prefix.Length)
-                    $lineEnd     = $after.IndexOf("`n")
-                    if ($lineEnd -lt 0) { $lineEnd = $after.Length }
-                    $currentRest = $after.Substring(0, $lineEnd)
-                    $content     = $content.Substring(0, $pidx) + $prefix + $newRest + $content.Substring($pidx + $prefix.Length + $currentRest.Length)
-                    $fuzzyApplied = $true
-                    Write-Host "  Apply-ParamTask: prefix anchor match utilise pour $id" -ForegroundColor Cyan
+                    $after = $content.Substring($pidx + $prefix.Length)
+                    # Scanner uniquement les caracteres de valeur (chiffres, lettres, _, .)
+                    # Stopper au premier separateur (; ) , espace \n) pour preserver le reste
+                    $valueEndIdx = 0
+                    while ($valueEndIdx -lt $after.Length -and $after[$valueEndIdx] -match '[0-9a-zA-Z_.]') {
+                        $valueEndIdx++
+                    }
+                    if ($valueEndIdx -gt 0) {
+                        $content = $content.Substring(0, $pidx) + $prefix + $newRest + $content.Substring($pidx + $prefix.Length + $valueEndIdx)
+                        $fuzzyApplied = $true
+                        Write-Host "  Apply-ParamTask: prefix anchor match utilise pour $id" -ForegroundColor Cyan
+                    }
                 }
             }
         }

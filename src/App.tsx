@@ -10,7 +10,6 @@ import Onboarding, {
   AccessibilityOnboarding,
   ConsentStep,
 } from "./components/onboarding";
-import { TrialWelcomeModal } from "./components/onboarding/TrialWelcomeModal";
 import { VoiceToCodeOnboarding } from "./components/settings/app-context/VoiceToCodeOnboarding";
 import { Sidebar } from "./components/Sidebar";
 import { SidebarSection, SECTIONS_CONFIG } from "./components/sections-config";
@@ -167,14 +166,12 @@ function App() {
     authSubmitting,
     authError,
     licenseState,
-    showTrialWelcome,
     hasCompletedPostOnboardingInit,
     refreshSession,
     handleDeepLinkAuth,
     handleLogin,
     handleRegister,
     handleLogout,
-    handleDismissTrialWelcome,
     handleStartCheckout,
     handleOpenBillingPortal,
   } = useAuthFlow(t);
@@ -508,9 +505,6 @@ function App() {
           onModelSelected={handleModelSelected}
           onBack={handleGoBack}
         />
-        {showTrialWelcome && (
-          <TrialWelcomeModal onDismiss={handleDismissTrialWelcome} />
-        )}
       </div>
     );
   }
@@ -628,15 +622,15 @@ function App() {
             </div>
           </main>
         </div>
-      {showVoiceToCodeOnboarding && (
-        <VoiceToCodeOnboarding
-          onDismiss={() => setShowVoiceToCodeOnboarding(false)}
-          onOpenSettings={(section) => {
-            setCurrentSection(section as SidebarSection);
-            setShowVoiceToCodeOnboarding(false);
-          }}
-        />
-      )}
+        {showVoiceToCodeOnboarding && (
+          <VoiceToCodeOnboarding
+            onDismiss={() => setShowVoiceToCodeOnboarding(false)}
+            onOpenSettings={(section) => {
+              setCurrentSection(section as SidebarSection);
+              setShowVoiceToCodeOnboarding(false);
+            }}
+          />
+        )}
       </div>
     </PlanContext.Provider>
   );

@@ -8,10 +8,10 @@
     "cancel": "Annuler"
   },
   "sidebar": {
-    "general": "Général",
+    "general": "Dicter",
     "models": "Modèles",
-    "advanced": "Avancé",
-    "postProcessing": "Post-traitement",
+    "advanced": "Plus",
+    "postProcessing": "Style de sortie",
     "notes": "Notes",
     "meetings": "Réunions",
     "history": "Historique",
@@ -24,22 +24,22 @@
     "group": {
       "config": "Configuration",
       "usage": "Utilisation",
-      "advanced": "Avancé"
+      "advanced": "Plus"
     }
   },
   "shell": {
     "workspaceSubtitle": "Espace de dictée IA",
     "sectionDescriptions": {
       "default": "Ajustez votre espace Vocalype avec des contrôles plus clairs et une meilleure cohérence.",
-      "general": "Réglez les raccourcis, les microphones et votre flux de dictée quotidien.",
+      "general": "Choisissez le micro, le raccourci principal et le comportement de dictée.",
       "models": "Choisissez le modèle vocal, le comportement linguistique et l'équilibre entre qualité et vitesse.",
-      "postprocessing": "Contrôlez le nettoyage, le formatage et la forme finale des transcriptions avant insertion.",
+      "postprocessing": "Choisissez comment Vocalype corrige ou reformate le texte avant insertion.",
       "snippets": "Créez des commandes réutilisables et des extraits de texte pour aller plus vite.",
       "history": "Relisez les transcriptions récentes, réutilisez du contenu et gérez l'activité enregistrée.",
       "meetings": "Configurez la capture des réunions, le comportement d'enregistrement et les flux collaboratifs.",
       "notes": "Réglez les intégrations de notes et la façon dont Vocalype structure les idées capturées.",
       "stats": "Suivez l'utilisation, l'état du runtime et les performances de l'app dans le temps.",
-      "advanced": "Ajustez le comportement système, le démarrage, les fonctions expérimentales et les réglages avancés.",
+      "advanced": "Gardez les réglages système et les options moins courantes hors du chemin principal.",
       "billing": "Gérez votre formule, vos limites et les détails de votre abonnement.",
       "referral": "Invitez d'autres personnes et suivez vos récompenses de parrainage.",
       "about": "Consultez les détails de l'app, les versions, les liens d'aide et l'état du produit.",
@@ -287,6 +287,7 @@
         "shortcuts": "Raccourcis",
         "audio": "Audio",
         "dictation": "Dictée",
+        "primaryShortcut": "Raccourci principal",
         "keyboardShortcutsTitle": "Raccourcis clavier"
       },
       "shortcut": {

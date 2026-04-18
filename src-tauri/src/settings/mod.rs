@@ -1365,7 +1365,7 @@ pub fn get_default_settings() -> AppSettings {
     AppSettings {
         settings_version: CURRENT_SETTINGS_VERSION,
         bindings,
-        push_to_talk: false,
+        push_to_talk: true,
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
@@ -1591,6 +1591,13 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_settings_use_push_to_talk_for_launch_flow() {
+        let settings = get_default_settings();
+        assert!(settings.push_to_talk);
+        assert_eq!(settings.recording_mode, RecordingMode::PushToTalk);
     }
 
     #[test]

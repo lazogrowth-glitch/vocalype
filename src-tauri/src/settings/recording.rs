@@ -22,17 +22,22 @@ pub enum RecordingRetentionPeriod {
 /// ## Migration (T11)
 /// - Old `push_to_talk = true`         → `RecordingMode::PushToTalk`
 /// - Old `always_on_microphone = true`  → `RecordingMode::AlwaysOn`
-/// - Both `false` (the default)         → `RecordingMode::Toggle`
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+/// - Both `false`                       → `RecordingMode::Toggle`
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum RecordingMode {
-    /// Press shortcut once to start, press again to stop (default).
-    #[default]
+    /// Press shortcut once to start, press again to stop.
     Toggle,
-    /// Hold shortcut to record, release to stop.
+    /// Hold shortcut to record, release to stop (default).
     PushToTalk,
     /// Microphone is always listening; VAD decides when a utterance starts/ends.
     AlwaysOn,
+}
+
+impl Default for RecordingMode {
+    fn default() -> Self {
+        RecordingMode::PushToTalk
+    }
 }
 
 impl RecordingMode {
@@ -59,6 +64,11 @@ impl RecordingMode {
 #[cfg(test)]
 mod tests {
     use super::RecordingMode;
+
+    #[test]
+    fn default_recording_mode_is_push_to_talk() {
+        assert_eq!(RecordingMode::default(), RecordingMode::PushToTalk);
+    }
 
     #[test]
     fn from_legacy_always_on_wins_over_ptt() {

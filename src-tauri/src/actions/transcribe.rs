@@ -508,8 +508,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         }
     }
 
-    // ESC cancel shortcut intentionally disabled — ESC should have no effect.
-    // shortcut::register_cancel_shortcut(app);
+    shortcut::register_cancel_shortcut(app);
     shortcut::register_pause_shortcut(app);
     shortcut::register_action_shortcuts(app);
     debug!("[TIMING] shortcuts registered: {:?}", start_time.elapsed());
@@ -978,8 +977,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 },
                             );
                             debug!(
-                                "Chunk {}: discarding likely hallucination {:?} ({} samples, final={})",
-                                idx, text, chunk_samples, is_final_chunk
+                                "Chunk {}: discarding likely hallucination (words={}, samples={}, final={})",
+                                idx, word_count, chunk_samples, is_final_chunk
                             );
                             String::new()
                         } else {
@@ -1542,9 +1541,10 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             }
 
             debug!(
-                "Chunked assembly done: {} chunks → '{}' (first 80 chars)",
+                "Chunked assembly done: {} chunks, chars={}, words={}",
                 chunk_count,
-                &assembled.chars().take(80).collect::<String>()
+                assembled.chars().count(),
+                assembled.split_whitespace().count()
             );
 
             let chunk_cleanup_started = Instant::now();

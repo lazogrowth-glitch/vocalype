@@ -69,6 +69,26 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     }
 }
 
+/// Register the cancel shortcut while recording so push-to-talk can be aborted quickly.
+pub fn register_cancel_shortcut(app: &AppHandle) {
+    #[cfg(target_os = "linux")]
+    {
+        let _ = app;
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let settings = get_settings(app);
+        if let Some(binding) = settings.bindings.get("cancel").cloned() {
+            if binding.current_binding.is_empty() {
+                return;
+            }
+            let _ = register_shortcut(app, binding);
+        }
+    }
+}
+
 /// Register the pause shortcut (called when recording starts)
 pub fn register_pause_shortcut(app: &AppHandle) {
     let settings = get_settings(app);

@@ -4,7 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
 
 const MAX_RECENT_SESSIONS: usize = 20;
-const PREVIEW_WORD_LIMIT: usize = 24;
+const REDACTED_TEXT_PREVIEW: &str = "[redacted]";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
@@ -153,7 +153,7 @@ impl ParakeetDiagnosticsState {
         session_id: u64,
         completion: ParakeetSessionCompletion,
         duration_samples: usize,
-        assembled_text: &str,
+        _assembled_text: &str,
     ) -> Option<ParakeetSessionDiagnostics> {
         let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         let mut session = inner.active_sessions.remove(&session_id)?;
@@ -169,7 +169,7 @@ impl ParakeetDiagnosticsState {
         session.base.finalization_recoveries = completion.finalization_recoveries;
         let duration_secs = duration_samples as f32 / 16_000.0;
         session.base.duration_secs = duration_secs;
-        session.base.assembled_preview = preview_words(assembled_text, PREVIEW_WORD_LIMIT);
+        session.base.assembled_preview = REDACTED_TEXT_PREVIEW.to_string();
         session.base.audio_to_word_ratio = if duration_secs > 0.0 {
             session.base.output_words as f32 / duration_secs
         } else {
@@ -198,13 +198,6 @@ impl ParakeetDiagnosticsState {
             recent_sessions: inner.recent_sessions.iter().cloned().collect(),
         }
     }
-}
-
-fn preview_words(text: &str, limit: usize) -> String {
-    text.split_whitespace()
-        .take(limit)
-        .collect::<Vec<_>>()
-        .join(" ")
 }
 
 fn infer_failure_mode(session: &ParakeetSessionDiagnostics) -> ParakeetFailureMode {

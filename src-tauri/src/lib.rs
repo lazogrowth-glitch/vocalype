@@ -28,7 +28,9 @@ mod security;
 // continue to resolve without changes.
 
 // processing
-pub use processing::{code_dictation, correction_tracker, dictionary, filler, post_processing, punctuation};
+pub use processing::{
+    code_dictation, correction_tracker, dictionary, filler, post_processing, punctuation,
+};
 // security
 pub use security::{bundle_signing, integrity, license, model_crypto, secret_store};
 // llm
@@ -1132,6 +1134,9 @@ pub fn run(cli_args: CliArgs) {
             // est dÃ©jÃ  chargÃ© ou en cours de chargement â†’ l'app s'affiche prÃªte immÃ©diatement.
             startup_warmup::ensure_startup_warmup(&app_handle, "early-startup");
             log::info!("[startup] model pre-warm launched");
+
+            // Pre-download LLM binary + model in background so it's ready when the user activates the feature.
+            llama_server::spawn_prefetch(&app_handle);
 
             // Register vocalype:// URL scheme (needed on Windows/Linux in dev)
             #[cfg(not(target_os = "macos"))]

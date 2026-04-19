@@ -1649,8 +1649,23 @@ async pullOllamaModel(model: string) : Promise<Result<null, string>> {
 }
 },
 /**
- * Download binary + model (if needed) and start the embedded llama-server.
- * Emits `llm-setup-progress` events throughout.
+ * Pre-load a model into Ollama's memory so the first real request is instant.
+ * Sends a tiny dummy chat completion with `keep_alive: -1` so the model
+ * stays loaded indefinitely after warmup.
+ * Fire-and-forget from the frontend — errors are silently ignored.
+ */
+async warmupOllamaModel(model: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("warmup_ollama_model", { model }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Full setup: download binary + model (if needed) then start the server.
+ * Emits `llm-setup-progress` events so the frontend can show a progress bar.
+ * Idempotent — safe to call on every "Activer" click.
  */
 async setupLlamaServer() : Promise<Result<null, string>> {
     try {
@@ -1660,7 +1675,9 @@ async setupLlamaServer() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-/** Returns binary_ready, model_ready, server_running, port. */
+/**
+ * Lightweight status check — no side effects.
+ */
 async checkLlamaServerStatus() : Promise<Result<LlamaServerStatus, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("check_llama_server_status") };
@@ -1669,7 +1686,9 @@ async checkLlamaServerStatus() : Promise<Result<LlamaServerStatus, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-/** Kill the embedded llama-server process to free RAM. */
+/**
+ * Stop the server (called when "Clean for LLM" is disabled or app exits).
+ */
 async stopLlamaServer() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("stop_llama_server") };
@@ -1809,7 +1828,11 @@ process_name: string | null;
 /**
  * Window title at capture time.
  */
-window_title: string | null; category: AppContextCategory; detected_at_ms: number }
+window_title: string | null; category: AppContextCategory; 
+/**
+ * Detected coding language (only set when category == Code).
+ */
+code_language?: CodeLanguage | null; detected_at_ms: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AudioInputLevelState = "unknown" | "silent" | "weak" | "healthy" | "hot"
 export type AudioTranscriptSegment = { start_ms: number; end_ms: number; text: string }
@@ -1820,6 +1843,7 @@ export type BindingResponse = { success: boolean; binding: ShortcutBinding | nul
 export type CalibrationPhase = "none" | "quick" | "full"
 export type CalibrationStatusSnapshot = { model_id: string; phase: CalibrationPhase; state: AdaptiveCalibrationState; detail: string | null; updated_at_ms: number }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
+export type CodeLanguage = "rust" | "python" | "java_script" | "type_script" | "go" | "java" | "c_sharp" | "cpp" | "html" | "css" | "shell" | "json" | "toml" | "yaml" | "markdown"
 export type ConfidenceWord = { text: string; confidence: number }
 /**
  * A suggested dictionary entry derived from a user correction.
@@ -1889,6 +1913,7 @@ top_corrections: TopCorrection[] }
 export type LicenseRuntimeState = { state: LicenseState; reason: string | null; device_id: string | null; grant_expires_at: string | null; offline_expires_at: string | null; grace_until: string | null; entitlement_status: string | null; last_refreshed_at: string | null; integrity_anomalies: string[] }
 export type LicenseState = "online_valid" | "offline_valid" | "expired"
 export type LifecycleStateEvent = { state: TranscriptionLifecycleState; operation_id: number | null; binding_id: string | null; detail: string | null; recoverable: boolean; timestamp_ms: number }
+export type LlamaServerStatus = { binary_ready: boolean; model_ready: boolean; server_running: boolean; port: number }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 export type MachineScoreDetails = { ram_score?: number; cpu_threads_score?: number; cpu_family_score?: number; gpu_prebench_bonus?: number; npu_prebench_bonus?: number; low_power_penalty?: number; power_penalty?: number; thermal_penalty?: number; final_score?: number; tier_reason?: string }
 export type MachineStatusMode = "optimal" | "battery" | "saver" | "thermal" | "memory_limited" | "fallback" | "calibrating"
@@ -1904,7 +1929,6 @@ export type NoteEntry = { id: number; title: string; content: string; category: 
 export type NpuKind = "none" | "qualcomm" | "intel" | "amd" | "unknown"
 export type OllamaModelInfo = { name: string; size_gb: number }
 export type OllamaStatus = { available: boolean; models: OllamaModelInfo[] }
-export type LlamaServerStatus = { binary_ready: boolean; model_ready: boolean; server_running: boolean; port: number }
 export type OverlayPosition = "none" | "top" | "bottom"
 export type ParakeetDiagnosticsSnapshot = { active_session: ParakeetSessionDiagnostics | null; recent_sessions: ParakeetSessionDiagnostics[] }
 export type ParakeetFailureMode = "healthy" | "underchunking_long_utterance" | "overtrim_overlap" | "missing_word_timestamps" | "retry_recovered_chunk" | "final_chunk_hallucination" | "low_audio_density" | "boundary_word_loss"

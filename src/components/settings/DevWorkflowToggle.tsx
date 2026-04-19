@@ -22,14 +22,20 @@ interface SetupProgress {
 
 export const DevWorkflowToggle: React.FC = () => {
   const { t } = useTranslation();
-  const { settings, updateSetting } = useSettings();
+  const { settings, updateSetting, refreshSettings } = useSettings();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<SetupProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const isDevModeOn =
-    settings?.post_process_enabled === true &&
-    settings?.post_process_selected_prompt_id === DEV_PROMPT_ID;
+  const [isDevModeOn, setIsDevModeOn] = useState(() => {
+    const devPrompt = settings?.post_process_prompts?.find(
+      (p) => p.id === DEV_PROMPT_ID || p.name === DEV_PROMPT_NAME,
+    );
+    return (
+      settings?.post_process_enabled === true &&
+      !!devPrompt &&
+      settings?.post_process_selected_prompt_id === devPrompt?.id
+    );
+  });
 
   // Subscribe to progress events from the Rust backend.
   useEffect(() => {
@@ -43,62 +49,84 @@ export const DevWorkflowToggle: React.FC = () => {
   }, [loading]);
 
   const enable = useCallback(async () => {
+    console.log("[DevWorkflow] enable clicked");
     setLoading(true);
     setError(null);
     setProgress(null);
 
     try {
-      // 1. Download binary + model (if needed) and start server.
-      //    Progress is streamed via "llm-setup-progress" events above.
+      console.log("[DevWorkflow] calling setupLlamaServer...");
       const setupResult = await commands.setupLlamaServer();
+      console.log("[DevWorkflow] setupLlamaServer result:", setupResult);
       if (setupResult.status === "error") {
         setError(setupResult.error);
         return;
       }
 
-      // 2. Switch post-process provider to vocalype-llm.
+      console.log("[DevWorkflow] setting provider...");
       const providerResult = await commands.setPostProcessProvider(PROVIDER_ID);
+      console.log("[DevWorkflow] providerResult:", providerResult);
       if (providerResult.status === "error") {
         setError(providerResult.error);
         return;
       }
 
       // 3. Set model.
+      console.log("[DevWorkflow] setting model...");
       const modelResult = await commands.changePostProcessModelSetting(
         PROVIDER_ID,
         MODEL_ID,
       );
+      console.log("[DevWorkflow] modelResult:", modelResult);
       if (modelResult.status === "error") {
         setError(modelResult.error);
         return;
       }
 
       // 4. Ensure the "Clean for LLM" prompt exists.
+      let promptId = DEV_PROMPT_ID;
       const existing = settings?.post_process_prompts?.find(
         (p) => p.id === DEV_PROMPT_ID,
       );
+      console.log(
+        "[DevWorkflow] existing prompt:",
+        existing,
+        "all prompts:",
+        settings?.post_process_prompts,
+      );
       if (!existing) {
+        console.log("[DevWorkflow] adding prompt...");
         const promptResult = await commands.addPostProcessPrompt(
           DEV_PROMPT_NAME,
           DEV_PROMPT_TEXT,
         );
+        console.log("[DevWorkflow] promptResult:", promptResult);
         if (promptResult.status === "error") {
           setError(promptResult.error);
           return;
         }
+        promptId = promptResult.data.id;
       }
 
       // 5. Select the prompt.
+      console.log("[DevWorkflow] selecting prompt id:", promptId);
       const selectResult =
-        await commands.setPostProcessSelectedPrompt(DEV_PROMPT_ID);
+        await commands.setPostProcessSelectedPrompt(promptId);
+      console.log("[DevWorkflow] selectResult:", selectResult);
       if (selectResult.status === "error") {
         setError(selectResult.error);
         return;
       }
 
       // 6. Enable post-processing.
+      console.log("[DevWorkflow] enabling post-processing...");
+      updateSetting("post_process_selected_prompt_id", promptId);
       updateSetting("post_process_enabled", true);
+      await refreshSettings();
+      setIsDevModeOn(true);
+      console.log("[DevWorkflow] done!");
     } catch (e) {
+      console.error("[DevWorkflow] caught error:", e);
       setError(String(e));
     } finally {
       setLoading(false);
@@ -108,8 +136,8 @@ export const DevWorkflowToggle: React.FC = () => {
 
   const disable = useCallback(async () => {
     updateSetting("post_process_enabled", false);
+    setIsDevModeOn(false);
     setError(null);
-    // Stop server to free RAM.
     await commands.stopLlamaServer().catch(() => {});
   }, [updateSetting]);
 

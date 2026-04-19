@@ -110,77 +110,77 @@ fn apply_multi_word_operators(s: &mut String) {
     // Listed longest-first so sub-phrases don't match early.
     const OPERATORS: &[(&str, &str)] = &[
         // Equality / comparison
-        ("triple equals",           "==="),
-        ("strict equals",           "==="),
-        ("double equals",           "=="),
-        ("equals equals",           "=="),
-        ("not equals",              "!="),
-        ("not equal",               "!="),
-        ("bang equals",             "!="),
-        ("strictly not equal",      "!=="),
-        ("greater than or equal to",">="),
-        ("greater than or equal",   ">="),
-        ("greater or equal",        ">="),
-        ("less than or equal to",   "<="),
-        ("less than or equal",      "<="),
-        ("less or equal",           "<="),
-        ("greater than",            ">"),
-        ("less than",               "<"),
+        ("triple equals", "==="),
+        ("strict equals", "==="),
+        ("double equals", "=="),
+        ("equals equals", "=="),
+        ("not equals", "!="),
+        ("not equal", "!="),
+        ("bang equals", "!="),
+        ("strictly not equal", "!=="),
+        ("greater than or equal to", ">="),
+        ("greater than or equal", ">="),
+        ("greater or equal", ">="),
+        ("less than or equal to", "<="),
+        ("less than or equal", "<="),
+        ("less or equal", "<="),
+        ("greater than", ">"),
+        ("less than", "<"),
         // Logical
-        ("double ampersand",        "&&"),
-        ("and and",                 "&&"),
-        ("logical and",             "&&"),
-        ("double pipe",             "||"),
-        ("pipe pipe",               "||"),
-        ("logical or",              "||"),
+        ("double ampersand", "&&"),
+        ("and and", "&&"),
+        ("logical and", "&&"),
+        ("double pipe", "||"),
+        ("pipe pipe", "||"),
+        ("logical or", "||"),
         // Arrows
-        ("fat arrow",               "=>"),
-        ("double arrow",            "=>"),
-        ("right arrow",             "->"),
-        ("thin arrow",              "->"),
-        ("left arrow",              "<-"),
+        ("fat arrow", "=>"),
+        ("double arrow", "=>"),
+        ("right arrow", "->"),
+        ("thin arrow", "->"),
+        ("left arrow", "<-"),
         // Brackets
-        ("open parenthesis",        "("),
-        ("close parenthesis",       ")"),
-        ("open paren",              "("),
-        ("close paren",             ")"),
-        ("left paren",              "("),
-        ("right paren",             ")"),
-        ("open bracket",            "["),
-        ("close bracket",           "]"),
-        ("left bracket",            "["),
-        ("right bracket",           "]"),
-        ("open brace",              "{"),
-        ("close brace",             "}"),
-        ("left brace",              "{"),
-        ("right brace",             "}"),
-        ("open curly",              "{"),
-        ("close curly",             "}"),
-        ("open angle",              "<"),
-        ("close angle",             ">"),
+        ("open parenthesis", "("),
+        ("close parenthesis", ")"),
+        ("open paren", "("),
+        ("close paren", ")"),
+        ("left paren", "("),
+        ("right paren", ")"),
+        ("open bracket", "["),
+        ("close bracket", "]"),
+        ("left bracket", "["),
+        ("right bracket", "]"),
+        ("open brace", "{"),
+        ("close brace", "}"),
+        ("left brace", "{"),
+        ("right brace", "}"),
+        ("open curly", "{"),
+        ("close curly", "}"),
+        ("open angle", "<"),
+        ("close angle", ">"),
         // Arithmetic
-        ("plus equals",             "+="),
-        ("minus equals",            "-="),
-        ("times equals",            "*="),
-        ("divide equals",           "/="),
-        ("modulo equals",           "%="),
+        ("plus equals", "+="),
+        ("minus equals", "-="),
+        ("times equals", "*="),
+        ("divide equals", "/="),
+        ("modulo equals", "%="),
         // Bitwise
-        ("bitwise and",             "&"),
-        ("bitwise or",              "|"),
-        ("bitwise xor",             "^"),
-        ("shift left",              "<<"),
-        ("shift right",             ">>"),
+        ("bitwise and", "&"),
+        ("bitwise or", "|"),
+        ("bitwise xor", "^"),
+        ("shift left", "<<"),
+        ("shift right", ">>"),
         // Double-char symbols
-        ("double colon",            "::"),
-        ("double slash",            "//"),
-        ("double dot",              ".."),
-        ("triple dot",              "..."),
-        ("spread operator",         "..."),
-        ("rest operator",           "..."),
+        ("double colon", "::"),
+        ("double slash", "//"),
+        ("double dot", ".."),
+        ("triple dot", "..."),
+        ("spread operator", "..."),
+        ("rest operator", "..."),
         // Whitespace
-        ("new line",                "\n"),
-        ("newline",                 "\n"),
-        ("tab character",           "\t"),
+        ("new line", "\n"),
+        ("newline", "\n"),
+        ("tab character", "\t"),
     ];
 
     for (phrase, symbol) in OPERATORS {
@@ -193,18 +193,18 @@ fn apply_multi_word_operators(s: &mut String) {
 fn apply_language_specific(s: &mut String, language: Option<CodeLanguage>) {
     match language {
         Some(CodeLanguage::Rust) => {
-            *s = replace_word_phrase(s, "arrow",     "->");
-            *s = replace_word_phrase(s, "lifetime",  "'");
+            *s = replace_word_phrase(s, "arrow", "->");
+            *s = replace_word_phrase(s, "lifetime", "'");
         }
         Some(CodeLanguage::Python) => {
-            *s = replace_word_phrase(s, "arrow",     "->");
+            *s = replace_word_phrase(s, "arrow", "->");
             // Python doesn't use semicolons — leave "semicolon" for the universal pass
         }
         Some(CodeLanguage::JavaScript) | Some(CodeLanguage::TypeScript) => {
-            *s = replace_word_phrase(s, "arrow",     "=>");
+            *s = replace_word_phrase(s, "arrow", "=>");
         }
         Some(CodeLanguage::Go) => {
-            *s = replace_word_phrase(s, "arrow",     "<-");
+            *s = replace_word_phrase(s, "arrow", "<-");
             *s = replace_word_phrase(s, "short assign", ":=");
         }
         _ => {
@@ -219,41 +219,41 @@ fn apply_language_specific(s: &mut String, language: Option<CodeLanguage>) {
 fn apply_symbol_words(s: &mut String) {
     const SYMBOLS: &[(&str, &str)] = &[
         // Assignment
-        ("equals",      "="),
+        ("equals", "="),
         // Arithmetic
-        ("plus",        "+"),
-        ("minus",       "-"),
-        ("times",       "*"),
-        ("multiply",    "*"),
-        ("divided",     "/"),
-        ("divide",      "/"),
-        ("slash",       "/"),
-        ("modulo",      "%"),
-        ("percent",     "%"),
+        ("plus", "+"),
+        ("minus", "-"),
+        ("times", "*"),
+        ("multiply", "*"),
+        ("divided", "/"),
+        ("divide", "/"),
+        ("slash", "/"),
+        ("modulo", "%"),
+        ("percent", "%"),
         // Punctuation
-        ("semicolon",   ";"),
-        ("colon",       ":"),
-        ("comma",       ","),
-        ("period",      "."),
-        ("dot",         "."),
-        ("bang",        "!"),
+        ("semicolon", ";"),
+        ("colon", ":"),
+        ("comma", ","),
+        ("period", "."),
+        ("dot", "."),
+        ("bang", "!"),
         ("exclamation", "!"),
         // Quotes & special
-        ("backtick",    "`"),
-        ("tilde",       "~"),
-        ("caret",       "^"),
-        ("ampersand",   "&"),
-        ("pipe",        "|"),
-        ("at",          "@"),
-        ("hash",        "#"),
-        ("pound",       "#"),
-        ("dollar",      "$"),
-        ("underscore",  "_"),
-        ("backslash",   "\\"),
-        ("question",    "?"),
+        ("backtick", "`"),
+        ("tilde", "~"),
+        ("caret", "^"),
+        ("ampersand", "&"),
+        ("pipe", "|"),
+        ("at", "@"),
+        ("hash", "#"),
+        ("pound", "#"),
+        ("dollar", "$"),
+        ("underscore", "_"),
+        ("backslash", "\\"),
+        ("question", "?"),
         // Quotes
-        ("quote",       "\""),
-        ("apostrophe",  "'"),
+        ("quote", "\""),
+        ("apostrophe", "'"),
     ];
 
     for (word, symbol) in SYMBOLS {
@@ -268,7 +268,7 @@ fn apply_symbol_words(s: &mut String) {
 fn apply_spacing_cleanup(s: &mut String) {
     // Collapse spaces around punctuation-only tokens
     const NO_SPACE_BEFORE: &[char] = &['.', '(', '[', '{', ')', ']', '}', ',', ';', ':'];
-    const NO_SPACE_AFTER: &[char]  = &['(', '[', '{', '.'];
+    const NO_SPACE_AFTER: &[char] = &['(', '[', '{', '.'];
 
     let mut out = String::with_capacity(s.len());
     let chars: Vec<char> = s.chars().collect();
@@ -283,8 +283,7 @@ fn apply_spacing_cleanup(s: &mut String) {
             let next = chars.get(i + 1).copied().unwrap_or(' ');
             let prev = out.chars().last().unwrap_or(' ');
 
-            let drop_space = NO_SPACE_BEFORE.contains(&next)
-                || NO_SPACE_AFTER.contains(&prev);
+            let drop_space = NO_SPACE_BEFORE.contains(&next) || NO_SPACE_AFTER.contains(&prev);
 
             if !drop_space {
                 out.push(ch);
@@ -317,8 +316,8 @@ fn replace_word_phrase(s: &str, phrase: &str, replacement: &str) -> String {
 
     while pos <= lower.len().saturating_sub(plen) {
         if lower[pos..].starts_with(phrase_lower.as_str()) {
-            let before_ok = pos == 0
-                || !bytes[pos - 1].is_ascii_alphanumeric() && bytes[pos - 1] != b'_';
+            let before_ok =
+                pos == 0 || !bytes[pos - 1].is_ascii_alphanumeric() && bytes[pos - 1] != b'_';
             let after_pos = pos + plen;
             let after_ok = after_pos >= lower.len()
                 || !bytes[after_pos].is_ascii_alphanumeric() && bytes[after_pos] != b'_';
@@ -366,13 +365,19 @@ mod tests {
 
     #[test]
     fn rust_uses_thin_arrow() {
-        let result = apply_code_dictation("fn foo open paren close paren arrow String", Some(CodeLanguage::Rust));
+        let result = apply_code_dictation(
+            "fn foo open paren close paren arrow String",
+            Some(CodeLanguage::Rust),
+        );
         assert!(result.contains("->"), "expected '->' in: {result}");
     }
 
     #[test]
     fn js_uses_fat_arrow() {
-        let result = apply_code_dictation("const f equals open paren x close paren arrow x plus 1", Some(CodeLanguage::JavaScript));
+        let result = apply_code_dictation(
+            "const f equals open paren x close paren arrow x plus 1",
+            Some(CodeLanguage::JavaScript),
+        );
         assert!(result.contains("=>"), "expected '=>' in: {result}");
     }
 
@@ -416,6 +421,9 @@ mod tests {
     fn triple_equals_before_double() {
         let result = apply_code_dictation("if x triple equals y", None);
         assert!(result.contains("==="), "got: {result}");
-        assert!(!result.contains("===="), "should not have four equals: {result}");
+        assert!(
+            !result.contains("===="),
+            "should not have four equals: {result}"
+        );
     }
 }

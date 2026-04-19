@@ -2072,7 +2072,6 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             }
 
             if should_auto_paste(effective_status) && !transcription.is_empty() {
-
                 let outcome = process_transcription_text(
                     &ah,
                     operation_id,

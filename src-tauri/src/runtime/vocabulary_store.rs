@@ -960,10 +960,8 @@ mod tests {
 
     #[test]
     fn camel_split_pascal_component() {
-        let result = apply_custom_word_splits(
-            "return my component props",
-            &["MyComponent".to_string()],
-        );
+        let result =
+            apply_custom_word_splits("return my component props", &["MyComponent".to_string()]);
         assert!(result.contains("MyComponent"), "got: {result}");
     }
 

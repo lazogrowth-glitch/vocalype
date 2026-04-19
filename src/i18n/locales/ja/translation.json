@@ -464,6 +464,25 @@
       "adaptiveVoiceProfile": {
         "label": "Adaptive voice profile",
         "description": "Learns your speaking pace and pauses on this device to gradually tune Whisper."
+      },
+      "startup": {
+        "label": "Launch on Startup",
+        "description": "Automatically start Vocalype in the background when you log in."
+      },
+      "devWorkflow": {
+        "label": "Clean for LLM",
+        "description": "Reformat your dictation into a clean prompt (local LLM, 100% private, no install needed).",
+        "activeDescription": "Active — prompt reformatted locally before paste",
+        "activate": "Enable",
+        "deactivate": "Disable",
+        "errors": {
+          "checkFailed": "Cannot verify LLM. Please try again.",
+          "notInstalled": "LLM not available. Please try again.",
+          "notStarted": "LLM did not start. Please try again.",
+          "downloading": "Downloading model...",
+          "downloadFailed": "Download failed: {{error}}",
+          "modelNotFound": "Model not found. Restart the app."
+        }
       }
     },
     "postProcessing": {

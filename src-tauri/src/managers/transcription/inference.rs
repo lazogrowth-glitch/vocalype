@@ -819,7 +819,8 @@ impl TranscriptionManager {
         let learned_result = if matches!(
             app_context.as_ref().map(|c| c.category),
             Some(crate::context_detector::AppContextCategory::Code)
-        ) && (!settings.custom_words.is_empty() || !session_glossary_terms.is_empty())
+        ) && (!settings.custom_words.is_empty()
+            || !session_glossary_terms.is_empty())
         {
             let mut split_words = settings.custom_words.clone();
             split_words.extend(session_glossary_terms.iter().cloned());

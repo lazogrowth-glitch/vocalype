@@ -153,7 +153,10 @@ pub fn spawn_clipboard_watcher(app: tauri::AppHandle, interval_ms: u64) {
     use tauri_plugin_clipboard_manager::ClipboardExt;
 
     thread::spawn(move || {
-        debug!("[session_glossary] clipboard watcher started ({}ms interval)", interval_ms);
+        debug!(
+            "[session_glossary] clipboard watcher started ({}ms interval)",
+            interval_ms
+        );
         loop {
             thread::sleep(Duration::from_millis(interval_ms));
 
@@ -162,10 +165,7 @@ pub fn spawn_clipboard_watcher(app: tauri::AppHandle, interval_ms: u64) {
             let app_for_read = app.clone();
             if app
                 .run_on_main_thread(move || {
-                    let text = app_for_read
-                        .clipboard()
-                        .read_text()
-                        .unwrap_or_default();
+                    let text = app_for_read.clipboard().read_text().unwrap_or_default();
                     let _ = tx.send(text);
                 })
                 .is_err()
@@ -208,7 +208,10 @@ mod tests {
     #[test]
     fn extracts_camel_case() {
         let ids = extract_code_identifiers("let result = useState(false);");
-        assert!(ids.contains(&"useState".to_string()), "should find useState");
+        assert!(
+            ids.contains(&"useState".to_string()),
+            "should find useState"
+        );
     }
 
     #[test]

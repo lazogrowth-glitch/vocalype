@@ -1614,23 +1614,21 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             // Skip chunk-cleanup LLM when the post-processing LLM is going to run
             // on this same text anyway — it will fix stitching artifacts too.
             // This avoids paying for two sequential LLM calls on the same content.
-            let post_process_will_run = post_process
-                || (llm_auto_mode && auto_llm_should_trigger(&ah, &assembled));
-            let transcription = if chunk_count >= 2
-                && !assembled.is_empty()
-                && !post_process_will_run
-            {
-                let settings_for_cleanup = get_settings(&ah);
-                cleanup_assembled_transcription_with_strategy(
-                    &settings_for_cleanup,
-                    &assembled,
-                    &cleanup_strategy.llm_cleanup,
-                )
-                .await
-                .unwrap_or(assembled)
-            } else {
-                assembled
-            };
+            let post_process_will_run =
+                post_process || (llm_auto_mode && auto_llm_should_trigger(&ah, &assembled));
+            let transcription =
+                if chunk_count >= 2 && !assembled.is_empty() && !post_process_will_run {
+                    let settings_for_cleanup = get_settings(&ah);
+                    cleanup_assembled_transcription_with_strategy(
+                        &settings_for_cleanup,
+                        &assembled,
+                        &cleanup_strategy.llm_cleanup,
+                    )
+                    .await
+                    .unwrap_or(assembled)
+                } else {
+                    assembled
+                };
             if let Ok(mut p) = profiler.lock() {
                 p.push_step_since(
                     "chunk_cleanup",
@@ -2134,9 +2132,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 //   1. Code context — glossary has ≥ 3 extracted identifiers
                 //   2. Text complexity — the transcription itself contains filler words
                 //      OR at least one glossary term (i.e. it's technical/messy)
-                let effective_post_process = post_process || (llm_auto_mode && {
-                    auto_llm_should_trigger(&ah, &transcription)
-                });
+                let effective_post_process = post_process
+                    || (llm_auto_mode && { auto_llm_should_trigger(&ah, &transcription) });
                 let outcome = process_transcription_text(
                     &ah,
                     operation_id,
@@ -2218,9 +2215,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     );
                 }
                 emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
-                let effective_post_process = post_process || (llm_auto_mode && {
-                    auto_llm_should_trigger(&ah, &transcription)
-                });
+                let effective_post_process = post_process
+                    || (llm_auto_mode && { auto_llm_should_trigger(&ah, &transcription) });
                 let outcome = process_transcription_text(
                     &ah,
                     operation_id,

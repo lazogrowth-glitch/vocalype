@@ -262,7 +262,7 @@ export function useBackendEvents({
       }
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [settings, setCurrentSection]);
 
@@ -275,7 +275,7 @@ export function useBackendEvents({
       });
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t]);
 
@@ -301,7 +301,7 @@ export function useBackendEvents({
       );
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t]);
 
@@ -346,7 +346,7 @@ export function useBackendEvents({
       );
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t]);
 
@@ -387,7 +387,7 @@ export function useBackendEvents({
       },
     );
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t]);
 
@@ -426,7 +426,7 @@ export function useBackendEvents({
       },
     );
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t, clearCommandModeCountdown]);
 
@@ -440,7 +440,7 @@ export function useBackendEvents({
       );
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t, clearCommandModeCountdown]);
 
@@ -451,7 +451,7 @@ export function useBackendEvents({
       toast.dismiss("command-mode");
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [clearCommandModeCountdown]);
 
@@ -471,7 +471,7 @@ export function useBackendEvents({
       },
     );
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t, clearCommandModeCountdown]);
 
@@ -491,7 +491,7 @@ export function useBackendEvents({
       }
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t]);
 
@@ -507,7 +507,7 @@ export function useBackendEvents({
       );
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn?.());
     };
   }, [t]);
 }

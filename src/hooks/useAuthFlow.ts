@@ -5,6 +5,7 @@ import { authClient } from "@/lib/auth/client";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
 import { licenseClient } from "@/lib/license/client";
 import type { LicenseRuntimeState } from "@/lib/license/types";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { useSessionRefresh } from "./useSessionRefresh";
 
 const isExpectedMissingLicenseMessage = (value: unknown) => {
@@ -141,9 +142,7 @@ export function useAuthFlow(
         );
         if (!isExpectedMissingLicenseMessage(licenseError)) {
           setAuthError(
-            licenseError instanceof Error
-              ? licenseError.message
-              : "Activation failed",
+            getUserFacingErrorMessage(licenseError, { t, context: "auth" }),
           );
         }
         try {
@@ -242,9 +241,7 @@ export function useAuthFlow(
         applySession(nextSession);
       } catch (error) {
         console.error("Authentication failed:", error);
-        setAuthError(
-          error instanceof Error ? error.message : "Authentication failed",
-        );
+        setAuthError(getUserFacingErrorMessage(error, { t, context: "auth" }));
       } finally {
         setAuthSubmitting(false);
       }
@@ -269,9 +266,7 @@ export function useAuthFlow(
           );
           if (!isExpectedMissingLicenseMessage(licenseError)) {
             setAuthError(
-              licenseError instanceof Error
-                ? licenseError.message
-                : "Activation failed",
+              getUserFacingErrorMessage(licenseError, { t, context: "auth" }),
             );
           }
           try {
@@ -285,7 +280,7 @@ export function useAuthFlow(
         }
       } catch (error) {
         console.error("Deep link auth failed:", error);
-        setAuthError(error instanceof Error ? error.message : "Auth failed");
+        setAuthError(getUserFacingErrorMessage(error, { t, context: "auth" }));
       } finally {
         setAuthLoading(false);
         setAuthSubmitting(false);
@@ -445,11 +440,13 @@ export function useAuthFlow(
         t("auth.locked", { defaultValue: "Premium access required" }),
         {
           duration: 8000,
-          description:
-            event.payload ||
-            t("auth.errors.networkError", {
-              defaultValue: "Reconnect to validate your subscription.",
+          description: getUserFacingErrorMessage(event.payload, {
+            t,
+            context: "auth",
+            fallback: t("auth.errors.networkError", {
+              defaultValue: "Reconnectez-vous pour valider votre abonnement.",
             }),
+          }),
         },
       );
     });

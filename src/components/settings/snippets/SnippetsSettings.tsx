@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { commands, type VoiceSnippet } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { Button } from "../../ui/Button";
 
 const snippetPillClassName =
@@ -172,8 +173,9 @@ export const SnippetsSettings: React.FC = () => {
       await load();
       return;
     }
-    toast.error(result.error);
-    throw new Error(result.error);
+    const message = getUserFacingErrorMessage(result.error, { t });
+    toast.error(message);
+    throw new Error(message);
   };
 
   const handleEdit = async (trigger: string, expansion: string) => {
@@ -187,8 +189,9 @@ export const SnippetsSettings: React.FC = () => {
       await load();
       return;
     }
-    toast.error(result.error);
-    throw new Error(result.error);
+    const message = getUserFacingErrorMessage(result.error, { t });
+    toast.error(message);
+    throw new Error(message);
   };
 
   const handleRemove = async (id: string) => {
@@ -197,10 +200,10 @@ export const SnippetsSettings: React.FC = () => {
       if (result.status === "ok") {
         await load();
       } else {
-        toast.error(result.error);
+        toast.error(getUserFacingErrorMessage(result.error, { t }));
       }
     } catch (e) {
-      toast.error(String(e));
+      toast.error(getUserFacingErrorMessage(e, { t }));
     }
   };
 

@@ -31,6 +31,7 @@ import { useOsType } from "@/hooks/useOsType";
 import { useModelStore } from "@/stores/modelStore";
 import { ConfidenceText } from "./ConfidenceText";
 import { usePlan } from "@/lib/subscription/context";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { Button } from "../../ui/Button";
 import { useSettings } from "@/hooks/useSettings";
 
@@ -143,7 +144,7 @@ const ExportHistoryButton: React.FC = () => {
           }),
         );
       } else {
-        toast.error(result.error);
+        toast.error(getUserFacingErrorMessage(result.error, { t }));
       }
     } catch (e) {
       console.error(e);
@@ -293,7 +294,7 @@ const TranscribeFileButton: React.FC = () => {
           }),
         );
       } else {
-        toast.error(result.error);
+        toast.error(getUserFacingErrorMessage(result.error, { t }));
       }
     } catch (e) {
       console.error(e);
@@ -1099,7 +1100,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       );
       return;
     }
-    toast.error(error);
+    toast.error(getUserFacingErrorMessage(error, { t }));
   };
 
   const handleDeleteEntry = async () => {

@@ -3,8 +3,10 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ExternalLink, Loader2, LogOut, ShieldAlert } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { useModelStore } from "@/stores/modelStore";
 
 const MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
@@ -145,6 +147,7 @@ export const AuthPortal = ({
   onRefreshSession,
   onLogout,
 }: AuthPortalProps) => {
+  const { t } = useTranslation();
   const [browserBusy, setBrowserBusy] = useState<"signup" | "login" | null>(
     null,
   );
@@ -156,7 +159,9 @@ export const AuthPortal = ({
   const canInteract =
     !isLoading && !isSubmitting && !autoRefreshBusy && browserBusy === null;
   const displayError =
-    error && !isExpectedMissingLicenseMessage(error) ? error.trim() : null;
+    error && !isExpectedMissingLicenseMessage(error)
+      ? getUserFacingErrorMessage(error, { t, context: "auth" })
+      : null;
 
   useEffect(() => {
     if (!session) {
@@ -201,10 +206,12 @@ export const AuthPortal = ({
       }
       await openUrl(buildBrowserAuthUrl(intent, result.data));
     } catch (openError) {
-      const message =
-        openError instanceof Error
-          ? openError.message
-          : "Impossible d'ouvrir le navigateur.";
+      const message = getUserFacingErrorMessage(openError, {
+        t,
+        context: "auth",
+        fallback:
+          "Impossible d'ouvrir le navigateur. Reessayez dans un instant.",
+      });
       toast.error("Ouverture impossible", { description: message });
     } finally {
       setBrowserBusy(null);
@@ -217,10 +224,12 @@ export const AuthPortal = ({
       const url = await action();
       await openUrl(url);
     } catch (billingError) {
-      const message =
-        billingError instanceof Error
-          ? billingError.message
-          : "Impossible d'ouvrir la facturation.";
+      const message = getUserFacingErrorMessage(billingError, {
+        t,
+        context: "auth",
+        fallback:
+          "Impossible d'ouvrir la facturation. Reessayez dans un instant.",
+      });
       toast.error("Ouverture impossible", { description: message });
     } finally {
       setBillingBusy(false);

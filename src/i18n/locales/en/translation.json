@@ -468,8 +468,8 @@
         }
       },
       "autoSubmit": {
-        "title": "Auto Submit",
-        "description": "Automatically send the selected key combination after text insertion. Cmd+Enter applies on macOS, while Windows/Linux use Super+Enter.",
+        "title": "Auto send after paste",
+        "description": "Automatically press a key after text is pasted — useful to send messages or confirm input.",
         "options": {
           "off": "Off",
           "enter": "Enter",
@@ -506,8 +506,8 @@
         "duplicate": "\"{{word}}\" already exists"
       },
       "adaptiveVocabulary": {
-        "label": "Adaptive vocabulary",
-        "description": "Learns spellings and terms by app context on this device to better guide Whisper."
+        "label": "Learn my words",
+        "description": "Automatically learns terms you use often to improve recognition accuracy."
       },
       "adaptiveVoiceProfile": {
         "label": "Adaptive voice profile",
@@ -751,8 +751,8 @@
         "description": "Mute system audio during recording"
       },
       "appendTrailingSpace": {
-        "label": "Append Trailing Space",
-        "description": "Add a space after pasted transcription"
+        "label": "Space after paste",
+        "description": "Adds a space after the pasted text so the next word starts cleanly."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
@@ -879,6 +879,14 @@
       "audioCaptureFailed": "Audio capture failed. Try a different microphone in Settings.",
       "generic": "{{detail}}",
       "unknownPasteReason": "An unexpected error occurred."
+    },
+    "userFacing": {
+      "generic": "Something went wrong. Please try again in a moment.",
+      "network": "Unable to connect. Check your internet connection, then try again.",
+      "accessRequired": "Your access needs to be verified. Sign in again or open your subscription.",
+      "microphone": "Vocalype cannot use the microphone. Check permission and the selected microphone.",
+      "model": "The voice model could not be prepared. Check your connection and try again.",
+      "agent": "The assistant could not respond. Please try again in a moment."
     }
   },
   "error": {

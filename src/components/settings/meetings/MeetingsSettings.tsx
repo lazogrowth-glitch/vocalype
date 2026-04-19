@@ -28,6 +28,7 @@ import {
   type MeetingEntry,
   type MeetingSegmentEntry,
 } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { Button } from "../../ui/Button";
 
 function formatDate(ms: number): string {
@@ -423,7 +424,7 @@ export const MeetingsSettings: React.FC = () => {
     const normalized = value.trim();
     const res = await commands.setMeetingCategory(selectedId, normalized);
     if (res.status !== "ok") {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
       return;
     }
 
@@ -442,7 +443,7 @@ export const MeetingsSettings: React.FC = () => {
         const app = detectedApp ?? "";
         const created = await commands.createMeeting("", app);
         if (created.status !== "ok") {
-          toast.error(created.error);
+          toast.error(getUserFacingErrorMessage(created.error, { t }));
           return;
         }
         setMeetings((prev) => [created.data, ...prev]);
@@ -468,7 +469,7 @@ export const MeetingsSettings: React.FC = () => {
       setMeetings((prev) => prev.filter((meeting) => meeting.id !== id));
       if (selectedId === id) setSelectedId(null);
     } else {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
     }
   };
 
@@ -480,7 +481,7 @@ export const MeetingsSettings: React.FC = () => {
     const nextPinned = !meeting.is_pinned;
     const res = await commands.setMeetingPinned(meeting.id, nextPinned);
     if (res.status !== "ok") {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
       return;
     }
 
@@ -507,7 +508,7 @@ export const MeetingsSettings: React.FC = () => {
     const nextArchived = !meeting.is_archived;
     const res = await commands.setMeetingArchived(meeting.id, nextArchived);
     if (res.status !== "ok") {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
       return;
     }
 
@@ -534,7 +535,7 @@ export const MeetingsSettings: React.FC = () => {
     e.stopPropagation();
     const res = await commands.duplicateMeeting(meeting.id);
     if (res.status !== "ok") {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
       return;
     }
 
@@ -584,7 +585,7 @@ export const MeetingsSettings: React.FC = () => {
         filePath.split(".").pop()?.toLowerCase() === "txt" ? "txt" : "md";
       const result = await commands.exportMeeting(selectedMeeting.id, ext);
       if (result.status !== "ok") {
-        toast.error(result.error);
+        toast.error(getUserFacingErrorMessage(result.error, { t }));
         return;
       }
 
@@ -622,7 +623,9 @@ export const MeetingsSettings: React.FC = () => {
 
       const result = await commands.transcribeAudioFile(selected);
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "meetings-audio-import" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "meetings-audio-import",
+        });
         return;
       }
 
@@ -641,7 +644,9 @@ export const MeetingsSettings: React.FC = () => {
         const app = detectedApp ?? "";
         const created = await commands.createMeeting("", app);
         if (created.status !== "ok") {
-          toast.error(created.error, { id: "meetings-audio-import" });
+          toast.error(getUserFacingErrorMessage(created.error, { t }), {
+            id: "meetings-audio-import",
+          });
           return;
         }
         const nextTranscript = importedText;
@@ -738,7 +743,9 @@ export const MeetingsSettings: React.FC = () => {
       );
       const result = await commands.summarizeMeeting(selectedMeeting.id);
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "meetings-summarize" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "meetings-summarize",
+        });
         return;
       }
 
@@ -780,7 +787,9 @@ export const MeetingsSettings: React.FC = () => {
       );
       const result = await commands.extractMeetingActions(selectedMeeting.id);
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "meetings-actions" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "meetings-actions",
+        });
         return;
       }
 
@@ -822,7 +831,9 @@ export const MeetingsSettings: React.FC = () => {
       );
       const result = await commands.generateMeetingTitle(selectedMeeting.id);
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "meetings-title" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "meetings-title",
+        });
         return;
       }
 
@@ -886,7 +897,9 @@ export const MeetingsSettings: React.FC = () => {
         selectedMeeting.id,
       );
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "meetings-chapters-ai" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "meetings-chapters-ai",
+        });
         return;
       }
       setAiChapterTitles(result.data);
@@ -1433,7 +1446,9 @@ export const MeetingsSettings: React.FC = () => {
                   )}
                   <span className="truncate text-[10px] text-white/20">
                     {formatDate(meeting.updated_at)} ·{" "}
-                    {t("common.words", { count: countWords(meeting.transcript) })}
+                    {t("common.words", {
+                      count: countWords(meeting.transcript),
+                    })}
                   </span>
                 </div>
               </div>

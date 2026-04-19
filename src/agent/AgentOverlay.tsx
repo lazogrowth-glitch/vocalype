@@ -2,6 +2,7 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { commands } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 interface AgentResponsePayload {
   question: string;
@@ -91,7 +92,9 @@ export const AgentOverlay: React.FC = () => {
         const payload = event.payload;
         setQuestion(payload.question);
         if (payload.error) {
-          setError(payload.error);
+          setError(
+            getUserFacingErrorMessage(payload.error, { context: "agent" }),
+          );
           setResponse(null);
           setLoading(false);
         } else if (

@@ -4,6 +4,7 @@ import { SettingContainer } from "../../ui/SettingContainer";
 import { Dropdown, type DropdownOption } from "../../ui/Dropdown";
 import { useSettings } from "../../../hooks/useSettings";
 import { commands } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { toast } from "sonner";
 
 const KEYBOARD_IMPLEMENTATION_OPTIONS: DropdownOption[] = [
@@ -35,7 +36,9 @@ export const KeyboardImplementationSelector: React.FC<
           "Failed to update keyboard implementation:",
           result.error,
         );
-        toast.error(String(result.error));
+        toast.error(
+          getUserFacingErrorMessage(result.error, { t, context: "settings" }),
+        );
         return;
       }
 
@@ -47,7 +50,7 @@ export const KeyboardImplementationSelector: React.FC<
       await refreshSettings();
     } catch (error) {
       console.error("Failed to update keyboard implementation:", error);
-      toast.error(String(error));
+      toast.error(getUserFacingErrorMessage(error, { t, context: "settings" }));
     }
   };
 

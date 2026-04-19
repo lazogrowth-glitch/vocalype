@@ -218,15 +218,23 @@ impl ParakeetTDTModel {
     }
 
     /// Run greedy decoding - returns (token_ids, frame_indices, durations)
+    ///
+    /// `language_token_id`: when `Some(id)`, the LSTM prediction network is
+    /// primed with the given language control token before the first audio
+    /// frame.  This biases the decoder towards the target language without
+    /// any changes to the ONNX graph — the same mechanism Whisper uses when
+    /// you pass `<|fr|>` as a forced decoder token.
     pub fn forward(
         &mut self,
         features: Array2<f32>,
+        language_token_id: Option<usize>,
     ) -> Result<(Vec<usize>, Vec<usize>, Vec<usize>)> {
         // Run encoder
         let (encoder_out, encoder_len) = self.run_encoder(&features)?;
 
         // Run greedy decoding with decoder_joint
-        let (tokens, frame_indices, durations) = self.greedy_decode(&encoder_out, encoder_len)?;
+        let (tokens, frame_indices, durations) =
+            self.greedy_decode(&encoder_out, encoder_len, language_token_id)?;
 
         Ok((tokens, frame_indices, durations))
     }
@@ -307,6 +315,7 @@ impl ParakeetTDTModel {
         &mut self,
         encoder_out: &Array3<f32>,
         encoder_len: i64,
+        language_token_id: Option<usize>,
     ) -> Result<(Vec<usize>, Vec<usize>, Vec<usize>)> {
         // encoder_out shape: [batch, time, encoder_dim]
         let time_steps = encoder_out.shape()[1];
@@ -327,7 +336,14 @@ impl ParakeetTDTModel {
 
         let mut t = 0;
         let mut emitted_tokens = 0;
-        let mut last_emitted_token = blank_id as i32;
+        // Prime the prediction network with the language control token when one
+        // is provided (e.g. <|fr|>=71).  The LSTM sees it as "previously emitted
+        // token" on the very first frame, biasing subsequent predictions towards
+        // that language — the same effect as Whisper's forced language prefix.
+        // Falls back to blank_id (standard behaviour) when language is "auto".
+        let mut last_emitted_token = language_token_id
+            .map(|id| id as i32)
+            .unwrap_or(blank_id as i32);
 
         // Frame-by-frame RNN-T/TDT greedy decoding
         while t < time_steps {

@@ -15,6 +15,9 @@ pub struct ParakeetTDT {
     decoder: ParakeetTDTDecoder,
     preprocessor_config: PreprocessorConfig,
     model_dir: PathBuf,
+    /// BCP-47 language code to force (e.g. "fr", "de").
+    /// `None` means auto-detect (default behaviour).
+    language: Option<String>,
 }
 
 impl ParakeetTDT {
@@ -81,6 +84,7 @@ impl ParakeetTDT {
             decoder,
             preprocessor_config,
             model_dir: path.to_path_buf(),
+            language: None,
         })
     }
 
@@ -90,6 +94,18 @@ impl ParakeetTDT {
 
     pub fn preprocessor_config(&self) -> &PreprocessorConfig {
         &self.preprocessor_config
+    }
+
+    /// Set the language to force during decoding.
+    ///
+    /// Pass a BCP-47 code like `"fr"`, `"de"`, `"es"` to constrain the decoder
+    /// to that language.  Pass `None` (or `"auto"`) to restore auto-detection.
+    ///
+    /// Internally this injects the matching `<|{lang}|>` control token as the
+    /// initial context for the LSTM prediction network, biasing all subsequent
+    /// token predictions towards the target language.
+    pub fn set_language(&mut self, lang: Option<&str>) {
+        self.language = lang.filter(|l| !l.is_empty() && *l != "auto").map(String::from);
     }
 }
 
@@ -111,7 +127,13 @@ impl Transcriber for ParakeetTDT {
             audio
         };
         let features = self.model.extract_features(&mono, &self.preprocessor_config)?;
-        let (tokens, frame_indices, durations) = self.model.forward(features)?;
+        // Resolve the language control token ID once per call.
+        let language_token_id = self
+            .language
+            .as_deref()
+            .and_then(|lang| self.decoder.language_token_id(lang));
+        let (tokens, frame_indices, durations) =
+            self.model.forward(features, language_token_id)?;
 
         let mut result = self.decoder.decode_with_timestamps(
             &tokens,

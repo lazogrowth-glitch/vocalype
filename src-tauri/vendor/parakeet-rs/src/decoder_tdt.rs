@@ -14,6 +14,12 @@ impl ParakeetTDTDecoder {
         Self { vocab }
     }
 
+    /// Resolve a BCP-47 language code to its vocab token ID (e.g. "fr" → 71).
+    /// Returns `None` when the language has no control token in this vocab.
+    pub fn language_token_id(&self, lang_code: &str) -> Option<usize> {
+        self.vocab.get_language_token_id(lang_code)
+    }
+
     /// Decode tokens with timestamps
     /// For TDT models, greedy decoding is done in the model, here we just convert to text
     pub fn decode_with_timestamps(

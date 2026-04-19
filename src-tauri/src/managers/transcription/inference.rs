@@ -608,6 +608,21 @@ impl TranscriptionManager {
                                 .as_ref()
                                 .map(|(samples, _)| samples.clone())
                                 .unwrap_or_else(|| audio.clone());
+
+                            // Constrained decoding: prime the LSTM with the selected language
+                            // token so the model stays in the target language throughout the
+                            // utterance.  "auto" → None → standard behaviour (no change).
+                            let forced_lang = if settings.selected_language == "auto" {
+                                None
+                            } else {
+                                // Normalise zh-Hans / zh-Hant → zh (model only has <|zh|>)
+                                Some(match settings.selected_language.as_str() {
+                                    "zh-Hans" | "zh-Hant" => "zh",
+                                    other => other,
+                                })
+                            };
+                            parakeet_engine.set_language(forced_lang);
+
                             match parakeet_engine.transcribe_samples(
                                 decode_audio.clone(),
                                 16_000,

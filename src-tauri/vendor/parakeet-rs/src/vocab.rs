@@ -63,4 +63,14 @@ impl Vocabulary {
     pub fn size(&self) -> usize {
         self.id_to_token.len()
     }
+
+    /// Find the token ID for a language control token like `<|fr|>`, `<|en|>`.
+    /// `lang_code` should be a BCP-47 two-letter code (e.g. "fr", "en", "de").
+    /// Returns `None` when the language is not present in this vocab.
+    pub fn get_language_token_id(&self, lang_code: &str) -> Option<usize> {
+        let target = format!("<|{lang_code}|>");
+        self.id_to_token
+            .iter()
+            .position(|t| t == &target)
+    }
 }

@@ -221,8 +221,7 @@ pub fn spawn_clipboard_watcher(app: tauri::AppHandle, interval_ms: u64) {
                 let app_clone = app.clone();
                 tauri::async_runtime::spawn(async move {
                     debug!("[session_glossary] code context detected — pre-warming llama-server");
-                    if let Err(e) =
-                        crate::llm::llama_server::ensure_llama_server(&app_clone).await
+                    if let Err(e) = crate::llm::llama_server::ensure_llama_server(&app_clone).await
                     {
                         debug!("[session_glossary] llama-server pre-warm failed: {}", e);
                     } else {

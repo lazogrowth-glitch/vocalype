@@ -42,18 +42,20 @@ pub fn provider_base_url() -> String {
 }
 
 /// Model identifier used in chat completion requests.
-pub const MODEL_ID: &str = "qwen2.5-coder:0.5b";
+/// Using the general Qwen2.5-0.5B-Instruct (not code-specialized) for better
+/// multilingual support — critical for French language correction use case.
+pub const MODEL_ID: &str = "qwen2.5:0.5b";
 
 /// GGUF filename stored on disk.
-const MODEL_FILENAME: &str = "qwen2.5-coder-0.5b-q4_k_m.gguf";
+const MODEL_FILENAME: &str = "qwen2.5-0.5b-instruct-q4_k_m.gguf";
 
 /// Direct download URL for the quantised GGUF (public Hugging Face repo).
 const MODEL_DOWNLOAD_URL: &str =
-    "https://huggingface.co/bartowski/Qwen2.5-Coder-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-Coder-0.5B-Instruct-Q4_K_M.gguf";
+    "https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf";
 
 /// Expected model size in bytes (used for progress calculation if server
 /// does not send Content-Length).
-const MODEL_APPROX_BYTES: u64 = 394 * 1024 * 1024;
+const MODEL_APPROX_BYTES: u64 = 397 * 1024 * 1024;
 
 /// Pinned llama.cpp release tag. Bump to upgrade.
 const LLAMA_CPP_RELEASE: &str = "b8849";

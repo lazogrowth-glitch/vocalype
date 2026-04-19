@@ -246,9 +246,14 @@ fn should_auto_paste(status: TranscriptionStatus) -> bool {
 /// Filler-word detection was deliberately removed: Parakeet V3 partially removes
 /// fillers itself, making the check inconsistent and prone to missed triggers.
 fn auto_llm_should_trigger(app: &AppHandle, text: &str) -> bool {
-    const CODE_CONTEXT_THRESHOLD: usize = 3;
-    const LONG_FORM_WORD_THRESHOLD: usize = 8;
+    // Primary signal: spoken code patterns in the transcription itself.
+    // Works regardless of which app is active or what's in the clipboard.
+    if crate::code_dictation::contains_spoken_code_patterns(text) {
+        return true;
+    }
 
+    // Secondary signal: glossary has code identifiers AND text references one.
+    // Catches cases like "add error handling to fetchUser" (no spoken symbols).
     let Some(state) = app.try_state::<crate::runtime::session_glossary::SessionGlossaryState>()
     else {
         return false;
@@ -256,25 +261,14 @@ fn auto_llm_should_trigger(app: &AppHandle, text: &str) -> bool {
     let Ok(glossary) = state.0.lock() else {
         return false;
     };
-
-    // Condition 1: code context.
-    if glossary.term_count() < CODE_CONTEXT_THRESHOLD {
+    if glossary.term_count() < 3 {
         return false;
     }
-
     let text_lower = text.to_lowercase();
-
-    // Condition 2a: glossary term present in text — most reliable signal.
-    if glossary
+    glossary
         .terms
         .iter()
         .any(|term| text_lower.contains(&term.to_lowercase()))
-    {
-        return true;
-    }
-
-    // Condition 2b: long-form dictation (≥ 8 words) — worth cleaning regardless.
-    text.split_whitespace().count() >= LONG_FORM_WORD_THRESHOLD
 }
 
 fn classify_microphone_start_error(message: &str) -> &'static str {

@@ -371,7 +371,7 @@ export const PostProcessingSettings: React.FC = () => {
                       key: Number(e.target.value),
                     })
                   }
-                  className="h-10 w-12 cursor-pointer appearance-none rounded-xl border border-[#F5C300]/25 bg-[#F5C300]/10 text-center font-mono text-[13px] font-bold text-[#F5C300] outline-none hover:border-[#F5C300]/40 focus:ring-2 focus:ring-[#F5C300]/30"
+                  className="h-10 w-12 cursor-pointer appearance-none rounded-xl border border-accent/25 bg-accent-soft text-center font-mono text-[13px] font-bold text-accent outline-none hover:border-accent/40 focus:ring-2 focus:ring-accent/30"
                 >
                   {availableKeysForEditing.map((opt) => (
                     <option key={opt.value} value={opt.value}>

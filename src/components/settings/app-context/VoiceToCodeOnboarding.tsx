@@ -19,7 +19,7 @@ export const VoiceToCodeOnboarding: React.FC<VoiceToCodeOnboardingProps> = ({
 
   useEffect(() => {
     const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
-      "button, [tabindex]:not([tabindex=\"-1\"])",
+      'button, [tabindex]:not([tabindex="-1"])',
     );
     focusable?.[0]?.focus();
 
@@ -51,7 +51,7 @@ export const VoiceToCodeOnboarding: React.FC<VoiceToCodeOnboardingProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="vtc-onboarding-title"
-        className="w-full max-w-[400px] rounded-xl border border-white/10 bg-[#1a1a1a] shadow-2xl"
+        className="voca-surface w-full max-w-[400px] shadow-2xl"
         style={{ pointerEvents: "auto" }}
       >
         {/* Header */}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { LoaderCircle, TriangleAlert, Zap } from "lucide-react";
+import { CheckCircle, LoaderCircle, TriangleAlert, Zap } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { commands } from "@/bindings";
 import { listen } from "@tauri-apps/api/event";
@@ -10,7 +10,6 @@ const DEV_PROMPT_NAME = "Clean for LLM";
 const DEV_PROMPT_TEXT =
   "Convert this rough voice dictation into a clear, structured prompt for an AI assistant. Rules:\n1. Remove filler words (uh, um, like, you know)\n2. Fix grammar and sentence structure\n3. Preserve all technical terms, variable names, and intent exactly\n4. Keep it concise - one clear request\n5. Do not add explanations or preamble\n\nReturn only the cleaned prompt.\n\nDictation:\n${output}";
 
-// Fixed provider: Vocalype's embedded llama-server.
 const PROVIDER_ID = "vocalype-llm";
 const MODEL_ID = "qwen2.5-coder:0.5b";
 
@@ -22,22 +21,15 @@ interface SetupProgress {
 
 export const DevWorkflowToggle: React.FC = () => {
   const { t } = useTranslation();
-  const { settings, updateSetting, refreshSettings } = useSettings();
+  const { settings, updateSetting } = useSettings();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<SetupProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isDevModeOn, setIsDevModeOn] = useState(() => {
-    const devPrompt = settings?.post_process_prompts?.find(
-      (p) => p.id === DEV_PROMPT_ID || p.name === DEV_PROMPT_NAME,
-    );
-    return (
-      settings?.post_process_enabled === true &&
-      !!devPrompt &&
-      settings?.post_process_selected_prompt_id === devPrompt?.id
-    );
-  });
 
-  // Subscribe to progress events from the Rust backend.
+  // Auto-mode is active once the LLM is set up and enabled.
+  const isAutoModeActive = settings?.llm_auto_mode === true;
+
+  // Subscribe to progress events during first-time setup.
   useEffect(() => {
     if (!loading) return;
     const unlisten = listen<SetupProgress>("llm-setup-progress", (event) => {
@@ -48,100 +40,75 @@ export const DevWorkflowToggle: React.FC = () => {
     };
   }, [loading]);
 
-  const enable = useCallback(async () => {
-    console.log("[DevWorkflow] enable clicked");
+  const setup = useCallback(async () => {
     setLoading(true);
     setError(null);
     setProgress(null);
 
     try {
-      console.log("[DevWorkflow] calling setupLlamaServer...");
+      // 1. Download binary + model (if needed) and start server.
       const setupResult = await commands.setupLlamaServer();
-      console.log("[DevWorkflow] setupLlamaServer result:", setupResult);
       if (setupResult.status === "error") {
         setError(setupResult.error);
         return;
       }
 
-      console.log("[DevWorkflow] setting provider...");
+      // 2. Switch post-process provider to vocalype-llm.
       const providerResult = await commands.setPostProcessProvider(PROVIDER_ID);
-      console.log("[DevWorkflow] providerResult:", providerResult);
       if (providerResult.status === "error") {
         setError(providerResult.error);
         return;
       }
 
       // 3. Set model.
-      console.log("[DevWorkflow] setting model...");
       const modelResult = await commands.changePostProcessModelSetting(
         PROVIDER_ID,
         MODEL_ID,
       );
-      console.log("[DevWorkflow] modelResult:", modelResult);
       if (modelResult.status === "error") {
         setError(modelResult.error);
         return;
       }
 
       // 4. Ensure the "Clean for LLM" prompt exists.
-      let promptId = DEV_PROMPT_ID;
       const existing = settings?.post_process_prompts?.find(
         (p) => p.id === DEV_PROMPT_ID,
       );
-      console.log(
-        "[DevWorkflow] existing prompt:",
-        existing,
-        "all prompts:",
-        settings?.post_process_prompts,
-      );
       if (!existing) {
-        console.log("[DevWorkflow] adding prompt...");
         const promptResult = await commands.addPostProcessPrompt(
           DEV_PROMPT_NAME,
           DEV_PROMPT_TEXT,
         );
-        console.log("[DevWorkflow] promptResult:", promptResult);
         if (promptResult.status === "error") {
           setError(promptResult.error);
           return;
         }
-        promptId = promptResult.data.id;
       }
 
       // 5. Select the prompt.
-      console.log("[DevWorkflow] selecting prompt id:", promptId);
       const selectResult =
-        await commands.setPostProcessSelectedPrompt(promptId);
-      console.log("[DevWorkflow] selectResult:", selectResult);
+        await commands.setPostProcessSelectedPrompt(DEV_PROMPT_ID);
       if (selectResult.status === "error") {
         setError(selectResult.error);
         return;
       }
 
-      // 6. Enable post-processing.
-      console.log("[DevWorkflow] enabling post-processing...");
-      updateSetting("post_process_selected_prompt_id", promptId);
-      updateSetting("post_process_enabled", true);
-      await refreshSettings();
-      setIsDevModeOn(true);
-      console.log("[DevWorkflow] done!");
+      // 6. Enable auto-mode — LLM fires automatically when code context is detected.
+      updateSetting("llm_auto_mode", true);
     } catch (e) {
-      console.error("[DevWorkflow] caught error:", e);
       setError(String(e));
     } finally {
       setLoading(false);
       setProgress(null);
     }
-  }, [settings, updateSetting, t]);
+  }, [settings, updateSetting]);
 
   const disable = useCallback(async () => {
-    updateSetting("post_process_enabled", false);
-    setIsDevModeOn(false);
+    updateSetting("llm_auto_mode", false);
     setError(null);
     await commands.stopLlamaServer().catch(() => {});
   }, [updateSetting]);
 
-  // Progress label shown during setup.
   const progressLabel = progress
     ? progress.step === "done"
       ? null
@@ -156,25 +123,27 @@ export const DevWorkflowToggle: React.FC = () => {
         gap: 8,
         padding: "12px 14px",
         borderRadius: 10,
-        border: isDevModeOn
-          ? "1px solid rgba(100,140,255,0.35)"
+        border: isAutoModeActive
+          ? "1px solid rgba(100,200,120,0.35)"
           : "1px solid rgba(255,255,255,0.07)",
-        background: isDevModeOn
-          ? "rgba(100,140,255,0.06)"
+        background: isAutoModeActive
+          ? "rgba(100,200,120,0.05)"
           : "rgba(255,255,255,0.03)",
         transition: "border-color 0.2s, background 0.2s",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Zap
-          size={15}
-          style={{
-            color: isDevModeOn
-              ? "rgba(100,140,255,0.9)"
-              : "rgba(255,255,255,0.3)",
-            flexShrink: 0,
-          }}
-        />
+        {isAutoModeActive ? (
+          <CheckCircle
+            size={15}
+            style={{ color: "rgba(100,200,120,0.9)", flexShrink: 0 }}
+          />
+        ) : (
+          <Zap
+            size={15}
+            style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }}
+          />
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p
             style={{
@@ -185,7 +154,7 @@ export const DevWorkflowToggle: React.FC = () => {
             }}
           >
             {t("settings.advanced.devWorkflow.label", {
-              defaultValue: "Clean for LLM",
+              defaultValue: "Auto-LLM",
             })}
           </p>
           <p
@@ -195,20 +164,20 @@ export const DevWorkflowToggle: React.FC = () => {
               margin: "2px 0 0",
             }}
           >
-            {isDevModeOn
+            {isAutoModeActive
               ? t("settings.advanced.devWorkflow.activeDescription", {
                   defaultValue:
-                    "Actif — prompt reformaté localement avant de coller",
+                    "Actif — LLM s'active automatiquement quand tu codes",
                 })
               : t("settings.advanced.devWorkflow.description", {
                   defaultValue:
-                    "Reformate ta dictée en prompt clair (LLM local, 100% privé, aucune install)",
+                    "Nettoie ta dictée automatiquement quand tu codes (LLM local, 100% privé)",
                 })}
           </p>
         </div>
         <button
           type="button"
-          onClick={isDevModeOn ? disable : enable}
+          onClick={isAutoModeActive ? disable : setup}
           disabled={loading}
           style={{
             flexShrink: 0,
@@ -218,10 +187,10 @@ export const DevWorkflowToggle: React.FC = () => {
             fontSize: 12,
             fontWeight: 500,
             cursor: loading ? "not-allowed" : "pointer",
-            background: isDevModeOn
+            background: isAutoModeActive
               ? "rgba(255,255,255,0.08)"
-              : "rgba(100,140,255,0.85)",
-            color: isDevModeOn ? "rgba(255,255,255,0.5)" : "#fff",
+              : "rgba(100,200,120,0.85)",
+            color: isAutoModeActive ? "rgba(255,255,255,0.5)" : "#fff",
             display: "flex",
             alignItems: "center",
             gap: 5,
@@ -229,7 +198,7 @@ export const DevWorkflowToggle: React.FC = () => {
           }}
         >
           {loading && <LoaderCircle size={11} className="animate-spin" />}
-          {isDevModeOn
+          {isAutoModeActive
             ? t("settings.advanced.devWorkflow.deactivate", {
                 defaultValue: "Désactiver",
               })
@@ -254,7 +223,7 @@ export const DevWorkflowToggle: React.FC = () => {
               style={{
                 height: "100%",
                 width: `${progress.pct}%`,
-                background: "rgba(100,140,255,0.8)",
+                background: "rgba(100,200,120,0.8)",
                 transition: "width 0.3s ease",
                 borderRadius: 2,
               }}

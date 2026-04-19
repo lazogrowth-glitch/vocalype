@@ -78,6 +78,11 @@ impl SessionGlossary {
     pub fn as_vec(&self) -> Vec<String> {
         self.terms.iter().cloned().collect()
     }
+
+    /// How many distinct code identifiers have been collected this session.
+    pub fn term_count(&self) -> usize {
+        self.terms.len()
+    }
 }
 
 // ── Identifier extraction ─────────────────────────────────────────────────────

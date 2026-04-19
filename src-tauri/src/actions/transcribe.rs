@@ -1153,6 +1153,17 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
     let settings = get_settings(app);
     let auto_pause_media = settings.auto_pause_media;
 
+    // Auto-mode: activate LLM post-processing when the session glossary has
+    // collected enough code identifiers to signal a coding context.
+    // Threshold: ≥ 3 terms means the user has been copying code recently.
+    let post_process = post_process || (settings.llm_auto_mode && {
+        const CODE_CONTEXT_THRESHOLD: usize = 3;
+        app.try_state::<crate::runtime::session_glossary::SessionGlossaryState>()
+            .and_then(|state| state.0.lock().ok().map(|g| g.term_count()))
+            .unwrap_or(0)
+            >= CODE_CONTEXT_THRESHOLD
+    });
+
     let chunking_handle = app
         .try_state::<ActiveChunkingHandle>()
         .and_then(|s| match s.0.lock() {

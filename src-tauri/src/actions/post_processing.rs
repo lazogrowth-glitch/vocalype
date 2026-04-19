@@ -58,6 +58,8 @@ pub(super) async fn process_transcription_text(
     active_app_context: Option<&AppTranscriptionContext>,
     selected_action_key: Option<u8>,
     post_process: bool,
+    // Language name (e.g. "French") when drift was detected — passed to LLM.
+    language_correction: Option<String>,
     samples: &[f32],
     profiler: &Arc<Mutex<PipelineProfiler>>,
 ) -> PostProcessOutcome {
@@ -220,7 +222,13 @@ pub(super) async fn process_transcription_text(
             }
         }
         PostProcessMode::StandardPrompt => {
-            post_process_transcription(&settings, &final_text, active_app_context).await
+            post_process_transcription(
+                &settings,
+                &final_text,
+                active_app_context,
+                language_correction.as_deref(),
+            )
+            .await
         }
         PostProcessMode::None => None,
     };

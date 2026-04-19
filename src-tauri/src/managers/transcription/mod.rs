@@ -1,5 +1,5 @@
 mod engine_loader;
-mod inference;
+pub(crate) mod inference;
 
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::context_detector::{AppContextCategory, AppTranscriptionContext};

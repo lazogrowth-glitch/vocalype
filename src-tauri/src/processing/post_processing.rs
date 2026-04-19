@@ -208,6 +208,9 @@ pub(crate) async fn post_process_transcription(
     settings: &AppSettings,
     transcription: &str,
     app_context: Option<&AppTranscriptionContext>,
+    // When language drift was detected: target language name (e.g. "French").
+    // Injected as a hard instruction at the top of the system prompt.
+    language_correction: Option<&str>,
 ) -> Option<String> {
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
@@ -288,13 +291,25 @@ pub(crate) async fn post_process_transcription(
         _ => None,
     });
 
+    // Language-drift correction instruction — prepended with highest priority so the
+    // LLM fixes wrong-language segments before applying any other transformation.
+    let drift_instruction: Option<String> = language_correction.map(|lang| {
+        format!(
+            "CRITICAL: The user speaks {lang}. Some words or phrases in the input \
+             may be in the wrong language (e.g. English instead of {lang}). \
+             Translate those portions back to {lang} before doing anything else.",
+        )
+    });
+
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
         let base_prompt = build_system_prompt(&prompt);
-        let system_prompt = match context_hint {
-            Some(hint) => format!("{hint}\n\n{base_prompt}"),
-            None => base_prompt,
+        let system_prompt = match (drift_instruction.as_deref(), context_hint) {
+            (Some(drift), Some(hint)) => format!("{drift}\n\n{hint}\n\n{base_prompt}"),
+            (Some(drift), None) => format!("{drift}\n\n{base_prompt}"),
+            (None, Some(hint)) => format!("{hint}\n\n{base_prompt}"),
+            (None, None) => base_prompt,
         };
         let user_content = transcription.to_string();
 
@@ -417,12 +432,20 @@ pub(crate) async fn post_process_transcription(
         let instruction = prompt.replace("${output}", "");
         let instruction = instruction.trim();
         if instruction.is_empty() {
-            (None, transcription.to_string())
+            (drift_instruction, transcription.to_string())
         } else {
-            (Some(instruction.to_string()), transcription.to_string())
+            let full = match drift_instruction.as_deref() {
+                Some(drift) => format!("{drift}\n\n{instruction}"),
+                None => instruction.to_string(),
+            };
+            (Some(full), transcription.to_string())
         }
     } else {
-        (Some(prompt.to_string()), transcription.to_string())
+        let full = match drift_instruction.as_deref() {
+            Some(drift) => format!("{drift}\n\n{}", prompt),
+            None => prompt.to_string(),
+        };
+        (Some(full), transcription.to_string())
     };
     debug!(
         "Processed prompt — system: {} chars, user: {} chars",

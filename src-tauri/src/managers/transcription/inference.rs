@@ -124,25 +124,35 @@ fn whichlang_to_bcp47(lang: Lang) -> Option<&'static str> {
 /// of latency per utterance. A proper fallback requires a persistent secondary
 /// engine, which is a larger architectural change.
 fn check_parakeet_language_drift(text: &str, selected_language: &str) {
+    if has_language_drift(text, selected_language) {
+        warn!(
+            "Parakeet language drift detected in chunk output. \
+             Consider switching to Whisper or SenseVoice for forced-language transcription."
+        );
+    }
+}
+
+/// Returns `true` when the detected language of `text` does not match
+/// `selected_language`. Safe to call on assembled output from transcribe.rs.
+///
+/// Returns `false` when:
+/// - `selected_language` is "auto" (user doesn't care about language)
+/// - The text is too short to detect reliably (< 40 chars)
+/// - The detected language is not in our BCP-47 mapping
+pub(crate) fn has_language_drift(text: &str, selected_language: &str) -> bool {
     if selected_language == "auto" || text.chars().count() < 40 {
-        return;
+        return false;
     }
     let detected = whichlang::detect_language(text);
     let detected_bcp47 = match whichlang_to_bcp47(detected) {
         Some(code) => code,
-        None => return, // language not in our mapping — skip
+        None => return false,
     };
     let selected_normalized = match selected_language {
         "zh-Hans" | "zh-Hant" => "zh",
         other => other,
     };
-    if detected_bcp47 != selected_normalized {
-        warn!(
-            "Parakeet language drift detected: output is '{}' but selected_language is '{}'. \
-             Consider switching to Whisper or SenseVoice for forced-language transcription.",
-            detected_bcp47, selected_language
-        );
-    }
+    detected_bcp47 != selected_normalized
 }
 
 impl TranscriptionManager {

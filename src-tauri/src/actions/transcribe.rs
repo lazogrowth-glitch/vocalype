@@ -1611,10 +1611,19 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 failed_chunk_count,
                 is_parakeet_chunked,
             );
+            // Detect language drift on the assembled output — used to decide
+            // whether to skip chunk-cleanup (post-processing LLM will fix it).
+            let drift_detected_on_assembly =
+                crate::managers::transcription::inference::has_language_drift(
+                    &assembled,
+                    &settings.selected_language,
+                );
+
             // Skip chunk-cleanup LLM when the post-processing LLM is going to run
             // on this same text anyway — it will fix stitching artifacts too.
-            // This avoids paying for two sequential LLM calls on the same content.
+            // Also force post-processing when drift is detected and auto-mode is on.
             let post_process_will_run = post_process
+                || drift_detected_on_assembly
                 || (llm_auto_mode && auto_llm_should_trigger(&ah, &assembled));
             let transcription = if chunk_count >= 2
                 && !assembled.is_empty()
@@ -1965,6 +1974,32 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             let mut transcription = transcription;
             let mut effective_status = status;
 
+            // Detect language drift on the final transcription (covers both
+            // single-chunk and chunked paths). Used to inject a language-correction
+            // instruction into the LLM prompt when drift is found.
+            let language_correction: Option<String> = {
+                let drifted = crate::managers::transcription::inference::has_language_drift(
+                    &transcription,
+                    &settings.selected_language,
+                );
+                if drifted {
+                    let lang_name = crate::processing::post_processing::language_code_to_name(
+                        &settings.selected_language,
+                    );
+                    if lang_name != "Unknown" {
+                        debug!(
+                            "[drift] language drift on final transcription — forcing LLM correction to {}",
+                            lang_name
+                        );
+                        Some(lang_name.to_string())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            };
+
             match effective_status {
                 TranscriptionStatus::Partial => {
                     if transcription.trim().is_empty() {
@@ -2130,13 +2165,9 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             }
 
             if should_auto_paste(effective_status) && !transcription.is_empty() {
-                // Auto-mode: upgrade to LLM post-processing when BOTH signals are present:
-                //   1. Code context — glossary has ≥ 3 extracted identifiers
-                //   2. Text complexity — the transcription itself contains filler words
-                //      OR at least one glossary term (i.e. it's technical/messy)
-                let effective_post_process = post_process || (llm_auto_mode && {
-                    auto_llm_should_trigger(&ah, &transcription)
-                });
+                let effective_post_process = post_process
+                    || language_correction.is_some()
+                    || (llm_auto_mode && auto_llm_should_trigger(&ah, &transcription));
                 let outcome = process_transcription_text(
                     &ah,
                     operation_id,
@@ -2144,6 +2175,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     active_app_context.as_ref(),
                     selected_action_key,
                     effective_post_process,
+                    language_correction.clone(),
                     &samples,
                     &profiler,
                 )
@@ -2218,9 +2250,9 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     );
                 }
                 emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
-                let effective_post_process = post_process || (llm_auto_mode && {
-                    auto_llm_should_trigger(&ah, &transcription)
-                });
+                let effective_post_process = post_process
+                    || language_correction.is_some()
+                    || (llm_auto_mode && auto_llm_should_trigger(&ah, &transcription));
                 let outcome = process_transcription_text(
                     &ah,
                     operation_id,
@@ -2228,6 +2260,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     active_app_context.as_ref(),
                     selected_action_key,
                     effective_post_process,
+                    language_correction.clone(),
                     &samples,
                     &profiler,
                 )

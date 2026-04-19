@@ -473,9 +473,9 @@ pub struct AppSettings {
     pub log_level: LogLevel,
     #[serde(default)]
     pub custom_words: Vec<String>,
-    #[serde(default)]
+    #[serde(default = "default_adaptive_vocabulary_enabled")]
     pub adaptive_vocabulary_enabled: bool,
-    #[serde(default)]
+    #[serde(default = "default_adaptive_voice_profile_enabled")]
     pub adaptive_voice_profile_enabled: bool,
     #[serde(default)]
     pub model_unload_timeout: ModelUnloadTimeout,
@@ -623,6 +623,14 @@ fn default_overlay_position() -> OverlayPosition {
 
 fn default_debug_mode() -> bool {
     false
+}
+
+fn default_adaptive_vocabulary_enabled() -> bool {
+    true
+}
+
+fn default_adaptive_voice_profile_enabled() -> bool {
+    true
 }
 
 fn default_log_level() -> LogLevel {

@@ -407,6 +407,25 @@
         "label": "Lancer au démarrage",
         "description": "Démarrer automatiquement Vocalype lorsque vous vous connectez à votre ordinateur."
       },
+      "startup": {
+        "label": "Lancer au démarrage",
+        "description": "Démarre automatiquement en arrière-plan à l'ouverture de session."
+      },
+      "devWorkflow": {
+        "label": "Clean for LLM",
+        "description": "Reformate ta dictée en prompt clair via Ollama (local, 100% privé).",
+        "activeDescription": "Actif via Ollama{{model}} — prompt reformaté avant de coller",
+        "activate": "Activer",
+        "deactivate": "Désactiver",
+        "errors": {
+          "checkFailed": "Impossible de vérifier Ollama. Réessaie.",
+          "notInstalled": "Ollama n'est pas installé. Installe-le sur ollama.com puis réessaie.",
+          "notStarted": "Ollama n'a pas démarré. Vérifie que l'installation est complète.",
+          "downloading": "Téléchargement de qwen2.5 en cours...",
+          "downloadFailed": "Échec du téléchargement : {{error}}",
+          "modelNotFound": "Modèle téléchargé mais introuvable. Redémarre l'app."
+        }
+      },
       "showTrayIcon": {
         "label": "Afficher l'icône de la barre",
         "description": "Afficher l'icône de Vocalype dans la barre système."

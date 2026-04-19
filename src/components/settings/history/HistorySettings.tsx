@@ -15,6 +15,7 @@ import {
   Sparkles,
   Pencil,
   X,
+  Share2,
 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -876,6 +877,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
+  const [showShared, setShowShared] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [processingActionKey, setProcessingActionKey] = useState<number | null>(
@@ -1003,6 +1005,23 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     }
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
+  };
+
+  const handleShare = async () => {
+    const text = entry.post_processed_text ?? entry.transcription_text;
+    const shareText = `${text}\n\n— Transcribed with Vocalype (100% local, no cloud) · vocalype.com`;
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setShowShared(true);
+      setTimeout(() => setShowShared(false), 2000);
+      toast.success(
+        t("settings.history.shareCopied", {
+          defaultValue: "Copied with Vocalype attribution!",
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleCopyExplicitText = async (
@@ -1262,6 +1281,19 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               <Check width={16} height={16} />
             ) : (
               <Copy width={16} height={16} />
+            )}
+          </button>
+          <button
+            onClick={() => void handleShare()}
+            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70"
+            title={t("settings.history.shareWithAttribution", {
+              defaultValue: "Share with Vocalype attribution",
+            })}
+          >
+            {showShared ? (
+              <Check width={16} height={16} className="text-emerald-400" />
+            ) : (
+              <Share2 width={16} height={16} />
             )}
           </button>
           <button

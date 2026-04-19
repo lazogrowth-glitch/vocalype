@@ -236,6 +236,7 @@ mod tests {
                 "VocalypeSpeech.tsx - vocalype-desktop | GitHub Copilot".to_string(),
             ),
             category: AppContextCategory::Code,
+            code_language: None,
             detected_at_ms: 1,
         }
     }
@@ -267,6 +268,7 @@ mod tests {
                 process_name: Some("chat.exe".to_string()),
                 window_title: Some("the and for with this".to_string()),
                 category: AppContextCategory::Chat,
+                code_language: None,
                 detected_at_ms: 1,
             }),
             "en",

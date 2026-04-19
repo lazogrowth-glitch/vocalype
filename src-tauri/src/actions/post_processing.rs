@@ -118,6 +118,27 @@ pub(super) async fn process_transcription_text(
         );
     }
 
+    // Code-dictation conversion: spoken symbols → code syntax (Code context only).
+    let is_code_ctx_early = active_app_context
+        .as_ref()
+        .map(|ctx| ctx.category.skip_post_processing())
+        .unwrap_or(false);
+    if is_code_ctx_early {
+        let code_dict_started = Instant::now();
+        let before_code = final_text.clone();
+        let code_language = active_app_context
+            .as_ref()
+            .and_then(|ctx| ctx.code_language);
+        final_text = crate::code_dictation::apply_code_dictation(&final_text, code_language);
+        if let Ok(mut p) = profiler.lock() {
+            p.push_step_since(
+                "code_dictation",
+                code_dict_started,
+                Some(format!("changed={}", final_text != before_code)),
+            );
+        }
+    }
+
     let snippet_matched = if let Some(expanded) =
         crate::settings::apply_voice_snippets(&final_text, &settings.voice_snippets)
     {

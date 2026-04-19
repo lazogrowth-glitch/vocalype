@@ -136,6 +136,9 @@ export const MachineStatusBar: React.FC<{ variant?: "banner" | "sidebar" }> = ({
               {backendLabel ? ` · ${backendLabel}` : ""}
             </span>
           )}
+          <span className="ml-auto shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-400/70">
+            100% Local · Private
+          </span>
         </div>
         {status.detail && status.mode !== "optimal" && (
           <p className="mt-2 text-[12px] leading-5 text-current/68">

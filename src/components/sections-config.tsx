@@ -21,6 +21,11 @@ const AdvancedSettings = React.lazy(() =>
     default: m.AdvancedSettings,
   })),
 );
+const ReferralSettings = React.lazy(() =>
+  import("./settings/referral/ReferralSettings").then((m) => ({
+    default: m.ReferralSettings,
+  })),
+);
 const HistorySettings = React.lazy(() =>
   import("./settings/history/HistorySettings").then((m) => ({
     default: m.HistorySettings,
@@ -149,7 +154,7 @@ export const SECTIONS_CONFIG = {
   referral: {
     labelKey: "sidebar.referral",
     icon: Gift,
-    component: GeneralSettings,
+    component: ReferralSettings,
     enabled: () => isLaunchVisible("referral"),
   },
   billing: {

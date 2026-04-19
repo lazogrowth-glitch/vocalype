@@ -32,6 +32,85 @@ impl AppContextCategory {
     }
 }
 
+// ── Code language ──────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum CodeLanguage {
+    Rust,
+    Python,
+    JavaScript,
+    TypeScript,
+    Go,
+    Java,
+    CSharp,
+    Cpp,
+    Html,
+    Css,
+    Shell,
+    Json,
+    Toml,
+    Yaml,
+    Markdown,
+}
+
+impl CodeLanguage {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CodeLanguage::Rust => "rust",
+            CodeLanguage::Python => "python",
+            CodeLanguage::JavaScript => "javascript",
+            CodeLanguage::TypeScript => "typescript",
+            CodeLanguage::Go => "go",
+            CodeLanguage::Java => "java",
+            CodeLanguage::CSharp => "csharp",
+            CodeLanguage::Cpp => "cpp",
+            CodeLanguage::Html => "html",
+            CodeLanguage::Css => "css",
+            CodeLanguage::Shell => "shell",
+            CodeLanguage::Json => "json",
+            CodeLanguage::Toml => "toml",
+            CodeLanguage::Yaml => "yaml",
+            CodeLanguage::Markdown => "markdown",
+        }
+    }
+}
+
+/// Infer the active coding language from the window title.
+/// VS Code titles: "main.rs — vocalype", "index.tsx - project - Visual Studio Code"
+/// Cursor titles: "Cursor — App.py"
+pub fn detect_code_language(window_title: &str) -> Option<CodeLanguage> {
+    // Extract all tokens that look like filenames (contain a dot)
+    for token in window_title.split_whitespace() {
+        let token = token.trim_matches(|c: char| !c.is_alphanumeric() && c != '.' && c != '_');
+        if let Some(ext) = token.rsplit('.').next() {
+            let lang = match ext.to_ascii_lowercase().as_str() {
+                "rs" => Some(CodeLanguage::Rust),
+                "py" | "pyw" | "pyi" => Some(CodeLanguage::Python),
+                "js" | "mjs" | "cjs" => Some(CodeLanguage::JavaScript),
+                "ts" | "tsx" | "mts" => Some(CodeLanguage::TypeScript),
+                "jsx" => Some(CodeLanguage::JavaScript),
+                "go" => Some(CodeLanguage::Go),
+                "java" => Some(CodeLanguage::Java),
+                "cs" => Some(CodeLanguage::CSharp),
+                "cpp" | "cc" | "cxx" | "c" | "h" | "hpp" => Some(CodeLanguage::Cpp),
+                "html" | "htm" => Some(CodeLanguage::Html),
+                "css" | "scss" | "sass" | "less" => Some(CodeLanguage::Css),
+                "sh" | "bash" | "zsh" | "fish" => Some(CodeLanguage::Shell),
+                "json" | "jsonc" => Some(CodeLanguage::Json),
+                "toml" => Some(CodeLanguage::Toml),
+                "yaml" | "yml" => Some(CodeLanguage::Yaml),
+                "md" | "mdx" => Some(CodeLanguage::Markdown),
+                _ => None,
+            };
+            if lang.is_some() {
+                return lang;
+            }
+        }
+    }
+    None
+}
+
 // ── Core context ──────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -41,6 +120,9 @@ pub struct AppTranscriptionContext {
     /// Window title at capture time.
     pub window_title: Option<String>,
     pub category: AppContextCategory,
+    /// Detected coding language (only set when category == Code).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub code_language: Option<CodeLanguage>,
     pub detected_at_ms: u64,
 }
 
@@ -50,6 +132,7 @@ impl AppTranscriptionContext {
             category: AppContextCategory::Unknown,
             process_name,
             window_title,
+            code_language: None,
             detected_at_ms: crate::runtime_observability::now_ms(),
         }
     }
@@ -407,10 +490,17 @@ pub fn detect_current_app_context() -> AppTranscriptionContext {
             }
         }
 
+        let code_language = if category == AppContextCategory::Code {
+            window_title.as_deref().and_then(detect_code_language)
+        } else {
+            None
+        };
+
         AppTranscriptionContext {
             process_name,
             window_title,
             category,
+            code_language,
             detected_at_ms: crate::runtime_observability::now_ms(),
         }
     }
@@ -548,6 +638,7 @@ mod tests {
                 process_name: Some(format!("app{}.exe", i % 3)), // 3 unique names
                 window_title: None,
                 category: AppContextCategory::Unknown,
+                code_language: None,
                 detected_at_ms: i * 1000,
             };
             snapshot.set_last_transcription_context(ctx);
@@ -569,6 +660,7 @@ mod tests {
             process_name: Some("notion.exe".to_string()),
             window_title: None,
             category: AppContextCategory::Notes,
+            code_language: None,
             detected_at_ms: 0,
         };
         snapshot.apply_overrides(&mut ctx);
@@ -584,6 +676,7 @@ mod tests {
             process_name: Some("slack.exe".to_string()),
             window_title: None,
             category: AppContextCategory::Chat,
+            code_language: None,
             detected_at_ms: 0,
         };
         snapshot.apply_overrides(&mut ctx);
@@ -600,6 +693,7 @@ mod tests {
             process_name: Some("obsidian.exe".to_string()),
             window_title: None,
             category: AppContextCategory::Notes,
+            code_language: None,
             detected_at_ms: 0,
         };
         snapshot.apply_overrides(&mut ctx);

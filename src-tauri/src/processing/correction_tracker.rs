@@ -20,7 +20,7 @@ use tauri::{AppHandle, Manager};
 
 const COUNTS_FILE: &str = "correction_counts.json";
 /// Number of times a correction must be seen before auto-adding to dictionary.
-pub const AUTO_ADD_THRESHOLD: u32 = 2;
+pub const AUTO_ADD_THRESHOLD: u32 = 1;
 /// Minimum character length for a word to be a dictionary candidate.
 const MIN_WORD_LEN: usize = 3;
 

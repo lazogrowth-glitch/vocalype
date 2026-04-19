@@ -918,6 +918,7 @@ mod tests {
             process_name: Some("Code.exe".to_string()),
             window_title: Some("VocalypeSpeech.tsx - GitHub".to_string()),
             category: AppContextCategory::Code,
+            code_language: None,
             detected_at_ms: 1,
         };
         let session_keyterms = build_session_keyterms(

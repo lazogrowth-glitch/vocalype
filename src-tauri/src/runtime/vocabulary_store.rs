@@ -689,6 +689,7 @@ mod tests {
             process_name: Some("code.exe".to_string()),
             window_title: Some("VS Code".to_string()),
             category: AppContextCategory::Code,
+            code_language: None,
             detected_at_ms: 1,
         }
     }

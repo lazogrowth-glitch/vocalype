@@ -6,8 +6,9 @@
 //! 2. Filler removal              (`filler::clean_transcript`)
 //! 3. Punctuation restoration     (`punctuation::fix_punctuation`)
 //! 4. Dictionary replacement      (`dictionary::apply_dictionary`)
-//! 5. Voice snippets              (`settings::apply_voice_snippets`)
-//! 6. LLM post-processing         (`post_processing::post_process_transcription`)
+//! 5. Code dictation              (`code_dictation::apply_code_dictation`) — Code context only
+//! 6. Voice snippets              (`settings::apply_voice_snippets`)
+//! 7. LLM post-processing         (`post_processing::post_process_transcription`)
 //!
 //! ## Extending the pipeline
 //!
@@ -15,6 +16,7 @@
 //! and add your step to the relevant position in `actions/post_processing.rs`.
 #![allow(dead_code)]
 
+pub mod code_dictation;
 pub mod correction_tracker;
 pub mod dictionary;
 pub mod filler;

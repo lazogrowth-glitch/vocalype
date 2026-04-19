@@ -1,0 +1,41 @@
+name: "Issue Triage"
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Label and welcome
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          TITLE_LOWER=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]')
+
+          if echo "$TITLE_LOWER" | grep -qE "crash|error|bug|broken|fail|not work|doesn.t work"; then
+            LABEL="bug"
+            REPLY="Thanks for the report! To help us reproduce the issue, please share:\n- Your OS and version\n- Vocalype version\n- Steps to reproduce\n- Any error message or log from Advanced → Logs"
+          elif echo "$TITLE_LOWER" | grep -qE "feature|request|add|support|would be nice|suggestion"; then
+            LABEL="feature-request"
+            REPLY="Thanks for the suggestion! We've logged this as a feature request and will consider it for a future release."
+          elif echo "$TITLE_LOWER" | grep -qE "slow|latency|performance|speed|lag"; then
+            LABEL="performance"
+            REPLY="Thanks for the report! Performance issues can depend on your hardware. Please share your OS, CPU/GPU specs, and the Vocalype version so we can investigate."
+          elif echo "$TITLE_LOWER" | grep -qE "how|question|docs|documentation|help"; then
+            LABEL="question"
+            REPLY="Thanks for reaching out! Check the docs at vocalype.com/docs first — if your question isn't answered there, let us know and we'll help."
+          else
+            LABEL="triage"
+            REPLY="Thanks for opening this issue! We'll review it shortly. If it's a bug, please include your OS, Vocalype version, and steps to reproduce."
+          fi
+
+          gh label create "$LABEL" --color "0075ca" --repo "$REPO" 2>/dev/null || true
+          gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-label "$LABEL"
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "$(printf '%b' "$REPLY")"

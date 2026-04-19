@@ -28,7 +28,7 @@ mod security;
 // continue to resolve without changes.
 
 // processing
-pub use processing::{correction_tracker, dictionary, filler, post_processing, punctuation};
+pub use processing::{code_dictation, correction_tracker, dictionary, filler, post_processing, punctuation};
 // security
 pub use security::{bundle_signing, integrity, license, model_crypto, secret_store};
 // llm

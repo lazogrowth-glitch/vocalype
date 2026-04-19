@@ -1,0 +1,74 @@
+name: "Generate Changelog"
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_tag:
+        description: "From tag (e.g. v1.2.0) — leave empty to use the previous tag"
+        required: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tags
+        id: tags
+        run: |
+          TO=$(git describe --tags --abbrev=0 HEAD 2>/dev/null || echo "HEAD")
+          FROM="${{ github.event.inputs.from_tag }}"
+          if [ -z "$FROM" ]; then
+            FROM=$(git describe --tags --abbrev=0 "$TO^" 2>/dev/null || echo "")
+          fi
+          echo "to=$TO"    >> "$GITHUB_OUTPUT"
+          echo "from=$FROM" >> "$GITHUB_OUTPUT"
+
+      - name: Build changelog entry
+        id: build
+        run: |
+          FROM="${{ steps.tags.outputs.from }}"
+          TO="${{ steps.tags.outputs.to }}"
+          DATE=$(date +%Y-%m-%d)
+
+          if [ -n "$FROM" ]; then
+            RANGE="$FROM..$TO"
+          else
+            RANGE="$TO"
+          fi
+
+          FEATS=$(git log $RANGE --pretty=format:"%s" | grep -iE "^feat" | sed 's/^feat[^:]*: /- /' | head -20)
+          FIXES=$(git log $RANGE --pretty=format:"%s" | grep -iE "^fix"  | sed 's/^fix[^:]*: /- /'  | head -20)
+          PERF=$(git  log $RANGE --pretty=format:"%s" | grep -iE "^perf" | sed 's/^perf[^:]*: /- /' | head -10)
+
+          ENTRY="## $TO — $DATE\n"
+          [ -n "$FEATS" ] && ENTRY="${ENTRY}\n### What's New\n${FEATS}\n"
+          [ -n "$PERF"  ] && ENTRY="${ENTRY}\n### Improvements\n${PERF}\n"
+          [ -n "$FIXES" ] && ENTRY="${ENTRY}\n### Bug Fixes\n${FIXES}\n"
+          ENTRY="${ENTRY}\n---\n"
+
+          echo "entry<<EOF" >> "$GITHUB_OUTPUT"
+          printf "%b" "$ENTRY" >> "$GITHUB_OUTPUT"
+          echo "EOF"          >> "$GITHUB_OUTPUT"
+
+      - name: Prepend to CHANGELOG.md
+        run: |
+          ENTRY='${{ steps.build.outputs.entry }}'
+          if [ -f CHANGELOG.md ]; then
+            EXISTING=$(cat CHANGELOG.md)
+            printf "%b\n%s" "$ENTRY" "$EXISTING" > CHANGELOG.md
+          else
+            printf "%b" "$ENTRY" > CHANGELOG.md
+          fi
+
+      - name: Commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "chore: changelog for ${{ steps.tags.outputs.to }}"
+          git push

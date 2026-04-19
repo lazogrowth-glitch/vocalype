@@ -406,6 +406,25 @@
         "label": "Launch on Startup",
         "description": "Automatically start Vocalype when you log in to your computer."
       },
+      "startup": {
+        "label": "Launch on Startup",
+        "description": "Automatically start Vocalype in the background when you log in."
+      },
+      "devWorkflow": {
+        "label": "Clean for LLM",
+        "description": "Reformat your dictation into a clean prompt via Ollama (local, 100% private).",
+        "activeDescription": "Active via Ollama{{model}} — prompt reformatted before paste",
+        "activate": "Enable",
+        "deactivate": "Disable",
+        "errors": {
+          "checkFailed": "Cannot verify Ollama. Please try again.",
+          "notInstalled": "Ollama is not installed. Install it at ollama.com then try again.",
+          "notStarted": "Ollama did not start. Check that the installation is complete.",
+          "downloading": "Downloading qwen2.5...",
+          "downloadFailed": "Download failed: {{error}}",
+          "modelNotFound": "Model downloaded but not found. Restart the app."
+        }
+      },
       "showTrayIcon": {
         "label": "Show Tray Icon",
         "description": "Display the Vocalype icon in the system tray."

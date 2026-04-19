@@ -159,6 +159,19 @@
     },
     "progress": {
       "stepOf": "Paso {{current}} de {{total}}"
+    },
+    "firstRunTitle": "Instalando modelo de voz",
+    "firstRunSubtitle": "Vocalype Native - descarga única (~478 MB)",
+    "mode": {
+      "auto": "Auto",
+      "autoDescription": "Best choice for this machine",
+      "fast": "Fast",
+      "fastDescriptionNPU": "Minimum latency using this PC's NPU path",
+      "fastDescription": "Fastest for smooth dictation",
+      "balanced": "Balanced",
+      "balancedDescription": "A good balance between speed and quality",
+      "quality": "Quality",
+      "qualityDescription": "Best text quality on a more powerful machine"
     }
   },
   "modelSelector": {
@@ -318,7 +331,8 @@
         "shortcuts": "Atajos",
         "audio": "Audio",
         "dictation": "Dictado",
-        "keyboardShortcutsTitle": "Atajos de teclado"
+        "keyboardShortcutsTitle": "Atajos de teclado",
+        "primaryShortcut": "Main shortcut"
       },
       "recordingMode": {
         "label": "Modo de grabaci?n",
@@ -552,7 +566,39 @@
         "save": "Guardar",
         "cancel": "Cancelar",
         "delete": "Eliminar",
-        "maxActionsReached": "Se alcanz? el m?ximo de 9 acciones."
+        "maxActionsReached": "Se alcanz? el m?ximo de 9 acciones.",
+        "templates": {
+          "title": "Ready-to-use actions",
+          "llmBadge": "LLM required",
+          "readyBadge": "Model ready",
+          "setupBadge": "Setup required",
+          "readyHint": "Actions will use your current post-processing configuration.",
+          "setupHint": "Add an AI model under Models > Post-processing to run these actions.",
+          "description": "Quickly install the most useful actions: correction, summary, professional email, or translation.",
+          "llmHint": "These actions apply after dictation and use the AI model configured in Post-processing. Normal dictation is unchanged.",
+          "cleanup": {
+            "name": "Fix",
+            "description": "Cleans up dictation without changing the meaning.",
+            "prompt": "Fix the grammar, punctuation, and clarity of the following text without changing its meaning. Keep the original language. Text: ${output}"
+          },
+          "summary": {
+            "name": "Summary + actions",
+            "description": "Turns a long dictation into useful bullet points.",
+            "prompt": "Summarize the following text in a few clear points, then add an Actions section if tasks are mentioned. Text: ${output}"
+          },
+          "email": {
+            "name": "Pro email",
+            "description": "Reformats the dictation into a ready-to-send email.",
+            "prompt": "Turn the following text into a professional, clear, and natural email. Add a greeting if needed, structure the paragraphs, and keep the message concise. Text: ${output}"
+          },
+          "translate": {
+            "name": "Translate to French",
+            "description": "Cleanly translates to natural French.",
+            "prompt": "Translate the following text into natural and professional French. Do not add any comments. Text: ${output}"
+          }
+        },
+        "llmExecutionHint": "This action does not modify the voice capture. It only transforms the final text with the configured AI model.",
+        "outputPlaceholder": "dictated text"
       }
     },
     "history": {
@@ -590,7 +636,26 @@
       "loadMore": "Cargar m?s",
       "loadingMore": "Cargando?",
       "confirmDeleteAllMessage": "?Eliminar todas las entradas del historial?",
-      "confirmYes": "Eliminar todo"
+      "confirmYes": "Eliminar todo",
+      "search": "Search transcriptions…",
+      "noResults": "No results for \"{{query}}\"",
+      "noAiActionsHint": "Create an action in Post-processing to correct, summarize, or reformat your past dictations here.",
+      "configureActions": "Configure actions",
+      "actionApplied": "Action applied.",
+      "actionFailed": "Failed to apply action.",
+      "actionNeedsPremium": "This action requires Premium. Upgrade to Premium to transform history.",
+      "actionNeedsModel": "Configure an AI model in Models > Post-processing to use this action.",
+      "actionNotFound": "This action no longer exists. Check your actions in Post-processing.",
+      "emptyActionSource": "This history entry is empty.",
+      "restoreOriginal": "Original",
+      "originalRestored": "Original restored.",
+      "restoreOriginalFailed": "Failed to restore original.",
+      "aiActions": "AI Actions",
+      "showLessActions": "Less",
+      "copiedAiResult": "AI result copied.",
+      "copyAiResult": "Copy AI result",
+      "copiedOriginal": "Original copied.",
+      "copyOriginal": "Copy original"
     },
     "debug": {
       "title": "Depuración",
@@ -773,7 +838,13 @@
     "noOptionsFound": "No se encontraron opciones",
     "moreInformation": "M?s informaci?n",
     "infoGlyph": "i",
-    "back": "Volver"
+    "back": "Volver",
+    "all": "All",
+    "pinned": "Pinned",
+    "recent": "Recent",
+    "archived": "Archived",
+    "copy": "Copy",
+    "words": "{{count}} words"
   },
   "accessibility": {
     "permissionsRequired": "Se Requieren Permisos de Accesibilidad",
@@ -878,7 +949,8 @@
       "passwordsDoNotMatch": "Las contrase?as no coinciden.",
       "invalidResetCode": "C?digo no v?lido o caducado.",
       "wrongOldPassword": "La contrase?a actual es incorrecta."
-    }
+    },
+    "sessionExpiredNotice": "Session expired — please sign in again to continue."
   },
   "warnings": {
     "whisperGpuUnavailable": "GPU no disponible ? ejecutando en CPU",
@@ -903,7 +975,22 @@
       "notes": "Notas",
       "browser": "Navegador",
       "unknown": "Desconocido"
-    }
+    },
+    "title": "Auto context",
+    "description": "Adapt dictation to the active app",
+    "enableToggle": "Enable auto context",
+    "enableToggleDescription": "Automatically adapt output based on the active app",
+    "recentApps": "Recent apps",
+    "noRecentApps": "No recent apps",
+    "refresh": "Refresh",
+    "otherOverrides": "Other forced overrides",
+    "removeOverride": "Remove override",
+    "howItWorks": "How it works",
+    "chatHint": "Conversational tone, light punctuation",
+    "codeHint": "Markdown structure preserved",
+    "emailHint": "Formal tone, full punctuation",
+    "notesHint": "Post-processing disabled, text injected as-is",
+    "tab": "Context"
   },
   "bootstrap": {
     "desktopRuntimeUnavailable": "Vocalype no pudo conectarse al runtime de escritorio. Reinicia la app.",
@@ -936,7 +1023,7 @@
   "dictionary": {
     "tab": "Diccionario",
     "empty": "Todav?a no hay t?rminos personalizados. A?ade palabras, nombres propios o acr?nimos.",
-    "fromPlaceholder": "Whisper oye?",
+    "fromPlaceholder": "Vocalype hears...",
     "toPlaceholder": "Reemplazar por?",
     "add": "A?adir",
     "remove": "Eliminar",
@@ -964,7 +1051,13 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "duplicate": "\"{{trigger}}\" ya existe.",
-    "arrow": "?"
+    "arrow": "?",
+    "addNew": "Add",
+    "addTitle": "Add a snippet",
+    "editTitle": "Edit snippet",
+    "addSubmit": "Add",
+    "addFirst": "Create my first snippet",
+    "edit": "Edit"
   },
   "stats": {
     "title": "Estad?sticas",
@@ -977,7 +1070,24 @@
     "timeSaved": "Tiempo ahorrado",
     "timeSavedUnit": "min",
     "noData": "Todav?a no hay datos. Empieza a transcribir para construir tus estad?sticas.",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "loading": "Loading…",
+    "empty": "No data available.",
+    "subtitle": "A simple overview of your usage and results in the app.",
+    "overview": "Overview",
+    "overviewDescription": "The most useful metrics to read at a glance.",
+    "totalEntries": "Transcriptions",
+    "totalEntriesSub": "Total number of results recorded.",
+    "transcriptions": "transcriptions",
+    "insights": "Benchmarks",
+    "insightsDescription": "A few simple benchmarks to understand your rhythm.",
+    "noModel": "No dominant model yet",
+    "modelSub": "The engine you use most often.",
+    "avgWordsSub": "Average length of each transcription.",
+    "quickRead": "Quick read",
+    "snapshotEntries": "Total sessions",
+    "snapshotWords": "Words dictated",
+    "snapshotTime": "Estimated time saved"
   },
   "basic": {
     "copiedToClipboard": "Texto copiado al portapapeles",
@@ -1029,5 +1139,87 @@
   "plan": {
     "premium": "Premium",
     "basic": "Básico"
+  },
+  "meetings": {
+    "search": "Search...",
+    "new": "New meeting",
+    "empty": "No meetings yet.\nPress your meeting key to start.",
+    "startCapture": "Start meeting",
+    "stopCapture": "Stop",
+    "importAudio": "Import audio",
+    "selectOrCreate": "Select a meeting or start a recording to create one",
+    "titlePlaceholder": "Meeting title",
+    "saving": "Saving...",
+    "titleAi": "AI Title",
+    "chapters": "AI Chapters",
+    "category": "Category / folder",
+    "actions": "Actions",
+    "summarize": "Summarize",
+    "export": "Export",
+    "closeTitle": "Close meeting — next recording will create a new meeting",
+    "close": "Finish",
+    "captureError": "Failed to start meeting recording",
+    "closed": "Meeting closed — next recording will create a new meeting",
+    "exportSuccess": "Meeting exported.",
+    "exportError": "Failed to export meeting",
+    "importingAudio": "Transcribing audio file...",
+    "importAudioEmpty": "No text was extracted from the file",
+    "importAudioSuccess": "Audio added to meeting.",
+    "importAudioError": "Failed to import audio file",
+    "copyEmpty": "Nothing to copy",
+    "copySuccess": "Meeting copied.",
+    "copyError": "Failed to copy",
+    "summarizing": "Generating summary...",
+    "summarizeSuccess": "Summary updated.",
+    "summarizeError": "Failed to generate summary",
+    "extractingActions": "Extracting actions...",
+    "extractActionsSuccess": "Actions updated.",
+    "extractActionsError": "Failed to extract actions",
+    "generatingTitle": "Generating title...",
+    "generateTitleSuccess": "Title generated.",
+    "generateTitleError": "Failed to generate title",
+    "generatingChapterTitles": "Generating chapter titles...",
+    "generateChapterTitlesSuccess": "Chapter titles generated.",
+    "generateChapterTitlesError": "Failed to generate chapter titles"
+  },
+  "notes": {
+    "search": "Search...",
+    "new": "New note",
+    "empty": "No notes yet.\nClick + to create one.",
+    "startCapture": "Dictate note",
+    "stopCapture": "Stop",
+    "importAudio": "Import audio",
+    "selectOrCreate": "Select a note or create a new one",
+    "titlePlaceholder": "Title",
+    "saving": "Saving...",
+    "titleAi": "AI Title",
+    "category": "Category / folder",
+    "actions": "Actions",
+    "summarize": "Summarize",
+    "export": "Export",
+    "closeTitle": "Close note — next dictation will create a new note",
+    "close": "New note",
+    "contentPlaceholder": "Start writing...",
+    "captureError": "Failed to start note dictation",
+    "closed": "Voice note closed — next dictation will create a new note",
+    "closeError": "Failed to close the active note",
+    "exportSuccess": "Note exported.",
+    "exportError": "Failed to export note",
+    "importingAudio": "Transcribing audio file...",
+    "importAudioEmpty": "No text was extracted from the file",
+    "importAudioSuccess": "Audio added to note.",
+    "importAudioError": "Failed to import audio file",
+    "copyEmpty": "Nothing to copy",
+    "copySuccess": "Note copied.",
+    "copyError": "Failed to copy",
+    "summarizing": "Generating summary...",
+    "summarizeSuccess": "Summary updated.",
+    "summarizeError": "Failed to generate summary",
+    "extractingActions": "Extracting actions...",
+    "extractActionsSuccess": "Actions updated.",
+    "extractActionsError": "Failed to extract actions",
+    "generatingTitle": "Generating title...",
+    "generateTitleSuccess": "Title generated.",
+    "generateTitleError": "Failed to generate title"
   }
 }

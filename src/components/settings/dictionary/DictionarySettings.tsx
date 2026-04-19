@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Pencil, Trash2, Check, X, Download, Upload } from "lucide-react";
-import { save, open } from "@tauri-apps/plugin-dialog";
-import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
+import { Pencil, Trash2, Check, X } from "lucide-react";
 import { commands, DictionaryEntry } from "@/bindings";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
@@ -114,82 +112,28 @@ export const DictionarySettings: React.FC = () => {
 
   // ── Export ────────────────────────────────────────────────────────────────
 
-  const handleExport = async () => {
-    try {
-      const filePath = await save({
-        defaultPath: "vocalype-dictionary.json",
-        filters: [{ name: "JSON", extensions: ["json"] }],
-      });
-      if (!filePath) return;
-      const result = await commands.exportDictionary();
-      if (result.status === "ok") {
-        await writeTextFile(filePath, result.data);
-        toast.success(
-          t("dictionary.exportSuccess", {
-            defaultValue: "Dictionnaire exporté.",
-          }),
-        );
-      } else {
-        toast.error(result.error);
-      }
-    } catch (e) {
-      toast.error(String(e));
-    }
-  };
-
-  // ── Import ────────────────────────────────────────────────────────────────
-
-  const handleImport = async (replace: boolean) => {
-    try {
-      const selected = await open({
-        multiple: false,
-        filters: [{ name: "JSON", extensions: ["json"] }],
-      });
-      if (!selected || typeof selected !== "string") return;
-      const content = await readTextFile(selected);
-      const result = await commands.importDictionary(content, replace);
-      if (result.status === "ok") {
-        await load();
-        toast.success(
-          replace
-            ? t("dictionary.importReplaceSuccess", {
-                defaultValue: "Dictionnaire importé (remplacé).",
-              })
-            : t("dictionary.importMergeSuccess", {
-                defaultValue: "Dictionnaire importé (fusionné).",
-              }),
-        );
-      } else {
-        toast.error(result.error);
-      }
-    } catch (e) {
-      toast.error(String(e));
-    }
-  };
-
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div
       style={{
-        paddingTop: 16,
         display: "flex",
         flexDirection: "column",
-        gap: 0,
+        gap: 32,
       }}
     >
       {/* Auto-learn toggle */}
       <div
-        className="flex items-center justify-between rounded-[8px] border border-white/8 bg-white/[0.03]"
-        style={{ padding: "14px 20px" }}
+        className="flex items-center justify-between voca-surface"
+        style={{ padding: "24px", gap: 24 }}
       >
         <div>
-          <p className="text-[12px] font-medium text-white/80">
+          <p className="text-[15.5px] font-bold text-white/92">
             {t("dictionary.autoLearn", {
               defaultValue: "Auto-learn corrections",
             })}
           </p>
-          <p className="text-[11px] text-white/40">
+          <p className="mt-2 text-[14px] leading-6 text-white/58">
             {t("dictionary.autoLearnDesc", {
               defaultValue:
                 "Automatically learns word corrections when you copy edited text after dictation.",
@@ -199,67 +143,31 @@ export const DictionarySettings: React.FC = () => {
         <button
           type="button"
           role="switch"
-          aria-checked={autoLearn}
+          aria-checked={Boolean(autoLearn)}
           onClick={() => updateSetting("auto_learn_dictionary", !autoLearn)}
-          className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${
-            autoLearn ? "bg-logo-primary" : "bg-white/15"
+          className={`relative h-[26px] w-[46px] flex-shrink-0 rounded-full border transition-colors ${
+            autoLearn
+              ? "border-logo-primary/35 bg-logo-primary/85"
+              : "border-logo-stroke/12 bg-white/[0.065]"
           }`}
         >
           <span
-            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-              autoLearn ? "translate-x-4" : "translate-x-0.5"
+            className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.32)] transition-transform ${
+              autoLearn ? "translate-x-[20px]" : "translate-x-[3px]"
             }`}
           />
         </button>
       </div>
 
-      <div
-        style={{
-          height: "0.5px",
-          background: "rgba(255,255,255,0.06)",
-          margin: "28px 0 24px",
-        }}
-      />
-
-      {/* Export/Import toolbar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <button
-          type="button"
-          onClick={handleExport}
-          style={{
-            padding: "8px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-          className="rounded-[7px] border border-white/8 bg-white/[0.04] text-[12px] text-white/45 transition-colors hover:text-white/70"
-          title={t("dictionary.export", { defaultValue: "Exporter" })}
-        >
-          <Download size={13} aria-hidden="true" />
-          {t("dictionary.export", { defaultValue: "Exporter" })}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleImport(false)}
-          style={{
-            padding: "8px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-          className="rounded-[7px] border border-white/8 bg-white/[0.04] text-[12px] text-white/45 transition-colors hover:text-white/70"
-          title={t("dictionary.importMerge", {
-            defaultValue: "Importer (fusionner)",
-          })}
-        >
-          <Upload size={13} aria-hidden="true" />
-          {t("dictionary.importMerge", { defaultValue: "Importer" })}
-        </button>
-      </div>
-
       {/* Add row */}
       <div
-        style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8 }}
+        className="voca-surface"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 32,
+          padding: "20px",
+        }}
       >
         <Input
           type="text"
@@ -296,23 +204,27 @@ export const DictionarySettings: React.FC = () => {
       </div>
 
       {/* Entry list */}
-      <div style={{ marginTop: 16 }}>
+      <div>
         {entries.length === 0 ? (
-          <p className="px-1 text-[13px] text-white/35 italic">
+          <p
+            className="voca-surface p-6 text-[13px] italic"
+            style={{ color: "var(--color-text-faint)" }}
+          >
             {t("dictionary.empty")}
           </p>
         ) : (
-          <div className="divide-y divide-white/6 rounded-lg border border-white/8">
+          <div className="voca-surface" style={{ padding: "8px 24px" }}>
             {entries.map((entry) => {
               const isEditing = editingFrom === entry.from;
               return (
                 <div
                   key={entry.from}
+                  className="border-b border-logo-stroke/[0.08] last:border-b-0"
                   style={{
-                    padding: "10px 16px",
+                    padding: "20px 0",
                     display: "flex",
                     alignItems: "center",
-                    gap: 12,
+                    gap: 16,
                   }}
                 >
                   {/* From (read-only) */}

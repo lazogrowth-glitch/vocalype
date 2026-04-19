@@ -25,16 +25,11 @@ export const DebugSettings: React.FC = () => {
       <SettingsGroup title={t("settings.debug.title")}>
         <LogLevelSelector grouped={true} />
         <UpdateChecksToggle descriptionMode="tooltip" grouped={true} />
-        <SoundPicker
-          label={t("settings.debug.soundTheme.label")}
-          description={t("settings.debug.soundTheme.description")}
-        />
         <WordCorrectionThreshold descriptionMode="tooltip" grouped={true} />
         <PasteDelay descriptionMode="tooltip" grouped={true} />
         <RuntimeDiagnostics grouped={true} />
         <ParakeetLab grouped={true} />
         <VoiceFeedbackPanel grouped={true} />
-        <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         {/* Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration */}
         {!isLinux && (
           <ShortcutInput

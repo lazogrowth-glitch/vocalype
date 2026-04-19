@@ -125,7 +125,7 @@ export const BillingSettings: React.FC = () => {
           display: "flex",
           alignItems: "center",
           gap: 12,
-          marginBottom: 16,
+          marginBottom: 32,
         }}
       >
         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-logo-primary/20 bg-logo-primary/10">
@@ -187,12 +187,12 @@ export const BillingSettings: React.FC = () => {
           })}
         >
           <div
-            className="rounded-xl border border-white/8 bg-white/[0.03]"
+            className="voca-surface"
             style={{
-              padding: "16px 20px",
+              padding: "24px",
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: 16,
             }}
           >
             <p className="text-[12px] font-medium text-white/60">
@@ -219,26 +219,20 @@ export const BillingSettings: React.FC = () => {
           title={t("billing.stats.title", { defaultValue: "All-time stats" })}
         >
           <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
           >
-            <div
-              className="rounded-xl border border-white/8 bg-white/[0.03]"
-              style={{ padding: "16px 20px" }}
-            >
+            <div className="voca-surface" style={{ padding: "24px" }}>
               <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
                 {t("billing.stats.words", { defaultValue: "Words dictated" })}
               </p>
               <p
                 style={{ marginTop: 4 }}
-                className="text-[22px] font-semibold leading-none text-white/90"
+                className="text-[28px] font-semibold leading-none text-white/90"
               >
                 {stats.total_words.toLocaleString()}
               </p>
             </div>
-            <div
-              className="rounded-xl border border-white/8 bg-white/[0.03]"
-              style={{ padding: "16px 20px" }}
-            >
+            <div className="voca-surface" style={{ padding: "24px" }}>
               <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
                 {t("billing.stats.sessions", {
                   defaultValue: "Total sessions",
@@ -246,7 +240,7 @@ export const BillingSettings: React.FC = () => {
               </p>
               <p
                 style={{ marginTop: 4 }}
-                className="text-[22px] font-semibold leading-none text-white/90"
+                className="text-[28px] font-semibold leading-none text-white/90"
               >
                 {stats.total_entries.toLocaleString()}
               </p>

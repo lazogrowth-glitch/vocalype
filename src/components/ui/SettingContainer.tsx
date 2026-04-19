@@ -52,7 +52,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
     >
       <button
         type="button"
-        className="flex h-[16px] w-[16px] items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.02] text-[9px] font-medium text-white/28 transition-colors hover:border-white/20 hover:bg-white/[0.04] hover:text-white/48"
+        className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-white/[0.14] bg-white/[0.025] text-[10px] font-medium text-white/34 transition-colors hover:border-logo-primary/32 hover:bg-logo-primary/10 hover:text-logo-primary"
         aria-label={t("common.moreInformation", {
           defaultValue: "More information",
         })}
@@ -69,46 +69,18 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
 
   if (layout === "stacked") {
     return (
-      <div
-        className="setting-row border-b border-white/[0.05] last:border-b-0"
-        style={{
-          padding: "17px 20px",
-          transition: "background 0.14s ease",
-        }}
-      >
-        <div
-          style={{
-            marginBottom: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
+      <div className="setting-row border-b border-logo-stroke/[0.08] px-6 py-5 last:border-b-0">
+        <div className="mb-5 flex items-center gap-3">
           {descriptionMode === "tooltip" ? infoButton : null}
           <div className="min-w-0">
             <h3
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: "19px",
-                letterSpacing: "-0.01em",
-                color: disabled
-                  ? "rgba(255,255,255,0.35)"
-                  : "rgba(255,255,255,0.94)",
-              }}
+              className={`text-[15px] font-semibold leading-snug ${disabled ? "text-white/35" : "text-white/95"}`}
             >
               {title}
             </h3>
             {descriptionMode === "inline" && description ? (
               <p
-                style={{
-                  marginTop: 5,
-                  fontSize: 12.5,
-                  lineHeight: "18px",
-                  color: disabled
-                    ? "rgba(255,255,255,0.25)"
-                    : "rgba(255,255,255,0.58)",
-                }}
+                className={`mt-1.5 text-[12px] leading-5 ${disabled ? "text-white/25" : "text-zinc-400"}`}
               >
                 {description}
               </p>
@@ -122,49 +94,64 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
 
   return (
     <div
-      className="setting-row border-b border-white/[0.05] last:border-b-0"
+      className="setting-row border-b border-logo-stroke/[0.08] last:border-b-0"
       style={{
         display: "flex",
         width: "100%",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 20,
-        minHeight: 60,
-        padding: "15px 20px",
+        gap: 16,
+        minHeight: 72,
+        padding: "16px",
         transition: "background 0.14s ease",
       }}
     >
       <div className="min-w-0">
         {descriptionMode === "tooltip" ? (
-          <div className="flex min-w-0 items-center gap-[10px]">
+          <div className="flex min-w-0 items-start gap-[12px]">
             {infoButton}
-            <h3
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: "19px",
-                letterSpacing: "-0.01em",
-                color: disabled
-                  ? "rgba(255,255,255,0.35)"
-                  : "rgba(255,255,255,0.94)",
-                whiteSpace: "normal",
-              }}
-            >
-              {title}
-            </h3>
+            <div className="min-w-0">
+              <h3
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  lineHeight: "22px",
+                  letterSpacing: 0,
+                  color: disabled
+                    ? "rgba(255,255,255,0.35)"
+                    : "rgba(255,255,255,0.94)",
+                  whiteSpace: "normal",
+                }}
+              >
+                {title}
+              </h3>
+              {description ? (
+                <p
+                  style={{
+                    marginTop: 5,
+                    maxWidth: 560,
+                    fontSize: 12,
+                    lineHeight: "18px",
+                    color: disabled ? "rgba(255,255,255,0.25)" : "#a1a1aa",
+                  }}
+                >
+                  {description}
+                </p>
+              ) : null}
+            </div>
           </div>
         ) : (
-          <div className="flex min-w-0 items-start gap-[10px]">
+          <div className="flex min-w-0 items-start gap-[12px]">
             {description ? (
               <div style={{ paddingTop: 3 }}>{infoButton}</div>
             ) : null}
             <div className="min-w-0">
               <h3
                 style={{
-                  fontSize: 14.5,
-                  fontWeight: 600,
-                  lineHeight: "20px",
-                  letterSpacing: "-0.01em",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  lineHeight: "22px",
+                  letterSpacing: 0,
                   color: disabled
                     ? "rgba(255,255,255,0.35)"
                     : "rgba(255,255,255,0.94)",
@@ -175,11 +162,9 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
               <p
                 style={{
                   marginTop: 5,
-                  fontSize: 12.5,
+                  fontSize: 12,
                   lineHeight: "18px",
-                  color: disabled
-                    ? "rgba(255,255,255,0.25)"
-                    : "rgba(255,255,255,0.58)",
+                  color: disabled ? "rgba(255,255,255,0.25)" : "#a1a1aa",
                 }}
               >
                 {description}

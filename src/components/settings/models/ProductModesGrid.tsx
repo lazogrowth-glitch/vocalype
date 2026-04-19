@@ -51,7 +51,7 @@ export const ProductModesGrid: React.FC<ProductModesGridProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {productModes.map(({ id, label, description, modelId, model }) => {
         const isActiveMode =
           (adaptiveProfile?.active_runtime_model_id || currentModel) ===
@@ -63,31 +63,33 @@ export const ProductModesGrid: React.FC<ProductModesGridProps> = ({
             key={id}
             type="button"
             onClick={() => onSelect(modelId)}
-            style={{ padding: "8px 16px", marginBottom: 6 }}
-            className={`flex w-full items-center gap-4 rounded-[10px] border text-left transition-all ${
+            style={{ padding: "22px 24px" }}
+            className={`flex min-h-[88px] w-full items-center gap-4 rounded-[10px] border text-left transition-all ${
               isActiveMode
-                ? "border-logo-primary/30 bg-logo-primary/[0.08]"
-                : "border-white/8 bg-white/[0.03] hover:bg-white/[0.05]"
+                ? "border-accent/40 bg-surface-elevated"
+                : "border-border bg-row hover:border-border-strong hover:bg-surface"
             }`}
           >
             <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border ${meta.tone}`}
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <p className="text-[13.5px] font-medium text-white">{label}</p>
+                <p className="text-[14.5px] font-semibold text-white">
+                  {label}
+                </p>
                 {id === "auto" && (
-                  <span className="rounded-md border border-logo-primary/25 bg-logo-primary/15 px-2 py-0.5 text-[10px] font-medium text-logo-primary">
+                  <span className="voca-badge voca-badge-accent">
                     {t("onboarding.recommended")}
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 text-[11.5px] leading-5 text-white/40">
+              <p className="mt-1 text-[13px] leading-5 text-white/50">
                 {description}
               </p>
-              <p className="mt-0.5 text-[11px] text-white/28">
+              <p className="mt-1 text-[11.5px] text-white/34">
                 {model ? getTranslatedModelName(model, t) : modelId}
               </p>
             </div>

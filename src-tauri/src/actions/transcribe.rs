@@ -380,6 +380,27 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     }
     debug!("[TIMING] license check: {:?}", start_time.elapsed());
 
+    let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() else {
+        error!("TranscriptionCoordinator not initialized");
+        return;
+    };
+    let operation_id = match coordinator.begin_preparing(app, binding_id) {
+        Ok(operation_id) => operation_id,
+        Err(reason) => {
+            debug!(
+                "Skipping transcription start for '{}': {}",
+                binding_id, reason
+            );
+            return;
+        }
+    };
+    debug!("[TIMING] begin_preparing: {:?}", start_time.elapsed());
+    show_preparing_overlay(app);
+    debug!(
+        "[TIMING] show_preparing_overlay: {:?}",
+        start_time.elapsed()
+    );
+
     if !crate::startup_warmup::can_start_recording(app) {
         let warmup_status = crate::startup_warmup::current_status(app);
         crate::startup_warmup::ensure_startup_warmup(app, "transcription-blocked");
@@ -395,6 +416,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 message
             );
             let _ = app.emit("transcription-warmup-blocked", message);
+            let _ = coordinator.complete_operation(app, operation_id, "warmup-blocked");
+            utils::hide_recording_overlay(app);
+            change_tray_icon(app, TrayIconState::Idle);
             return;
         }
         debug!(
@@ -417,6 +441,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     "transcription-quota-exceeded",
                     serde_json::json!({ "count": count, "limit": 30 }),
                 );
+                let _ = coordinator.complete_operation(app, operation_id, "quota-exceeded");
+                utils::hide_recording_overlay(app);
+                change_tray_icon(app, TrayIconState::Idle);
                 return;
             }
             Err(e) => {
@@ -428,27 +455,6 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
 
     let captured_app_context = detect_current_app_context();
     debug!("[TIMING] app context detected: {:?}", start_time.elapsed());
-
-    let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() else {
-        error!("TranscriptionCoordinator not initialized");
-        return;
-    };
-    let operation_id = match coordinator.begin_preparing(app, binding_id) {
-        Ok(operation_id) => operation_id,
-        Err(reason) => {
-            debug!(
-                "Skipping transcription start for '{}': {}",
-                binding_id, reason
-            );
-            return;
-        }
-    };
-    debug!("[TIMING] begin_preparing: {:?}", start_time.elapsed());
-    show_preparing_overlay(app);
-    debug!(
-        "[TIMING] show_preparing_overlay: {:?}",
-        start_time.elapsed()
-    );
 
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.initiate_model_load();

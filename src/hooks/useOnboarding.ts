@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { useModelStore } from "@/stores/modelStore";
 
-type OnboardingStep = "consent" | "accessibility" | "model" | "done";
+type OnboardingStep = "first-run" | "done" | null;
 
 interface UseOnboardingProps {
   authLoading: boolean;
@@ -11,28 +12,22 @@ export function useOnboarding({
   authLoading,
   hasAnyAccess,
 }: UseOnboardingProps) {
-  const [onboardingStep, setOnboardingStep] =
-    useState<OnboardingStep | null>(null);
+  const isFirstRun = useModelStore((s) => s.isFirstRun);
+  const modelsInitialized = useModelStore((s) => s.initialized);
 
-  const finishOnboarding = useCallback(() => {
-    setOnboardingStep("done");
-  }, []);
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(null);
 
   useEffect(() => {
-    if (authLoading || !hasAnyAccess) {
+    if (authLoading || !hasAnyAccess || !modelsInitialized) {
       setOnboardingStep(null);
       return;
     }
+    setOnboardingStep(isFirstRun ? "first-run" : "done");
+  }, [authLoading, hasAnyAccess, modelsInitialized, isFirstRun]);
 
+  const handleFirstRunComplete = useCallback(() => {
     setOnboardingStep("done");
-  }, [authLoading, hasAnyAccess]);
+  }, []);
 
-  return {
-    onboardingStep,
-    isReturningUser: true,
-    handleConsentAccepted: finishOnboarding,
-    handleAccessibilityComplete: finishOnboarding,
-    handleModelSelected: finishOnboarding,
-    handleGoBack: finishOnboarding,
-  };
+  return { onboardingStep, handleFirstRunComplete };
 }

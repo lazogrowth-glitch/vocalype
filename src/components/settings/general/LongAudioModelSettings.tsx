@@ -15,7 +15,10 @@ export const LongAudioModelSettings: React.FC = () => {
   const { getSetting, updateSetting } = useSettings();
   const { models } = useModelStore();
 
-  const downloadedModels = models.filter((m: ModelInfo) => m.is_downloaded);
+  const downloadedModels = models.filter(
+    (m: ModelInfo) =>
+      m.id === "parakeet-tdt-0.6b-v3-multilingual" && m.is_downloaded,
+  );
   const longAudioModel = getSetting("long_audio_model") ?? null;
   const threshold = getSetting("long_audio_threshold_seconds") ?? 10;
 

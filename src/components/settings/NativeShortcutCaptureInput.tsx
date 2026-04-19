@@ -282,7 +282,7 @@ export const NativeShortcutCaptureInput: React.FC<
         {isRecording ? (
           <div
             ref={shortcutRef}
-            className="rounded-[5px] border border-logo-primary/30 bg-logo-primary/15 px-[10px] py-[4px] font-mono text-[12px] text-logo-primary"
+            className="min-h-[38px] rounded-[8px] border border-logo-primary/30 bg-logo-primary/15 px-[12px] py-[8px] font-mono text-[12.5px] text-logo-primary"
           >
             {formatCurrentKeys()}
           </div>
@@ -290,7 +290,7 @@ export const NativeShortcutCaptureInput: React.FC<
           <div
             role="button"
             tabIndex={0}
-            className="cursor-pointer rounded-[5px] border border-white/12 bg-white/[0.07] px-[10px] py-[4px] font-mono text-[12px] text-white/70 hover:bg-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
+            className="min-h-[38px] cursor-pointer rounded-[8px] border border-white/12 bg-white/[0.07] px-[12px] py-[8px] font-mono text-[12.5px] text-white/72 hover:bg-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
             onClick={startRecording}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {

@@ -42,27 +42,25 @@ export type SelectProps = BaseProps & (CreatableProps | NonCreatableProps);
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
-    minHeight: 42,
-    borderRadius: 12,
+    minHeight: 44,
+    borderRadius: 8,
     borderColor: state.isFocused
       ? "rgba(201,168,76,0.42)"
-      : "rgba(255,255,255,0.1)",
+      : "rgba(255,255,255,0.08)",
     boxShadow: state.isFocused ? "0 0 0 1px rgba(201,168,76,0.22)" : "none",
-    backgroundColor: state.isFocused
-      ? "rgba(201,168,76,0.08)"
-      : "rgba(255,255,255,0.035)",
-    fontSize: "0.8125rem",
+    backgroundColor: state.isFocused ? "#2A2A30" : "#1F1F23",
+    fontSize: "0.875rem",
     color: "var(--color-text)",
     transition: "all 150ms ease",
     ":hover": {
-      borderColor: "rgba(255,255,255,0.16)",
-      backgroundColor: "rgba(255,255,255,0.05)",
+      borderColor: "rgba(255,255,255,0.12)",
+      backgroundColor: "#2A2A30",
     },
   }),
   valueContainer: (base) => ({
     ...base,
-    paddingInline: 10,
-    paddingBlock: 6,
+    paddingInline: 12,
+    paddingBlock: 7,
   }),
   input: (base) => ({
     ...base,
@@ -91,28 +89,28 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   menu: (provided) => ({
     ...provided,
     zIndex: 30,
-    backgroundColor: "rgba(14,14,14,0.98)",
+    backgroundColor: "#1F1F23",
     color: "var(--color-text)",
     border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 14,
+    borderRadius: 8,
     boxShadow: "0 18px 40px rgba(0, 0, 0, 0.32)",
     overflow: "hidden",
   }),
   menuList: (base) => ({
     ...base,
     padding: 6,
-    backgroundColor: "rgba(14,14,14,0.98)",
+    backgroundColor: "#1F1F23",
   }),
   option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected
       ? "rgba(201,168,76,0.13)"
       : state.isFocused
-        ? "rgba(255,255,255,0.05)"
+        ? "#2A2A30"
         : "transparent",
     color: "var(--color-text)",
-    borderRadius: 10,
-    padding: "10px 12px",
+    borderRadius: 6,
+    padding: "11px 12px",
     cursor: state.isDisabled ? "not-allowed" : base.cursor,
     opacity: state.isDisabled ? 0.5 : 1,
     ":active": {

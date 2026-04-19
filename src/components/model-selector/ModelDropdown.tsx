@@ -6,6 +6,8 @@ import {
   getTranslatedModelDescription,
 } from "../../lib/utils/modelTranslation";
 
+const LAUNCH_MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
+
 interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
@@ -21,7 +23,10 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
 }) => {
   const { t } = useTranslation();
   const downloadedModels = models.filter(
-    (m) => m.is_downloaded && (m.id !== "gemini-api" || hasGeminiKey),
+    (m) =>
+      m.id === LAUNCH_MODEL_ID &&
+      m.is_downloaded &&
+      (m.id !== "gemini-api" || hasGeminiKey),
   );
 
   const handleModelClick = (modelId: string) => {

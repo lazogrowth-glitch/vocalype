@@ -40,12 +40,12 @@ pub(super) fn decide_post_process_mode(
         PostProcessMode::SnippetOnly
     } else if is_code_context && voice_to_code_enabled {
         PostProcessMode::VoiceToCode
-    } else if is_code_context {
-        PostProcessMode::SkipForCodeContext
     } else if has_selected_action {
         PostProcessMode::SelectedAction
     } else if post_process {
         PostProcessMode::StandardPrompt
+    } else if is_code_context {
+        PostProcessMode::SkipForCodeContext
     } else {
         PostProcessMode::None
     }

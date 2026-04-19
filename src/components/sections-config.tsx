@@ -62,17 +62,23 @@ interface SectionConfig {
   enabled: (settings: any) => boolean;
 }
 
-const LAUNCH_HIDDEN_SECTIONS = new Set([
+const LAUNCH_HIDDEN_SECTIONS = new Set<SidebarSection>([
   "meetings",
   "notes",
   "snippets",
   "stats",
+  "debug",
   "referral",
   "about",
 ]);
 
-const isLaunchVisible = (section: string) =>
+const isLaunchVisible = (section: SidebarSection) =>
   !LAUNCH_HIDDEN_SECTIONS.has(section);
+
+export const isSectionVisibleInLaunch = (
+  section: SidebarSection,
+  settings: any,
+) => SECTIONS_CONFIG[section]?.enabled(settings) === true;
 
 export const SECTIONS_CONFIG = {
   // ── Configuration ─────────────────────────────────────
@@ -136,7 +142,8 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.debug",
     icon: FlaskConical,
     component: DebugSettings,
-    enabled: (settings) => settings?.debug_mode ?? false,
+    enabled: (settings) =>
+      import.meta.env.DEV && (settings?.debug_mode ?? false),
   },
   // ── Bas de sidebar ────────────────────────────────────
   referral: {

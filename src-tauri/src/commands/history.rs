@@ -1,5 +1,7 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::transcription::TranscriptionManager;
+use crate::processing::correction_tracker::{diff_words, CorrectionTracker, AUTO_ADD_THRESHOLD};
+use crate::processing::dictionary::DictionaryManager;
 use crate::processing::post_processing::process_action;
 use crate::vocabulary_store::VocabularyStoreState;
 use hound::WavReader;
@@ -492,6 +494,8 @@ pub async fn update_recording_retention_period(
 pub async fn update_history_entry_text(
     app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
+    dictionary: State<'_, Arc<DictionaryManager>>,
+    correction_tracker: State<'_, Arc<CorrectionTracker>>,
     id: i64,
     new_text: String,
 ) -> Result<(), String> {
@@ -508,9 +512,16 @@ pub async fn update_history_entry_text(
     // Feed the correction into the adaptive vocabulary store so the model
     // learns this correction for future sessions.
     if let Some(entry) = old_entry {
+        let settings = crate::settings::get_settings(&app);
+        for candidate in diff_words(&entry.transcription_text, &new_text) {
+            let count = correction_tracker.record(&candidate.from, &candidate.to);
+            if settings.auto_learn_dictionary && count >= AUTO_ADD_THRESHOLD {
+                let _ = dictionary.add(candidate.from, candidate.to);
+            }
+        }
+
         if let Some(vocab_state) = app.try_state::<VocabularyStoreState>() {
             if let Ok(mut store) = vocab_state.0.lock() {
-                let settings = crate::settings::get_settings(&app);
                 let model_id = entry.model_name.as_deref().unwrap_or("");
                 store.learn_feedback_correction(
                     None, // no per-entry app context stored

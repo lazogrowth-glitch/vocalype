@@ -170,7 +170,9 @@
       "balancedDescription": "Un bon compromis entre vitesse et qualité",
       "quality": "Qualité",
       "qualityDescription": "La meilleure qualité de texte sur une machine plus puissante"
-    }
+    },
+    "firstRunTitle": "Installation du modèle vocal",
+    "firstRunSubtitle": "Vocalype Native - téléchargement unique (~478 MB)"
   },
   "modelSelector": {
     "badges": {
@@ -1021,10 +1023,10 @@
   "dictionary": {
     "tab": "Dictionnaire",
     "empty": "Aucun terme custom. Ajoute des mots, noms propres ou acronymes.",
-    "fromPlaceholder": "Whisper entend…",
+    "fromPlaceholder": "Vocalype entend...",
     "toPlaceholder": "Remplacer par…",
     "autoLearn": "Apprentissage automatique",
-    "autoLearnDesc": "Apprend automatiquement les corrections de mots lorsque vous copiez un texte modifié après une dictée.",
+    "autoLearnDesc": "Apprend automatiquement les corrections de mots après une dictée.",
     "edit": "Modifier",
     "add": "Ajouter",
     "remove": "Supprimer",

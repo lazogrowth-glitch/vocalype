@@ -1615,14 +1615,34 @@ async startBrowserAuth() : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-/**
- * Check whether Ollama is running locally and return the list of available models.
- * Uses the native Ollama API at http://localhost:11434 rather than the OpenAI-compat
- * endpoint, so no API key is needed and the response is stable across Ollama versions.
- */
 async checkOllamaStatus() : Promise<Result<OllamaStatus, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("check_ollama_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Spawn `ollama serve` detached. Searches common install paths on Windows
+ * in case ollama is not in PATH.
+ */
+async startOllamaServe() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_ollama_serve") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Pull an Ollama model, emitting `ollama-pull-progress` events so the
+ * frontend can show a live progress bar.
+ * Emits `ollama-pull-done` when complete or `ollama-pull-error` on failure.
+ */
+async pullOllamaModel(model: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("pull_ollama_model", { model }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -1731,21 +1751,21 @@ voice_snippets?: VoiceSnippet[];
 /**
  * Automatically learn word corrections from clipboard changes after paste.
  */
-auto_learn_dictionary?: boolean;
+auto_learn_dictionary?: boolean; 
 /**
  * Automatically pause media players (Spotify, etc.) during recording.
  */
-auto_pause_media?: boolean;
+auto_pause_media?: boolean; 
 /**
  * When true, dictation in code editors is sent to a local LLM (Ollama)
  * and the result is pasted as formatted code instead of raw text.
  */
-voice_to_code_enabled?: boolean;
+voice_to_code_enabled?: boolean; 
 /**
  * Model name to use for Voice-to-Code (e.g. "devstral", "ministral-3:8b").
  * Applies to the "ollama" provider.
  */
-voice_to_code_model?: string;
+voice_to_code_model?: string; 
 /**
  * Set to true after the Voice-to-Code discovery prompt has been shown
  * once, so it never appears again.
@@ -1852,7 +1872,8 @@ export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"
 export type NoteEntry = { id: number; title: string; content: string; category: string; is_pinned: boolean; is_archived: boolean; summary: string; action_items: string; created_at: number; updated_at: number }
 export type NpuKind = "none" | "qualcomm" | "intel" | "amd" | "unknown"
-export type OllamaStatus = { available: boolean; models: string[] }
+export type OllamaModelInfo = { name: string; size_gb: number }
+export type OllamaStatus = { available: boolean; models: OllamaModelInfo[] }
 export type OverlayPosition = "none" | "top" | "bottom"
 export type ParakeetDiagnosticsSnapshot = { active_session: ParakeetSessionDiagnostics | null; recent_sessions: ParakeetSessionDiagnostics[] }
 export type ParakeetFailureMode = "healthy" | "underchunking_long_utterance" | "overtrim_overlap" | "missing_word_timestamps" | "retry_recovered_chunk" | "final_chunk_hallucination" | "low_audio_density" | "boundary_word_loss"
@@ -1876,15 +1897,15 @@ export type RecentAppEntry = { process_name: string; window_title: string | null
  * ## Migration (T11)
  * - Old `push_to_talk = true`         → `RecordingMode::PushToTalk`
  * - Old `always_on_microphone = true`  → `RecordingMode::AlwaysOn`
- * - Both `false` (the default)         → `RecordingMode::Toggle`
+ * - Both `false`                       → `RecordingMode::Toggle`
  */
 export type RecordingMode = 
 /**
- * Press shortcut once to start, press again to stop (default).
+ * Press shortcut once to start, press again to stop.
  */
 "toggle" | 
 /**
- * Hold shortcut to record, release to stop.
+ * Hold shortcut to record, release to stop (default).
  */
 "push_to_talk" | 
 /**

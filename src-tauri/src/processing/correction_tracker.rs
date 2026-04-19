@@ -97,8 +97,8 @@ fn make_key(from: &str, to: &str) -> String {
 /// Uses a longest-common-subsequence approach to align the two sequences and
 /// extracts (deleted_segment → inserted_segment) hunks as candidates.
 pub fn diff_words(original: &str, corrected: &str) -> Vec<RawCandidate> {
-    let orig: Vec<String> = tokenize(original);
-    let corr: Vec<String> = tokenize(corrected);
+    let orig = tokenize(original);
+    let corr = tokenize(corrected);
 
     if orig.is_empty() || corr.is_empty() {
         return vec![];
@@ -107,14 +107,17 @@ pub fn diff_words(original: &str, corrected: &str) -> Vec<RawCandidate> {
     let m = orig.len();
     let n = corr.len();
 
-    // Build LCS table (case-insensitive comparison)
-    let mut dp = vec![vec![0usize; n + 1]; m + 1];
+    // Build a compact LCS table. Tokens are already normalized, so the inner
+    // loop avoids repeated lowercase allocations on every comparison.
+    let stride = n + 1;
+    let mut dp = vec![0usize; (m + 1) * stride];
     for i in 1..=m {
         for j in 1..=n {
-            if orig[i - 1].to_lowercase() == corr[j - 1].to_lowercase() {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
+            let idx = i * stride + j;
+            if orig[i - 1].norm == corr[j - 1].norm {
+                dp[idx] = dp[(i - 1) * stride + (j - 1)] + 1;
             } else {
-                dp[i][j] = dp[i - 1][j].max(dp[i][j - 1]);
+                dp[idx] = dp[(i - 1) * stride + j].max(dp[i * stride + (j - 1)]);
             }
         }
     }
@@ -126,16 +129,16 @@ pub fn diff_words(original: &str, corrected: &str) -> Vec<RawCandidate> {
     let mut ins_buf: Vec<String> = Vec::new();
 
     while i > 0 || j > 0 {
-        if i > 0 && j > 0 && orig[i - 1].to_lowercase() == corr[j - 1].to_lowercase() {
+        if i > 0 && j > 0 && orig[i - 1].norm == corr[j - 1].norm {
             // Match — flush pending hunk first
             flush(&mut del_buf, &mut ins_buf, &mut result);
             i -= 1;
             j -= 1;
-        } else if j > 0 && (i == 0 || dp[i][j - 1] >= dp[i - 1][j]) {
-            ins_buf.push(corr[j - 1].clone());
+        } else if j > 0 && (i == 0 || dp[i * stride + (j - 1)] >= dp[(i - 1) * stride + j]) {
+            ins_buf.push(corr[j - 1].text.clone());
             j -= 1;
         } else {
-            del_buf.push(orig[i - 1].clone());
+            del_buf.push(orig[i - 1].text.clone());
             i -= 1;
         }
     }
@@ -200,7 +203,7 @@ fn flush(del: &mut Vec<String>, ins: &mut Vec<String>, out: &mut Vec<RawCandidat
 }
 
 /// Split text into word tokens, stripping surrounding punctuation.
-fn tokenize(text: &str) -> Vec<String> {
+fn tokenize(text: &str) -> Vec<Token> {
     text.split_whitespace()
         .filter_map(|w| {
             let cleaned = w
@@ -209,10 +212,19 @@ fn tokenize(text: &str) -> Vec<String> {
             if cleaned.is_empty() {
                 None
             } else {
-                Some(cleaned)
+                Some(Token {
+                    norm: cleaned.to_lowercase(),
+                    text: cleaned,
+                })
             }
         })
         .collect()
+}
+
+#[derive(Debug, Clone)]
+struct Token {
+    text: String,
+    norm: String,
 }
 
 /// Return true if this word is a viable dictionary candidate.

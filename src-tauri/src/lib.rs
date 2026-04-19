@@ -10,7 +10,7 @@ mod settings;
 mod shortcut;
 mod tray;
 
-// â”€â”€ Organised sub-modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Organised sub-modules
 
 /// LLM provider clients (Gemini, OpenAI-compatible, prompt builder).
 mod llm;
@@ -23,7 +23,7 @@ mod runtime;
 /// Security subsystem (license, integrity, crypto, keyring).
 mod security;
 
-// â”€â”€ Backward-compatible re-exports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Backward-compatible re-exports
 // `pub use` ensures existing `use crate::X::SomeType` imports in sub-modules
 // continue to resolve without changes.
 
@@ -126,6 +126,7 @@ const MAIN_WINDOW_HEIGHT: f64 = 875.0;
 const MIN_MAIN_WINDOW_WIDTH: f64 = 760.0;
 const MIN_MAIN_WINDOW_HEIGHT: f64 = 540.0;
 const MAX_MAIN_WINDOW_SCALE: f64 = 1.0;
+const LAUNCH_HIDDEN_WORKSPACES_ENABLED: bool = false;
 
 fn create_browser_auth_state() -> String {
     rand::thread_rng()
@@ -455,26 +456,6 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
         t.elapsed().as_millis()
     );
 
-    let t = std::time::Instant::now();
-    let note_manager = Arc::new(
-        NoteManager::new(app_handle)
-            .map_err(|err| format!("Failed to initialize note manager: {}", err))?,
-    );
-    log::info!(
-        "[startup] NoteManager::new â€” {}ms",
-        t.elapsed().as_millis()
-    );
-
-    let t = std::time::Instant::now();
-    let meeting_manager = Arc::new(
-        MeetingManager::new(app_handle)
-            .map_err(|err| format!("Failed to initialize meeting manager: {}", err))?,
-    );
-    log::info!(
-        "[startup] MeetingManager::new â€” {}ms",
-        t.elapsed().as_millis()
-    );
-
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
@@ -482,8 +463,29 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
     app_handle.manage(history_manager.clone());
     app_handle.manage(dictionary_manager);
     app_handle.manage(correction_tracker);
-    app_handle.manage(note_manager);
-    app_handle.manage(meeting_manager);
+
+    if LAUNCH_HIDDEN_WORKSPACES_ENABLED {
+        let t = std::time::Instant::now();
+        let note_manager = Arc::new(
+            NoteManager::new(app_handle)
+                .map_err(|err| format!("Failed to initialize note manager: {}", err))?,
+        );
+        log::info!("[startup] NoteManager::new {}ms", t.elapsed().as_millis());
+        app_handle.manage(note_manager);
+
+        let t = std::time::Instant::now();
+        let meeting_manager = Arc::new(
+            MeetingManager::new(app_handle)
+                .map_err(|err| format!("Failed to initialize meeting manager: {}", err))?,
+        );
+        log::info!(
+            "[startup] MeetingManager::new {}ms",
+            t.elapsed().as_millis()
+        );
+        app_handle.manage(meeting_manager);
+    } else {
+        log::info!("[startup] launch-hidden workspace managers skipped");
+    }
 
     {
         let app_handle = app_handle.clone();
@@ -891,6 +893,8 @@ pub fn run(cli_args: CliArgs) {
         helpers::clamshell::is_laptop,
         commands::start_browser_auth,
         commands::ollama::check_ollama_status,
+        commands::ollama::start_ollama_serve,
+        commands::ollama::pull_ollama_model,
     ]);
 
     #[cfg(debug_assertions)]

@@ -5,6 +5,85 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "sonner";
 import { commands } from "@/bindings";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
+import { useModelStore } from "@/stores/modelStore";
+
+const MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
+
+const ModelDownloadBadge: React.FC = () => {
+  const {
+    downloadingModels,
+    extractingModels,
+    getDownloadProgress,
+    isFirstRun,
+  } = useModelStore();
+  const isDownloading = MODEL_ID in downloadingModels;
+  const isExtracting = MODEL_ID in extractingModels;
+  if (!isFirstRun && !isDownloading && !isExtracting) return null;
+
+  const progress = getDownloadProgress(MODEL_ID);
+  const pct = progress?.percentage ?? 0;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 16,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "min(100% - 32px, 360px)",
+        zIndex: 10,
+      }}
+    >
+      <div
+        style={{
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(18,18,18,0.95)",
+          padding: "10px 14px",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 11,
+            color: "rgba(255,255,255,0.4)",
+            marginBottom: 6,
+          }}
+        >
+          <span>
+            {isExtracting
+              ? "Preparation du modele..."
+              : "Telechargement du modele vocal"}
+          </span>
+          {isDownloading && !isExtracting && pct > 0 && (
+            <span>{Math.round(pct)}%</span>
+          )}
+        </div>
+        <div
+          style={{
+            height: 3,
+            borderRadius: 99,
+            background: "rgba(255,255,255,0.08)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              borderRadius: 99,
+              background: "rgba(100,140,255,0.7)",
+              width: isExtracting ? "100%" : `${pct}%`,
+              transition: "width 0.3s ease",
+              opacity: isExtracting ? 0.5 : 1,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface AuthPortalProps {
   isLoading: boolean;
@@ -404,6 +483,7 @@ export const AuthPortal = ({
           .
         </p>
       </section>
+      <ModelDownloadBadge />
     </main>
   );
 };

@@ -12,7 +12,7 @@ use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::get_settings;
 use crate::transcription_coordinator::{
-    is_action_binding, is_transcribe_binding, parse_action_key,
+    is_action_binding, is_launch_hidden_binding, is_transcribe_binding, parse_action_key,
 };
 use crate::TranscriptionCoordinator;
 
@@ -44,6 +44,14 @@ pub fn handle_shortcut_event(
     hotkey_string: &str,
     is_pressed: bool,
 ) {
+    if is_launch_hidden_binding(binding_id) {
+        warn!(
+            "Ignoring launch-hidden shortcut '{}'. The feature is kept in code but hidden for launch.",
+            binding_id
+        );
+        return;
+    }
+
     let settings = get_settings(app);
 
     // Transcribe bindings are handled by the coordinator.

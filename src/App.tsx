@@ -6,13 +6,13 @@ import { useTranslation } from "react-i18next";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
-import Onboarding, {
-  AccessibilityOnboarding,
-  ConsentStep,
-} from "./components/onboarding";
-import { VoiceToCodeOnboarding } from "./components/settings/app-context/VoiceToCodeOnboarding";
+import FirstRunDownload from "./components/onboarding/FirstRunDownload";
 import { Sidebar } from "./components/Sidebar";
-import { SidebarSection, SECTIONS_CONFIG } from "./components/sections-config";
+import {
+  isSectionVisibleInLaunch,
+  SidebarSection,
+  SECTIONS_CONFIG,
+} from "./components/sections-config";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
@@ -88,7 +88,11 @@ async function resolveMonitorBounds(): Promise<WindowSize | null> {
   };
 }
 
-const renderSettingsContent = (section: SidebarSection) => {
+const renderSettingsContent = (section: SidebarSection, settings: unknown) => {
+  if (!isSectionVisibleInLaunch(section, settings)) {
+    return null;
+  }
+
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
   return (
@@ -101,37 +105,6 @@ const renderSettingsContent = (section: SidebarSection) => {
     >
       <ActiveComponent />
     </Suspense>
-  );
-};
-
-const OnboardingProgressBar: React.FC<{ current: number; total: number }> = ({
-  current,
-  total,
-}) => {
-  const { t } = useTranslation();
-  return (
-    <div
-      className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center"
-      style={{ gap: 6, paddingTop: 12, paddingBottom: 8 }}
-    >
-      <p className="text-[11px] text-text/70">
-        {t("onboarding.progress.stepOf", { current, total })}
-      </p>
-      <div style={{ display: "flex", gap: 4 }}>
-        {Array.from({ length: total }, (_, i) => (
-          <div
-            key={i}
-            className="h-[3px] w-7 rounded-full transition-all duration-300"
-            style={{
-              background:
-                i < current
-                  ? "rgba(100,140,255,0.9)"
-                  : "rgba(255,255,255,0.12)",
-            }}
-          />
-        ))}
-      </div>
-    </div>
   );
 };
 
@@ -191,19 +164,10 @@ function App() {
     ? (session?.subscription?.trial_ends_at ?? null)
     : null;
 
-  const {
-    onboardingStep,
-    handleConsentAccepted,
-    handleAccessibilityComplete,
-    handleModelSelected,
-    handleGoBack,
-  } = useOnboarding({
+  const { onboardingStep, handleFirstRunComplete } = useOnboarding({
     authLoading,
     hasAnyAccess: canEnterApp,
   });
-
-  const [showVoiceToCodeOnboarding, setShowVoiceToCodeOnboarding] =
-    useState(false);
 
   const [showFirstLaunchHint, setShowFirstLaunchHint] = useState(
     () => !localStorage.getItem("vt.firstUseHintShown"),
@@ -219,12 +183,12 @@ function App() {
     : sidebarCollapsed;
   const mainContentPadding =
     layoutTier === "compact"
-      ? "20px 22px 28px"
+      ? "24px 26px 32px"
       : layoutTier === "cozy"
-        ? "24px 28px 32px"
-        : "28px 36px 36px";
+        ? "32px 40px 44px"
+        : "40px 48px 52px";
   const mainHeadingSize =
-    layoutTier === "compact" ? 24 : layoutTier === "cozy" ? 26 : 28;
+    layoutTier === "compact" ? 26 : layoutTier === "cozy" ? 30 : 32;
   const pageTitle = SECTIONS_CONFIG[currentSection]
     ? t(SECTIONS_CONFIG[currentSection].labelKey)
     : t(SECTIONS_CONFIG.general.labelKey);
@@ -296,16 +260,6 @@ function App() {
     settings,
     updateSetting,
   });
-
-  // Show Voice-to-Code discovery prompt the first time user dictates in a code editor
-  useEffect(() => {
-    const unlisten = listen("voice-to-code-onboarding", () => {
-      setShowVoiceToCodeOnboarding(true);
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
 
   // Initialize RTL direction when language changes
   useEffect(() => {
@@ -385,9 +339,15 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!isSectionVisibleInLaunch(currentSection, settings)) {
+      setCurrentSection("general");
+    }
+  }, [currentSection, settings]);
+
+  useEffect(() => {
     const handleNavigateSettings = (event: Event) => {
       const section = (event as CustomEvent<SidebarSection>).detail;
-      if (section && SECTIONS_CONFIG[section]) {
+      if (section && isSectionVisibleInLaunch(section, settings)) {
         setCurrentSection(section);
       }
     };
@@ -398,7 +358,7 @@ function App() {
         NAVIGATE_SETTINGS_EVENT,
         handleNavigateSettings,
       );
-  }, [setCurrentSection]);
+  }, [settings, setCurrentSection]);
 
   if (authLoading) {
     return (
@@ -467,44 +427,13 @@ function App() {
     );
   }
 
-  if (onboardingStep === "consent") {
+  if (onboardingStep === "first-run") {
     return (
       <div
         style={{ display: "flex", flexDirection: "column", height: "100vh" }}
       >
         <TitleBar />
-        <OnboardingProgressBar current={1} total={3} />
-        <ConsentStep onAccept={handleConsentAccepted} />
-      </div>
-    );
-  }
-
-  if (onboardingStep === "accessibility") {
-    return (
-      <div
-        style={{ display: "flex", flexDirection: "column", height: "100vh" }}
-      >
-        <TitleBar />
-        <OnboardingProgressBar current={2} total={3} />
-        <AccessibilityOnboarding
-          onComplete={handleAccessibilityComplete}
-          onBack={handleGoBack}
-        />
-      </div>
-    );
-  }
-
-  if (onboardingStep === "model") {
-    return (
-      <div
-        style={{ display: "flex", flexDirection: "column", height: "100vh" }}
-      >
-        <TitleBar />
-        <OnboardingProgressBar current={3} total={3} />
-        <Onboarding
-          onModelSelected={handleModelSelected}
-          onBack={handleGoBack}
-        />
+        <FirstRunDownload onComplete={handleFirstRunComplete} />
       </div>
     );
   }
@@ -581,16 +510,16 @@ function App() {
               padding: mainContentPadding,
               ["--main-pad-top" as string]:
                 layoutTier === "compact"
-                  ? "20px"
+                  ? "24px"
                   : layoutTier === "cozy"
-                    ? "24px"
-                    : "28px",
+                    ? "32px"
+                    : "40px",
               ["--main-pad-x" as string]:
                 layoutTier === "compact"
-                  ? "22px"
+                  ? "26px"
                   : layoutTier === "cozy"
-                    ? "28px"
-                    : "36px",
+                    ? "40px"
+                    : "48px",
             }}
           >
             <div className="app-main-inner">
@@ -617,20 +546,11 @@ function App() {
               )}
 
               <ErrorBoundary>
-                {renderSettingsContent(currentSection)}
+                {renderSettingsContent(currentSection, settings)}
               </ErrorBoundary>
             </div>
           </main>
         </div>
-        {showVoiceToCodeOnboarding && (
-          <VoiceToCodeOnboarding
-            onDismiss={() => setShowVoiceToCodeOnboarding(false)}
-            onOpenSettings={(section) => {
-              setCurrentSection(section as SidebarSection);
-              setShowVoiceToCodeOnboarding(false);
-            }}
-          />
-        )}
       </div>
     </PlanContext.Provider>
   );

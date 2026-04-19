@@ -19,10 +19,49 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, LazyLock, Mutex};
 use tauri::{AppHandle, Manager};
 
 const DICTIONARY_FILE: &str = "dictionary.json";
+
+static DEVELOPER_VOCABULARY: LazyLock<Vec<(Regex, &'static str)>> = LazyLock::new(|| {
+    [
+        ("a p i", "API"),
+        ("api", "API"),
+        ("j w t", "JWT"),
+        ("jwt", "JWT"),
+        ("json web token", "JWT"),
+        ("s d k", "SDK"),
+        ("sdk", "SDK"),
+        ("c l i", "CLI"),
+        ("cli", "CLI"),
+        ("s q l", "SQL"),
+        ("sql", "SQL"),
+        ("sequel", "SQL"),
+        ("o auth", "OAuth"),
+        ("oauth", "OAuth"),
+        ("react", "React"),
+        ("tauri", "Tauri"),
+        ("typescript", "TypeScript"),
+        ("javascript", "JavaScript"),
+        ("node js", "Node.js"),
+        ("next js", "Next.js"),
+        ("user id", "userId"),
+        ("user identifier", "userId"),
+        ("auth token", "authToken"),
+        ("access token", "accessToken"),
+        ("refresh token", "refreshToken"),
+        ("use state", "useState"),
+        ("use effect", "useEffect"),
+        ("n p m", "npm"),
+        ("npm", "npm"),
+        ("git hub", "GitHub"),
+        ("github", "GitHub"),
+    ]
+    .into_iter()
+    .filter_map(|(from, to)| build_pattern(from).map(|re| (re, to)))
+    .collect()
+});
 
 // ---------------------------------------------------------------------------
 // Public data type (serializable, used by Tauri commands)
@@ -218,10 +257,22 @@ fn save_to_file(path: &PathBuf, entries: &[DictionaryEntry]) -> Result<(), Strin
 /// `patterns` comes from [`DictionaryManager::compiled_entries`] — every
 /// `Regex` is already compiled and ready to use.
 pub fn apply_dictionary(text: &str, patterns: &[(Regex, String)]) -> String {
-    if patterns.is_empty() || text.is_empty() {
+    if text.is_empty() {
         return text.to_string();
     }
     let mut result = text.to_string();
+    for (re, to) in DEVELOPER_VOCABULARY.iter() {
+        result = re
+            .replace_all(&result, |caps: &regex::Captures<'_>| {
+                format!(
+                    "{}{}{}",
+                    caps.get(1).map_or("", |m| m.as_str()),
+                    to,
+                    caps.get(3).map_or("", |m| m.as_str())
+                )
+            })
+            .into_owned();
+    }
     for (re, to) in patterns {
         result = re
             .replace_all(&result, |caps: &regex::Captures<'_>| {
@@ -332,6 +383,22 @@ mod tests {
         assert_eq!(
             apply_dictionary("lgtm on this PR", &[compiled("lgtm", "LGTM")]),
             "LGTM on this PR"
+        );
+    }
+
+    #[test]
+    fn developer_vocabulary_is_applied_without_user_dictionary() {
+        assert_eq!(
+            apply_dictionary("call the api with jwt from react and save auth token", &[]),
+            "call the API with JWT from React and save authToken"
+        );
+    }
+
+    #[test]
+    fn developer_vocabulary_handles_spoken_letters_and_camel_case() {
+        assert_eq!(
+            apply_dictionary("run the c l i and check user id", &[]),
+            "run the CLI and check userId"
         );
     }
 }

@@ -1,4 +1,4 @@
-use once_cell::sync::Lazy;
+﻿use once_cell::sync::Lazy;
 use regex::Regex;
 
 static PARAKEET_V3_PATTERN: Lazy<Regex> = Lazy::new(|| {
@@ -390,6 +390,83 @@ static AROUND_ME_NOW_I_WANT_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\baround\s+me\.\s+Now\s+I\s+want\s+to\s+know\b").unwrap());
 static STOPS_AND_WE_START_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bstops\s+and\s+we\s+start\b").unwrap());
+
+// ── Dev tech term corrections ──────────────────────────────────────────────
+// React hooks: "use state" / "use effect" / "use callback" / "use router" / "use ref"
+static DEV_USESTATE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+state\b").unwrap());
+static DEV_USEEFFECT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+effect\b").unwrap());
+static DEV_USECALLBACK_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+callback\b").unwrap());
+static DEV_USEMEMO_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\buse\s+memo\b").unwrap());
+static DEV_USEREF_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\buse\s+ref\b").unwrap());
+static DEV_USEROUTER_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+router\b").unwrap());
+static DEV_USECONTEXT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+context\b").unwrap());
+static DEV_USEONBOARDING_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+onboarding\b").unwrap());
+// TypeScript / JavaScript
+static DEV_TYPESCRIPT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\btype\s+script\b").unwrap());
+static DEV_JAVASCRIPT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bjava\s+script\b").unwrap());
+// HTML element names
+static DEV_HTMLINPUTELEMENT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+input\s+element\b").unwrap());
+static DEV_HTMLDIVELEMENT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+div(?:e)?\s+element\b").unwrap());
+static DEV_HTMLBUTTONELEMENT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+button\s+element\b").unwrap());
+// Multi-word dev libs / tools
+static DEV_PGVECTOR_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bpg\s+vector\b").unwrap());
+static DEV_IVFFLAT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\b(?:eve|ivf)\s+flat\b").unwrap());
+static DEV_LANGCHAIN_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\blang\s+chain\b").unwrap());
+static DEV_NEXTJS_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bnext\s*\.\s*js\b").unwrap());
+static DEV_NODEJS_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bnode\s*\.\s*js\b").unwrap());
+// Groq API garble: "Groc appi", "groc api", "grok ap i"
+static DEV_GROQ_API_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bgro[ck]\s+ap+[iy]\b").unwrap());
+static DEV_GROQ_STANDALONE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bgroc\b").unwrap());
+// Zod garble: "Z schema" → "Zod schema"
+static DEV_ZOD_SCHEMA_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bz\s+schema\b").unwrap());
+// "bun run" garble: "burn run"
+static DEV_BUN_RUN_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bburn\s+run\b").unwrap());
+// "alter table" garble: only "after table" preceded by SQL context keywords
+static DEV_ALTER_TABLE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bafter\s+table\s+(\w+)\s+add\b").unwrap());
+// "status code" garble (FR accent): "statut code"
+static DEV_STATUS_CODE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bstatut\s+code\b").unwrap());
+// "cargo tauri" garble: "cargoTori", "cargo tori", "cargo touri"
+static DEV_CARGO_TAURI_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bcargo\s*(?:tori|touri|tary|taory)\b").unwrap());
+// "jest" garble: only "write the just test" / "write a just test" — needs verb context
+static DEV_JEST_TEST_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\b(write|run|add)\s+(?:a\s+|the\s+)?just\s+test\b").unwrap());
+// "prompt caching" garble: "prompt catching"
+static DEV_PROMPT_CACHING_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bprompt\s+catching\b").unwrap());
+// "semantic search" garble: "samoon seek search", "salmon seek"
+static DEV_SEMANTIC_SEARCH_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bsam+on\s+s(?:eek|eke)\s+search\b").unwrap());
+// "foreign key" garble: "forin k", "foreign k", "foreign key contraint"
+static DEV_FOREIGN_KEY_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bfor(?:in|ing?)\s+k\b").unwrap());
+// "ivfflat" alternate garble
+static DEV_EVEFLAT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\beve\s+flat\b").unwrap());
+// "useOnboarding" / hook compounds with "use"
+static DEV_USE_HOOK_COMPOUND_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)\buse\s+(auth|session|query|params|search|pathname|locale|theme|modal|toast|store|settings|plan|model)\b").unwrap()
+});
 static I_WANTED_TO_KNOW_WHETHER_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\bI\s+wanted\s+to\s+know\s+whether\s+the\s+transcript\b").unwrap()
 });
@@ -628,6 +705,138 @@ pub fn parakeet_builtin_correction_terms(selected_language: &str) -> Vec<String>
     terms
 }
 
+fn looks_like_developer_dictation(text: &str) -> bool {
+    let lower = text.to_lowercase();
+    [
+        "api",
+        "auth",
+        "cargo",
+        "cli",
+        "code",
+        "component",
+        "cursor",
+        "database",
+        "docker",
+        "github",
+        "hook",
+        "javascript",
+        "jwt",
+        "npm",
+        "oauth",
+        "postgres",
+        "react",
+        "redis",
+        "sdk",
+        "sql",
+        "supabase",
+        "tauri",
+        "typescript",
+        "user id",
+        "visual studio",
+        "vs code",
+        "vscode",
+        "zod",
+    ]
+    .iter()
+    .any(|needle| lower.contains(needle))
+}
+
+fn normalize_dev_tech_terms(text: &str) -> String {
+    let mut s = text.to_string();
+    // React hooks
+    s = DEV_USESTATE_PATTERN.replace_all(&s, "useState").to_string();
+    s = DEV_USEEFFECT_PATTERN
+        .replace_all(&s, "useEffect")
+        .to_string();
+    s = DEV_USECALLBACK_PATTERN
+        .replace_all(&s, "useCallback")
+        .to_string();
+    s = DEV_USEMEMO_PATTERN.replace_all(&s, "useMemo").to_string();
+    s = DEV_USEREF_PATTERN.replace_all(&s, "useRef").to_string();
+    s = DEV_USEROUTER_PATTERN
+        .replace_all(&s, "useRouter")
+        .to_string();
+    s = DEV_USECONTEXT_PATTERN
+        .replace_all(&s, "useContext")
+        .to_string();
+    s = DEV_USEONBOARDING_PATTERN
+        .replace_all(&s, "useOnboarding")
+        .to_string();
+    s = DEV_USE_HOOK_COMPOUND_PATTERN
+        .replace_all(&s, |caps: &regex::Captures| {
+            let name = &caps[1];
+            let capitalized = {
+                let mut c = name.chars();
+                match c.next() {
+                    None => String::new(),
+                    Some(f) => f.to_uppercase().to_string() + c.as_str(),
+                }
+            };
+            format!("use{capitalized}")
+        })
+        .to_string();
+    // TypeScript / JavaScript
+    s = DEV_TYPESCRIPT_PATTERN
+        .replace_all(&s, "TypeScript")
+        .to_string();
+    s = DEV_JAVASCRIPT_PATTERN
+        .replace_all(&s, "JavaScript")
+        .to_string();
+    // HTML elements
+    s = DEV_HTMLINPUTELEMENT_PATTERN
+        .replace_all(&s, "HTMLInputElement")
+        .to_string();
+    s = DEV_HTMLDIVELEMENT_PATTERN
+        .replace_all(&s, "HTMLDivElement")
+        .to_string();
+    s = DEV_HTMLBUTTONELEMENT_PATTERN
+        .replace_all(&s, "HTMLButtonElement")
+        .to_string();
+    // Libs / tools
+    s = DEV_PGVECTOR_PATTERN.replace_all(&s, "pgvector").to_string();
+    s = DEV_IVFFLAT_PATTERN.replace_all(&s, "ivfflat").to_string();
+    s = DEV_EVEFLAT_PATTERN.replace_all(&s, "ivfflat").to_string();
+    s = DEV_LANGCHAIN_PATTERN
+        .replace_all(&s, "LangChain")
+        .to_string();
+    s = DEV_NEXTJS_PATTERN.replace_all(&s, "Next.js").to_string();
+    s = DEV_NODEJS_PATTERN.replace_all(&s, "Node.js").to_string();
+    // Groq
+    s = DEV_GROQ_API_PATTERN.replace_all(&s, "Groq API").to_string();
+    s = DEV_GROQ_STANDALONE_PATTERN
+        .replace_all(&s, "Groq")
+        .to_string();
+    // Zod
+    s = DEV_ZOD_SCHEMA_PATTERN
+        .replace_all(&s, "Zod schema")
+        .to_string();
+    // CLI garbles
+    s = DEV_BUN_RUN_PATTERN.replace_all(&s, "bun run").to_string();
+    s = DEV_ALTER_TABLE_PATTERN
+        .replace_all(&s, "alter table $1 add")
+        .to_string();
+    s = DEV_CARGO_TAURI_PATTERN
+        .replace_all(&s, "cargo tauri")
+        .to_string();
+    // Misc
+    s = DEV_STATUS_CODE_PATTERN
+        .replace_all(&s, "status code")
+        .to_string();
+    s = DEV_JEST_TEST_PATTERN
+        .replace_all(&s, "$1 jest test")
+        .to_string();
+    s = DEV_PROMPT_CACHING_PATTERN
+        .replace_all(&s, "prompt caching")
+        .to_string();
+    s = DEV_SEMANTIC_SEARCH_PATTERN
+        .replace_all(&s, "semantic search")
+        .to_string();
+    s = DEV_FOREIGN_KEY_PATTERN
+        .replace_all(&s, "foreign key")
+        .to_string();
+    s
+}
+
 pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -> String {
     let mut normalized = PARAKEET_V3_PATTERN
         .replace_all(text, "Parakeet V3")
@@ -644,6 +853,10 @@ pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -
     normalized = VOCALYPE_VARIANT_PATTERN
         .replace_all(&normalized, "Vocalype")
         .to_string();
+
+    if looks_like_developer_dictation(&normalized) {
+        normalized = normalize_dev_tech_terms(&normalized);
+    }
 
     if selected_language == "fr" {
         normalized = TODAY_FR_PATTERN
@@ -2091,6 +2304,32 @@ mod tests {
         );
         assert!(normalized.contains("est-ce que"));
         assert!(normalized.contains("qu'est-ce que"));
+    }
+
+    #[test]
+    fn does_not_apply_dev_terms_to_general_speech() {
+        let english = finalize_parakeet_text(
+            "There are still many people alive who remember their time here.",
+            "en",
+        );
+        assert!(!english.contains("Tauri"), "got: {english}");
+
+        let french = finalize_parakeet_text(
+            "Si vous ne vous rendez a terre qu'avec une excursion, vous n'aurez pas besoin d'un visa distinct.",
+            "fr",
+        );
+        assert!(!french.contains("Tauri"), "got: {french}");
+        assert!(!french.contains("pgvector"), "got: {french}");
+    }
+
+    #[test]
+    fn applies_dev_terms_when_context_is_developer_dictation() {
+        let normalized = finalize_parakeet_text(
+            "In React code I need use state and pg vector for the database.",
+            "en",
+        );
+        assert!(normalized.contains("useState"), "got: {normalized}");
+        assert!(normalized.contains("pgvector"), "got: {normalized}");
     }
 
     #[test]

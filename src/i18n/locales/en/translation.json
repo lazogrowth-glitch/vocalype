@@ -170,7 +170,9 @@
       "balancedDescription": "A good balance between speed and quality",
       "quality": "Quality",
       "qualityDescription": "Best text quality on a more powerful machine"
-    }
+    },
+    "firstRunTitle": "Installing voice model",
+    "firstRunSubtitle": "Vocalype Native - one-time download (~478 MB)"
   },
   "modelSelector": {
     "badges": {
@@ -1020,7 +1022,7 @@
   "dictionary": {
     "tab": "Dictionary",
     "empty": "No custom terms yet. Add words, proper nouns, or acronyms.",
-    "fromPlaceholder": "Whisper hears…",
+    "fromPlaceholder": "Vocalype hears...",
     "toPlaceholder": "Replace with…",
     "add": "Add",
     "remove": "Remove",
@@ -1034,7 +1036,7 @@
     "importReplaceSuccess": "Dictionary imported (replaced).",
     "importMergeSuccess": "Dictionary imported (merged).",
     "autoLearn": "Auto-learn",
-    "autoLearnDesc": "Automatically learns word corrections when you copy modified text after dictation.",
+    "autoLearnDesc": "Automatically learns word corrections after dictation.",
     "edit": "Edit"
   },
   "snippets": {

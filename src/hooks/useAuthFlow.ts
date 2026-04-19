@@ -203,6 +203,7 @@ export function useAuthFlow(
 
       // Nothing worked — clear everything and show login.
       applySession(null);
+      setAuthError("auth.sessionExpired");
       void authClient.clearStoredToken();
     } finally {
       setAuthLoading(false);

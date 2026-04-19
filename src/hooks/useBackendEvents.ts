@@ -4,7 +4,9 @@ import {
   listen,
   type EventCallback,
   type EventName,
+  type UnlistenFn,
 } from "@tauri-apps/api/event";
+import { safeUnlisten } from "@/lib/tauri/events";
 
 function useTauriEvent<T>(
   event: EventName,
@@ -12,23 +14,27 @@ function useTauriEvent<T>(
   deps: DependencyList = [],
 ) {
   useEffect(() => {
-    let unlistenFn: (() => void) | undefined;
+    let unlistenFn: UnlistenFn | undefined;
     let cancelled = false;
-    listen<T>(event, handler).then((fn) => {
-      if (cancelled) {
-        try {
-          fn();
-        } catch {
-          /* Tauri HMR race — safe to ignore */
+    void listen<T>(event, handler)
+      .then((fn) => {
+        if (cancelled) {
+          try {
+            safeUnlisten(fn);
+          } catch {
+            /* Tauri HMR race — safe to ignore */
+          }
+        } else {
+          unlistenFn = fn;
         }
-      } else {
-        unlistenFn = fn;
-      }
-    });
+      })
+      .catch(() => {
+        /* Listener registration may fail during startup/HMR teardown. */
+      });
     return () => {
       cancelled = true;
       try {
-        unlistenFn?.();
+        safeUnlisten(unlistenFn);
       } catch {
         /* Tauri HMR race — safe to ignore */
       }

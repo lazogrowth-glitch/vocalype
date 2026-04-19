@@ -201,6 +201,10 @@ def client_ip() -> str:
     return resolved_client_ip()
 
 
+def request_client_ip() -> str:
+    return resolved_client_ip()
+
+
 def log_security_event(event: str, **fields) -> None:
     rendered_fields = " ".join(
         f"{key}={value}" for key, value in fields.items() if value not in (None, "")
@@ -213,6 +217,25 @@ def log_security_event(event: str, **fields) -> None:
 
 def normalize_email(value: str) -> str:
     return value.strip().lower()
+
+
+def require_json_string(data: dict, field: str, *, required: bool = True) -> tuple[str | None, object | None]:
+    value = data.get(field, "")
+    if value is None and not required:
+        return None, None
+    if not isinstance(value, str):
+        return None, (jsonify({"error": f"Champ invalide: {field}"}), 400)
+    stripped = value.strip()
+    if required and not stripped:
+        return None, (jsonify({"error": f"Champ invalide: {field}"}), 400)
+    return stripped, None
+
+
+def optional_json_string(data: dict, field: str) -> tuple[str | None, object | None]:
+    value, error = require_json_string(data, field, required=False)
+    if error:
+        return None, error
+    return value or None, None
 
 
 def email_is_valid(email: str) -> bool:
@@ -463,7 +486,8 @@ def init_db():
     db.close()
 
 
-init_db()
+if not env_bool("SKIP_DB_INIT", False):
+    init_db()
 
 
 def make_token(user) -> str:
@@ -1211,6 +1235,11 @@ def add_security_headers(response):
         "Permissions-Policy",
         "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=()",
     )
+    if request.is_secure or request.headers.get("X-Forwarded-Proto", "").lower() == "https":
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            "max-age=31536000; includeSubDomains",
+        )
     return response
 
 
@@ -1711,10 +1740,22 @@ def health():
 @app.route("/auth/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True) or {}
-    email = normalize_email(data.get("email", ""))
-    password = data.get("password", "")
-    name = data.get("name", "").strip() or None
-    device_id = data.get("device_id", "").strip() or None
+    email_value, error = require_json_string(data, "email")
+    if error:
+        return error
+    password, error = require_json_string(data, "password")
+    if error:
+        return error
+    name, error = optional_json_string(data, "name")
+    if error:
+        return error
+    device_id, error = optional_json_string(data, "device_id")
+    if error:
+        return error
+    ref_code, error = optional_json_string(data, "ref")
+    if error:
+        return error
+    email = normalize_email(email_value)
     ip_address = client_ip()
 
     response = rate_limit_response(
@@ -1754,8 +1795,6 @@ def register():
             ip=ip_address,
         )
         return jsonify({"error": "Cet email est déjà utilisé"}), 409
-
-    ref_code = data.get("ref", "").strip() or None
 
     try:
         trial_end = (utc_now() + timedelta(days=14)).isoformat()
@@ -1822,9 +1861,16 @@ def register():
 @app.route("/auth/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
-    email = normalize_email(data.get("email", ""))
-    password = data.get("password", "")
-    device_id = data.get("device_id", "").strip() or None
+    email_value, error = require_json_string(data, "email")
+    if error:
+        return error
+    password, error = require_json_string(data, "password")
+    if error:
+        return error
+    device_id, error = optional_json_string(data, "device_id")
+    if error:
+        return error
+    email = normalize_email(email_value)
     ip_address = client_ip()
 
     response = rate_limit_response(

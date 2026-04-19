@@ -21,7 +21,8 @@ class BackendSecurityTests(unittest.TestCase):
         self._tempdir = tempfile.TemporaryDirectory()
         os.environ["DATABASE_PATH"] = str(Path(self._tempdir.name) / "test.db")
         os.environ["JWT_SECRET"] = "x" * 32
-        os.environ["TRUST_PROXY_COUNT"] = "0"
+        os.environ["TRUST_X_FORWARDED_FOR"] = "0"
+        os.environ["SKIP_DB_INIT"] = "1"
         self.app_module = load_backend_module()
         self.client = self.app_module.app.test_client()
 
@@ -62,8 +63,8 @@ class BackendSecurityTests(unittest.TestCase):
             self.assertEqual(self.app_module.request_client_ip(), "198.51.100.10")
 
     def test_forwarded_for_uses_client_hop_when_proxy_is_trusted(self):
-        previous = self.app_module.TRUST_PROXY_COUNT
-        self.app_module.TRUST_PROXY_COUNT = 1
+        previous = self.app_module.TRUST_X_FORWARDED_FOR
+        self.app_module.TRUST_X_FORWARDED_FOR = True
         try:
             with self.app_module.app.test_request_context(
                 "/auth/login",
@@ -72,7 +73,7 @@ class BackendSecurityTests(unittest.TestCase):
             ):
                 self.assertEqual(self.app_module.request_client_ip(), "203.0.113.9")
         finally:
-            self.app_module.TRUST_PROXY_COUNT = previous
+            self.app_module.TRUST_X_FORWARDED_FOR = previous
 
     def test_hsts_header_is_added_for_https_requests(self):
         with self.app_module.app.test_request_context(

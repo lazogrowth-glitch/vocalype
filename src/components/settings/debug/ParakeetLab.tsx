@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import React, { useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
@@ -41,14 +42,13 @@ export const ParakeetLab: React.FC<{ grouped?: boolean }> = ({
 
   const sessions = useMemo(
     () =>
-      (snapshot?.parakeet_diagnostics?.recent_sessions ?? [])
-        .slice()
-        .reverse(),
+      (snapshot?.parakeet_diagnostics?.recent_sessions ?? []).slice().reverse(),
     [snapshot],
   );
   const active = snapshot?.parakeet_diagnostics?.active_session ?? null;
   const activeVoiceSegment = snapshot?.active_voice_profile_segment ?? null;
-  const activeVoiceAdjustment = snapshot?.active_voice_runtime_adjustment ?? null;
+  const activeVoiceAdjustment =
+    snapshot?.active_voice_runtime_adjustment ?? null;
 
   const refresh = async () => {
     setBusy(true);
@@ -83,12 +83,7 @@ export const ParakeetLab: React.FC<{ grouped?: boolean }> = ({
       layout="stacked"
     >
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={refresh}
-          disabled={busy}
-        >
+        <Button size="sm" variant="secondary" onClick={refresh} disabled={busy}>
           {t("settings.debug.parakeetLab.refresh", {
             defaultValue: "Refresh",
           })}
@@ -104,7 +99,10 @@ export const ParakeetLab: React.FC<{ grouped?: boolean }> = ({
               })}
             </p>
             <p>
-              model {snapshot?.loaded_model_name || snapshot?.loaded_model_id || "n/a"}
+              model{" "}
+              {snapshot?.loaded_model_name ||
+                snapshot?.loaded_model_id ||
+                "n/a"}
               {" · "}
               lang {snapshot?.selected_language || "n/a"}
               {" · "}
@@ -131,9 +129,7 @@ export const ParakeetLab: React.FC<{ grouped?: boolean }> = ({
                 </p>
                 {activeVoiceSegment.preferred_terms.length > 0 && (
                   <p className="break-words text-text/60">
-                    {activeVoiceSegment.preferred_terms
-                      .slice(0, 10)
-                      .join(", ")}
+                    {activeVoiceSegment.preferred_terms.slice(0, 10).join(", ")}
                   </p>
                 )}
               </>
@@ -276,12 +272,21 @@ export const ParakeetLab: React.FC<{ grouped?: boolean }> = ({
                     className="rounded-md border border-white/8 bg-white/[0.02] p-2"
                   >
                     <p className="font-medium">
-                      {new Date(entry.created_at_ms).toLocaleString(i18n.language)}
-                      {entry.selected_language ? ` · ${entry.selected_language}` : ""}
-                      {entry.tags.length > 0 ? ` · ${entry.tags.join(", ")}` : ""}
+                      {new Date(entry.created_at_ms).toLocaleString(
+                        i18n.language,
+                      )}
+                      {entry.selected_language
+                        ? ` · ${entry.selected_language}`
+                        : ""}
+                      {entry.tags.length > 0
+                        ? ` · ${entry.tags.join(", ")}`
+                        : ""}
                     </p>
                     <p>
-                      model {entry.runtime.loaded_model_name || entry.runtime.loaded_model_id || entry.runtime.selected_model}
+                      model{" "}
+                      {entry.runtime.loaded_model_name ||
+                        entry.runtime.loaded_model_id ||
+                        entry.runtime.selected_model}
                       {" · "}
                       input {entry.runtime.input_level_state}
                       {" · "}
@@ -289,9 +294,17 @@ export const ParakeetLab: React.FC<{ grouped?: boolean }> = ({
                     </p>
                     {entry.runtime.active_voice_runtime_adjustment && (
                       <p>
-                        adjust {entry.runtime.active_voice_runtime_adjustment.adjusted_chunk_seconds}s
-                        {" / "}
-                        {entry.runtime.active_voice_runtime_adjustment.adjusted_overlap_ms}ms
+                        adjust{" "}
+                        {
+                          entry.runtime.active_voice_runtime_adjustment
+                            .adjusted_chunk_seconds
+                        }
+                        s{" / "}
+                        {
+                          entry.runtime.active_voice_runtime_adjustment
+                            .adjusted_overlap_ms
+                        }
+                        ms
                         {entry.runtime.active_voice_runtime_adjustment.reason
                           ? ` · ${entry.runtime.active_voice_runtime_adjustment.reason}`
                           : ""}
@@ -299,11 +312,21 @@ export const ParakeetLab: React.FC<{ grouped?: boolean }> = ({
                     )}
                     {entry.runtime.parakeet_diagnostics.active_session && (
                       <p>
-                        risk {(entry.runtime.parakeet_diagnostics.active_session.quality_risk_score * 100).toFixed(0)}%
-                        {" · "}
-                        {entry.runtime.parakeet_diagnostics.active_session.estimated_issue}
+                        risk{" "}
+                        {(
+                          entry.runtime.parakeet_diagnostics.active_session
+                            .quality_risk_score * 100
+                        ).toFixed(0)}
+                        %{" · "}
+                        {
+                          entry.runtime.parakeet_diagnostics.active_session
+                            .estimated_issue
+                        }
                         {" · recovered "}
-                        {entry.runtime.parakeet_diagnostics.active_session.finalization_recoveries}
+                        {
+                          entry.runtime.parakeet_diagnostics.active_session
+                            .finalization_recoveries
+                        }
                       </p>
                     )}
                     {entry.expected_text && (

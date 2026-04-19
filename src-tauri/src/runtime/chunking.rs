@@ -363,23 +363,23 @@ mod tests {
     #[test]
     fn french_parakeet_base_profile_is_shorter_and_wider() {
         let (chunk_seconds, overlap_ms) = parakeet_language_base_profile("fr");
-        assert_eq!(chunk_seconds, 12);
-        assert_eq!(overlap_ms, 1000);
+        assert_eq!(chunk_seconds, 8);
+        assert_eq!(overlap_ms, 750);
     }
 
     #[test]
     fn auto_parakeet_base_profile_stays_english_safe() {
         let (chunk_seconds, overlap_ms) = parakeet_language_base_profile("auto");
-        assert_eq!(chunk_seconds, 12);
-        assert_eq!(overlap_ms, 1000);
+        assert_eq!(chunk_seconds, 8);
+        assert_eq!(overlap_ms, 750);
     }
 
     #[test]
     fn spanish_hindi_and_portuguese_use_multilingual_profile() {
         for language in ["es", "hi", "pt"] {
             let (chunk_seconds, overlap_ms) = parakeet_language_base_profile(language);
-            assert_eq!(chunk_seconds, 12);
-            assert_eq!(overlap_ms, 1000);
+            assert_eq!(chunk_seconds, 8);
+            assert_eq!(overlap_ms, 750);
         }
     }
 

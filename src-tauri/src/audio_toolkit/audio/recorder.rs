@@ -422,6 +422,7 @@ Format: {:?}",
 }
 
 const MAX_PROCESSED_SAMPLES: usize = 16_000 * 60 * 20; // 20 min at 16kHz
+const PRE_RECORDING_PREROLL_MS: usize = 500;
 
 fn run_consumer(
     in_sample_rate: u32,
@@ -443,6 +444,8 @@ fn run_consumer(
     );
 
     let mut processed_samples = Vec::<f32>::new();
+    let mut pre_recording_frames = std::collections::VecDeque::<Vec<f32>>::new();
+    let max_pre_recording_frames = (PRE_RECORDING_PREROLL_MS / 30).max(1) + 1;
     let mut recording = false;
     let mut stream_closed = false;
 
@@ -513,6 +516,14 @@ fn run_consumer(
         }
     }
 
+    fn apply_gain_to_frame(frame: &[f32], gain: f32) -> Vec<f32> {
+        if gain == 1.0 {
+            frame.to_vec()
+        } else {
+            frame.iter().map(|&s| (s * gain).clamp(-1.0, 1.0)).collect()
+        }
+    }
+
     loop {
         match sample_rx.recv_timeout(Duration::from_millis(25)) {
             Ok(raw) => {
@@ -542,13 +553,11 @@ fn run_consumer(
                             }
                         }
 
-                        if gain != 1.0 {
-                            // Apply gain boost and clamp to [-1.0, 1.0] to avoid clipping.
-                            let boosted: Vec<f32> =
-                                frame.iter().map(|&s| (s * gain).clamp(-1.0, 1.0)).collect();
+                        let frame_for_pipeline = apply_gain_to_frame(frame, gain);
+                        if recording {
                             handle_frame(
-                                &boosted,
-                                recording,
+                                &frame_for_pipeline,
+                                true,
                                 &vad,
                                 &mut processed_samples,
                                 &error_cb,
@@ -556,15 +565,10 @@ fn run_consumer(
                                 &speaking_rate_cb,
                             );
                         } else {
-                            handle_frame(
-                                frame,
-                                recording,
-                                &vad,
-                                &mut processed_samples,
-                                &error_cb,
-                                &vad_cb,
-                                &speaking_rate_cb,
-                            );
+                            pre_recording_frames.push_back(frame_for_pipeline);
+                            while pre_recording_frames.len() > max_pre_recording_frames {
+                                pre_recording_frames.pop_front();
+                            }
                         }
                     });
                     if processed_samples.len() > MAX_PROCESSED_SAMPLES {
@@ -592,6 +596,17 @@ fn run_consumer(
                     if let Some(v) = &vad {
                         v.lock().unwrap_or_else(|e| e.into_inner()).reset();
                     }
+                    for frame in &pre_recording_frames {
+                        handle_frame(
+                            frame,
+                            true,
+                            &vad,
+                            &mut processed_samples,
+                            &error_cb,
+                            &vad_cb,
+                            &speaking_rate_cb,
+                        );
+                    }
                 }
                 Cmd::Stop(reply_tx) => {
                     recording = false;
@@ -599,8 +614,9 @@ fn run_consumer(
                     // Drain any audio chunks that were captured but not yet consumed
                     while let Ok(remaining) = sample_rx.try_recv() {
                         frame_resampler.push(&remaining, &mut |frame: &[f32]| {
+                            let frame_for_pipeline = apply_gain_to_frame(frame, gain);
                             handle_frame(
-                                frame,
+                                &frame_for_pipeline,
                                 true,
                                 &vad,
                                 &mut processed_samples,
@@ -612,8 +628,9 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
+                        let frame_for_pipeline = apply_gain_to_frame(frame, gain);
                         handle_frame(
-                            frame,
+                            &frame_for_pipeline,
                             true,
                             &vad,
                             &mut processed_samples,

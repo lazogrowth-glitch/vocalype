@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -28,7 +29,8 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
     [snapshot],
   );
   const parakeetSessions = useMemo(
-    () => (snapshot?.parakeet_diagnostics?.recent_sessions ?? []).slice().reverse(),
+    () =>
+      (snapshot?.parakeet_diagnostics?.recent_sessions ?? []).slice().reverse(),
     [snapshot],
   );
   const adaptiveProfile = snapshot?.adaptive_machine_profile ?? null;
@@ -59,9 +61,8 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
   const activeVoiceProfileWpm = snapshot?.active_voice_profile_segment
     ? t("settings.debug.runtimeDiagnostics.voiceProfileWpm", {
         defaultValue: "{{value}} wpm",
-        value: snapshot.active_voice_profile_segment.avg_words_per_minute.toFixed(
-          0,
-        ),
+        value:
+          snapshot.active_voice_profile_segment.avg_words_per_minute.toFixed(0),
       })
     : null;
   const activeVoiceProfilePauses = snapshot?.active_voice_profile_segment
@@ -394,7 +395,8 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
             {t("settings.debug.runtimeDiagnostics.inputLevel", {
               defaultValue: "Input level",
             })}
-            : <span className="font-semibold">{snapshot.input_level_state}</span>
+            :{" "}
+            <span className="font-semibold">{snapshot.input_level_state}</span>
             {" � "}
             <span className="text-text/60">
               ema {snapshot.input_energy_ema.toFixed(4)}
@@ -603,8 +605,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                   {" � "}
                   {session.filtered_chunks} filtered
                   {" · risk "}
-                  {(session.quality_risk_score * 100).toFixed(0)}%
-                  {" � "}
+                  {(session.quality_risk_score * 100).toFixed(0)}%{" � "}
                   {session.estimated_issue}
                   {session.assembled_preview
                     ? ` · ${session.assembled_preview}`
@@ -636,4 +637,3 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
     </SettingContainer>
   );
 };
-

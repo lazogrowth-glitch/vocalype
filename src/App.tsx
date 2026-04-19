@@ -23,6 +23,7 @@ import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { emit, listen } from "@tauri-apps/api/event";
 import { ensureVoiceStateStore } from "@/stores/voiceState";
+import { cleanupTauriListen, safeUnlisten } from "@/lib/tauri/events";
 
 const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
 
@@ -240,7 +241,7 @@ function App() {
     void bindResizeListener();
 
     return () => {
-      unlisten?.();
+      safeUnlisten(unlisten);
     };
   }, []);
 
@@ -249,7 +250,7 @@ function App() {
     if (!showFirstLaunchHint) return;
     const unlisten = listen("transcription-lifecycle", dismissHint);
     return () => {
-      unlisten.then((fn) => fn());
+      cleanupTauriListen(unlisten);
     };
   }, [showFirstLaunchHint, dismissHint]);
 
@@ -281,7 +282,7 @@ function App() {
       }
     });
     return () => {
-      unlisten.then((fn) => fn());
+      cleanupTauriListen(unlisten);
     };
   }, [handleDeepLinkAuth]);
 

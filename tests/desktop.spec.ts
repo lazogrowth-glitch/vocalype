@@ -31,74 +31,73 @@ test.describe("Desktop app — with mocked Tauri", () => {
     await expect(root).not.toBeEmpty();
   });
 
-  test("auth portal renders when no session stored", async ({ page }) => {
+  test("auth portal renders browser sign-in when no session stored", async ({
+    page,
+  }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
-    // Auth portal shows Login and Create account tabs
     await expect(
-      page.getByRole("button", { name: "Login", exact: true }),
+      page.getByRole("heading", { name: "Connectez-vous." }),
+    ).toBeVisible();
+    await expect(page.getByText(/connexion dans le navigateur/i)).toBeVisible();
+  });
+
+  test("auth portal has create-account browser CTA", async ({ page }) => {
+    await expect(page.locator("#startup-splash")).toBeHidden({
+      timeout: 10000,
+    });
+    await expect(
+      page.getByRole("button", { name: /creer un compte/i }),
+    ).toBeVisible({ timeout: 8000 });
+  });
+
+  test("auth portal has existing-account browser CTA", async ({ page }) => {
+    await expect(page.locator("#startup-splash")).toBeHidden({
+      timeout: 10000,
+    });
+    await expect(
+      page.getByRole("button", { name: /j'ai deja un compte/i }),
     ).toBeVisible({
       timeout: 8000,
     });
   });
 
-  test("auth portal has Create account tab", async ({ page }) => {
+  test("auth portal has legal links", async ({ page }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
     await expect(
-      page.getByRole("button", { name: /create account/i }),
-    ).toBeVisible({ timeout: 8000 });
+      page.getByRole("button", { name: "Conditions" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Confidentialite" }),
+    ).toBeVisible();
   });
 
-  test("auth portal has email input field", async ({ page }) => {
+  test("clicking Create account stays on auth portal", async ({ page }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
-    await expect(page.locator('input[type="email"]')).toBeVisible({
-      timeout: 8000,
-    });
-  });
-
-  test("auth portal has password input field", async ({ page }) => {
-    await expect(page.locator("#startup-splash")).toBeHidden({
-      timeout: 10000,
-    });
-    await expect(page.locator('input[type="password"]')).toBeVisible({
-      timeout: 8000,
-    });
-  });
-
-  test("clicking Create account tab switches mode", async ({ page }) => {
-    await expect(page.locator("#startup-splash")).toBeHidden({
-      timeout: 10000,
-    });
-    const createBtn = page.getByRole("button", { name: /create account/i });
+    const createBtn = page.getByRole("button", { name: /creer un compte/i });
     await createBtn.waitFor({ timeout: 8000 });
     await createBtn.click();
-    // Register mode shows a name field in addition to email/password
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[type="password"]')).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Connectez-vous." }),
+    ).toBeVisible();
   });
 
-  test("email field accepts user input", async ({ page }) => {
+  test("auth portal does not show inline email form", async ({ page }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
-    const emailInput = page.locator('input[type="email"]');
-    await emailInput.waitFor({ timeout: 8000 });
-    await emailInput.fill("test@example.com");
-    await expect(emailInput).toHaveValue("test@example.com");
+    await expect(page.locator('input[type="email"]')).toHaveCount(0);
   });
 
-  test("password field accepts user input", async ({ page }) => {
+  test("auth portal does not show inline password form", async ({ page }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
-    const pwdInput = page.locator('input[type="password"]');
-    await pwdInput.waitFor({ timeout: 8000 });
-    await pwdInput.fill("mypassword123");
-    await expect(pwdInput).toHaveValue("mypassword123");
+    await expect(page.locator('input[type="password"]')).toHaveCount(0);
   });
 });

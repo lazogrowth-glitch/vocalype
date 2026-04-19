@@ -23,11 +23,9 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
 }) => {
   const { t } = useTranslation();
   const downloadedModels = models.filter(
-    (m) =>
-      m.id === LAUNCH_MODEL_ID &&
-      m.is_downloaded &&
-      (m.id !== "gemini-api" || hasGeminiKey),
+    (m) => m.id === LAUNCH_MODEL_ID && m.is_downloaded,
   );
+  void hasGeminiKey;
 
   const handleModelClick = (modelId: string) => {
     onModelSelect(modelId);

@@ -8,11 +8,14 @@ vi.mock("@/lib/auth/client", () => ({
     hydrateStoredSession: vi.fn().mockResolvedValue(null),
     getStoredToken: vi.fn().mockReturnValue(null),
     getStoredSession: vi.fn().mockReturnValue(null),
+    getStoredRefreshToken: vi.fn().mockReturnValue(null),
+    refreshAccessToken: vi.fn(),
     getSession: vi.fn(),
     login: vi.fn(),
     register: vi.fn(),
     setStoredSession: vi.fn().mockResolvedValue(undefined),
     clearStoredSession: vi.fn().mockResolvedValue(undefined),
+    clearStoredToken: vi.fn().mockResolvedValue(undefined),
     getErrorStatus: vi.fn().mockReturnValue(0),
     hasSeenTrialWelcome: vi.fn().mockResolvedValue(false),
     markTrialWelcomeSeen: vi.fn().mockResolvedValue(undefined),
@@ -33,7 +36,7 @@ vi.mock("@/lib/license/client", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: { warning: vi.fn(), error: vi.fn(), success: vi.fn() },
+  toast: { warning: vi.fn(), error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }));
 
 import { authClient } from "@/lib/auth/client";
@@ -59,6 +62,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockAuthClient.hydrateStoredSession.mockResolvedValue(null);
   mockAuthClient.getStoredToken.mockReturnValue(null);
+  mockAuthClient.getStoredRefreshToken.mockReturnValue(null);
   mockAuthClient.getSession.mockResolvedValue(null);
   mockAuthClient.getErrorStatus.mockReturnValue(0);
   mockLicenseClient.getRuntimeState.mockResolvedValue(defaultRuntimeState);

@@ -64,8 +64,23 @@ interface SectionConfig {
   labelKey: string;
   icon: React.ComponentType<IconProps>;
   component: React.ComponentType;
-  enabled: (settings: any) => boolean;
+  enabled: (settings: unknown) => boolean;
 }
+
+export type SidebarSection =
+  | "general"
+  | "models"
+  | "postprocessing"
+  | "snippets"
+  | "history"
+  | "meetings"
+  | "notes"
+  | "stats"
+  | "advanced"
+  | "debug"
+  | "referral"
+  | "billing"
+  | "about";
 
 const LAUNCH_HIDDEN_SECTIONS = new Set<SidebarSection>([
   "meetings",
@@ -82,7 +97,7 @@ const isLaunchVisible = (section: SidebarSection) =>
 
 export const isSectionVisibleInLaunch = (
   section: SidebarSection,
-  settings: any,
+  settings: unknown,
 ) => SECTIONS_CONFIG[section]?.enabled(settings) === true;
 
 export const SECTIONS_CONFIG = {
@@ -148,7 +163,11 @@ export const SECTIONS_CONFIG = {
     icon: FlaskConical,
     component: DebugSettings,
     enabled: (settings) =>
-      import.meta.env.DEV && (settings?.debug_mode ?? false),
+      import.meta.env.DEV &&
+      typeof settings === "object" &&
+      settings !== null &&
+      "debug_mode" in settings &&
+      settings.debug_mode === true,
   },
   // ── Bas de sidebar ────────────────────────────────────
   referral: {
@@ -169,6 +188,4 @@ export const SECTIONS_CONFIG = {
     component: GeneralSettings,
     enabled: () => isLaunchVisible("about"),
   },
-} as const satisfies Record<string, SectionConfig>;
-
-export type SidebarSection = keyof typeof SECTIONS_CONFIG;
+} as const satisfies Record<SidebarSection, SectionConfig>;

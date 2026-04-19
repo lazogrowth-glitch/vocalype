@@ -7,12 +7,21 @@ import { useSessionRefresh } from "./useSessionRefresh";
 vi.mock("@/lib/auth/client", () => ({
   authClient: {
     getStoredToken: vi.fn(),
+    getStoredRefreshToken: vi.fn(),
+    refreshAccessToken: vi.fn(),
     getSession: vi.fn(),
     getErrorStatus: vi.fn(),
   },
 }));
 
+vi.mock("@/lib/license/client", () => ({
+  licenseClient: {
+    getRuntimeState: vi.fn().mockResolvedValue({ state: "expired" }),
+  },
+}));
+
 import { authClient } from "@/lib/auth/client";
+import { licenseClient } from "@/lib/license/client";
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +34,10 @@ describe("useSessionRefresh", () => {
     vi.clearAllMocks();
     // Default: no stored token → hook is a no-op
     vi.mocked(authClient.getStoredToken).mockReturnValue(null);
+    vi.mocked(authClient.getStoredRefreshToken).mockReturnValue(null);
+    vi.mocked(licenseClient.getRuntimeState).mockResolvedValue({
+      state: "expired",
+    } as never);
   });
 
   afterEach(() => {

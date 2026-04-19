@@ -341,10 +341,10 @@ mod tests {
     }
 
     #[test]
-    fn code_context_skips_llm_when_voice_to_code_disabled() {
+    fn selected_action_wins_when_voice_to_code_is_disabled() {
         assert_eq!(
             decide_post_process_mode(false, true, false, true, true),
-            PostProcessMode::SkipForCodeContext
+            PostProcessMode::SelectedAction
         );
     }
 }

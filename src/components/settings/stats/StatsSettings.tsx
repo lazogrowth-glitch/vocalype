@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -162,9 +163,7 @@ const MiniBarChart: React.FC<{ data: number[] }> = ({ data }) => {
         <div key={i} className="flex flex-1 flex-col items-center gap-0.5">
           <div
             className={`w-full rounded-sm transition-all ${
-              i === today
-                ? "bg-logo-primary/60"
-                : "bg-white/[0.10]"
+              i === today ? "bg-logo-primary/60" : "bg-white/[0.10]"
             }`}
             style={{ height: `${Math.max(2, (v / max) * 32)}px` }}
           />
@@ -238,7 +237,9 @@ export const StatsSettings: React.FC = () => {
       setProfile(refreshed);
       if (added > 0) {
         // re-fetch learning stats too since dict may have changed
-        const learnResult = await invoke<LearningStats>("get_learning_stats").catch(() => null);
+        const learnResult = await invoke<LearningStats>(
+          "get_learning_stats",
+        ).catch(() => null);
         if (learnResult) setLearning(learnResult);
       }
     } catch {
@@ -339,7 +340,8 @@ export const StatsSettings: React.FC = () => {
         <SettingsGroup
           title={t("stats.weeklyReport", { defaultValue: "Cette semaine" })}
           description={t("stats.weeklyReportDescription", {
-            defaultValue: "Votre usage des 7 derniers jours et ce que Vocalype a appris.",
+            defaultValue:
+              "Votre usage des 7 derniers jours et ce que Vocalype a appris.",
           })}
         >
           {/* Top row: sessions + words + bars */}
@@ -362,8 +364,11 @@ export const StatsSettings: React.FC = () => {
               </p>
               {report.sessions_last_week > 0 && (
                 <p className="mt-2 text-[11px] text-white/36">
-                  {report.sessions_this_week >= report.sessions_last_week ? "+" : ""}
-                  {report.sessions_this_week - report.sessions_last_week} vs sem. passée
+                  {report.sessions_this_week >= report.sessions_last_week
+                    ? "+"
+                    : ""}
+                  {report.sessions_this_week - report.sessions_last_week} vs
+                  sem. passée
                 </p>
               )}
             </div>
@@ -575,125 +580,144 @@ export const StatsSettings: React.FC = () => {
         </div>
       </SettingsGroup>
 
-      {learning && (learning.total_corrections_recorded > 0 || learning.dictionary_entries > 0) && (
-        <SettingsGroup
-          title={t("stats.learning", { defaultValue: "Apprentissage" })}
-          description={t("stats.learningDescription", {
-            defaultValue:
-              "Ce que Vocalype a appris de vos corrections. Plus vous corrigez, moins il y a d'erreurs.",
-          })}
-        >
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}
+      {learning &&
+        (learning.total_corrections_recorded > 0 ||
+          learning.dictionary_entries > 0) && (
+          <SettingsGroup
+            title={t("stats.learning", { defaultValue: "Apprentissage" })}
+            description={t("stats.learningDescription", {
+              defaultValue:
+                "Ce que Vocalype a appris de vos corrections. Plus vous corrigez, moins il y a d'erreurs.",
+            })}
           >
             <div
-              className="rounded-xl border border-logo-primary/14 bg-logo-primary/[0.06]"
-              style={{ padding: "16px 20px" }}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 12,
+              }}
             >
-              <div className="mb-3 h-[3px] w-10 rounded-full bg-logo-primary" />
-              <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
-                {t("stats.correctionsRecorded", {
-                  defaultValue: "Corrections",
-                })}
-              </p>
-              <p
-                style={{ marginTop: 6 }}
-                className="text-[28px] font-semibold leading-none text-white/92"
+              <div
+                className="rounded-xl border border-logo-primary/14 bg-logo-primary/[0.06]"
+                style={{ padding: "16px 20px" }}
               >
-                {formatNumber(learning.total_corrections_recorded)}
-              </p>
-              <p style={{ marginTop: 10 }} className="text-[11px] text-white/36">
-                {t("stats.correctionsRecordedSub", {
-                  defaultValue: "{{n}} paires distinctes",
-                  n: learning.distinct_corrections,
-                })}
-              </p>
-            </div>
-
-            <div
-              className="rounded-xl border border-white/8 bg-white/[0.03]"
-              style={{ padding: "16px 20px" }}
-            >
-              <div className="mb-3 h-[3px] w-10 rounded-full bg-white/14" />
-              <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
-                {t("stats.dictionaryEntries", {
-                  defaultValue: "Dictionnaire",
-                })}
-              </p>
-              <p
-                style={{ marginTop: 6 }}
-                className="text-[28px] font-semibold leading-none text-white/92"
-              >
-                {formatNumber(learning.dictionary_entries)}
-              </p>
-              <p style={{ marginTop: 10 }} className="text-[11px] text-white/36">
-                {t("stats.dictionaryEntriesSub", {
-                  defaultValue: "{{n}} appris automatiquement",
-                  n: learning.auto_learned_pairs,
-                })}
-              </p>
-            </div>
-
-            <div
-              className="rounded-xl border border-white/8 bg-white/[0.03]"
-              style={{ padding: "16px 20px" }}
-            >
-              <div className="mb-3 h-[3px] w-10 rounded-full bg-white/14" />
-              <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
-                {t("stats.switchingCost", {
-                  defaultValue: "Valeur accumulée",
-                })}
-              </p>
-              <p
-                style={{ marginTop: 6 }}
-                className="text-[28px] font-semibold leading-none text-white/92"
-              >
-                {learning.total_corrections_recorded > 0
-                  ? `${Math.min(100, Math.round((learning.auto_learned_pairs / Math.max(1, learning.distinct_corrections)) * 100))}%`
-                  : "—"}
-              </p>
-              <p style={{ marginTop: 10 }} className="text-[11px] text-white/36">
-                {t("stats.switchingCostSub", {
-                  defaultValue: "corrections actives dans votre dict.",
-                })}
-              </p>
-            </div>
-          </div>
-
-          {learning.top_corrections.length > 0 && (
-            <div
-              className="mt-3 rounded-xl border border-white/8 bg-white/[0.03]"
-              style={{ padding: "16px 20px" }}
-            >
-              <div className="mb-3 flex items-center gap-2">
-                <BookOpen size={12} className="text-white/30" />
+                <div className="mb-3 h-[3px] w-10 rounded-full bg-logo-primary" />
                 <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
-                  {t("stats.topCorrections", {
-                    defaultValue: "Corrections les plus fréquentes",
+                  {t("stats.correctionsRecorded", {
+                    defaultValue: "Corrections",
+                  })}
+                </p>
+                <p
+                  style={{ marginTop: 6 }}
+                  className="text-[28px] font-semibold leading-none text-white/92"
+                >
+                  {formatNumber(learning.total_corrections_recorded)}
+                </p>
+                <p
+                  style={{ marginTop: 10 }}
+                  className="text-[11px] text-white/36"
+                >
+                  {t("stats.correctionsRecordedSub", {
+                    defaultValue: "{{n}} paires distinctes",
+                    n: learning.distinct_corrections,
                   })}
                 </p>
               </div>
-              <div className="flex flex-col divide-y divide-white/[0.05]">
-                {learning.top_corrections.map((c) => (
-                  <div
-                    key={c.from}
-                    className="flex items-center justify-between gap-4 py-2"
-                  >
-                    <div className="flex items-center gap-2 text-[12.5px]">
-                      <span className="text-white/50 line-through">{c.from}</span>
-                      <span className="text-white/25">→</span>
-                      <span className="font-medium text-white/80">{c.to}</span>
-                    </div>
-                    <span className="shrink-0 rounded-md bg-white/[0.06] px-2 py-0.5 text-[10.5px] font-medium text-white/40">
-                      {c.count}×
-                    </span>
-                  </div>
-                ))}
+
+              <div
+                className="rounded-xl border border-white/8 bg-white/[0.03]"
+                style={{ padding: "16px 20px" }}
+              >
+                <div className="mb-3 h-[3px] w-10 rounded-full bg-white/14" />
+                <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
+                  {t("stats.dictionaryEntries", {
+                    defaultValue: "Dictionnaire",
+                  })}
+                </p>
+                <p
+                  style={{ marginTop: 6 }}
+                  className="text-[28px] font-semibold leading-none text-white/92"
+                >
+                  {formatNumber(learning.dictionary_entries)}
+                </p>
+                <p
+                  style={{ marginTop: 10 }}
+                  className="text-[11px] text-white/36"
+                >
+                  {t("stats.dictionaryEntriesSub", {
+                    defaultValue: "{{n}} appris automatiquement",
+                    n: learning.auto_learned_pairs,
+                  })}
+                </p>
+              </div>
+
+              <div
+                className="rounded-xl border border-white/8 bg-white/[0.03]"
+                style={{ padding: "16px 20px" }}
+              >
+                <div className="mb-3 h-[3px] w-10 rounded-full bg-white/14" />
+                <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
+                  {t("stats.switchingCost", {
+                    defaultValue: "Valeur accumulée",
+                  })}
+                </p>
+                <p
+                  style={{ marginTop: 6 }}
+                  className="text-[28px] font-semibold leading-none text-white/92"
+                >
+                  {learning.total_corrections_recorded > 0
+                    ? `${Math.min(100, Math.round((learning.auto_learned_pairs / Math.max(1, learning.distinct_corrections)) * 100))}%`
+                    : "—"}
+                </p>
+                <p
+                  style={{ marginTop: 10 }}
+                  className="text-[11px] text-white/36"
+                >
+                  {t("stats.switchingCostSub", {
+                    defaultValue: "corrections actives dans votre dict.",
+                  })}
+                </p>
               </div>
             </div>
-          )}
-        </SettingsGroup>
-      )}
+
+            {learning.top_corrections.length > 0 && (
+              <div
+                className="mt-3 rounded-xl border border-white/8 bg-white/[0.03]"
+                style={{ padding: "16px 20px" }}
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <BookOpen size={12} className="text-white/30" />
+                  <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
+                    {t("stats.topCorrections", {
+                      defaultValue: "Corrections les plus fréquentes",
+                    })}
+                  </p>
+                </div>
+                <div className="flex flex-col divide-y divide-white/[0.05]">
+                  {learning.top_corrections.map((c) => (
+                    <div
+                      key={c.from}
+                      className="flex items-center justify-between gap-4 py-2"
+                    >
+                      <div className="flex items-center gap-2 text-[12.5px]">
+                        <span className="text-white/50 line-through">
+                          {c.from}
+                        </span>
+                        <span className="text-white/25">→</span>
+                        <span className="font-medium text-white/80">
+                          {c.to}
+                        </span>
+                      </div>
+                      <span className="shrink-0 rounded-md bg-white/[0.06] px-2 py-0.5 text-[10.5px] font-medium text-white/40">
+                        {c.count}×
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </SettingsGroup>
+        )}
 
       {profile && (
         <SettingsGroup

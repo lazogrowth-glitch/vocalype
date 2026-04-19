@@ -229,23 +229,25 @@ fn should_auto_paste(status: TranscriptionStatus) -> bool {
     matches!(status, TranscriptionStatus::Success)
 }
 
-/// Returns `true` when both conditions are met:
-///  1. **Code context** — the session glossary holds ≥ 3 extracted identifiers,
-///     meaning the user has been actively copying code.
-///  2. **Text complexity** — the transcribed text itself either
-///     - contains a known filler word (signals messy dictation), OR
-///     - contains at least one glossary term (signals technical content).
+/// Returns `true` when BOTH conditions are met:
 ///
-/// This prevents the LLM from firing on short, clean phrases like "ok thanks"
-/// even when the user is sitting inside a code editor.
+///  1. **Code context** — the session glossary holds ≥ 3 extracted identifiers,
+///     meaning the user has been actively copying code recently.
+///
+///  2. **Text is worth processing** — at least one of:
+///     - The text contains a known glossary term (technical content).
+///       This is the primary signal: Parakeet already strips most filler words,
+///       so checking for fillers in its output is unreliable. A glossary term
+///       in the transcription is a direct, stable signal that the text is code-related.
+///     - The text is ≥ 8 words (long-form dictation — likely a complex request).
+///       Short phrases like "ok thanks" or "good morning" never reach 8 words,
+///       so they're always left untouched.
+///
+/// Filler-word detection was deliberately removed: Parakeet V3 partially removes
+/// fillers itself, making the check inconsistent and prone to missed triggers.
 fn auto_llm_should_trigger(app: &AppHandle, text: &str) -> bool {
     const CODE_CONTEXT_THRESHOLD: usize = 3;
-
-    // Filler words in English and French.
-    const FILLERS: &[&str] = &[
-        "euh", "um", "uh", "genre", "truc", "machin", "en fait",
-        "je sais pas", "you know", "like", "basically", "sort of",
-    ];
+    const LONG_FORM_WORD_THRESHOLD: usize = 8;
 
     let Some(state) = app.try_state::<crate::runtime::session_glossary::SessionGlossaryState>()
     else {
@@ -262,16 +264,17 @@ fn auto_llm_should_trigger(app: &AppHandle, text: &str) -> bool {
 
     let text_lower = text.to_lowercase();
 
-    // Condition 2a: filler words.
-    if FILLERS.iter().any(|f| text_lower.contains(f)) {
-        return true;
-    }
-
-    // Condition 2b: at least one glossary term appears in the text.
-    glossary
+    // Condition 2a: glossary term present in text — most reliable signal.
+    if glossary
         .terms
         .iter()
         .any(|term| text_lower.contains(&term.to_lowercase()))
+    {
+        return true;
+    }
+
+    // Condition 2b: long-form dictation (≥ 8 words) — worth cleaning regardless.
+    text.split_whitespace().count() >= LONG_FORM_WORD_THRESHOLD
 }
 
 fn classify_microphone_start_error(message: &str) -> &'static str {
@@ -1608,7 +1611,15 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 failed_chunk_count,
                 is_parakeet_chunked,
             );
-            let transcription = if chunk_count >= 2 && !assembled.is_empty() {
+            // Skip chunk-cleanup LLM when the post-processing LLM is going to run
+            // on this same text anyway — it will fix stitching artifacts too.
+            // This avoids paying for two sequential LLM calls on the same content.
+            let post_process_will_run = post_process
+                || (llm_auto_mode && auto_llm_should_trigger(&ah, &assembled));
+            let transcription = if chunk_count >= 2
+                && !assembled.is_empty()
+                && !post_process_will_run
+            {
                 let settings_for_cleanup = get_settings(&ah);
                 cleanup_assembled_transcription_with_strategy(
                     &settings_for_cleanup,

@@ -36,6 +36,9 @@ pub struct SessionGlossary {
     pub terms: HashSet<String>,
     /// Last clipboard snapshot — avoids re-scanning unchanged content.
     last_seen: String,
+    /// Set to true once we've fired the llama-server pre-warm for this session.
+    /// Prevents re-triggering on every subsequent clipboard event.
+    prewarmed: bool,
 }
 
 /// Tauri managed state wrapper.
@@ -46,6 +49,7 @@ impl SessionGlossary {
         Self {
             terms: HashSet::new(),
             last_seen: String::new(),
+            prewarmed: false,
         }
     }
 
@@ -188,7 +192,7 @@ pub fn spawn_clipboard_watcher(app: tauri::AppHandle, interval_ms: u64) {
             }
 
             // Ingest into state.
-            if let Some(state) = app.try_state::<SessionGlossaryState>() {
+            let should_prewarm = if let Some(state) = app.try_state::<SessionGlossaryState>() {
                 if let Ok(mut glossary) = state.0.lock() {
                     let added = glossary.ingest(&clipboard_text);
                     if added > 0 {
@@ -198,7 +202,33 @@ pub fn spawn_clipboard_watcher(app: tauri::AppHandle, interval_ms: u64) {
                             glossary.terms.len()
                         );
                     }
+                    // Fire pre-warm the first time we cross the code-context threshold.
+                    let crossed = !glossary.prewarmed && glossary.term_count() >= 3;
+                    if crossed {
+                        glossary.prewarmed = true;
+                    }
+                    crossed
+                } else {
+                    false
                 }
+            } else {
+                false
+            };
+
+            // If llm_auto_mode is on and we just crossed the threshold,
+            // boot llama-server silently so it is ready before the first dictation.
+            if should_prewarm && crate::settings::get_settings(&app).llm_auto_mode {
+                let app_clone = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    debug!("[session_glossary] code context detected — pre-warming llama-server");
+                    if let Err(e) =
+                        crate::llm::llama_server::ensure_llama_server(&app_clone).await
+                    {
+                        debug!("[session_glossary] llama-server pre-warm failed: {}", e);
+                    } else {
+                        debug!("[session_glossary] llama-server pre-warm complete");
+                    }
+                });
             }
         }
     });

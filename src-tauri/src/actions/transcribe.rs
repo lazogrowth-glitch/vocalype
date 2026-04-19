@@ -229,6 +229,51 @@ fn should_auto_paste(status: TranscriptionStatus) -> bool {
     matches!(status, TranscriptionStatus::Success)
 }
 
+/// Returns `true` when both conditions are met:
+///  1. **Code context** — the session glossary holds ≥ 3 extracted identifiers,
+///     meaning the user has been actively copying code.
+///  2. **Text complexity** — the transcribed text itself either
+///     - contains a known filler word (signals messy dictation), OR
+///     - contains at least one glossary term (signals technical content).
+///
+/// This prevents the LLM from firing on short, clean phrases like "ok thanks"
+/// even when the user is sitting inside a code editor.
+fn auto_llm_should_trigger(app: &AppHandle, text: &str) -> bool {
+    const CODE_CONTEXT_THRESHOLD: usize = 3;
+
+    // Filler words in English and French.
+    const FILLERS: &[&str] = &[
+        "euh", "um", "uh", "genre", "truc", "machin", "en fait",
+        "je sais pas", "you know", "like", "basically", "sort of",
+    ];
+
+    let Some(state) = app.try_state::<crate::runtime::session_glossary::SessionGlossaryState>()
+    else {
+        return false;
+    };
+    let Ok(glossary) = state.0.lock() else {
+        return false;
+    };
+
+    // Condition 1: code context.
+    if glossary.term_count() < CODE_CONTEXT_THRESHOLD {
+        return false;
+    }
+
+    let text_lower = text.to_lowercase();
+
+    // Condition 2a: filler words.
+    if FILLERS.iter().any(|f| text_lower.contains(f)) {
+        return true;
+    }
+
+    // Condition 2b: at least one glossary term appears in the text.
+    glossary
+        .terms
+        .iter()
+        .any(|term| text_lower.contains(&term.to_lowercase()))
+}
+
 fn classify_microphone_start_error(message: &str) -> &'static str {
     let normalized = message.to_ascii_lowercase();
     if normalized.contains("permission") || normalized.contains("access denied") {
@@ -1153,16 +1198,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
     let settings = get_settings(app);
     let auto_pause_media = settings.auto_pause_media;
 
-    // Auto-mode: activate LLM post-processing when the session glossary has
-    // collected enough code identifiers to signal a coding context.
-    // Threshold: ≥ 3 terms means the user has been copying code recently.
-    let post_process = post_process || (settings.llm_auto_mode && {
-        const CODE_CONTEXT_THRESHOLD: usize = 3;
-        app.try_state::<crate::runtime::session_glossary::SessionGlossaryState>()
-            .and_then(|state| state.0.lock().ok().map(|g| g.term_count()))
-            .unwrap_or(0)
-            >= CODE_CONTEXT_THRESHOLD
-    });
+    let llm_auto_mode = settings.llm_auto_mode;
 
     let chunking_handle = app
         .try_state::<ActiveChunkingHandle>()
@@ -2083,13 +2119,20 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             }
 
             if should_auto_paste(effective_status) && !transcription.is_empty() {
+                // Auto-mode: upgrade to LLM post-processing when BOTH signals are present:
+                //   1. Code context — glossary has ≥ 3 extracted identifiers
+                //   2. Text complexity — the transcription itself contains filler words
+                //      OR at least one glossary term (i.e. it's technical/messy)
+                let effective_post_process = post_process || (llm_auto_mode && {
+                    auto_llm_should_trigger(&ah, &transcription)
+                });
                 let outcome = process_transcription_text(
                     &ah,
                     operation_id,
                     &transcription,
                     active_app_context.as_ref(),
                     selected_action_key,
-                    post_process,
+                    effective_post_process,
                     &samples,
                     &profiler,
                 )
@@ -2164,13 +2207,16 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     );
                 }
                 emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
+                let effective_post_process = post_process || (llm_auto_mode && {
+                    auto_llm_should_trigger(&ah, &transcription)
+                });
                 let outcome = process_transcription_text(
                     &ah,
                     operation_id,
                     &transcription,
                     active_app_context.as_ref(),
                     selected_action_key,
-                    post_process,
+                    effective_post_process,
                     &samples,
                     &profiler,
                 )

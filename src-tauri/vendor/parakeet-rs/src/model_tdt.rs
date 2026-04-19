@@ -336,14 +336,7 @@ impl ParakeetTDTModel {
 
         let mut t = 0;
         let mut emitted_tokens = 0;
-        // Prime the prediction network with the language control token when one
-        // is provided (e.g. <|fr|>=71).  The LSTM sees it as "previously emitted
-        // token" on the very first frame, biasing subsequent predictions towards
-        // that language — the same effect as Whisper's forced language prefix.
-        // Falls back to blank_id (standard behaviour) when language is "auto".
-        let mut last_emitted_token = language_token_id
-            .map(|id| id as i32)
-            .unwrap_or(blank_id as i32);
+        let mut last_emitted_token = blank_id as i32;
 
         // Frame-by-frame RNN-T/TDT greedy decoding
         while t < time_steps {

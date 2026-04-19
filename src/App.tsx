@@ -1,22 +1,18 @@
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { TitleBar } from "./components/TitleBar";
 import { useTranslation } from "react-i18next";
-import {
-  LogicalSize,
-  currentMonitor,
-  getCurrentWindow,
-} from "@tauri-apps/api/window";
+import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
-import Onboarding, {
-  AccessibilityOnboarding,
-  ConsentStep,
-} from "./components/onboarding";
-import { TrialWelcomeModal } from "./components/onboarding/TrialWelcomeModal";
+import FirstRunDownload from "./components/onboarding/FirstRunDownload";
 import { Sidebar } from "./components/Sidebar";
-import { SidebarSection, SECTIONS_CONFIG } from "./components/sections-config";
+import {
+  isSectionVisibleInLaunch,
+  SidebarSection,
+  SECTIONS_CONFIG,
+} from "./components/sections-config";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
@@ -25,18 +21,12 @@ import { PlanContext } from "@/lib/subscription/context";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { ensureVoiceStateStore } from "@/stores/voiceState";
 
 const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
 
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
-const MIN_WINDOW_SIZE = { width: 960, height: 624 };
-const REFERENCE_SCREEN_SIZE = { width: 1920, height: 1080 };
-const DEFAULT_WIDTH_RATIO =
-  DESIGN_WINDOW_SIZE.width / REFERENCE_SCREEN_SIZE.width;
-const DEFAULT_HEIGHT_RATIO =
-  DESIGN_WINDOW_SIZE.height / REFERENCE_SCREEN_SIZE.height;
 
 type WindowSize = {
   width: number;
@@ -82,82 +72,9 @@ function getLayoutTier(width: number): LayoutTier {
   return "spacious";
 }
 
-function readStoredWindowSize(): StoredWindowSize | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(WINDOW_SIZE_STORAGE_KEY);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<StoredWindowSize>;
-    if (
-      typeof parsed.width === "number" &&
-      typeof parsed.height === "number" &&
-      Number.isFinite(parsed.width) &&
-      Number.isFinite(parsed.height)
-    ) {
-      return {
-        width: Math.round(parsed.width),
-        height: Math.round(parsed.height),
-        widthRatio:
-          typeof parsed.widthRatio === "number" &&
-          Number.isFinite(parsed.widthRatio)
-            ? parsed.widthRatio
-            : undefined,
-        heightRatio:
-          typeof parsed.heightRatio === "number" &&
-          Number.isFinite(parsed.heightRatio)
-            ? parsed.heightRatio
-            : undefined,
-        screenWidth:
-          typeof parsed.screenWidth === "number" &&
-          Number.isFinite(parsed.screenWidth)
-            ? Math.round(parsed.screenWidth)
-            : undefined,
-        screenHeight:
-          typeof parsed.screenHeight === "number" &&
-          Number.isFinite(parsed.screenHeight)
-            ? Math.round(parsed.screenHeight)
-            : undefined,
-      };
-    }
-  } catch {
-    window.localStorage.removeItem(WINDOW_SIZE_STORAGE_KEY);
-  }
-
-  return null;
-}
-
 function writeStoredWindowSize(size: StoredWindowSize) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(WINDOW_SIZE_STORAGE_KEY, JSON.stringify(size));
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-async function resolveAdaptiveWindowSize(): Promise<WindowSize> {
-  const monitorBounds = await resolveMonitorBounds();
-  if (!monitorBounds) {
-    return DESIGN_WINDOW_SIZE;
-  }
-
-  return {
-    width: Math.round(
-      clamp(
-        monitorBounds.width * DEFAULT_WIDTH_RATIO,
-        MIN_WINDOW_SIZE.width,
-        monitorBounds.width,
-      ),
-    ),
-    height: Math.round(
-      clamp(
-        monitorBounds.height * DEFAULT_HEIGHT_RATIO,
-        MIN_WINDOW_SIZE.height,
-        monitorBounds.height,
-      ),
-    ),
-  };
 }
 
 async function resolveMonitorBounds(): Promise<WindowSize | null> {
@@ -171,48 +88,11 @@ async function resolveMonitorBounds(): Promise<WindowSize | null> {
   };
 }
 
-async function resolveWindowSize(): Promise<WindowSize> {
-  const storedSize = readStoredWindowSize();
-  const monitorBounds = await resolveMonitorBounds();
-
-  if (!monitorBounds) {
-    return DESIGN_WINDOW_SIZE;
+const renderSettingsContent = (section: SidebarSection, settings: unknown) => {
+  if (!isSectionVisibleInLaunch(section, settings)) {
+    return null;
   }
 
-  if (!storedSize) {
-    return resolveAdaptiveWindowSize();
-  }
-
-  const widthRatio =
-    storedSize.widthRatio ??
-    (storedSize.screenWidth && storedSize.screenWidth > 0
-      ? storedSize.width / storedSize.screenWidth
-      : DEFAULT_WIDTH_RATIO);
-  const heightRatio =
-    storedSize.heightRatio ??
-    (storedSize.screenHeight && storedSize.screenHeight > 0
-      ? storedSize.height / storedSize.screenHeight
-      : DEFAULT_HEIGHT_RATIO);
-
-  return {
-    width: Math.round(
-      clamp(
-        monitorBounds.width * widthRatio,
-        MIN_WINDOW_SIZE.width,
-        monitorBounds.width,
-      ),
-    ),
-    height: Math.round(
-      clamp(
-        monitorBounds.height * heightRatio,
-        MIN_WINDOW_SIZE.height,
-        monitorBounds.height,
-      ),
-    ),
-  };
-}
-
-const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
   return (
@@ -228,37 +108,6 @@ const renderSettingsContent = (section: SidebarSection) => {
   );
 };
 
-const OnboardingProgressBar: React.FC<{ current: number; total: number }> = ({
-  current,
-  total,
-}) => {
-  const { t } = useTranslation();
-  return (
-    <div
-      className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center"
-      style={{ gap: 6, paddingTop: 12, paddingBottom: 8 }}
-    >
-      <p className="text-[11px] text-text/70">
-        {t("onboarding.progress.stepOf", { current, total })}
-      </p>
-      <div style={{ display: "flex", gap: 4 }}>
-        {Array.from({ length: total }, (_, i) => (
-          <div
-            key={i}
-            className="h-[3px] w-7 rounded-full transition-all duration-300"
-            style={{
-              background:
-                i < current
-                  ? "rgba(100,140,255,0.9)"
-                  : "rgba(255,255,255,0.12)",
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
 function App() {
   const { i18n, t } = useTranslation();
   const [currentSection, setCurrentSection] =
@@ -266,6 +115,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("vt.sidebarCollapsed") === "1",
   );
+  const lastDeepLinkTokenRef = useRef<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth);
   const toggleSidebar = () => {
     setSidebarCollapsed((v) => {
@@ -289,14 +139,12 @@ function App() {
     authSubmitting,
     authError,
     licenseState,
-    showTrialWelcome,
     hasCompletedPostOnboardingInit,
     refreshSession,
     handleDeepLinkAuth,
     handleLogin,
     handleRegister,
     handleLogout,
-    handleDismissTrialWelcome,
     handleStartCheckout,
     handleOpenBillingPortal,
   } = useAuthFlow(t);
@@ -304,24 +152,21 @@ function App() {
   const hasAnyAccess =
     licenseState?.state === "online_valid" ||
     licenseState?.state === "offline_valid";
+  const hasAccountAccess = session?.subscription.has_access === true;
+  const canEnterApp = hasAnyAccess;
+  const isActivationPending = hasAccountAccess && !hasAnyAccess;
   const currentTier = session?.subscription?.tier ?? null;
-  const isBasicTier = hasAnyAccess && currentTier === "basic";
-  const hasPremiumAccess = hasAnyAccess && currentTier === "premium";
+  const isBasicTier = canEnterApp && currentTier === "basic";
+  const hasPremiumAccess = canEnterApp && currentTier === "premium";
   const isTrialing =
     session?.subscription?.status === "trialing" && hasPremiumAccess;
   const trialEndsAt = isTrialing
     ? (session?.subscription?.trial_ends_at ?? null)
     : null;
 
-  const {
-    onboardingStep,
-    handleConsentAccepted,
-    handleAccessibilityComplete,
-    handleModelSelected,
-    handleGoBack,
-  } = useOnboarding({
+  const { onboardingStep, handleFirstRunComplete } = useOnboarding({
     authLoading,
-    hasAnyAccess,
+    hasAnyAccess: canEnterApp,
   });
 
   const [showFirstLaunchHint, setShowFirstLaunchHint] = useState(
@@ -338,12 +183,12 @@ function App() {
     : sidebarCollapsed;
   const mainContentPadding =
     layoutTier === "compact"
-      ? "20px 22px 28px"
+      ? "24px 26px 32px"
       : layoutTier === "cozy"
-        ? "24px 28px 32px"
-        : "28px 36px 36px";
+        ? "32px 40px 44px"
+        : "40px 48px 52px";
   const mainHeadingSize =
-    layoutTier === "compact" ? 24 : layoutTier === "cozy" ? 26 : 28;
+    layoutTier === "compact" ? 26 : layoutTier === "cozy" ? 30 : 32;
   const pageTitle = SECTIONS_CONFIG[currentSection]
     ? t(SECTIONS_CONFIG[currentSection].labelKey)
     : t(SECTIONS_CONFIG.general.labelKey);
@@ -425,8 +270,14 @@ function App() {
   useEffect(() => {
     const unlisten = listen<string>("deep-link-auth", async (event) => {
       const token = event.payload;
-      if (token) {
+      if (token && lastDeepLinkTokenRef.current !== token) {
+        lastDeepLinkTokenRef.current = token;
         await handleDeepLinkAuth(token);
+        try {
+          await emit("desktop-auth-ready");
+        } catch (error) {
+          console.warn("Failed to notify desktop auth completion:", error);
+        }
       }
     });
     return () => {
@@ -455,34 +306,48 @@ function App() {
   ]);
 
   useEffect(() => {
-    const initializeWindowSize = async () => {
-      try {
-        const window = getCurrentWindow();
-        await window.setMinSize(
-          new LogicalSize(MIN_WINDOW_SIZE.width, MIN_WINDOW_SIZE.height),
-        );
+    if (!isActivationPending) return;
 
-        const target = await resolveWindowSize();
-        await window.setSize(new LogicalSize(target.width, target.height));
-        if (readStoredWindowSize() === null) {
-          await window.center();
-        }
-      } catch (windowError) {
-        console.warn("Failed to initialize main window size:", windowError);
+    let cancelled = false;
+    let attempts = 0;
+    let timer: number | undefined;
+
+    const refreshPendingActivation = async () => {
+      if (cancelled || attempts >= 12) return;
+      attempts += 1;
+      try {
+        await refreshSession();
+      } catch (error) {
+        console.warn("Pending activation refresh failed:", error);
+      }
+
+      if (!cancelled && attempts < 12) {
+        timer = window.setTimeout(refreshPendingActivation, 5000);
       }
     };
 
-    void initializeWindowSize();
-  }, []);
+    void refreshPendingActivation();
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [isActivationPending, refreshSession]);
 
   useEffect(() => {
     ensureVoiceStateStore();
   }, []);
 
   useEffect(() => {
+    if (!isSectionVisibleInLaunch(currentSection, settings)) {
+      setCurrentSection("general");
+    }
+  }, [currentSection, settings]);
+
+  useEffect(() => {
     const handleNavigateSettings = (event: Event) => {
       const section = (event as CustomEvent<SidebarSection>).detail;
-      if (section && SECTIONS_CONFIG[section]) {
+      if (section && isSectionVisibleInLaunch(section, settings)) {
         setCurrentSection(section);
       }
     };
@@ -493,7 +358,7 @@ function App() {
         NAVIGATE_SETTINGS_EVENT,
         handleNavigateSettings,
       );
-  }, [setCurrentSection]);
+  }, [settings, setCurrentSection]);
 
   if (authLoading) {
     return (
@@ -514,7 +379,7 @@ function App() {
     );
   }
 
-  if (!session || !hasAnyAccess) {
+  if (!session || !canEnterApp) {
     return (
       <div
         style={{
@@ -562,47 +427,13 @@ function App() {
     );
   }
 
-  if (onboardingStep === "consent") {
+  if (onboardingStep === "first-run") {
     return (
       <div
         style={{ display: "flex", flexDirection: "column", height: "100vh" }}
       >
         <TitleBar />
-        <OnboardingProgressBar current={1} total={3} />
-        <ConsentStep onAccept={handleConsentAccepted} />
-      </div>
-    );
-  }
-
-  if (onboardingStep === "accessibility") {
-    return (
-      <div
-        style={{ display: "flex", flexDirection: "column", height: "100vh" }}
-      >
-        <TitleBar />
-        <OnboardingProgressBar current={2} total={3} />
-        <AccessibilityOnboarding
-          onComplete={handleAccessibilityComplete}
-          onBack={handleGoBack}
-        />
-      </div>
-    );
-  }
-
-  if (onboardingStep === "model") {
-    return (
-      <div
-        style={{ display: "flex", flexDirection: "column", height: "100vh" }}
-      >
-        <TitleBar />
-        <OnboardingProgressBar current={3} total={3} />
-        <Onboarding
-          onModelSelected={handleModelSelected}
-          onBack={handleGoBack}
-        />
-        {showTrialWelcome && (
-          <TrialWelcomeModal onDismiss={handleDismissTrialWelcome} />
-        )}
+        <FirstRunDownload onComplete={handleFirstRunComplete} />
       </div>
     );
   }
@@ -628,6 +459,17 @@ function App() {
           onLogout={handleLogout}
           onOpenBillingPortal={handleOpenBillingPortal}
         />
+        {isActivationPending ? (
+          <div className="activation-banner" role="status">
+            <span className="activation-banner-dot" />
+            <span>
+              {t("auth.activationPending", {
+                defaultValue:
+                  "Activation du compte en arrière-plan. Vous pouvez déjà entrer dans Vocalype.",
+              })}
+            </span>
+          </div>
+        ) : null}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-text focus:rounded-lg focus:ring-2 focus:ring-logo-primary focus:outline-none text-sm font-medium"
@@ -668,16 +510,16 @@ function App() {
               padding: mainContentPadding,
               ["--main-pad-top" as string]:
                 layoutTier === "compact"
-                  ? "20px"
+                  ? "24px"
                   : layoutTier === "cozy"
-                    ? "24px"
-                    : "28px",
+                    ? "32px"
+                    : "40px",
               ["--main-pad-x" as string]:
                 layoutTier === "compact"
-                  ? "22px"
+                  ? "26px"
                   : layoutTier === "cozy"
-                    ? "28px"
-                    : "36px",
+                    ? "40px"
+                    : "48px",
             }}
           >
             <div className="app-main-inner">
@@ -704,7 +546,7 @@ function App() {
               )}
 
               <ErrorBoundary>
-                {renderSettingsContent(currentSection)}
+                {renderSettingsContent(currentSection, settings)}
               </ErrorBoundary>
             </div>
           </main>

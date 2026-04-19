@@ -14,13 +14,6 @@ import { Button } from "@/components/ui/Button";
 import { Dropdown, FeatureGateHint } from "@/components/ui";
 import { GeminiKeyModal } from "./GeminiKeyModal";
 import { CloudSttKeyModal, type CloudSttProvider } from "./CloudSttKeyModal";
-import { LanguageFilterDropdown } from "./LanguageFilterDropdown";
-
-// check if model supports a language based on its supported_languages list
-const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
-  return model.supported_languages.includes(langCode);
-};
-
 const getModelRank = (model: ModelInfo): number => {
   if (model.id === "parakeet-tdt-0.6b-v3-multilingual") return 1000;
   if (model.id === "large") return 950;
@@ -64,12 +57,6 @@ const compareModels = (a: ModelInfo, b: ModelInfo): number => {
 const PRIMARY_LOCAL_MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
 const isPrimaryModel = (model: ModelInfo): boolean =>
   model.id === PRIMARY_LOCAL_MODEL_ID;
-
-const isApiModel = (model: ModelInfo): boolean =>
-  model.id === "gemini-api" ||
-  model.id === "groq-whisper" ||
-  model.id === "mistral-voxtral" ||
-  model.id === "deepgram-nova";
 
 const ProcessingModelsSection: React.FC = () => {
   const { t } = useTranslation();
@@ -213,29 +200,26 @@ const ProcessingModelsSection: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div
-        className="rounded-[12px] border border-white/8 bg-white/[0.03]"
-        style={{ padding: "18px 20px" }}
-      >
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className="voca-surface" style={{ padding: "24px" }}>
         <p className="text-[13.5px] font-medium text-white">
           {t("settings.models.processingModels.title")}
         </p>
         <p
-          style={{ marginTop: 4 }}
-          className="text-[11.5px] leading-5 text-white/40"
+          style={{ marginTop: 8 }}
+          className="text-[14px] leading-6 text-white/52"
         >
           {t("settings.models.processingModels.description")}
         </p>
       </div>
 
       {savedModels.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {savedModels.map((model) => (
             <div
               key={model.id}
-              className="flex items-center justify-between rounded-[12px] border border-white/8 bg-white/[0.03]"
-              style={{ padding: "16px 18px" }}
+              className="flex items-center justify-between voca-surface"
+              style={{ padding: "18px 24px" }}
             >
               <span className="truncate pr-3 text-[13px] text-text">
                 {model.label}
@@ -261,10 +245,7 @@ const ProcessingModelsSection: React.FC = () => {
       )}
 
       {savedModels.length === 0 && !isAdding && (
-        <div
-          className="rounded-[12px] border border-white/8 bg-white/[0.03]"
-          style={{ padding: "18px 20px" }}
-        >
+        <div className="voca-surface" style={{ padding: "24px" }}>
           <p className="text-[12.5px] text-mid-gray">
             {t("settings.models.processingModels.noModels")}
           </p>
@@ -273,12 +254,12 @@ const ProcessingModelsSection: React.FC = () => {
 
       {isAdding && (
         <div
-          className="rounded-[12px] border border-white/8 bg-white/[0.03]"
+          className="voca-surface"
           style={{
-            padding: "18px",
+            padding: "24px",
             display: "flex",
             flexDirection: "column",
-            gap: 14,
+            gap: 20,
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -482,8 +463,6 @@ export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ModelsTab>("transcription");
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
-  const [languageFilter, setLanguageFilter] = useState("all");
-  const [showAdvancedModels, setShowAdvancedModels] = useState(false);
   const [showGeminiKeyDialog, setShowGeminiKeyDialog] = useState(false);
   const [geminiKeyInput, setGeminiKeyInput] = useState("");
   const [showCloudSttKeyDialog, setShowCloudSttKeyDialog] = useState(false);
@@ -678,12 +657,10 @@ export const ModelsSettings: React.FC = () => {
   // Filter models based on language filter
   const filteredModels = useMemo(() => {
     return models.filter((model: ModelInfo) => {
-      if (languageFilter !== "all") {
-        if (!modelSupportsLanguage(model, languageFilter)) return false;
-      }
+      if (!isPrimaryModel(model)) return false;
       return true;
     });
-  }, [models, languageFilter]);
+  }, [models]);
 
   // Split filtered models into downloaded (including custom) and available sections
   const { downloadedModels, availableModels } = useMemo(() => {
@@ -738,33 +715,6 @@ export const ModelsSettings: React.FC = () => {
     [downloadedModels, availableModels],
   );
 
-  const advancedVisibleModels = useMemo(
-    () =>
-      [...downloadedModels, ...availableModels].filter(
-        (model, index, items) =>
-          items.findIndex((entry) => entry.id === model.id) === index &&
-          model.id !== "parakeet-tdt-0.6b-v3" &&
-          !isPrimaryModel(model),
-      ),
-    [downloadedModels, availableModels],
-  );
-
-  const advancedApiVisibleModels = useMemo(
-    () => advancedVisibleModels.filter((model) => isApiModel(model)),
-    [advancedVisibleModels],
-  );
-
-  const advancedLocalVisibleModels = useMemo(
-    () => advancedVisibleModels.filter((model) => !isApiModel(model)),
-    [advancedVisibleModels],
-  );
-
-  const activeAdvancedModel = useMemo(
-    () =>
-      advancedVisibleModels.find((model) => model.id === currentModel) ?? null,
-    [advancedVisibleModels, currentModel],
-  );
-
   if (loading) {
     return (
       <div className="max-w-3xl w-full mx-auto">
@@ -782,7 +732,7 @@ export const ModelsSettings: React.FC = () => {
         style={{ gap: 4 }}
         role="tablist"
       >
-        {(["transcription", "processing"] as const).map((tab) => (
+        {(["transcription"] as const).map((tab) => (
           <button
             key={tab}
             role="tab"
@@ -815,22 +765,19 @@ export const ModelsSettings: React.FC = () => {
 
       {activeTab === "transcription" && filteredModels.length > 0 ? (
         <div
-          style={{ display: "flex", flexDirection: "column", gap: 20 }}
+          style={{ display: "flex", flexDirection: "column", gap: 40 }}
           role="tabpanel"
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div
               className="flex items-center justify-between"
               style={{ marginBottom: 4 }}
             >
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
+              <h2 className="text-[18px] font-bold tracking-[0] text-white/90">
                 {t("settings.models.yourModels")}
               </h2>
 
-              <LanguageFilterDropdown
-                value={languageFilter}
-                onChange={setLanguageFilter}
-              />
+              {null}
             </div>
 
             {primaryVisibleModels.map((model: ModelInfo) => (
@@ -852,118 +799,6 @@ export const ModelsSettings: React.FC = () => {
               />
             ))}
           </div>
-
-          <div
-            className="rounded-[10px] border border-white/8 bg-white/[0.03]"
-            style={{ padding: "14px 16px" }}
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[13px] font-medium text-white">
-                  {t("settings.models.advanced.title", {
-                    defaultValue: "Add an advanced model",
-                  })}
-                </p>
-                <p className="mt-1 text-[11.5px] leading-5 text-white/40">
-                  {t("settings.models.advanced.description", {
-                    defaultValue:
-                      "Older, niche, experimental, and custom models live here. Most people should stay on the main models above.",
-                  })}
-                </p>
-              </div>
-              <Button
-                onClick={() => setShowAdvancedModels((value) => !value)}
-                variant="secondary"
-                size="md"
-              >
-                {showAdvancedModels
-                  ? t("settings.models.advanced.hide", {
-                      defaultValue: "Hide advanced",
-                    })
-                  : t("settings.models.advanced.show", {
-                      defaultValue: "Show advanced",
-                    })}
-              </Button>
-            </div>
-          </div>
-
-          {showAdvancedModels && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {activeAdvancedModel ? (
-                <FeatureGateHint
-                  tone="warning"
-                  title={t("settings.models.advanced.activeTitle", {
-                    defaultValue: "Advanced model currently active",
-                  })}
-                  description={t("settings.models.advanced.activeDescription", {
-                    defaultValue:
-                      "You are currently using {{model}}. It stays available here, but the recommended surface only shows the main models.",
-                    model: activeAdvancedModel.name,
-                  })}
-                />
-              ) : null}
-
-              {advancedApiVisibleModels.length > 0 && (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                >
-                  <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
-                    {t("settings.models.advanced.apiSection", {
-                      defaultValue: "Advanced API models",
-                    })}
-                  </h2>
-                  {advancedApiVisibleModels.map((model: ModelInfo) => (
-                    <ModelCard
-                      key={model.id}
-                      model={model}
-                      status={getModelStatus(model.id)}
-                      onSelect={handleModelSelect}
-                      onDownload={handleModelDownload}
-                      onDelete={handleModelDelete}
-                      onCancel={handleModelCancel}
-                      downloadProgress={getDownloadProgress(model.id)}
-                      downloadSpeed={getDownloadSpeed(model.id)}
-                      showRecommended={false}
-                      copilotOptimized={isCopilotOptimizedParakeet(
-                        adaptiveProfile,
-                        model.id,
-                      )}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {advancedLocalVisibleModels.length > 0 && (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                >
-                  <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
-                    {t("settings.models.advanced.localSection", {
-                      defaultValue: "Advanced local models",
-                    })}
-                  </h2>
-                  {advancedLocalVisibleModels.map((model: ModelInfo) => (
-                    <ModelCard
-                      key={model.id}
-                      model={model}
-                      status={getModelStatus(model.id)}
-                      onSelect={handleModelSelect}
-                      onDownload={handleModelDownload}
-                      onDelete={handleModelDelete}
-                      onCancel={handleModelCancel}
-                      downloadProgress={getDownloadProgress(model.id)}
-                      downloadSpeed={getDownloadSpeed(model.id)}
-                      showRecommended={false}
-                      copilotOptimized={isCopilotOptimizedParakeet(
-                        adaptiveProfile,
-                        model.id,
-                      )}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       ) : activeTab === "transcription" ? (
         <div className="py-8 text-center text-text/50">

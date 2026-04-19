@@ -38,11 +38,10 @@ pub(super) fn dispatch_text_insertion(
     let paste_time = Instant::now();
 
     info!(
-        "[PASTE] dispatch_text_insertion called: op={} text_len={} is_basic={} text_preview='{}'",
+        "[PASTE] dispatch_text_insertion called: op={} text_len={} is_basic={}",
         operation_id,
         final_text.len(),
-        is_basic_plan,
-        final_text.chars().take(60).collect::<String>()
+        is_basic_plan
     );
 
     if let Ok(mut p) = profiler.lock() {

@@ -84,6 +84,13 @@ pub fn is_transcribe_binding(id: &str) -> bool {
     )
 }
 
+pub fn is_launch_hidden_binding(id: &str) -> bool {
+    matches!(
+        id,
+        "agent_key" | "meeting_key" | "note_key" | "command_mode" | "whisper_mode"
+    )
+}
+
 pub fn is_action_binding(id: &str) -> bool {
     id.starts_with("action_")
 }
@@ -542,6 +549,19 @@ mod tests {
     #[test]
     fn fresh_state_can_start() {
         assert!(CoordinatorRuntimeState::default().can_start());
+    }
+
+    #[test]
+    fn launch_hidden_bindings_stay_registered_but_blocked() {
+        assert!(is_transcribe_binding("agent_key"));
+        assert!(is_transcribe_binding("meeting_key"));
+        assert!(is_transcribe_binding("note_key"));
+        assert!(is_launch_hidden_binding("agent_key"));
+        assert!(is_launch_hidden_binding("meeting_key"));
+        assert!(is_launch_hidden_binding("note_key"));
+        assert!(is_launch_hidden_binding("command_mode"));
+        assert!(is_launch_hidden_binding("whisper_mode"));
+        assert!(!is_launch_hidden_binding("transcribe"));
     }
 
     #[test]

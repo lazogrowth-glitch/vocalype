@@ -234,17 +234,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   color: isActive
                     ? "rgba(255,255,255,0.97)"
                     : "rgba(255,255,255,0.5)",
-                  borderRadius: collapsed ? 14 : "14px",
+                  borderRadius: collapsed ? 8 : "8px",
                   border: isActive
-                    ? "1px solid rgba(201,168,76,0.16)"
+                    ? "1px solid rgba(201,168,76,0.30)"
                     : "1px solid transparent",
                   background: isActive
-                    ? "linear-gradient(180deg, rgba(201,168,76,0.18), rgba(201,168,76,0.09))"
+                    ? "linear-gradient(90deg, rgba(201,168,76,0.22), rgba(201,168,76,0.10))"
                     : "transparent",
                   textAlign: "left",
                   position: "relative",
                   boxShadow: isActive
-                    ? "inset 0 1px 0 rgba(255,255,255,0.06)"
+                    ? "inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.16)"
                     : "none",
                 }}
                 onClick={() => onSectionChange(section.id)}
@@ -256,7 +256,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span
                     style={{
                       position: "absolute",
-                      left: 8,
+                      left: 7,
                       top: "50%",
                       transform: "translateY(-50%)",
                       height: 18,
@@ -338,12 +338,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 fontSize: bottomFontSize,
                 width: "100%",
                 cursor: "pointer",
-                background: isActive ? "rgba(255,255,255,0.06)" : "transparent",
+                background: isActive
+                  ? "linear-gradient(90deg, rgba(201,168,76,0.16), rgba(201,168,76,0.07))"
+                  : "transparent",
                 color: isActive
                   ? "rgba(255,255,255,0.90)"
                   : "rgba(255,255,255,0.34)",
-                borderRadius: collapsed ? 14 : "12px",
-                border: "1px solid transparent",
+                borderRadius: collapsed ? 8 : "8px",
+                border: isActive
+                  ? "1px solid rgba(201,168,76,0.20)"
+                  : "1px solid transparent",
                 textAlign: "left",
                 position: "relative",
               }}
@@ -388,7 +392,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
 
-        {!collapsed && (
+        {import.meta.env.DEV && !collapsed && (
           <div style={{ padding: "10px 8px 2px" }}>
             <MachineStatusBar variant="sidebar" />
           </div>

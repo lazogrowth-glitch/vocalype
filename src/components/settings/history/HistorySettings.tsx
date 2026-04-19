@@ -606,12 +606,12 @@ export const HistorySettings: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/25">
+          <h2 className="text-[18px] font-bold tracking-[0] text-white/90">
             {t("settings.history.title")}
           </h2>
-          <p className="mt-1 text-[12px] text-white/36">
+          <p className="mt-2 text-[14px] leading-6 text-white/58">
             {t("shell.sectionDescriptions.history")}
           </p>
         </div>
@@ -621,8 +621,8 @@ export const HistorySettings: React.FC = () => {
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 14,
-              padding: "14px 18px 16px",
+              gap: 18,
+              padding: "20px 24px",
             }}
           >
             <div className="flex flex-wrap items-center gap-2.5">
@@ -674,7 +674,7 @@ export const HistorySettings: React.FC = () => {
                     defaultValue: "Rechercher une transcription…",
                   })}
                   style={{ padding: "12px 16px 12px 38px", width: "100%" }}
-                  className="rounded-[12px] border border-white/10 bg-black/20 text-[13px] text-white/82 placeholder-white/25 outline-none transition-all focus:border-logo-primary/35 focus:bg-white/[0.06]"
+                  className="rounded-[8px] border border-border bg-surface text-[13px] text-white/82 placeholder-white/25 outline-none transition-all focus:border-logo-primary/35 focus:bg-surface-elevated"
                 />
                 {searchQuery && (
                   <button
@@ -742,8 +742,8 @@ export const HistorySettings: React.FC = () => {
           )}
           {postProcessActions.length === 0 && (
             <div
-              className="mb-3 rounded-xl border border-white/8 bg-white/[0.03] text-[12.5px] leading-6 text-white/42"
-              style={{ padding: "16px 20px" }}
+              className="voca-surface mb-4 text-[12.5px] leading-6 text-white/42"
+              style={{ padding: "20px 24px" }}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -771,7 +771,7 @@ export const HistorySettings: React.FC = () => {
               </div>
             </div>
           )}
-          <div className="divide-y divide-white/8">
+          <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
             {(isBasicTier
               ? historyEntries.slice(0, BASIC_HISTORY_LIMIT)
               : historyEntries
@@ -979,7 +979,9 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   };
   const models = useModelStore((s) => s.models);
 
-  const downloadedModels = models.filter((m) => m.is_downloaded);
+  const downloadedModels = models.filter(
+    (m) => m.id === "parakeet-tdt-0.6b-v3-multilingual" && m.is_downloaded,
+  );
   const sortedPostProcessActions = [...postProcessActions].sort(
     (a, b) => a.key - b.key,
   );
@@ -1178,11 +1180,12 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
   return (
     <div
+      className="voca-surface"
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 10,
-        padding: "14px 0",
+        gap: 16,
+        padding: "24px",
       }}
     >
       <div className="flex justify-between items-center">
@@ -1444,8 +1447,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       )}
       {postProcessActions.length > 0 && (
         <div
-          className="mt-2 rounded-xl border border-white/8 bg-white/[0.03]"
-          style={{ padding: "16px 20px" }}
+          className="mt-3 rounded-[10px] border border-border bg-surface-elevated"
+          style={{ padding: "20px 24px" }}
         >
           <div className="mb-3 flex items-center gap-2">
             <div className="h-[3px] w-12 rounded-full bg-logo-primary" />

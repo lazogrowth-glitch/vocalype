@@ -1,24 +1,89 @@
 /* eslint-disable i18next/no-literal-string */
-import { useMemo, useState, type CSSProperties } from "react";
-import {
-  ArrowRight,
-  ExternalLink,
-  Loader2,
-  LogOut,
-  RefreshCw,
-  ShieldAlert,
-} from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { ExternalLink, Loader2, LogOut, ShieldAlert } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "sonner";
 import { commands } from "@/bindings";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
-import {
-  AUTH_STEP_ORDER,
-  AUTH_STEPS,
-  type AuthStep,
-} from "./authOnboardingContent";
-import { OnboardingStepper } from "./OnboardingStepper";
-import { ProductMediaPanel } from "./ProductMediaPanel";
+import { useModelStore } from "@/stores/modelStore";
+
+const MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
+
+const ModelDownloadBadge: React.FC = () => {
+  const {
+    downloadingModels,
+    extractingModels,
+    getDownloadProgress,
+    isFirstRun,
+  } = useModelStore();
+  const isDownloading = MODEL_ID in downloadingModels;
+  const isExtracting = MODEL_ID in extractingModels;
+  if (!isFirstRun && !isDownloading && !isExtracting) return null;
+
+  const progress = getDownloadProgress(MODEL_ID);
+  const pct = progress?.percentage ?? 0;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 16,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "min(100% - 32px, 360px)",
+        zIndex: 10,
+      }}
+    >
+      <div
+        style={{
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(18,18,18,0.95)",
+          padding: "10px 14px",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 11,
+            color: "rgba(255,255,255,0.4)",
+            marginBottom: 6,
+          }}
+        >
+          <span>
+            {isExtracting
+              ? "Preparation du modele..."
+              : "Telechargement du modele vocal"}
+          </span>
+          {isDownloading && !isExtracting && pct > 0 && (
+            <span>{Math.round(pct)}%</span>
+          )}
+        </div>
+        <div
+          style={{
+            height: 3,
+            borderRadius: 99,
+            background: "rgba(255,255,255,0.08)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              borderRadius: 99,
+              background: "rgba(100,140,255,0.7)",
+              width: isExtracting ? "100%" : `${pct}%`,
+              transition: "width 0.3s ease",
+              opacity: isExtracting ? 0.5 : 1,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface AuthPortalProps {
   isLoading: boolean;
@@ -38,34 +103,38 @@ const AUTH_LOGIN_URL = "https://vocalype.com/login?source=desktop";
 const PRIVACY_URL = "https://vocalype.com/privacy";
 const TERMS_URL = "https://vocalype.com/terms";
 
-const accessLabelForSession = (session: AuthSession | null) => {
-  if (!session) return "Aucune session detectee";
-  switch (session.subscription.status) {
-    case "active":
-      return "Abonnement actif";
-    case "trialing":
-      return "Essai en cours";
-    case "canceled":
-      return "Abonnement annule";
-    default:
-      return "Acces verrouille";
-  }
+const buildBrowserAuthUrl = (intent: "signup" | "login", state: string) => {
+  const url = new URL(intent === "signup" ? AUTH_SIGNUP_URL : AUTH_LOGIN_URL);
+  url.searchParams.set("source", "desktop");
+  url.searchParams.set("state", state);
+  return url.toString();
 };
 
 const buttonBaseStyle: CSSProperties = {
   width: "100%",
-  border: "none",
-  borderRadius: 16,
-  padding: "15px 18px",
+  borderRadius: 8,
+  padding: "13px 16px",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   gap: 10,
   cursor: "pointer",
-  fontSize: 15,
-  fontWeight: 700,
-  transition: "transform 160ms ease, opacity 160ms ease, background 160ms ease",
+  fontSize: 14,
+  fontWeight: 800,
+  transition: "opacity 160ms ease, background 160ms ease, transform 160ms ease",
 };
+
+const getStatusText = (session: AuthSession | null, isRefreshing: boolean) => {
+  if (isRefreshing) return "Synchronisation de votre acces...";
+  if (!session) return "Connectez-vous pour activer Vocalype sur ce PC.";
+  if (session.subscription.has_access) {
+    return "Compte detecte. Activation en cours...";
+  }
+  return "Compte detecte. Finalisez l'abonnement dans le navigateur.";
+};
+
+const isExpectedMissingLicenseMessage = (value: string | null) =>
+  value?.toLowerCase().includes("no stored license bundle") ?? false;
 
 export const AuthPortal = ({
   isLoading,
@@ -73,66 +142,72 @@ export const AuthPortal = ({
   error,
   session,
   onStartCheckout,
-  onOpenBillingPortal,
   onRefreshSession,
   onLogout,
 }: AuthPortalProps) => {
-  const viewportWidth =
-    typeof window === "undefined" ? 1348 : window.innerWidth;
-  const isNarrowLayout = viewportWidth < 1180;
-  const isCompactLayout = viewportWidth < 980;
-  const [currentStep, setCurrentStep] = useState<AuthStep>("sign-up");
   const [browserBusy, setBrowserBusy] = useState<"signup" | "login" | null>(
     null,
   );
-  const [refreshBusy, setRefreshBusy] = useState(false);
   const [billingBusy, setBillingBusy] = useState(false);
+  const [autoRefreshBusy, setAutoRefreshBusy] = useState(false);
+  const refreshAttemptRef = useRef(0);
 
-  const activeStep = useMemo(
-    () => AUTH_STEPS.find((step) => step.id === currentStep) ?? AUTH_STEPS[0],
-    [currentStep],
-  );
-
-  const stepIndex = AUTH_STEP_ORDER.indexOf(currentStep);
-  const hasPreviousStep = stepIndex > 0;
-  const hasNextStep = stepIndex < AUTH_STEP_ORDER.length - 1;
   const hasAccess = session?.subscription.has_access ?? false;
-  const canManageBilling = session?.subscription.can_manage_billing ?? false;
-  const canInteract = !isLoading && !isSubmitting && !refreshBusy;
-  const displayError = error?.trim() ?? null;
+  const canInteract =
+    !isLoading && !isSubmitting && !autoRefreshBusy && browserBusy === null;
+  const displayError =
+    error && !isExpectedMissingLicenseMessage(error) ? error.trim() : null;
+
+  useEffect(() => {
+    if (!session) {
+      refreshAttemptRef.current = 0;
+      return;
+    }
+
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const refresh = async () => {
+      if (cancelled || refreshAttemptRef.current >= 8) return;
+      refreshAttemptRef.current += 1;
+      setAutoRefreshBusy(true);
+      try {
+        await onRefreshSession();
+      } catch {
+        // Keep the auth screen calm. A visible error from the auth flow still renders below.
+      } finally {
+        if (!cancelled) setAutoRefreshBusy(false);
+      }
+
+      if (!cancelled && refreshAttemptRef.current < 8) {
+        timer = window.setTimeout(refresh, 2500);
+      }
+    };
+
+    void refresh();
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [session?.user.email, session?.subscription.status, onRefreshSession]);
 
   const openBrowserAuth = async (intent: "signup" | "login") => {
     setBrowserBusy(intent);
     try {
-      // Register the auth flow so the deep-link handler accepts the returning token.
-      // Without this, any app can hijack the session via a crafted vocalype:// URL.
-      await commands.startBrowserAuth();
-      await openUrl(intent === "signup" ? AUTH_SIGNUP_URL : AUTH_LOGIN_URL);
+      const result = await commands.startBrowserAuth();
+      if (result.status !== "ok") {
+        throw new Error(result.error);
+      }
+      await openUrl(buildBrowserAuthUrl(intent, result.data));
     } catch (openError) {
       const message =
         openError instanceof Error
           ? openError.message
           : "Impossible d'ouvrir le navigateur.";
-      toast.error("Ouverture du navigateur impossible", {
-        description: message,
-      });
+      toast.error("Ouverture impossible", { description: message });
     } finally {
       setBrowserBusy(null);
-    }
-  };
-
-  const verifyAccess = async () => {
-    setRefreshBusy(true);
-    try {
-      await onRefreshSession();
-    } catch (refreshError) {
-      const message =
-        refreshError instanceof Error
-          ? refreshError.message
-          : "Impossible de verifier votre acces.";
-      toast.error("Verification echouee", { description: message });
-    } finally {
-      setRefreshBusy(false);
     }
   };
 
@@ -146,542 +221,269 @@ export const AuthPortal = ({
         billingError instanceof Error
           ? billingError.message
           : "Impossible d'ouvrir la facturation.";
-      toast.error("Impossible d'ouvrir la facturation", {
-        description: message,
-      });
+      toast.error("Ouverture impossible", { description: message });
     } finally {
       setBillingBusy(false);
     }
   };
 
-  const goToPreviousStep = () => {
-    if (!hasPreviousStep) return;
-    setCurrentStep(AUTH_STEP_ORDER[stepIndex - 1]);
-  };
-
-  const goToNextStep = () => {
-    if (!hasNextStep) return;
-    setCurrentStep(AUTH_STEP_ORDER[stepIndex + 1]);
-  };
-
-  const primaryCta = session ? (
-    <button
-      type="button"
-      style={{
-        ...buttonBaseStyle,
-        background: "#C9A84C",
-        color: "#0a0908",
-        boxShadow: "0 16px 36px rgba(201,168,76,0.24)",
-        opacity: billingBusy ? 0.72 : 1,
-      }}
-      disabled={billingBusy}
-      onClick={() =>
-        openBillingLink(
-          hasAccess && canManageBilling ? onOpenBillingPortal : onStartCheckout,
-        )
-      }
-    >
-      {billingBusy ? <Loader2 size={16} className="animate-spin" /> : null}
-      {hasAccess && canManageBilling
-        ? "Gerer mon abonnement"
-        : "Debloquer Vocalype"}
-    </button>
-  ) : (
-    <button
-      type="button"
-      style={{
-        ...buttonBaseStyle,
-        background: "#C9A84C",
-        color: "#0a0908",
-        boxShadow: "0 16px 36px rgba(201,168,76,0.24)",
-        opacity: browserBusy === "signup" ? 0.72 : 1,
-      }}
-      disabled={!canInteract || browserBusy !== null}
-      onClick={() => openBrowserAuth("signup")}
-    >
-      {browserBusy === "signup" ? (
+  const primaryAction =
+    session && hasAccess ? (
+      <button
+        type="button"
+        style={{
+          ...buttonBaseStyle,
+          border: "1px solid rgba(136,224,189,0.2)",
+          background: "rgba(136,224,189,0.1)",
+          color: "#88e0bd",
+          cursor: "default",
+        }}
+        disabled
+      >
         <Loader2 size={16} className="animate-spin" />
-      ) : (
-        <ExternalLink size={16} />
-      )}
-      Continuer dans le navigateur
-    </button>
-  );
-
-  const secondaryActions = session ? (
-    <>
+        Activation automatique...
+      </button>
+    ) : session ? (
       <button
         type="button"
         style={{
           ...buttonBaseStyle,
-          background: "rgba(255,255,255,0.06)",
-          color: "#f3ecdf",
-          border: "1px solid rgba(255,255,255,0.1)",
-          opacity: refreshBusy ? 0.72 : 1,
+          border: "1px solid rgba(231,201,119,0.24)",
+          background: "#d5b45b",
+          color: "#080808",
+          opacity: billingBusy ? 0.7 : 1,
+        }}
+        disabled={billingBusy}
+        onClick={() => openBillingLink(onStartCheckout)}
+      >
+        {billingBusy ? <Loader2 size={16} className="animate-spin" /> : null}
+        Activer Vocalype
+      </button>
+    ) : (
+      <button
+        type="button"
+        style={{
+          ...buttonBaseStyle,
+          border: "1px solid rgba(231,201,119,0.24)",
+          background: "#d5b45b",
+          color: "#080808",
+          opacity: browserBusy === "signup" ? 0.7 : 1,
         }}
         disabled={!canInteract}
-        onClick={verifyAccess}
+        onClick={() => openBrowserAuth("signup")}
       >
-        {refreshBusy ? (
+        {browserBusy === "signup" ? (
           <Loader2 size={16} className="animate-spin" />
         ) : (
-          <RefreshCw size={16} />
+          <ExternalLink size={16} />
         )}
-        Verifier mon acces
+        Creer un compte
       </button>
-      <button
-        type="button"
-        style={{
-          ...buttonBaseStyle,
-          background: "transparent",
-          color: "rgba(243,236,223,0.72)",
-          border: "1px solid rgba(255,255,255,0.08)",
-        }}
-        onClick={onLogout}
-      >
-        <LogOut size={16} />
-        Se deconnecter
-      </button>
-    </>
-  ) : (
-    <>
-      <button
-        type="button"
-        style={{
-          ...buttonBaseStyle,
-          background: "rgba(255,255,255,0.06)",
-          color: "#f3ecdf",
-          border: "1px solid rgba(255,255,255,0.1)",
-          opacity: browserBusy === "login" ? 0.72 : 1,
-        }}
-        disabled={!canInteract || browserBusy !== null}
-        onClick={() => openBrowserAuth("login")}
-      >
-        {browserBusy === "login" ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <ArrowRight size={16} />
-        )}
-        J'ai deja un compte
-      </button>
-      <button
-        type="button"
-        style={{
-          ...buttonBaseStyle,
-          background: "transparent",
-          color: "rgba(243,236,223,0.72)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          opacity: refreshBusy ? 0.72 : 1,
-        }}
-        disabled={!canInteract}
-        onClick={verifyAccess}
-      >
-        {refreshBusy ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <RefreshCw size={16} />
-        )}
-        J'ai termine, verifier mon acces
-      </button>
-    </>
-  );
+    );
 
   return (
-    <div
+    <main
       style={{
         width: "100%",
         height: "100%",
         overflow: "hidden",
-        background: "#050505",
+        background:
+          "linear-gradient(180deg, #0d0d0d 0%, #080808 52%, #050505 100%)",
         color: "#f3ecdf",
-        fontFamily: '"DM Sans", sans-serif',
+        fontFamily: '"DM Sans", "Segoe UI", system-ui, sans-serif',
+        display: "grid",
+        placeItems: "center",
+        padding: "clamp(16px, 4vw, 36px)",
+        boxSizing: "border-box",
+        overscrollBehavior: "none",
       }}
     >
-      <div
+      <section
         style={{
-          width: "100%",
-          height: "100%",
-          padding: isCompactLayout ? 10 : 12,
+          width: "min(100%, 420px)",
+          maxHeight: "100%",
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 8,
+          background: "rgba(255,255,255,0.035)",
+          padding: "clamp(18px, 4vw, 28px)",
           boxSizing: "border-box",
-          display: "grid",
-          gridTemplateRows: isCompactLayout ? "72px 1fr" : "84px 1fr",
-          gap: isCompactLayout ? 10 : 12,
+          boxShadow: "0 24px 70px rgba(0,0,0,0.34)",
         }}
       >
-        <header
-          style={{
-            borderRadius: isCompactLayout ? 20 : 26,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background:
-              "linear-gradient(180deg, rgba(15,14,12,0.94) 0%, rgba(10,9,8,0.98) 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: isCompactLayout ? "0 14px" : "0 24px",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-          }}
-        >
-          <OnboardingStepper
-            steps={AUTH_STEPS}
-            currentStep={currentStep}
-            onStepSelect={setCurrentStep}
-          />
-        </header>
-
         <div
           style={{
-            minHeight: 0,
-            display: "grid",
-            gridTemplateColumns: isNarrowLayout
-              ? "minmax(0, 1fr)"
-              : "minmax(420px, 480px) minmax(0, 1fr)",
-            gridTemplateRows: isNarrowLayout
-              ? "minmax(0, auto) minmax(320px, 38vh)"
-              : undefined,
-            gap: isCompactLayout ? 10 : 12,
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 28,
+            fontWeight: 800,
+            color: "#f6efe4",
+            marginBottom: 18,
           }}
         >
-          <section
+          Vocal<span style={{ color: "#d5b45b" }}>ype</span>
+        </div>
+
+        <h1
+          style={{
+            margin: 0,
+            marginBottom: 10,
+            fontFamily: "'Syne', sans-serif",
+            fontSize: "clamp(28px, 8vw, 40px)",
+            lineHeight: 1,
+            color: "#f7f1e7",
+          }}
+        >
+          Connectez-vous.
+        </h1>
+
+        <p
+          style={{
+            margin: 0,
+            marginBottom: 22,
+            fontSize: 14,
+            lineHeight: 1.55,
+            color: "rgba(243,236,223,0.62)",
+          }}
+        >
+          Vocalype s'active automatiquement apres la connexion dans le
+          navigateur.
+        </p>
+
+        {session ? (
+          <div
             style={{
-              minHeight: 0,
-              borderRadius: isCompactLayout ? 24 : 34,
-              border: "1px solid rgba(201,168,76,0.14)",
-              background:
-                "radial-gradient(circle at top left, rgba(201,168,76,0.12), transparent 34%), #0a0908",
-              padding: isCompactLayout
-                ? "18px 18px 20px"
-                : isNarrowLayout
-                  ? "22px 24px 22px"
-                  : "24px 34px 24px",
-              display: "flex",
-              flexDirection: "column",
-              position: "relative",
-              overflow: "auto",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 8,
+              background: "rgba(0,0,0,0.22)",
+              padding: 14,
+              marginBottom: 14,
             }}
           >
             <div
               style={{
-                position: "absolute",
-                inset: "0 auto auto 0",
-                width: "100%",
-                height: 1,
-                background:
-                  "linear-gradient(90deg, transparent, rgba(201,168,76,0.34), transparent)",
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                alignItems: isCompactLayout ? "flex-start" : "center",
-                flexDirection: isCompactLayout ? "column" : "row",
-                justifyContent: "space-between",
-                marginBottom: 20,
-                gap: isCompactLayout ? 10 : 12,
+                fontSize: 14,
+                fontWeight: 800,
+                color: "#f7f1e7",
+                overflowWrap: "anywhere",
               }}
             >
-              <div
-                style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: isCompactLayout ? 26 : 32,
-                  fontWeight: 800,
-                  letterSpacing: "-0.04em",
-                  color: "#f6efe4",
-                }}
-              >
-                Vocal<span style={{ color: "#C9A84C" }}>ype</span>
-              </div>
-              <div
-                style={{
-                  borderRadius: 999,
-                  padding: isCompactLayout ? "8px 12px" : "10px 14px",
-                  fontSize: isCompactLayout ? 11 : 12,
-                  fontWeight: 700,
-                  color: "#E7C977",
-                  background: "rgba(201,168,76,0.14)",
-                  border: "1px solid rgba(201,168,76,0.22)",
-                }}
-              >
-                14 jours gratuits
-              </div>
+              {session.user.email}
             </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div
-                style={{
-                  marginBottom: 12,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  color: "rgba(201,168,76,0.88)",
-                }}
-              >
-                {session ? "Compte" : activeStep.eyebrow}
-              </div>
-              <h1
-                style={{
-                  margin: 0,
-                  marginBottom: 12,
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: isCompactLayout ? 32 : isNarrowLayout ? 38 : 44,
-                  lineHeight: 0.95,
-                  letterSpacing: "-0.05em",
-                  color: "#f7f1e7",
-                }}
-              >
-                {session ? "Votre acces passe par le web." : activeStep.title}
-              </h1>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: isCompactLayout ? 14 : 16,
-                  lineHeight: 1.55,
-                  color: "rgba(243,236,223,0.66)",
-                  maxWidth: isNarrowLayout ? "100%" : 372,
-                }}
-              >
-                {session
-                  ? "Votre session est detectee sur cet appareil. Finalisez ou gerez votre acces depuis le navigateur, puis revenez verifier dans l'app."
-                  : activeStep.description}
-              </p>
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: 13,
+                lineHeight: 1.45,
+                color: hasAccess ? "#88e0bd" : "rgba(243,236,223,0.58)",
+              }}
+            >
+              {getStatusText(session, autoRefreshBusy)}
             </div>
+          </div>
+        ) : null}
 
-            {displayError ? (
-              <div
-                style={{
-                  marginBottom: 20,
-                  borderRadius: 18,
-                  border: "1px solid rgba(248,113,113,0.2)",
-                  background: "rgba(248,113,113,0.08)",
-                  color: "#f7b0b0",
-                  padding: "14px 16px",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 10,
-                }}
-              >
-                <ShieldAlert
-                  size={18}
-                  style={{ marginTop: 1, flexShrink: 0 }}
-                />
-                <div style={{ lineHeight: 1.5, fontSize: 14 }}>
-                  {displayError}
-                </div>
-              </div>
-            ) : null}
+        {displayError ? (
+          <div
+            style={{
+              marginBottom: 14,
+              borderRadius: 8,
+              border: "1px solid rgba(248,113,113,0.2)",
+              background: "rgba(248,113,113,0.08)",
+              color: "#f7b0b0",
+              padding: "12px 13px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+            }}
+          >
+            <ShieldAlert size={17} style={{ marginTop: 1, flexShrink: 0 }} />
+            <div style={{ lineHeight: 1.45, fontSize: 13 }}>{displayError}</div>
+          </div>
+        ) : null}
 
-            {session ? (
-              <div
-                style={{
-                  marginBottom: 24,
-                  borderRadius: 22,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255,255,255,0.03)",
-                  padding: 18,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: isCompactLayout ? "column" : "row",
-                    alignItems: isCompactLayout ? "flex-start" : "stretch",
-                    justifyContent: "space-between",
-                    gap: 14,
-                    marginBottom: 10,
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: "#f7f1e7",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {session.user.email}
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 4,
-                        fontSize: 13,
-                        color: "rgba(243,236,223,0.56)",
-                      }}
-                    >
-                      {accessLabelForSession(session)}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      flexShrink: 0,
-                      alignSelf: "flex-start",
-                      borderRadius: 999,
-                      padding: "7px 10px",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: hasAccess ? "#6EE7B7" : "#E7C977",
-                      background: hasAccess
-                        ? "rgba(110,231,183,0.12)"
-                        : "rgba(201,168,76,0.12)",
-                      border: hasAccess
-                        ? "1px solid rgba(110,231,183,0.18)"
-                        : "1px solid rgba(201,168,76,0.16)",
-                    }}
-                  >
-                    {hasAccess ? "Actif" : "A valider"}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 1.55,
-                    color: "rgba(243,236,223,0.5)",
-                  }}
-                >
-                  Si vous venez de payer ou de vous connecter sur le web,
-                  cliquez sur "Verifier mon acces" pour mettre a jour cette
-                  session.
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  marginBottom: 22,
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 10,
-                }}
-              >
-                {activeStep.highlights.map((item) => (
-                  <div
-                    key={item}
-                    style={{
-                      borderRadius: 999,
-                      padding: "9px 12px",
-                      fontSize: 12,
-                      color: "rgba(243,236,223,0.82)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(255,255,255,0.03)",
-                    }}
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            )}
+        <div style={{ display: "grid", gap: 8 }}>
+          {primaryAction}
 
-            <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
-              {primaryCta}
-              {secondaryActions}
-            </div>
-
-            {!session ? (
-              <>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: isCompactLayout ? "column" : "row",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    marginBottom: 10,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={goToPreviousStep}
-                    disabled={!hasPreviousStep}
-                    style={{
-                      ...buttonBaseStyle,
-                      width: "auto",
-                      padding: "12px 14px",
-                      background: "transparent",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      color: hasPreviousStep
-                        ? "rgba(243,236,223,0.72)"
-                        : "rgba(243,236,223,0.28)",
-                    }}
-                  >
-                    Retour
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goToNextStep}
-                    disabled={!hasNextStep}
-                    style={{
-                      ...buttonBaseStyle,
-                      width: "auto",
-                      padding: "12px 14px",
-                      background: "transparent",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      color: hasNextStep
-                        ? "rgba(243,236,223,0.72)"
-                        : "rgba(243,236,223,0.28)",
-                    }}
-                  >
-                    Continuer
-                    <ArrowRight size={15} />
-                  </button>
-                </div>
-
-                <p
-                  style={{
-                    margin: "auto 0 0",
-                    fontSize: 13,
-                    lineHeight: 1.7,
-                    color: "rgba(243,236,223,0.42)",
-                  }}
-                >
-                  En continuant, vous acceptez nos{" "}
-                  <button
-                    type="button"
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: "#E7C977",
-                      padding: 0,
-                      cursor: "pointer",
-                      font: "inherit",
-                    }}
-                    onClick={() => openUrl(TERMS_URL)}
-                  >
-                    Conditions
-                  </button>{" "}
-                  et notre{" "}
-                  <button
-                    type="button"
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: "#E7C977",
-                      padding: 0,
-                      cursor: "pointer",
-                      font: "inherit",
-                    }}
-                    onClick={() => openUrl(PRIVACY_URL)}
-                  >
-                    Politique de confidentialite
-                  </button>
-                  .
-                </p>
-              </>
-            ) : (
-              <div
-                style={{
-                  marginTop: "auto",
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                  color: "rgba(243,236,223,0.42)",
-                }}
-              >
-                Vocalype garde le desktop leger: connexion et facturation sur le
-                web, verification instantanee dans l'app.
-              </div>
-            )}
-          </section>
-
-          <ProductMediaPanel step={activeStep} compact={isNarrowLayout} />
+          {!session ? (
+            <button
+              type="button"
+              style={{
+                ...buttonBaseStyle,
+                border: "1px solid rgba(255,255,255,0.09)",
+                background: "rgba(255,255,255,0.055)",
+                color: "#f3ecdf",
+                opacity: browserBusy === "login" ? 0.7 : 1,
+              }}
+              disabled={!canInteract}
+              onClick={() => openBrowserAuth("login")}
+            >
+              {browserBusy === "login" ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <ExternalLink size={16} />
+              )}
+              J'ai deja un compte
+            </button>
+          ) : (
+            <button
+              type="button"
+              style={{
+                ...buttonBaseStyle,
+                border: "1px solid rgba(255,255,255,0.09)",
+                background: "transparent",
+                color: "rgba(243,236,223,0.74)",
+              }}
+              onClick={onLogout}
+            >
+              <LogOut size={16} />
+              Se deconnecter
+            </button>
+          )}
         </div>
-      </div>
-    </div>
+
+        <p
+          style={{
+            margin: "16px 0 0",
+            fontSize: 12,
+            lineHeight: 1.55,
+            color: "rgba(243,236,223,0.4)",
+          }}
+        >
+          En continuant, vous acceptez les{" "}
+          <button
+            type="button"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#d5b45b",
+              padding: 0,
+              cursor: "pointer",
+              font: "inherit",
+            }}
+            onClick={() => openUrl(TERMS_URL)}
+          >
+            Conditions
+          </button>{" "}
+          et la{" "}
+          <button
+            type="button"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#d5b45b",
+              padding: 0,
+              cursor: "pointer",
+              font: "inherit",
+            }}
+            onClick={() => openUrl(PRIVACY_URL)}
+          >
+            Confidentialite
+          </button>
+          .
+        </p>
+      </section>
+      <ModelDownloadBadge />
+    </main>
   );
 };

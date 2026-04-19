@@ -173,7 +173,7 @@ fn should_attempt_full_audio_recovery(
     assembled: &str,
 ) -> bool {
     let duration_secs = sample_count as f32 / 16_000.0;
-    if !(6.0..=45.0).contains(&duration_secs) {
+    if !(5.0..=50.0).contains(&duration_secs) {
         return false;
     }
 
@@ -182,15 +182,15 @@ fn should_attempt_full_audio_recovery(
     let final_chunk_secs = summary.final_chunk_samples as f32 / 16_000.0;
     let final_chunk_words_per_sec = summary.final_chunk_words as f32 / final_chunk_secs.max(0.1);
 
-    let low_density = assembled_words_per_sec <= 1.45;
-    let severe_low_density = assembled_words_per_sec <= 1.05 && duration_secs >= 12.0;
+    let low_density = assembled_words_per_sec <= 1.35;
+    let severe_low_density = assembled_words_per_sec <= 0.95 && duration_secs >= 12.0;
     let empty_boundary = summary.empty_nonfinal_chunks > 0 && low_density;
     let short_final_chunk = final_chunk_secs >= 1.0
         && final_chunk_secs <= 6.0
         && summary.final_chunk_words <= 2
         && assembled_words_per_sec <= 2.5;
     let sparse_final_chunk = final_chunk_secs >= 3.0
-        && final_chunk_words_per_sec <= 0.35
+        && final_chunk_words_per_sec <= 0.25
         && assembled_words_per_sec <= 2.0;
     // Empty final chunk with any density: ending was likely cut
     let empty_final_chunk =
@@ -213,9 +213,9 @@ fn should_promote_full_audio_recovery(
     let duration_secs = sample_count as f32 / 16_000.0;
     let recovered_words_per_sec = recovered_words as f32 / duration_secs.max(0.1);
 
-    recovered_words >= assembled_words + 3
-        && (recovered_words as f32) >= (assembled_words as f32 * 1.15)
-        && (0.4..=5.5).contains(&recovered_words_per_sec)
+    recovered_words >= assembled_words + 4
+        && (recovered_words as f32) >= (assembled_words as f32 * 1.20)
+        && (0.3..=5.5).contains(&recovered_words_per_sec)
         && is_viable_preview_rescue_candidate(recovered)
 }
 
@@ -380,6 +380,27 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     }
     debug!("[TIMING] license check: {:?}", start_time.elapsed());
 
+    let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() else {
+        error!("TranscriptionCoordinator not initialized");
+        return;
+    };
+    let operation_id = match coordinator.begin_preparing(app, binding_id) {
+        Ok(operation_id) => operation_id,
+        Err(reason) => {
+            debug!(
+                "Skipping transcription start for '{}': {}",
+                binding_id, reason
+            );
+            return;
+        }
+    };
+    debug!("[TIMING] begin_preparing: {:?}", start_time.elapsed());
+    show_preparing_overlay(app);
+    debug!(
+        "[TIMING] show_preparing_overlay: {:?}",
+        start_time.elapsed()
+    );
+
     if !crate::startup_warmup::can_start_recording(app) {
         let warmup_status = crate::startup_warmup::current_status(app);
         crate::startup_warmup::ensure_startup_warmup(app, "transcription-blocked");
@@ -395,6 +416,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 message
             );
             let _ = app.emit("transcription-warmup-blocked", message);
+            let _ = coordinator.complete_operation(app, operation_id, "warmup-blocked");
+            utils::hide_recording_overlay(app);
+            change_tray_icon(app, TrayIconState::Idle);
             return;
         }
         debug!(
@@ -417,6 +441,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     "transcription-quota-exceeded",
                     serde_json::json!({ "count": count, "limit": 30 }),
                 );
+                let _ = coordinator.complete_operation(app, operation_id, "quota-exceeded");
+                utils::hide_recording_overlay(app);
+                change_tray_icon(app, TrayIconState::Idle);
                 return;
             }
             Err(e) => {
@@ -428,27 +455,6 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
 
     let captured_app_context = detect_current_app_context();
     debug!("[TIMING] app context detected: {:?}", start_time.elapsed());
-
-    let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() else {
-        error!("TranscriptionCoordinator not initialized");
-        return;
-    };
-    let operation_id = match coordinator.begin_preparing(app, binding_id) {
-        Ok(operation_id) => operation_id,
-        Err(reason) => {
-            debug!(
-                "Skipping transcription start for '{}': {}",
-                binding_id, reason
-            );
-            return;
-        }
-    };
-    debug!("[TIMING] begin_preparing: {:?}", start_time.elapsed());
-    show_preparing_overlay(app);
-    debug!(
-        "[TIMING] show_preparing_overlay: {:?}",
-        start_time.elapsed()
-    );
 
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.initiate_model_load();
@@ -508,8 +514,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         }
     }
 
-    // ESC cancel shortcut intentionally disabled — ESC should have no effect.
-    // shortcut::register_cancel_shortcut(app);
+    shortcut::register_cancel_shortcut(app);
     shortcut::register_pause_shortcut(app);
     shortcut::register_action_shortcuts(app);
     debug!("[TIMING] shortcuts registered: {:?}", start_time.elapsed());
@@ -978,8 +983,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 },
                             );
                             debug!(
-                                "Chunk {}: discarding likely hallucination {:?} ({} samples, final={})",
-                                idx, text, chunk_samples, is_final_chunk
+                                "Chunk {}: discarding likely hallucination (words={}, samples={}, final={})",
+                                idx, word_count, chunk_samples, is_final_chunk
                             );
                             String::new()
                         } else {
@@ -1542,9 +1547,10 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             }
 
             debug!(
-                "Chunked assembly done: {} chunks → '{}' (first 80 chars)",
+                "Chunked assembly done: {} chunks, chars={}, words={}",
                 chunk_count,
-                &assembled.chars().take(80).collect::<String>()
+                assembled.chars().count(),
+                assembled.split_whitespace().count()
             );
 
             let chunk_cleanup_started = Instant::now();

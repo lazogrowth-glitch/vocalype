@@ -27,7 +27,7 @@
 //! polled from a dedicated recording thread. Events are emitted to the frontend
 //! via Tauri's event system.
 
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use native_shortcut_capture_backend::{
     Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener, Modifiers,
 };
@@ -431,7 +431,7 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
     let state = NativeShortcutCaptureState::new(app.clone())?;
 
     let default_bindings = settings::get_default_settings().bindings;
-    let user_settings = settings::load_or_create_app_settings(app);
+    let mut user_settings = settings::load_or_create_app_settings(app);
 
     // Register all bindings except cancel (which is dynamic)
     for (id, default_binding) in default_bindings {
@@ -454,6 +454,17 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
         }
 
         if let Err(e) = state.register(&binding) {
+            if id == "transcribe" {
+                if let Some(fallback) =
+                    register_transcribe_fallback(app, &state, &binding, &mut user_settings)
+                {
+                    warn!(
+                        "Primary native transcription shortcut '{}' failed during init ({}). Using fallback '{}'.",
+                        binding.current_binding, e, fallback
+                    );
+                    continue;
+                }
+            }
             error!(
                 "Failed to register native shortcut capture shortcut {} during init: {}",
                 id, e
@@ -464,6 +475,43 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
     app.manage(state);
     info!("Native shortcut capture shortcuts initialized");
     Ok(())
+}
+
+fn register_transcribe_fallback(
+    app: &AppHandle,
+    state: &NativeShortcutCaptureState,
+    binding: &ShortcutBinding,
+    user_settings: &mut settings::AppSettings,
+) -> Option<String> {
+    for candidate in transcribe_fallback_bindings(&binding.current_binding) {
+        let mut fallback = binding.clone();
+        fallback.current_binding = candidate.to_string();
+        if state.register(&fallback).is_ok() {
+            user_settings
+                .bindings
+                .insert(fallback.id.clone(), fallback.clone());
+            settings::write_settings(app, user_settings.clone());
+            return Some(candidate.to_string());
+        }
+    }
+    None
+}
+
+fn transcribe_fallback_bindings(current: &str) -> Vec<&'static str> {
+    let candidates = if cfg!(target_os = "macos") {
+        vec![
+            "option+space",
+            "cmd+shift+space",
+            "ctrl+space",
+            "ctrl+alt+space",
+        ]
+    } else {
+        vec!["ctrl+shift+space", "alt+space", "ctrl+alt+space"]
+    };
+    candidates
+        .into_iter()
+        .filter(|candidate| !candidate.eq_ignore_ascii_case(current.trim()))
+        .collect()
 }
 
 /// Unregister the cancel shortcut (called when recording stops)

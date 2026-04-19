@@ -654,7 +654,13 @@ impl ModelManager {
                     models.values().find(|model| {
                         model.id != PARAKEET_V3_LEGACY_ID
                             && model.is_downloaded
-                            && !matches!(model.engine_type, EngineType::GeminiApi)
+                            && !matches!(
+                                model.engine_type,
+                                EngineType::GeminiApi
+                                    | EngineType::GroqWhisper
+                                    | EngineType::MistralVoxtral
+                                    | EngineType::Deepgram
+                            )
                     })
                 });
 

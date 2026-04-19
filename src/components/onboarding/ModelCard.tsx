@@ -157,14 +157,14 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const productBadges = getProductBadges(model, t, copilotOptimized);
 
   const baseClasses =
-    "flex flex-wrap items-center rounded-2xl border border-white/8 bg-white/[0.03] text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-2";
+    "flex flex-wrap items-center rounded-[8px] border border-white/10 bg-zinc-900/90 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-2";
 
   const getVariantClasses = () => {
     if (status === "active") {
-      return "border-logo-primary/30 bg-logo-primary/[0.08]";
+      return "border-[#F5C300]/40 bg-zinc-800 shadow-[0_12px_26px_rgba(0,0,0,0.18)]";
     }
     if (isFeatured) {
-      return "border-logo-primary/22 bg-logo-primary/[0.05]";
+      return "border-[#F5C300]/30 bg-zinc-800";
     }
     return "border-white/8";
   };
@@ -172,7 +172,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const getInteractiveClasses = () => {
     if (!isClickable) return "";
     if (disabled) return "cursor-not-allowed opacity-50";
-    return "group cursor-pointer hover:border-white/12 hover:bg-white/[0.05]";
+    return "group cursor-pointer hover:border-white/15 hover:bg-zinc-800";
   };
 
   const handleClick = () => {
@@ -197,7 +197,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
       }}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
-      style={{ padding: "12px 16px", gap: 16 }}
+      style={{ padding: "24px", gap: 20 }}
       className={[
         baseClasses,
         getVariantClasses(),
@@ -213,10 +213,10 @@ const ModelCard: React.FC<ModelCardProps> = ({
           minWidth: 0,
           flex: 1,
           alignItems: "center",
-          gap: 16,
+          gap: 20,
         }}
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-logo-primary/12 text-logo-primary">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] border border-logo-primary/14 bg-logo-primary/12 text-logo-primary">
           <Globe className="h-4 w-4" />
         </div>
 
@@ -226,7 +226,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
-              gap: 6,
+              gap: 8,
             }}
           >
             <h3
@@ -266,7 +266,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             ) : null}
           </div>
 
-          <p className="mt-1 text-[13px] leading-6 text-white/75">
+          <p className="mt-2 text-[14px] leading-6 text-white/72">
             {displayDescription}
           </p>
 
@@ -284,11 +284,11 @@ const ModelCard: React.FC<ModelCardProps> = ({
 
           <div
             style={{
-              marginTop: 6,
+              marginTop: 12,
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
-              gap: 8,
+              gap: 12,
             }}
             className="text-[12px] text-white/34"
           >
@@ -308,23 +308,23 @@ const ModelCard: React.FC<ModelCardProps> = ({
 
         {(model.accuracy_score > 0 || model.speed_score > 0) && (
           <div className="ml-auto hidden items-center min-[900px]:flex">
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <p className="w-12 text-right text-[10px] text-white/34">
                   {t("onboarding.modelCard.accuracy")}
                 </p>
-                <div className="h-[4px] w-[68px] overflow-hidden rounded-full bg-white/8">
+                <div className="h-[5px] w-[86px] overflow-hidden rounded-full bg-logo-stroke/10">
                   <div
                     className="h-full rounded-full bg-logo-primary"
                     style={{ width: `${model.accuracy_score * 100}%` }}
                   />
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <p className="w-12 text-right text-[10px] text-white/34">
                   {t("onboarding.modelCard.speed")}
                 </p>
-                <div className="h-[4px] w-[68px] overflow-hidden rounded-full bg-white/8">
+                <div className="h-[5px] w-[86px] overflow-hidden rounded-full bg-logo-stroke/10">
                   <div
                     className="h-full rounded-full bg-logo-primary"
                     style={{ width: `${model.speed_score * 100}%` }}

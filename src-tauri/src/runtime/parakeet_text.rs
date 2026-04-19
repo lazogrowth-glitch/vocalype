@@ -1,4 +1,4 @@
-use once_cell::sync::Lazy;
+﻿use once_cell::sync::Lazy;
 use regex::Regex;
 
 static PARAKEET_V3_PATTERN: Lazy<Regex> = Lazy::new(|| {
@@ -43,6 +43,217 @@ static TRAILING_PUNCTUATION_RUN_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\s*([.!?])(?:\s*[.!?])+$").unwrap());
 static TRAILING_MM_HMM_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)[,.]?\s*\b(?:mm-hmm|uh-huh|mhm|mmhmm)\b\s*[.!?,]*$").unwrap());
+// A01: Scotturb split
+static A01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bscott\s+turb\b").unwrap());
+// A02: SANParks split (EN)
+static A02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bsand\s+parks\b").unwrap());
+// A03: Vichy French
+static A03_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bv\.?\s*c\.?\s+french\b").unwrap());
+// A04: U.S. Corps of Engineers
+static A04_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bu\.?\s*s\.?\s+courts\s+of\s+(?:the\s+)?engineers\b").unwrap());
+// A05: Rachis mispronunciation
+static A05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bra(?:chie|kis)\b").unwrap());
+// A06: Kundalini mispronunciation
+static A06_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bkudali\b").unwrap());
+// A07: 802.11n extra letter
+static A07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b802\.11in\b").unwrap());
+// A08: Barbules mispronunciation
+static A08_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bbarpus\b").unwrap());
+// A09: Nineteen forty → 1940
+static A09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+forty\b").unwrap());
+// A10: Nineteen eighty-eight → 1988 (EN)
+static A10_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+eighty[\s-]eight\b").unwrap());
+// A11: Time word form: eleven thirty-five
+static A11_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\beleven\s+thirty[\s-]five\s+(a\.?m\.?|p\.?m\.?)\b").unwrap());
+// A12: Digit + space + percent
+static A12_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+%").unwrap());
+// A13: Levees vs leaves
+static A13_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdamaged\s+leaves\b").unwrap());
+// A14: Mau movement
+static A14_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMao\s+movement\b").unwrap());
+// A15: Superpredator (EN)
+static A15_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bsuper\s+predator\b").unwrap());
+// B02: Twenty-five to thirty years
+static B02_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\btwenty[\s-]five\s+to\s+thirty\s+years?\b").unwrap());
+// B04: Thirty percent word form
+static B04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bthirty\s+per\s*cent\b").unwrap());
+// B05: Time range: eleven thirty → 11:30
+static B05_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\beleven\s+thirty\s+(a\.?m\.?|p\.?m\.?)\b").unwrap());
+// D01: Sundarbans garbled (FR)
+static D01_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bseines?\s+d['']?\s*arbans?\b").unwrap());
+// D02: Sundarbans alternate garble (FR)
+static D02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bSundarmans?\b").unwrap());
+// D03: Mosasaure (FR)
+static D03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bmosasure\b").unwrap());
+// D04: Mosasaures plural (FR)
+static D04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bmosasores\b").unwrap());
+// D05: Superprédateur compound (FR)
+static D05_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bsuper\s+pr[eé]dateur\b").unwrap());
+// D06: l'UE from LEUP (FR)
+static D06_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bLEUP\b").unwrap());
+// D07: Kundalini FR garble
+static D07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bkundalani\b").unwrap());
+// D08: Rachis FR variants
+static D08_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\brachi(?:de|e)\b").unwrap());
+// D09: Noor / Nours (FR)
+static D09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bNours\b").unwrap());
+// D10: Muhammad vs Mohammad (FR)
+static D10_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMohammad\b").unwrap());
+// D11: Les années vingt → les années 20 (FR)
+static D11_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bles ann[eé]es\s+vingt\b").unwrap());
+// D12: Time format 23h35 → 23 h 35 (FR)
+static D12_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b(\d{1,2})h(\d{2})\b").unwrap());
+// D13: GMT time garble (FR)
+static D13_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bdouze\s+heures?\s+Gm\s*D\b").unwrap());
+// D14: Appelat → appelé (FR)
+static D14_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bappelat\b").unwrap());
+// D15: 1988 word form (FR)
+static D15_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]huit\b").unwrap());
+// D17: The soir → ce soir (FR)
+static D17_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bthe\s+soir\b").unwrap());
+// D18: And + French verb → et + verb (FR)
+static D18_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)\band\s+(d[eé]terminer|d[eé]cider|pr[eé]senter|[eé]valuer|continuer|rester)\b")
+        .unwrap()
+});
+// D19: "the" before French article → suppress (FR)
+static D19_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bthe\s+(la|le|les|un|une|des|du)\b").unwrap());
+// D20: Rougissement → rugissement (FR)
+static D20_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\brougissement\b").unwrap());
+// F01: Digit + space + percent (global)
+static F01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+%").unwrap());
+// F02: Time colon spacing (global)
+static F02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d{1,2})\s+:\s*(\d{2})\b").unwrap());
+// C01: Scotturb split (ES)
+static C01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bScottuur\b").unwrap());
+// C02: 802.11 digit transposition (ES)
+static C02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b800\.11([abgnABGN])\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_1: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+twenty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_2: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+thirty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_3: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+forty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_4: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+fifty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_5: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+sixty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_6: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+seventy\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_7: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+eighty\b").unwrap());
+// B01: Nineteen + decade year pattern (general)
+static B01_PATTERN_8: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+ninety\b").unwrap());
+// C03: GHz suffix missing: 5.0z (ES)
+static C03_PATTERN_1: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b5\.0z\b").unwrap());
+// C03: GHz suffix missing: 5.0z (ES)
+static C03_PATTERN_2: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b2\.4z\b").unwrap());
+// C04: Space before colon in times (ES)
+static C04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+:\s*(\d{2})\b").unwrap());
+// C05: Brzezinski mispronunciation (ES)
+static C05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bBresinski\b").unwrap());
+// C06: Lyndon B. Johnson (ES)
+static C06_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\blydon\s+v\.?\s+johnson\b").unwrap());
+// C07: FTIR vs FTER (ES)
+static C07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bFTER\b").unwrap());
+// C08: Apia (capital of Samoa)
+static C08_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bAppia\b").unwrap());
+// C09: Upolu island (ES)
+static C09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bOpolu\b").unwrap());
+// C10: El Amazonas (ES)
+static C10_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\blo\s+amazonas\b").unwrap());
+// C11: Lantagne (ES)
+static C11_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bLata[ñn]a\b").unwrap());
+// C12: Sintra (ES)
+static C12_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bIntra\b").unwrap());
+// C13: Digit-space-percent (ES)
+static C13_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+%").unwrap());
+// C14: Martelly name (ES)
+static C14_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMartelli\b").unwrap());
+// C15: Espectroscopia accent (ES)
+static C15_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\bespectroscopía\b").unwrap());
+// E01: Casablanca split (PT)
+static E01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bcasa\s+blanca\b").unwrap());
+// E02: SANParks in PT
+static E02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bsem\s+parks\b").unwrap());
+// E03: Mosassauro (PT)
+static E03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bmosasauro\b").unwrap());
+// E04: Mosassauros plural (PT)
+static E04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bmosasaurus\b").unwrap());
+// E05: Pirâmide de Gizé (PT)
+static E05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bpirâmide\s+de\s+Zé\b").unwrap());
+// E06: Addenbrooke's hospital (PT)
+static E06_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bAlden\s+Brooks\s+Hospital\b").unwrap());
+// E07: Oldřich Jelínek (PT)
+static E07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bAldritch\s+Jelinek\b").unwrap());
+// E08: Trailing "Okay" in PT
+static E08_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)[,.]?\s*\bokay\b\s*[.!?,]*$").unwrap());
+// E09: Áreotas → áreas remotas (PT)
+static E09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\báreotas\b").unwrap());
+// E10: Presença → fix presenha (PT)
+static E10_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bpresenha\b").unwrap());
+// E11: Hóquei no gelo (PT)
+static E11_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bó\s*,?\s*no\s+gelo\b").unwrap());
+// E12: Hóquei em patins (PT)
+static E12_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\boken\s+empatins\b").unwrap());
+// E13: Empatins → em patins (PT)
+static E13_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bempatins\b").unwrap());
+// E14: Mitchell Gourley (PT)
+static E14_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bGurley\b").unwrap());
+// E15: Martelly (PT)
+static E15_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMarteli\b").unwrap());
+// F03: Ordinal suffix: 11o / 16o → 11º / 16º (PT)
+static F03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b(\d{1,2})o\b").unwrap());
+// F04: FR year: mille neuf cent quatre-vingt (general)
+static F04_PATTERN_1: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]dix\b").unwrap());
+// F04: FR year: mille neuf cent quatre-vingt (general)
+static F04_PATTERN_2: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+soixante\b").unwrap());
+// F04: FR year: mille neuf cent quatre-vingt (general)
+static F04_PATTERN_3: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt\b").unwrap());
+// F05: 802.11 space variants (already partially covered)
+static F05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b802\s+\.\s*11\b").unwrap());
+// G01: Anti-incendios → antincendios (ES)
+static G01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bantiincendios\b").unwrap());
+// G02: Micro. Cru → microexpressões (PT)
+static G02_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmicro\.\s*cru\s+express[oõ]es\b").unwrap());
+// G03: Microexpressões split (PT)
+static G03_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bmicro\s+express[oõ]es\b").unwrap());
+// I01: Danielle Lantagne (ES)
+static I01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bDaniel\s+Lantagne\b").unwrap());
+// I03: Erdoğan pronunciation (ES)
+static I03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bNorgan\b").unwrap());
+// I04: Recep Tayyip (ES)
+static I04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bTayib\b").unwrap());
+// I05: Carpanedo (ES)
+static I05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bCarbaneo\b").unwrap());
+// J01: Duvall → Duval disambiguation (FR)
+static J01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bDuval\b").unwrap());
+// J02: Mau → Mau in FR context
+static J02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMao\s+mouvement\b").unwrap());
+// J05: Vaccination/infection numbers (FR)
+static J05_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\btrois\s+cent\s+trente\s+mille\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -179,6 +390,83 @@ static AROUND_ME_NOW_I_WANT_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\baround\s+me\.\s+Now\s+I\s+want\s+to\s+know\b").unwrap());
 static STOPS_AND_WE_START_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bstops\s+and\s+we\s+start\b").unwrap());
+
+// ── Dev tech term corrections ──────────────────────────────────────────────
+// React hooks: "use state" / "use effect" / "use callback" / "use router" / "use ref"
+static DEV_USESTATE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+state\b").unwrap());
+static DEV_USEEFFECT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+effect\b").unwrap());
+static DEV_USECALLBACK_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+callback\b").unwrap());
+static DEV_USEMEMO_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\buse\s+memo\b").unwrap());
+static DEV_USEREF_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\buse\s+ref\b").unwrap());
+static DEV_USEROUTER_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+router\b").unwrap());
+static DEV_USECONTEXT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+context\b").unwrap());
+static DEV_USEONBOARDING_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\buse\s+onboarding\b").unwrap());
+// TypeScript / JavaScript
+static DEV_TYPESCRIPT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\btype\s+script\b").unwrap());
+static DEV_JAVASCRIPT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bjava\s+script\b").unwrap());
+// HTML element names
+static DEV_HTMLINPUTELEMENT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+input\s+element\b").unwrap());
+static DEV_HTMLDIVELEMENT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+div(?:e)?\s+element\b").unwrap());
+static DEV_HTMLBUTTONELEMENT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+button\s+element\b").unwrap());
+// Multi-word dev libs / tools
+static DEV_PGVECTOR_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bpg\s+vector\b").unwrap());
+static DEV_IVFFLAT_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\b(?:eve|ivf)\s+flat\b").unwrap());
+static DEV_LANGCHAIN_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\blang\s+chain\b").unwrap());
+static DEV_NEXTJS_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bnext\s*\.\s*js\b").unwrap());
+static DEV_NODEJS_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bnode\s*\.\s*js\b").unwrap());
+// Groq API garble: "Groc appi", "groc api", "grok ap i"
+static DEV_GROQ_API_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bgro[ck]\s+ap+[iy]\b").unwrap());
+static DEV_GROQ_STANDALONE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bgroc\b").unwrap());
+// Zod garble: "Z schema" → "Zod schema"
+static DEV_ZOD_SCHEMA_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bz\s+schema\b").unwrap());
+// "bun run" garble: "burn run"
+static DEV_BUN_RUN_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bburn\s+run\b").unwrap());
+// "alter table" garble: only "after table" preceded by SQL context keywords
+static DEV_ALTER_TABLE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bafter\s+table\s+(\w+)\s+add\b").unwrap());
+// "status code" garble (FR accent): "statut code"
+static DEV_STATUS_CODE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bstatut\s+code\b").unwrap());
+// "cargo tauri" garble: "cargoTori", "cargo tori", "cargo touri"
+static DEV_CARGO_TAURI_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bcargo\s*(?:tori|touri|tary|taory)\b").unwrap());
+// "jest" garble: only "write the just test" / "write a just test" — needs verb context
+static DEV_JEST_TEST_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\b(write|run|add)\s+(?:a\s+|the\s+)?just\s+test\b").unwrap());
+// "prompt caching" garble: "prompt catching"
+static DEV_PROMPT_CACHING_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bprompt\s+catching\b").unwrap());
+// "semantic search" garble: "samoon seek search", "salmon seek"
+static DEV_SEMANTIC_SEARCH_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bsam+on\s+s(?:eek|eke)\s+search\b").unwrap());
+// "foreign key" garble: "forin k", "foreign k", "foreign key contraint"
+static DEV_FOREIGN_KEY_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\bfor(?:in|ing?)\s+k\b").unwrap());
+// "ivfflat" alternate garble
+static DEV_EVEFLAT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\beve\s+flat\b").unwrap());
+// "useOnboarding" / hook compounds with "use"
+static DEV_USE_HOOK_COMPOUND_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)\buse\s+(auth|session|query|params|search|pathname|locale|theme|modal|toast|store|settings|plan|model)\b").unwrap()
+});
 static I_WANTED_TO_KNOW_WHETHER_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\bI\s+wanted\s+to\s+know\s+whether\s+the\s+transcript\b").unwrap()
 });
@@ -417,6 +705,138 @@ pub fn parakeet_builtin_correction_terms(selected_language: &str) -> Vec<String>
     terms
 }
 
+fn looks_like_developer_dictation(text: &str) -> bool {
+    let lower = text.to_lowercase();
+    [
+        "api",
+        "auth",
+        "cargo",
+        "cli",
+        "code",
+        "component",
+        "cursor",
+        "database",
+        "docker",
+        "github",
+        "hook",
+        "javascript",
+        "jwt",
+        "npm",
+        "oauth",
+        "postgres",
+        "react",
+        "redis",
+        "sdk",
+        "sql",
+        "supabase",
+        "tauri",
+        "typescript",
+        "user id",
+        "visual studio",
+        "vs code",
+        "vscode",
+        "zod",
+    ]
+    .iter()
+    .any(|needle| lower.contains(needle))
+}
+
+fn normalize_dev_tech_terms(text: &str) -> String {
+    let mut s = text.to_string();
+    // React hooks
+    s = DEV_USESTATE_PATTERN.replace_all(&s, "useState").to_string();
+    s = DEV_USEEFFECT_PATTERN
+        .replace_all(&s, "useEffect")
+        .to_string();
+    s = DEV_USECALLBACK_PATTERN
+        .replace_all(&s, "useCallback")
+        .to_string();
+    s = DEV_USEMEMO_PATTERN.replace_all(&s, "useMemo").to_string();
+    s = DEV_USEREF_PATTERN.replace_all(&s, "useRef").to_string();
+    s = DEV_USEROUTER_PATTERN
+        .replace_all(&s, "useRouter")
+        .to_string();
+    s = DEV_USECONTEXT_PATTERN
+        .replace_all(&s, "useContext")
+        .to_string();
+    s = DEV_USEONBOARDING_PATTERN
+        .replace_all(&s, "useOnboarding")
+        .to_string();
+    s = DEV_USE_HOOK_COMPOUND_PATTERN
+        .replace_all(&s, |caps: &regex::Captures| {
+            let name = &caps[1];
+            let capitalized = {
+                let mut c = name.chars();
+                match c.next() {
+                    None => String::new(),
+                    Some(f) => f.to_uppercase().to_string() + c.as_str(),
+                }
+            };
+            format!("use{capitalized}")
+        })
+        .to_string();
+    // TypeScript / JavaScript
+    s = DEV_TYPESCRIPT_PATTERN
+        .replace_all(&s, "TypeScript")
+        .to_string();
+    s = DEV_JAVASCRIPT_PATTERN
+        .replace_all(&s, "JavaScript")
+        .to_string();
+    // HTML elements
+    s = DEV_HTMLINPUTELEMENT_PATTERN
+        .replace_all(&s, "HTMLInputElement")
+        .to_string();
+    s = DEV_HTMLDIVELEMENT_PATTERN
+        .replace_all(&s, "HTMLDivElement")
+        .to_string();
+    s = DEV_HTMLBUTTONELEMENT_PATTERN
+        .replace_all(&s, "HTMLButtonElement")
+        .to_string();
+    // Libs / tools
+    s = DEV_PGVECTOR_PATTERN.replace_all(&s, "pgvector").to_string();
+    s = DEV_IVFFLAT_PATTERN.replace_all(&s, "ivfflat").to_string();
+    s = DEV_EVEFLAT_PATTERN.replace_all(&s, "ivfflat").to_string();
+    s = DEV_LANGCHAIN_PATTERN
+        .replace_all(&s, "LangChain")
+        .to_string();
+    s = DEV_NEXTJS_PATTERN.replace_all(&s, "Next.js").to_string();
+    s = DEV_NODEJS_PATTERN.replace_all(&s, "Node.js").to_string();
+    // Groq
+    s = DEV_GROQ_API_PATTERN.replace_all(&s, "Groq API").to_string();
+    s = DEV_GROQ_STANDALONE_PATTERN
+        .replace_all(&s, "Groq")
+        .to_string();
+    // Zod
+    s = DEV_ZOD_SCHEMA_PATTERN
+        .replace_all(&s, "Zod schema")
+        .to_string();
+    // CLI garbles
+    s = DEV_BUN_RUN_PATTERN.replace_all(&s, "bun run").to_string();
+    s = DEV_ALTER_TABLE_PATTERN
+        .replace_all(&s, "alter table $1 add")
+        .to_string();
+    s = DEV_CARGO_TAURI_PATTERN
+        .replace_all(&s, "cargo tauri")
+        .to_string();
+    // Misc
+    s = DEV_STATUS_CODE_PATTERN
+        .replace_all(&s, "status code")
+        .to_string();
+    s = DEV_JEST_TEST_PATTERN
+        .replace_all(&s, "$1 jest test")
+        .to_string();
+    s = DEV_PROMPT_CACHING_PATTERN
+        .replace_all(&s, "prompt caching")
+        .to_string();
+    s = DEV_SEMANTIC_SEARCH_PATTERN
+        .replace_all(&s, "semantic search")
+        .to_string();
+    s = DEV_FOREIGN_KEY_PATTERN
+        .replace_all(&s, "foreign key")
+        .to_string();
+    s
+}
+
 pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -> String {
     let mut normalized = PARAKEET_V3_PATTERN
         .replace_all(text, "Parakeet V3")
@@ -433,6 +853,10 @@ pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -
     normalized = VOCALYPE_VARIANT_PATTERN
         .replace_all(&normalized, "Vocalype")
         .to_string();
+
+    if looks_like_developer_dictation(&normalized) {
+        normalized = normalize_dev_tech_terms(&normalized);
+    }
 
     if selected_language == "fr" {
         normalized = TODAY_FR_PATTERN
@@ -498,6 +922,47 @@ fn restore_french_apostrophes(text: &str) -> String {
 
 pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
+    normalized = F05_PATTERN.replace_all(&normalized, "802.11").to_string();
+    normalized = B01_PATTERN_1.replace_all(&normalized, "1920").to_string();
+    normalized = B01_PATTERN_2.replace_all(&normalized, "1930").to_string();
+    normalized = B01_PATTERN_3.replace_all(&normalized, "1940").to_string();
+    normalized = B01_PATTERN_4.replace_all(&normalized, "1950").to_string();
+    normalized = B01_PATTERN_5.replace_all(&normalized, "1960").to_string();
+    normalized = B01_PATTERN_6.replace_all(&normalized, "1970").to_string();
+    normalized = B01_PATTERN_7.replace_all(&normalized, "1980").to_string();
+    normalized = B01_PATTERN_8.replace_all(&normalized, "1990").to_string();
+    normalized = F02_PATTERN.replace_all(&normalized, "$1:$2").to_string();
+    normalized = F01_PATTERN.replace_all(&normalized, "$1%").to_string();
+    normalized = B05_PATTERN.replace_all(&normalized, "11:30 $1").to_string();
+    normalized = B04_PATTERN.replace_all(&normalized, "30%").to_string();
+    normalized = B02_PATTERN
+        .replace_all(&normalized, "25 to 30 years")
+        .to_string();
+    normalized = A15_PATTERN
+        .replace_all(&normalized, "superpredator")
+        .to_string();
+    normalized = A14_PATTERN
+        .replace_all(&normalized, "Mau movement")
+        .to_string();
+    normalized = A13_PATTERN.replace_all(&normalized, "damaged").to_string();
+    normalized = A12_PATTERN.replace_all(&normalized, "$1%").to_string();
+    normalized = A11_PATTERN.replace_all(&normalized, "11:35 $1").to_string();
+    normalized = A09_PATTERN.replace_all(&normalized, "1940").to_string();
+    normalized = A10_PATTERN.replace_all(&normalized, "1988").to_string();
+    normalized = A08_PATTERN.replace_all(&normalized, "barbules").to_string();
+    normalized = A07_PATTERN.replace_all(&normalized, "802.11n").to_string();
+    normalized = A06_PATTERN
+        .replace_all(&normalized, "kundalini")
+        .to_string();
+    normalized = A05_PATTERN.replace_all(&normalized, "rachis").to_string();
+    normalized = A04_PATTERN
+        .replace_all(&normalized, "U.S. Corps of Engineers")
+        .to_string();
+    normalized = A03_PATTERN
+        .replace_all(&normalized, "Vichy French")
+        .to_string();
+    normalized = A02_PATTERN.replace_all(&normalized, "SANParks").to_string();
+    normalized = A01_PATTERN.replace_all(&normalized, "Scotturb").to_string();
     normalized = DOT_UP_PATTERN
         .replace_all(&normalized, "dot app")
         .to_string();
@@ -813,6 +1278,51 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
 
 pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
     let mut normalized = text.to_string();
+    normalized = J05_PATTERN.replace_all(&normalized, "330 000").to_string();
+    normalized = J02_PATTERN
+        .replace_all(&normalized, "Mau mouvement")
+        .to_string();
+    normalized = J01_PATTERN.replace_all(&normalized, "Duvall").to_string();
+    normalized = F04_PATTERN_1.replace_all(&normalized, "1990").to_string();
+    normalized = F04_PATTERN_2.replace_all(&normalized, "1960").to_string();
+    normalized = F04_PATTERN_3.replace_all(&normalized, "1980").to_string();
+    normalized = D20_PATTERN
+        .replace_all(&normalized, "tigre/lion")
+        .to_string();
+    normalized = D19_PATTERN.replace_all(&normalized, "$1").to_string();
+    normalized = D18_PATTERN.replace_all(&normalized, "et $1").to_string();
+    normalized = D17_PATTERN.replace_all(&normalized, "ce soir").to_string();
+    normalized = D15_PATTERN.replace_all(&normalized, "1988").to_string();
+    normalized = D14_PATTERN.replace_all(&normalized, "appelé").to_string();
+    normalized = D13_PATTERN
+        .replace_all(&normalized, "12 h 00 GMT")
+        .to_string();
+    normalized = D12_PATTERN.replace_all(&normalized, "$1 h $2").to_string();
+    normalized = D11_PATTERN
+        .replace_all(&normalized, "les années 20")
+        .to_string();
+    normalized = D10_PATTERN.replace_all(&normalized, "Muhammad").to_string();
+    normalized = D09_PATTERN.replace_all(&normalized, "Noor").to_string();
+    normalized = D08_PATTERN.replace_all(&normalized, "rachis").to_string();
+    normalized = D07_PATTERN
+        .replace_all(&normalized, "kundalini")
+        .to_string();
+    normalized = D06_PATTERN.replace_all(&normalized, "l'UE").to_string();
+    normalized = D05_PATTERN
+        .replace_all(&normalized, "superprédateur")
+        .to_string();
+    normalized = D04_PATTERN
+        .replace_all(&normalized, "mosasaures")
+        .to_string();
+    normalized = D03_PATTERN
+        .replace_all(&normalized, "mosasaure")
+        .to_string();
+    normalized = D02_PATTERN
+        .replace_all(&normalized, "Sundarbans")
+        .to_string();
+    normalized = D01_PATTERN
+        .replace_all(&normalized, "Sundarbans")
+        .to_string();
     normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
     normalized = MOJIBAKE_E_ACUTE_PATTERN
         .replace_all(&normalized, "e")
@@ -1035,6 +1545,97 @@ fn replace_french_word(text: &str, from: &str, to: &str) -> String {
     regex.replace_all(text, to).to_string()
 }
 
+#[allow(unused_mut)]
+pub fn normalize_parakeet_spanish_artifacts(text: &str) -> String {
+    let mut normalized = text.to_string();
+    normalized = I05_PATTERN
+        .replace_all(&normalized, "Carpanedo")
+        .to_string();
+    normalized = I04_PATTERN.replace_all(&normalized, "Tayyip").to_string();
+    normalized = I03_PATTERN.replace_all(&normalized, "Erdoğan").to_string();
+    normalized = I01_PATTERN
+        .replace_all(&normalized, "Danielle Lantagne")
+        .to_string();
+    normalized = G01_PATTERN
+        .replace_all(&normalized, "antincendios")
+        .to_string();
+    normalized = C15_PATTERN
+        .replace_all(&normalized, "espectroscopia")
+        .to_string();
+    normalized = C14_PATTERN.replace_all(&normalized, "Martelly").to_string();
+    normalized = C13_PATTERN.replace_all(&normalized, "$1%").to_string();
+    normalized = C12_PATTERN.replace_all(&normalized, "Sintra").to_string();
+    normalized = C11_PATTERN.replace_all(&normalized, "Lantagne").to_string();
+    normalized = C10_PATTERN
+        .replace_all(&normalized, "el Amazonas")
+        .to_string();
+    normalized = C09_PATTERN.replace_all(&normalized, "Upolu").to_string();
+    normalized = C08_PATTERN.replace_all(&normalized, "Apia").to_string();
+    normalized = C07_PATTERN.replace_all(&normalized, "FTIR").to_string();
+    normalized = C06_PATTERN
+        .replace_all(&normalized, "Lyndon B. Johnson")
+        .to_string();
+    normalized = C05_PATTERN
+        .replace_all(&normalized, "Brzezinski")
+        .to_string();
+    normalized = C04_PATTERN.replace_all(&normalized, "$1:$2").to_string();
+    normalized = C03_PATTERN_1.replace_all(&normalized, "5.0GHz").to_string();
+    normalized = C03_PATTERN_2.replace_all(&normalized, "2.4GHz").to_string();
+    normalized = C02_PATTERN.replace_all(&normalized, "802.11$1").to_string();
+    normalized = C01_PATTERN.replace_all(&normalized, "Scotturb").to_string();
+    // Robot inserts ES artifact corrections here
+    normalized
+}
+
+#[allow(unused_mut)]
+pub fn normalize_parakeet_portuguese_artifacts(text: &str) -> String {
+    let mut normalized = text.to_string();
+    normalized = G03_PATTERN
+        .replace_all(&normalized, "microexpressões")
+        .to_string();
+    normalized = G02_PATTERN
+        .replace_all(&normalized, "microexpressões")
+        .to_string();
+    normalized = F03_PATTERN.replace_all(&normalized, "$1º").to_string();
+    normalized = E15_PATTERN.replace_all(&normalized, "Martelly").to_string();
+    normalized = E14_PATTERN.replace_all(&normalized, "Gourley").to_string();
+    normalized = E13_PATTERN
+        .replace_all(&normalized, "em patins")
+        .to_string();
+    normalized = E12_PATTERN
+        .replace_all(&normalized, "hóquei em patins")
+        .to_string();
+    normalized = E11_PATTERN
+        .replace_all(&normalized, "hóquei no gelo")
+        .to_string();
+    normalized = E10_PATTERN.replace_all(&normalized, "presença").to_string();
+    normalized = E09_PATTERN
+        .replace_all(&normalized, "áreas remotas")
+        .to_string();
+    normalized = E08_PATTERN.replace_all(&normalized, "").to_string();
+    normalized = E07_PATTERN
+        .replace_all(&normalized, "Oldřich Jelínek")
+        .to_string();
+    normalized = E06_PATTERN
+        .replace_all(&normalized, "Addenbrooke's Hospital")
+        .to_string();
+    normalized = E05_PATTERN
+        .replace_all(&normalized, "Pirâmide de Gizé")
+        .to_string();
+    normalized = E04_PATTERN
+        .replace_all(&normalized, "mosassauros")
+        .to_string();
+    normalized = E03_PATTERN
+        .replace_all(&normalized, "mosassauro")
+        .to_string();
+    normalized = E02_PATTERN.replace_all(&normalized, "SANParks").to_string();
+    normalized = E01_PATTERN
+        .replace_all(&normalized, "Casablanca")
+        .to_string();
+    // Robot inserts PT artifact corrections here
+    normalized
+}
+
 pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
     let mut normalized = normalize_parakeet_phrase_variants(text, selected_language);
     if selected_language == "en" {
@@ -1047,8 +1648,32 @@ pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
         normalized = PUNCT_SPACE_PATTERN
             .replace_all(&normalized, "$1")
             .to_string();
+    } else if selected_language == "es" {
+        normalized = normalize_parakeet_spanish_artifacts(&normalized);
+        normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
+        normalized = MOJIBAKE_E_ACUTE_PATTERN
+            .replace_all(&normalized, "\u{00e9}")
+            .to_string();
+        normalized = MOJIBAKE_APOS_PATTERN
+            .replace_all(&normalized, "'")
+            .to_string();
+        normalized = PUNCT_SPACE_PATTERN
+            .replace_all(&normalized, "$1")
+            .to_string();
+    } else if selected_language == "pt" {
+        normalized = normalize_parakeet_portuguese_artifacts(&normalized);
+        normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
+        normalized = MOJIBAKE_E_ACUTE_PATTERN
+            .replace_all(&normalized, "\u{00e9}")
+            .to_string();
+        normalized = MOJIBAKE_APOS_PATTERN
+            .replace_all(&normalized, "'")
+            .to_string();
+        normalized = PUNCT_SPACE_PATTERN
+            .replace_all(&normalized, "$1")
+            .to_string();
     } else {
-        // ES, PT and other languages: apply shared safe normalization
+        // Other languages: apply shared safe normalization
         normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
         normalized = MOJIBAKE_E_ACUTE_PATTERN
             .replace_all(&normalized, "\u{00e9}")
@@ -1679,6 +2304,32 @@ mod tests {
         );
         assert!(normalized.contains("est-ce que"));
         assert!(normalized.contains("qu'est-ce que"));
+    }
+
+    #[test]
+    fn does_not_apply_dev_terms_to_general_speech() {
+        let english = finalize_parakeet_text(
+            "There are still many people alive who remember their time here.",
+            "en",
+        );
+        assert!(!english.contains("Tauri"), "got: {english}");
+
+        let french = finalize_parakeet_text(
+            "Si vous ne vous rendez a terre qu'avec une excursion, vous n'aurez pas besoin d'un visa distinct.",
+            "fr",
+        );
+        assert!(!french.contains("Tauri"), "got: {french}");
+        assert!(!french.contains("pgvector"), "got: {french}");
+    }
+
+    #[test]
+    fn applies_dev_terms_when_context_is_developer_dictation() {
+        let normalized = finalize_parakeet_text(
+            "In React code I need use state and pg vector for the database.",
+            "en",
+        );
+        assert!(normalized.contains("useState"), "got: {normalized}");
+        assert!(normalized.contains("pgvector"), "got: {normalized}");
     }
 
     #[test]

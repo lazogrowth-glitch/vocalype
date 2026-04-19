@@ -179,9 +179,16 @@ pub async fn has_any_models_available(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
     let models = model_manager.get_available_models();
-    Ok(models
-        .iter()
-        .any(|m| m.is_downloaded && !matches!(m.engine_type, EngineType::GeminiApi)))
+    Ok(models.iter().any(|m| {
+        m.is_downloaded
+            && !matches!(
+                m.engine_type,
+                EngineType::GeminiApi
+                    | EngineType::GroqWhisper
+                    | EngineType::MistralVoxtral
+                    | EngineType::Deepgram
+            )
+    }))
 }
 
 #[tauri::command]

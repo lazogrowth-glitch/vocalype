@@ -15,7 +15,7 @@ use super::handler::handle_shortcut_event;
 /// Initialize shortcuts using Tauri's global-shortcut plugin
 pub fn init_shortcuts(app: &AppHandle) {
     let default_bindings = settings::get_default_settings().bindings;
-    let user_settings = settings::load_or_create_app_settings(app);
+    let mut user_settings = settings::load_or_create_app_settings(app);
 
     // Register all default shortcuts, applying user customizations
     for (id, default_binding) in default_bindings {
@@ -36,10 +36,57 @@ pub fn init_shortcuts(app: &AppHandle) {
             continue;
         }
 
-        if let Err(e) = register_shortcut(app, binding) {
+        if let Err(e) = register_shortcut(app, binding.clone()) {
+            if id == "transcribe" {
+                if let Some(fallback) =
+                    register_transcribe_fallback(app, &binding, &mut user_settings)
+                {
+                    warn!(
+                        "Primary transcription shortcut '{}' failed during init ({}). Using fallback '{}'.",
+                        binding.current_binding, e, fallback
+                    );
+                    continue;
+                }
+            }
             error!("Failed to register shortcut {} during init: {}", id, e);
         }
     }
+}
+
+fn register_transcribe_fallback(
+    app: &AppHandle,
+    binding: &ShortcutBinding,
+    user_settings: &mut settings::AppSettings,
+) -> Option<String> {
+    for candidate in transcribe_fallback_bindings(&binding.current_binding) {
+        let mut fallback = binding.clone();
+        fallback.current_binding = candidate.to_string();
+        if register_shortcut(app, fallback.clone()).is_ok() {
+            user_settings
+                .bindings
+                .insert(fallback.id.clone(), fallback.clone());
+            settings::write_settings(app, user_settings.clone());
+            return Some(candidate.to_string());
+        }
+    }
+    None
+}
+
+fn transcribe_fallback_bindings(current: &str) -> Vec<&'static str> {
+    let candidates = if cfg!(target_os = "macos") {
+        vec![
+            "option+space",
+            "cmd+shift+space",
+            "ctrl+space",
+            "ctrl+alt+space",
+        ]
+    } else {
+        vec!["ctrl+shift+space", "alt+space", "ctrl+alt+space"]
+    };
+    candidates
+        .into_iter()
+        .filter(|candidate| !candidate.eq_ignore_ascii_case(current.trim()))
+        .collect()
 }
 
 /// Validate a shortcut string for the Tauri global-shortcut implementation.

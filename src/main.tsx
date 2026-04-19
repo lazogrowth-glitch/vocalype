@@ -138,6 +138,12 @@ const bootstrap = async () => {
           console.warn(`Deferred startup task failed: ${label}`, result.reason);
         }
       });
+
+      // Pre-download Parakeet while the user creates or activates the account.
+      const store = modelStoreModule.useModelStore.getState();
+      if (store.isFirstRun) {
+        void store.downloadModel("parakeet-tdt-0.6b-v3-multilingual");
+      }
     });
   } catch (error) {
     console.error("Fatal bootstrap error:", error);

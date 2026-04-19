@@ -102,8 +102,7 @@ pub fn set_license_bundle(app: &AppHandle, bundle_json: &str) -> Result<(), Stri
     // Rejects tampered or hand-crafted bundles.
     bundle_signing::verify_bundle_signature(bundle_json)?;
     let path = license_bundle_path(app)?;
-    std::fs::write(&path, bundle_json)
-        .map_err(|e| format!("Failed to write license bundle: {}", e))
+    std::fs::write(&path, bundle_json).map_err(|e| format!("Failed to write license bundle: {}", e))
 }
 
 pub fn clear_license_bundle(app: &AppHandle) -> Result<(), String> {

@@ -44,7 +44,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
           disabled={disabled || isUpdating}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <div className="relative h-[22px] w-[38px] rounded-full border border-white/8 bg-white/[0.06] transition-colors peer peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-logo-primary/30 peer-checked:border-logo-primary/30 peer-checked:bg-logo-primary/80 peer-disabled:opacity-50 peer-checked:after:translate-x-[16px] rtl:peer-checked:after:-translate-x-[16px] after:absolute after:start-[3px] after:top-[3px] after:h-[14px] after:w-[14px] after:rounded-full after:bg-white after:shadow-[0_1px_3px_rgba(0,0,0,0.3)] after:transition-all after:content-['']"></div>
+        <div className="relative h-4 w-[26px] rounded-full bg-white/15 transition-colors peer peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-logo-primary/35 peer-checked:bg-[#F5C300] peer-disabled:opacity-50 peer-checked:after:translate-x-2.5 rtl:peer-checked:after:-translate-x-2.5 after:absolute after:left-0.5 after:top-0.5 after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-transform after:content-['']"></div>
       </label>
       {isUpdating && (
         <div className="absolute inset-0 flex items-center justify-center">

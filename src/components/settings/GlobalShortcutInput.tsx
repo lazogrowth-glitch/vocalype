@@ -293,8 +293,8 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
         {editingShortcutId === shortcutId ? (
           <div
             ref={(ref) => setShortcutRef(shortcutId, ref)}
-            style={{ padding: "4px 10px" }}
-            className="rounded-[5px] border border-logo-primary/30 bg-logo-primary/15 font-mono text-[12px] text-logo-primary"
+            style={{ padding: "8px 12px", minHeight: 38 }}
+            className="rounded-[8px] border border-logo-primary/30 bg-logo-primary/15 font-mono text-[12.5px] text-logo-primary"
           >
             {formatCurrentKeys()}
           </div>
@@ -302,8 +302,8 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
           <div
             role="button"
             tabIndex={0}
-            style={{ padding: "4px 10px" }}
-            className="cursor-pointer rounded-[5px] border border-white/12 bg-white/[0.07] font-mono text-[12px] text-white/70 hover:bg-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
+            style={{ padding: "8px 12px", minHeight: 38 }}
+            className="cursor-pointer rounded-[8px] border border-white/12 bg-white/[0.07] font-mono text-[12.5px] text-white/72 hover:bg-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary"
             onClick={() => startRecording(shortcutId)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {

@@ -20,7 +20,6 @@ use std::collections::HashSet;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 
-use crate::clipboard::validate_external_script_path;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
@@ -66,6 +65,26 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
         KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
         KeyboardImplementation::NativeShortcutCapture => {
             native_shortcut_capture::unregister_cancel_shortcut(app)
+        }
+    }
+}
+
+/// Register the cancel shortcut while recording so push-to-talk can be aborted quickly.
+pub fn register_cancel_shortcut(app: &AppHandle) {
+    #[cfg(target_os = "linux")]
+    {
+        let _ = app;
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let settings = get_settings(app);
+        if let Some(binding) = settings.bindings.get("cancel").cloned() {
+            if binding.current_binding.is_empty() {
+                return;
+            }
+            let _ = register_shortcut(app, binding);
         }
     }
 }
@@ -895,11 +914,7 @@ pub fn change_external_script_path_setting(
             if trimmed.is_empty() {
                 None
             } else {
-                Some(
-                    validate_external_script_path(trimmed)?
-                        .to_string_lossy()
-                        .to_string(),
-                )
+                Some(settings::validate_external_script_path(&app, trimmed)?)
             }
         }
         None => None,

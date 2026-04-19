@@ -84,12 +84,9 @@ async function postLicense(
   }
 
   const data = (await response.json()) as LicenseEnvelope;
-  const bundle = {
-    ...data.license,
-    last_refreshed_at: new Date().toISOString(),
-    app_version,
-    app_channel,
-  };
+  // The backend signs the complete license bundle. Do not add or mutate fields
+  // here, because the Rust client verifies the exact JSON before persisting it.
+  const bundle = data.license;
   await licenseClient.setStoredBundle(bundle);
   return bundle;
 }
@@ -107,13 +104,9 @@ export const licenseClient = {
   },
 
   async setStoredBundle(bundle: StoredLicenseBundle): Promise<void> {
-    try {
-      await invoke("set_secure_license_bundle", {
-        bundleJson: JSON.stringify(bundle),
-      });
-    } catch (error) {
-      console.warn("Failed to persist secure license bundle:", error);
-    }
+    await invoke("set_secure_license_bundle", {
+      bundleJson: JSON.stringify(bundle),
+    });
   },
 
   async clearStoredBundle(): Promise<void> {

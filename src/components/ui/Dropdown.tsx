@@ -177,11 +177,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
       <button
         ref={triggerRef}
         type="button"
-        style={{ padding: "10px 16px" }}
-        className={`flex min-h-[38px] w-full items-center justify-between rounded-[7px] border border-white/10 bg-white/[0.06] text-start text-[12.5px] font-normal text-white/70 transition-all duration-150 ${
+        style={{ padding: "11px 16px" }}
+        className={`flex min-h-[44px] w-full items-center justify-between rounded-[8px] border border-white/10 bg-zinc-900 text-start text-[13px] font-normal text-white/76 transition-all duration-150 ${
           disabled
             ? "opacity-50 cursor-not-allowed"
-            : "cursor-pointer hover:bg-white/[0.08] hover:border-white/14"
+            : "cursor-pointer hover:border-white/15 hover:bg-zinc-800"
         }`}
         onClick={handleToggle}
         onKeyDown={handleTriggerKeyDown}
@@ -209,13 +209,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
         <div
           id={listboxId}
           role="listbox"
-          className="absolute right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-[8px] border border-white/10 bg-[#141414] shadow-lg"
+          className="absolute right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-[8px] border border-white/10 bg-zinc-900 shadow-lg"
           style={{ minWidth: "100%", width: "max-content", maxWidth: 320 }}
         >
           {options.length === 0 ? (
             <div
-              style={{ padding: "10px 16px" }}
-              className="text-[12.5px] text-mid-gray"
+              style={{ padding: "11px 16px" }}
+              className="text-[13px] text-mid-gray"
             >
               {t("common.noOptionsFound")}
             </div>
@@ -224,13 +224,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
               <button
                 key={option.value}
                 type="button"
-                style={{ padding: "10px 16px" }}
-                className={`w-full text-start text-[12.5px] transition-colors duration-150 hover:bg-white/[0.06] ${
+                style={{ padding: "11px 16px" }}
+                className={`w-full text-start text-[13px] transition-colors duration-150 hover:bg-logo-primary/[0.06] ${
                   selectedValue === option.value
                     ? "bg-logo-primary/14 font-medium text-logo-primary"
                     : ""
                 } ${
-                  highlightedIndex === index ? "bg-white/[0.05]" : ""
+                  highlightedIndex === index ? "bg-logo-primary/[0.055]" : ""
                 } ${option.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setHighlightedIndex(index)}

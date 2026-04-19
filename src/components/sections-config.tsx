@@ -31,11 +31,6 @@ const DebugSettings = React.lazy(() =>
     default: m.DebugSettings,
   })),
 );
-const AboutSettings = React.lazy(() =>
-  import("./settings/about/AboutSettings").then((m) => ({
-    default: m.AboutSettings,
-  })),
-);
 const PostProcessingSettings = React.lazy(() =>
   import("./settings/post-processing/PostProcessingSettings").then((m) => ({
     default: m.PostProcessingSettings,
@@ -46,34 +41,9 @@ const ModelsSettings = React.lazy(() =>
     default: m.ModelsSettings,
   })),
 );
-const SnippetsSettings = React.lazy(() =>
-  import("./settings/snippets/SnippetsSettings").then((m) => ({
-    default: m.SnippetsSettings,
-  })),
-);
-const NotesSettings = React.lazy(() =>
-  import("./settings/notes/NotesSettings").then((m) => ({
-    default: m.NotesSettings,
-  })),
-);
-const MeetingsSettings = React.lazy(() =>
-  import("./settings/meetings/MeetingsSettings").then((m) => ({
-    default: m.MeetingsSettings,
-  })),
-);
 const BillingSettings = React.lazy(() =>
   import("./settings/billing/BillingSettings").then((m) => ({
     default: m.BillingSettings,
-  })),
-);
-const ReferralSettings = React.lazy(() =>
-  import("./settings/referral/ReferralSettings").then((m) => ({
-    default: m.ReferralSettings,
-  })),
-);
-const StatsSettings = React.lazy(() =>
-  import("./settings/stats/StatsSettings").then((m) => ({
-    default: m.StatsSettings,
   })),
 );
 
@@ -91,6 +61,24 @@ interface SectionConfig {
   component: React.ComponentType;
   enabled: (settings: any) => boolean;
 }
+
+const LAUNCH_HIDDEN_SECTIONS = new Set<SidebarSection>([
+  "meetings",
+  "notes",
+  "snippets",
+  "stats",
+  "debug",
+  "referral",
+  "about",
+]);
+
+const isLaunchVisible = (section: SidebarSection) =>
+  !LAUNCH_HIDDEN_SECTIONS.has(section);
+
+export const isSectionVisibleInLaunch = (
+  section: SidebarSection,
+  settings: any,
+) => SECTIONS_CONFIG[section]?.enabled(settings) === true;
 
 export const SECTIONS_CONFIG = {
   // ── Configuration ─────────────────────────────────────
@@ -115,8 +103,8 @@ export const SECTIONS_CONFIG = {
   snippets: {
     labelKey: "sidebar.snippets",
     icon: Zap,
-    component: SnippetsSettings,
-    enabled: () => true,
+    component: GeneralSettings,
+    enabled: () => isLaunchVisible("snippets"),
   },
   // ── Utilisation ───────────────────────────────────────
   history: {
@@ -128,20 +116,20 @@ export const SECTIONS_CONFIG = {
   meetings: {
     labelKey: "sidebar.meetings",
     icon: Mic,
-    component: MeetingsSettings,
-    enabled: () => true,
+    component: GeneralSettings,
+    enabled: () => isLaunchVisible("meetings"),
   },
   notes: {
     labelKey: "sidebar.notes",
     icon: NotebookPen,
-    component: NotesSettings,
-    enabled: () => true,
+    component: GeneralSettings,
+    enabled: () => isLaunchVisible("notes"),
   },
   stats: {
     labelKey: "sidebar.stats",
     icon: BarChart2,
-    component: StatsSettings,
-    enabled: () => true,
+    component: GeneralSettings,
+    enabled: () => isLaunchVisible("stats"),
   },
   // ── Avancé ────────────────────────────────────────────
   advanced: {
@@ -154,14 +142,15 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.debug",
     icon: FlaskConical,
     component: DebugSettings,
-    enabled: (settings) => settings?.debug_mode ?? false,
+    enabled: (settings) =>
+      import.meta.env.DEV && (settings?.debug_mode ?? false),
   },
   // ── Bas de sidebar ────────────────────────────────────
   referral: {
     labelKey: "sidebar.referral",
     icon: Gift,
-    component: ReferralSettings,
-    enabled: () => true,
+    component: GeneralSettings,
+    enabled: () => isLaunchVisible("referral"),
   },
   billing: {
     labelKey: "sidebar.billing",
@@ -172,8 +161,8 @@ export const SECTIONS_CONFIG = {
   about: {
     labelKey: "sidebar.about",
     icon: Info,
-    component: AboutSettings,
-    enabled: () => true,
+    component: GeneralSettings,
+    enabled: () => isLaunchVisible("about"),
   },
 } as const satisfies Record<string, SectionConfig>;
 

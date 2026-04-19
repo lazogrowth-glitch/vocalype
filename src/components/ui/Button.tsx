@@ -19,7 +19,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "inline-flex items-center justify-center gap-2 cursor-pointer rounded-[12px] border font-medium leading-none focus:outline-none transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex items-center justify-center gap-2 cursor-pointer rounded-[8px] border font-medium leading-none tracking-[0] focus:outline-none transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50";
 
   const variantClasses = {
     primary:
@@ -37,15 +37,15 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const sizeClasses = {
-    sm: "text-[12px] tracking-[0.01em]",
-    md: "text-[13px] tracking-[0.01em]",
-    lg: "text-[14px] tracking-[0.01em]",
+    sm: "text-[12px] tracking-[0]",
+    md: "text-[13px] tracking-[0]",
+    lg: "text-[14px] tracking-[0]",
   };
 
   const sizeStyles = {
-    sm: { padding: "9px 14px", minHeight: 36 },
-    md: { padding: "10px 16px", minHeight: 40 },
-    lg: { padding: "11px 18px", minHeight: 44 },
+    sm: { padding: "10px 14px", minHeight: 38 },
+    md: { padding: "12px 16px", minHeight: 42 },
+    lg: { padding: "13px 18px", minHeight: 46 },
   };
 
   return (

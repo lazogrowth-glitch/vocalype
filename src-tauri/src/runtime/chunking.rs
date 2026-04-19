@@ -13,16 +13,16 @@ use tauri::AppHandle;
 /// Accumulate this many speech samples before sending a chunk for background transcription.
 pub(crate) const DEFAULT_CHUNK_INTERVAL_SAMPLES: usize = 15 * 16_000; // 15 s at 16 kHz
 /// Overlap kept at the START of each new chunk to avoid cutting words at boundaries.
-pub(crate) const DEFAULT_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const DEFAULT_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// Whisper Small benchmarks best with slightly larger chunks on weak PCs.
 pub(crate) const WHISPER_SMALL_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s
-pub(crate) const WHISPER_SMALL_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const WHISPER_SMALL_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// Whisper Medium tuned for latency while staying conservative on slow machines.
 pub(crate) const WHISPER_MEDIUM_CHUNK_INTERVAL_SAMPLES: usize = 6 * 16_000; // 6 s
-pub(crate) const WHISPER_MEDIUM_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const WHISPER_MEDIUM_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// Whisper Turbo: larger chunks reduce tail assembly overhead on low-end hardware.
 pub(crate) const WHISPER_TURBO_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s
-pub(crate) const WHISPER_TURBO_CHUNK_OVERLAP_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const WHISPER_TURBO_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 /// Whisper Large: quality-oriented but avoids all-work-after-key-up behaviour.
 pub(crate) const WHISPER_LARGE_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; // 8 s
 pub(crate) const WHISPER_LARGE_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s
@@ -32,11 +32,11 @@ pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = 200;
 pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;
 /// Minimum new samples required before a VAD-triggered flush can fire (1 s at 16 kHz).
 /// Prevents spurious flushes at the very start of an utterance.
-pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 16_000; // 1 s
+pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 24_000; // 1.5 s
 /// Width of the silence window scanned for VAD-triggered flush (500 ms at 16 kHz).
 /// 500 ms filters out inter-word hesitation pauses (typically 100-400 ms) while
 /// still catching genuine sentence-ending pauses (≥ 500 ms).
-pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms
+pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms
 /// Mean-squared energy threshold — windows below this are considered silent.
 /// 1e-5 ≈ RMS 0.003, well below conversational speech (~0.02–0.1 RMS).
 pub(crate) const VAD_FLUSH_ENERGY_THRESHOLD: f32 = 1e-5;
@@ -50,10 +50,10 @@ pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s
 /// Unified Parakeet V3 profile for user-selected language dictation.
 /// Keep this conservative: most Vocalype users dictate in English, with
 /// Spanish/Hindi/Portuguese also sharing the multilingual path.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s at 16 kHz
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; // 8 s at 16 kHz
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1.0 s
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s; // 2.5 s; // 2.0 s
 /// French errors are handled by text/vocabulary learning rather than a more
 /// aggressive chunk profile, which regressed long-form eval samples.
 pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize =

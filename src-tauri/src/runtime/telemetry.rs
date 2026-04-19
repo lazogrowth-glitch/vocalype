@@ -15,6 +15,8 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+const REDACTED_TEXT_PREVIEW: &str = "[redacted]";
+
 // ── Public state type ─────────────────────────────────────────────────────────
 
 pub struct TranscriptionTelemetry {
@@ -227,7 +229,7 @@ impl TranscriptionTelemetry {
         words_in: usize,
         words_out: usize,
         words_trimmed: usize,
-        text_preview: &str,
+        _text_preview: &str,
     ) {
         #[derive(Serialize)]
         struct E<'a> {
@@ -252,7 +254,7 @@ impl TranscriptionTelemetry {
             words_in,
             words_out,
             words_trimmed,
-            text_preview,
+            text_preview: REDACTED_TEXT_PREVIEW,
         });
     }
 
@@ -296,7 +298,7 @@ impl TranscriptionTelemetry {
         session_id: u64,
         chunk_idx: usize,
         filter_name: &str,
-        raw_text_preview: &str,
+        _raw_text_preview: &str,
         word_count: usize,
         chunk_samples: usize,
         is_final_chunk: bool,
@@ -321,7 +323,7 @@ impl TranscriptionTelemetry {
             session_id,
             chunk_idx,
             filter_name,
-            raw_text_preview,
+            raw_text_preview: REDACTED_TEXT_PREVIEW,
             word_count,
             chunk_samples,
             is_final_chunk,
@@ -388,7 +390,7 @@ impl TranscriptionTelemetry {
         failed_chunks: usize,
         duration_samples: usize,
         assembled_word_count: usize,
-        assembled_preview: &str,
+        _assembled_preview: &str,
     ) {
         #[derive(Serialize)]
         struct E<'a> {
@@ -411,7 +413,7 @@ impl TranscriptionTelemetry {
             duration_samples,
             duration_secs: duration_samples as f32 / 16_000.0,
             assembled_word_count,
-            assembled_preview,
+            assembled_preview: REDACTED_TEXT_PREVIEW,
         });
     }
 
@@ -440,7 +442,7 @@ impl TranscriptionTelemetry {
             audio_to_word_ratio: f32,
             estimated_issue: &'a crate::parakeet_quality::ParakeetFailureMode,
             quality_risk_score: f32,
-            assembled_preview: &'a str,
+            assembled_preview_redacted: bool,
         }
         self.write_line(&E {
             event: "session_quality_summary",
@@ -462,7 +464,7 @@ impl TranscriptionTelemetry {
             audio_to_word_ratio: summary.audio_to_word_ratio,
             estimated_issue: &summary.estimated_issue,
             quality_risk_score: summary.quality_risk_score,
-            assembled_preview: &summary.assembled_preview,
+            assembled_preview_redacted: true,
         });
     }
 
@@ -472,7 +474,7 @@ impl TranscriptionTelemetry {
         chunk_idx: usize,
         recovery_type: &str,
         words_recovered: usize,
-        text_preview: &str,
+        _text_preview: &str,
     ) {
         #[derive(Serialize)]
         struct E<'a> {
@@ -491,7 +493,7 @@ impl TranscriptionTelemetry {
             chunk_idx,
             recovery_type,
             words_recovered,
-            text_preview,
+            text_preview: REDACTED_TEXT_PREVIEW,
         });
     }
 }

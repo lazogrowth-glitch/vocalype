@@ -2,6 +2,7 @@ use super::profiler::PipelineProfiler;
 use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
 use crate::post_processing::{
     maybe_convert_chinese_variant, post_process_transcription, process_action,
+    voice_to_code_completion,
 };
 use crate::utils::show_processing_overlay;
 use crate::vocabulary_store::VocabularyStoreState;
@@ -10,7 +11,7 @@ use crate::TranscriptionCoordinator;
 use log::debug;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 pub(super) struct PostProcessOutcome {
     pub final_text: String,
@@ -21,6 +22,7 @@ pub(super) struct PostProcessOutcome {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum PostProcessMode {
     SnippetOnly,
+    VoiceToCode,
     SkipForCodeContext,
     SelectedAction,
     StandardPrompt,
@@ -30,17 +32,20 @@ pub(super) enum PostProcessMode {
 pub(super) fn decide_post_process_mode(
     snippet_matched: bool,
     is_code_context: bool,
+    voice_to_code_enabled: bool,
     has_selected_action: bool,
     post_process: bool,
 ) -> PostProcessMode {
     if snippet_matched {
         PostProcessMode::SnippetOnly
-    } else if is_code_context {
-        PostProcessMode::SkipForCodeContext
+    } else if is_code_context && voice_to_code_enabled {
+        PostProcessMode::VoiceToCode
     } else if has_selected_action {
         PostProcessMode::SelectedAction
     } else if post_process {
         PostProcessMode::StandardPrompt
+    } else if is_code_context {
+        PostProcessMode::SkipForCodeContext
     } else {
         PostProcessMode::None
     }
@@ -140,16 +145,27 @@ pub(super) async fn process_transcription_text(
         .map(|ctx| ctx.category.skip_post_processing())
         .unwrap_or(false);
 
+    // First time the user dictates in a code editor → show the discovery prompt.
+    if is_code_context && !settings.voice_to_code_onboarding_done {
+        let _ = app.emit("voice-to-code-onboarding", ());
+        let mut s = crate::settings::get_settings(app);
+        s.voice_to_code_onboarding_done = true;
+        crate::settings::write_settings(app, s);
+    }
+
     let mode = decide_post_process_mode(
         snippet_matched,
         is_code_context,
+        settings.voice_to_code_enabled,
         selected_action.is_some(),
         post_process,
     );
 
     if matches!(
         mode,
-        PostProcessMode::SelectedAction | PostProcessMode::StandardPrompt
+        PostProcessMode::VoiceToCode
+            | PostProcessMode::SelectedAction
+            | PostProcessMode::StandardPrompt
     ) {
         show_processing_overlay(app);
         if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
@@ -160,6 +176,10 @@ pub(super) async fn process_transcription_text(
     let post_process_started = Instant::now();
     let processed = match mode {
         PostProcessMode::SnippetOnly => None,
+        PostProcessMode::VoiceToCode => {
+            debug!("Voice-to-Code mode — sending to local Ollama");
+            voice_to_code_completion(&settings, &final_text).await
+        }
         PostProcessMode::SkipForCodeContext => {
             debug!("Code context detected — skipping LLM post-processing");
             None
@@ -278,15 +298,23 @@ mod tests {
     #[test]
     fn snippet_wins_over_everything() {
         assert_eq!(
-            decide_post_process_mode(true, true, true, true),
+            decide_post_process_mode(true, true, true, true, true),
             PostProcessMode::SnippetOnly
         );
     }
 
     #[test]
-    fn code_context_skips_llm() {
+    fn voice_to_code_when_enabled() {
         assert_eq!(
-            decide_post_process_mode(false, true, true, true),
+            decide_post_process_mode(false, true, true, true, true),
+            PostProcessMode::VoiceToCode
+        );
+    }
+
+    #[test]
+    fn code_context_skips_llm_when_voice_to_code_disabled() {
+        assert_eq!(
+            decide_post_process_mode(false, true, false, true, true),
             PostProcessMode::SkipForCodeContext
         );
     }

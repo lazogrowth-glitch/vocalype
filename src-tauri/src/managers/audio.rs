@@ -179,8 +179,8 @@ const SR_MAX_PAUSES: usize = 10;
 const SR_WARMUP_PAUSES: usize = 5;
 const SR_MIN_PAUSE_MS: u64 = 80;
 const SR_MAX_PAUSE_MS: u64 = 1_800;
-const SR_PAUSE_MULTIPLIER: f64 = 1.8;
-const SR_MIN_THRESHOLD_MS: u64 = 400;
+const SR_PAUSE_MULTIPLIER: f64 = 1.5;
+const SR_MIN_THRESHOLD_MS: u64 = 300;
 const SR_MAX_THRESHOLD_MS: u64 = 3_000;
 const SR_ENERGY_ALPHA: f32 = 0.20;
 const SR_ENERGY_REL_THRESHOLD: f32 = 0.15;
@@ -255,7 +255,7 @@ fn create_audio_recorder(
     let (vad_threshold, prefill_frames, mut hangover_frames, onset_frames) = if is_parakeet_v3 {
         // Parakeet V3 is sensitive to clipped speech on short dictation.
         // Use a less aggressive profile to reduce dropped words.
-        (0.24, 20, 20, 1)
+        (0.28, 20, 20, 1)
     } else {
         (0.30, 15, 15, 2)
     };

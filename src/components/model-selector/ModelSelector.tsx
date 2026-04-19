@@ -29,6 +29,8 @@ interface ModelSelectorProps {
   onError?: (error: string) => void;
 }
 
+const LAUNCH_MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
+
 const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const { t } = useTranslation();
   const {
@@ -110,7 +112,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         setTimeout(async () => {
           try {
             const isRecording = await commands.isRecording();
-            if (!isRecording && !currentModel) {
+            if (!isRecording && !currentModel && modelId === LAUNCH_MODEL_ID) {
               setPendingModelId(modelId);
               setModelError(null);
               setShowModelDropdown(false);

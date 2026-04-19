@@ -1,194 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
-import { platform } from "@tauri-apps/plugin-os";
-import { getIdentifier } from "@tauri-apps/api/app";
-import {
-  checkAccessibilityPermission,
-  checkMicrophonePermission,
-} from "tauri-plugin-macos-permissions-api";
-import { commands } from "@/bindings";
-import { load } from "@tauri-apps/plugin-store";
+import { useModelStore } from "@/stores/modelStore";
 
-type OnboardingStep = "consent" | "accessibility" | "model" | "done";
-
-const CONSENT_STORE_FILE = "auth.store.json";
-const CONSENT_ACCEPTED_KEY = "vocalype.privacy.consent_accepted";
-const DIAGNOSTICS_OPT_IN_KEY = "vocalype.diagnostics.share_opt_in";
-
-async function hasAcceptedConsent(): Promise<boolean> {
-  try {
-    const store = await load(CONSENT_STORE_FILE, {
-      autoSave: false,
-      defaults: {},
-    });
-    return (await store.get<boolean>(CONSENT_ACCEPTED_KEY)) === true;
-  } catch {
-    return false;
-  }
-}
-
-async function markConsentAccepted(
-  shareDiagnostics: boolean,
-): Promise<void> {
-  try {
-    const store = await load(CONSENT_STORE_FILE, {
-      autoSave: false,
-      defaults: {},
-    });
-    await store.set(CONSENT_ACCEPTED_KEY, true);
-    await store.set(DIAGNOSTICS_OPT_IN_KEY, shareDiagnostics);
-    await store.save();
-  } catch (e) {
-    console.warn("Failed to persist consent flag:", e);
-  }
-}
+type OnboardingStep = "first-run" | "done" | null;
 
 interface UseOnboardingProps {
   authLoading: boolean;
   hasAnyAccess: boolean;
 }
 
-async function resolvePostConsentStep() {
-  const appIdentifier = await getIdentifier();
-  const isDevFlavor = appIdentifier.endsWith(".dev");
-  const [modelsResult, currentModelResult] = await Promise.all([
-    commands.hasAnyModelsAvailable(),
-    commands.getCurrentModel(),
-  ]);
-  const hasModels = modelsResult.status === "ok" && modelsResult.data;
-  const currentModel =
-    currentModelResult.status === "ok" ? currentModelResult.data.trim() : "";
-  const hasSelectedModel = currentModel.length > 0;
-
-  return {
-    isDevFlavor,
-    hasModels,
-    hasSelectedModel,
-    isReturningUser: hasModels && hasSelectedModel,
-  };
-}
-
 export function useOnboarding({
   authLoading,
   hasAnyAccess,
 }: UseOnboardingProps) {
-  const [stepHistory, setStepHistory] = useState<OnboardingStep[]>([]);
-  const [isReturningUser, setIsReturningUser] = useState(false);
+  const isFirstRun = useModelStore((s) => s.isFirstRun);
+  const modelsInitialized = useModelStore((s) => s.initialized);
 
-  const onboardingStep = stepHistory[stepHistory.length - 1] ?? null;
-
-  const pushStep = useCallback((step: OnboardingStep) => {
-    setStepHistory((prev) => [...prev, step]);
-  }, []);
-
-  const handleGoBack = useCallback(() => {
-    setStepHistory((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
-  }, []);
-
-  const checkOnboardingStatus = useCallback(async () => {
-    try {
-      // Always show consent step first for new users (and returning users who
-      // haven't seen it yet — e.g. installed before this policy was added).
-      const consentAccepted = await hasAcceptedConsent();
-      if (!consentAccepted) {
-        pushStep("consent");
-        return;
-      }
-
-      const { isDevFlavor, hasModels, hasSelectedModel, isReturningUser } =
-        await resolvePostConsentStep();
-
-      if (isReturningUser) {
-        setIsReturningUser(true);
-        if (platform() === "macos" && !isDevFlavor) {
-          try {
-            const [hasAccessibility, hasMicrophone] = await Promise.all([
-              checkAccessibilityPermission(),
-              checkMicrophonePermission(),
-            ]);
-            if (!hasAccessibility || !hasMicrophone) {
-              pushStep("accessibility");
-              return;
-            }
-          } catch (e) {
-            console.warn("Failed to check permissions:", e);
-          }
-        }
-        pushStep("done");
-      } else {
-        setIsReturningUser(false);
-        if (hasSelectedModel) {
-          pushStep("done");
-          return;
-        }
-
-        pushStep(hasModels || isDevFlavor ? "model" : "accessibility");
-      }
-    } catch (error) {
-      console.error("Failed to check onboarding status:", error);
-      pushStep("accessibility");
-    }
-  }, [pushStep]);
-
-  const handleConsentAccepted = useCallback(async (shareDiagnostics = false) => {
-    await markConsentAccepted(shareDiagnostics);
-    // After consent, proceed to check the rest of the onboarding flow
-    try {
-      const { isDevFlavor, hasModels, hasSelectedModel, isReturningUser } =
-        await resolvePostConsentStep();
-
-      if (isReturningUser) {
-        setIsReturningUser(true);
-        if (platform() === "macos" && !isDevFlavor) {
-          try {
-            const [hasAccessibility, hasMicrophone] = await Promise.all([
-              checkAccessibilityPermission(),
-              checkMicrophonePermission(),
-            ]);
-            if (!hasAccessibility || !hasMicrophone) {
-              pushStep("accessibility");
-              return;
-            }
-          } catch (e) {
-            console.warn("Failed to check permissions:", e);
-          }
-        }
-        pushStep("done");
-      } else {
-        setIsReturningUser(false);
-        if (hasSelectedModel) {
-          pushStep("done");
-          return;
-        }
-
-        pushStep(hasModels || isDevFlavor ? "model" : "accessibility");
-      }
-    } catch (error) {
-      console.error("Failed to check onboarding status after consent:", error);
-      pushStep("accessibility");
-    }
-  }, [pushStep]);
-
-  const handleAccessibilityComplete = useCallback(() => {
-    pushStep(isReturningUser ? "done" : "model");
-  }, [isReturningUser, pushStep]);
-
-  const handleModelSelected = useCallback(() => {
-    pushStep("done");
-  }, [pushStep]);
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(null);
 
   useEffect(() => {
-    if (authLoading || !hasAnyAccess) {
+    if (authLoading || !hasAnyAccess || !modelsInitialized) {
+      setOnboardingStep(null);
       return;
     }
-    checkOnboardingStatus();
-  }, [authLoading, hasAnyAccess, checkOnboardingStatus]);
+    setOnboardingStep(isFirstRun ? "first-run" : "done");
+  }, [authLoading, hasAnyAccess, modelsInitialized, isFirstRun]);
 
-  return {
-    onboardingStep,
-    isReturningUser,
-    handleConsentAccepted,
-    handleAccessibilityComplete,
-    handleModelSelected,
-    handleGoBack,
-  };
+  const handleFirstRunComplete = useCallback(() => {
+    setOnboardingStep("done");
+  }, []);
+
+  return { onboardingStep, handleFirstRunComplete };
 }

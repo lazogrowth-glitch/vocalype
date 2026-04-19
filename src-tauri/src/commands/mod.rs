@@ -9,6 +9,7 @@ pub mod history;
 pub mod meetings;
 pub mod models;
 pub mod notes;
+pub mod ollama;
 pub mod report;
 pub mod snippets;
 pub mod transcription;
@@ -649,15 +650,20 @@ pub fn recalibrate_whisper_model_command(
 }
 
 /// Called by the frontend just before opening the browser for OAuth login.
-/// Records that a login flow is in progress so the deep-link handler will accept
-/// the returning token. Without this, any app or URL can hijack the session via
-/// a crafted `vocalype://auth-callback?token=...` link (deep-link CSRF).
+/// Records that a login flow is in progress and returns the one-time `state`
+/// that must come back on the deep-link callback. Without this, any app or URL
+/// can hijack the session via a crafted `vocalype://auth-callback?token=...`
+/// link (deep-link CSRF).
 #[specta::specta]
 #[tauri::command]
-pub fn start_browser_auth(_app: AppHandle) -> Result<(), String> {
-    if let Ok(mut guard) = crate::PENDING_AUTH_NONCE.lock() {
-        *guard = Some(std::time::Instant::now());
-        Ok(())
+pub fn start_browser_auth(_app: AppHandle) -> Result<String, String> {
+    if let Ok(mut guard) = crate::PENDING_AUTH_FLOW.lock() {
+        let state = crate::create_browser_auth_state();
+        *guard = Some(crate::PendingAuthFlow {
+            started_at: std::time::Instant::now(),
+            state: state.clone(),
+        });
+        Ok(state)
     } else {
         Err("Failed to record auth flow start".to_string())
     }

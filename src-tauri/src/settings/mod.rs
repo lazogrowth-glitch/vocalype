@@ -541,7 +541,7 @@ pub struct AppSettings {
     /// Deepgram API key for cloud STT (stored in keyring, never persisted to disk).
     #[serde(default)]
     pub deepgram_api_key: Option<String>,
-    #[serde(default)]
+    #[serde(default = "default_post_process_actions")]
     pub post_process_actions: Vec<PostProcessAction>,
     #[serde(default)]
     pub saved_processing_models: Vec<SavedProcessingModel>,
@@ -564,6 +564,18 @@ pub struct AppSettings {
     /// Automatically pause media players (Spotify, etc.) during recording.
     #[serde(default)]
     pub auto_pause_media: bool,
+    /// When true, dictation in code editors is sent to a local LLM (Ollama)
+    /// and the result is pasted as formatted code instead of raw text.
+    #[serde(default)]
+    pub voice_to_code_enabled: bool,
+    /// Model name to use for Voice-to-Code (e.g. "devstral", "ministral-3:8b").
+    /// Applies to the "ollama" provider.
+    #[serde(default)]
+    pub voice_to_code_model: String,
+    /// Set to true after the Voice-to-Code discovery prompt has been shown
+    /// once, so it never appears again.
+    #[serde(default)]
+    pub voice_to_code_onboarding_done: bool,
 }
 
 fn default_model() -> String {
@@ -769,6 +781,15 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         supports_structured_output: false,
     });
 
+    providers.push(PostProcessProvider {
+        id: "ollama".to_string(),
+        label: "Ollama (Local)".to_string(),
+        base_url: "http://localhost:11434/v1".to_string(),
+        allow_base_url_edit: false,
+        models_endpoint: Some("/models".to_string()),
+        supports_structured_output: false,
+    });
+
     // Custom provider always comes last
     providers.push(PostProcessProvider {
         id: "custom".to_string(),
@@ -809,11 +830,58 @@ fn default_post_process_models() -> HashMap<String, String> {
 }
 
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
-    vec![LLMPrompt {
-        id: "default_improve_transcriptions".to_string(),
-        name: "Improve Transcriptions".to_string(),
-        prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
-    }]
+    vec![
+        LLMPrompt {
+            id: "default_improve_transcriptions".to_string(),
+            name: "Improve Transcriptions".to_string(),
+            prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five -> 25, ten percent -> 10%, five dollars -> $5)\n3. Replace spoken punctuation with symbols (period -> ., comma -> ,, question mark -> ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was French, keep it in French for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+        },
+        LLMPrompt {
+            id: "dev_clean_llm_prompt".to_string(),
+            name: "Clean for LLM".to_string(),
+            prompt: "You are a voice transcription cleaner for developer dictation. Your ONLY job is to clean the raw transcript; never answer questions or execute tasks.\n\nRules:\n1. Replace spoken symbols with actual characters: dash -> -, slash -> /, dot -> ., colon -> :, underscore -> _, at -> @, equals -> =, open paren -> (, close paren -> ), open bracket -> [, close bracket -> ], star -> *\n2. Fix capitalization for tech terms: API, JWT, SDK, CLI, SQL, OAuth, React, Tauri, useState, useEffect, npm, git, TypeScript, Supabase, userId, authToken.\n3. Remove filler words (uh, um, like as filler)\n4. KEEP THE SAME LANGUAGE as the transcript. If it is French, output French; if English, output English. Never translate.\n5. NEVER answer, explain, implement, or generate anything, even if the transcript sounds like a task. Output ONLY the cleaned version of what was said.\n\nReturn only the cleaned transcript. No explanations, no code blocks, no preamble.\n\nTranscript:\n${output}".to_string(),
+        },
+    ]
+}
+
+fn default_post_process_actions() -> Vec<PostProcessAction> {
+    vec![
+        PostProcessAction {
+            key: 1,
+            name: "Corriger".to_string(),
+            prompt: "Correct spelling, punctuation, capitalization, and spacing. Keep the same language and meaning. Return only the corrected text.\n\nText:\n${output}".to_string(),
+            model: None,
+            provider_id: None,
+        },
+        PostProcessAction {
+            key: 2,
+            name: "Resumer".to_string(),
+            prompt: "Summarize the text in concise bullet points. Keep the same language as the source.\n\nText:\n${output}".to_string(),
+            model: None,
+            provider_id: None,
+        },
+        PostProcessAction {
+            key: 3,
+            name: "Email".to_string(),
+            prompt: "Transform the text into a clear, polite email. Keep the same language as the source. Return only the email body.\n\nText:\n${output}".to_string(),
+            model: None,
+            provider_id: None,
+        },
+        PostProcessAction {
+            key: 4,
+            name: "Traduire".to_string(),
+            prompt: "Translate the text. If the source is French, translate to English. If the source is not French, translate to French. Return only the translation.\n\nText:\n${output}".to_string(),
+            model: None,
+            provider_id: None,
+        },
+        PostProcessAction {
+            key: 5,
+            name: "Clean for LLM".to_string(),
+            prompt: "Clean this developer dictation for use as an LLM prompt. Fix punctuation and tech terms such as API, JWT, SDK, CLI, SQL, OAuth, React, Tauri, userId, and authToken. Do not answer the prompt. Return only the cleaned prompt.\n\nText:\n${output}".to_string(),
+            model: None,
+            provider_id: None,
+        },
+    ]
 }
 
 fn default_typing_tool() -> TypingTool {
@@ -929,6 +997,11 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
 
     if !allowed_provider_ids.contains(&settings.post_process_provider_id) {
         settings.post_process_provider_id = default_post_process_provider_id();
+        changed = true;
+    }
+
+    if settings.post_process_actions.is_empty() {
+        settings.post_process_actions = default_post_process_actions();
         changed = true;
     }
 
@@ -1068,6 +1141,7 @@ fn prepare_settings_for_runtime(app: &AppHandle, settings: &mut AppSettings) -> 
     let language_changed = ensure_selected_language_default(settings);
     let adaptive_profile_changed = ensure_adaptive_profile(app, settings);
     let external_script_changed = sanitize_external_script_path(app, settings);
+    let launch_output_changed = ensure_launch_output_defaults(settings);
 
     hydrate_secure_secrets(settings);
 
@@ -1076,6 +1150,7 @@ fn prepare_settings_for_runtime(app: &AppHandle, settings: &mut AppSettings) -> 
         || language_changed
         || adaptive_profile_changed
         || external_script_changed
+        || launch_output_changed
 }
 
 fn prepare_settings_for_fast_runtime(app: &AppHandle, settings: &mut AppSettings) -> bool {
@@ -1083,10 +1158,62 @@ fn prepare_settings_for_fast_runtime(app: &AppHandle, settings: &mut AppSettings
     let post_process_changed = ensure_post_process_defaults(settings);
     let language_changed = ensure_selected_language_default(settings);
     let external_script_changed = sanitize_external_script_path(app, settings);
+    let launch_output_changed = ensure_launch_output_defaults(settings);
 
     hydrate_secure_secrets(settings);
 
-    secrets_changed || post_process_changed || language_changed || external_script_changed
+    secrets_changed
+        || post_process_changed
+        || language_changed
+        || external_script_changed
+        || launch_output_changed
+}
+
+fn ensure_launch_output_defaults(settings: &mut AppSettings) -> bool {
+    #[cfg(debug_assertions)]
+    {
+        let _ = settings;
+        false
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        let mut changed = false;
+        let default_paste_method = PasteMethod::default();
+        if settings.paste_method != default_paste_method {
+            settings.paste_method = default_paste_method;
+            changed = true;
+        }
+        if settings.typing_tool != TypingTool::Auto {
+            settings.typing_tool = TypingTool::Auto;
+            changed = true;
+        }
+        if settings.clipboard_handling != ClipboardHandling::DontModify {
+            settings.clipboard_handling = ClipboardHandling::DontModify;
+            changed = true;
+        }
+        if settings.paste_delay_ms != default_paste_delay_ms() {
+            settings.paste_delay_ms = default_paste_delay_ms();
+            changed = true;
+        }
+        if settings.external_script_path.take().is_some() {
+            changed = true;
+        }
+        if settings.model_unload_timeout != ModelUnloadTimeout::Never {
+            settings.model_unload_timeout = ModelUnloadTimeout::Never;
+            changed = true;
+        }
+        if settings.long_audio_model.take().is_some() {
+            changed = true;
+        }
+        if (settings.long_audio_threshold_seconds - default_long_audio_threshold_seconds()).abs()
+            > f32::EPSILON
+        {
+            settings.long_audio_threshold_seconds = default_long_audio_threshold_seconds();
+            changed = true;
+        }
+        changed
+    }
 }
 
 pub fn external_scripts_dir(app: &AppHandle) -> Result<PathBuf, String> {
@@ -1344,7 +1471,7 @@ pub fn get_default_settings() -> AppSettings {
     AppSettings {
         settings_version: CURRENT_SETTINGS_VERSION,
         bindings,
-        push_to_talk: false,
+        push_to_talk: true,
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
@@ -1396,19 +1523,22 @@ pub fn get_default_settings() -> AppSettings {
         long_audio_threshold_seconds: default_long_audio_threshold_seconds(),
         gemini_api_key: None,
         gemini_model: default_gemini_model(),
-        post_process_actions: Vec::new(),
+        post_process_actions: default_post_process_actions(),
         saved_processing_models: Vec::new(),
         adaptive_profile_applied: default_adaptive_profile_applied(),
         adaptive_machine_profile: None,
         app_context_enabled: default_app_context_enabled(),
         whisper_mode: false,
         voice_snippets: Vec::new(),
-        auto_learn_dictionary: false,
+        auto_learn_dictionary: true,
         auto_pause_media: false,
         groq_stt_api_key: None,
         mistral_stt_api_key: None,
         deepgram_api_key: None,
         speaking_rate_pauses: Vec::new(),
+        voice_to_code_enabled: false,
+        voice_to_code_model: String::new(),
+        voice_to_code_onboarding_done: false,
     }
 }
 
@@ -1567,6 +1697,13 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_settings_use_push_to_talk_for_launch_flow() {
+        let settings = get_default_settings();
+        assert!(settings.push_to_talk);
+        assert_eq!(settings.recording_mode, RecordingMode::PushToTalk);
     }
 
     #[test]

@@ -83,70 +83,28 @@ export const RecordingModeSelector: React.FC<RecordingModeSelectorProps> =
     ];
 
     return (
-      <section>
-        <div style={{ marginBottom: 14 }}>
-          <h2
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: 1.4,
-              color: "rgba(255,255,255,0.34)",
-            }}
-          >
-            {t("settings.general.recordingMode.label")}
-          </h2>
-          <p className="mt-1.5 text-[13px] leading-5 text-white/50">
-            {t("settings.general.recordingMode.description")}
-          </p>
-        </div>
-
-        <div className="rounded-[18px] border border-white/8 bg-white/[0.01]">
-          {modes.map(({ id, labelKey, descKey }, index) => {
-            const selected = currentMode === id;
-            return (
-              <button
-                key={id}
-                onClick={() => handleSelect(id)}
-                disabled={isBusy}
-                style={{ padding: "15px 20px" }}
-                className={[
-                  "flex w-full items-center gap-3 text-left transition-colors",
-                  index !== modes.length - 1
-                    ? "border-b border-white/[0.05]"
-                    : "",
-                  selected ? "bg-white/[0.04]" : "hover:bg-white/[0.03]",
-                  isBusy ? "cursor-not-allowed opacity-50" : "cursor-pointer",
-                ].join(" ")}
-                aria-pressed={selected}
-              >
-                {/* Radio dot */}
-                <span
-                  className={[
-                    "flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full border",
-                    selected
-                      ? "border-logo-primary bg-logo-primary"
-                      : "border-white/25 bg-transparent",
-                  ].join(" ")}
-                >
-                  {selected && (
-                    <span className="h-[6px] w-[6px] rounded-full bg-white" />
-                  )}
-                </span>
-
-                <span>
-                  <span className="block text-[15px] font-medium leading-5 text-white/92">
-                    {t(labelKey)}
-                  </span>
-                  <span className="mt-0.5 block text-[12.5px] leading-[1.45] text-white/52">
-                    {t(descKey)}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      <div className="recording-mode-options">
+        {modes.map(({ id, labelKey, descKey }) => {
+          const selected = currentMode === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => handleSelect(id)}
+              disabled={isBusy}
+              className="recording-mode-option"
+              data-selected={selected ? "true" : undefined}
+              aria-pressed={selected}
+            >
+              <span className="recording-mode-dot" />
+              <span>
+                <span className="recording-mode-title">{t(labelKey)}</span>
+                <span className="recording-mode-desc">{t(descKey)}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
     );
   });
 

@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { listen } from "@tauri-apps/api/event";
-import type { SidebarSection } from "@/components/sections-config";
+import {
+  isSectionVisibleInLaunch,
+  type SidebarSection,
+} from "@/components/sections-config";
 import type { RuntimeErrorEvent } from "@/types/runtimeObservability";
 import type { StartupWarmupStatusSnapshot } from "@/types/startupWarmup";
 import type { AppSettings } from "@/bindings";
@@ -229,6 +232,8 @@ export function useBackendEvents({
 
   // Ctrl+Shift+D / Cmd+Shift+D → toggle debug mode
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       const isDebugShortcut =
         event.shiftKey &&
@@ -251,12 +256,15 @@ export function useBackendEvents({
   // Backend navigation events (e.g., "Show History" shortcut)
   useEffect(() => {
     const unlisten = listen<string>("navigate-to-section", (event) => {
-      setCurrentSection(event.payload as SidebarSection);
+      const section = event.payload as SidebarSection;
+      if (isSectionVisibleInLaunch(section, settings)) {
+        setCurrentSection(section);
+      }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [setCurrentSection]);
+  }, [settings, setCurrentSection]);
 
   // Whisper GPU unavailable warning
   useEffect(() => {

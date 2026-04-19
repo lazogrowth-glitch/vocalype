@@ -8,6 +8,69 @@
 use crate::context_detector::CodeLanguage;
 use regex::Regex;
 
+// ── Code-speak detector ───────────────────────────────────────────────────────
+
+/// Returns true if `text` contains spoken code patterns that strongly indicate
+/// the user is dictating code — regardless of which app they are in.
+///
+/// Uses two tiers:
+/// - **Unambiguous** phrases (open paren, camel case…): 1 hit is enough.
+/// - **Ambiguous** keywords (function, equals, slash…): need ≥ 2 hits.
+pub fn contains_spoken_code_patterns(text: &str) -> bool {
+    let lower = text.to_lowercase();
+
+    // Tier 1 — unambiguous spoken-code phrases. One match = code context.
+    const UNAMBIGUOUS: &[&str] = &[
+        "open paren",
+        "close paren",
+        "open parenthesis",
+        "close parenthesis",
+        "open bracket",
+        "close bracket",
+        "open brace",
+        "close brace",
+        "open curly",
+        "close curly",
+        "camel case",
+        "snake case",
+        "pascal case",
+        "triple equals",
+        "double equals",
+        "not equals",
+        "fat arrow",
+        "thin arrow",
+        "right arrow",
+        "plus equals",
+        "minus equals",
+        "bang equals",
+    ];
+    if UNAMBIGUOUS.iter().any(|p| lower.contains(p)) {
+        return true;
+    }
+
+    // Tier 2 — ambiguous keywords. Need ≥ 2 to avoid false positives.
+    const AMBIGUOUS: &[&str] = &[
+        "function",
+        "const ",
+        "let ",
+        "var ",
+        "return",
+        "async",
+        "await",
+        "import",
+        "export",
+        "interface",
+        "semicolon",
+        "backtick",
+        "underscore",
+        "backslash",
+        "equals",
+        "slash",
+    ];
+    let hits = AMBIGUOUS.iter().filter(|p| lower.contains(*p)).count();
+    hits >= 2
+}
+
 // ── Public entry point ────────────────────────────────────────────────────────
 
 /// Apply code-dictation conversions to `text`.

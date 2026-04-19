@@ -1,6 +1,29 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type DependencyList } from "react";
 import { toast } from "sonner";
-import { listen } from "@tauri-apps/api/event";
+import {
+  listen,
+  type EventCallback,
+  type EventName,
+} from "@tauri-apps/api/event";
+
+function useTauriEvent<T>(
+  event: EventName,
+  handler: EventCallback<T>,
+  deps: DependencyList = [],
+) {
+  useEffect(() => {
+    let unlistenFn: (() => void) | undefined;
+    let cancelled = false;
+    listen<T>(event, handler).then((fn) => {
+      if (cancelled) fn();
+      else unlistenFn = fn;
+    });
+    return () => {
+      cancelled = true;
+      unlistenFn?.();
+    };
+  }, deps);
+}
 import {
   isSectionVisibleInLaunch,
   type SidebarSection,
@@ -254,37 +277,33 @@ export function useBackendEvents({
   }, [settings?.debug_mode, updateSetting]);
 
   // Backend navigation events (e.g., "Show History" shortcut)
-  useEffect(() => {
-    const unlisten = listen<string>("navigate-to-section", (event) => {
+  useTauriEvent<string>(
+    "navigate-to-section",
+    (event) => {
       const section = event.payload as SidebarSection;
       if (isSectionVisibleInLaunch(section, settings)) {
         setCurrentSection(section);
       }
-    });
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [settings, setCurrentSection]);
+    },
+    [settings, setCurrentSection],
+  );
 
   // Whisper GPU unavailable warning
-  useEffect(() => {
-    const unlisten = listen<string>("whisper-gpu-unavailable", () => {
+  useTauriEvent<string>(
+    "whisper-gpu-unavailable",
+    () => {
       toast.warning(t("warnings.whisperGpuUnavailable"), {
         duration: 8000,
         description: t("warnings.whisperGpuUnavailableDesc"),
       });
-    });
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t]);
+    },
+    [t],
+  );
 
   // Paste failed error
-  useEffect(() => {
-    const unlisten = listen<{
-      reason?: string;
-      copied_to_clipboard?: boolean;
-    }>("paste-failed", (event) => {
+  useTauriEvent<{ reason?: string; copied_to_clipboard?: boolean }>(
+    "paste-failed",
+    (event) => {
       const copiedToClipboard = event.payload?.copied_to_clipboard ?? false;
       toast.error(
         copiedToClipboard
@@ -299,15 +318,14 @@ export function useBackendEvents({
           }),
         },
       );
-    });
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t]);
+    },
+    [t],
+  );
 
   // Runtime error toast (with dedup within 1.5s)
-  useEffect(() => {
-    const unlisten = listen<RuntimeErrorEvent>("runtime-error", (event) => {
+  useTauriEvent<RuntimeErrorEvent>(
+    "runtime-error",
+    (event) => {
       const payload = event.payload;
       if (!payload) return;
 
@@ -315,9 +333,7 @@ export function useBackendEvents({
       const now = Date.now();
       const last = lastRuntimeErrorRef.current;
 
-      if (last && last.key === dedupeKey && now - last.at < 1500) {
-        return;
-      }
+      if (last && last.key === dedupeKey && now - last.at < 1500) return;
 
       lastRuntimeErrorRef.current = { key: dedupeKey, at: now };
 
@@ -344,140 +360,113 @@ export function useBackendEvents({
         t("warnings.runtimeFailure", { defaultValue: "Transcription failed" }),
         { duration: 8000, description },
       );
-    });
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t]);
+    },
+    [t],
+  );
 
   // Transcription lifecycle — show "Text pasted ✓" on completion
-  useEffect(() => {
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-
-    listen<{ state?: string }>("transcription-lifecycle", (event) => {
-      if (cancelled) return;
+  useTauriEvent<{ state?: string }>(
+    "transcription-lifecycle",
+    (event) => {
       if (event.payload?.state === "completed") {
         toast.success(t("overlay.pasteSuccess"), { duration: 2000 });
       }
-    }).then((fn) => {
-      cleanup = fn;
-    });
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, [t]);
+    },
+    [t],
+  );
 
   // Warmup blocked info toast
-  useEffect(() => {
-    const unlisten = listen<string | StartupWarmupStatusSnapshot>(
-      "transcription-warmup-blocked",
-      (event) => {
-        const message =
-          typeof event.payload === "string"
-            ? event.payload
-            : event.payload?.message || t("transcription.warmup_preparing");
-
-        toast(message, {
-          duration: 3000,
-          description: t("transcription.warmup_ready"),
-        });
-      },
-    );
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t]);
+  useTauriEvent<string | StartupWarmupStatusSnapshot>(
+    "transcription-warmup-blocked",
+    (event) => {
+      const message =
+        typeof event.payload === "string"
+          ? event.payload
+          : event.payload?.message || t("transcription.warmup_preparing");
+      toast(message, {
+        duration: 3000,
+        description: t("transcription.warmup_ready"),
+      });
+    },
+    [t],
+  );
 
   // command-mode-started → loading toast with live countdown
-  useEffect(() => {
-    const unlisten = listen<{ max_duration_secs: number }>(
-      "command-mode-started",
-      (event) => {
-        const maxSecs = event.payload?.max_duration_secs ?? 8;
-        let remaining = maxSecs;
+  useTauriEvent<{ max_duration_secs: number }>(
+    "command-mode-started",
+    (event) => {
+      const maxSecs = event.payload?.max_duration_secs ?? 8;
+      let remaining = maxSecs;
 
-        clearCommandModeCountdown();
+      clearCommandModeCountdown();
 
-        toast.loading(
-          t("commandMode.recording", {
-            count: remaining,
-            defaultValue: `Parle maintenant… (${remaining}s)`,
-          }),
-          { id: "command-mode", duration: Infinity },
-        );
+      toast.loading(
+        t("commandMode.recording", {
+          count: remaining,
+          defaultValue: `Parle maintenant… (${remaining}s)`,
+        }),
+        { id: "command-mode", duration: Infinity },
+      );
 
-        commandModeCountdownRef.current = setInterval(() => {
-          remaining -= 1;
-          if (remaining > 0) {
-            toast.loading(
-              t("commandMode.recording", {
-                count: remaining,
-                defaultValue: `Parle maintenant… (${remaining}s)`,
-              }),
-              { id: "command-mode", duration: Infinity },
-            );
-          } else {
-            clearCommandModeCountdown();
-          }
-        }, 1000);
-      },
-    );
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t, clearCommandModeCountdown]);
+      commandModeCountdownRef.current = setInterval(() => {
+        remaining -= 1;
+        if (remaining > 0) {
+          toast.loading(
+            t("commandMode.recording", {
+              count: remaining,
+              defaultValue: `Parle maintenant… (${remaining}s)`,
+            }),
+            { id: "command-mode", duration: Infinity },
+          );
+        } else {
+          clearCommandModeCountdown();
+        }
+      }, 1000);
+    },
+    [t, clearCommandModeCountdown],
+  );
 
   // command-mode-processing → swap to spinner
-  useEffect(() => {
-    const unlisten = listen("command-mode-processing", () => {
+  useTauriEvent(
+    "command-mode-processing",
+    () => {
       clearCommandModeCountdown();
       toast.loading(
         t("commandMode.processing", { defaultValue: "Traitement en cours…" }),
         { id: "command-mode", duration: Infinity },
       );
-    });
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t, clearCommandModeCountdown]);
+    },
+    [t, clearCommandModeCountdown],
+  );
 
   // command-mode-finished → dismiss loading toast
-  useEffect(() => {
-    const unlisten = listen("command-mode-finished", () => {
+  useTauriEvent(
+    "command-mode-finished",
+    () => {
       clearCommandModeCountdown();
       toast.dismiss("command-mode");
-    });
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [clearCommandModeCountdown]);
+    },
+    [clearCommandModeCountdown],
+  );
 
   // command-mode-error → show error toast
-  useEffect(() => {
-    const unlisten = listen<{ message: string }>(
-      "command-mode-error",
-      (event) => {
-        clearCommandModeCountdown();
-        toast.dismiss("command-mode");
-        toast.error(
-          t("commandMode.errorTitle", {
-            defaultValue: "Command Mode — erreur",
-          }),
-          { duration: 6000, description: event.payload?.message },
-        );
-      },
-    );
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t, clearCommandModeCountdown]);
+  useTauriEvent<{ message: string }>(
+    "command-mode-error",
+    (event) => {
+      clearCommandModeCountdown();
+      toast.dismiss("command-mode");
+      toast.error(
+        t("commandMode.errorTitle", { defaultValue: "Command Mode — erreur" }),
+        { duration: 6000, description: event.payload?.message },
+      );
+    },
+    [t, clearCommandModeCountdown],
+  );
 
   // whisper-mode-changed
-  useEffect(() => {
-    const unlisten = listen<boolean>("whisper-mode-changed", (event) => {
+  useTauriEvent<boolean>(
+    "whisper-mode-changed",
+    (event) => {
       const enabled = event.payload;
       if (enabled) {
         toast.success(
@@ -489,25 +478,19 @@ export function useBackendEvents({
           duration: 2500,
         });
       }
-    });
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t]);
+    },
+    [t],
+  );
 
   // whisper-mode-error
-  useEffect(() => {
-    const unlisten = listen<string>("whisper-mode-error", (event) => {
+  useTauriEvent<string>(
+    "whisper-mode-error",
+    (event) => {
       toast.error(
         t("whisperMode.errorTitle", { defaultValue: "Whisper Mode — error" }),
-        {
-          duration: 6000,
-          description: event.payload,
-        },
+        { duration: 6000, description: event.payload },
       );
-    });
-    return () => {
-      unlisten.then((fn) => fn?.());
-    };
-  }, [t]);
+    },
+    [t],
+  );
 }

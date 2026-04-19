@@ -16,8 +16,26 @@ impl ParakeetTDTDecoder {
 
     /// Resolve a BCP-47 language code to its vocab token ID (e.g. "fr" → 71).
     /// Returns `None` when the language has no control token in this vocab.
-    pub fn language_token_id(&self, lang_code: &str) -> Option<usize> {
-        self.vocab.get_language_token_id(lang_code)
+    pub fn language_token_id(&self, token_text: &str) -> Option<usize> {
+        // Accept both bare lang codes ("fr") and full token strings ("▁le").
+        // If it looks like a bare code (no spaces, no ▁, short), wrap it.
+        if token_text.len() <= 3
+            && token_text.chars().all(|c| c.is_ascii_alphabetic())
+        {
+            self.vocab.get_language_token_id(token_text)
+        } else {
+            // Exact match on the raw token string
+            self.vocab
+                .id_to_token
+                .iter()
+                .position(|t| t == token_text)
+        }
+    }
+
+    /// Iterator over all raw token strings in vocab order.
+    /// Used by bias-token pre-computation in `parakeet_tdt.rs`.
+    pub fn vocab_tokens(&self) -> impl Iterator<Item = &str> {
+        self.vocab.id_to_token.iter().map(|s| s.as_str())
     }
 
     /// Decode tokens with timestamps

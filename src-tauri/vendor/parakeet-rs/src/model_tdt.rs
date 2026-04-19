@@ -219,22 +219,21 @@ impl ParakeetTDTModel {
 
     /// Run greedy decoding - returns (token_ids, frame_indices, durations)
     ///
-    /// `language_token_id`: when `Some(id)`, the LSTM prediction network is
-    /// primed with the given language control token before the first audio
-    /// frame.  This biases the decoder towards the target language without
-    /// any changes to the ONNX graph — the same mechanism Whisper uses when
-    /// you pass `<|fr|>` as a forced decoder token.
+    /// `language_bias_tokens`: slice of token IDs that should receive a logit
+    /// boost at every decode step.  Pre-computed by `ParakeetTDT::set_language()`
+    /// from language-specific characters and common function words.
+    /// An empty slice means no bias (auto-detect, default behaviour).
     pub fn forward(
         &mut self,
         features: Array2<f32>,
-        language_token_id: Option<usize>,
+        language_bias_tokens: &[usize],
     ) -> Result<(Vec<usize>, Vec<usize>, Vec<usize>)> {
         // Run encoder
         let (encoder_out, encoder_len) = self.run_encoder(&features)?;
 
         // Run greedy decoding with decoder_joint
         let (tokens, frame_indices, durations) =
-            self.greedy_decode(&encoder_out, encoder_len, language_token_id)?;
+            self.greedy_decode(&encoder_out, encoder_len, language_bias_tokens)?;
 
         Ok((tokens, frame_indices, durations))
     }
@@ -315,7 +314,7 @@ impl ParakeetTDTModel {
         &mut self,
         encoder_out: &Array3<f32>,
         encoder_len: i64,
-        language_token_id: Option<usize>,
+        language_bias_tokens: &[usize],
     ) -> Result<(Vec<usize>, Vec<usize>, Vec<usize>)> {
         // encoder_out shape: [batch, time, encoder_dim]
         let time_steps = encoder_out.shape()[1];
@@ -367,8 +366,23 @@ impl ParakeetTDTModel {
                 .map_err(|e| Error::Model(format!("Failed to extract logits: {e}")))?;
 
             // TDT outputs vocab_size + 5 durations
-            let vocab_logits: Vec<f32> = logits_data.iter().take(vocab_size).copied().collect();
+            let mut vocab_logits: Vec<f32> =
+                logits_data.iter().take(vocab_size).copied().collect();
             let duration_logits: Vec<f32> = logits_data.iter().skip(vocab_size).copied().collect();
+
+            // Language bias: boost logits of target-language tokens so the model
+            // prefers them over phonetically similar tokens from other languages.
+            // Bias of +2.0 ≈ ×7.4 relative probability — noticeable but not
+            // absolute (audio signal can still override if very clear).
+            // Cost: ~200 additions per frame, negligible vs ONNX inference.
+            if !language_bias_tokens.is_empty() {
+                const LANG_BIAS: f32 = 2.0;
+                for &id in language_bias_tokens {
+                    if id < vocab_logits.len() {
+                        vocab_logits[id] += LANG_BIAS;
+                    }
+                }
+            }
 
             let token_id = vocab_logits
                 .iter()

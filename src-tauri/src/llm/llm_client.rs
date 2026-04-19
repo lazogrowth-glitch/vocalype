@@ -41,6 +41,16 @@ struct ChatCompletionRequest {
     /// Ignored by other providers (field is unknown → silently dropped).
     #[serde(skip_serializing_if = "Option::is_none")]
     keep_alive: Option<i64>,
+    /// Cap generation length. For transcription cleanup the output is never
+    /// longer than the input — 300 tokens covers even long dictations.
+    /// Without this the model runs until EOS, which can be 3-5× the needed
+    /// tokens, adding 1-3 s of unnecessary latency.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
+    /// Greedy decoding (temperature=0): deterministic output, fastest path
+    /// through the sampler.  Post-processing is a deterministic editing task —
+    /// there is no benefit to stochastic sampling here.
+    temperature: f32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -181,6 +191,12 @@ pub async fn send_chat_completion_with_schema(
         } else {
             None
         },
+        // 300 tokens = ~225 words — enough for any dictation cleanup.
+        // Cloud providers (OpenAI, Anthropic) accept and respect max_tokens.
+        // Local llama-server also respects it, cutting unnecessary generation.
+        max_tokens: Some(300),
+        // Greedy decoding: fastest + deterministic for editing tasks.
+        temperature: 0.0,
     };
 
     let response = client

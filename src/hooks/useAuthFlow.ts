@@ -9,7 +9,11 @@ import { useSessionRefresh } from "./useSessionRefresh";
 
 const isExpectedMissingLicenseMessage = (value: unknown) => {
   const message =
-    value instanceof Error ? value.message : typeof value === "string" ? value : "";
+    value instanceof Error
+      ? value.message
+      : typeof value === "string"
+        ? value
+        : "";
   return message.toLowerCase().includes("no stored license bundle");
 };
 
@@ -381,7 +385,11 @@ export function useAuthFlow(
       );
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => {
+        try {
+          fn();
+        } catch {}
+      });
     };
   }, [t, handleStartCheckout]);
 
@@ -419,7 +427,11 @@ export function useAuthFlow(
       },
     );
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => {
+        try {
+          fn();
+        } catch {}
+      });
     };
   }, [t, handleStartCheckout]);
 
@@ -441,7 +453,11 @@ export function useAuthFlow(
       );
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => {
+        try {
+          fn();
+        } catch {}
+      });
     };
   }, [t]);
 

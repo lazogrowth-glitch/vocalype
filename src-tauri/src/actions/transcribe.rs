@@ -1619,21 +1619,19 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             let post_process_will_run = post_process
                 || drift_detected_on_assembly
                 || (llm_auto_mode && auto_llm_should_trigger(&ah, &assembled));
-            let transcription = if chunk_count >= 2
-                && !assembled.is_empty()
-                && !post_process_will_run
-            {
-                let settings_for_cleanup = get_settings(&ah);
-                cleanup_assembled_transcription_with_strategy(
-                    &settings_for_cleanup,
-                    &assembled,
-                    &cleanup_strategy.llm_cleanup,
-                )
-                .await
-                .unwrap_or(assembled)
-            } else {
-                assembled
-            };
+            let transcription =
+                if chunk_count >= 2 && !assembled.is_empty() && !post_process_will_run {
+                    let settings_for_cleanup = get_settings(&ah);
+                    cleanup_assembled_transcription_with_strategy(
+                        &settings_for_cleanup,
+                        &assembled,
+                        &cleanup_strategy.llm_cleanup,
+                    )
+                    .await
+                    .unwrap_or(assembled)
+                } else {
+                    assembled
+                };
             if let Ok(mut p) = profiler.lock() {
                 p.push_step_since(
                     "chunk_cleanup",

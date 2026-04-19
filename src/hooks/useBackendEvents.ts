@@ -15,12 +15,23 @@ function useTauriEvent<T>(
     let unlistenFn: (() => void) | undefined;
     let cancelled = false;
     listen<T>(event, handler).then((fn) => {
-      if (cancelled) fn();
-      else unlistenFn = fn;
+      if (cancelled) {
+        try {
+          fn();
+        } catch {
+          /* Tauri HMR race — safe to ignore */
+        }
+      } else {
+        unlistenFn = fn;
+      }
     });
     return () => {
       cancelled = true;
-      unlistenFn?.();
+      try {
+        unlistenFn?.();
+      } catch {
+        /* Tauri HMR race — safe to ignore */
+      }
     };
   }, deps);
 }

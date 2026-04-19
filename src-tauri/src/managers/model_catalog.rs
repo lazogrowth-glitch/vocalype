@@ -7,7 +7,7 @@ use std::fs;
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
-pub const DEFAULT_MODEL_ASSET_BASE_URL: &str = "https://blob.handy.computer";
+pub const DEFAULT_MODEL_ASSET_BASE_URL: &str = "https://assets.vocalype.com/models";
 const MODEL_CATALOG_RESOURCE_PATH: &str = "resources/model_catalog.json";
 const FALLBACK_MODEL_CATALOG_JSON: &str = include_str!("../../resources/model_catalog.json");
 

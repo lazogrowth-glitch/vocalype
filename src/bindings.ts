@@ -1647,6 +1647,36 @@ async pullOllamaModel(model: string) : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Download binary + model (if needed) and start the embedded llama-server.
+ * Emits `llm-setup-progress` events throughout.
+ */
+async setupLlamaServer() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("setup_llama_server") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/** Returns binary_ready, model_ready, server_running, port. */
+async checkLlamaServerStatus() : Promise<Result<LlamaServerStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("check_llama_server_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/** Kill the embedded llama-server process to free RAM. */
+async stopLlamaServer() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_llama_server") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -1874,6 +1904,7 @@ export type NoteEntry = { id: number; title: string; content: string; category: 
 export type NpuKind = "none" | "qualcomm" | "intel" | "amd" | "unknown"
 export type OllamaModelInfo = { name: string; size_gb: number }
 export type OllamaStatus = { available: boolean; models: OllamaModelInfo[] }
+export type LlamaServerStatus = { binary_ready: boolean; model_ready: boolean; server_running: boolean; port: number }
 export type OverlayPosition = "none" | "top" | "bottom"
 export type ParakeetDiagnosticsSnapshot = { active_session: ParakeetSessionDiagnostics | null; recent_sessions: ParakeetSessionDiagnostics[] }
 export type ParakeetFailureMode = "healthy" | "underchunking_long_utterance" | "overtrim_overlap" | "missing_word_timestamps" | "retry_recovered_chunk" | "final_chunk_hallucination" | "low_audio_density" | "boundary_word_loss"

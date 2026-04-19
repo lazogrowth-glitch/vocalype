@@ -37,6 +37,10 @@ struct ChatCompletionRequest {
     messages: Vec<ChatMessage>,
     #[serde(skip_serializing_if = "Option::is_none")]
     response_format: Option<ResponseFormat>,
+    /// Ollama-specific: -1 = keep model loaded indefinitely.
+    /// Ignored by other providers (field is unknown → silently dropped).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    keep_alive: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -169,6 +173,14 @@ pub async fn send_chat_completion_with_schema(
         model: model.to_string(),
         messages,
         response_format,
+        // Keep Ollama model hot for 30 min after last use.
+        // Default Ollama TTL is 5 min which causes a 10-second reload on every
+        // longer pause. 30 min covers a coding session without wasting RAM all day.
+        keep_alive: if provider.id == "ollama" || provider.id == "vocalype-llm" {
+            Some(1800)
+        } else {
+            None
+        },
     };
 
     let response = client

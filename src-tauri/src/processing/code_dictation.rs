@@ -6,6 +6,7 @@
 //! Rules are applied in order: multi-word phrases first, single symbols last.
 
 use crate::context_detector::CodeLanguage;
+use regex::Regex;
 
 // ── Public entry point ────────────────────────────────────────────────────────
 
@@ -15,6 +16,9 @@ use crate::context_detector::CodeLanguage;
 pub fn apply_code_dictation(text: &str, language: Option<CodeLanguage>) -> String {
     let mut out = text.to_string();
 
+    // Casing commands run first so "camel case use state" → "useState" before
+    // any symbol replacement touches the words.
+    apply_casing_commands(&mut out);
     // Order matters: longer phrases must be replaced before their sub-words.
     apply_multi_word_operators(&mut out);
     apply_language_specific(&mut out, language);
@@ -22,6 +26,81 @@ pub fn apply_code_dictation(text: &str, language: Option<CodeLanguage>) -> Strin
     apply_spacing_cleanup(&mut out);
 
     out
+}
+
+// ── Casing commands ───────────────────────────────────────────────────────────
+
+/// Convert spoken casing commands into the right identifier format.
+///
+/// Supported triggers (case-insensitive):
+///   "camel case <words>"    → camelCase
+///   "snake case <words>"    → snake_case
+///   "pascal case <words>"   → PascalCase
+///   "constant case <words>" → CONSTANT_CASE
+///
+/// Captures up to 6 lowercase words after the trigger keyword.
+fn apply_casing_commands(s: &mut String) {
+    let word_group = r"([a-z]+(?:\s+[a-z]+){0,5})";
+
+    let rules: &[(&str, fn(&str) -> String)] = &[
+        (r"(?i)\bcamel\s+case\s+", to_camel_case),
+        (r"(?i)\bsnake\s+case\s+", to_snake_case),
+        (r"(?i)\bpascal\s+case\s+", to_pascal_case),
+        (r"(?i)\bconstant\s+case\s+", to_screaming_snake),
+    ];
+
+    for (trigger, converter) in rules {
+        let pattern = format!("{}{}", trigger, word_group);
+        if let Ok(re) = Regex::new(&pattern) {
+            *s = re
+                .replace_all(s, |caps: &regex::Captures| converter(&caps[1]))
+                .to_string();
+        }
+    }
+}
+
+fn to_camel_case(words: &str) -> String {
+    let mut parts = words.split_whitespace();
+    let first = parts.next().unwrap_or("").to_lowercase();
+    let rest: String = parts
+        .map(|w| {
+            let mut chars = w.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().to_string() + chars.as_str(),
+            }
+        })
+        .collect();
+    first + &rest
+}
+
+fn to_snake_case(words: &str) -> String {
+    words
+        .split_whitespace()
+        .map(|w| w.to_lowercase())
+        .collect::<Vec<_>>()
+        .join("_")
+}
+
+fn to_pascal_case(words: &str) -> String {
+    words
+        .split_whitespace()
+        .map(|w| {
+            let mut chars = w.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().to_string() + &chars.as_str().to_lowercase(),
+            }
+        })
+        .collect()
+}
+
+fn to_screaming_snake(words: &str) -> String {
+    words
+        .split_whitespace()
+        .map(|w| w.to_uppercase())
+        .collect::<Vec<_>>()
+        .join("_")
 }
 
 // ── Multi-word operator phrases ───────────────────────────────────────────────
@@ -295,6 +374,42 @@ mod tests {
     fn js_uses_fat_arrow() {
         let result = apply_code_dictation("const f equals open paren x close paren arrow x plus 1", Some(CodeLanguage::JavaScript));
         assert!(result.contains("=>"), "expected '=>' in: {result}");
+    }
+
+    #[test]
+    fn camel_case_use_state() {
+        let result = apply_code_dictation("camel case use state", None);
+        assert_eq!(result, "useState", "got: {result}");
+    }
+
+    #[test]
+    fn camel_case_multi_word() {
+        let result = apply_code_dictation("camel case my function name", None);
+        assert_eq!(result, "myFunctionName", "got: {result}");
+    }
+
+    #[test]
+    fn snake_case_basic() {
+        let result = apply_code_dictation("snake case my variable", None);
+        assert_eq!(result, "my_variable", "got: {result}");
+    }
+
+    #[test]
+    fn pascal_case_component() {
+        let result = apply_code_dictation("pascal case my component", None);
+        assert_eq!(result, "MyComponent", "got: {result}");
+    }
+
+    #[test]
+    fn constant_case_basic() {
+        let result = apply_code_dictation("constant case max retries", None);
+        assert_eq!(result, "MAX_RETRIES", "got: {result}");
+    }
+
+    #[test]
+    fn casing_in_sentence() {
+        let result = apply_code_dictation("const camel case handle click equals", None);
+        assert!(result.contains("handleClick"), "got: {result}");
     }
 
     #[test]

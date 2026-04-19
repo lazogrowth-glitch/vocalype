@@ -1,4 +1,5 @@
 pub mod agent;
+pub mod llama_server;
 pub mod app_context;
 pub mod audio;
 pub mod cloud_stt;

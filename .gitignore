@@ -50,6 +50,7 @@ backend/*.db
 # Test/dev artifacts (never commit these)
 .pydeps-onnxasr/
 tmp-parakeet-tests/
+r2-upload/
 src-tauri/evals/parakeet/audio/*.wav
 src-tauri/evals/parakeet/reports/*.json
 src-tauri/evals/parakeet/external/

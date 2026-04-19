@@ -33,17 +33,17 @@ pub use processing::{code_dictation, correction_tracker, dictionary, filler, pos
 pub use security::{bundle_signing, integrity, license, model_crypto, secret_store};
 // llm
 pub use llm::{
-    deepgram_stt_client, gemini_client, groq_stt_client, llm_client, mistral_stt_client,
-    prompt_builder,
+    deepgram_stt_client, gemini_client, groq_stt_client, llama_server, llm_client,
+    mistral_stt_client, prompt_builder,
 };
 // runtime
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub use runtime::apple_intelligence;
 pub use runtime::{
     adaptive_runtime, chunking, command_mode, context_detector, model_ids, parakeet_quality,
-    parakeet_text, runtime_observability, session_keyterms, startup_warmup, telemetry,
-    transcription_confidence, transcription_coordinator, vocabulary_store, voice_feedback,
-    voice_profile, wake_word,
+    parakeet_text, runtime_observability, session_glossary, session_keyterms, startup_warmup,
+    telemetry, transcription_confidence, transcription_coordinator, vocabulary_store,
+    voice_feedback, voice_profile, wake_word,
 };
 // platform
 pub use platform::signal_handle;
@@ -895,6 +895,10 @@ pub fn run(cli_args: CliArgs) {
         commands::ollama::check_ollama_status,
         commands::ollama::start_ollama_serve,
         commands::ollama::pull_ollama_model,
+        commands::ollama::warmup_ollama_model,
+        commands::llama_server::setup_llama_server,
+        commands::llama_server::check_llama_server_status,
+        commands::llama_server::stop_llama_server,
     ]);
 
     #[cfg(debug_assertions)]
@@ -1045,6 +1049,13 @@ pub fn run(cli_args: CliArgs) {
             app.manage(vocabulary_store::VocabularyStoreState(std::sync::Mutex::new(
                 vocabulary_store::VocabularyStore::load(&app_handle),
             )));
+            app.manage(session_glossary::SessionGlossaryState(std::sync::Mutex::new(
+                session_glossary::SessionGlossary::new(),
+            )));
+            // Passive Session Glossary: watch clipboard every 2 s in code context.
+            session_glossary::spawn_clipboard_watcher(app_handle.clone(), 2000);
+            // Embedded llama-server process handle.
+            app.manage(llama_server::LlamaServerState::new());
             app.manage(voice_profile::VoiceProfileState(std::sync::Mutex::new(
                 voice_profile::VoiceProfile::load(&app_handle),
             )));
@@ -1278,6 +1289,14 @@ pub fn run(cli_args: CliArgs) {
         if let tauri::RunEvent::Reopen { .. } = &event {
             show_main_window(app);
         }
+
+        // Kill embedded llama-server on exit.
+        if let tauri::RunEvent::Exit = &event {
+            if let Some(state) = app.try_state::<llama_server::LlamaServerState>() {
+                state.shutdown();
+            }
+        }
+
         let _ = (app, event); // suppress unused warnings on non-macOS
     });
 }

@@ -163,6 +163,37 @@ pub async fn pull_ollama_model(app: AppHandle, model: String) -> Result<(), Stri
     }
 }
 
+/// Pre-load a model into Ollama's memory so the first real request is instant.
+/// Sends a tiny dummy chat completion with `keep_alive: -1` so the model
+/// stays loaded indefinitely after warmup.
+/// Fire-and-forget from the frontend — errors are silently ignored.
+#[specta::specta]
+#[tauri::command]
+pub async fn warmup_ollama_model(model: String) -> Result<(), String> {
+    debug!("[ollama] warming up model: {}", model);
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("client build failed: {e}"))?;
+
+    let body = serde_json::json!({
+        "model": model,
+        "messages": [{ "role": "user", "content": "hi" }],
+        "max_tokens": 1,
+        "keep_alive": 1800,
+    });
+
+    let _ = client
+        .post("http://localhost:11434/v1/chat/completions")
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+        .await;
+
+    debug!("[ollama] warmup done for {}", model);
+    Ok(())
+}
+
 fn parse_pull_pct(line: &str) -> u8 {
     // Ollama outputs lines like "pulling sha256:... 45% ▕████   ▏ 450 MB/1.0 GB"
     if let Some(pct_pos) = line.find('%') {

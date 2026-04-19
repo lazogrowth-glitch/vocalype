@@ -790,6 +790,15 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
     });
 
     providers.push(PostProcessProvider {
+        id: "vocalype-llm".to_string(),
+        label: "Vocalype LLM (local)".to_string(),
+        base_url: crate::llm::llama_server::provider_base_url(),
+        allow_base_url_edit: false,
+        models_endpoint: None,
+        supports_structured_output: false,
+    });
+
+    providers.push(PostProcessProvider {
         id: "ollama".to_string(),
         label: "Ollama (Local)".to_string(),
         base_url: "http://localhost:11434/v1".to_string(),

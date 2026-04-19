@@ -13,6 +13,7 @@
 #![allow(dead_code)]
 
 pub mod deepgram_stt_client;
+pub mod llama_server;
 pub mod gemini_client;
 pub mod groq_stt_client;
 pub mod llm_client;

@@ -154,12 +154,8 @@ fn is_proper_noun_candidate(word: &str) -> bool {
     if word.len() < 3 {
         return false;
     }
-    let has_alpha = word.chars().any(|c| c.is_alphabetic());
-    if !has_alpha {
-        return false;
-    }
-    let first_char = word.chars().next().unwrap();
-    first_char.is_uppercase()
+    // Accept proper nouns (Tremblay), camelCase (useState), and acronyms (RSI)
+    word.chars().any(|c| c.is_uppercase())
 }
 
 // ── Correction commands ───────────────────────────────────────────────────────
@@ -208,7 +204,7 @@ pub fn analyze_correction(
                 to: c.to,
                 count,
                 already_in_dict,
-                auto_add: false,
+                auto_add: count >= AUTO_ADD_THRESHOLD,
             }
         })
         .collect();

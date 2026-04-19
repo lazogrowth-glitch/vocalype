@@ -51,9 +51,15 @@ fn maybe_boost_low_energy_parakeet_audio(samples: &[f32]) -> Option<(Vec<f32>, f
 fn build_correction_terms(
     settings: &crate::settings::AppSettings,
     session_keyterms: &[String],
+    session_glossary_terms: &[String],
     active_model_id: Option<&str>,
 ) -> Vec<String> {
     let mut terms = settings.custom_words.clone();
+
+    // Passive Session Glossary terms: project-specific identifiers extracted
+    // from clipboard while the developer codes. Injected regardless of model
+    // so cloud engines (Gemini, Groq) also benefit.
+    terms.extend(session_glossary_terms.iter().cloned());
 
     if matches!(active_model_id, Some(id) if is_parakeet_v3_model_id(id)) {
         terms.extend(parakeet_builtin_correction_terms(
@@ -230,8 +236,18 @@ impl TranscriptionManager {
             &vocabulary_terms,
         )
         .terms;
-        let correction_terms =
-            build_correction_terms(&settings, &session_keyterms, active_model_id.as_deref());
+        // Collect session glossary terms (passive clipboard identifiers).
+        let session_glossary_terms: Vec<String> = self
+            .app_handle
+            .try_state::<crate::session_glossary::SessionGlossaryState>()
+            .and_then(|state| state.0.lock().ok().map(|g| g.as_vec()))
+            .unwrap_or_default();
+        let correction_terms = build_correction_terms(
+            &settings,
+            &session_keyterms,
+            &session_glossary_terms,
+            active_model_id.as_deref(),
+        );
         let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
             settings.word_correction_threshold.max(0.24)
@@ -796,6 +812,22 @@ impl TranscriptionManager {
         } else {
             raw_result
         };
+        // In code context, try to recover camelCase identifiers that Parakeet
+        // split into separate words (e.g. "use state" → "useState").
+        // Merge custom_words + session glossary so clipboard-discovered
+        // identifiers (e.g. `handleClick` → "handle click") are also recovered.
+        let learned_result = if matches!(
+            app_context.as_ref().map(|c| c.category),
+            Some(crate::context_detector::AppContextCategory::Code)
+        ) && (!settings.custom_words.is_empty() || !session_glossary_terms.is_empty())
+        {
+            let mut split_words = settings.custom_words.clone();
+            split_words.extend(session_glossary_terms.iter().cloned());
+            crate::vocabulary_store::apply_custom_word_splits(&learned_result, &split_words)
+        } else {
+            learned_result
+        };
+
         let corrected_result = if !correction_terms.is_empty() {
             apply_custom_words(&learned_result, &correction_terms, correction_threshold)
         } else {
@@ -934,6 +966,7 @@ mod tests {
         let corrections = build_correction_terms(
             &settings,
             &session_keyterms.terms,
+            &[],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
         );
 

@@ -24,6 +24,7 @@ pub mod model_ids;
 pub mod parakeet_quality;
 pub mod parakeet_text;
 pub mod runtime_observability;
+pub mod session_glossary;
 pub mod session_keyterms;
 pub mod startup_warmup;
 pub mod telemetry;

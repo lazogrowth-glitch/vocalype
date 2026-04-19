@@ -648,6 +648,67 @@ impl VocabularyStore {
     }
 }
 
+/// Convert a camelCase or PascalCase identifier to its space-separated form.
+///
+/// "useState"   → "use state"
+/// "MyComponent" → "my component"
+/// "useEffect"  → "use effect"
+/// Returns `None` if the word has no uppercase letters (no split needed).
+fn camel_to_words(s: &str) -> Option<String> {
+    if !s.chars().any(|c| c.is_uppercase()) {
+        return None;
+    }
+    let mut result = String::with_capacity(s.len() + 4);
+    for (i, ch) in s.chars().enumerate() {
+        if i > 0 && ch.is_uppercase() {
+            result.push(' ');
+        }
+        result.push(ch.to_ascii_lowercase());
+    }
+    let result = result.trim().to_string();
+    // Only useful if we actually produced multiple words
+    if result.contains(' ') {
+        Some(result)
+    } else {
+        None
+    }
+}
+
+/// For every camelCase term in `custom_words`, replace its spoken split form
+/// back to the canonical identifier in `text`.
+///
+/// Example: `custom_words = ["useState"]`, text contains "use state"
+/// → replaced with "useState".
+///
+/// Only applied in code context where such identifiers are expected.
+/// Uses word-boundary regex so "use state machines" is not disturbed
+/// (only exact "use state" matches).
+pub fn apply_custom_word_splits(text: &str, custom_words: &[String]) -> String {
+    let mut result = text.to_string();
+
+    for word in custom_words {
+        let word = word.trim();
+        // Only process multi-char camelCase / PascalCase terms
+        if word.len() < 4 {
+            continue;
+        }
+        let Some(split_form) = camel_to_words(word) else {
+            continue;
+        };
+        // Only replace if split form is at least 2 words and reasonably long
+        if split_form.split_whitespace().count() < 2 {
+            continue;
+        }
+        let pattern = format!(r"(?i)\b{}\b", regex::escape(&split_form));
+        let Ok(re) = Regex::new(&pattern) else {
+            continue;
+        };
+        result = re.replace_all(&result, word).to_string();
+    }
+
+    result
+}
+
 pub fn vocabulary_store_file(app: &AppHandle) -> PathBuf {
     app.path()
         .app_data_dir()
@@ -877,6 +938,50 @@ mod tests {
             .any(|variant| variant == "Vocalype"));
         assert!(entry.observed_variants.len() <= MAX_VARIANTS_PER_TERM);
         assert!(entry.observed_variant_counts.len() <= MAX_VARIANTS_PER_TERM - 1);
+    }
+
+    #[test]
+    fn camel_split_use_state() {
+        let result = apply_custom_word_splits(
+            "const value equals use state open paren null close paren",
+            &["useState".to_string()],
+        );
+        assert!(result.contains("useState"), "got: {result}");
+    }
+
+    #[test]
+    fn camel_split_use_effect() {
+        let result = apply_custom_word_splits(
+            "use effect open paren arrow fetch data close paren",
+            &["useEffect".to_string()],
+        );
+        assert!(result.contains("useEffect"), "got: {result}");
+    }
+
+    #[test]
+    fn camel_split_pascal_component() {
+        let result = apply_custom_word_splits(
+            "return my component props",
+            &["MyComponent".to_string()],
+        );
+        assert!(result.contains("MyComponent"), "got: {result}");
+    }
+
+    #[test]
+    fn camel_split_no_false_positive_for_lowercase() {
+        // "async" has no uppercase — should not be touched
+        let result = apply_custom_word_splits("run async task", &["async".to_string()]);
+        assert_eq!(result, "run async task");
+    }
+
+    #[test]
+    fn camel_split_no_match_without_custom_word() {
+        // "use state" is NOT replaced if "useState" is not in custom_words
+        let result = apply_custom_word_splits(
+            "use state open paren null close paren",
+            &["useEffect".to_string()],
+        );
+        assert!(!result.contains("useState"), "got: {result}");
     }
 
     #[test]

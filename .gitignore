@@ -127,3 +127,4 @@ cargo-test-warnings*.txt
 .env
 .env
 .env
+parakeet_test_150.zip

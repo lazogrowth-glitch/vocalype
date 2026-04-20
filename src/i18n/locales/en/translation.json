@@ -493,6 +493,7 @@
           "min5": "After 5 minutes",
           "min10": "After 10 minutes",
           "min15": "After 15 minutes",
+          "min30": "After 30 minutes",
           "hour1": "After 1 hour",
           "sec5": "After 5 seconds (Debug)"
         }

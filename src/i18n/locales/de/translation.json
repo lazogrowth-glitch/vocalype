@@ -445,6 +445,7 @@
           "min5": "Nach 5 Minuten",
           "min10": "Nach 10 Minuten",
           "min15": "Nach 15 Minuten",
+          "min30": "Nach 30 Minuten",
           "hour1": "Nach 1 Stunde",
           "sec5": "Nach 5 Sekunden (Debug)"
         }

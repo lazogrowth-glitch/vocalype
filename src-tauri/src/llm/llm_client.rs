@@ -51,6 +51,10 @@ struct ChatCompletionRequest {
     /// through the sampler.  Post-processing is a deterministic editing task —
     /// there is no benefit to stochastic sampling here.
     temperature: f32,
+    /// Stop generation at Qwen3 end-of-turn token — prevents the model from
+    /// generating extra content after the answer, cutting latency on local providers.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stop: Option<Vec<&'static str>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -183,11 +187,9 @@ pub async fn send_chat_completion_with_schema(
         model: model.to_string(),
         messages,
         response_format,
-        // Keep Ollama model hot for 30 min after last use.
-        // Default Ollama TTL is 5 min which causes a 10-second reload on every
-        // longer pause. 30 min covers a coding session without wasting RAM all day.
+        // Keep model hot for 5 min after last use — matches ModelUnloadTimeout::Min5.
         keep_alive: if provider.id == "ollama" || provider.id == "vocalype-llm" {
-            Some(1800)
+            Some(300)
         } else {
             None
         },
@@ -197,6 +199,13 @@ pub async fn send_chat_completion_with_schema(
         max_tokens: Some(300),
         // Greedy decoding: fastest + deterministic for editing tasks.
         temperature: 0.0,
+        // Qwen3 end-of-turn stop token — halts generation immediately after the
+        // answer so llama-server doesn't pad with extra tokens.
+        stop: if provider.id == "vocalype-llm" || provider.id == "ollama" {
+            Some(vec!["<|im_end|>"])
+        } else {
+            None
+        },
     };
 
     let response = client

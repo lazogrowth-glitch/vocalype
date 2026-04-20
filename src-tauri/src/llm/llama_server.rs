@@ -42,20 +42,18 @@ pub fn provider_base_url() -> String {
 }
 
 /// Model identifier used in chat completion requests.
-/// Using the general Qwen2.5-0.5B-Instruct (not code-specialized) for better
-/// multilingual support — critical for French language correction use case.
-pub const MODEL_ID: &str = "qwen2.5:0.5b";
+pub const MODEL_ID: &str = "qwen3:0.6b";
 
 /// GGUF filename stored on disk.
-const MODEL_FILENAME: &str = "qwen2.5-0.5b-instruct-q4_k_m.gguf";
+const MODEL_FILENAME: &str = "qwen3-0.6b-q4_k_m.gguf";
 
 /// Direct download URL for the quantised GGUF (public Hugging Face repo).
 const MODEL_DOWNLOAD_URL: &str =
-    "https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf";
+    "https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q4_K_M.gguf";
 
 /// Expected model size in bytes (used for progress calculation if server
 /// does not send Content-Length).
-const MODEL_APPROX_BYTES: u64 = 397 * 1024 * 1024;
+const MODEL_APPROX_BYTES: u64 = 450 * 1024 * 1024;
 
 /// Pinned llama.cpp release tag. Bump to upgrade.
 const LLAMA_CPP_RELEASE: &str = "b8849";
@@ -226,6 +224,69 @@ pub async fn is_server_healthy() -> bool {
         .await
         .map(|r| r.status().is_success())
         .unwrap_or(false)
+}
+
+/// Start llama-server at recording START (if assets are on disk) and preheat
+/// the KV cache while the user is speaking — by the time Parakeet finishes,
+/// the LLM is ready. After post-processing, call `stop_after_use` to free RAM.
+/// Does nothing if binary/model are not yet downloaded.
+pub fn start_for_transcription(app: AppHandle) {
+    if !is_binary_ready(&app) || !is_model_ready(&app) {
+        return;
+    }
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = ensure_llama_server(&app).await {
+            warn!("[llama-server] start_for_transcription failed: {}", e);
+            return;
+        }
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()
+            .unwrap_or_default();
+        let _ = client
+            .post(format!("http://127.0.0.1:{}/v1/chat/completions", LLAMA_SERVER_PORT))
+            .header("Content-Type", "application/json")
+            .json(&serde_json::json!({
+                "model": MODEL_ID,
+                "messages": [{"role": "user", "content": "hi"}],
+                "max_tokens": 1,
+            }))
+            .send()
+            .await;
+    });
+}
+
+/// Stop the server after post-processing to free ~450 MB RAM.
+/// The server will restart automatically on the next recording.
+pub fn stop_after_use(app: &AppHandle) {
+    if let Some(state) = app.try_state::<LlamaServerState>() {
+        state.shutdown();
+    }
+}
+
+/// Fire-and-forget: if llama-server is running, send a tiny request so the
+/// model is paged into RAM before transcription completes.
+/// Called at recording START so the LLM loads in parallel with the user speaking.
+pub fn preheat_if_running() {
+    tauri::async_runtime::spawn(async {
+        if !is_server_healthy().await {
+            return;
+        }
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()
+            .unwrap_or_default();
+        let _ = client
+            .post(format!("http://127.0.0.1:{}/v1/chat/completions", LLAMA_SERVER_PORT))
+            .header("Content-Type", "application/json")
+            .json(&serde_json::json!({
+                "model": MODEL_ID,
+                "messages": [{ "role": "user", "content": "hi" }],
+                "max_tokens": 1,
+            }))
+            .send()
+            .await;
+    });
 }
 
 // ── Download helpers ──────────────────────────────────────────────────────────
@@ -412,14 +473,19 @@ pub async fn ensure_llama_server(app: &AppHandle) -> Result<(), String> {
             "--model",
             model.to_str().unwrap_or_default(),
             "--ctx-size",
-            "2048",
+            "768", // system prompt ~200 tokens + input ~200 + output ~200 = 600 max; 768 gives safety margin
             "--threads",
             "4",
             "--n-predict",
-            "512",
+            "256",
             "-ngl",
-            "0",         // CPU only; GPU layers can be added later
-            "--no-mmap", // more reliable across OS
+            "0", // CPU only; GPU layers can be added later
+            "--parallel",
+            "1", // single-user desktop app — no need for concurrent slots
+            // Disable Qwen3 chain-of-thought thinking mode — dictation cleanup
+            // needs fast direct answers, not step-by-step reasoning.
+            "--chat-template-kwargs",
+            "{\"enable_thinking\":false}",
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::null())

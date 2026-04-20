@@ -12,7 +12,7 @@ const DEV_PROMPT_TEXT =
   "Convert this rough voice dictation into a clear, structured prompt for an AI assistant. Rules:\n1. Remove filler words (uh, um, like, you know)\n2. Fix grammar and sentence structure\n3. Preserve all technical terms, variable names, and intent exactly\n4. Keep it concise - one clear request\n5. Do not add explanations or preamble\n\nReturn only the cleaned prompt.\n\nDictation:\n${output}";
 
 const PROVIDER_ID = "vocalype-llm";
-const MODEL_ID = "qwen2.5:0.5b";
+const MODEL_ID = "qwen3:0.6b";
 
 interface SetupProgress {
   step: "binary" | "model" | "starting" | "done";

@@ -19,7 +19,7 @@ interface SetupProgress {
 }
 
 const PROVIDER_ID = "vocalype-llm";
-const MODEL_ID = "qwen2.5:0.5b";
+const MODEL_ID = "qwen3:0.6b";
 const DEV_PROMPT_ID = "dev_clean_llm_prompt";
 const DEV_PROMPT_NAME = "Clean for LLM";
 const DEV_PROMPT_TEXT =

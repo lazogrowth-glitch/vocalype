@@ -445,6 +445,7 @@
           "min5": "Po 5 minutách",
           "min10": "Po 10 minutách",
           "min15": "Po 15 minutách",
+          "min30": "Po 30 minutách",
           "hour1": "Po 1 hodině",
           "sec5": "Po 5 sekundách (Debug)"
         }

@@ -46,6 +46,17 @@ pub async fn download_model(
 
     maybe_schedule_whisper_calibration(&app_handle, model_manager.inner().clone(), &model_id);
 
+    // Auto-select this model if nothing is selected yet (first install).
+    {
+        let mut settings = get_settings(&app_handle);
+        if settings.selected_model.is_empty() {
+            settings.selected_model = model_id.clone();
+            write_settings(&app_handle, settings);
+        }
+    }
+
+    // Always warm up: if this is the selected model, load it into memory now
+    // so the first shortcut press is instant instead of waiting 5s for ONNX compilation.
     if get_settings(&app_handle).selected_model == model_id {
         crate::startup_warmup::ensure_startup_warmup(&app_handle, "model-downloaded");
     }

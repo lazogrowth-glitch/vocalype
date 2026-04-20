@@ -1,5 +1,6 @@
 import React from "react";
 import i18n from "i18next";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 interface Props {
   children: React.ReactNode;
@@ -53,7 +54,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
           </span>
           {this.state.error && (
             <span style={{ color: "#888", fontSize: "11px" }}>
-              {this.state.error.message}
+              {getUserFacingErrorMessage(this.state.error, {
+                t: i18n.t.bind(i18n),
+              })}
             </span>
           )}
           <button

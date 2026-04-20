@@ -5,6 +5,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import type { RuntimeDiagnosticsSnapshot } from "../../../types/runtimeObservability";
 
 export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
@@ -96,7 +97,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
       setStatus(
         t("settings.debug.runtimeDiagnostics.captureFailed", {
           defaultValue: "Capture failed: {{error}}",
-          error: error instanceof Error ? error.message : String(error),
+          error: getUserFacingErrorMessage(error, { t }),
         }),
       );
     } finally {
@@ -126,7 +127,7 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
       setStatus(
         t("settings.debug.runtimeDiagnostics.exportFailed", {
           defaultValue: "Export failed: {{error}}",
-          error: error instanceof Error ? error.message : String(error),
+          error: getUserFacingErrorMessage(error, { t }),
         }),
       );
     } finally {

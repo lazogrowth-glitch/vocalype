@@ -4,6 +4,7 @@ import { emit } from "@tauri-apps/api/event";
 import { waitForTauriRuntime } from "./lib/tauri/runtime";
 import i18n from "./i18n";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { getUserFacingErrorMessage } from "./lib/userFacingErrors";
 import "./App.css";
 
 const rootElement = document.getElementById("root") as HTMLElement | null;
@@ -148,15 +149,18 @@ const bootstrap = async () => {
   } catch (error) {
     console.error("Fatal bootstrap error:", error);
     renderBootstrapMessage(
-      `Vocalype startup error: ${error instanceof Error ? error.message : "unknown error"}`,
+      getUserFacingErrorMessage(error, { t: i18n.t.bind(i18n) }),
     );
   }
 };
 
 window.addEventListener("error", (event) => {
-  const message = event.error?.message || event.message || "unknown error";
   console.error("Unhandled startup error:", event.error || event.message);
-  renderBootstrapMessage(`Vocalype frontend error: ${message}`);
+  renderBootstrapMessage(
+    getUserFacingErrorMessage(event.error || event.message, {
+      t: i18n.t.bind(i18n),
+    }),
+  );
 });
 
 window.addEventListener("unhandledrejection", (event) => {
@@ -167,7 +171,9 @@ window.addEventListener("unhandledrejection", (event) => {
         ? event.reason
         : "unknown rejection";
   console.error("Unhandled startup rejection:", event.reason);
-  renderBootstrapMessage(`Vocalype frontend rejection: ${reason}`);
+  renderBootstrapMessage(
+    getUserFacingErrorMessage(reason, { t: i18n.t.bind(i18n) }),
+  );
 });
 
 void bootstrap();

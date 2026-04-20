@@ -41,6 +41,20 @@ struct ChatCompletionRequest {
     /// Ignored by other providers (field is unknown → silently dropped).
     #[serde(skip_serializing_if = "Option::is_none")]
     keep_alive: Option<i64>,
+    /// Cap generation length. For transcription cleanup the output is never
+    /// longer than the input — 300 tokens covers even long dictations.
+    /// Without this the model runs until EOS, which can be 3-5× the needed
+    /// tokens, adding 1-3 s of unnecessary latency.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
+    /// Greedy decoding (temperature=0): deterministic output, fastest path
+    /// through the sampler.  Post-processing is a deterministic editing task —
+    /// there is no benefit to stochastic sampling here.
+    temperature: f32,
+    /// Stop generation at Qwen3 end-of-turn token — prevents the model from
+    /// generating extra content after the answer, cutting latency on local providers.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stop: Option<Vec<&'static str>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -173,11 +187,22 @@ pub async fn send_chat_completion_with_schema(
         model: model.to_string(),
         messages,
         response_format,
-        // Keep Ollama model hot for 30 min after last use.
-        // Default Ollama TTL is 5 min which causes a 10-second reload on every
-        // longer pause. 30 min covers a coding session without wasting RAM all day.
+        // Keep model hot for 5 min after last use — matches ModelUnloadTimeout::Min5.
         keep_alive: if provider.id == "ollama" || provider.id == "vocalype-llm" {
-            Some(1800)
+            Some(300)
+        } else {
+            None
+        },
+        // 300 tokens = ~225 words — enough for any dictation cleanup.
+        // Cloud providers (OpenAI, Anthropic) accept and respect max_tokens.
+        // Local llama-server also respects it, cutting unnecessary generation.
+        max_tokens: Some(300),
+        // Greedy decoding: fastest + deterministic for editing tasks.
+        temperature: 0.0,
+        // Qwen3 end-of-turn stop token — halts generation immediately after the
+        // answer so llama-server doesn't pad with extra tokens.
+        stop: if provider.id == "vocalype-llm" || provider.id == "ollama" {
+            Some(vec!["<|im_end|>"])
         } else {
             None
         },

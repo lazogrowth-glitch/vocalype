@@ -77,6 +77,7 @@ pub enum ModelUnloadTimeout {
     Min5,
     Min10,
     Min15,
+    Min30,
     Hour1,
     Sec5, // Debug mode only
 }
@@ -356,7 +357,7 @@ impl Default for KeyboardImplementation {
 
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
-        ModelUnloadTimeout::Never
+        ModelUnloadTimeout::Min30
     }
 }
 
@@ -391,6 +392,7 @@ impl ModelUnloadTimeout {
             ModelUnloadTimeout::Min5 => Some(5),
             ModelUnloadTimeout::Min10 => Some(10),
             ModelUnloadTimeout::Min15 => Some(15),
+            ModelUnloadTimeout::Min30 => Some(30),
             ModelUnloadTimeout::Hour1 => Some(60),
             ModelUnloadTimeout::Sec5 => Some(0), // Special case for debug - handled separately
         }
@@ -1220,10 +1222,6 @@ fn ensure_launch_output_defaults(settings: &mut AppSettings) -> bool {
         if settings.external_script_path.take().is_some() {
             changed = true;
         }
-        if settings.model_unload_timeout != ModelUnloadTimeout::Never {
-            settings.model_unload_timeout = ModelUnloadTimeout::Never;
-            changed = true;
-        }
         if settings.long_audio_model.take().is_some() {
             changed = true;
         }
@@ -1516,7 +1514,7 @@ pub fn get_default_settings() -> AppSettings {
         custom_words: Vec::new(),
         adaptive_vocabulary_enabled: true,
         adaptive_voice_profile_enabled: true,
-        model_unload_timeout: ModelUnloadTimeout::Never,
+        model_unload_timeout: ModelUnloadTimeout::Min5,
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         recording_retention_period: default_recording_retention_period(),

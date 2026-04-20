@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle, LoaderCircle, TriangleAlert, Zap } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { commands } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { listen } from "@tauri-apps/api/event";
 
 const DEV_PROMPT_ID = "dev_clean_llm_prompt";
@@ -11,7 +12,7 @@ const DEV_PROMPT_TEXT =
   "Convert this rough voice dictation into a clear, structured prompt for an AI assistant. Rules:\n1. Remove filler words (uh, um, like, you know)\n2. Fix grammar and sentence structure\n3. Preserve all technical terms, variable names, and intent exactly\n4. Keep it concise - one clear request\n5. Do not add explanations or preamble\n\nReturn only the cleaned prompt.\n\nDictation:\n${output}";
 
 const PROVIDER_ID = "vocalype-llm";
-const MODEL_ID = "qwen2.5:0.5b";
+const MODEL_ID = "qwen3:0.6b";
 
 interface SetupProgress {
   step: "binary" | "model" | "starting" | "done";
@@ -49,14 +50,14 @@ export const DevWorkflowToggle: React.FC = () => {
       // 1. Download binary + model (if needed) and start server.
       const setupResult = await commands.setupLlamaServer();
       if (setupResult.status === "error") {
-        setError(setupResult.error);
+        setError(getUserFacingErrorMessage(setupResult.error, { t }));
         return;
       }
 
       // 2. Switch post-process provider to vocalype-llm.
       const providerResult = await commands.setPostProcessProvider(PROVIDER_ID);
       if (providerResult.status === "error") {
-        setError(providerResult.error);
+        setError(getUserFacingErrorMessage(providerResult.error, { t }));
         return;
       }
 
@@ -66,7 +67,7 @@ export const DevWorkflowToggle: React.FC = () => {
         MODEL_ID,
       );
       if (modelResult.status === "error") {
-        setError(modelResult.error);
+        setError(getUserFacingErrorMessage(modelResult.error, { t }));
         return;
       }
 
@@ -80,7 +81,7 @@ export const DevWorkflowToggle: React.FC = () => {
           DEV_PROMPT_TEXT,
         );
         if (promptResult.status === "error") {
-          setError(promptResult.error);
+          setError(getUserFacingErrorMessage(promptResult.error, { t }));
           return;
         }
       }
@@ -89,14 +90,14 @@ export const DevWorkflowToggle: React.FC = () => {
       const selectResult =
         await commands.setPostProcessSelectedPrompt(DEV_PROMPT_ID);
       if (selectResult.status === "error") {
-        setError(selectResult.error);
+        setError(getUserFacingErrorMessage(selectResult.error, { t }));
         return;
       }
 
       // 6. Enable auto-mode — LLM fires automatically when code context is detected.
       updateSetting("llm_auto_mode", true);
     } catch (e) {
-      setError(String(e));
+      setError(getUserFacingErrorMessage(e, { t }));
     } finally {
       setLoading(false);
       setProgress(null);

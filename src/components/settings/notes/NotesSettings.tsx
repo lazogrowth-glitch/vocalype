@@ -24,6 +24,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { commands, type NoteEntry } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { Button } from "../../ui/Button";
 
 function formatNoteDate(ms: number): string {
@@ -250,7 +251,7 @@ export const NotesSettings: React.FC = () => {
     const normalized = value.trim();
     const res = await commands.setNoteCategory(selectedId, normalized);
     if (res.status !== "ok") {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
       return;
     }
 
@@ -268,7 +269,7 @@ export const NotesSettings: React.FC = () => {
       if (selectedId === null && !noteCaptureActive) {
         const created = await commands.createNote("", "");
         if (created.status !== "ok") {
-          toast.error(created.error);
+          toast.error(getUserFacingErrorMessage(created.error, { t }));
           return;
         }
         setNotes((prev) => [created.data, ...prev]);
@@ -332,7 +333,7 @@ export const NotesSettings: React.FC = () => {
         filePath.split(".").pop()?.toLowerCase() === "txt" ? "txt" : "md";
       const result = await commands.exportNote(selectedNote.id, ext);
       if (result.status !== "ok") {
-        toast.error(result.error);
+        toast.error(getUserFacingErrorMessage(result.error, { t }));
         return;
       }
 
@@ -370,7 +371,9 @@ export const NotesSettings: React.FC = () => {
 
       const result = await commands.transcribeAudioFileDetailed(selected);
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "notes-audio-import" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "notes-audio-import",
+        });
         return;
       }
 
@@ -398,7 +401,9 @@ export const NotesSettings: React.FC = () => {
       if (selectedId === null) {
         const created = await commands.createNote("", timestampedImport);
         if (created.status !== "ok") {
-          toast.error(created.error, { id: "notes-audio-import" });
+          toast.error(getUserFacingErrorMessage(created.error, { t }), {
+            id: "notes-audio-import",
+          });
           return;
         }
         setNotes((prev) => [created.data, ...prev]);
@@ -479,7 +484,9 @@ export const NotesSettings: React.FC = () => {
       );
       const result = await commands.summarizeNote(selectedNote.id);
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "notes-summarize" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "notes-summarize",
+        });
         return;
       }
 
@@ -521,7 +528,9 @@ export const NotesSettings: React.FC = () => {
       );
       const result = await commands.extractNoteActions(selectedNote.id);
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "notes-actions" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "notes-actions",
+        });
         return;
       }
 
@@ -563,7 +572,9 @@ export const NotesSettings: React.FC = () => {
       );
       const result = await commands.generateNoteTitle(selectedNote.id);
       if (result.status !== "ok") {
-        toast.error(result.error, { id: "notes-title" });
+        toast.error(getUserFacingErrorMessage(result.error, { t }), {
+          id: "notes-title",
+        });
         return;
       }
 
@@ -600,7 +611,7 @@ export const NotesSettings: React.FC = () => {
       setNotes((prev) => prev.filter((note) => note.id !== id));
       if (selectedId === id) setSelectedId(null);
     } else {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
     }
   };
 
@@ -609,7 +620,7 @@ export const NotesSettings: React.FC = () => {
     const nextPinned = !note.is_pinned;
     const res = await commands.setNotePinned(note.id, nextPinned);
     if (res.status !== "ok") {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
       return;
     }
 
@@ -633,7 +644,7 @@ export const NotesSettings: React.FC = () => {
     const nextArchived = !note.is_archived;
     const res = await commands.setNoteArchived(note.id, nextArchived);
     if (res.status !== "ok") {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
       return;
     }
 
@@ -657,7 +668,7 @@ export const NotesSettings: React.FC = () => {
     e.stopPropagation();
     const res = await commands.duplicateNote(note.id);
     if (res.status !== "ok") {
-      toast.error(res.error);
+      toast.error(getUserFacingErrorMessage(res.error, { t }));
       return;
     }
 
@@ -1074,7 +1085,8 @@ export const NotesSettings: React.FC = () => {
                   {notePreview(note)}
                 </p>
                 <p className="mt-2 truncate text-[10px] text-white/24">
-                  {formatNoteDate(note.updated_at)} · {t("common.words", { count: countWords(note.content) })}
+                  {formatNoteDate(note.updated_at)} ·{" "}
+                  {t("common.words", { count: countWords(note.content) })}
                 </p>
                 <div className="mt-3 max-w-[220px]">
                   <input

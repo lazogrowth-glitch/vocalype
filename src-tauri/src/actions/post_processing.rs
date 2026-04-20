@@ -240,6 +240,15 @@ pub(super) async fn process_transcription_text(
         );
     }
 
+    // LLM call done — shut down the embedded server to free ~450 MB RAM.
+    // It will restart automatically on the next recording start.
+    if matches!(
+        mode,
+        PostProcessMode::StandardPrompt | PostProcessMode::VoiceToCode | PostProcessMode::SelectedAction
+    ) {
+        crate::llm::llama_server::stop_after_use(app);
+    }
+
     if let Some(processed_text) = processed {
         post_processed_text = Some(processed_text.clone());
         final_text = processed_text;

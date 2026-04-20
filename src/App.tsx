@@ -267,6 +267,42 @@ function App() {
     initializeRTL(i18n.language);
   }, [i18n.language]);
 
+  // Auto-detect system language on first load.
+  // If the user never touched the language setting (still "auto"), silently
+  // switch to their OS language so the logit-bias fix activates automatically.
+  // The user can always revert to "auto" in settings.
+  useEffect(() => {
+    if (!settings) return;
+    if (settings.selected_language !== "auto") return;
+
+    // navigator.language → e.g. "fr-FR", "en-US", "zh-TW", "de-DE"
+    const systemLang = navigator.language || "";
+    const primary = systemLang.split("-")[0].toLowerCase();
+    const region = systemLang.split("-")[1]?.toUpperCase() ?? "";
+
+    // Special cases for Chinese variants
+    let langCode: string;
+    if (primary === "zh") {
+      langCode = region === "TW" || region === "HK" ? "zh-Hant" : "zh-Hans";
+    } else {
+      langCode = primary;
+    }
+
+    // Only set if it's a supported language (not "auto", not unknown)
+    const SUPPORTED = [
+      "en","fr","de","es","pt","it","nl","ru","pl","tr","ko","ja",
+      "zh-Hans","zh-Hant","ar","hi","sv","fi","da","no","cs","ro",
+      "hu","uk","el","bg","hr","sk","lt","lv","et","he","vi","th",
+      "id","ms","fa","ur","bn","ta","ml","te","kn","si","km",
+    ];
+    if (langCode && SUPPORTED.includes(langCode) && langCode !== "en") {
+      updateSetting("selected_language", langCode);
+    }
+    // English → leave as "auto" (English is already the model's dominant language,
+    // no bias needed — auto-detect works fine for English speakers)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!settings]);
+
   // Handle deep link auth: vocalype://auth-callback?token=xxx
   useEffect(() => {
     const unlisten = listen<string>("deep-link-auth", async (event) => {

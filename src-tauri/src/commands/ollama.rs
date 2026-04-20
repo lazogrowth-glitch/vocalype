@@ -180,7 +180,7 @@ pub async fn warmup_ollama_model(model: String) -> Result<(), String> {
         "model": model,
         "messages": [{ "role": "user", "content": "hi" }],
         "max_tokens": 1,
-        "keep_alive": 1800,
+        "keep_alive": 300, // unload after 5 min idle — matches ModelUnloadTimeout::Min5
     });
 
     let _ = client

@@ -7,6 +7,7 @@ import {
   type UnlistenFn,
 } from "@tauri-apps/api/event";
 import { safeUnlisten } from "@/lib/tauri/events";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 function useTauriEvent<T>(
   event: EventName,
@@ -212,9 +213,16 @@ function getRuntimeActionableMessage(
   }
 
   return t("errors.actionable.generic", {
-    defaultValue:
-      payload.message || "An unexpected transcription issue occurred.",
-    detail: payload.message ?? "",
+    defaultValue: getUserFacingErrorMessage(payload.message, {
+      t,
+      context: "transcription",
+      fallback: "Un probleme de transcription est survenu. Reessayez.",
+    }),
+    detail: getUserFacingErrorMessage(payload.message, {
+      t,
+      context: "transcription",
+      fallback: "Un probleme de transcription est survenu. Reessayez.",
+    }),
   });
 }
 
@@ -329,9 +337,11 @@ export function useBackendEvents({
         {
           duration: 8000,
           description: t("warnings.pasteFailedDesc", {
-            reason:
-              event.payload?.reason ??
-              t("errors.actionable.unknownPasteReason"),
+            reason: getUserFacingErrorMessage(event.payload?.reason, {
+              t,
+              context: "transcription",
+              fallback: t("errors.actionable.unknownPasteReason"),
+            }),
           }),
         },
       );
@@ -474,7 +484,13 @@ export function useBackendEvents({
       toast.dismiss("command-mode");
       toast.error(
         t("commandMode.errorTitle", { defaultValue: "Command Mode — erreur" }),
-        { duration: 6000, description: event.payload?.message },
+        {
+          duration: 6000,
+          description: getUserFacingErrorMessage(event.payload?.message, {
+            t,
+            context: "transcription",
+          }),
+        },
       );
     },
     [t, clearCommandModeCountdown],
@@ -505,7 +521,13 @@ export function useBackendEvents({
     (event) => {
       toast.error(
         t("whisperMode.errorTitle", { defaultValue: "Whisper Mode — error" }),
-        { duration: 6000, description: event.payload },
+        {
+          duration: 6000,
+          description: getUserFacingErrorMessage(event.payload, {
+            t,
+            context: "transcription",
+          }),
+        },
       );
     },
     [t],

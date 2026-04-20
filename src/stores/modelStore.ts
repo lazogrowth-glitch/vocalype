@@ -20,6 +20,7 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 interface DownloadProgress {
   model_id: string;
@@ -121,10 +122,16 @@ export const useModelStore = create<ModelsStore>()(
             }),
           );
         } else {
-          set({ error: `Failed to load models: ${result.error}` });
+          set({
+            error: getUserFacingErrorMessage(result.error, {
+              context: "model",
+            }),
+          });
         }
       } catch (err) {
-        set({ error: `Failed to load models: ${err}` });
+        set({
+          error: getUserFacingErrorMessage(err, { context: "model" }),
+        });
       } finally {
         set({ loading: false });
       }
@@ -168,11 +175,17 @@ export const useModelStore = create<ModelsStore>()(
           });
           return true;
         } else {
-          set({ error: `Failed to switch to model: ${result.error}` });
+          set({
+            error: getUserFacingErrorMessage(result.error, {
+              context: "model",
+            }),
+          });
           return false;
         }
       } catch (err) {
-        set({ error: `Failed to switch to model: ${err}` });
+        set({
+          error: getUserFacingErrorMessage(err, { context: "model" }),
+        });
         return false;
       }
     },
@@ -195,7 +208,11 @@ export const useModelStore = create<ModelsStore>()(
         if (result.status === "ok") {
           return true;
         } else {
-          set({ error: `Failed to download model: ${result.error}` });
+          set({
+            error: getUserFacingErrorMessage(result.error, {
+              context: "model",
+            }),
+          });
           set(
             produce((state) => {
               delete state.downloadingModels[modelId];
@@ -204,7 +221,9 @@ export const useModelStore = create<ModelsStore>()(
           return false;
         }
       } catch (err) {
-        set({ error: `Failed to download model: ${err}` });
+        set({
+          error: getUserFacingErrorMessage(err, { context: "model" }),
+        });
         set(
           produce((state) => {
             delete state.downloadingModels[modelId];
@@ -231,11 +250,17 @@ export const useModelStore = create<ModelsStore>()(
           await get().loadModels();
           return true;
         } else {
-          set({ error: `Failed to cancel download: ${result.error}` });
+          set({
+            error: getUserFacingErrorMessage(result.error, {
+              context: "model",
+            }),
+          });
           return false;
         }
       } catch (err) {
-        set({ error: `Failed to cancel download: ${err}` });
+        set({
+          error: getUserFacingErrorMessage(err, { context: "model" }),
+        });
         return false;
       }
     },
@@ -249,11 +274,17 @@ export const useModelStore = create<ModelsStore>()(
           await get().loadCurrentModel();
           return true;
         } else {
-          set({ error: `Failed to delete model: ${result.error}` });
+          set({
+            error: getUserFacingErrorMessage(result.error, {
+              context: "model",
+            }),
+          });
           return false;
         }
       } catch (err) {
-        set({ error: `Failed to delete model: ${err}` });
+        set({
+          error: getUserFacingErrorMessage(err, { context: "model" }),
+        });
         return false;
       }
     },
@@ -366,7 +397,9 @@ export const useModelStore = create<ModelsStore>()(
           set(
             produce((state) => {
               delete state.extractingModels[modelId];
-              state.error = `Failed to extract model: ${event.payload.error}`;
+              state.error = getUserFacingErrorMessage(event.payload.error, {
+                context: "model",
+              });
             }),
           );
         },

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Pencil, Trash2, Check, X } from "lucide-react";
 import { commands, DictionaryEntry } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { useSettings } from "@/hooks/useSettings";
@@ -53,7 +54,7 @@ export const DictionarySettings: React.FC = () => {
       setNewTo("");
       await load();
     } catch (e) {
-      toast.error(String(e));
+      toast.error(getUserFacingErrorMessage(e, { t, context: "settings" }));
     } finally {
       setAdding(false);
     }
@@ -73,7 +74,7 @@ export const DictionarySettings: React.FC = () => {
       await commands.removeDictionaryEntry(from);
       await load();
     } catch (e) {
-      toast.error(String(e));
+      toast.error(getUserFacingErrorMessage(e, { t, context: "settings" }));
     }
   };
 
@@ -97,7 +98,7 @@ export const DictionarySettings: React.FC = () => {
       setEditingFrom(null);
       await load();
     } catch (e) {
-      toast.error(String(e));
+      toast.error(getUserFacingErrorMessage(e, { t, context: "settings" }));
     }
   };
 

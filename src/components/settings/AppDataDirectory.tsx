@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Button } from "../ui/Button";
 
@@ -25,11 +26,14 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
         if (result.status === "ok") {
           setAppDirPath(result.data);
         } else {
-          setError(result.error);
+          setError(getUserFacingErrorMessage(result.error, { t }));
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to load app directory",
+          getUserFacingErrorMessage(err, {
+            t,
+            fallback: "Impossible de charger le dossier de l'application.",
+          }),
         );
       } finally {
         setLoading(false);

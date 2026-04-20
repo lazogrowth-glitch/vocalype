@@ -15,9 +15,9 @@ pub struct ParakeetTDT {
     decoder: ParakeetTDTDecoder,
     preprocessor_config: PreprocessorConfig,
     model_dir: PathBuf,
-    /// BCP-47 language code to force (e.g. "fr", "de").
-    /// `None` means auto-detect (default behaviour).
-    language: Option<String>,
+    /// Pre-computed token IDs that receive a logit boost when a specific
+    /// language is selected.  Empty = auto-detect (default).
+    language_bias_tokens: Vec<usize>,
 }
 
 impl ParakeetTDT {
@@ -84,7 +84,7 @@ impl ParakeetTDT {
             decoder,
             preprocessor_config,
             model_dir: path.to_path_buf(),
-            language: None,
+            language_bias_tokens: Vec::new(),
         })
     }
 
@@ -96,17 +96,119 @@ impl ParakeetTDT {
         &self.preprocessor_config
     }
 
-    /// Set the language to force during decoding.
+    /// Set the language to bias during decoding.
     ///
-    /// Pass a BCP-47 code like `"fr"`, `"de"`, `"es"` to constrain the decoder
-    /// to that language.  Pass `None` (or `"auto"`) to restore auto-detection.
+    /// Pass a BCP-47 code like `"fr"`, `"de"`, `"es"` to nudge the decoder
+    /// towards that language.  Pass `None` or `"auto"` to restore auto-detection.
     ///
-    /// Internally this injects the matching `<|{lang}|>` control token as the
-    /// initial context for the LSTM prediction network, biasing all subsequent
-    /// token predictions towards the target language.
+    /// Internally this pre-computes the set of vocab token IDs that correspond
+    /// to the target language (by scanning for language-specific accented
+    /// characters and common function words).  At decode time, those token
+    /// logits receive a +2.0 boost — ≈7× more probable before softmax.  The
+    /// audio signal can still override this when the speech is unambiguous.
+    ///
+    /// Computation happens once here; per-frame cost is just a few hundred
+    /// float additions inside the ONNX inference loop.
     pub fn set_language(&mut self, lang: Option<&str>) {
-        self.language = lang.filter(|l| !l.is_empty() && *l != "auto").map(String::from);
+        let lang = match lang {
+            Some(l) if !l.is_empty() && l != "auto" => l,
+            _ => {
+                self.language_bias_tokens.clear();
+                return;
+            }
+        };
+        self.language_bias_tokens =
+            compute_language_bias_tokens(&self.decoder, lang);
     }
+}
+
+// ── Language bias helpers ─────────────────────────────────────────────────────
+
+/// Characters that are unique to a given language and not normally found in
+/// English text.  Any vocab token containing one of these chars gets boosted.
+fn language_accent_chars(lang: &str) -> &'static str {
+    match lang {
+        "fr" => "éèêëàâùûüçîïôœæÉÈÊËÀÂÙÛÜÇÎÏÔŒÆ",
+        "de" => "äöüßÄÖÜ",
+        "es" => "ñáíóúüÑÁÍÓÚÜ¿¡",
+        "pt" => "ãõçáéíóúâêôÃÕÇÁÉÍÓÚÂÊÔ",
+        "it" => "àèéìíòóùúÀÈÉÌÍÒÓÙÚ",
+        "ru" | "uk" | "bg" => "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
+        "ja" => "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんアイウエオカキクケコサシスセソ",
+        "zh" => "的一是在不了有和人这中大为上个国我以要他时来用们生到作地于出就分对成会",
+        "ar" => "ابتثجحخدذرزسشصضطظعغفقكلمنهوي",
+        "ko" => "가나다라마바사아자차카타파하",
+        "hi" => "अआइईउऊएऐओऔकखगघचछजझटठडढणतथदधनपफबभमयरलवशषसह",
+        "tr" => "çğışöüÇĞİŞÖÜ",
+        "nl" => "ëïöüáéíóúàèìòùâêîôûÉÈÀÙ",
+        _ => "",
+    }
+}
+
+/// Common function words for a language.  These pure-ASCII tokens are
+/// language-specific enough to serve as strong biasing signals.
+fn language_function_words(lang: &str) -> &'static [&'static str] {
+    match lang {
+        "fr" => &[
+            "▁le", "▁la", "▁les", "▁de", "▁du", "▁des", "▁un", "▁une",
+            "▁et", "▁est", "▁je", "▁tu", "▁il", "▁elle", "▁nous", "▁vous",
+            "▁que", "▁qui", "▁pas", "▁ne", "▁sur", "▁dans", "▁avec",
+            "▁pour", "▁au", "▁aux", "▁ce", "▁se", "▁en",
+        ],
+        "de" => &[
+            "▁die", "▁der", "▁das", "▁und", "▁ist", "▁ich", "▁du",
+            "▁er", "▁wir", "▁sie", "▁nicht", "▁mit", "▁auf", "▁für",
+            "▁ein", "▁eine", "▁den", "▁dem", "▁des", "▁im",
+        ],
+        "es" => &[
+            "▁el", "▁la", "▁los", "▁las", "▁de", "▁del", "▁un", "▁una",
+            "▁y", "▁es", "▁en", "▁que", "▁no", "▁por", "▁con", "▁al",
+        ],
+        "pt" => &[
+            "▁o", "▁a", "▁os", "▁as", "▁de", "▁da", "▁do", "▁um",
+            "▁uma", "▁e", "▁em", "▁que", "▁não", "▁por", "▁com",
+        ],
+        "it" => &[
+            "▁il", "▁la", "▁i", "▁le", "▁di", "▁del", "▁un", "▁una",
+            "▁e", "▁in", "▁che", "▁non", "▁per", "▁con", "▁si",
+        ],
+        "nl" => &[
+            "▁de", "▁het", "▁een", "▁en", "▁van", "▁in", "▁is", "▁dat",
+            "▁op", "▁te", "▁met", "▁zijn", "▁voor", "▁niet",
+        ],
+        _ => &[],
+    }
+}
+
+/// Walk the vocabulary once and collect all token IDs that should be boosted
+/// for the given language.
+fn compute_language_bias_tokens(decoder: &ParakeetTDTDecoder, lang: &str) -> Vec<usize> {
+    use std::collections::HashSet;
+    let mut seen: HashSet<usize> = HashSet::new();
+    let mut ids: Vec<usize> = Vec::new();
+
+    let accent_chars = language_accent_chars(lang);
+
+    // Tokens containing language-specific accented characters
+    if !accent_chars.is_empty() {
+        for (id, token) in decoder.vocab_tokens().enumerate() {
+            if token.chars().any(|c| accent_chars.contains(c)) && seen.insert(id) {
+                ids.push(id);
+            }
+        }
+    }
+
+    // Common function word tokens (pure ASCII — looked up by exact token text)
+    for &word in language_function_words(lang) {
+        if let Some(id) = decoder.language_token_id(word) {
+            // re-use language_token_id — it searches by exact match
+            if seen.insert(id) {
+                ids.push(id);
+            }
+        }
+    }
+
+    ids
 }
 
 impl Transcriber for ParakeetTDT {
@@ -127,13 +229,8 @@ impl Transcriber for ParakeetTDT {
             audio
         };
         let features = self.model.extract_features(&mono, &self.preprocessor_config)?;
-        // Resolve the language control token ID once per call.
-        let language_token_id = self
-            .language
-            .as_deref()
-            .and_then(|lang| self.decoder.language_token_id(lang));
         let (tokens, frame_indices, durations) =
-            self.model.forward(features, language_token_id)?;
+            self.model.forward(features, &self.language_bias_tokens)?;
 
         let mut result = self.decoder.decode_with_timestamps(
             &tokens,

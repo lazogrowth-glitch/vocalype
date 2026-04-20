@@ -43,6 +43,10 @@ export const ModelUnloadTimeoutSetting: React.FC<ModelUnloadTimeoutProps> = ({
       label: t("settings.advanced.modelUnload.options.min15"),
     },
     {
+      value: "min30" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.min30"),
+    },
+    {
       value: "hour1" as ModelUnloadTimeout,
       label: t("settings.advanced.modelUnload.options.hour1"),
     },

@@ -258,25 +258,34 @@ fn build_console_filter() -> env_filter::Filter {
 }
 
 pub(crate) fn show_main_window(app: &AppHandle) {
-    if let Some(main_window) = app.get_webview_window("main") {
-        prepare_main_window_bounds(app, &main_window);
-        // First, ensure the window is visible
-        if let Err(e) = main_window.show() {
-            log::error!("Failed to show window: {}", e);
-        }
-        // Then, bring it to the front and give it focus
-        if let Err(e) = main_window.set_focus() {
-            log::error!("Failed to focus window: {}", e);
-        }
-        // Optional: On macOS, ensure the app becomes active if it was an accessory
-        #[cfg(target_os = "macos")]
-        {
-            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
-                log::error!("Failed to set activation policy to Regular: {}", e);
+    let main_window = app.get_webview_window("main").or_else(|| {
+        log::info!("Main window not found — recreating");
+        SHOULD_SHOW_MAIN_WINDOW_ON_READY.store(true, Ordering::Relaxed);
+        match create_main_window(app) {
+            Ok(w) => Some(w),
+            Err(e) => {
+                log::error!("Failed to recreate main window: {}", e);
+                None
             }
         }
-    } else {
-        log::error!("Main window not found.");
+    });
+
+    let Some(main_window) = main_window else {
+        return;
+    };
+
+    prepare_main_window_bounds(app, &main_window);
+    if let Err(e) = main_window.show() {
+        log::error!("Failed to show window: {}", e);
+    }
+    if let Err(e) = main_window.set_focus() {
+        log::error!("Failed to focus window: {}", e);
+    }
+    #[cfg(target_os = "macos")]
+    {
+        if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
+            log::error!("Failed to set activation policy to Regular: {}", e);
+        }
     }
 }
 
@@ -294,6 +303,23 @@ fn prepare_main_window_before_show(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         prepare_main_window_bounds(app, &main_window);
     }
+}
+
+fn create_main_window(app: &AppHandle) -> Result<tauri::WebviewWindow, tauri::Error> {
+    tauri::WebviewWindowBuilder::new(
+        app,
+        "main",
+        tauri::WebviewUrl::App("desktop/index.html".into()),
+    )
+    .title("Vocalype")
+    .inner_size(MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT)
+    .min_inner_size(MIN_MAIN_WINDOW_WIDTH, MIN_MAIN_WINDOW_HEIGHT)
+    .decorations(false)
+    .resizable(true)
+    .maximizable(true)
+    .center()
+    .visible(false)
+    .build()
 }
 
 #[cfg(target_os = "windows")]
@@ -1252,23 +1278,30 @@ pub fn run(cli_args: CliArgs) {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
-                api.prevent_close();
-                let _res = window.hide();
-
-                #[cfg(target_os = "macos")]
-                {
+                if window.label() == "main" {
                     let tray_visible = TRAY_ICON_ENABLED.load(Ordering::Relaxed)
                         && !window.app_handle().state::<CliArgs>().no_tray;
                     if tray_visible {
-                        // Tray is available: hide the dock icon, app lives in the tray
-                        let res = window
-                            .app_handle()
-                            .set_activation_policy(tauri::ActivationPolicy::Accessory);
-                        if let Err(e) = res {
-                            log::error!("Failed to set activation policy: {}", e);
+                        // Tray is available: destroy the window to free Chromium RAM.
+                        // It will be recreated on next open via show_main_window.
+                        #[cfg(target_os = "macos")]
+                        {
+                            let res = window
+                                .app_handle()
+                                .set_activation_policy(tauri::ActivationPolicy::Accessory);
+                            if let Err(e) = res {
+                                log::error!("Failed to set activation policy: {}", e);
+                            }
                         }
+                        // Do NOT prevent close — window is destroyed and freed.
+                        return;
                     }
-                    // No tray: keep the dock icon visible so the user can reopen
+                    // No tray: must keep the window so the user can reopen the app.
+                    api.prevent_close();
+                    let _ = window.hide();
+                } else {
+                    api.prevent_close();
+                    let _ = window.hide();
                 }
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
@@ -1293,6 +1326,13 @@ pub fn run(cli_args: CliArgs) {
         #[cfg(target_os = "macos")]
         if let tauri::RunEvent::Reopen { .. } = &event {
             show_main_window(app);
+        }
+
+        // Keep the process alive when the main window is destroyed but the tray is active.
+        if let tauri::RunEvent::ExitRequested { api, .. } = &event {
+            if TRAY_ICON_ENABLED.load(Ordering::Relaxed) {
+                api.prevent_exit();
+            }
         }
 
         // Kill embedded llama-server on exit.

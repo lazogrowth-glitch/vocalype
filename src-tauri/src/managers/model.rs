@@ -263,9 +263,11 @@ impl ModelManager {
         if !models_dir.exists() {
             fs::create_dir_all(&models_dir)?;
         }
-        if runtime_cache_dir.exists() {
-            let _ = fs::remove_dir_all(&runtime_cache_dir);
-        }
+        // Persist the ONNX optimised-model cache across restarts.
+        // Loading a pre-built .opt.ort (Level1) is 5-10x faster than recompiling
+        // from the raw ONNX file (Level3) — drops Parakeet reload from ~5s to <1s.
+        // Staleness is handled in engine_loader: if the source .onnx is newer than
+        // the cached .opt.ort, the cache file is deleted and rebuilt automatically.
         fs::create_dir_all(&runtime_cache_dir)?;
 
         let mut available_models = model_catalog::load_catalog(app_handle)?;

@@ -543,6 +543,13 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     }
 
     debug!("Recording started in {:?}", recording_start_time.elapsed());
+
+    // Start llama-server (if not already running) while the user is speaking.
+    // 2-4s startup is hidden behind the dictation. Server stops after post-processing.
+    if settings.post_process_enabled || settings.llm_auto_mode {
+        crate::llm::llama_server::start_for_transcription(app.clone());
+    }
+
     if !is_always_on {
         rm.apply_mute();
     }

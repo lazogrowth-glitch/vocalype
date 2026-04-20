@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
 
@@ -25,14 +26,15 @@ export const LogDirectory: React.FC<LogDirectoryProps> = ({
         if (result.status === "ok") {
           setLogDir(result.data);
         } else {
-          setError(result.error);
+          setError(getUserFacingErrorMessage(result.error, { t }));
         }
       } catch (err) {
-        const errorMessage =
-          err && typeof err === "object" && "message" in err
-            ? String(err.message)
-            : "Failed to load log directory";
-        setError(errorMessage);
+        setError(
+          getUserFacingErrorMessage(err, {
+            t,
+            fallback: "Impossible de charger le dossier des journaux.",
+          }),
+        );
       } finally {
         setLoading(false);
       }

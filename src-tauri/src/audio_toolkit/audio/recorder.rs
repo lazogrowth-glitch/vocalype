@@ -421,7 +421,7 @@ Format: {:?}",
     }
 }
 
-const MAX_PROCESSED_SAMPLES: usize = 16_000 * 60 * 20; // 20 min at 16kHz
+const MAX_PROCESSED_SAMPLES: usize = 16_000 * 60 * 5; // 5 min at 16kHz
 const PRE_RECORDING_PREROLL_MS: usize = 500;
 
 fn run_consumer(
@@ -574,6 +574,7 @@ fn run_consumer(
                     if processed_samples.len() > MAX_PROCESSED_SAMPLES {
                         let excess = processed_samples.len() - MAX_PROCESSED_SAMPLES;
                         processed_samples.drain(0..excess);
+                        processed_samples.shrink_to_fit();
                     }
                 }
             }

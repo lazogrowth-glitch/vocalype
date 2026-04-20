@@ -124,15 +124,35 @@ impl ModelConfig {
         // ── Fast path: pre-optimized cache exists ────────────────────────── //
         if let Some(cache) = &cache_path {
             if cache.exists() {
-                // Load with Level1 — the .ort file is already fully optimized,
-                // so we skip the expensive Level3 graph optimization pass.
-                // apply_to_session_builder forces Level3, so we build manually here.
-                let builder = Session::builder()?
-                    .with_optimization_level(GraphOptimizationLevel::Level1)?
-                    .with_intra_threads(self.intra_threads)?
-                    .with_inter_threads(self.inter_threads)?;
-                let builder = self.apply_execution_provider(builder)?;
-                return Ok(builder.commit_from_file(cache)?);
+                // Invalidate cache if the source model file is newer than the cache.
+                let cache_is_fresh = model_path
+                    .metadata()
+                    .and_then(|m| m.modified())
+                    .and_then(|model_mtime| {
+                        cache
+                            .metadata()
+                            .and_then(|cm| cm.modified())
+                            .map(|cache_mtime| cache_mtime >= model_mtime)
+                    })
+                    .unwrap_or(false);
+
+                if !cache_is_fresh {
+                    let _ = std::fs::remove_file(cache);
+                } else {
+                    // Load with Level1 — the .ort file is already fully optimized,
+                    // so we skip the expensive Level3 graph optimization pass.
+                    let builder = Session::builder()?
+                        .with_optimization_level(GraphOptimizationLevel::Level1)?
+                        .with_intra_threads(self.intra_threads)?
+                        .with_inter_threads(self.inter_threads)?
+                        .with_memory_pattern(false)?
+                        // Threads stop spinning between inferences — saves CPU idle at cost of ~6ms,
+                        // negligible vs Parakeet's ~800ms total inference time.
+                        .with_config_entry("session.intra_op.allow_spinning", "0")?
+                        .with_config_entry("session.inter_op.allow_spinning", "0")?;
+                    let builder = self.apply_execution_provider(builder)?;
+                    return Ok(builder.commit_from_file(cache)?);
+                }
             }
         }
 
@@ -162,20 +182,17 @@ impl ModelConfig {
     /// Applies only the execution provider to an already-configured builder.
     /// Does NOT set optimization level or thread counts — call those separately.
     fn apply_execution_provider(&self, builder: SessionBuilder) -> Result<SessionBuilder> {
-        #[cfg(any(
-            feature = "cuda",
-            feature = "tensorrt",
-            feature = "coreml",
-            feature = "directml",
-            feature = "rocm",
-            feature = "openvino",
-            feature = "qnn",
-            feature = "webgpu"
-        ))]
         use ort::execution_providers::CPUExecutionProvider;
 
         let builder = match self.execution_provider {
-            ExecutionProvider::Cpu => builder,
+            // Disable arena allocator: ONNX pre-allocates exponentially growing chunks
+            // (64 MB → 128 MB → …). Disabling saves 100-200 MB at the cost of
+            // per-inference allocation overhead (~negligible for short audio clips).
+            ExecutionProvider::Cpu => builder.with_execution_providers([
+                CPUExecutionProvider::default()
+                    .with_arena_allocator(false)
+                    .build(),
+            ])?,
 
             #[cfg(feature = "qnn")]
             ExecutionProvider::Qnn => {
@@ -284,7 +301,14 @@ impl ModelConfig {
         let builder = builder
             .with_optimization_level(GraphOptimizationLevel::Level3)?
             .with_intra_threads(self.intra_threads)?
-            .with_inter_threads(self.inter_threads)?;
+            .with_inter_threads(self.inter_threads)?
+            // Disable memory pattern optimization: saves ~50-100 MB of pre-allocated
+            // buffers at the cost of a negligible per-run allocation overhead.
+            .with_memory_pattern(false)?
+            // Threads stop spinning between inferences — saves CPU idle at cost of ~6ms,
+            // negligible vs Parakeet's ~800ms total inference time.
+            .with_config_entry("session.intra_op.allow_spinning", "0")?
+            .with_config_entry("session.inter_op.allow_spinning", "0")?;
 
         self.apply_execution_provider(builder)
     }

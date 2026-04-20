@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useModelStore } from "@/stores/modelStore";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import VocalypeLogo from "../icons/VocalypeLogo";
 
 const MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
@@ -17,6 +18,7 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
     downloadingModels,
     extractingModels,
     models,
+    error: modelError,
   } = useModelStore();
 
   const started = useRef(false);
@@ -47,7 +49,12 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
     downloadModel(MODEL_ID).then((ok) => {
       if (!ok) {
         setError(
-          "Le telechargement a echoue. Verifie ta connexion et reessaie.",
+          getUserFacingErrorMessage(modelError, {
+            t,
+            context: "model",
+            fallback:
+              "Le telechargement a echoue. Verifie ta connexion et reessaie.",
+          }),
         );
       }
     });

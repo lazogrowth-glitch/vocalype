@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
 import { Textarea } from "../../ui/Textarea";
+import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 interface VoiceFeedbackEntry {
   id: string;
@@ -43,9 +44,12 @@ export const VoiceFeedbackPanel: React.FC<{ grouped?: boolean }> = ({
   const [status, setStatus] = useState<string | null>(null);
 
   const loadEntries = async () => {
-    const data = await invoke<VoiceFeedbackEntry[]>("list_voice_feedback_command", {
-      limit: 8,
-    });
+    const data = await invoke<VoiceFeedbackEntry[]>(
+      "list_voice_feedback_command",
+      {
+        limit: 8,
+      },
+    );
     setEntries(data);
   };
 
@@ -85,7 +89,7 @@ export const VoiceFeedbackPanel: React.FC<{ grouped?: boolean }> = ({
       setStatus(
         t("settings.debug.voiceFeedback.saveFailed", {
           defaultValue: "Save failed: {{error}}",
-          error: error instanceof Error ? error.message : String(error),
+          error: getUserFacingErrorMessage(error, { t }),
         }),
       );
     } finally {
@@ -127,7 +131,8 @@ export const VoiceFeedbackPanel: React.FC<{ grouped?: boolean }> = ({
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           placeholder={t("settings.debug.voiceFeedback.notes", {
-            defaultValue: "Notes: low voice, noisy room, French drift, weird punctuation...",
+            defaultValue:
+              "Notes: low voice, noisy room, French drift, weird punctuation...",
           })}
           variant="compact"
         />
@@ -192,7 +197,9 @@ export const VoiceFeedbackPanel: React.FC<{ grouped?: boolean }> = ({
               >
                 <p className="font-medium text-white/80">
                   {new Date(entry.created_at_ms).toLocaleString(i18n.language)}
-                  {entry.selected_language ? ` · ${entry.selected_language}` : ""}
+                  {entry.selected_language
+                    ? ` · ${entry.selected_language}`
+                    : ""}
                   {entry.tags.length > 0 ? ` · ${entry.tags.join(", ")}` : ""}
                 </p>
                 {entry.expected_text && (

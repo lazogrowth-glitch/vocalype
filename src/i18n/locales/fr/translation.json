@@ -469,8 +469,8 @@
         }
       },
       "autoSubmit": {
-        "title": "Envoi automatique",
-        "description": "Envoie automatiquement la combinaison de touches sélectionnée après l'insertion du texte. Cmd+Enter s'applique sur macOS, tandis que Windows/Linux utilisent Super+Enter.",
+        "title": "Envoyer après collage",
+        "description": "Appuie automatiquement sur une touche après le collage — utile pour envoyer un message ou valider.",
         "options": {
           "off": "Désactivé",
           "enter": "Entrée",
@@ -494,6 +494,7 @@
           "min5": "Après 5 minutes",
           "min10": "Après 10 minutes",
           "min15": "Après 15 minutes",
+          "min30": "Après 30 minutes",
           "hour1": "Après 1 heure",
           "sec5": "Après 5 secondes (Débogage)"
         }
@@ -507,8 +508,8 @@
         "duplicate": "\"{{word}}\" existe déjà"
       },
       "adaptiveVocabulary": {
-        "label": "Vocabulaire adaptatif",
-        "description": "Apprend les orthographes et termes par application sur cet appareil pour mieux guider Whisper."
+        "label": "Apprends mes mots",
+        "description": "Mémorise les termes que tu utilises souvent pour améliorer la précision."
       },
       "adaptiveVoiceProfile": {
         "label": "Profil vocal adaptatif",
@@ -756,8 +757,8 @@
         "description": "Met automatiquement en pause Spotify et autres lecteurs multimédias pendant l'enregistrement, puis les reprend à la fin."
       },
       "appendTrailingSpace": {
-        "label": "Ajouter un espace final",
-        "description": "Ajouter un espace après la transcription collée"
+        "label": "Espace après collage",
+        "description": "Ajoute un espace après le texte collé pour que le mot suivant commence proprement."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
@@ -880,6 +881,14 @@
       "audioCaptureFailed": "La capture audio a échoué. Essayez un autre microphone dans les paramètres.",
       "generic": "{{detail}}",
       "unknownPasteReason": "Une erreur inattendue s'est produite."
+    },
+    "userFacing": {
+      "generic": "Un problème est survenu. Réessayez dans un instant.",
+      "network": "Connexion impossible. Vérifiez internet, puis réessayez.",
+      "accessRequired": "Votre accès doit être vérifié. Reconnectez-vous ou ouvrez votre abonnement.",
+      "microphone": "Vocalype n'arrive pas à utiliser le microphone. Vérifiez l'autorisation et le micro sélectionné.",
+      "model": "Le modèle vocal n'a pas pu être préparé. Vérifiez votre connexion et réessayez.",
+      "agent": "L'assistant n'a pas pu répondre. Réessayez dans un instant."
     }
   },
   "error": {

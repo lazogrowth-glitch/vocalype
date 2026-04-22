@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Wand2, ListChecks, Mail, Languages, Plus } from "lucide-react";
+import {
+  Wand2,
+  ListChecks,
+  Mail,
+  Languages,
+  Plus,
+  ChevronRight,
+} from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import { Dropdown, Textarea } from "@/components/ui";
@@ -26,7 +33,7 @@ export const PostProcessingSettings: React.FC = () => {
   const templates = [
     {
       id: "cleanup",
-      icon: <Wand2 size={22} aria-hidden="true" />,
+      icon: <Wand2 size={18} aria-hidden="true" />,
       label: t("settings.postProcessing.actions.templates.cleanup.name", {
         defaultValue: "Corriger",
       }),
@@ -41,7 +48,7 @@ export const PostProcessingSettings: React.FC = () => {
     },
     {
       id: "summary",
-      icon: <ListChecks size={22} aria-hidden="true" />,
+      icon: <ListChecks size={18} aria-hidden="true" />,
       label: t("settings.postProcessing.actions.templates.summary.name", {
         defaultValue: "Resume + actions",
       }),
@@ -56,7 +63,7 @@ export const PostProcessingSettings: React.FC = () => {
     },
     {
       id: "email",
-      icon: <Mail size={22} aria-hidden="true" />,
+      icon: <Mail size={18} aria-hidden="true" />,
       label: t("settings.postProcessing.actions.templates.email.name", {
         defaultValue: "Email pro",
       }),
@@ -71,7 +78,7 @@ export const PostProcessingSettings: React.FC = () => {
     },
     {
       id: "translate",
-      icon: <Languages size={22} aria-hidden="true" />,
+      icon: <Languages size={18} aria-hidden="true" />,
       label: t("settings.postProcessing.actions.templates.translate.name", {
         defaultValue: "Traduire en anglais",
       }),
@@ -235,13 +242,14 @@ export const PostProcessingSettings: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10 py-4">
-      <div className="flex items-start justify-between gap-6">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2.5">
-            <h2 className="voca-section-title">
-              {t("settings.postProcessing.actions.title")}
-            </h2>
+    <div className="space-y-8 py-6 px-2">
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="voca-page-title">
+            {t("settings.postProcessing.actions.title")}
+          </h2>
+          <div className="flex items-center gap-2 mb-2">
             <span className="voca-badge voca-badge-neutral">LLM</span>
             <span
               className={`voca-badge ${hasProcessingModel ? "voca-badge-success" : "voca-badge-accent"}`}
@@ -266,95 +274,99 @@ export const PostProcessingSettings: React.FC = () => {
         )}
       </div>
 
+      {/* ── Template cards ── */}
       {!editingAction && actions.length < 9 && (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {templates.map((tpl) => (
-            <button
-              key={tpl.id}
-              type="button"
-              onClick={() => handleStartFromTemplate(tpl)}
-              className={`voca-card group outline-none`}
-            >
-              <div className={`voca-icon ${tpl.bg} ${tpl.color}`}>
-                {tpl.icon}
-              </div>
-              <div>
-                <p
-                  className="text-[13px] font-semibold"
-                  style={{ color: "rgba(255,255,255,0.88)" }}
-                >
-                  {tpl.label}
-                </p>
-                <p
-                  className="mt-1 text-[12px] leading-relaxed"
-                  style={{ color: "var(--color-text-faint)" }}
-                >
-                  {tpl.description}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {actions.length > 0 && !editingAction && (
-        <div className="space-y-2">
-          {[...actions]
-            .sort((a, b) => a.key - b.key)
-            .map((action) => (
-              <div
-                key={action.key}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleStartEdit(action);
-                  }
-                }}
-                onClick={() => handleStartEdit(action)}
-                className="voca-row group outline-none"
+        <div>
+          <p className="voca-label-caps mb-3">
+            {t("settings.postProcessing.quickTemplates", {
+              defaultValue: "Quick templates",
+            })}
+          </p>
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5">
+            {templates.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => handleStartFromTemplate(tpl)}
+                className="voca-tpl-card group outline-none"
               >
-                <span className="voca-key">{action.key}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className="text-[13px] font-semibold"
-                      style={{ color: "rgba(255,255,255,0.85)" }}
-                    >
-                      {action.name}
-                    </span>
-                    {action.provider_id && action.model && (
-                      <span className="voca-badge voca-badge-neutral">
-                        {savedModels.find(
-                          (m) =>
-                            m.id === `${action.provider_id}:${action.model}`,
-                        )?.label || action.model}
-                      </span>
-                    )}
-                  </div>
-                  <p
-                    className="mt-0.5 line-clamp-1 text-[11px]"
-                    style={{ color: "var(--color-text-ghost)" }}
-                  >
-                    {formatPromptPreview(action.prompt)}
-                  </p>
+                <div className={`voca-tpl-icon ${tpl.bg} ${tpl.color}`}>
+                  {tpl.icon}
                 </div>
-                <button
-                  className="shrink-0 rounded-md px-2.5 py-1 text-[11px] opacity-0 transition-all hover:bg-red-400/[0.08] hover:text-red-400 group-hover:opacity-100"
-                  style={{ color: "rgba(255,255,255,0.20)" }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(action.key);
-                  }}
-                >
-                  {t("settings.postProcessing.actions.delete")}
-                </button>
-              </div>
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="voca-tpl-name">{tpl.label}</p>
+                  <p className="voca-tpl-desc">{tpl.description}</p>
+                </div>
+                <ChevronRight
+                  size={14}
+                  className="shrink-0 opacity-0 group-hover:opacity-30 transition-opacity"
+                  aria-hidden="true"
+                />
+              </button>
             ))}
+          </div>
         </div>
       )}
 
+      {/* ── Action list ── */}
+      {actions.length > 0 && !editingAction && (
+        <div>
+          <p className="voca-label-caps mb-3">
+            {t("settings.postProcessing.actions.title")}{" "}
+            <span className="opacity-40 font-medium">({actions.length}/9)</span>
+          </p>
+          <div className="flex flex-col gap-3">
+            {[...actions]
+              .sort((a, b) => a.key - b.key)
+              .map((action) => (
+                <div
+                  key={action.key}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleStartEdit(action);
+                    }
+                  }}
+                  onClick={() => handleStartEdit(action)}
+                  className="voca-action-row group outline-none"
+                >
+                  <div className="voca-action-key">
+                    <span className="voca-key-num">{action.key}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="voca-item-name">{action.name}</span>
+                      {action.provider_id && action.model && (
+                        <span className="voca-badge voca-badge-neutral">
+                          {savedModels.find(
+                            (m) =>
+                              m.id === `${action.provider_id}:${action.model}`,
+                          )?.label || action.model}
+                        </span>
+                      )}
+                    </div>
+                    <p className="voca-item-preview">
+                      {formatPromptPreview(action.prompt)}
+                    </p>
+                  </div>
+                  <button
+                    className="voca-row-delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(action.key);
+                    }}
+                  >
+                    {t("settings.postProcessing.actions.delete")}
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit panel ── */}
       {editingAction && (
         <div className="voca-panel">
           <div className="space-y-5">
@@ -441,14 +453,7 @@ export const PostProcessingSettings: React.FC = () => {
               </p>
             </div>
 
-            <div
-              className="rounded-xl border px-4 py-3 text-[12px] leading-5"
-              style={{
-                background: "var(--color-background)",
-                borderColor: "var(--color-border-row)",
-                color: "var(--color-text-ghost)",
-              }}
-            >
+            <div className="voca-hint-box">
               {t("settings.postProcessing.actions.llmExecutionHint", {
                 defaultValue:
                   "Cette action ne modifie pas la capture vocale. Elle transforme seulement le texte final.",
@@ -490,6 +495,7 @@ export const PostProcessingSettings: React.FC = () => {
         </div>
       )}
 
+      {/* ── Add action (bottom) ── */}
       {!editingAction && actions.length > 0 && actions.length < 9 && (
         <div>
           <Button onClick={handleStartCreate} variant="secondary" size="sm">
@@ -500,7 +506,7 @@ export const PostProcessingSettings: React.FC = () => {
       )}
 
       {actions.length >= 9 && !editingAction && (
-        <p className="text-[12px] text-zinc-600">
+        <p className="text-[12px] text-muted">
           {t("settings.postProcessing.actions.maxActionsReached")}
         </p>
       )}

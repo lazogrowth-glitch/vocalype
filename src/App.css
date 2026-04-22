@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Page & panel backgrounds ── */
-  --color-background: #09090b;
-  --color-panel: #0f0f11;
+  /* ── Backgrounds ── */
+  --color-background: #0a0908;
+  --color-panel: #0e0d0b;
 
-  /* ── Surface layers (cards, rows, elevated) ── */
-  --color-card: #131316;
-  --color-card-hover: #1a1a1e;
-  --color-row: #101013;
-  --color-row-hover: #16161a;
-  --color-surface: #18181b;
-  --color-surface-elevated: #27272a;
-  --color-surface-strong: #111113;
+  /* ── Surface layers ── */
+  --color-card: #131211;
+  --color-card-hover: #191815;
+  --color-row: #100f0d;
+  --color-row-hover: #161513;
+  --color-surface: #161513;
+  --color-surface-elevated: #1d1c19;
+  --color-surface-strong: #0c0b09;
 
   /* ── Text ── */
   --color-text: #f4f4f5;
@@ -20,7 +20,6 @@
   --color-text-faint: rgba(255, 255, 255, 0.36);
   --color-text-ghost: rgba(255, 255, 255, 0.28);
   --color-muted: #a1a1aa;
-  --color-faint: rgba(245, 242, 237, 0.45);
 
   /* ── Borders ── */
   --color-border: rgba(255, 255, 255, 0.07);
@@ -31,12 +30,16 @@
   --color-accent: #f5c300;
   --color-accent-soft: rgba(245, 195, 0, 0.1);
   --color-accent-border: rgba(245, 195, 0, 0.18);
+  --color-accent-glow: rgba(245, 195, 0, 0.4);
+  --color-accent-hover-border: rgba(245, 195, 0, 0.16);
 
   /* ── Status ── */
   --color-success: #34d399;
   --color-success-soft: rgba(52, 211, 153, 0.1);
+  --color-danger: #f87171;
+  --color-danger-soft: rgba(248, 113, 113, 0.09);
 
-  /* ── Legacy (sidebar, logo — ne pas toucher) ── */
+  /* ── Brand ── */
   --color-logo-primary: #c9a84c;
   --color-logo-stroke: #f0d080;
   --color-accent-v: #f5c300;
@@ -48,8 +51,6 @@
 :root {
   font-size: 15px;
   line-height: 24px;
-  --app-radius: 10px;
-  --app-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   font-weight: 400;
   font-family: "Segoe UI", system-ui, sans-serif;
   font-synthesis: none;
@@ -59,19 +60,25 @@
   -webkit-text-size-adjust: 100%;
   color: var(--color-text);
   background-color: var(--color-background);
-  --app-bg: #09090b;
-  --app-panel: #18181b;
-  --app-panel-strong: #0f0f12;
-  --app-card: #18181b;
-  --app-card-hover: #27272a;
-  --app-border: rgba(255, 255, 255, 0.08);
-  --app-border-strong: rgba(255, 255, 255, 0.12);
-  --app-muted: rgba(245, 242, 237, 0.58);
-  --app-faint: rgba(245, 242, 237, 0.34);
+
+  /* ── Layout tokens ── */
+  --app-radius: 10px;
+  --app-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   --app-radius-xl: 10px;
   --app-radius-lg: 10px;
   --app-radius-md: 8px;
   --app-sidebar-width: 250px;
+
+  /* ── Aliases — single source of truth via --color-* ── */
+  --app-bg: var(--color-background);
+  --app-panel: var(--color-surface);
+  --app-panel-strong: var(--color-surface-strong);
+  --app-card: var(--color-surface);
+  --app-card-hover: var(--color-surface-elevated);
+  --app-border: var(--color-border-strong);
+  --app-border-strong: var(--color-border-strong);
+  --app-muted: var(--color-text-sub);
+  --app-faint: var(--color-text-faint);
 }
 
 .container {
@@ -86,7 +93,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --color-text: #f5f2ed;
-    --color-background: #0a0a0a;
+    --color-background: #0a0908;
     --color-logo-primary: #c9a84c;
     --color-logo-stroke: #f0d080;
   }
@@ -98,16 +105,24 @@
   }
 }
 
-/* ── Reusable component classes ───────────────────────────────────── */
+/* ── Shared focus ring — one place to change ── */
+.voca-card:focus-visible,
+.voca-tpl-card:focus-visible,
+.voca-row:focus-visible,
+.voca-action-row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent-glow);
+}
 
-/* Static content card (non-clickable — history entries, info blocks) */
+/* ── Reusable component classes ── */
+
 .voca-surface {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 
-/* Template card (clickable, centered content) */
+/* Old template card (centered, 4-col) — kept for backward compat */
 .voca-card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
@@ -132,12 +147,8 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
 }
-.voca-card:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(245, 195, 0, 0.4);
-}
 
-/* List row (action items, history entries, etc.) */
+/* List row */
 .voca-row {
   background: var(--color-row);
   border: 1px solid var(--color-border-row);
@@ -153,22 +164,29 @@
 }
 .voca-row:hover {
   background: var(--color-row-hover);
-  border-color: rgba(245, 195, 0, 0.16);
-}
-.voca-row:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(245, 195, 0, 0.4);
+  border-color: var(--color-accent-hover-border);
 }
 
-/* Inline form / edit panel */
+/* Edit panel */
 .voca-panel {
   background: var(--color-row);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-strong);
   border-radius: 14px;
   padding: 28px;
 }
 
-/* Badge — pill shaped */
+/* Hint / info box */
+.voca-hint-box {
+  border-radius: 11px;
+  border: 1px solid var(--color-border-row);
+  padding: 12px 16px;
+  font-size: 12px;
+  line-height: 1.55;
+  background: var(--color-background);
+  color: var(--color-text-ghost);
+}
+
+/* Badge */
 .voca-badge {
   display: inline-flex;
   align-items: center;
@@ -188,28 +206,26 @@
   background: var(--color-accent-soft);
   color: var(--color-accent);
 }
-.voca-badge-accent::before {
+.voca-badge-accent::before,
+.voca-badge-success::before {
   content: "";
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-accent);
   flex-shrink: 0;
+}
+.voca-badge-accent::before {
+  background: var(--color-accent);
 }
 .voca-badge-success {
   background: var(--color-success-soft);
   color: var(--color-success);
 }
 .voca-badge-success::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
   background: var(--color-success);
-  flex-shrink: 0;
 }
 
-/* Key badge (keyboard shortcut number) */
+/* Keyboard shortcut key (old single-char) */
 .voca-key {
   display: flex;
   align-items: center;
@@ -217,8 +233,8 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px solid rgba(245, 195, 0, 0.2);
-  background: rgba(245, 195, 0, 0.1);
+  border: 1px solid var(--color-accent-border);
+  background: var(--color-accent-soft);
   color: var(--color-accent);
   font-family: monospace;
   font-size: 12px;
@@ -226,7 +242,7 @@
   flex-shrink: 0;
 }
 
-/* Card icon container */
+/* Icon container */
 .voca-icon {
   display: flex;
   align-items: center;
@@ -237,7 +253,7 @@
   flex-shrink: 0;
 }
 
-/* Section header */
+/* Section header text */
 .voca-section-title {
   font-size: 14px;
   font-weight: 600;
@@ -251,7 +267,218 @@
   max-width: 440px;
 }
 
-/* Global: all clickable elements show pointer cursor */
+/* Page-level section title */
+.voca-page-title {
+  font-size: 26px;
+  font-weight: 750;
+  color: rgba(255, 255, 255, 0.96);
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+/* Section caps label */
+.voca-label-caps {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Template card (horizontal, 2-col) ── */
+.voca-tpl-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.voca-tpl-card:hover {
+  background: var(--color-card-hover);
+  border-color: var(--color-accent-border);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(245, 195, 0, 0.06);
+}
+.voca-tpl-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.voca-tpl-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.2;
+}
+.voca-tpl-desc {
+  font-size: 11.5px;
+  color: var(--color-text-faint);
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+/* ── Action row ── */
+.voca-action-row {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.voca-action-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(
+    180deg,
+    var(--color-accent),
+    rgba(245, 195, 0, 0.35)
+  );
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.voca-action-row:hover {
+  background: var(--color-row-hover);
+  border-color: rgba(245, 195, 0, 0.14);
+}
+.voca-action-row:hover::before {
+  opacity: 1;
+}
+
+.voca-action-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid var(--color-accent-border);
+  background: var(--color-accent-soft);
+  flex-shrink: 0;
+}
+.voca-key-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-accent);
+  font-family: monospace;
+  margin-top: -1px;
+  line-height: 1;
+}
+
+.voca-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+}
+.voca-item-preview {
+  font-size: 11px;
+  color: var(--color-text-ghost);
+  margin-top: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.voca-row-delete {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+.voca-action-row:hover .voca-row-delete {
+  opacity: 1;
+}
+.voca-row-delete:hover {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+/* ── Model card ── */
+.voca-model-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  padding: 20px 22px;
+  gap: 20px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.voca-model-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--color-accent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.voca-model-card:hover {
+  border-color: rgba(255, 255, 255, 0.17);
+  background: var(--color-surface-elevated);
+}
+.voca-model-card--active {
+  border-color: var(--color-accent-border);
+  background: var(--color-surface-elevated);
+  box-shadow:
+    0 0 0 1px rgba(245, 195, 0, 0.06),
+    0 6px 24px rgba(0, 0, 0, 0.28);
+}
+.voca-model-card--active::before {
+  opacity: 1;
+}
+
+/* ── Global cursor ── */
 button:not(:disabled),
 [role="button"]:not(:disabled),
 [role="tab"],
@@ -265,7 +492,6 @@ a[href] {
 .logo-primary {
   fill: var(--color-logo-primary);
 }
-
 .logo-stroke {
   fill: var(--color-logo-stroke);
   stroke: var(--color-logo-stroke);
@@ -278,7 +504,7 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  background: #09090b;
+  background: var(--color-background);
   font-family: "Segoe UI", system-ui, sans-serif;
 }
 
@@ -296,21 +522,18 @@ body {
   width: 4px;
   height: 4px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.22);
 }
 
-/* ── Sidebar nav items ─────────────────────────────── */
+/* ── Sidebar ── */
 .sidebar-nav-btn {
   transition:
     background 0.16s ease,
@@ -319,6 +542,11 @@ body {
     transform 0.16s ease,
     box-shadow 0.16s ease;
 }
+/*
+ * The sidebar sets color/background via inline styles (dynamic active state).
+ * !important is required here to override inline styles on hover for idle items.
+ * To remove it: move sidebar visual states to CSS data-attributes.
+ */
 .sidebar-nav-btn:not([data-active="true"]):hover {
   background: rgba(255, 255, 255, 0.032) !important;
   color: rgba(255, 255, 255, 0.84) !important;
@@ -326,7 +554,6 @@ body {
   transform: translateX(1px);
 }
 
-/* ── Sidebar section label ─────────────────────────── */
 .sidebar-section-label {
   font-size: 10px;
   font-weight: 700;
@@ -337,19 +564,18 @@ body {
   user-select: none;
 }
 
-/* ── Settings card hover row ───────────────────────── */
+/* ── Settings rows ── */
 .setting-row:hover {
   background: rgba(39, 39, 42, 0.66);
 }
-
-/* ── Neutralize link colors in settings descriptions ── */
 .setting-row a,
 .settings-desc a {
   color: inherit;
   text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid var(--color-border-strong);
 }
 
+/* ── App shell ── */
 .app-shell {
   position: relative;
   display: flex;
@@ -385,13 +611,12 @@ body {
   font-size: 12px;
   line-height: 1.35;
 }
-
 .activation-banner-dot {
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: #d5b45b;
-  box-shadow: 0 0 0 4px rgba(213, 180, 91, 0.12);
+  background: var(--color-logo-primary);
+  box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.12);
   flex: 0 0 auto;
 }
 
@@ -404,12 +629,15 @@ body {
   overflow-x: hidden;
   border: 1px solid rgba(255, 255, 255, 0.032);
   border-radius: 8px;
-  background: linear-gradient(180deg, #0f0f12, #09090b);
+  background: linear-gradient(
+    180deg,
+    var(--color-panel),
+    var(--color-background)
+  );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.014),
     0 12px 28px rgba(0, 0, 0, 0.16);
 }
-
 .app-main::before {
   content: "";
   position: absolute;
@@ -436,7 +664,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 7px 11px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-strong);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.022);
   color: rgba(255, 255, 255, 0.48);
@@ -445,7 +673,6 @@ body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-
 .app-header-eyebrow::before {
   content: "";
   width: 7px;
@@ -459,11 +686,9 @@ body {
   margin: 0;
   font-size: 32px;
   line-height: 1.12;
-  letter-spacing: 0;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.97);
 }
-
 .app-page-subtitle {
   max-width: 680px;
   margin-top: 12px;
@@ -488,7 +713,6 @@ body {
   color: rgba(255, 255, 255, 0.78);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
-
 .app-first-launch-hint::before {
   content: "";
   width: 9px;
@@ -500,52 +724,48 @@ body {
   box-shadow: 0 0 0 5px rgba(201, 168, 76, 0.12);
 }
 
+/* ── Settings groups ── */
 .settings-group {
   margin-bottom: 32px;
 }
-
 .settings-group-header {
   margin-bottom: 16px;
   padding: 0 2px;
 }
-
 .settings-group-title {
   font-size: 15px;
   line-height: 1.25;
   font-weight: 700;
-  letter-spacing: 0;
-  color: #e4e4e7;
+  color: var(--color-text);
 }
-
 .settings-group-description {
   margin-top: 6px;
   max-width: 680px;
   font-size: 12px;
   line-height: 1.5;
-  color: #a1a1aa;
+  color: var(--color-muted);
 }
-
 .settings-group-card {
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
-  background: rgba(24, 24, 27, 0.88);
+  background: var(--color-surface);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.035),
     0 16px 34px rgba(0, 0, 0, 0.22);
 }
 
+/* ── General settings tabs ── */
 .general-settings-tabs {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 6px;
   padding: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
-  background: rgba(24, 24, 27, 0.82);
+  background: var(--color-surface);
   margin-bottom: 32px;
 }
-
 .general-settings-tab {
   border: 1px solid transparent;
   border-radius: 6px;
@@ -559,13 +779,31 @@ body {
     border-color 0.16s ease,
     box-shadow 0.16s ease;
 }
+.general-settings-tab[data-active="true"] {
+  border-color: rgba(201, 168, 76, 0.18);
+  background: linear-gradient(
+    180deg,
+    rgba(201, 168, 76, 0.14),
+    rgba(201, 168, 76, 0.08)
+  );
+  color: #f7e6b2;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.general-settings-tab[data-active="false"] {
+  color: rgba(255, 255, 255, 0.5);
+}
+.general-settings-tab[data-active="false"]:hover {
+  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.74);
+}
 
+/* ── Recording mode options ── */
 .recording-mode-options {
   display: grid;
   gap: 0;
   padding: 0;
 }
-
 .recording-mode-option {
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
@@ -575,9 +813,9 @@ body {
   min-height: 80px;
   padding: 16px;
   border: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--color-border-strong);
   border-radius: 0;
-  background: rgba(24, 24, 27, 0.86);
+  background: var(--color-surface);
   color: inherit;
   text-align: left;
   transition:
@@ -585,20 +823,18 @@ body {
     border-color 0.16s ease,
     box-shadow 0.16s ease;
 }
-
 .recording-mode-option:last-child {
   border-bottom: 0;
 }
-
 .recording-mode-option:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: #27272a;
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-elevated);
 }
-
 .recording-mode-option[data-selected="true"] {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-border-strong);
   background:
-    linear-gradient(90deg, rgba(245, 195, 0, 0.08), transparent 68%), #27272a;
+    linear-gradient(90deg, rgba(245, 195, 0, 0.08), transparent 68%),
+    var(--color-surface-elevated);
   box-shadow:
     inset 0 1px 0 rgba(245, 195, 0, 0.08),
     0 10px 22px rgba(0, 0, 0, 0.14);
@@ -613,22 +849,19 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
 }
-
 .recording-mode-option[data-selected="true"] .recording-mode-dot {
-  border-color: #f5c300;
-  background: #f5c300;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
   box-shadow: 0 0 0 4px rgba(245, 195, 0, 0.14);
 }
-
 .recording-mode-dot::after {
   content: "";
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #15110a;
+  background: var(--color-background);
   opacity: 0;
 }
-
 .recording-mode-option[data-selected="true"] .recording-mode-dot::after {
   opacity: 1;
 }
@@ -640,34 +873,12 @@ body {
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.94);
 }
-
 .recording-mode-desc {
   display: block;
   margin-top: 6px;
   font-size: 12px;
   line-height: 1.45;
-  color: #a1a1aa;
-}
-
-.general-settings-tab[data-active="true"] {
-  border-color: rgba(201, 168, 76, 0.18);
-  background: linear-gradient(
-    180deg,
-    rgba(201, 168, 76, 0.14),
-    rgba(201, 168, 76, 0.08)
-  );
-  color: #f7e6b2;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.general-settings-tab[data-active="false"] {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.general-settings-tab[data-active="false"]:hover {
-  border-color: rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.035);
-  color: rgba(255, 255, 255, 0.74);
+  color: var(--color-muted);
 }
 
 @media (max-width: 1100px) {
@@ -675,15 +886,12 @@ body {
     padding: 0 12px 12px;
     gap: 12px;
   }
-
   .app-main {
     border-radius: 8px;
   }
-
   .app-header-block {
     margin-bottom: 22px;
   }
-
   .app-page-title {
     font-size: 28px;
   }

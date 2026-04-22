@@ -853,6 +853,14 @@
     "dismiss": "閉じる"
   },
   "errors": {
+    "userFacing": {
+      "generic": "問題が発生しました。しばらくしてからもう一度お試しください。",
+      "network": "接続できません。インターネット接続を確認してからもう一度お試しください。",
+      "accessRequired": "アクセスの確認が必要です。再度サインインするか、サブスクリプションを開いてください。",
+      "microphone": "Vocalypeはマイクを使用できません。権限と選択したマイクを確認してください。",
+      "model": "音声モデルを準備できませんでした。接続を確認してからもう一度お試しください。",
+      "agent": "アシスタントが応答できませんでした。しばらくしてからもう一度お試しください。"
+    },
     "loadDirectory": "ディレクトリの読み込みエラー: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

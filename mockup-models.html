@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup — Modèles</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:            #0f0f11;
+    --panel:         #111113;
+    --surface:       #18181b;
+    --surface-el:    #1e1e23;
+    --border:        rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.13);
+    --text:          #e4e4e7;
+    --muted:         rgba(255,255,255,0.45);
+    --faint:         rgba(255,255,255,0.28);
+    --accent:        #F5C300;
+    --accent-soft:   rgba(245,195,0,0.10);
+    --accent-border: rgba(245,195,0,0.28);
+    --sky:           #38bdf8;
+    --emerald:       #34d399;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+
+  .page { width: 680px; }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .tab {
+    padding: 7px 14px 9px;
+    font-size: 13px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid var(--accent);
+    color: var(--accent);
+    cursor: pointer;
+    transition: color .15s;
+  }
+
+  /* ── Section title ── */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 12px;
+  }
+
+  /* ── Model card ── */
+  .model-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 20px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+    position: relative;
+  }
+  .model-card:hover {
+    border-color: rgba(255,255,255,0.18);
+    background: var(--surface-el);
+  }
+  .model-card.active {
+    border-color: var(--accent-border);
+    background: var(--surface-el);
+    box-shadow: 0 0 0 1px rgba(245,195,0,0.08), 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  /* active left accent stripe */
+  .model-card.active::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 20%; bottom: 20%;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--accent);
+  }
+
+  .model-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    border: 1px solid rgba(245,195,0,0.16);
+    background: rgba(245,195,0,0.08);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .model-body { flex: 1; min-width: 0; }
+
+  .model-name-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 5px;
+  }
+  .model-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .model-card.active .model-name { color: var(--accent); }
+
+  .model-desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  .model-meta {
+    margin-top: 9px;
+    display: flex;
+    gap: 14px;
+    font-size: 11.5px;
+    color: var(--faint);
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .badge-accent  { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(245,195,0,0.18); }
+  .badge-sky     { background: rgba(56,189,248,0.08); color: var(--sky); border: 1px solid rgba(56,189,248,0.18); }
+  .badge-neutral { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.10); }
+  .badge-active  { background: rgba(245,195,0,0.12); color: var(--accent); border: 1px solid rgba(245,195,0,0.24); }
+
+  /* ── Score bars ── */
+  .scores {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .score-row { display: flex; align-items: center; gap: 10px; }
+  .score-label {
+    font-size: 10px;
+    color: var(--faint);
+    text-align: right;
+    width: 48px;
+  }
+  .bar-track {
+    width: 80px; height: 5px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+  }
+
+  /* ── Mode grid ── */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .mode-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+    text-align: left;
+  }
+  .mode-card:hover {
+    border-color: rgba(255,255,255,0.16);
+    background: var(--surface-el);
+  }
+  .mode-card.active {
+    border-color: var(--accent-border);
+    background: var(--surface-el);
+    box-shadow: 0 0 0 1px rgba(245,195,0,0.06);
+  }
+
+  .mode-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: 1px solid;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .mode-icon.gold   { border-color: rgba(245,195,0,0.22); background: rgba(245,195,0,0.08); color: var(--accent); }
+  .mode-icon.sky    { border-color: rgba(56,189,248,0.22); background: rgba(56,189,248,0.08); color: var(--sky); }
+  .mode-icon.gray   { border-color: rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6); }
+  .mode-icon.green  { border-color: rgba(52,211,153,0.22); background: rgba(52,211,153,0.08); color: var(--emerald); }
+
+  .mode-label-row {
+    display: flex; align-items: center; gap: 7px;
+  }
+  .mode-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .mode-card.active .mode-label { color: var(--accent); }
+  .mode-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: -6px;
+  }
+  .mode-model-name {
+    font-size: 11px;
+    color: var(--faint);
+    margin-top: 2px;
+  }
+
+  /* ── Section spacing ── */
+  .section { margin-top: 36px; }
+  .section:first-child { margin-top: 0; }
+
+  /* ── Divider ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab">Transcription</button>
+  </div>
+
+  <!-- Section: Your model -->
+  <div class="section">
+    <p class="section-title">Modèle actif</p>
+
+    <div class="model-card active">
+      <div class="model-icon">🌐</div>
+      <div class="model-body">
+        <div class="model-name-row">
+          <span class="model-name">Parakeet TDT Multilingue</span>
+          <span class="badge badge-accent">Best Default</span>
+          <span class="badge badge-neutral">Multilingue</span>
+          <span class="badge badge-neutral">100% local</span>
+          <span class="badge badge-active">✓ Actif</span>
+        </div>
+        <p class="model-desc">Modèle rapide et précis pour la dictée quotidienne. Optimisé pour une faible latence sur CPU.</p>
+        <div class="model-meta">
+          <span>Multilingue</span>
+          <span>Traduction</span>
+        </div>
+      </div>
+      <div class="scores">
+        <div class="score-row">
+          <span class="score-label">Précision</span>
+          <div class="bar-track"><div class="bar-fill" style="width:82%"></div></div>
+        </div>
+        <div class="score-row">
+          <span class="score-label">Vitesse</span>
+          <div class="bar-track"><div class="bar-fill" style="width:90%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Section: Modes -->
+  <div class="section" style="margin-top:0">
+    <p class="section-title">Mode de performance</p>
+
+    <div class="mode-grid">
+
+      <button class="mode-card active">
+        <div class="mode-icon gold">✨</div>
+        <div>
+          <div class="mode-label-row">
+            <span class="mode-label">Auto</span>
+            <span class="badge badge-accent">Recommandé</span>
+          </div>
+          <p class="mode-desc">Sélection automatique du meilleur modèle selon votre machine.</p>
+          <p class="mode-model-name">Parakeet TDT Multilingue</p>
+        </div>
+      </button>
+
+      <button class="mode-card">
+        <div class="mode-icon sky">🚀</div>
+        <div>
+          <div class="mode-label-row">
+            <span class="mode-label">Rapide</span>
+          </div>
+          <p class="mode-desc">Transcription ultra-rapide, idéale pour les dictées longues.</p>
+          <p class="mode-model-name">Moonshine Tiny</p>
+        </div>
+      </button>
+
+      <button class="mode-card">
+        <div class="mode-icon gray">⏱</div>
+        <div>
+          <div class="mode-label-row">
+            <span class="mode-label">Équilibré</span>
+          </div>
+          <p class="mode-desc">Bon compromis entre vitesse et qualité de transcription.</p>
+          <p class="mode-model-name">Parakeet TDT v2</p>
+        </div>
+      </button>
+
+      <button class="mode-card">
+        <div class="mode-icon green">🛡</div>
+        <div>
+          <div class="mode-label-row">
+            <span class="mode-label">Qualité</span>
+          </div>
+          <p class="mode-desc">Meilleure précision, recommandé pour des accents ou vocabulaire spécialisé.</p>
+          <p class="mode-model-name">Whisper Large</p>
+        </div>
+      </button>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

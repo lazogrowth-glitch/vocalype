@@ -854,6 +854,14 @@
     "dismiss": "Dispensar"
   },
   "errors": {
+    "userFacing": {
+      "generic": "Algo correu mal. Por favor, tente novamente em breve.",
+      "network": "Não foi possível conectar. Verifique a sua ligação à internet e tente novamente.",
+      "accessRequired": "O seu acesso precisa de ser verificado. Inicie sessão novamente ou abra a sua subscrição.",
+      "microphone": "O Vocalype não consegue usar o microfone. Verifique a permissão e o microfone selecionado.",
+      "model": "O modelo de voz não pôde ser preparado. Verifique a sua ligação e tente novamente.",
+      "agent": "O assistente não conseguiu responder. Por favor, tente novamente em breve."
+    },
     "loadDirectory": "Erro ao carregar diretório: {{error}}",
     "actionable": {
       "noModelLoaded": "Nenhum modelo est? carregado. V? para Modelos e selecione um.",

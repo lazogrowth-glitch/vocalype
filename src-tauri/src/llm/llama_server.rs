@@ -244,7 +244,10 @@ pub fn start_for_transcription(app: AppHandle) {
             .build()
             .unwrap_or_default();
         let _ = client
-            .post(format!("http://127.0.0.1:{}/v1/chat/completions", LLAMA_SERVER_PORT))
+            .post(format!(
+                "http://127.0.0.1:{}/v1/chat/completions",
+                LLAMA_SERVER_PORT
+            ))
             .header("Content-Type", "application/json")
             .json(&serde_json::json!({
                 "model": MODEL_ID,
@@ -277,7 +280,10 @@ pub fn preheat_if_running() {
             .build()
             .unwrap_or_default();
         let _ = client
-            .post(format!("http://127.0.0.1:{}/v1/chat/completions", LLAMA_SERVER_PORT))
+            .post(format!(
+                "http://127.0.0.1:{}/v1/chat/completions",
+                LLAMA_SERVER_PORT
+            ))
             .header("Content-Type", "application/json")
             .json(&serde_json::json!({
                 "model": MODEL_ID,

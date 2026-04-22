@@ -853,6 +853,14 @@
     "dismiss": "닫기"
   },
   "errors": {
+    "userFacing": {
+      "generic": "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      "network": "연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도하세요.",
+      "accessRequired": "액세스를 확인해야 합니다. 다시 로그인하거나 구독을 열어보세요.",
+      "microphone": "Vocalype가 마이크를 사용할 수 없습니다. 권한과 선택된 마이크를 확인하세요.",
+      "model": "음성 모델을 준비할 수 없습니다. 연결을 확인하고 다시 시도하세요.",
+      "agent": "어시스턴트가 응답하지 못했습니다. 잠시 후 다시 시도해 주세요."
+    },
     "loadDirectory": "디렉토리 로딩 오류: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

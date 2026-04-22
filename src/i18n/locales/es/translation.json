@@ -873,6 +873,14 @@
     "dismiss": "Descartar"
   },
   "errors": {
+    "userFacing": {
+      "generic": "Algo salió mal. Por favor, inténtalo de nuevo en un momento.",
+      "network": "No se puede conectar. Comprueba tu conexión a internet e inténtalo de nuevo.",
+      "accessRequired": "Tu acceso debe ser verificado. Inicia sesión de nuevo o abre tu suscripción.",
+      "microphone": "Vocalype no puede usar el micrófono. Comprueba el permiso y el micrófono seleccionado.",
+      "model": "El modelo de voz no pudo prepararse. Comprueba tu conexión e inténtalo de nuevo.",
+      "agent": "El asistente no pudo responder. Por favor, inténtalo de nuevo en un momento."
+    },
     "loadDirectory": "Error al cargar el directorio: {{error}}",
     "actionable": {
       "noModelLoaded": "No hay ning?n modelo cargado. Ve a Modelos y selecciona uno.",

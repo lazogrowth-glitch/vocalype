@@ -10,6 +10,14 @@ const PARAKEET_LOW_ENERGY_RMS_THRESHOLD: f32 = 0.05;
 const PARAKEET_LOW_ENERGY_TARGET_RMS: f32 = 0.1;
 const PARAKEET_LOW_ENERGY_MAX_GAIN: f32 = 4.5;
 
+// Short-phrase threshold: recordings under 5 s get silence padding on both
+// sides and Sentences mode (Words timestamps are unstable on short clips and
+// the first few seconds often have cold-start encoder errors).
+const PARAKEET_SHORT_PHRASE_SAMPLES: usize = 5 * 16_000; // 5 s at 16 kHz
+const PARAKEET_SHORT_PHRASE_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
+                                                             // Tail pad applied to ALL recordings so the last word is never cut off.
+const PARAKEET_TAIL_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
+
 fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
     if samples.is_empty() {
         return (0.0, 0.0);
@@ -21,6 +29,27 @@ fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
         .map(|sample| sample.abs())
         .fold(0.0_f32, f32::max);
     ((sum / samples.len() as f32).sqrt(), peak)
+}
+
+/// For short phrases (< 5 s), pad with silence on both sides so the encoder
+/// has enough context and doesn't start decoding mid-phoneme.
+fn pad_short_phrase(samples: &[f32]) -> Vec<f32> {
+    let pad = vec![0.0_f32; PARAKEET_SHORT_PHRASE_PAD_SAMPLES];
+    let mut padded = Vec::with_capacity(pad.len() * 2 + samples.len());
+    padded.extend_from_slice(&pad);
+    padded.extend_from_slice(samples);
+    padded.extend_from_slice(&pad);
+    padded
+}
+
+/// Append 0.5 s of silence to any recording so the encoder never cuts the
+/// last word at a hard boundary.
+fn pad_audio_tail(samples: &[f32]) -> Vec<f32> {
+    let tail = vec![0.0_f32; PARAKEET_TAIL_PAD_SAMPLES];
+    let mut padded = Vec::with_capacity(samples.len() + tail.len());
+    padded.extend_from_slice(samples);
+    padded.extend_from_slice(&tail);
+    padded
 }
 
 fn maybe_boost_low_energy_parakeet_audio(samples: &[f32]) -> Option<(Vec<f32>, f32)> {
@@ -597,6 +626,8 @@ impl TranscriptionManager {
                                 })
                         }
                         LoadedEngine::ParakeetV3(parakeet_engine) => {
+                            let is_short_phrase = audio.len() < PARAKEET_SHORT_PHRASE_SAMPLES;
+
                             let boosted_audio = maybe_boost_low_energy_parakeet_audio(&audio);
                             if let Some((_, gain)) = boosted_audio.as_ref() {
                                 info!(
@@ -604,30 +635,44 @@ impl TranscriptionManager {
                                     gain
                                 );
                             }
-                            let decode_audio = boosted_audio
+                            let base_audio = boosted_audio
                                 .as_ref()
                                 .map(|(samples, _)| samples.clone())
                                 .unwrap_or_else(|| audio.clone());
 
-                            // Constrained decoding: prime the LSTM with the selected language
-                            // token so the model stays in the target language throughout the
-                            // utterance.  "auto" → None → standard behaviour (no change).
-                            let forced_lang = if settings.selected_language == "auto" {
-                                None
+                            // Short phrases (< 5 s): add silence padding on both sides so the
+                            // encoder has enough context and go straight to Sentences mode —
+                            // Words timestamps are unstable on clips this short.
+                            // Longer clips: still add trailing silence so the last word is
+                            // never cut off at the encoder boundary.
+                            let decode_audio = if is_short_phrase {
+                                pad_short_phrase(&base_audio)
                             } else {
-                                // Normalise zh-Hans / zh-Hant → zh (model only has <|zh|>)
-                                Some(match settings.selected_language.as_str() {
-                                    "zh-Hans" | "zh-Hant" => "zh",
-                                    other => other,
-                                })
+                                pad_audio_tail(&base_audio)
                             };
-                            parakeet_engine.set_language(forced_lang);
+
+                            // Language bias disabled: Parakeet TDT auto-detects language via
+                            // the encoder — logit biasing accent-char tokens causes regressions
+                            // (e.g. "a" → "à", "e" → "é") because single-char accent tokens
+                            // get indiscriminately boosted at every decode frame.
+                            parakeet_engine.set_language(None);
+
+                            if is_short_phrase {
+                                // ── Short-phrase path ──────────────────────────────────────
+                                // Sentences mode is more robust for short clips: no word-level
+                                // timestamp machinery, less prone to hallucination loops.
+                                debug!("Parakeet V3 short-phrase path ({} samples)", audio.len());
+                            }
 
                             match parakeet_engine.transcribe_samples(
                                 decode_audio.clone(),
                                 16_000,
                                 1,
-                                Some(ParakeetTimestampMode::Words),
+                                if is_short_phrase {
+                                    Some(ParakeetTimestampMode::Sentences)
+                                } else {
+                                    Some(ParakeetTimestampMode::Words)
+                                },
                             ) {
                                 Ok(result) => {
                                     check_parakeet_language_drift(
@@ -654,7 +699,10 @@ impl TranscriptionManager {
                                             }
                                         }
                                     }
-                                    // Words mode succeeded — convert per-word timed tokens to
+                                    // Sentences mode (short phrase) has no word timestamps — that
+                                    // is intentional: segments=None lets assembly fall back to
+                                    // deduplicate_boundary, same as the Words-mode error path.
+                                    // Words mode (long phrase): convert per-word timed tokens to
                                     // TranscriptionSegment so the chunking worker can trim the
                                     // overlap prefix by timestamp (immune to non-determinism).
                                     let segments: Vec<transcribe_rs::TranscriptionSegment> = result

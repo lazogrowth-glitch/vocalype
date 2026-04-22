@@ -1,465 +1,237 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vocalype — Style de sortie (mockup)</title>
+<meta charset="UTF-8" />
+<title>Mockup — Style de sortie</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-    background: #09090b;
-    color: #f4f4f5;
-    min-height: 100vh;
-    display: flex;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* ── Sidebar ── */
-  .sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background: #0f0f11;
-    border-right: 1px solid rgba(255,255,255,0.06);
-    padding: 20px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .sidebar-logo {
-    padding: 8px 10px 20px;
-    font-size: 15px;
-    font-weight: 700;
-    color: #F5C300;
-    letter-spacing: -0.3px;
-  }
-  .sidebar-item {
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: rgba(255,255,255,0.45);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .sidebar-item:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.72); }
-  .sidebar-item.active {
-    background: rgba(245,195,0,0.08);
-    color: #F5C300;
-    font-weight: 500;
-  }
-
-  /* ── Main ── */
-  .main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 40px 48px;
-  }
-
-  /* ── Page header ── */
-  .page-header {
-    margin-bottom: 36px;
-    padding-bottom: 28px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-  .page-title {
-    font-size: 26px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.96);
-    letter-spacing: -0.4px;
-    line-height: 1.2;
-  }
-  .page-subtitle {
-    margin-top: 8px;
-    font-size: 14px;
-    color: rgba(255,255,255,0.38);
-    line-height: 1.5;
-    max-width: 480px;
-  }
-
-  /* ── Section ── */
-  .section { margin-bottom: 40px; }
-
-  .section-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
-    margin-bottom: 20px;
-  }
-  .section-header-left { display: flex; flex-direction: column; gap: 8px; }
-
-  .section-title-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .section-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.88);
-    letter-spacing: -0.1px;
-  }
-  .badge {
-    padding: 3px 9px;
-    border-radius: 99px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-  }
-  .badge-neutral { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.38); }
-  .badge-warning {
-    background: rgba(245,195,0,0.1);
-    color: #F5C300;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .badge-warning::before {
-    content: '';
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: #F5C300;
-    flex-shrink: 0;
-  }
-  .badge-success {
-    background: rgba(52,211,153,0.1);
-    color: #34d399;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .badge-success::before {
-    content: '';
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: #34d399;
-    flex-shrink: 0;
-  }
-  .section-desc {
-    font-size: 13px;
-    color: rgba(255,255,255,0.36);
-    line-height: 1.55;
-    max-width: 440px;
-  }
-
-  /* ── Button ── */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 8px 16px;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .btn-primary {
-    background: rgba(245,195,0,0.12);
-    color: #F5C300;
-    border: 1px solid rgba(245,195,0,0.2);
-  }
-  .btn-primary:hover { background: rgba(245,195,0,0.18); border-color: rgba(245,195,0,0.32); }
-  .btn-secondary {
-    background: rgba(255,255,255,0.05);
-    color: rgba(255,255,255,0.6);
-    border: 1px solid rgba(255,255,255,0.08);
-  }
-  .btn-secondary:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.82); }
-
-  /* ── Template cards ── */
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-  }
-  .template-card {
-    background: #131316;
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 14px;
-    padding: 22px 20px;
-    cursor: pointer;
-    transition: all 0.18s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 14px;
-    user-select: none;
-  }
-  .template-card:hover {
-    background: #1a1a1e;
-    border-color: rgba(245,195,0,0.18);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.3);
-  }
-  .card-icon {
-    width: 44px; height: 44px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-  .card-icon-violet { background: rgba(139,92,246,0.15); color: #a78bfa; }
-  .card-icon-sky    { background: rgba(56,189,248,0.12); color: #7dd3fc; }
-  .card-icon-green  { background: rgba(52,211,153,0.12); color: #6ee7b7; }
-  .card-icon-amber  { background: rgba(251,191,36,0.12); color: #fcd34d; }
-
-  .card-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.88);
-  }
-  .card-desc {
-    font-size: 12px;
-    color: rgba(255,255,255,0.36);
-    line-height: 1.5;
-  }
-
-  /* ── Configured actions ── */
-  .actions-list { display: flex; flex-direction: column; gap: 6px; }
-  .action-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 13px 16px;
-    background: #101013;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 11px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .action-row:hover {
-    background: #16161a;
-    border-color: rgba(245,195,0,0.16);
-  }
-  .action-key {
-    width: 30px; height: 30px;
-    border-radius: 8px;
-    background: rgba(245,195,0,0.1);
-    border: 1px solid rgba(245,195,0,0.2);
-    color: #F5C300;
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .action-info { flex: 1; min-width: 0; }
-  .action-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85); }
-  .action-preview {
-    font-size: 11px;
-    color: rgba(255,255,255,0.28);
-    margin-top: 2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .action-delete {
-    font-size: 11px;
-    color: rgba(255,255,255,0.2);
-    opacity: 0;
-    transition: opacity 0.15s;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
-  }
-  .action-row:hover .action-delete { opacity: 1; }
-  .action-delete:hover { color: #f87171; background: rgba(248,113,113,0.08); }
-
-  /* ── Divider ── */
-  .divider {
-    height: 1px;
-    background: rgba(255,255,255,0.05);
-    margin: 28px 0;
-  }
-
-  /* ── Switcher to show different states ── */
-  .demo-controls {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    display: flex;
-    gap: 8px;
-    background: #1a1a1e;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    padding: 10px 12px;
-    font-size: 12px;
-    color: rgba(255,255,255,0.5);
-    align-items: center;
-    gap: 10px;
-    z-index: 100;
-  }
-  .demo-btn {
-    padding: 5px 12px;
-    border-radius: 7px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.04);
-    color: rgba(255,255,255,0.6);
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .demo-btn.active, .demo-btn:hover { background: rgba(245,195,0,0.1); border-color: rgba(245,195,0,0.25); color: #F5C300; }
-
-  svg { display: block; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: #040406;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 40px 20px;
+}
+.window {
+  width: 1100px; height: 720px;
+  background: #09090b; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow: 0 40px 120px rgba(0,0,0,0.85);
+  display: flex; overflow: hidden; position: relative;
+}
+/* titlebar */
+.titlebar {
+  position: absolute; top:0; left:0; right:0; height:36px;
+  background: #0c0c0f; border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 14px; z-index: 10;
+}
+.dots { display: flex; gap: 7px; }
+.dot { width:11px; height:11px; border-radius:50%; }
+.d1{background:#ff5f57} .d2{background:#febc2e} .d3{background:#28c840}
+.tbtn {
+  width:26px; height:26px; border-radius:6px;
+  background:rgba(255,255,255,0.05); border:none;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+/* sidebar */
+.sidebar {
+  width:220px; min-width:220px; background:#0c0c0e;
+  border-right:1px solid rgba(255,255,255,0.06);
+  padding-top:36px; display:flex; flex-direction:column;
+}
+.brand {
+  padding:20px 18px 22px;
+  display:flex; align-items:center; gap:11px;
+  border-bottom:1px solid rgba(255,255,255,0.05); margin-bottom:14px;
+}
+.brand-logo {
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg,#1a1a1e,#222228);
+  border:1px solid rgba(245,195,0,0.2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:800; color:#f5c300;
+}
+.bname{font-size:15px;font-weight:700;color:rgba(255,255,255,0.9);line-height:1.2}
+.bsub{font-size:10.5px;color:rgba(255,255,255,0.27);margin-top:2px}
+.nsec{padding:0 10px; margin-bottom:6px}
+.nlbl{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:0 8px 7px}
+.ni{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13px;color:rgba(255,255,255,0.4);cursor:pointer}
+.ni:hover{background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.65)}
+.ni.on{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.88);font-weight:500}
+.sfooter{margin-top:auto;padding:13px 12px;border-top:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between}
+.sdot{width:7px;height:7px;border-radius:50%;background:#34d399}
+.slbl{font-size:11.5px;color:rgba(255,255,255,0.3)}
+.sbill{font-size:11px;color:rgba(255,255,255,0.22);padding:4px 8px;border-radius:5px;cursor:pointer}
+/* main */
+.main{flex:1;padding-top:36px;overflow-y:auto;display:flex;flex-direction:column}
+.main::-webkit-scrollbar{width:4px}
+.main::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:99px}
+.content{padding:36px 44px 52px;max-width:740px}
+/* page header */
+.ptitle{font-size:26px;font-weight:750;color:rgba(255,255,255,0.96);letter-spacing:-.5px;line-height:1;margin-bottom:7px}
+.psub{font-size:13.5px;color:rgba(255,255,255,0.33);line-height:1.5;margin-bottom:32px}
+/* section row */
+.srow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sleft{display:flex;align-items:center;gap:10px}
+.lcaps{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,0.22)}
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:600;letter-spacing:.04em}
+.bn{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.38)}
+.ba{background:rgba(245,195,0,0.1);color:#f5c300}
+.ba::before{content:"";width:5px;height:5px;border-radius:50%;background:#f5c300;flex-shrink:0}
+/* add btn */
+.btnadd{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:1px solid rgba(245,195,0,0.22);background:rgba(245,195,0,0.07);color:#f5c300;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s}
+.btnadd:hover{background:rgba(245,195,0,0.13);border-color:rgba(245,195,0,0.38)}
+kbd{background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:4px;font-size:11px;color:rgba(255,255,255,0.45);font-family:inherit}
+.hint{font-size:12.5px;color:rgba(255,255,255,0.27);line-height:1.55;margin-bottom:20px}
+/* template grid */
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:30px}
+.tcard{background:#111114;border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;position:relative;overflow:hidden;transition:background .15s,border-color .2s,transform .2s,box-shadow .2s}
+.tcard:hover{background:#161619;border-color:rgba(245,195,0,0.22);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 0 1px rgba(245,195,0,.06)}
+.tcard:hover .tarr{color:rgba(245,195,0,0.45);transform:translateX(3px)}
+.tic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.iv{background:rgba(139,92,246,.13);color:#a78bfa}
+.is{background:rgba(14,165,233,.12);color:#38bdf8}
+.ig{background:rgba(52,211,153,.10);color:#34d399}
+.ia{background:rgba(245,158,11,.12);color:#fbbf24}
+.tbody{flex:1;min-width:0}
+.tname{font-size:13px;font-weight:600;color:rgba(255,255,255,0.9);line-height:1.2}
+.tdesc{font-size:11.5px;color:rgba(255,255,255,0.32);margin-top:4px;line-height:1.45}
+.tarr{font-size:18px;color:rgba(255,255,255,0.12);flex-shrink:0;line-height:1;transition:color .15s,transform .2s}
+/* action rows */
+.alist{display:flex;flex-direction:column;gap:6px}
+.arow{background:#0f0f12;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;position:relative;overflow:hidden;transition:background .15s,border-color .15s}
+.arow::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(180deg,#f5c300,rgba(245,195,0,.35));opacity:0;transition:opacity .15s}
+.arow:hover{background:#141417;border-color:rgba(245,195,0,.14)}
+.arow:hover::before{opacity:1}
+.arow:hover .rdel{opacity:1}
+.akey{display:flex;flex-direction:column;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;border:1px solid rgba(245,195,0,.18);background:rgba(245,195,0,.07);flex-shrink:0;gap:1px}
+.kctrl{font-size:8.5px;font-weight:700;color:rgba(245,195,0,.4)}
+.knum{font-size:15px;font-weight:700;color:#f5c300;font-family:monospace;margin-top:-1px}
+.ainfo{flex:1;min-width:0}
+.aname{font-size:13px;font-weight:600;color:rgba(255,255,255,.88)}
+.aprev{font-size:11px;color:rgba(255,255,255,.23);margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rdel{flex-shrink:0;font-size:11px;color:rgba(255,255,255,.2);padding:4px 10px;border-radius:6px;cursor:pointer;opacity:0;border:none;background:none;font-family:inherit;transition:opacity .15s,color .15s,background .15s}
+.rdel:hover{color:#f87171;background:rgba(248,113,113,.09)}
+.htip{margin-top:34px;padding:13px 18px;background:rgba(245,195,0,.04);border:1px solid rgba(245,195,0,.1);border-radius:10px;font-size:12px;color:rgba(245,195,0,.5);text-align:center}
 </style>
 </head>
 <body>
+<div class="window">
 
-<!-- Sidebar -->
-<nav class="sidebar">
-  <div class="sidebar-logo">⚡ Vocalype</div>
-  <div class="sidebar-item">Dicter</div>
-  <div class="sidebar-item">Modèles</div>
-  <div class="sidebar-item active">Style de sortie</div>
-  <div class="sidebar-item">Historique</div>
-  <div class="sidebar-item">Snippets</div>
-  <div class="sidebar-item">Avancé</div>
-</nav>
-
-<!-- Main content -->
-<main class="main">
-
-  <!-- Page header -->
-  <div class="page-header">
-    <h1 class="page-title">Style de sortie</h1>
-    <p class="page-subtitle">Choisissez comment Vocalype reformate votre texte après la dictée.</p>
-  </div>
-
-  <!-- Actions section -->
-  <div class="section">
-    <div class="section-header">
-      <div class="section-header-left">
-        <div class="section-title-row">
-          <span class="section-title">Actions</span>
-          <span class="badge badge-neutral">LLM</span>
-          <span class="badge badge-warning" id="status-badge">À configurer</span>
-        </div>
-        <p class="section-desc" id="section-desc">
-          Associez Ctrl+1 à 9 à un prompt IA — correction, résumé, traduction. Déclenchez après la dictée, le résultat remplace votre texte.
-        </p>
-      </div>
-      <button class="btn btn-primary">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Ajouter une action
-      </button>
-    </div>
-
-    <!-- Template cards -->
-    <div class="cards-grid" id="cards-grid">
-      <div class="template-card">
-        <div class="card-icon card-icon-violet">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l2 2"/><circle cx="18" cy="6" r="3" fill="currentColor" stroke="none"/></svg>
-        </div>
-        <div>
-          <div class="card-label">Corriger</div>
-          <div class="card-desc">Nettoie la grammaire sans changer le sens.</div>
-        </div>
-      </div>
-      <div class="template-card">
-        <div class="card-icon card-icon-sky">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        </div>
-        <div>
-          <div class="card-label">Résumé + actions</div>
-          <div class="card-desc">Transforme une longue dictée en points clés.</div>
-        </div>
-      </div>
-      <div class="template-card">
-        <div class="card-icon card-icon-green">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        </div>
-        <div>
-          <div class="card-label">Email pro</div>
-          <div class="card-desc">Reformate en email prêt à envoyer.</div>
-        </div>
-      </div>
-      <div class="template-card">
-        <div class="card-icon card-icon-amber">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-        </div>
-        <div>
-          <div class="card-label">Traduire en anglais</div>
-          <div class="card-desc">Traduit proprement en anglais naturel.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Configured actions (hidden by default in this state) -->
-    <div id="actions-list" style="display:none; margin-top: 20px;">
-      <div class="divider" style="margin-top:0;"></div>
-      <div class="actions-list">
-        <div class="action-row">
-          <div class="action-key">1</div>
-          <div class="action-info">
-            <div class="action-name">Corriger</div>
-            <div class="action-preview">Corrige la grammaire, la ponctuation et la clarté du texte...</div>
-          </div>
-          <div class="action-delete">Supprimer</div>
-        </div>
-        <div class="action-row">
-          <div class="action-key">2</div>
-          <div class="action-info">
-            <div class="action-name">Email pro</div>
-            <div class="action-preview">Transforme le texte en email professionnel clair et naturel...</div>
-          </div>
-          <div class="action-delete">Supprimer</div>
-        </div>
-      </div>
+  <div class="titlebar">
+    <div class="dots"><div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div></div>
+    <div style="display:flex;gap:8px">
+      <button class="tbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+      <button class="tbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg></button>
     </div>
   </div>
 
-</main>
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">V</div>
+      <div><div class="bname">Vocalype</div><div class="bsub">Espace de dictée IA</div></div>
+    </div>
+    <div class="nsec">
+      <div class="nlbl">Configuration</div>
+      <div class="ni"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dicter</div>
+      <div class="ni"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>Modèles</div>
+      <div class="ni on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Style de sortie</div>
+    </div>
+    <div style="height:16px"></div>
+    <div class="nsec">
+      <div class="nlbl">Utilisation</div>
+      <div class="ni"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Historique</div>
+    </div>
+    <div style="height:16px"></div>
+    <div class="nsec">
+      <div class="nlbl">Plus</div>
+      <div class="ni"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>Plus</div>
+    </div>
+    <div class="sfooter">
+      <div style="display:flex;align-items:center;gap:7px"><div class="sdot"></div><span class="slbl">Actif</span></div>
+      <span class="sbill">Facturation</span>
+    </div>
+  </div>
 
-<!-- Demo controls -->
-<div class="demo-controls">
-  État :
-  <button class="demo-btn active" onclick="setState('empty')">Vide</button>
-  <button class="demo-btn" onclick="setState('configured')">Avec actions</button>
-  <button class="demo-btn" onclick="setState('ready')">Modèle prêt</button>
+  <div class="main">
+    <div class="content">
+
+      <div class="ptitle">Style de sortie</div>
+      <div class="psub">Choisissez comment Vocalype corrige ou reformate le texte avant insertion.</div>
+
+      <div class="srow">
+        <div class="sleft">
+          <span class="lcaps">Actions</span>
+          <span class="badge bn">LLM</span>
+          <span class="badge ba">À configurer</span>
+        </div>
+        <button class="btnadd">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Ajouter une action
+        </button>
+      </div>
+
+      <p class="hint">Associez des touches <kbd>Ctrl</kbd> + chiffre (1–9) à des prompts personnalisés. Appuyez sur le raccourci pendant l'enregistrement pour appliquer l'action après la transcription.</p>
+
+      <div class="lcaps" style="margin-bottom:12px">Modèles rapides</div>
+      <div class="tgrid">
+        <div class="tcard">
+          <div class="tic iv"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></div>
+          <div class="tbody"><div class="tname">Corriger</div><div class="tdesc">Nettoie la dictée sans changer le sens.</div></div>
+          <div class="tarr">›</div>
+        </div>
+        <div class="tcard">
+          <div class="tic is"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg></div>
+          <div class="tbody"><div class="tname">Résumé + actions</div><div class="tdesc">Transforme une dictée longue en points utiles.</div></div>
+          <div class="tarr">›</div>
+        </div>
+        <div class="tcard">
+          <div class="tic ig"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>
+          <div class="tbody"><div class="tname">Email pro</div><div class="tdesc">Reformate la dictée en email prêt à envoyer.</div></div>
+          <div class="tarr">›</div>
+        </div>
+        <div class="tcard">
+          <div class="tic ia"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div>
+          <div class="tbody"><div class="tname">Traduire en anglais</div><div class="tdesc">Traduit proprement en anglais naturel.</div></div>
+          <div class="tarr">›</div>
+        </div>
+      </div>
+
+      <div class="lcaps" style="margin-bottom:12px">Mes actions <span style="opacity:.4;font-weight:500">5 / 9</span></div>
+      <div class="alist">
+        <div class="arow">
+          <div class="akey"><span class="kctrl">⌃</span><span class="knum">1</span></div>
+          <div class="ainfo"><div class="aname">Corriger</div><div class="aprev">Correct spelling, punctuation, capitalization, and spacing. Keep the same language and meaning. Return only the corrected text…</div></div>
+          <button class="rdel">Supprimer</button>
+        </div>
+        <div class="arow">
+          <div class="akey"><span class="kctrl">⌃</span><span class="knum">2</span></div>
+          <div class="ainfo"><div class="aname">Résumer</div><div class="aprev">Summarize the text in concise bullet points. Keep the same language as the source. Text: texte dicté…</div></div>
+          <button class="rdel">Supprimer</button>
+        </div>
+        <div class="arow">
+          <div class="akey"><span class="kctrl">⌃</span><span class="knum">3</span></div>
+          <div class="ainfo"><div class="aname">Email</div><div class="aprev">Transform the text into a clear, polite email. Keep the same language as the source. Return only the email body…</div></div>
+          <button class="rdel">Supprimer</button>
+        </div>
+        <div class="arow">
+          <div class="akey"><span class="kctrl">⌃</span><span class="knum">4</span></div>
+          <div class="ainfo"><div class="aname">Traduire</div><div class="aprev">Translate the text. If the source is French, translate to English. If the source is not French, translate to French…</div></div>
+          <button class="rdel">Supprimer</button>
+        </div>
+        <div class="arow">
+          <div class="akey"><span class="kctrl">⌃</span><span class="knum">5</span></div>
+          <div class="ainfo"><div class="aname">Clean for LLM</div><div class="aprev">Clean this developer dictation for use as an LLM prompt. Fix punctuation and tech terms such as API, JWT, SDK, CLI…</div></div>
+          <button class="rdel">Supprimer</button>
+        </div>
+      </div>
+
+      <div class="htip">✦ Survolez les cartes et les lignes pour voir les effets hover</div>
+
+    </div>
+  </div>
+
 </div>
-
-<script>
-function setState(state) {
-  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
-
-  const badge = document.getElementById('status-badge');
-  const desc = document.getElementById('section-desc');
-  const actionsList = document.getElementById('actions-list');
-  const cardsGrid = document.getElementById('cards-grid');
-
-  if (state === 'empty') {
-    badge.className = 'badge badge-warning';
-    badge.textContent = 'À configurer';
-    desc.textContent = "Associez Ctrl+1 à 9 à un prompt IA — correction, résumé, traduction. Configurez d'abord un modèle dans Modèles › Post-traitement.";
-    actionsList.style.display = 'none';
-    cardsGrid.style.display = 'grid';
-  } else if (state === 'configured') {
-    badge.className = 'badge badge-warning';
-    badge.textContent = 'À configurer';
-    desc.textContent = "Associez Ctrl+1 à 9 à un prompt IA. Configurez un modèle dans Modèles › Post-traitement pour les activer.";
-    actionsList.style.display = 'block';
-    cardsGrid.style.display = 'grid';
-  } else if (state === 'ready') {
-    badge.className = 'badge badge-success';
-    badge.textContent = 'Modèle prêt';
-    desc.textContent = "Appuyez sur Ctrl+chiffre après une dictée pour appliquer l'action. Le texte est transformé puis collé à votre curseur.";
-    actionsList.style.display = 'block';
-    cardsGrid.style.display = 'grid';
-  }
-}
-</script>
-
 </body>
 </html>

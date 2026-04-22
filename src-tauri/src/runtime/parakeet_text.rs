@@ -1,4 +1,4 @@
-﻿use once_cell::sync::Lazy;
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 static PARAKEET_V3_PATTERN: Lazy<Regex> = Lazy::new(|| {
@@ -32,7 +32,7 @@ static QU_EST_CE_QUE_PATTERN: Lazy<Regex> =
 static GITHUB_SPLIT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bgit\s*hub\b").unwrap());
 static OPENAI_SPLIT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen\s*ai\b").unwrap());
 static VOCALYPE_VARIANT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bvocal(?:i|ipe|ype|type)\b").unwrap());
+    Lazy::new(|| Regex::new(r"(?i)\bvocal(?:i|ipe|ype|type|ite)\b").unwrap());
 static TRAILING_PARAKEET_FILLER_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
         r"(?i)([.!?])\s+(?:and|et|mais|donc|alors|yeah|yep|gracias|thanks|thank you)\s*[.!?]*$",
@@ -257,6 +257,12 @@ static J05_PATTERN: Lazy<Regex> =
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
+// FR_K01: standalone "ca" → "ça" (30+ occurrences in history)
+static FR_K01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\bca\b").unwrap());
+// FR_K02: "Hallo" → "Allo" (13 occurrences in history)
+static FR_K02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bHallo\b").unwrap());
+// FR_K03: "difference" without accent → "différence"
+static FR_K03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\bdifference\b").unwrap());
 // WiFi standard: model speaks "802.11a" as "eight zero two point one one a" (word form)
 static WIFI_802_WORD_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
@@ -1476,6 +1482,13 @@ pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
     normalized = normalized
         .replace("dicte longue", "dict\u{00E9}e longue")
         .replace("dict\u{00E9} longue", "dict\u{00E9}e longue");
+    normalized = FR_K02_PATTERN.replace_all(&normalized, "Allo").to_string();
+    normalized = FR_K03_PATTERN
+        .replace_all(&normalized, "diff\u{00E9}rence")
+        .to_string();
+    normalized = FR_K01_PATTERN
+        .replace_all(&normalized, "\u{00E7}a")
+        .to_string();
     DOUBLE_SPACE_PATTERN
         .replace_all(&normalized, " ")
         .to_string()
@@ -1636,6 +1649,127 @@ pub fn normalize_parakeet_portuguese_artifacts(text: &str) -> String {
     normalized
 }
 
+/// Restore missing accents on very common French words that Parakeet outputs
+/// without diacritics.  Only called when selected_language == "fr".
+/// Rules are conservative: every word here is unambiguous in a French context.
+fn restore_french_accents(text: &str) -> String {
+    let mut t = text.to_string();
+    // être conjugations
+    t = replace_french_word(&t, "etaient", "\u{00e9}taient");
+    t = replace_french_word(&t, "etais", "\u{00e9}tais");
+    t = replace_french_word(&t, "etait", "\u{00e9}tait");
+    t = replace_french_word(&t, "ete", "\u{00e9}t\u{00e9}");
+    t = replace_french_word(&t, "etre", "\u{00ea}tre");
+    // Common adverbs / prepositions
+    t = replace_french_word(&t, "deja", "d\u{00e9}j\u{00e0}");
+    t = replace_french_word(&t, "apres", "apr\u{00e8}s");
+    t = replace_french_word(&t, "tres", "tr\u{00e8}s");
+    t = replace_french_word(&t, "voila", "voil\u{00e0}");
+    t = replace_french_word(&t, "meme", "m\u{00ea}me");
+    t = replace_french_word(&t, "memes", "m\u{00ea}mes");
+    // Nouns with grave/circumflex
+    t = replace_french_word(&t, "probleme", "probl\u{00e8}me");
+    t = replace_french_word(&t, "problemes", "probl\u{00e8}mes");
+    t = replace_french_word(&t, "systeme", "syst\u{00e8}me");
+    t = replace_french_word(&t, "systemes", "syst\u{00e8}mes");
+    t = replace_french_word(&t, "modele", "mod\u{00e8}le");
+    t = replace_french_word(&t, "modeles", "mod\u{00e8}les");
+    t = replace_french_word(&t, "numero", "num\u{00e9}ro");
+    t = replace_french_word(&t, "numeros", "num\u{00e9}ros");
+    t = replace_french_word(&t, "medecin", "m\u{00e9}decin");
+    t = replace_french_word(&t, "periode", "p\u{00e9}riode");
+    t = replace_french_word(&t, "periodes", "p\u{00e9}riodes");
+    t = replace_french_word(&t, "serie", "s\u{00e9}rie");
+    t = replace_french_word(&t, "series", "s\u{00e9}ries");
+    t = replace_french_word(&t, "energie", "\u{00e9}nergie");
+    t = replace_french_word(&t, "strategie", "strat\u{00e9}gie");
+    t = replace_french_word(&t, "economie", "\u{00e9}conomie");
+    // Ordinals
+    t = replace_french_word(&t, "deuxieme", "deuxi\u{00e8}me");
+    t = replace_french_word(&t, "troisieme", "troisi\u{00e8}me");
+    t = replace_french_word(&t, "premiere", "premi\u{00e8}re");
+    t = replace_french_word(&t, "dernieres", "derni\u{00e8}res");
+    // Adjectives
+    t = replace_french_word(&t, "interessant", "int\u{00e9}ressant");
+    t = replace_french_word(&t, "interessante", "int\u{00e9}ressante");
+    t = replace_french_word(&t, "interessants", "int\u{00e9}ressants");
+    t = replace_french_word(&t, "interessantes", "int\u{00e9}ressantes");
+    t = replace_french_word(&t, "francais", "fran\u{00e7}ais");
+    t = replace_french_word(&t, "francaise", "fran\u{00e7}aise");
+    t = replace_french_word(&t, "francaises", "fran\u{00e7}aises");
+    t = replace_french_word(&t, "connait", "conna\u{00ee}t");
+    t = replace_french_word(&t, "parait", "para\u{00ee}t");
+    // -ité nouns (uniquely French, no English homograph)
+    t = replace_french_word(&t, "realite", "r\u{00e9}alit\u{00e9}");
+    t = replace_french_word(&t, "qualite", "qualit\u{00e9}");
+    t = replace_french_word(&t, "possibilite", "possibilit\u{00e9}");
+    t = replace_french_word(&t, "capacite", "capacit\u{00e9}");
+    t = replace_french_word(&t, "necessite", "n\u{00e9}cessit\u{00e9}");
+    t = replace_french_word(&t, "activite", "activit\u{00e9}");
+    t = replace_french_word(&t, "majorite", "majorit\u{00e9}");
+    t = replace_french_word(&t, "minorite", "minorit\u{00e9}");
+    t = replace_french_word(&t, "identite", "identit\u{00e9}");
+    t = replace_french_word(&t, "securite", "s\u{00e9}curit\u{00e9}");
+    t = replace_french_word(&t, "liberte", "libert\u{00e9}");
+    t = replace_french_word(&t, "fraternite", "fraternit\u{00e9}");
+    t = replace_french_word(&t, "egalite", "\u{00e9}galit\u{00e9}");
+    t = replace_french_word(&t, "societe", "soci\u{00e9}t\u{00e9}");
+    t = replace_french_word(&t, "priorite", "priorit\u{00e9}");
+    t = replace_french_word(&t, "sante", "sant\u{00e9}");
+    t = replace_french_word(&t, "diversite", "diversit\u{00e9}");
+    t = replace_french_word(&t, "mobilite", "mobilit\u{00e9}");
+    t = replace_french_word(&t, "humanite", "humanit\u{00e9}");
+    t
+}
+
+/// Remove hallucination loops where the model repeats the same word 3+ times
+/// in a row (e.g. "quoi quoi quoi quoi" → "quoi").  Applied to all languages.
+fn deduplicate_word_repetitions(text: &str) -> String {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.len() < 3 {
+        return text.to_string();
+    }
+
+    fn word_key(w: &str) -> String {
+        w.trim_matches(|c: char| !c.is_alphanumeric())
+            .to_lowercase()
+    }
+
+    let mut result: Vec<&str> = Vec::with_capacity(words.len());
+    let mut i = 0;
+    while i < words.len() {
+        let key = word_key(words[i]);
+        if key.is_empty() {
+            result.push(words[i]);
+            i += 1;
+            continue;
+        }
+        let mut run_end = i + 1;
+        while run_end < words.len() && word_key(words[run_end]) == key {
+            run_end += 1;
+        }
+        let run_len = run_end - i;
+        if run_len >= 3 {
+            result.push(words[i]);
+        } else {
+            for j in i..run_end {
+                result.push(words[j]);
+            }
+        }
+        i = run_end;
+    }
+    result.join(" ")
+}
+
+/// Ensure the first character of the transcription is uppercase.
+fn capitalize_first(text: &str) -> String {
+    let mut chars = text.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
+    }
+}
+
 pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
     let mut normalized = normalize_parakeet_phrase_variants(text, selected_language);
     if selected_language == "en" {
@@ -1644,6 +1778,7 @@ pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
     } else if selected_language == "fr" {
         normalized = normalize_parakeet_french_artifacts(&normalized);
         normalized = restore_french_apostrophes(&normalized);
+        normalized = restore_french_accents(&normalized);
         // Remove spaces that the model inserts before punctuation (e.g. "802 .11n" → "802.11n")
         normalized = PUNCT_SPACE_PATTERN
             .replace_all(&normalized, "$1")
@@ -1693,9 +1828,11 @@ pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
     }
     normalized = remove_multilingual_standalone_fillers(&normalized);
     normalized = cleanup_parakeet_tail_artifacts(&normalized);
-    DOUBLE_SPACE_PATTERN
+    normalized = deduplicate_word_repetitions(&normalized);
+    normalized = DOUBLE_SPACE_PATTERN
         .replace_all(normalized.trim(), " ")
-        .to_string()
+        .to_string();
+    capitalize_first(&normalized)
 }
 
 fn normalize_english_numbers(text: &str) -> String {

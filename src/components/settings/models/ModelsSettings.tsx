@@ -372,49 +372,30 @@ export const ModelsSettings: React.FC = () => {
         ))}
       </div>
 
-      {activeTab === "transcription" && (
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: 10 }}
-          role="tabpanel"
-        />
-      )}
-
       {activeTab === "transcription" && filteredModels.length > 0 ? (
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: 40 }}
-          role="tabpanel"
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div
-              className="flex items-center justify-between"
-              style={{ marginBottom: 4 }}
-            >
-              <h2 className="text-[18px] font-bold tracking-[0] text-white/90">
-                {t("settings.models.yourModels")}
-              </h2>
+        <div className="flex flex-col gap-3 pt-6" role="tabpanel">
+          <p className="voca-label-caps mb-1">
+            {t("settings.models.yourModels")}
+          </p>
 
-              {null}
-            </div>
-
-            {primaryVisibleModels.map((model: ModelInfo) => (
-              <ModelCard
-                key={model.id}
-                model={model}
-                status={getModelStatus(model.id)}
-                onSelect={handleModelSelect}
-                onDownload={handleModelDownload}
-                onDelete={handleModelDelete}
-                onCancel={handleModelCancel}
-                downloadProgress={getDownloadProgress(model.id)}
-                downloadSpeed={getDownloadSpeed(model.id)}
-                showRecommended={true}
-                copilotOptimized={isCopilotOptimizedParakeet(
-                  adaptiveProfile,
-                  model.id,
-                )}
-              />
-            ))}
-          </div>
+          {primaryVisibleModels.map((model: ModelInfo) => (
+            <ModelCard
+              key={model.id}
+              model={model}
+              status={getModelStatus(model.id)}
+              onSelect={handleModelSelect}
+              onDownload={handleModelDownload}
+              onDelete={handleModelDelete}
+              onCancel={handleModelCancel}
+              downloadProgress={getDownloadProgress(model.id)}
+              downloadSpeed={getDownloadSpeed(model.id)}
+              showRecommended={true}
+              copilotOptimized={isCopilotOptimizedParakeet(
+                adaptiveProfile,
+                model.id,
+              )}
+            />
+          ))}
         </div>
       ) : activeTab === "transcription" ? (
         <div className="py-8 text-center text-text/50">

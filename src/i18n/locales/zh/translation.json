@@ -853,6 +853,14 @@
     "dismiss": "关闭"
   },
   "errors": {
+    "userFacing": {
+      "generic": "出现了问题，请稍后重试。",
+      "network": "无法连接。请检查您的网络连接后重试。",
+      "accessRequired": "需要验证您的访问权限。请重新登录或打开您的订阅。",
+      "microphone": "Vocalype 无法使用麦克风。请检查权限和所选麦克风。",
+      "model": "无法准备语音模型。请检查您的连接后重试。",
+      "agent": "助手无法响应。请稍后重试。"
+    },
     "loadDirectory": "加载目录时出错: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

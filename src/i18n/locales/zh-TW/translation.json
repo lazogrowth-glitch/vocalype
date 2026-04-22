@@ -853,6 +853,14 @@
     "dismiss": "關閉"
   },
   "errors": {
+    "userFacing": {
+      "generic": "發生了問題，請稍後重試。",
+      "network": "無法連線。請檢查您的網路連線後重試。",
+      "accessRequired": "需要驗證您的存取權限。請重新登入或開啟您的訂閱。",
+      "microphone": "Vocalype 無法使用麥克風。請檢查權限和所選麥克風。",
+      "model": "無法準備語音模型。請檢查您的連線後重試。",
+      "agent": "助理無法回應。請稍後重試。"
+    },
     "loadDirectory": "載入目錄時發生錯誤: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

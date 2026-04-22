@@ -853,6 +853,14 @@
     "dismiss": "Schließen"
   },
   "errors": {
+    "userFacing": {
+      "generic": "Etwas ist schiefgelaufen. Bitte versuche es in einem Moment erneut.",
+      "network": "Verbindung nicht möglich. Überprüfe deine Internetverbindung und versuche es erneut.",
+      "accessRequired": "Dein Zugang muss überprüft werden. Melde dich erneut an oder öffne dein Abonnement.",
+      "microphone": "Vocalype kann das Mikrofon nicht verwenden. Überprüfe die Berechtigung und das ausgewählte Mikrofon.",
+      "model": "Das Sprachmodell konnte nicht vorbereitet werden. Überprüfe deine Verbindung und versuche es erneut.",
+      "agent": "Der Assistent konnte nicht antworten. Bitte versuche es in einem Moment erneut."
+    },
     "loadDirectory": "Fehler beim Laden des Verzeichnisses: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

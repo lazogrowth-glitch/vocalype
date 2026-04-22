@@ -853,6 +853,14 @@
     "dismiss": "Zavřít"
   },
   "errors": {
+    "userFacing": {
+      "generic": "Něco se pokazilo. Zkuste to znovu za chvíli.",
+      "network": "Nelze se připojit. Zkontrolujte připojení k internetu a zkuste to znovu.",
+      "accessRequired": "Váš přístup musí být ověřen. Přihlaste se znovu nebo otevřete své předplatné.",
+      "microphone": "Vocalype nemůže použít mikrofon. Zkontrolujte oprávnění a vybraný mikrofon.",
+      "model": "Hlasový model nemohl být připraven. Zkontrolujte připojení a zkuste to znovu.",
+      "agent": "Asistent nemohl odpovědět. Zkuste to znovu za chvíli."
+    },
     "loadDirectory": "Chyba při načítání adresáře: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

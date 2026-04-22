@@ -244,7 +244,9 @@ pub(super) async fn process_transcription_text(
     // It will restart automatically on the next recording start.
     if matches!(
         mode,
-        PostProcessMode::StandardPrompt | PostProcessMode::VoiceToCode | PostProcessMode::SelectedAction
+        PostProcessMode::StandardPrompt
+            | PostProcessMode::VoiceToCode
+            | PostProcessMode::SelectedAction
     ) {
         crate::llm::llama_server::stop_after_use(app);
     }

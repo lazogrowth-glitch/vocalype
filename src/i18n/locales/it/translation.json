@@ -853,6 +853,14 @@
     "dismiss": "Ignora"
   },
   "errors": {
+    "userFacing": {
+      "generic": "Qualcosa è andato storto. Riprova tra un momento.",
+      "network": "Impossibile connettersi. Controlla la connessione internet e riprova.",
+      "accessRequired": "Il tuo accesso deve essere verificato. Accedi di nuovo o apri il tuo abbonamento.",
+      "microphone": "Vocalype non può usare il microfono. Controlla il permesso e il microfono selezionato.",
+      "model": "Il modello vocale non ha potuto essere preparato. Controlla la connessione e riprova.",
+      "agent": "L'assistente non ha potuto rispondere. Riprova tra un momento."
+    },
     "loadDirectory": "Errore di caricamento cartella: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

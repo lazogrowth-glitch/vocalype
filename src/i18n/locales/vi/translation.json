@@ -853,6 +853,14 @@
     "dismiss": "Bỏ qua"
   },
   "errors": {
+    "userFacing": {
+      "generic": "Đã xảy ra sự cố. Vui lòng thử lại sau một lúc.",
+      "network": "Không thể kết nối. Kiểm tra kết nối internet của bạn rồi thử lại.",
+      "accessRequired": "Quyền truy cập của bạn cần được xác minh. Đăng nhập lại hoặc mở gói đăng ký.",
+      "microphone": "Vocalype không thể sử dụng micrô. Kiểm tra quyền và micrô đã chọn.",
+      "model": "Mô hình giọng nói không thể được chuẩn bị. Kiểm tra kết nối của bạn rồi thử lại.",
+      "agent": "Trợ lý không thể phản hồi. Vui lòng thử lại sau một lúc."
+    },
     "loadDirectory": "Lỗi khi tải thư mục: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

@@ -156,23 +156,10 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const displayDescription = getTranslatedModelDescription(model, t);
   const productBadges = getProductBadges(model, t, copilotOptimized);
 
-  const baseClasses =
-    "flex flex-wrap items-center rounded-[8px] border border-white/10 bg-zinc-900/90 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-2";
-
-  const getVariantClasses = () => {
-    if (status === "active") {
-      return "border-[#F5C300]/40 bg-zinc-800 shadow-[0_12px_26px_rgba(0,0,0,0.18)]";
-    }
-    if (isFeatured) {
-      return "border-[#F5C300]/30 bg-zinc-800";
-    }
-    return "border-white/8";
-  };
-
   const getInteractiveClasses = () => {
     if (!isClickable) return "";
     if (disabled) return "cursor-not-allowed opacity-50";
-    return "group cursor-pointer hover:border-white/15 hover:bg-zinc-800";
+    return "group";
   };
 
   const handleClick = () => {
@@ -197,10 +184,9 @@ const ModelCard: React.FC<ModelCardProps> = ({
       }}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
-      style={{ padding: "24px", gap: 20 }}
       className={[
-        baseClasses,
-        getVariantClasses(),
+        "voca-model-card text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-2",
+        status === "active" || isFeatured ? "voca-model-card--active" : "",
         getInteractiveClasses(),
         className,
       ]
@@ -236,28 +222,6 @@ const ModelCard: React.FC<ModelCardProps> = ({
             >
               {displayName}
             </h3>
-            {showRecommended &&
-              productBadges.map((badge) => (
-                <Badge key={badge.label} variant={badge.variant}>
-                  {badge.label}
-                </Badge>
-              ))}
-            {showRecommended && !isCloudModel ? (
-              <Badge variant="secondary">
-                {t("modelSelector.badges.localOnly", {
-                  defaultValue: "100% local",
-                })}
-              </Badge>
-            ) : null}
-            {status === "active" ? (
-              <Badge variant="primary">
-                <Check className="mr-1 h-3 w-3" />
-                {t("modelSelector.active")}
-              </Badge>
-            ) : null}
-            {model.is_custom ? (
-              <Badge variant="secondary">{t("modelSelector.custom")}</Badge>
-            ) : null}
             {status === "switching" ? (
               <Badge variant="secondary">
                 <Loader2 className="mr-1 h-3 w-3 animate-spin" />

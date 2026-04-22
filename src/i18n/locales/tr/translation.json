@@ -853,6 +853,14 @@
     "dismiss": "Yoksay"
   },
   "errors": {
+    "userFacing": {
+      "generic": "Bir şeyler ters gitti. Lütfen bir süre sonra tekrar deneyin.",
+      "network": "Bağlanılamıyor. İnternet bağlantınızı kontrol edin ve tekrar deneyin.",
+      "accessRequired": "Erişiminizin doğrulanması gerekiyor. Tekrar giriş yapın veya aboneliğinizi açın.",
+      "microphone": "Vocalype mikrofonu kullanamıyor. İzni ve seçili mikrofonu kontrol edin.",
+      "model": "Ses modeli hazırlanamadı. Bağlantınızı kontrol edin ve tekrar deneyin.",
+      "agent": "Asistan yanıt veremedi. Lütfen bir süre sonra tekrar deneyin."
+    },
     "loadDirectory": "Dizin yüklenirken hata oluştu: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

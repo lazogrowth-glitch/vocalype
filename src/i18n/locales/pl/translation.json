@@ -853,6 +853,14 @@
     "dismiss": "Zamknij"
   },
   "errors": {
+    "userFacing": {
+      "generic": "Coś poszło nie tak. Spróbuj ponownie za chwilę.",
+      "network": "Nie można się połączyć. Sprawdź połączenie internetowe i spróbuj ponownie.",
+      "accessRequired": "Twój dostęp musi zostać zweryfikowany. Zaloguj się ponownie lub otwórz subskrypcję.",
+      "microphone": "Vocalype nie może używać mikrofonu. Sprawdź uprawnienia i wybrany mikrofon.",
+      "model": "Model głosowy nie mógł zostać przygotowany. Sprawdź połączenie i spróbuj ponownie.",
+      "agent": "Asystent nie mógł odpowiedzieć. Spróbuj ponownie za chwilę."
+    },
     "loadDirectory": "Błąd wczytywania katalogu: {{error}}",
     "actionable": {
       "noModelLoaded": "No model is loaded. Go to Models and select one.",

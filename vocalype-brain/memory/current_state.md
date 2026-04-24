@@ -1,14 +1,13 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-24
-Latest commit: d59bc67 — docs(brain): record V2 status and current state
+Latest commit: 772c869 — feat(brain): add V3 safe patch mode
 
 ---
 
 ## Phase
 
-**V3 — Safe Patch Mode. Built, not yet validated.**
-Run the validation commands below to complete V3 acceptance.
+**V3.5 — Apply Approved Patch Mode. Built, not yet committed.**
 
 ---
 
@@ -23,10 +22,10 @@ Run the validation commands below to complete V3 acceptance.
 - Full V2 loop validated: night_shift → classify → prompt → execute → review → commit
 - **V3 — Safe Patch generation**: `generate_safe_patch.py` classifies target files and creates a patch proposal in `vocalype-brain/patches/`
 - **V3 — Safe Patch review**: `review_safe_patch.py` summarizes the latest patch candidate and recommends next action
+- **V3.5 — Apply Approved Patch**: `apply_approved_patch.py` applies `brain_safe`/`docs_safe` patches with `--approve`; dry-run by default; refuses product/unsafe patches; requires `## Apply Instructions` section in patch file
 
 ## What Does Not Exist Yet
 
-- Automated patch application — Brain proposes patches; humans apply them
 - `validate_patch.py` — no automated lint/test runner triggered by Brain
 - `rollback_patch.py` — revert is done manually via `git checkout -- <file>`
 - Baseline metrics — `activation_success_rate` and `dictation_latency_ms` both unknown
@@ -81,6 +80,9 @@ Current baseline: unknown — manual observation required
 - `measurement_task` classification → plan file only, no product code
 - V3: `unsafe` safety class → no patch file generated, rejection logged
 - V3: `product_proposal_only` → patch file is text only, never auto-applied
+- V3.5: `--approve` required for any write; dry-run by default
+- V3.5: requires `## Apply Instructions` section; refuses if missing
+- V3.5: resolves and validates absolute path before any write
 - `--no-verify` is never used on commits
 
 ---
@@ -105,6 +107,8 @@ Current baseline: unknown — manual observation required
 | Approved task candidates | data/approved_task_candidates.jsonl |
 | Safe patch candidates | data/safe_patch_candidates.jsonl |
 | Safe patch report | outputs/safe_patch_report.md |
+| Apply patch report | outputs/apply_patch_report.md |
+| Applied patches log | data/applied_patches.jsonl |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

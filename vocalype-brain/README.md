@@ -498,6 +498,77 @@ Safety:
 - does not deploy
 - writes only to `vocalype-brain/`
 
+## V3.5 Apply Approved Patch Mode
+
+V3.5 adds a controlled approval step that can apply `brain_safe` or `docs_safe` patches after explicit founder approval.
+
+**This is NOT product-code autonomy.** Only Brain memory/docs/output files may be written. Product code is never touched.
+
+Run:
+
+```bash
+# Dry run (default — no files modified)
+python vocalype-brain/scripts/apply_approved_patch.py
+
+# Apply (requires explicit flag)
+python vocalype-brain/scripts/apply_approved_patch.py --approve
+```
+
+Outputs:
+
+- `vocalype-brain/outputs/apply_patch_report.md` — apply result
+- `vocalype-brain/data/applied_patches.jsonl` — application history
+
+How it works:
+
+- reads the latest `safe_patch_candidates.jsonl` entry and its patch file
+- in dry-run mode: prints a full summary of what would happen, touches nothing
+- in `--approve` mode: applies only if `safety_class` is `brain_safe` or `docs_safe`
+- refuses `product_proposal_only` and `unsafe` patches unconditionally
+- requires an explicit `## Apply Instructions` section in the patch file with `target_file:`, `operation:`, and `content:` fields
+- if no Apply Instructions section exists, refuses and says manual implementation required
+- validates target file against an allowlist before writing
+- logs every attempt (dry-run and apply) to `applied_patches.jsonl`
+
+Apply Instructions format (add to a patch file to make it applyable):
+
+```markdown
+## Apply Instructions
+
+target_file: vocalype-brain/memory/some_file.md
+operation: append
+content:
+- New line to append
+- Another line
+```
+
+Supported operations: `append`, `create`.
+
+Allowed target files:
+
+- anything inside `vocalype-brain/`
+- `README` files
+- `docs/` files
+- `CHANGELOG`, `CONTRIBUTING`
+
+Forbidden target files (always blocked, even with `--approve`):
+
+- `src/`
+- `src-tauri/`
+- `backend/`
+- paths containing: `auth`, `license`, `payment`, `security`, `runtime`, `secrets`, `.env`, `translation.json`
+
+Safety:
+
+- dry-run by default — `--approve` required for any write
+- refuses `product_proposal_only` and `unsafe` patches
+- refuses patches with no Apply Instructions
+- resolves and checks the absolute path before writing
+- no file deletion
+- no auto-commit
+- no `--no-verify`
+- no deployment
+
 ## Local LLM Safety
 
 The orchestrator is intentionally limited.

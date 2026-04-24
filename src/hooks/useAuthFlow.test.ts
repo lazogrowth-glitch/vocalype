@@ -86,6 +86,7 @@ describe("useAuthFlow — initial state", () => {
     const { result } = renderHook(() => useAuthFlow(t));
     await waitFor(() => expect(result.current.authLoading).toBe(false));
     expect(result.current.session).toBeNull();
+    expect(result.current.activationStatus).toBe("logged_out");
   });
 
   it("showTrialWelcome is false initially", async () => {
@@ -117,6 +118,7 @@ describe("useAuthFlow — refreshSession", () => {
     await waitFor(() => expect(result.current.authLoading).toBe(false));
     expect(result.current.session).not.toBeNull();
     expect(result.current.session?.token).toBe("tok123");
+    expect(result.current.activationStatus).toBe("ready");
   });
 
   it("sets authError on 401 from getSession", async () => {
@@ -130,6 +132,27 @@ describe("useAuthFlow — refreshSession", () => {
     await waitFor(() => expect(result.current.authLoading).toBe(false));
     expect(result.current.session).toBeNull();
     expect(result.current.authError).toBe("auth.sessionExpired");
+    expect(result.current.activationStatus).toBe("logged_out");
+  });
+
+  it("marks subscription inactive when the user is logged in without access", async () => {
+    const fakeSession = {
+      token: "tok123",
+      user: { id: "u1", email: "a@b.com" },
+      subscription: {
+        status: "inactive" as const,
+        has_access: false,
+        tier: "basic" as const,
+      },
+    };
+    mockAuthClient.getStoredToken.mockReturnValue("tok123");
+    mockAuthClient.hydrateStoredSession.mockResolvedValue(fakeSession);
+    mockAuthClient.getSession.mockResolvedValue(fakeSession);
+
+    const { result } = renderHook(() => useAuthFlow(t));
+    await waitFor(() => expect(result.current.authLoading).toBe(false));
+    expect(result.current.session?.user.email).toBe("a@b.com");
+    expect(result.current.activationStatus).toBe("subscription_inactive");
   });
 });
 

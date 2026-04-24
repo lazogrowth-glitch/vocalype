@@ -76,15 +76,28 @@ export function getUserFacingErrorMessage(
   }
 
   if (
+    normalized.includes("subscription access inactive") ||
+    normalized.includes("subscription inactive") ||
+    normalized.includes("no active subscription")
+  ) {
+    return translate(
+      options.t,
+      "errors.userFacing.subscriptionInactive",
+      "Votre compte est connecte, mais aucun abonnement actif n'a ete detecte. Ouvrez votre abonnement pour activer Vocalype.",
+    );
+  }
+
+  if (
+    normalized.includes("activation failed") ||
+    normalized.includes("premium access expired") ||
     normalized.includes("premium access") ||
-    normalized.includes("subscription access") ||
     normalized.includes("license") ||
     normalized.includes("403")
   ) {
     return translate(
       options.t,
-      "errors.userFacing.accessRequired",
-      "Votre acces doit etre verifie. Reconnectez-vous ou ouvrez votre abonnement.",
+      "errors.userFacing.activationFailed",
+      "Votre compte est connecte, mais l'activation sur ce PC a echoue. Reessayez ou ouvrez votre abonnement.",
     );
   }
 

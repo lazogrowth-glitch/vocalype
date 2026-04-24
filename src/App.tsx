@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -139,6 +140,7 @@ function App() {
     authLoading,
     authSubmitting,
     authError,
+    activationStatus,
     licenseState,
     hasCompletedPostOnboardingInit,
     refreshSession,
@@ -290,17 +292,57 @@ function App() {
 
     // Only set if it's a supported language (not "auto", not unknown)
     const SUPPORTED = [
-      "en","fr","de","es","pt","it","nl","ru","pl","tr","ko","ja",
-      "zh-Hans","zh-Hant","ar","hi","sv","fi","da","no","cs","ro",
-      "hu","uk","el","bg","hr","sk","lt","lv","et","he","vi","th",
-      "id","ms","fa","ur","bn","ta","ml","te","kn","si","km",
+      "en",
+      "fr",
+      "de",
+      "es",
+      "pt",
+      "it",
+      "nl",
+      "ru",
+      "pl",
+      "tr",
+      "ko",
+      "ja",
+      "zh-Hans",
+      "zh-Hant",
+      "ar",
+      "hi",
+      "sv",
+      "fi",
+      "da",
+      "no",
+      "cs",
+      "ro",
+      "hu",
+      "uk",
+      "el",
+      "bg",
+      "hr",
+      "sk",
+      "lt",
+      "lv",
+      "et",
+      "he",
+      "vi",
+      "th",
+      "id",
+      "ms",
+      "fa",
+      "ur",
+      "bn",
+      "ta",
+      "ml",
+      "te",
+      "kn",
+      "si",
+      "km",
     ];
     if (langCode && SUPPORTED.includes(langCode) && langCode !== "en") {
       updateSetting("selected_language", langCode);
     }
     // English → leave as "auto" (English is already the model's dominant language,
     // no bias needed — auto-detect works fine for English speakers)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!settings]);
 
   // Handle deep link auth: vocalype://auth-callback?token=xxx
@@ -429,6 +471,7 @@ function App() {
         <TitleBar />
         <div style={{ flex: 1, minHeight: 0 }}>
           <AuthPortal
+            activationStatus={activationStatus}
             error={authError}
             isLoading={authLoading}
             isSubmitting={authSubmitting}
@@ -573,6 +616,11 @@ function App() {
               {showFirstLaunchHint && (
                 <div className="app-first-launch-hint">
                   <span>
+                    Votre premiere dictee : utilisez{" "}
+                    {settings?.bindings?.transcribe?.current_binding ??
+                      "Ctrl+Space"}{" "}
+                    et dites une phrase courte pour verifier que tout
+                    fonctionne.{" "}
                     {t("hints.firstLaunch", {
                       shortcut:
                         settings?.bindings?.transcribe?.current_binding ??

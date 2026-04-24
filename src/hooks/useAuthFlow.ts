@@ -8,6 +8,13 @@ import type { LicenseRuntimeState } from "@/lib/license/types";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { useSessionRefresh } from "./useSessionRefresh";
 
+export type ActivationStatus =
+  | "logged_out"
+  | "checking_activation"
+  | "subscription_inactive"
+  | "activation_failed"
+  | "ready";
+
 const isExpectedMissingLicenseMessage = (value: unknown) => {
   const message =
     value instanceof Error
@@ -16,6 +23,37 @@ const isExpectedMissingLicenseMessage = (value: unknown) => {
         ? value
         : "";
   return message.toLowerCase().includes("no stored license bundle");
+};
+
+const deriveActivationStatus = ({
+  session,
+  licenseState,
+  authLoading,
+  authSubmitting,
+  authError,
+}: {
+  session: AuthSession | null;
+  licenseState: LicenseRuntimeState | null;
+  authLoading: boolean;
+  authSubmitting: boolean;
+  authError: string | null;
+}): ActivationStatus => {
+  if (!session) return "logged_out";
+  if (!session.subscription.has_access) return "subscription_inactive";
+
+  if (
+    licenseState?.state === "online_valid" ||
+    licenseState?.state === "offline_valid"
+  ) {
+    return "ready";
+  }
+
+  if (authLoading || authSubmitting) return "checking_activation";
+  if (authError || licenseState?.reason === "Activation failed") {
+    return "activation_failed";
+  }
+
+  return "checking_activation";
 };
 
 export function useAuthFlow(
@@ -497,11 +535,20 @@ export function useAuthFlow(
     };
   }, [licenseState]);
 
+  const activationStatus = deriveActivationStatus({
+    session,
+    licenseState,
+    authLoading,
+    authSubmitting,
+    authError,
+  });
+
   return {
     session,
     authLoading,
     authSubmitting,
     authError,
+    activationStatus,
     licenseState,
     showTrialWelcome,
     hasCompletedPostOnboardingInit,

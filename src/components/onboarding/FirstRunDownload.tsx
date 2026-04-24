@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useModelStore } from "@/stores/modelStore";
@@ -144,9 +145,13 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
             fontSize: 13,
             color: "rgba(255,255,255,0.4)",
             marginTop: 8,
+            lineHeight: 1.5,
           }}
         >
           {t("onboarding.firstRunSubtitle")}
+          <span style={{ display: "block", marginTop: 8 }}>
+            Derniere etape avant votre premiere dictee dans Vocalype.
+          </span>
         </p>
       </div>
 

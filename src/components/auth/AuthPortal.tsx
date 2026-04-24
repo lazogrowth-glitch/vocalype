@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import type { AuthPayload, AuthSession } from "@/lib/auth/types";
+import type { ActivationStatus } from "@/hooks/useAuthFlow";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { useModelStore } from "@/stores/modelStore";
 
@@ -88,6 +89,7 @@ const ModelDownloadBadge: React.FC = () => {
 };
 
 interface AuthPortalProps {
+  activationStatus: ActivationStatus;
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
@@ -126,19 +128,88 @@ const buttonBaseStyle: CSSProperties = {
   transition: "opacity 160ms ease, background 160ms ease, transform 160ms ease",
 };
 
-const getStatusText = (session: AuthSession | null, isRefreshing: boolean) => {
-  if (isRefreshing) return "Synchronisation de votre acces...";
-  if (!session) return "Connectez-vous pour activer Vocalype sur ce PC.";
-  if (session.subscription.has_access) {
-    return "Compte detecte. Activation en cours...";
+const getStatusText = (
+  activationStatus: ActivationStatus,
+  session: AuthSession | null,
+  isRefreshing: boolean,
+) => {
+  if (isRefreshing && activationStatus !== "ready") {
+    return "Connexion detectee. Verification de l'activation sur ce PC...";
   }
-  return "Compte detecte. Finalisez l'abonnement dans le navigateur.";
+
+  switch (activationStatus) {
+    case "logged_out":
+      return "Connectez-vous pour activer Vocalype sur ce PC.";
+    case "subscription_inactive":
+      return "Compte detecte, mais aucun abonnement actif n'a ete trouve.";
+    case "activation_failed":
+      return "Compte detecte, mais l'activation sur ce PC n'a pas abouti.";
+    case "ready":
+      return session?.subscription.has_access
+        ? "Compte detecte. Vocalype est pret sur ce PC."
+        : "Vocalype est pret.";
+    case "checking_activation":
+    default:
+      return "Compte detecte. Activation en cours...";
+  }
+};
+
+const getReadinessRows = (
+  activationStatus: ActivationStatus,
+  session: AuthSession | null,
+  isRefreshing: boolean,
+) => {
+  const accountReady = Boolean(session);
+  const activationReady = activationStatus === "ready";
+
+  const nextStepLabel =
+    activationStatus === "logged_out"
+      ? "Connectez-vous pour lancer la preparation."
+      : activationStatus === "subscription_inactive"
+        ? "Activez l'abonnement pour debloquer la premiere dictee."
+        : activationStatus === "activation_failed"
+          ? "Relancez la verification pour continuer."
+          : activationStatus === "ready"
+            ? "Le modele se preparera ensuite avant votre premiere dictee."
+            : "Patientez pendant la verification de l'acces.";
+
+  return [
+    {
+      label: "Compte connecte",
+      status: accountReady ? "Fait" : "En attente",
+      tone: accountReady ? "#88e0bd" : "rgba(243,236,223,0.52)",
+    },
+    {
+      label: "Acces verifie sur ce PC",
+      status: activationReady
+        ? "Valide"
+        : isRefreshing || activationStatus === "checking_activation"
+          ? "Verification..."
+          : activationStatus === "subscription_inactive"
+            ? "Abonnement requis"
+            : activationStatus === "activation_failed"
+              ? "A relancer"
+              : "En attente",
+      tone: activationReady
+        ? "#88e0bd"
+        : activationStatus === "subscription_inactive" ||
+            activationStatus === "activation_failed"
+          ? "#f3c98b"
+          : "rgba(243,236,223,0.52)",
+    },
+    {
+      label: "Prochaine etape",
+      status: nextStepLabel,
+      tone: "rgba(243,236,223,0.74)",
+    },
+  ];
 };
 
 const isExpectedMissingLicenseMessage = (value: string | null) =>
   value?.toLowerCase().includes("no stored license bundle") ?? false;
 
 export const AuthPortal = ({
+  activationStatus,
   isLoading,
   isSubmitting,
   error,
@@ -156,12 +227,24 @@ export const AuthPortal = ({
   const refreshAttemptRef = useRef(0);
 
   const hasAccess = session?.subscription.has_access ?? false;
+  const statusTone =
+    activationStatus === "ready"
+      ? "#88e0bd"
+      : activationStatus === "activation_failed" ||
+          activationStatus === "subscription_inactive"
+        ? "#f3c98b"
+        : "rgba(243,236,223,0.58)";
   const canInteract =
     !isLoading && !isSubmitting && !autoRefreshBusy && browserBusy === null;
   const displayError =
     error && !isExpectedMissingLicenseMessage(error)
       ? getUserFacingErrorMessage(error, { t, context: "auth" })
       : null;
+  const readinessRows = getReadinessRows(
+    activationStatus,
+    session,
+    autoRefreshBusy,
+  );
 
   useEffect(() => {
     if (!session) {
@@ -384,13 +467,70 @@ export const AuthPortal = ({
                 marginTop: 6,
                 fontSize: 13,
                 lineHeight: 1.45,
-                color: hasAccess ? "#88e0bd" : "rgba(243,236,223,0.58)",
+                color: statusTone,
               }}
             >
-              {getStatusText(session, autoRefreshBusy)}
+              {getStatusText(activationStatus, session, autoRefreshBusy)}
             </div>
           </div>
         ) : null}
+
+        <div
+          style={{
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 8,
+            background: "rgba(255,255,255,0.028)",
+            padding: 14,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "rgba(243,236,223,0.4)",
+              marginBottom: 10,
+            }}
+          >
+            Premiere dictee
+          </div>
+          <div style={{ display: "grid", gap: 9 }}>
+            {readinessRows.map((row) => (
+              <div
+                key={row.label}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 1.4,
+                    color: "rgba(243,236,223,0.74)",
+                  }}
+                >
+                  {row.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                    color: row.tone,
+                    textAlign: "right",
+                    maxWidth: 170,
+                  }}
+                >
+                  {row.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {displayError ? (
           <div

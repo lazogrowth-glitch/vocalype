@@ -46,6 +46,33 @@ UI_CLARITY_TERMS = [
     "ui",
 ]
 
+MEASUREMENT_TERMS = [
+    "measure",
+    "measuring",
+    "measurement plan",
+    "track",
+    "observe",
+    "failure points",
+    "list failure",
+    "record where users fail",
+    "audit flow",
+    "identify bottlenecks",
+    "define metric",
+    "baseline",
+    "instrument",
+]
+
+PLANNING_ONLY_TERMS = [
+    "clarify",
+    "decide",
+    "evaluate",
+    "research",
+    "investigate whether",
+    "explore",
+    "think about",
+    "assess whether",
+]
+
 QUALITY_FILE_MAP = {
     "activation messages": ["src/components/auth/AuthPortal.tsx", "src/App.tsx"],
     "auth portal": ["src/components/auth/AuthPortal.tsx"],
@@ -245,6 +272,23 @@ def _changed_paths() -> list[str]:
     return paths
 
 
+def _classify_task_type(candidate: dict[str, Any]) -> str:
+    """Return 'planning_only', 'measurement_task', or 'implementation_task'."""
+    text = f"{candidate.get('title', '')} {candidate.get('summary', '')} {candidate.get('problem', '')}".lower()
+    if any(term in text for term in MEASUREMENT_TERMS):
+        return "measurement_task"
+    mode = candidate.get("mode", "implementation")
+    if mode == "planning":
+        return "planning_only"
+    if candidate.get("risk") == "high":
+        return "planning_only"
+    if not candidate.get("validation_test"):
+        return "planning_only"
+    if any(term in text for term in PLANNING_ONLY_TERMS):
+        return "planning_only"
+    return "implementation_task"
+
+
 def _worktree_warning(candidate: dict[str, Any]) -> str:
     changed = _changed_paths()
     if not changed:
@@ -393,10 +437,103 @@ def _manual_test_plan(candidate: dict[str, Any]) -> list[str]:
     ]
 
 
+def _measurement_prompt(candidate: dict[str, Any], critic_review: str, worktree_warning: str, scope_reason: str) -> str:
+    title = candidate.get("title", "Untitled")
+    slug = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
+    output_file = f"vocalype-brain/outputs/{slug}.md"
+    is_activation = "activation" in title.lower()
+
+    lines = [
+        "# Mission Codex — Measurement Plan Task",
+        "",
+        "Task type: measurement_task",
+        "",
+        f"Task title: {title}",
+        "",
+        "Goal:",
+        f"Create a measurement plan for: {title}",
+        "",
+        "Do NOT modify product code.",
+        "",
+        f"Create: {output_file}",
+        "",
+    ]
+
+    if is_activation:
+        lines.extend([
+            "Include in the plan:",
+            "1. Activation flow steps (all states a user passes through from install to first use)",
+            "2. Where users may hesitate or fail (friction points, confusing states, error conditions)",
+            "3. Existing files likely involved (inspect only, do not modify)",
+            "4. Proposed metrics (e.g. activation_success_rate, steps_to_first_dictation)",
+            "5. Events that could be tracked later (once a plan is approved by founder)",
+            "6. Manual observation checklist (what to verify without any code changes)",
+            "7. Minimal future implementation options (ranked by risk and impact)",
+            "8. Risks (what could go wrong with each approach)",
+            "9. Recommendation for whether instrumentation is needed and what type",
+        ])
+    else:
+        lines.extend([
+            "Include in the plan:",
+            "1. Flow steps relevant to this area",
+            "2. Where failures or friction points likely occur",
+            "3. Existing files likely involved (inspect only, do not modify)",
+            "4. Proposed metrics",
+            "5. Events that could be tracked later",
+            "6. Manual observation checklist",
+            "7. Minimal future implementation options",
+            "8. Risks",
+            "9. Recommendation for next step",
+        ])
+
+    lines.extend([
+        "",
+        "Allowed:",
+        "- inspect frontend/auth flow files",
+        "- inspect existing hooks/components",
+        f"- write the measurement plan inside vocalype-brain/outputs/ as {output_file}",
+        "",
+        "Forbidden:",
+        "- no product code changes",
+        "- no backend changes",
+        "- no auth behavior changes",
+        "- no license behavior changes",
+        "- no new analytics implementation yet",
+        "- no event tracking implementation yet",
+        "",
+    ])
+
+    if worktree_warning:
+        lines.extend(["Worktree warning:", worktree_warning, ""])
+
+    lines.extend([
+        "Validation:",
+        f"- File created: {output_file}",
+        "- All 9 sections present",
+        "- No product code was modified",
+        "",
+        "Safety rules:",
+        "- do not apply patches",
+        "- do not deploy",
+        "- do not delete files",
+        "- do not loosen safety rules",
+        "",
+        "Critic review:",
+        critic_review,
+        "",
+        "Scope note:",
+        scope_reason,
+    ])
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def _deterministic_prompt(candidate: dict[str, Any], critic_review: str, worktree_warning: str, scope_reason: str) -> str:
     approved_files = candidate.get("approved_files", [])
     files_to_inspect = approved_files or candidate.get("files", [])
     mode = candidate.get("mode", "implementation")
+
+    if mode == "measurement":
+        return _measurement_prompt(candidate, critic_review, worktree_warning, scope_reason)
 
     if mode == "planning":
         lines = [
@@ -570,6 +707,7 @@ def _coder_prompt(candidate: dict[str, Any], critic_review: str, worktree_warnin
             "Use these exact sections: task title, original proposal summary, why it matters, approved scope, forbidden scope, files to inspect, implementation constraints, validation commands, manual test plan, rollback plan, safety rules, what to report after implementation.",
             "Keep the scope small and practical.",
             "If the candidate mode is planning, make the prompt planning-only and say not to implement yet.",
+            "If the candidate mode is measurement, make the prompt a measurement plan task: goal is to create a plan file, no product code changes, no implementation yet.",
             f"Candidate:\n{json.dumps(candidate, indent=2)}",
             f"Critic review:\n{critic_review}",
             f"Worktree warning:\n{worktree_warning or 'none'}",
@@ -623,6 +761,7 @@ def _best_candidate() -> tuple[dict[str, Any], str, str, str]:
             "requires_product_changes": False,
             "approved_files": [],
             "mode": "planning",
+            "task_type": "planning_only",
         }
         return (
             candidate,
@@ -652,7 +791,9 @@ def _best_candidate() -> tuple[dict[str, Any], str, str, str]:
     warning = _worktree_warning(top_candidate)
 
     if top_candidate["selected_score"] < 25 or top_candidate.get("risk") == "high" or not top_candidate.get("validation_test"):
-        top_candidate["mode"] = "planning"
+        task_type = _classify_task_type(top_candidate)
+        top_candidate["task_type"] = task_type
+        top_candidate["mode"] = "measurement" if task_type == "measurement_task" else "planning"
         return (
             top_candidate,
             "All current proposals were too risky, too vague, or not validated enough, so a planning prompt was generated instead.",
@@ -661,7 +802,9 @@ def _best_candidate() -> tuple[dict[str, Any], str, str, str]:
         )
 
     if warning and top_candidate.get("requires_product_changes", False):
-        top_candidate["mode"] = "planning"
+        task_type = _classify_task_type(top_candidate)
+        top_candidate["task_type"] = task_type
+        top_candidate["mode"] = "measurement" if task_type == "measurement_task" else "planning"
         return (
             top_candidate,
             "Selected the best candidate, but the current git worktree already contains unrelated product changes, so the generated prompt is planning-first rather than direct implementation.",
@@ -670,6 +813,12 @@ def _best_candidate() -> tuple[dict[str, Any], str, str, str]:
         )
 
     top_candidate["mode"] = "implementation"
+    task_type = _classify_task_type(top_candidate)
+    if task_type == "measurement_task":
+        top_candidate["mode"] = "measurement"
+    elif task_type == "planning_only":
+        top_candidate["mode"] = "planning"
+    top_candidate["task_type"] = task_type
     return (
         top_candidate,
         "Selected because it directly improves Vocalype, scores well, has a clear validation path, and avoids repeating the last implementation lesson.",
@@ -688,9 +837,11 @@ def main() -> None:
     prompt, coder_mode = _coder_prompt(candidate, critic_review, worktree_warning, reason_scope_reduced)
     write_text("outputs/codex_task.md", prompt)
 
+    task_type = candidate.get("task_type", "implementation_task")
     record = {
         "date": datetime.now().replace(microsecond=0).isoformat(),
         "selected_title": candidate.get("title", "Untitled"),
+        "task_type": task_type,
         "source": candidate.get("source", "manual"),
         "priority_score": int(candidate.get("selected_score", candidate.get("priority_score", 0))),
         "risk": candidate.get("risk", "medium"),
@@ -703,6 +854,7 @@ def main() -> None:
 
     print("Generated vocalype-brain/outputs/codex_task.md")
     print(f"Selected task: {candidate.get('title', 'Untitled')}")
+    print(f"Task type: {task_type}")
     print(f"Source: {candidate.get('source', 'manual')}")
     print(f"Coder routing: {coder_mode}")
     print(f"Critic routing: {critic_mode}")

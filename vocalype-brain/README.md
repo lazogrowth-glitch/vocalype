@@ -417,6 +417,7 @@ How it works:
 
 - reads recent Night Shift proposals and proposed patches
 - reads results, lessons, wins, mistakes, founder rules, and the latest quality report when present
+- classifies each proposal into one of three task types before generating the prompt
 - prefers low-risk, high-impact tasks with clear validation
 - reduces scope when V1 lessons show the original proposal was too broad
 - prefers frontend-only scope first for UI clarity work
@@ -424,12 +425,21 @@ How it works:
 - uses the `coder` model to draft the task prompt and the `critic` model to review scope and safety when local routing is available
 - falls back to deterministic prompt generation when Ollama or the routed model is unavailable
 
+Task types:
+
+- `planning_only` — vague, high-risk, or no concrete behavior change. Generates a clarification prompt only. No product code modifications.
+- `measurement_task` — proposal intent is to measure, track, observe, or map failure points. Generates a measurement plan prompt. No product code modifications yet.
+- `implementation_task` — concrete code or UI behavior change with clear approved scope, validation test, and low/medium risk.
+
+The `task_type` field is written to both `codex_task.md` and `approved_task_candidates.jsonl`.
+
 Safety:
 
 - does not modify product code
 - does not apply patches
 - does not auto-approve high-risk work
-- generates a clarification/planning prompt instead when the available proposals are too risky or too vague
+- measurement and planning proposals never become implementation tasks
+- generates a clarification/planning prompt when the available proposals are too risky or too vague
 
 ## Local LLM Safety
 

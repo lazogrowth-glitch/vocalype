@@ -18,3 +18,5 @@ Starter patterns to watch:
 - Benchmark-driven model changes
 
 - 2026-04-23: Safe frontend-only clarity improvements can improve first successful dictation without touching backend/auth/Rust layers.
+
+- 2026-04-24: Safe frontend-only clarity improvements can improve first successful dictation without touching backend/auth/Rust layers.

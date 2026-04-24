@@ -19,3 +19,5 @@ Starter reminders:
 - Do not change model defaults without benchmarks.
 
 - 2026-04-23: Night Shift should narrow frontend clarity tasks before suggesting sensitive backend, auth, or Rust files.
+
+- 2026-04-24: Night Shift should narrow frontend clarity tasks before suggesting sensitive backend, auth, or Rust files.

@@ -1,74 +1,53 @@
-# Mission Codex — Implement Approved Vocalype Task
+# Mission Codex — Measurement Plan Task
+
+Task type: measurement_task
 
 Task title: Measure activation failure points
 
-Original proposal summary:
-List each activation step and record where users hesitate, fail, or need support.
+Goal:
+Create a measurement plan for: Measure activation failure points
 
-Why it matters:
-Metric activation_success_rate currently has baseline unknown and target >95%.
+Do NOT modify product code.
 
-Worktree warning:
-Warning: the current git worktree already contains unrelated product changes. Review those first or keep the next task narrowly scoped. Example changed files: src/components/onboarding/FirstRunDownload.tsx, src/hooks/useAuthFlow.test.ts, src/lib/userFacingErrors.ts, src/lib/userFacingErrors.test.ts.
+Create: vocalype-brain/outputs/measure_activation_failure_points.md
 
-Approved scope:
-- src/components/auth/AuthPortal.tsx
-- src/hooks/useAuthFlow.ts
-- src/App.tsx
+Include in the plan:
+1. Activation flow steps (all states a user passes through from install to first use)
+2. Where users may hesitate or fail (friction points, confusing states, error conditions)
+3. Existing files likely involved (inspect only, do not modify)
+4. Proposed metrics (e.g. activation_success_rate, steps_to_first_dictation)
+5. Events that could be tracked later (once a plan is approved by founder)
+6. Manual observation checklist (what to verify without any code changes)
+7. Minimal future implementation options (ranked by risk and impact)
+8. Risks (what could go wrong with each approach)
+9. Recommendation for whether instrumentation is needed and what type
 
-Forbidden scope:
-- backend/app.py
-- src-tauri/src/security/secret_store.rs
-- src-tauri/src/lib.rs
-- src/lib/auth/client.ts
-- src/lib/license/client.ts
-- payment or billing logic
-- auth logic
-- license validation logic
-- Rust dictation runtime
-- translation files
+Allowed:
+- inspect frontend/auth flow files
+- inspect existing hooks/components
+- write the measurement plan inside vocalype-brain/outputs/ as vocalype-brain/outputs/measure_activation_failure_points.md
 
-Files to inspect:
-- src/components/auth/AuthPortal.tsx
-- src/hooks/useAuthFlow.ts
-- src/App.tsx
+Forbidden:
+- no product code changes
+- no backend changes
+- no auth behavior changes
+- no license behavior changes
+- no new analytics implementation yet
+- no event tracking implementation yet
 
-Implementation constraints:
-- keep the change small and measurable
-- inspect frontend first
-- do not touch backend/auth/payment/security/Rust unless a concrete frontend limitation proves it is required
-- no new dependencies
-- if current repo changes create risk, warn before expanding product scope
-
-Validation commands:
-- npm run lint
-- python vocalype-brain/scripts/review_quality.py
-
-Manual test plan:
-- 1. Run the described baseline measurement on the current build.
-- 2. Confirm the metric, baseline, and target are recorded clearly.
-- 3. Verify the next decision is obvious from the report.
-
-Rollback plan:
-- revert only the touched approved files
-- remove the change if the validation test or manual test gets worse
+Validation:
+- File created: vocalype-brain/outputs/measure_activation_failure_points.md
+- All 9 sections present
+- No product code was modified
 
 Safety rules:
-- do not modify product code outside the approved scope
-- do not apply unrelated patches
+- do not apply patches
 - do not deploy
 - do not delete files
 - do not loosen safety rules
 
 Critic review:
-The task narrowly focuses on frontend clarity, aligning with past successes. However, the warning about unrelated worktree changes suggests potential scope creep if not carefully managed. The lessons learned emphasize frontend-first approach, which is good, but the mistake log highlights the need to strictly avoid suggesting backend/auth/Rust files unless absolutely necessary.
+The task narrowly focuses on frontend clarity, which is appropriate given past lessons. However, the summary could more explicitly state the measurement approach (e.g., user testing, analytics review). The risk rating is low but the task involves user data analysis which may have privacy implications. The priority score and selected score seem high for a measurement task without clear implementation impact. The validation test should specify quantitative thresholds for success rate improvement.
 
-What to report after implementation:
-- every file changed
-- commands run and whether they passed
-- exact copy/UI/report changes made
-- manual test results
-- remaining risks or limitations
-
-Scope reduction note:
+Scope note:
 Reduced scope to frontend-first work because past results show UI clarity tasks should avoid backend, auth, payment, security, and Rust files unless a concrete limitation proves they are required.

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vocalype Brain Action",
+  "type": "object",
+  "required": [
+    "agent",
+    "title",
+    "problem",
+    "why_it_matters",
+    "expected_impact",
+    "difficulty",
+    "area",
+    "action",
+    "validation_test",
+    "metric"
+  ],
+  "properties": {
+    "agent": { "type": "string" },
+    "title": { "type": "string" },
+    "problem": { "type": "string" },
+    "why_it_matters": { "type": "string" },
+    "expected_impact": { "enum": ["low", "medium", "high", "critical"] },
+    "difficulty": { "enum": ["easy", "medium", "hard"] },
+    "urgency": { "enum": ["low", "medium", "high", "critical"] },
+    "area": { "type": "string" },
+    "suggested_files": { "type": "array", "items": { "type": "string" } },
+    "action": { "type": "string" },
+    "validation_test": { "type": "string" },
+    "metric": { "type": "string" },
+    "priority_score": { "type": "number" },
+    "status": { "type": "string" },
+    "rejected": { "type": "boolean" }
+  }
+}

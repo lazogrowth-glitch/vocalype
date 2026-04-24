@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vocalype Brain Experiment",
+  "type": "object",
+  "required": ["date", "name", "hypothesis", "change", "metric", "start_date", "end_date", "success_condition", "status"],
+  "properties": {
+    "date": { "type": "string" },
+    "name": { "type": "string" },
+    "hypothesis": { "type": "string" },
+    "change": { "type": "string" },
+    "metric": { "type": "string" },
+    "start_date": { "type": "string" },
+    "end_date": { "type": "string" },
+    "success_condition": { "type": "string" },
+    "result": { "type": "string" },
+    "decision": { "enum": ["keep", "kill", "iterate", "pending"] },
+    "status": { "enum": ["active", "completed", "planned"] }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vocalype Brain Feedback",
+  "type": "object",
+  "required": ["date", "source", "feedback", "category", "severity", "suggested_action"],
+  "properties": {
+    "date": { "type": "string" },
+    "source": { "type": "string" },
+    "feedback": { "type": "string" },
+    "category": { "type": "string" },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "suggested_action": { "type": "string" }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vocalype Brain Benchmark",
+  "type": "object",
+  "required": ["model_name", "test_category", "test_sentence", "expected_text"],
+  "properties": {
+    "model_name": { "type": "string" },
+    "test_category": { "type": "string" },
+    "test_sentence": { "type": "string" },
+    "expected_text": { "type": "string" },
+    "actual_text": { "type": "string" },
+    "latency_ms": { "type": ["number", "null"] },
+    "ram_mb": { "type": ["number", "null"] },
+    "cpu_percent": { "type": ["number", "null"] },
+    "gpu_percent": { "type": ["number", "null"] },
+    "wer_estimate": { "type": ["number", "null"] },
+    "notes": { "type": "string" }
+  }
+}

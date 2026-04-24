@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vocalype Brain Daily Report",
+  "type": "object",
+  "required": ["date", "top_actions", "rejected_or_low_priority"],
+  "properties": {
+    "date": { "type": "string" },
+    "top_actions": {
+      "type": "array",
+      "items": { "$ref": "action.schema.json" }
+    },
+    "rejected_or_low_priority": {
+      "type": "array",
+      "items": { "$ref": "action.schema.json" }
+    }
+  }
+}

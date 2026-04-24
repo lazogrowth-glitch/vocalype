@@ -1,0 +1,76 @@
+{
+  "name": "Vocalype Brain",
+  "version": "1.0.0",
+  "purpose": "Local operational intelligence for improving Vocalype every day.",
+  "max_daily_actions": 5,
+  "north_star_metric": "successful_dictations_per_active_user_per_week",
+  "activation_event": "first_successful_dictation",
+  "allowed_focus_areas": [
+    "product",
+    "models",
+    "ux",
+    "distribution",
+    "revenue",
+    "trust",
+    "retention",
+    "feedback",
+    "competitors",
+    "bugs"
+  ],
+  "rejection_rule": "Reject ideas that do not directly improve Vocalype.",
+  "local_llm": {
+    "enabled": true,
+    "provider": "ollama",
+    "main_model": "qwen3:8b",
+    "code_model": "qwen2.5-coder:7b",
+    "embedding_model": "nomic-embed-text",
+    "temperature": 0.2
+  },
+  "models": {
+    "ceo": {
+      "provider": "ollama",
+      "model": "qwen3:8b",
+      "temperature": 0.2,
+      "keep_alive": "0"
+    },
+    "coder": {
+      "provider": "ollama",
+      "model": "qwen2.5-coder:7b",
+      "temperature": 0.1,
+      "keep_alive": "0"
+    },
+    "critic": {
+      "provider": "ollama",
+      "model": "qwen3:8b",
+      "temperature": 0.1,
+      "keep_alive": "0"
+    },
+    "embeddings": {
+      "provider": "ollama",
+      "model": "nomic-embed-text",
+      "keep_alive": "0"
+    },
+    "fast": {
+      "provider": "ollama",
+      "model": "qwen3:4b",
+      "fallback_model": "qwen3:8b",
+      "temperature": 0.1,
+      "keep_alive": "0"
+    }
+  },
+  "safety": {
+    "allow_code_writes": false,
+    "allow_shell_commands": false,
+    "allow_product_code_modifications": false,
+    "require_human_approval": true
+  },
+  "night_shift": {
+    "enabled": true,
+    "max_cycles": 5,
+    "max_runtime_minutes": 60,
+    "mode": "proposal_only",
+    "allow_product_code_writes": false,
+    "allow_patch_files": true,
+    "allow_tests": false
+  }
+}

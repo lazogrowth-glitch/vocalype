@@ -1,0 +1,2 @@
+{"date": "2026-04-23T19:40:32", "source": "manual", "observation": "License activation error message confused me", "category": "activation", "severity": "high", "suggested_metric": "activation_success_rate", "status": "open"}
+{"date": "2026-04-23T19:40:32", "source": "manual", "observation": "Dictation feels slow on first run", "category": "latency", "severity": "high", "suggested_metric": "dictation_latency_ms", "status": "open"}

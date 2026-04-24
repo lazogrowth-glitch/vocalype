@@ -1,0 +1,2 @@
+
+{"date": "2026-04-23", "name": "Demo video above fold", "hypothesis": "A clear demo will increase download clicks", "change": "Add 20-second homepage demo", "metric": "download_button_ctr", "start_date": "2026-04-23", "end_date": "2026-05-07", "success_condition": "Keep if CTR increases by at least 20 percent", "result": "", "decision": "pending", "status": "active"}

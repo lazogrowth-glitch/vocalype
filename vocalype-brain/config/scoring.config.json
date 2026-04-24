@@ -1,0 +1,19 @@
+{
+  "impact_weights": {
+    "critical": 100,
+    "high": 70,
+    "medium": 40,
+    "low": 10
+  },
+  "difficulty_penalty": {
+    "easy": 0,
+    "medium": 15,
+    "hard": 35
+  },
+  "urgency_bonus": {
+    "critical": 30,
+    "high": 15,
+    "medium": 5,
+    "low": 0
+  }
+}

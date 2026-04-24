@@ -441,6 +441,63 @@ Safety:
 - measurement and planning proposals never become implementation tasks
 - generates a clarification/planning prompt when the available proposals are too risky or too vague
 
+## V3 Safe Patch Mode
+
+V3 allows Brain to prepare safe patch proposals without modifying product code automatically.
+
+Every patch is a Markdown proposal file. No patch is applied automatically. Founder approval is always required before product files are touched.
+
+Run:
+
+```bash
+python vocalype-brain/scripts/generate_safe_patch.py
+python vocalype-brain/scripts/review_safe_patch.py
+```
+
+Outputs:
+
+- `vocalype-brain/patches/patch_YYYYMMDD_HHMMSS_<slug>.md` — patch proposal file
+- `vocalype-brain/outputs/safe_patch_report.md` — latest patch summary
+- `vocalype-brain/data/safe_patch_candidates.jsonl` — full patch history
+
+Safety classes:
+
+| Class | Meaning | Auto-apply? |
+|---|---|---|
+| `brain_safe` | Only `vocalype-brain/` files targeted | No |
+| `docs_safe` | Only README/docs/markdown files | No |
+| `product_proposal_only` | Product code involved | **Never** |
+| `unsafe` | Forbidden scope detected | No patch generated |
+
+How it works:
+
+- reads `codex_task.md` and `approved_task_candidates.jsonl` to identify the current task
+- classifies the target files into a safety class
+- if `brain_safe` or `docs_safe`: generates a patch proposal file in `vocalype-brain/patches/`
+- if `product_proposal_only`: generates a text-only proposal — no product file is written
+- if `unsafe`: logs the rejection reason and writes no patch file
+- appends a record to `safe_patch_candidates.jsonl`
+- writes a summary to `safe_patch_report.md`
+
+Forbidden scope (always blocked):
+
+- `backend/`
+- `src-tauri/`
+- `src/lib/auth/client.ts`
+- `src/lib/license/client.ts`
+- payment, billing, security logic
+- Rust runtime
+- translation files
+
+Safety:
+
+- does not modify product code
+- does not apply patches automatically
+- does not commit automatically
+- does not use `--no-verify`
+- does not deploy
+- writes only to `vocalype-brain/`
+
 ## Local LLM Safety
 
 The orchestrator is intentionally limited.

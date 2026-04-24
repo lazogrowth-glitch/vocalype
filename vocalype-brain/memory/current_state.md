@@ -1,14 +1,14 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-24
-Validation commit: f25a417
+Latest commit: d59bc67 — docs(brain): record V2 status and current state
 
 ---
 
 ## Phase
 
-**V2 — Validated.**
-V3 Safe Patch Mode is the recommended next phase.
+**V3 — Safe Patch Mode. Built, not yet validated.**
+Run the validation commands below to complete V3 acceptance.
 
 ---
 
@@ -20,15 +20,31 @@ V3 Safe Patch Mode is the recommended next phase.
 - Quality signal tracking and scoring
 - Post-implementation review via git diff
 - Memory retrieval via embeddings + keyword match
-- Full loop validated: night_shift → classify → prompt → execute → review → commit
+- Full V2 loop validated: night_shift → classify → prompt → execute → review → commit
+- **V3 — Safe Patch generation**: `generate_safe_patch.py` classifies target files and creates a patch proposal in `vocalype-brain/patches/`
+- **V3 — Safe Patch review**: `review_safe_patch.py` summarizes the latest patch candidate and recommends next action
 
 ## What Does Not Exist Yet
 
-- `apply_patch.py` — no automated patch application
-- `validate_patch.py` — no automated lint/test runner
-- `rollback_patch.py` — no automated rollback
+- Automated patch application — Brain proposes patches; humans apply them
+- `validate_patch.py` — no automated lint/test runner triggered by Brain
+- `rollback_patch.py` — revert is done manually via `git checkout -- <file>`
 - Baseline metrics — `activation_success_rate` and `dictation_latency_ms` both unknown
 - Event tracking — no instrumentation in product code
+
+---
+
+## V3 Safety Classes
+
+| Class | Meaning | Patch file created? |
+|---|---|---|
+| `brain_safe` | Only `vocalype-brain/` files | Yes — Markdown proposal |
+| `docs_safe` | Only README/docs/markdown | Yes — Markdown proposal |
+| `product_proposal_only` | Product code involved | Yes — TEXT ONLY, never auto-applied |
+| `unsafe` | Forbidden scope detected | No — rejection logged |
+
+Forbidden scope (always blocked in V3):
+`backend/`, `src-tauri/`, `src/lib/auth/client.ts`, `src/lib/license/client.ts`, payment, billing, security, translation.json
 
 ---
 
@@ -48,10 +64,10 @@ Current baseline: unknown — manual observation required
 
 ## Top Recommended Next Actions
 
-1. Complete manual observation checklist (outputs/measure_activation_failure_points.md, Section 6)
-2. Implement O1 + O2 from measurement plan (improve activation_failed message + add retry button)
-3. Deduplicate wins.md and mistakes.md entries
-4. Begin V3 apply_patch.py (dry-run, single-file, FRONTEND_SAFE_FILES only)
+1. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
+2. Run `generate_safe_patch.py` → confirm `brain_safe` for the current measurement task
+3. When ready for product fix: re-run `create_codex_task.py` after adding activation_failed observation → should yield `implementation_task` → `product_proposal_only` patch
+4. Apply O1 + O2 from measurement plan (improve `activation_failed` message + add retry button)
 
 ---
 
@@ -63,6 +79,8 @@ Current baseline: unknown — manual observation required
 - Scope reduction enforces frontend-first before any implementation prompt
 - Score < 25 or risk = high → `planning_only` classification, no implementation
 - `measurement_task` classification → plan file only, no product code
+- V3: `unsafe` safety class → no patch file generated, rejection logged
+- V3: `product_proposal_only` → patch file is text only, never auto-applied
 - `--no-verify` is never used on commits
 
 ---
@@ -83,10 +101,13 @@ Current baseline: unknown — manual observation required
 |---|---|
 | Full V2 status report | outputs/v2_status_report.md |
 | Activation measurement plan | outputs/measure_activation_failure_points.md |
-| Quality signals | data/quality_observations.jsonl |
-| Quality report | outputs/quality_report.md |
 | Latest Codex task | outputs/codex_task.md |
 | Approved task candidates | data/approved_task_candidates.jsonl |
+| Safe patch candidates | data/safe_patch_candidates.jsonl |
+| Safe patch report | outputs/safe_patch_report.md |
+| Patch proposal files | patches/ |
+| Quality signals | data/quality_observations.jsonl |
+| Quality report | outputs/quality_report.md |
 | Implementation review | outputs/implementation_review.md |
 | Wins | memory/wins.md |
 | Mistakes | memory/mistakes.md |

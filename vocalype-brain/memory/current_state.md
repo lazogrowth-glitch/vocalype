@@ -8,7 +8,7 @@ Brain commit: 12b3295 — feat(brain): add V6 implementation handoff loop
 
 ## Phase
 
-**V6 — Product Implementation Handoff Loop. Built and validated.**
+**V7 — Real Product Benchmark Loop. Design plan written, Phase 1 (manual sessions) not yet started.**
 
 ---
 
@@ -28,8 +28,16 @@ Brain commit: 12b3295 — feat(brain): add V6 implementation handoff loop
 
 - **V6 — Product Implementation Handoff Loop**: `generate_handoff_task.py` reads approved proposal, runs 9 safety gates, extracts read-only code context, classifies task, writes `outputs/handoff_task.md`; `review_handoff_task.py` reviews latest record and recommends next action
 
+- **V7 — Real Product Benchmark Loop**: Design plan at `outputs/v7_design_plan.md` — 13-section benchmark architecture covering latency, RAM, WER, activation stability, first dictation. Phase 1 = manual sessions. Phase 2 = baseline lock + comparison scripts.
+
 ## What Does Not Exist Yet
 
+- V7 Phase 1: ≥5 manual benchmark sessions not yet run
+- `review_benchmarks.py` — V7 Phase 1 script (designed, not yet built)
+- `lock_benchmark_baseline.py` — V7 Phase 2 script (designed, not yet built)
+- `compare_benchmarks.py` — V7 Phase 2 script (designed, not yet built)
+- `benchmark_observations.jsonl` — manual observation log (not yet created)
+- `benchmark_baseline.jsonl` — locked baseline (not yet created)
 - `validate_patch.py` — no automated lint/test runner triggered by Brain
 - `rollback_patch.py` — revert is done manually via `git checkout -- <file>`
 - Baseline metrics — `activation_success_rate` and `dictation_latency_ms` both unknown
@@ -73,10 +81,10 @@ Future prompts may reference the contract instead of repeating safety rules:
 ## Top Recommended Next Actions
 
 1. Run manual test: all 5 activation states (logged_out, checking_activation, subscription_inactive, activation_failed, ready)
-2. Verify `activation_failed` → retry button visible and calls session refresh
-3. Verify `activation_failed` with no `authError` → fallback error message visible
-4. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
-5. Plan V7: Real Product Benchmark Loop (latency, RAM, transcription quality, activation stability)
+2. Run ≥5 V7 manual benchmark sessions (M1–M7 protocol in `outputs/v7_design_plan.md` Section 4)
+3. Build `review_benchmarks.py` after ≥5 sessions
+4. Lock baseline with `lock_benchmark_baseline.py --approve`
+5. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
 
 ---
 
@@ -124,6 +132,7 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V6 design plan | outputs/v6_design_plan.md |
 | V6 handoff task | outputs/handoff_task.md |
 | V6 handoff tasks log | data/handoff_tasks.jsonl |
+| V7 design plan | outputs/v7_design_plan.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

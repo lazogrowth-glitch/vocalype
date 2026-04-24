@@ -1,6 +1,12 @@
 /* eslint-disable i18next/no-literal-string */
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ExternalLink, Loader2, LogOut, ShieldAlert } from "lucide-react";
+import {
+  ExternalLink,
+  Loader2,
+  LogOut,
+  RefreshCw,
+  ShieldAlert,
+} from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -240,6 +246,15 @@ export const AuthPortal = ({
     error && !isExpectedMissingLicenseMessage(error)
       ? getUserFacingErrorMessage(error, { t, context: "auth" })
       : null;
+
+  // When activation_failed with no explicit error text, show a clear fallback
+  // so the user always sees an actionable message — not a silent failed state.
+  const activationFailedFallback =
+    activationStatus === "activation_failed" && !displayError
+      ? "L'activation sur ce PC n'a pas abouti. Cliquez sur « Réessayer » ou reconnectez-vous."
+      : null;
+  const visibleError = displayError ?? activationFailedFallback;
+
   const readinessRows = getReadinessRows(
     activationStatus,
     session,
@@ -279,6 +294,20 @@ export const AuthPortal = ({
       if (timer) window.clearTimeout(timer);
     };
   }, [session?.user.email, session?.subscription.status, onRefreshSession]);
+
+  // Manual retry for activation_failed state. Resets the auto-refresh counter
+  // so the 8-cycle loop can run again, then immediately triggers a session check.
+  const handleRetry = async () => {
+    refreshAttemptRef.current = 0;
+    setAutoRefreshBusy(true);
+    try {
+      await onRefreshSession();
+    } catch {
+      // Errors surface via visibleError below — no toast needed here.
+    } finally {
+      setAutoRefreshBusy(false);
+    }
+  };
 
   const openBrowserAuth = async (intent: "signup" | "login") => {
     setBrowserBusy(intent);
@@ -320,7 +349,29 @@ export const AuthPortal = ({
   };
 
   const primaryAction =
-    session && hasAccess ? (
+    session && hasAccess && activationStatus === "activation_failed" ? (
+      // Distinct action for activation_failed: an active retry button so the
+      // user always has a clear next step instead of a silent disabled spinner.
+      <button
+        type="button"
+        style={{
+          ...buttonBaseStyle,
+          border: "1px solid rgba(243,201,139,0.3)",
+          background: "rgba(243,201,139,0.1)",
+          color: "#f3c98b",
+          opacity: autoRefreshBusy ? 0.7 : 1,
+        }}
+        disabled={autoRefreshBusy}
+        onClick={handleRetry}
+      >
+        {autoRefreshBusy ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <RefreshCw size={16} />
+        )}
+        Réessayer l'activation
+      </button>
+    ) : session && hasAccess ? (
       <button
         type="button"
         style={{
@@ -532,7 +583,7 @@ export const AuthPortal = ({
           </div>
         </div>
 
-        {displayError ? (
+        {visibleError ? (
           <div
             style={{
               marginBottom: 14,
@@ -547,7 +598,7 @@ export const AuthPortal = ({
             }}
           >
             <ShieldAlert size={17} style={{ marginTop: 1, flexShrink: 0 }} />
-            <div style={{ lineHeight: 1.45, fontSize: 13 }}>{displayError}</div>
+            <div style={{ lineHeight: 1.45, fontSize: 13 }}>{visibleError}</div>
           </div>
         ) : null}
 

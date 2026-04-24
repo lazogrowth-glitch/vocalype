@@ -1,7 +1,8 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-24
-Latest commit: 24f5bce — feat(brain): add product patch proposal mode
+Latest commit: 706d6c0 — feat(app): add activation retry state for first dictation
+Brain commit: 12b3295 — feat(brain): add V6 implementation handoff loop
 
 ---
 
@@ -60,17 +61,17 @@ Current baseline: unknown — manual observation required
 
 ## Top Active Quality Risks
 
-1. `activation_failed` state shows no actionable guidance — HIGH
-2. Auto-refresh loop (8 × 2500ms) may exhaust before license propagates — MEDIUM
+1. `activation_failed` retry button added — manual test pending (all 5 activation states) — MEDIUM
+2. Auto-refresh loop (8 × 2500ms) may exhaust before license propagates — MEDIUM (retry button now resets counter)
 3. `isExpectedMissingLicenseMessage` may silently suppress real errors — MEDIUM
 
 ## Top Recommended Next Actions
 
-1. Review `outputs/handoff_task.md` — the V6 handoff is generated and ready
-2. Confirm Approved Scope and Forbidden Scope are correct
-3. Copy `outputs/handoff_task.md` to Claude Code or Codex for implementation
-4. After implementation: review diff, run lint, run manual test (all 5 activation states)
-5. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
+1. Run manual test: all 5 activation states (logged_out, checking_activation, subscription_inactive, activation_failed, ready)
+2. Verify `activation_failed` → retry button visible and calls session refresh
+3. Verify `activation_failed` with no `authError` → fallback error message visible
+4. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
+5. Plan V7: Real Product Benchmark Loop (latency, RAM, transcription quality, activation stability)
 
 ---
 

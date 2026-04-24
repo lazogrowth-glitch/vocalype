@@ -65,6 +65,11 @@ Current baseline: unknown — manual observation required
 2. Auto-refresh loop (8 × 2500ms) may exhaust before license propagates — MEDIUM (retry button now resets counter)
 3. `isExpectedMissingLicenseMessage` may silently suppress real errors — MEDIUM
 
+## Operating Contract
+
+Future prompts may reference the contract instead of repeating safety rules:
+> "Follow `vocalype-brain/memory/operating_contract.md`."
+
 ## Top Recommended Next Actions
 
 1. Run manual test: all 5 activation states (logged_out, checking_activation, subscription_inactive, activation_failed, ready)
@@ -126,4 +131,5 @@ Current baseline: unknown — manual observation required
 | Wins | memory/wins.md |
 | Mistakes | memory/mistakes.md |
 | Lessons learned | memory/lessons_learned.md |
+| **Operating contract** | **memory/operating_contract.md** |
 | Brain config | config/brain.config.json |

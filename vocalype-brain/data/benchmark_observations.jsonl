@@ -1,0 +1,1 @@
+{"date": "2026-04-24T14:11:53", "scenario": "first_dictation", "metric": "total_dictation_latency_ms", "value": 2400.0, "unit": "ms", "app_version": "e07a8d4", "model": "parakeet", "device": "windows_4060", "notes": "manual validation sample"}

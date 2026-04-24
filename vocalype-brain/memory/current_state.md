@@ -2,13 +2,13 @@
 
 Last updated: 2026-04-24
 Latest commit: 706d6c0 — feat(app): add activation retry state for first dictation
-Brain commit: 12b3295 — feat(brain): add V6 implementation handoff loop
+Brain commit: e07a8d4 — feat(brain): add V7 Phase 1 manual benchmark recorder
 
 ---
 
 ## Phase
 
-**V7 — Real Product Benchmark Loop. Design plan written, Phase 1 (manual sessions) not yet started.**
+**V7 Phase 1 — Manual Benchmark Recorder. Scripts built and validated. First observation recorded. Collecting ≥5 observations per priority metric before locking baseline.**
 
 ---
 
@@ -30,14 +30,14 @@ Brain commit: 12b3295 — feat(brain): add V6 implementation handoff loop
 
 - **V7 — Real Product Benchmark Loop**: Design plan at `outputs/v7_design_plan.md` — 13-section benchmark architecture covering latency, RAM, WER, activation stability, first dictation. Phase 1 = manual sessions. Phase 2 = baseline lock + comparison scripts.
 
+- **V7 Phase 1 — Manual Benchmark Recorder**: `add_benchmark_observation.py` (CLI recorder) + `review_benchmarks.py` (report generator). Both validated. First observation recorded (`total_dictation_latency_ms = 2400ms`, first_dictation, parakeet, windows_4060). Waiting for ≥5 observations per priority metric.
+
 ## What Does Not Exist Yet
 
-- V7 Phase 1: ≥5 manual benchmark sessions not yet run
-- `review_benchmarks.py` — V7 Phase 1 script (designed, not yet built)
+- V7 Phase 1: 9 of 10 priority metrics still need ≥5 observations (1 obs recorded so far)
 - `lock_benchmark_baseline.py` — V7 Phase 2 script (designed, not yet built)
 - `compare_benchmarks.py` — V7 Phase 2 script (designed, not yet built)
-- `benchmark_observations.jsonl` — manual observation log (not yet created)
-- `benchmark_baseline.jsonl` — locked baseline (not yet created)
+- `benchmark_baseline.jsonl` — locked baseline (not yet created — requires ≥5 obs per metric)
 - `validate_patch.py` — no automated lint/test runner triggered by Brain
 - `rollback_patch.py` — revert is done manually via `git checkout -- <file>`
 - Baseline metrics — `activation_success_rate` and `dictation_latency_ms` both unknown
@@ -81,10 +81,11 @@ Future prompts may reference the contract instead of repeating safety rules:
 ## Top Recommended Next Actions
 
 1. Run manual test: all 5 activation states (logged_out, checking_activation, subscription_inactive, activation_failed, ready)
-2. Run ≥5 V7 manual benchmark sessions (M1–M7 protocol in `outputs/v7_design_plan.md` Section 4)
-3. Build `review_benchmarks.py` after ≥5 sessions
-4. Lock baseline with `lock_benchmark_baseline.py --approve`
-5. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
+2. Run ≥5 V7 manual benchmark sessions per metric (M1–M7 protocol in `outputs/v7_design_plan.md` Section 4)
+   - Use: `python vocalype-brain/scripts/add_benchmark_observation.py --scenario <s> --metric <m> --value <v> --unit <u> --model <model> --device <device>`
+   - Review progress: `python vocalype-brain/scripts/review_benchmarks.py`
+3. Lock baseline with `lock_benchmark_baseline.py --approve` (V7 Phase 2 — not yet built)
+4. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
 
 ---
 
@@ -133,6 +134,8 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V6 handoff task | outputs/handoff_task.md |
 | V6 handoff tasks log | data/handoff_tasks.jsonl |
 | V7 design plan | outputs/v7_design_plan.md |
+| V7 benchmark observations | data/benchmark_observations.jsonl |
+| V7 benchmark report | outputs/benchmark_report.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

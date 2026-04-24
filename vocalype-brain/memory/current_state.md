@@ -7,7 +7,7 @@ Latest commit: 24f5bce — feat(brain): add product patch proposal mode
 
 ## Phase
 
-**V6 — Product Implementation Handoff Loop. Design plan written, scripts not yet implemented.**
+**V6 — Product Implementation Handoff Loop. Built and validated.**
 
 ---
 
@@ -25,12 +25,10 @@ Latest commit: 24f5bce — feat(brain): add product patch proposal mode
 - **V3.5 — Apply Approved Patch**: `apply_approved_patch.py` applies `brain_safe`/`docs_safe` patches with `--approve`; dry-run by default; refuses product/unsafe patches; requires `## Apply Instructions` section in patch file
 - **V5 — Product Patch Proposal**: `generate_product_patch_proposal.py` selects best frontend candidate, writes structured proposal + copy-pasteable implementation prompt; `review_product_patch_proposal.py` summarises and recommends next action
 
-- **V6 — Design Plan**: `outputs/v6_design_plan.md` — 13-section architecture for Product Implementation Handoff Loop (planning_only, not yet implemented)
+- **V6 — Product Implementation Handoff Loop**: `generate_handoff_task.py` reads approved proposal, runs 9 safety gates, extracts read-only code context, classifies task, writes `outputs/handoff_task.md`; `review_handoff_task.py` reviews latest record and recommends next action
 
 ## What Does Not Exist Yet
 
-- `generate_handoff_task.py` — V6 main script (designed, not yet built)
-- `review_handoff_task.py` — V6 review script (designed, not yet built)
 - `validate_patch.py` — no automated lint/test runner triggered by Brain
 - `rollback_patch.py` — revert is done manually via `git checkout -- <file>`
 - Baseline metrics — `activation_success_rate` and `dictation_latency_ms` both unknown
@@ -68,10 +66,11 @@ Current baseline: unknown — manual observation required
 
 ## Top Recommended Next Actions
 
-1. Review `outputs/v6_design_plan.md` — approve or amend the V6 architecture
-2. Build V6 scripts: `generate_handoff_task.py` + `review_handoff_task.py`
-3. Validate V6: dry-run → approve → confirm handoff_task.md contains inlined code context
-4. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6) to feed V6 with real data
+1. Review `outputs/handoff_task.md` — the V6 handoff is generated and ready
+2. Confirm Approved Scope and Forbidden Scope are correct
+3. Copy `outputs/handoff_task.md` to Claude Code or Codex for implementation
+4. After implementation: review diff, run lint, run manual test (all 5 activation states)
+5. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
 
 ---
 
@@ -117,6 +116,8 @@ Current baseline: unknown — manual observation required
 | Product patch proposal | outputs/product_patch_proposal_report.md |
 | Product proposals log | data/product_patch_proposals.jsonl |
 | V6 design plan | outputs/v6_design_plan.md |
+| V6 handoff task | outputs/handoff_task.md |
+| V6 handoff tasks log | data/handoff_tasks.jsonl |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

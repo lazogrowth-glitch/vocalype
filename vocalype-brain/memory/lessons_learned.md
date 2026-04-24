@@ -14,3 +14,5 @@ For each lesson, capture:
 - Codex implemented a safe frontend-only clarity improvement.
 - Future UI clarity tasks should prefer frontend-only scope before backend/auth/Rust changes.
 - Night Shift initially proposed too many sensitive files; future task generation should narrow scope.
+
+- 2026-04-24 V3.5 lesson: Approved patch application must require explicit --approve and must refuse patches without Apply Instructions.

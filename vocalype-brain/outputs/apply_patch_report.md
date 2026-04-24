@@ -1,22 +1,24 @@
 # Vocalype Brain — Apply Patch Report
 
-Date: 2026-04-24T09:36:45
+Date: 2026-04-24T09:43:21
 Mode: approve
 
 ## Patch Candidate
 
-- Title: Measure activation failure points
+- Title: Append V3.5 lesson to lessons_learned.md
 - Safety class: brain_safe
-- Patch file: patch_20260424_093031_measure_activation_failure_points.md
+- Patch file: patch_20260424_094246_lessons_learned_v35.md
 
 ## Apply Instructions
 
-- NOT FOUND — no structured Apply Instructions section in patch file.
+- target_file: vocalype-brain/memory/lessons_learned.md
+- operation: append
+- content_length: 136 chars
 
 ## Result
 
-- Status: refused
-- Reason: No ## Apply Instructions section found in patch file. Manual implementation required. Add a structured Apply Instructions block to the patch file before approving.
+- Status: applied
+- Reason: Appended to 'vocalype-brain/memory/lessons_learned.md'.
 
 ## Safety Rules (always active)
 

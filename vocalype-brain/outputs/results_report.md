@@ -4,11 +4,11 @@ Date: 2026-04-24
 
 ## Recent Results
 
-- 2026-04-23T20:40:16: Frontend clarity pass for first successful dictation -> needs_manual_test
 - 2026-04-23T20:40:50: Frontend clarity pass for first successful dictation -> needs_manual_test
 - 2026-04-23T20:41:08: Frontend clarity pass for first successful dictation -> needs_manual_test
 - 2026-04-24T08:59:22: Frontend clarity pass for first successful dictation -> keep
 - 2026-04-24T09:09:56: Frontend clarity pass for first successful dictation -> keep
+- 2026-04-24T09:43:29: Frontend clarity pass for first successful dictation -> keep
 
 ## Repeated Wins
 
@@ -28,11 +28,11 @@ Date: 2026-04-24
 
 ## Top Lessons
 
-- What to repeat or avoid next time
 - Night Shift correctly prioritized first successful dictation.
 - Codex implemented a safe frontend-only clarity improvement.
 - Future UI clarity tasks should prefer frontend-only scope before backend/auth/Rust changes.
 - Night Shift initially proposed too many sensitive files; future task generation should narrow scope.
+- 2026-04-24 V3.5 lesson: Approved patch application must require explicit --approve and must refuse patches without Apply Instructions.
 
 ## Recommended Changes to Night Shift Behavior
 

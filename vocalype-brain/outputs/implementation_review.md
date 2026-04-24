@@ -1,6 +1,6 @@
 # Vocalype Brain — Implementation Review
 
-Date: 2026-04-24T09:09:56
+Date: 2026-04-24T09:43:29
 
 ## Summary
 
@@ -8,22 +8,19 @@ Frontend-only implementation improved first-successful-dictation clarity by addi
 
 ## Files Changed
 
-- vocalype-brain/data/approved_task_candidates.jsonl
-- vocalype-brain/data/night_shift_runs.jsonl
-- vocalype-brain/data/night_shift_status.json
-- vocalype-brain/data/proposed_patches.jsonl
-- vocalype-brain/outputs/codex_task.md
-- vocalype-brain/outputs/night_shift_report.md
+- vocalype-brain/data/applied_patches.jsonl
+- vocalype-brain/data/safe_patch_candidates.jsonl
+- vocalype-brain/memory/lessons_learned.md
+- vocalype-brain/outputs/apply_patch_report.md
+- vocalype-brain/patches/patch_20260424_094246_lessons_learned_v35.md
 
 ## Diff Summary
 
- vocalype-brain/data/approved_task_candidates.jsonl |  1 +
- vocalype-brain/data/night_shift_runs.jsonl         |  5 ++
- vocalype-brain/data/night_shift_status.json        |  4 +-
- vocalype-brain/data/proposed_patches.jsonl         |  5 ++
- vocalype-brain/outputs/codex_task.md               |  2 +-
- vocalype-brain/outputs/night_shift_report.md       | 66 +++++++++++-----------
- 6 files changed, 48 insertions(+), 35 deletions(-)
+ vocalype-brain/data/applied_patches.jsonl       |  2 ++
+ vocalype-brain/data/safe_patch_candidates.jsonl |  1 +
+ vocalype-brain/memory/lessons_learned.md        |  2 ++
+ vocalype-brain/outputs/apply_patch_report.md    | 14 ++++++++------
+ 4 files changed, 13 insertions(+), 6 deletions(-)
 
 ## Original Proposal / Task
 

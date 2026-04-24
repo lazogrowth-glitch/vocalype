@@ -569,6 +569,40 @@ Safety:
 - no `--no-verify`
 - no deployment
 
+## V5 Product Patch Proposal Mode
+
+V5 allows Brain to prepare structured product-code change proposals with a copy-pasteable implementation prompt. Product code is never modified automatically. Founder approval is always required before sending the prompt to an implementation model.
+
+Run:
+
+```bash
+python vocalype-brain/scripts/generate_product_patch_proposal.py
+python vocalype-brain/scripts/review_product_patch_proposal.py
+```
+
+Outputs:
+
+- `vocalype-brain/outputs/product_patch_proposal_report.md` — full proposal with implementation prompt
+- `vocalype-brain/data/product_patch_proposals.jsonl` — proposal history
+
+How it works:
+
+- reads Night Shift runs, the measurement plan (if present), and approved task candidates
+- filters out any proposals touching forbidden files (backend, src-tauri, auth/license clients, payment, Rust)
+- prefers measurement plan recommendations over raw Night Shift runs (post-analysis is more precise)
+- scores candidates by risk, impact, and validation clarity
+- generates a structured proposal record and a markdown report
+- the report's "Exact Prompt For Claude/Codex" section is ready to copy-paste to an implementation model but includes strict scope and safety constraints
+
+Safety:
+
+- does not modify product code
+- does not apply patches
+- does not edit src/, backend/, src-tauri/, or any auth/license/payment/security/Rust files
+- `sensitive_files_involved` flag is set if any target file is in a sensitive path
+- `manual_approval_required: true` on every record
+- proposal must be reviewed by founder before being sent to an implementation model
+
 ## Local LLM Safety
 
 The orchestrator is intentionally limited.

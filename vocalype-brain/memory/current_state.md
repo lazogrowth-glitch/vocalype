@@ -7,7 +7,7 @@ Latest commit: 772c869 — feat(brain): add V3 safe patch mode
 
 ## Phase
 
-**V3.5 — Apply Approved Patch Mode. Built, not yet committed.**
+**V5 — Product Patch Proposal Mode. Built, not yet committed.**
 
 ---
 
@@ -23,6 +23,7 @@ Latest commit: 772c869 — feat(brain): add V3 safe patch mode
 - **V3 — Safe Patch generation**: `generate_safe_patch.py` classifies target files and creates a patch proposal in `vocalype-brain/patches/`
 - **V3 — Safe Patch review**: `review_safe_patch.py` summarizes the latest patch candidate and recommends next action
 - **V3.5 — Apply Approved Patch**: `apply_approved_patch.py` applies `brain_safe`/`docs_safe` patches with `--approve`; dry-run by default; refuses product/unsafe patches; requires `## Apply Instructions` section in patch file
+- **V5 — Product Patch Proposal**: `generate_product_patch_proposal.py` selects best frontend candidate, writes structured proposal + copy-pasteable implementation prompt; `review_product_patch_proposal.py` summarises and recommends next action
 
 ## What Does Not Exist Yet
 
@@ -109,6 +110,8 @@ Current baseline: unknown — manual observation required
 | Safe patch report | outputs/safe_patch_report.md |
 | Apply patch report | outputs/apply_patch_report.md |
 | Applied patches log | data/applied_patches.jsonl |
+| Product patch proposal | outputs/product_patch_proposal_report.md |
+| Product proposals log | data/product_patch_proposals.jsonl |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

@@ -47,7 +47,7 @@ Safety rules:
 - do not loosen safety rules
 
 Critic review:
-The task narrowly focuses on frontend clarity, which is appropriate given past lessons. However, the summary could more explicitly state the measurement approach (e.g., user testing, analytics review). The risk rating is low but the task involves user data analysis which may have privacy implications. The priority score and selected score seem high for a measurement task without clear implementation impact. The validation test should specify quantitative thresholds for success rate improvement.
+The task narrowly focuses on frontend activation steps without addressing backend or Rust components, which may limit its impact. However, the scope reduction aligns with past lessons that UI clarity tasks should prioritize frontend-only work. The risk remains low, and the validation test for activation_success_rate is appropriate. The task avoids sensitive areas like auth and payment, which is a positive constraint. The critic_review should emphasize the trade-off between focused frontend work and potential missed backend issues, while acknowledging the safety of avoiding sensitive systems.
 
 Scope note:
 Reduced scope to frontend-first work because past results show UI clarity tasks should avoid backend, auth, payment, security, and Rust files unless a concrete limitation proves they are required.

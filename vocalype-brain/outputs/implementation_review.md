@@ -1,6 +1,6 @@
 # Vocalype Brain — Implementation Review
 
-Date: 2026-04-24T08:59:22
+Date: 2026-04-24T09:09:56
 
 ## Summary
 
@@ -8,27 +8,22 @@ Frontend-only implementation improved first-successful-dictation clarity by addi
 
 ## Files Changed
 
-- vocalype-brain/README.md
 - vocalype-brain/data/approved_task_candidates.jsonl
 - vocalype-brain/data/night_shift_runs.jsonl
 - vocalype-brain/data/night_shift_status.json
 - vocalype-brain/data/proposed_patches.jsonl
 - vocalype-brain/outputs/codex_task.md
 - vocalype-brain/outputs/night_shift_report.md
-- vocalype-brain/scripts/create_codex_task.py
-- vocalype-brain/outputs/measure_activation_failure_points.md
 
 ## Diff Summary
 
- vocalype-brain/README.md                           |  12 +-
- vocalype-brain/data/approved_task_candidates.jsonl |   3 +
- vocalype-brain/data/night_shift_runs.jsonl         |  15 ++
- vocalype-brain/data/night_shift_status.json        |   4 +-
- vocalype-brain/data/proposed_patches.jsonl         |  14 ++
- vocalype-brain/outputs/codex_task.md               | 103 ++++++--------
- vocalype-brain/outputs/night_shift_report.md       |  50 ++++---
- vocalype-brain/scripts/create_codex_task.py        | 156 ++++++++++++++++++++-
- 8 files changed, 264 insertions(+), 93 deletions(-)
+ vocalype-brain/data/approved_task_candidates.jsonl |  1 +
+ vocalype-brain/data/night_shift_runs.jsonl         |  5 ++
+ vocalype-brain/data/night_shift_status.json        |  4 +-
+ vocalype-brain/data/proposed_patches.jsonl         |  5 ++
+ vocalype-brain/outputs/codex_task.md               |  2 +-
+ vocalype-brain/outputs/night_shift_report.md       | 66 +++++++++++-----------
+ 6 files changed, 48 insertions(+), 35 deletions(-)
 
 ## Original Proposal / Task
 
@@ -47,7 +42,7 @@ Yes. The changed product files stayed inside the approved frontend-only surface.
 
 ## Tests / Checks Reported
 
-- npm run lint
+- No explicit successful checks detected from the git diff context.
 - Manual verification is still required for the five first-dictation scenarios.
 
 ## What Improved

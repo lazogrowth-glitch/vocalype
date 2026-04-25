@@ -2,13 +2,15 @@
 
 Last updated: 2026-04-24
 Latest commit: 706d6c0 — feat(app): add activation retry state for first dictation
-Brain commit: (pending) — docs(brain): V7 final status report
+Brain commit: (pending commit) — docs(brain): V7 closure report and V8 entry
 
 ---
 
 ## Phase
 
-**V7 Phase 1 — COMPLETE. V7 Phase 2 — NOT STARTED. 2/10 metrics at baseline. Primary bottleneck identified (paste_execute, 645ms, 62% of p50). Bottleneck hypothesis + investigation proposal written. V7 final status report complete. Awaiting: (1) M1 manual session for 8 missing metrics, (2) lock_benchmark_baseline.py build, (3) paste_execute investigation, (4) V8 design.**
+**V7 CLOSED. V8 CONDITIONALLY APPROVED.**
+V7 produced: 43 obs, 2/10 metrics at baseline, bottleneck hypothesis (paste-bound), idle inference loop observation, investigation proposals for both.
+V8 entry approved by founder. Next: send V8 design prompt from v7_closure_report.md Section 10.
 
 ---
 
@@ -80,17 +82,20 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Run paste_execute investigation** (approved scope in `product_patch_proposal_report.md` Section 10)
-   - Read `src-tauri/src/actions/paste.rs` in full — find the 645ms root cause
+1. **Start V8** — send the exact prompt from `outputs/v7_closure_report.md` Section 10
+   - Creates: `outputs/v8_design_plan.md`
+   - Task type: planning_only
+
+2. **V8 Track A** (after design plan): read-only investigation of `src-tauri/src/actions/paste.rs`
    - Output: `outputs/paste_mechanism_diagnosis.md`
-2. **Collect missing 8 priority metrics** (M1 session, ~30 min manual):
-   - `app_idle_ram_mb`, `model_load_time_ms`, `ram_during_transcription_mb`, `ram_after_transcription_mb`
-   - Use: `python vocalype-brain/scripts/add_benchmark_observation.py --scenario <s> --metric <m> --value <v> --unit <u> --model <model> --device <device>`
-   - Review: `python vocalype-brain/scripts/review_benchmarks.py`
-3. **WER/CER baseline**: Dictate 5 known French phrases, record `wer_percent` and `cer_percent`
-4. **activation_success_rate**: Run 5 launches, count successes
-5. **Lock baseline** with `lock_benchmark_baseline.py --approve` (V7 Phase 2 — not yet built)
-6. Run manual test: all 5 activation states (logged_out, checking_activation, subscription_inactive, activation_failed, ready)
+   - Answers: what causes the 645ms paste_execute?
+
+3. **V8 Track B** (after design plan): read-only investigation of audio manager + chunk worker
+   - Output: `outputs/idle_background_transcription_diagnosis.md`
+   - Answers: is mic always open? does chunk worker run continuously when idle?
+
+4. **Confirm idle RAM growth** (manual, ~20 min): timed readings at T=0, T=5, T=15
+   - Record with `add_benchmark_observation.py --scenario possible_idle_background_transcription_loop`
 
 ---
 
@@ -146,6 +151,8 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V7 paste investigation proposal | outputs/product_patch_proposal_report.md |
 | Paste mechanism diagnosis (pending) | outputs/paste_mechanism_diagnosis.md |
 | V7 final status report | outputs/v7_final_status_report.md |
+| V7 closure report + V8 entry | outputs/v7_closure_report.md |
+| V8 design plan (pending) | outputs/v8_design_plan.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

@@ -1,7 +1,7 @@
 # Vocalype Brain — V7 Benchmark Report
 
-Date: 2026-04-24T20:21:03
-Total observations: 6
+Date: 2026-04-24T20:33:36
+Total observations: 37
 
 > This report is measurement-only. No optimization recommendations.
 > Run more sessions to build a reliable baseline.
@@ -13,15 +13,15 @@ Total observations: 6
 - Priority metrics covered : 2 / 10
 - Priority metrics missing  : 8
 - Unique scenarios recorded : 2
-- Unique metrics recorded   : 3
+- Unique metrics recorded   : 4
 
 ### Baseline readiness per priority metric
 
 | Metric | Observations | Baseline ready (≥5) |
 |---|---|---|
-| `total_dictation_latency_ms` | 1 | ❌ No (1/5) |
+| `total_dictation_latency_ms` | 9 | ✅ Yes |
 | `model_load_time_ms` | 0 | ❌ No (0/5) |
-| `stt_inference_time_ms` | 2 | ❌ No (2/5) |
+| `stt_inference_time_ms` | 20 | ✅ Yes |
 | `app_idle_ram_mb` | 0 | ❌ No (0/5) |
 | `ram_during_transcription_mb` | 0 | ❌ No (0/5) |
 | `ram_after_transcription_mb` | 0 | ❌ No (0/5) |
@@ -37,31 +37,35 @@ Total observations: 6
 ### `total_dictation_latency_ms`
 *Total dictation latency (trigger → paste)*
 
-- Observations : 1
-- Min          : 2400.0 ms
+- Observations : 9
+- Min          : 998.0 ms
 - Max          : 2400.0 ms
-- Mean         : 2400.0 ms
-- p50          : 2400.0 ms
+- Mean         : 1387.33 ms
+- p50          : 1098.0 ms
 - p95          : 2400.0 ms
 - Recent observations:
-  - 2026-04-24T14:11 [windows_4060]: 2400.0 ms — manual validation sample
+  - 2026-04-24T20:31 [windows_ryzen7_rtx4060]: 1081.0 ms — from_log:2026-04-24T18:48:40 recording-stop-to-paste. steps: cfa=255ms cleanup=150ms paste=644ms
+  - 2026-04-24T20:31 [windows_ryzen7_rtx4060]: 2169.0 ms — from_log:2026-04-24T18:49:08 recording-stop-to-paste. steps: cfa=886ms cleanup=0ms paste=647ms
+  - 2026-04-24T20:31 [windows_ryzen7_rtx4060]: 998.0 ms — from_log:2026-04-24T18:49:16 recording-stop-to-paste. steps: cfa=321ms cleanup=0ms paste=645ms
 
 ### `stt_inference_time_ms`
 *STT inference time*
 
-- Observations : 2
-- Min          : 589.0 ms
-- Max          : 639.0 ms
-- Mean         : 614.0 ms
-- p50          : 639.0 ms
-- p95          : 639.0 ms
+- Observations : 20
+- Min          : 178.0 ms
+- Max          : 886.0 ms
+- Mean         : 328.8 ms
+- p50          : 255.0 ms
+- p95          : 886.0 ms
 - Recent observations:
-  - 2026-04-24T20:20 [windows_ryzen7_rtx4060]: 639.0 ms — upper_bound_from_history: recording-stop-to-paste <= 639ms for 3361ms audio (id=1106, sequential gap analysis). True value is less. Validate with bun run tauri dev.
-  - 2026-04-24T20:20 [windows_ryzen7_rtx4060]: 589.0 ms — upper_bound_from_history: recording-stop-to-paste <= 589ms for 7411ms audio (id=1111, sequential gap analysis). Tighter bound on longer audio.
+  - 2026-04-24T20:33 [windows_ryzen7_rtx4060]: 232.0 ms — per_chunk_inference from_log:2026-04-24 Transcription-completed-in line. True single-chunk Parakeet inference.
+  - 2026-04-24T20:33 [windows_ryzen7_rtx4060]: 253.0 ms — per_chunk_inference from_log:2026-04-24 Transcription-completed-in line. True single-chunk Parakeet inference.
+  - 2026-04-24T20:33 [windows_ryzen7_rtx4060]: 303.0 ms — per_chunk_inference from_log:2026-04-24 Transcription-completed-in line. True single-chunk Parakeet inference.
 
 ### Additional metrics recorded
 
 - `capture_duration_ms`: 3 obs, mean 4370.67 ms, range [1831.0–7410.0]
+- `paste_latency_ms`: 5 obs, mean 652.8 ms, range [644.0–687.0]
 
 ---
 
@@ -69,12 +73,16 @@ Total observations: 6
 
 | Date | Scenario | Metric | Value | Unit | Device |
 |---|---|---|---|---|---|
-| 2026-04-24T20:20 | warm_dictation | capture_duration_ms | 7410.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:20 | warm_dictation | capture_duration_ms | 1831.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:20 | warm_dictation | capture_duration_ms | 3871.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:20 | warm_dictation | stt_inference_time_ms | 589.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:20 | warm_dictation | stt_inference_time_ms | 639.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T14:11 | first_dictation | total_dictation_latency_ms | 2400.0 | ms | windows_4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 303.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 253.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 232.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 226.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 219.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 208.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 199.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 194.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 191.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 178.0 | ms | windows_ryzen7_rtx4060 |
 
 ---
 

@@ -2,13 +2,13 @@
 
 Last updated: 2026-04-24
 Latest commit: 706d6c0 — feat(app): add activation retry state for first dictation
-Brain commit: e07a8d4 — feat(brain): add V7 Phase 1 manual benchmark recorder
+Brain commit: (pending commit) — feat(brain): add V7 paste_execute investigation proposal
 
 ---
 
 ## Phase
 
-**V7 Phase 1 — Manual Benchmark Recorder. Scripts built and validated. First observation recorded. Collecting ≥5 observations per priority metric before locking baseline.**
+**V7 Phase 1 — Bottleneck Hypothesis Complete. 2/10 priority metrics at baseline (≥5 obs). Primary bottleneck identified: paste_execute (~645ms, 62% of p50). Investigation proposal written. Awaiting: (1) paste_execute mechanism investigation, (2) 8 remaining metrics, (3) baseline lock.**
 
 ---
 
@@ -80,12 +80,17 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. Run manual test: all 5 activation states (logged_out, checking_activation, subscription_inactive, activation_failed, ready)
-2. Run ≥5 V7 manual benchmark sessions per metric (M1–M7 protocol in `outputs/v7_design_plan.md` Section 4)
+1. **Run paste_execute investigation** (approved scope in `product_patch_proposal_report.md` Section 10)
+   - Read `src-tauri/src/actions/paste.rs` in full — find the 645ms root cause
+   - Output: `outputs/paste_mechanism_diagnosis.md`
+2. **Collect missing 8 priority metrics** (M1 session, ~30 min manual):
+   - `app_idle_ram_mb`, `model_load_time_ms`, `ram_during_transcription_mb`, `ram_after_transcription_mb`
    - Use: `python vocalype-brain/scripts/add_benchmark_observation.py --scenario <s> --metric <m> --value <v> --unit <u> --model <model> --device <device>`
-   - Review progress: `python vocalype-brain/scripts/review_benchmarks.py`
-3. Lock baseline with `lock_benchmark_baseline.py --approve` (V7 Phase 2 — not yet built)
-4. Complete manual observation checklist (`outputs/measure_activation_failure_points.md`, Section 6)
+   - Review: `python vocalype-brain/scripts/review_benchmarks.py`
+3. **WER/CER baseline**: Dictate 5 known French phrases, record `wer_percent` and `cer_percent`
+4. **activation_success_rate**: Run 5 launches, count successes
+5. **Lock baseline** with `lock_benchmark_baseline.py --approve` (V7 Phase 2 — not yet built)
+6. Run manual test: all 5 activation states (logged_out, checking_activation, subscription_inactive, activation_failed, ready)
 
 ---
 
@@ -136,6 +141,10 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V7 design plan | outputs/v7_design_plan.md |
 | V7 benchmark observations | data/benchmark_observations.jsonl |
 | V7 benchmark report | outputs/benchmark_report.md |
+| V7 bottleneck hypothesis | outputs/v7_bottleneck_hypothesis.md |
+| V7 pipeline logs search report | outputs/pipeline_logs_search_report.md |
+| V7 paste investigation proposal | outputs/product_patch_proposal_report.md |
+| Paste mechanism diagnosis (pending) | outputs/paste_mechanism_diagnosis.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

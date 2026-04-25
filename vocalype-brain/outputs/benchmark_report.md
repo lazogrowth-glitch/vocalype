@@ -1,7 +1,7 @@
 # Vocalype Brain — V7 Benchmark Report
 
-Date: 2026-04-24T20:33:36
-Total observations: 37
+Date: 2026-04-24T21:20:00
+Total observations: 43
 
 > This report is measurement-only. No optimization recommendations.
 > Run more sessions to build a reliable baseline.
@@ -10,10 +10,10 @@ Total observations: 37
 
 ## Coverage
 
-- Priority metrics covered : 2 / 10
-- Priority metrics missing  : 8
-- Unique scenarios recorded : 2
-- Unique metrics recorded   : 4
+- Priority metrics covered : 4 / 10
+- Priority metrics missing  : 6
+- Unique scenarios recorded : 5
+- Unique metrics recorded   : 8
 
 ### Baseline readiness per priority metric
 
@@ -22,8 +22,8 @@ Total observations: 37
 | `total_dictation_latency_ms` | 9 | ✅ Yes |
 | `model_load_time_ms` | 0 | ❌ No (0/5) |
 | `stt_inference_time_ms` | 20 | ✅ Yes |
-| `app_idle_ram_mb` | 0 | ❌ No (0/5) |
-| `ram_during_transcription_mb` | 0 | ❌ No (0/5) |
+| `app_idle_ram_mb` | 3 | ❌ No (3/5) |
+| `ram_during_transcription_mb` | 1 | ❌ No (1/5) |
 | `ram_after_transcription_mb` | 0 | ❌ No (0/5) |
 | `wer_percent` | 0 | ❌ No (0/5) |
 | `cer_percent` | 0 | ❌ No (0/5) |
@@ -62,10 +62,38 @@ Total observations: 37
   - 2026-04-24T20:33 [windows_ryzen7_rtx4060]: 253.0 ms — per_chunk_inference from_log:2026-04-24 Transcription-completed-in line. True single-chunk Parakeet inference.
   - 2026-04-24T20:33 [windows_ryzen7_rtx4060]: 303.0 ms — per_chunk_inference from_log:2026-04-24 Transcription-completed-in line. True single-chunk Parakeet inference.
 
+### `app_idle_ram_mb`
+*App idle RAM*
+
+- Observations : 3
+- Min          : 698.0 mb
+- Max          : 809.0 mb
+- Mean         : 735.33 mb
+- p50          : 699.0 mb
+- p95          : 809.0 mb
+- Recent observations:
+  - 2026-04-24T21:04 [windows_ryzen7_rtx4060]: 698.0 mb — idle, no dictation, app open and ready, measured from Windows Task Manager Working Set
+  - 2026-04-24T21:18 [windows_ryzen7_rtx4060]: 699.0 mb — idle initial reading before observed memory growth, no intentional dictation
+  - 2026-04-24T21:18 [windows_ryzen7_rtx4060]: 809.0 mb — idle after ~15 minutes with no intentional dictation — RAM grew 110mb unprompted
+
+### `ram_during_transcription_mb`
+*RAM during transcription (peak)*
+
+- Observations : 1
+- Min          : 698.0 mb
+- Max          : 698.0 mb
+- Mean         : 698.0 mb
+- p50          : 698.0 mb
+- p95          : 698.0 mb
+- Recent observations:
+  - 2026-04-24T21:13 [windows_ryzen7_rtx4060]: 698.0 mb — peak during short dictation, no visible RAM increase vs idle (698mb), measured from Windows Task Manager Working Set
+
 ### Additional metrics recorded
 
 - `capture_duration_ms`: 3 obs, mean 4370.67 ms, range [1831.0–7410.0]
 - `paste_latency_ms`: 5 obs, mean 652.8 ms, range [644.0–687.0]
+- `memory_growth_mb`: 1 obs, mean 110.0 mb, range [110.0–110.0]
+- `idle_background_inference_loop`: 1 obs, mean 1.0 count, range [1.0–1.0]
 
 ---
 
@@ -73,16 +101,16 @@ Total observations: 37
 
 | Date | Scenario | Metric | Value | Unit | Device |
 |---|---|---|---|---|---|
+| 2026-04-24T21:18 | possible_idle_background_transcription_loop | idle_background_inference_loop | 1.0 | count | windows_ryzen7_rtx4060 |
+| 2026-04-24T21:18 | possible_idle_background_transcription_loop | memory_growth_mb | 110.0 | mb | windows_ryzen7_rtx4060 |
+| 2026-04-24T21:18 | ram_idle | app_idle_ram_mb | 809.0 | mb | windows_ryzen7_rtx4060 |
+| 2026-04-24T21:18 | ram_idle | app_idle_ram_mb | 699.0 | mb | windows_ryzen7_rtx4060 |
+| 2026-04-24T21:13 | ram_transcription | ram_during_transcription_mb | 698.0 | mb | windows_ryzen7_rtx4060 |
+| 2026-04-24T21:04 | ram_idle | app_idle_ram_mb | 698.0 | mb | windows_ryzen7_rtx4060 |
 | 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 303.0 | ms | windows_ryzen7_rtx4060 |
 | 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 253.0 | ms | windows_ryzen7_rtx4060 |
 | 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 232.0 | ms | windows_ryzen7_rtx4060 |
 | 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 226.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 219.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 208.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 199.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 194.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 191.0 | ms | windows_ryzen7_rtx4060 |
-| 2026-04-24T20:33 | warm_dictation | stt_inference_time_ms | 178.0 | ms | windows_ryzen7_rtx4060 |
 
 ---
 
@@ -95,16 +123,6 @@ Collect these before building a baseline.
 *Model cold-load time*
 
 How to measure: Cold-start: relaunch app, time from launch to first 'ready' state.
-
-### `app_idle_ram_mb`
-*App idle RAM*
-
-How to measure: Open Task Manager → Vocalype process → record RSS with no dictation running.
-
-### `ram_during_transcription_mb`
-*RAM during transcription (peak)*
-
-How to measure: Open Task Manager → Vocalype → record peak RAM while dictating 10s audio.
 
 ### `ram_after_transcription_mb`
 *RAM after transcription (steady-state)*

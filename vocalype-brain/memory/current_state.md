@@ -8,11 +8,12 @@ Brain commit: (pending commit) — feat(brain): V8 design plan — business metr
 
 ## Phase
 
-**V8 — Business Metrics Visibility Loop. Design plan written. Phase 1 scripts not yet built.**
+**V8 Phase 1 — Business Metrics Recorder. Scripts built and validated. Validation observation recorded.**
 V8 gives the Brain business eyes: users, downloads, activation, conversion, MRR, content.
+Scripts: `add_business_observation.py` + `review_business_metrics.py`. Both validated.
 Phase 1 = manual weekly recording (no API calls). Phase 2 = automated pulls (after 4-week baseline).
-North Star: `first_successful_dictation_week` (Supabase history table).
-Next: build Phase 1 scripts using exact prompt in v8_design_plan.md Section 15.
+North Star: `first_successful_dictations` (Supabase history table).
+Next: founder records real weekly metrics from dashboards. 4 weeks needed for baseline.
 
 ---
 
@@ -38,8 +39,9 @@ Next: build Phase 1 scripts using exact prompt in v8_design_plan.md Section 15.
 
 ## What Does Not Exist Yet
 
-- `add_business_observation.py` — V8 Phase 1 script (designed, not yet built)
-- `review_business_metrics.py` — V8 Phase 1 script (designed, not yet built)
+- `lock_business_baseline.py` — V8 Phase 2 script (designed, not yet built)
+- `fetch_business_metrics.py` — V8 Phase 2 automated pull script (designed, not yet built)
+- `correlate_metrics.py` — V8 Phase 2 correlation script (designed, not yet built)
 - `lock_business_baseline.py` — V8 Phase 2 script (designed, not yet built)
 - `fetch_business_metrics.py` — V8 Phase 2 automated pull script (designed, not yet built)
 - `correlate_metrics.py` — V8 Phase 2 correlation script (designed, not yet built)
@@ -89,14 +91,13 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Build V8 Phase 1 scripts** — use exact prompt from `outputs/v8_design_plan.md` Section 15
-   - Builds: `add_business_observation.py` + `review_business_metrics.py`
-   - Task type: implementation_task (Brain scripts only, no product code)
-
-2. **Record first V8 business observation** — after scripts built:
-   - Open Stripe / Supabase / Vercel dashboards
-   - Record current MRR, WAU, first_successful_dictation_week, downloads
-   - Run: `python vocalype-brain/scripts/review_business_metrics.py`
+1. **Record real V8 business observations** (10-min weekly session):
+   - Open Stripe → record `mrr`, `paid_conversions`, `trial_starts`, `churned_users`, `refunds`
+   - Open Supabase → record `account_signups`, `activation_attempts`, `first_successful_dictations`
+   - Open Vercel → record `website_visitors`, `downloads`
+   - Open TikTok analytics → record `content_views`, `content_posts`
+   - Record each: `python vocalype-brain/scripts/add_business_observation.py --metric <m> --value <v> --unit <u> --source <s> --period <YYYY-Www>`
+   - Review: `python vocalype-brain/scripts/review_business_metrics.py`
 
 3. **V7 product investigations** (parallel track, can run after V8 scripts built):
    - Track A: read-only investigation of `src-tauri/src/actions/paste.rs` → `paste_mechanism_diagnosis.md`
@@ -162,8 +163,8 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V7 final status report | outputs/v7_final_status_report.md |
 | V7 closure report + V8 entry | outputs/v7_closure_report.md |
 | V8 design plan | outputs/v8_design_plan.md |
-| V8 business observations (pending) | data/business_observations.jsonl |
-| V8 business metrics report (pending) | outputs/business_metrics_report.md |
+| V8 business observations | data/business_observations.jsonl |
+| V8 business metrics report | outputs/business_report.md |
 | V8 business baseline (pending) | data/business_baseline.jsonl |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |

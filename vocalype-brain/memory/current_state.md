@@ -1,16 +1,18 @@
 # Vocalype Brain — Current State
 
-Last updated: 2026-04-24
+Last updated: 2026-04-25
 Latest commit: 706d6c0 — feat(app): add activation retry state for first dictation
-Brain commit: (pending commit) — docs(brain): V7 closure report and V8 entry
+Brain commit: (pending commit) — feat(brain): V8 design plan — business metrics loop
 
 ---
 
 ## Phase
 
-**V7 CLOSED. V8 CONDITIONALLY APPROVED.**
-V7 produced: 43 obs, 2/10 metrics at baseline, bottleneck hypothesis (paste-bound), idle inference loop observation, investigation proposals for both.
-V8 entry approved by founder. Next: send V8 design prompt from v7_closure_report.md Section 10.
+**V8 — Business Metrics Visibility Loop. Design plan written. Phase 1 scripts not yet built.**
+V8 gives the Brain business eyes: users, downloads, activation, conversion, MRR, content.
+Phase 1 = manual weekly recording (no API calls). Phase 2 = automated pulls (after 4-week baseline).
+North Star: `first_successful_dictation_week` (Supabase history table).
+Next: build Phase 1 scripts using exact prompt in v8_design_plan.md Section 15.
 
 ---
 
@@ -36,14 +38,19 @@ V8 entry approved by founder. Next: send V8 design prompt from v7_closure_report
 
 ## What Does Not Exist Yet
 
-- V7 Phase 1: 9 of 10 priority metrics still need ≥5 observations (1 obs recorded so far)
+- `add_business_observation.py` — V8 Phase 1 script (designed, not yet built)
+- `review_business_metrics.py` — V8 Phase 1 script (designed, not yet built)
+- `lock_business_baseline.py` — V8 Phase 2 script (designed, not yet built)
+- `fetch_business_metrics.py` — V8 Phase 2 automated pull script (designed, not yet built)
+- `correlate_metrics.py` — V8 Phase 2 correlation script (designed, not yet built)
+- `data/business_observations.jsonl` — V8 data store (empty, not yet created)
+- `data/business_baseline.jsonl` — V8 locked baseline (not yet created)
 - `lock_benchmark_baseline.py` — V7 Phase 2 script (designed, not yet built)
 - `compare_benchmarks.py` — V7 Phase 2 script (designed, not yet built)
-- `benchmark_baseline.jsonl` — locked baseline (not yet created — requires ≥5 obs per metric)
-- `validate_patch.py` — no automated lint/test runner triggered by Brain
-- `rollback_patch.py` — revert is done manually via `git checkout -- <file>`
-- Baseline metrics — `activation_success_rate` and `dictation_latency_ms` both unknown
-- Event tracking — no instrumentation in product code
+- `benchmark_baseline.jsonl` — V7 locked baseline (not yet created)
+- `paste_mechanism_diagnosis.md` — V7 read-only investigation output (not yet run)
+- `idle_background_transcription_diagnosis.md` — V7 Track B output (not yet run)
+- Event tracking — no instrumentation in product code (separate V7.5 task if needed)
 
 ---
 
@@ -82,19 +89,21 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Start V8** — send the exact prompt from `outputs/v7_closure_report.md` Section 10
-   - Creates: `outputs/v8_design_plan.md`
-   - Task type: planning_only
+1. **Build V8 Phase 1 scripts** — use exact prompt from `outputs/v8_design_plan.md` Section 15
+   - Builds: `add_business_observation.py` + `review_business_metrics.py`
+   - Task type: implementation_task (Brain scripts only, no product code)
 
-2. **V8 Track A** (after design plan): read-only investigation of `src-tauri/src/actions/paste.rs`
-   - Output: `outputs/paste_mechanism_diagnosis.md`
-   - Answers: what causes the 645ms paste_execute?
+2. **Record first V8 business observation** — after scripts built:
+   - Open Stripe / Supabase / Vercel dashboards
+   - Record current MRR, WAU, first_successful_dictation_week, downloads
+   - Run: `python vocalype-brain/scripts/review_business_metrics.py`
 
-3. **V8 Track B** (after design plan): read-only investigation of audio manager + chunk worker
-   - Output: `outputs/idle_background_transcription_diagnosis.md`
-   - Answers: is mic always open? does chunk worker run continuously when idle?
+3. **V7 product investigations** (parallel track, can run after V8 scripts built):
+   - Track A: read-only investigation of `src-tauri/src/actions/paste.rs` → `paste_mechanism_diagnosis.md`
+   - Track B: read-only investigation of audio manager → `idle_background_transcription_diagnosis.md`
 
-4. **Confirm idle RAM growth** (manual, ~20 min): timed readings at T=0, T=5, T=15
+4. **Confirm idle RAM growth** (manual, ~20 min):
+   - Timed readings at T=0, T=5min, T=15min with Task Manager
    - Record with `add_benchmark_observation.py --scenario possible_idle_background_transcription_loop`
 
 ---
@@ -152,7 +161,10 @@ Future prompts may reference the contract instead of repeating safety rules:
 | Paste mechanism diagnosis (pending) | outputs/paste_mechanism_diagnosis.md |
 | V7 final status report | outputs/v7_final_status_report.md |
 | V7 closure report + V8 entry | outputs/v7_closure_report.md |
-| V8 design plan (pending) | outputs/v8_design_plan.md |
+| V8 design plan | outputs/v8_design_plan.md |
+| V8 business observations (pending) | data/business_observations.jsonl |
+| V8 business metrics report (pending) | outputs/business_metrics_report.md |
+| V8 business baseline (pending) | data/business_baseline.jsonl |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

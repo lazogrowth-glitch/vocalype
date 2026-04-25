@@ -1,18 +1,23 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-25
-Latest commit: ea2d218 — feat(brain): add V9 manual content tracker
-Brain phase: V9 CLOSED — V10 design approved to begin
+Latest commit: 640f30e — docs(brain): close V9 growth distribution phase
+Brain phase: V10 design complete — Phase 1 implementation is next
 
 ---
 
 ## Phase
 
-**V9 CLOSED — Distribution Measurement Infrastructure complete. V10 design approved to begin.**
-V9 Phase 1 scripts built and validated. Real content entry is a recurring founder task (after each post).
-V10 = Unified Decision Engine — joins V7 + V8 + V9 by period key to answer: "Is the bottleneck product, funnel, or distribution?"
-Next: use exact prompt from `v9_closure_report.md` Section 11 to begin V10 design.
-V10 cannot run until all three layers (V7/V8/V9) have ≥4 weeks of real data.
+**V10 Design — Unified Decision Engine. Design plan written. Phase 1 implementation pending.**
+V10 joins V7 (product) + V8 (business) + V9 (distribution) by ISO week period key.
+Answers each week: "Is the constraint product, funnel, or distribution?"
+Rule-based decision matrix, confidence levels, graceful degradation on empty layers.
+Design plan: `outputs/v10_design_plan.md` — 15 sections.
+Phase 1 = single script `generate_unified_report.py` → `unified_weekly_report.md` + `weekly_action.md`.
+Use exact prompt from `v10_design_plan.md` Section 15 to implement.
+
+Current expected output: V7 product constraint MEDIUM confidence (paste_execute=645ms known).
+V8 and V9: INSUFFICIENT DATA — 0 real observations in both layers.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -41,7 +46,9 @@ V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each 
 
 ## What Does Not Exist Yet
 
-- `v10_design_plan.md` — V10 design (approved to begin)
+- `generate_unified_report.py` — V10 Phase 1 script (designed, not yet built)
+- `unified_weekly_report.md` — V10 cross-layer report (not yet generated)
+- `weekly_action.md` — V10 weekly action (not yet generated)
 - `correlate_content_business.py` — V9 Phase 2 script (not yet built)
 - `correlate_content_business.py` — V9 Phase 2 script (designed, not yet built)
 - `compare_content_experiments.py` — V9 Phase 3 script (not yet designed)
@@ -93,9 +100,9 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Design V10 Unified Decision Engine** (next Brain session):
-   - Use exact prompt from `vocalype-brain/outputs/v9_closure_report.md` Section 11
-   - Creates: `v10_design_plan.md`
+1. **Implement V10 Phase 1** (next Brain session):
+   - Use exact prompt from `vocalype-brain/outputs/v10_design_plan.md` Section 15
+   - Creates: `generate_unified_report.py`, `unified_weekly_report.md`, `weekly_action.md`
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
@@ -181,7 +188,9 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V9 content report | outputs/content_report.md |
 | V9 weekly content snapshot | outputs/weekly_content_snapshot.md |
 | V9 closure report | outputs/v9_closure_report.md |
-| V10 design plan (pending) | outputs/v10_design_plan.md |
+| **V10 design plan** | **outputs/v10_design_plan.md** |
+| V10 unified weekly report (pending) | outputs/unified_weekly_report.md |
+| V10 weekly action (pending) | outputs/weekly_action.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

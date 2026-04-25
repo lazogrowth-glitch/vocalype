@@ -1,18 +1,18 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-25
-Latest commit: f20be08 — docs(brain): close V8 business metrics phase
-Brain phase: V9 design complete — Phase 1 implementation is next
+Latest commit: ea2d218 — feat(brain): add V9 manual content tracker
+Brain phase: V9 CLOSED — V10 design approved to begin
 
 ---
 
 ## Phase
 
-**V9 Phase 1 — Manual Content Tracker. Scripts built and validated.**
-V9 gives the Brain distribution eyes: content posts, platform performance, hook analysis, lesson tracking.
-Scripts: `add_content_observation.py` + `review_content_performance.py` + `weekly_content_snapshot.py`. All validated.
-Phase 1 = manual weekly recording (no API calls, no automation). Phase 2 = V8 correlation (after ≥10 posts + ≥4 V8 weeks).
-Next: founder records real content observations after each post. 4 weeks needed for trend analysis.
+**V9 CLOSED — Distribution Measurement Infrastructure complete. V10 design approved to begin.**
+V9 Phase 1 scripts built and validated. Real content entry is a recurring founder task (after each post).
+V10 = Unified Decision Engine — joins V7 + V8 + V9 by period key to answer: "Is the bottleneck product, funnel, or distribution?"
+Next: use exact prompt from `v9_closure_report.md` Section 11 to begin V10 design.
+V10 cannot run until all three layers (V7/V8/V9) have ≥4 weeks of real data.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -41,6 +41,7 @@ V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each 
 
 ## What Does Not Exist Yet
 
+- `v10_design_plan.md` — V10 design (approved to begin)
 - `correlate_content_business.py` — V9 Phase 2 script (not yet built)
 - `correlate_content_business.py` — V9 Phase 2 script (designed, not yet built)
 - `compare_content_experiments.py` — V9 Phase 3 script (not yet designed)
@@ -92,7 +93,11 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Record real content observations** (after each post — founder task):
+1. **Design V10 Unified Decision Engine** (next Brain session):
+   - Use exact prompt from `vocalype-brain/outputs/v9_closure_report.md` Section 11
+   - Creates: `v10_design_plan.md`
+
+2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
    - 24–72h later: add `--views`, `--likes`, `--saves`, `--lesson`, `--next_action` to same script with `--record_type performance_update`
    - Review: `python vocalype-brain/scripts/review_content_performance.py`
@@ -175,6 +180,8 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V9 content observations | data/content_observations.jsonl |
 | V9 content report | outputs/content_report.md |
 | V9 weekly content snapshot | outputs/weekly_content_snapshot.md |
+| V9 closure report | outputs/v9_closure_report.md |
+| V10 design plan (pending) | outputs/v10_design_plan.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

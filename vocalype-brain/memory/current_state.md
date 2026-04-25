@@ -167,6 +167,7 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V8 business metrics report | outputs/business_report.md |
 | V8 business baseline (pending) | data/business_baseline.jsonl |
 | V8C missing metrics protocol | outputs/v8_missing_metrics_protocol.md |
+| V8D weekly business snapshot | outputs/weekly_business_snapshot.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

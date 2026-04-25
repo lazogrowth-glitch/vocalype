@@ -1,7 +1,7 @@
 # Vocalype Brain — V7 Benchmark Report
 
-Date: 2026-04-24T14:32:48
-Total observations: 1
+Date: 2026-04-24T20:21:03
+Total observations: 6
 
 > This report is measurement-only. No optimization recommendations.
 > Run more sessions to build a reliable baseline.
@@ -10,10 +10,10 @@ Total observations: 1
 
 ## Coverage
 
-- Priority metrics covered : 1 / 10
-- Priority metrics missing  : 9
-- Unique scenarios recorded : 1
-- Unique metrics recorded   : 1
+- Priority metrics covered : 2 / 10
+- Priority metrics missing  : 8
+- Unique scenarios recorded : 2
+- Unique metrics recorded   : 3
 
 ### Baseline readiness per priority metric
 
@@ -21,7 +21,7 @@ Total observations: 1
 |---|---|---|
 | `total_dictation_latency_ms` | 1 | ❌ No (1/5) |
 | `model_load_time_ms` | 0 | ❌ No (0/5) |
-| `stt_inference_time_ms` | 0 | ❌ No (0/5) |
+| `stt_inference_time_ms` | 2 | ❌ No (2/5) |
 | `app_idle_ram_mb` | 0 | ❌ No (0/5) |
 | `ram_during_transcription_mb` | 0 | ❌ No (0/5) |
 | `ram_after_transcription_mb` | 0 | ❌ No (0/5) |
@@ -46,12 +46,34 @@ Total observations: 1
 - Recent observations:
   - 2026-04-24T14:11 [windows_4060]: 2400.0 ms — manual validation sample
 
+### `stt_inference_time_ms`
+*STT inference time*
+
+- Observations : 2
+- Min          : 589.0 ms
+- Max          : 639.0 ms
+- Mean         : 614.0 ms
+- p50          : 639.0 ms
+- p95          : 639.0 ms
+- Recent observations:
+  - 2026-04-24T20:20 [windows_ryzen7_rtx4060]: 639.0 ms — upper_bound_from_history: recording-stop-to-paste <= 639ms for 3361ms audio (id=1106, sequential gap analysis). True value is less. Validate with bun run tauri dev.
+  - 2026-04-24T20:20 [windows_ryzen7_rtx4060]: 589.0 ms — upper_bound_from_history: recording-stop-to-paste <= 589ms for 7411ms audio (id=1111, sequential gap analysis). Tighter bound on longer audio.
+
+### Additional metrics recorded
+
+- `capture_duration_ms`: 3 obs, mean 4370.67 ms, range [1831.0–7410.0]
+
 ---
 
 ## Latest Observations
 
 | Date | Scenario | Metric | Value | Unit | Device |
 |---|---|---|---|---|---|
+| 2026-04-24T20:20 | warm_dictation | capture_duration_ms | 7410.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:20 | warm_dictation | capture_duration_ms | 1831.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:20 | warm_dictation | capture_duration_ms | 3871.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:20 | warm_dictation | stt_inference_time_ms | 589.0 | ms | windows_ryzen7_rtx4060 |
+| 2026-04-24T20:20 | warm_dictation | stt_inference_time_ms | 639.0 | ms | windows_ryzen7_rtx4060 |
 | 2026-04-24T14:11 | first_dictation | total_dictation_latency_ms | 2400.0 | ms | windows_4060 |
 
 ---
@@ -65,11 +87,6 @@ Collect these before building a baseline.
 *Model cold-load time*
 
 How to measure: Cold-start: relaunch app, time from launch to first 'ready' state.
-
-### `stt_inference_time_ms`
-*STT inference time*
-
-How to measure: Check Tauri console logs for inference timing during a dictation.
 
 ### `app_idle_ram_mb`
 *App idle RAM*

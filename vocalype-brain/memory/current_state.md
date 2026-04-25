@@ -1,19 +1,22 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-25
-Latest commit: 706d6c0 — feat(app): add activation retry state for first dictation
-Brain commit: (pending commit) — feat(brain): V8 design plan — business metrics loop
+Latest commit: f20be08 — docs(brain): close V8 business metrics phase
+Brain phase: V9 design complete — Phase 1 implementation is next
 
 ---
 
 ## Phase
 
-**V8 Phase 1 — Business Metrics Recorder. Scripts built and validated. Validation observation recorded.**
-V8 gives the Brain business eyes: users, downloads, activation, conversion, MRR, content.
-Scripts: `add_business_observation.py` + `review_business_metrics.py`. Both validated.
-Phase 1 = manual weekly recording (no API calls). Phase 2 = automated pulls (after 4-week baseline).
-North Star: `first_successful_dictations` (Supabase history table).
-Next: founder records real weekly metrics from dashboards. 4 weeks needed for baseline.
+**V9 Design — Content / Distribution Loop. Design plan written. Phase 1 implementation pending.**
+V9 gives the Brain distribution eyes: content posts, platform performance, hook analysis, lesson tracking.
+Design plan: `outputs/v9_design_plan.md` — 16 sections.
+Phase 1 = manual content recorder + weekly snapshot (no API calls, no automation).
+Next: implement `add_content_observation.py`, `review_content_performance.py`, `weekly_content_snapshot.py`.
+Use exact prompt from `v9_design_plan.md` Section 16.
+
+V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
+V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
 
 ---
 
@@ -39,13 +42,15 @@ Next: founder records real weekly metrics from dashboards. 4 weeks needed for ba
 
 ## What Does Not Exist Yet
 
+- `add_content_observation.py` — V9 Phase 1 script (designed, not yet built)
+- `review_content_performance.py` — V9 Phase 1 script (designed, not yet built)
+- `weekly_content_snapshot.py` — V9 Phase 1 script (designed, not yet built)
+- `data/content_observations.jsonl` — V9 data store (not yet created)
+- `correlate_content_business.py` — V9 Phase 2 script (designed, not yet built)
+- `compare_content_experiments.py` — V9 Phase 3 script (not yet designed)
 - `lock_business_baseline.py` — V8 Phase 2 script (designed, not yet built)
 - `fetch_business_metrics.py` — V8 Phase 2 automated pull script (designed, not yet built)
-- `correlate_metrics.py` — V8 Phase 2 correlation script (designed, not yet built)
-- `lock_business_baseline.py` — V8 Phase 2 script (designed, not yet built)
-- `fetch_business_metrics.py` — V8 Phase 2 automated pull script (designed, not yet built)
-- `correlate_metrics.py` — V8 Phase 2 correlation script (designed, not yet built)
-- `data/business_observations.jsonl` — V8 data store (empty, not yet created)
+- `correlate_metrics.py` — V8 Phase 2 V7×V8 correlation script (designed, not yet built)
 - `data/business_baseline.jsonl` — V8 locked baseline (not yet created)
 - `lock_benchmark_baseline.py` — V7 Phase 2 script (designed, not yet built)
 - `compare_benchmarks.py` — V7 Phase 2 script (designed, not yet built)
@@ -91,21 +96,20 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Record real V8 business observations** (10-min weekly session):
+1. **Implement V9 Phase 1** (next Brain session):
+   - Use exact prompt from `vocalype-brain/outputs/v9_design_plan.md` Section 16
+   - Builds: `add_content_observation.py`, `review_content_performance.py`, `weekly_content_snapshot.py`
+
+2. **Record real V8 business observations** (10-min weekly session — founder task):
    - Open Stripe → record `mrr`, `paid_conversions`, `trial_starts`, `churned_users`, `refunds`
    - Open Supabase → record `account_signups`, `activation_attempts`, `first_successful_dictations`
    - Open Vercel → record `website_visitors`, `downloads`
-   - Open TikTok analytics → record `content_views`, `content_posts`
    - Record each: `python vocalype-brain/scripts/add_business_observation.py --metric <m> --value <v> --unit <u> --source <s> --period <YYYY-Www>`
    - Review: `python vocalype-brain/scripts/review_business_metrics.py`
 
-3. **V7 product investigations** (parallel track, can run after V8 scripts built):
+3. **V7 product investigations** (parallel track, lower priority until V9 Phase 1 done):
    - Track A: read-only investigation of `src-tauri/src/actions/paste.rs` → `paste_mechanism_diagnosis.md`
    - Track B: read-only investigation of audio manager → `idle_background_transcription_diagnosis.md`
-
-4. **Confirm idle RAM growth** (manual, ~20 min):
-   - Timed readings at T=0, T=5min, T=15min with Task Manager
-   - Record with `add_benchmark_observation.py --scenario possible_idle_background_transcription_loop`
 
 ---
 
@@ -168,6 +172,11 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V8 business baseline (pending) | data/business_baseline.jsonl |
 | V8C missing metrics protocol | outputs/v8_missing_metrics_protocol.md |
 | V8D weekly business snapshot | outputs/weekly_business_snapshot.md |
+| V8 closure report | outputs/v8_closure_report.md |
+| **V9 design plan** | **outputs/v9_design_plan.md** |
+| V9 content observations (pending) | data/content_observations.jsonl |
+| V9 content report (pending) | outputs/content_report.md |
+| V9 weekly content snapshot (pending) | outputs/weekly_content_snapshot.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

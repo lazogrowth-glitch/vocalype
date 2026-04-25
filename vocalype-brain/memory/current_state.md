@@ -8,12 +8,11 @@ Brain phase: V9 design complete — Phase 1 implementation is next
 
 ## Phase
 
-**V9 Design — Content / Distribution Loop. Design plan written. Phase 1 implementation pending.**
+**V9 Phase 1 — Manual Content Tracker. Scripts built and validated.**
 V9 gives the Brain distribution eyes: content posts, platform performance, hook analysis, lesson tracking.
-Design plan: `outputs/v9_design_plan.md` — 16 sections.
-Phase 1 = manual content recorder + weekly snapshot (no API calls, no automation).
-Next: implement `add_content_observation.py`, `review_content_performance.py`, `weekly_content_snapshot.py`.
-Use exact prompt from `v9_design_plan.md` Section 16.
+Scripts: `add_content_observation.py` + `review_content_performance.py` + `weekly_content_snapshot.py`. All validated.
+Phase 1 = manual weekly recording (no API calls, no automation). Phase 2 = V8 correlation (after ≥10 posts + ≥4 V8 weeks).
+Next: founder records real content observations after each post. 4 weeks needed for trend analysis.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -42,10 +41,7 @@ V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each 
 
 ## What Does Not Exist Yet
 
-- `add_content_observation.py` — V9 Phase 1 script (designed, not yet built)
-- `review_content_performance.py` — V9 Phase 1 script (designed, not yet built)
-- `weekly_content_snapshot.py` — V9 Phase 1 script (designed, not yet built)
-- `data/content_observations.jsonl` — V9 data store (not yet created)
+- `correlate_content_business.py` — V9 Phase 2 script (not yet built)
 - `correlate_content_business.py` — V9 Phase 2 script (designed, not yet built)
 - `compare_content_experiments.py` — V9 Phase 3 script (not yet designed)
 - `lock_business_baseline.py` — V8 Phase 2 script (designed, not yet built)
@@ -96,9 +92,11 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Implement V9 Phase 1** (next Brain session):
-   - Use exact prompt from `vocalype-brain/outputs/v9_design_plan.md` Section 16
-   - Builds: `add_content_observation.py`, `review_content_performance.py`, `weekly_content_snapshot.py`
+1. **Record real content observations** (after each post — founder task):
+   - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
+   - 24–72h later: add `--views`, `--likes`, `--saves`, `--lesson`, `--next_action` to same script with `--record_type performance_update`
+   - Review: `python vocalype-brain/scripts/review_content_performance.py`
+   - Snapshot: `python vocalype-brain/scripts/weekly_content_snapshot.py`
 
 2. **Record real V8 business observations** (10-min weekly session — founder task):
    - Open Stripe → record `mrr`, `paid_conversions`, `trial_starts`, `churned_users`, `refunds`
@@ -174,9 +172,9 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V8D weekly business snapshot | outputs/weekly_business_snapshot.md |
 | V8 closure report | outputs/v8_closure_report.md |
 | **V9 design plan** | **outputs/v9_design_plan.md** |
-| V9 content observations (pending) | data/content_observations.jsonl |
-| V9 content report (pending) | outputs/content_report.md |
-| V9 weekly content snapshot (pending) | outputs/weekly_content_snapshot.md |
+| V9 content observations | data/content_observations.jsonl |
+| V9 content report | outputs/content_report.md |
+| V9 weekly content snapshot | outputs/weekly_content_snapshot.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

@@ -1,22 +1,42 @@
 """add_business_observation.py — V8 Phase 1 Manual Business Metrics Recorder.
 
 Records one manual business observation to data/business_observations.jsonl.
-Used by the founder to build the V8 baseline from Stripe, Supabase, Vercel,
-TikTok, and other dashboards.
+Supports honest early-stage recording via explicit status values.
+
+Statuses:
+  measured      — data source opened, real numeric value recorded
+  zero          — data source opened, confirmed value is 0
+  unknown       — data source not checked this week (no value)
+  not_available — data source does not exist yet (no value)
+  not_applicable — metric not relevant at current stage (no value)
 
 Does NOT modify product code. Does NOT connect APIs. Does NOT automate growth.
 
 Usage:
+    # Measured value:
     python vocalype-brain/scripts/add_business_observation.py \\
-        --metric downloads \\
-        --value 12 \\
-        --unit count \\
-        --source vercel \\
-        --period 2026-W17 \\
-        [--channel website] \\
-        [--segment all] \\
-        [--app_version <git-sha>] \\
-        [--notes "free text"]
+        --metric downloads --value 12 --unit count \\
+        --source vercel --period 2026-W18
+
+    # Confirmed zero:
+    python vocalype-brain/scripts/add_business_observation.py \\
+        --metric mrr --status zero --value 0 --unit usd \\
+        --source stripe_dashboard --period 2026-W18
+
+    # Not checked this week:
+    python vocalype-brain/scripts/add_business_observation.py \\
+        --metric website_visitors --status unknown \\
+        --source vercel_analytics --period 2026-W18 --notes "not checked"
+
+    # Data source missing:
+    python vocalype-brain/scripts/add_business_observation.py \\
+        --metric activation_attempts --status not_available \\
+        --source supabase_dashboard --period 2026-W18
+
+    # Precondition unmet:
+    python vocalype-brain/scripts/add_business_observation.py \\
+        --metric churned_users --status not_applicable \\
+        --source stripe_dashboard --period 2026-W18 --notes "no paying users yet"
 """
 from __future__ import annotations
 
@@ -30,7 +50,7 @@ from typing import Any
 from brain import append_jsonl, ensure_brain_structure
 
 # ---------------------------------------------------------------------------
-# Priority metrics
+# Constants
 # ---------------------------------------------------------------------------
 
 PRIORITY_METRICS = {
@@ -65,6 +85,14 @@ KNOWN_SOURCES = {
     "automated",
 }
 
+VALID_STATUSES = {"measured", "zero", "unknown", "not_available", "not_applicable"}
+
+# Statuses that require a numeric value
+VALUE_REQUIRED_STATUSES = {"measured", "zero"}
+
+# Statuses that must NOT have a value
+NO_VALUE_STATUSES = {"unknown", "not_available", "not_applicable"}
+
 ISO_WEEK_RE = re.compile(r"^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$")
 
 
@@ -83,7 +111,57 @@ def _get_git_sha() -> str:
         return "unknown"
 
 
-def _validate(args: argparse.Namespace) -> list[str]:
+def _resolve_status(args: argparse.Namespace) -> tuple[str, list[str]]:
+    """Resolve final status and return (status, errors)."""
+    errors: list[str] = []
+    status = args.status
+
+    # Default: if --status omitted and --value provided, treat as measured
+    if status is None:
+        if args.value is not None:
+            status = "measured"
+        else:
+            errors.append(
+                "Either --value (for a measured/zero observation) or "
+                "--status (unknown | not_available | not_applicable) is required."
+            )
+            return "unknown", errors
+
+    if status not in VALID_STATUSES:
+        errors.append(
+            f"--status '{status}' is not valid. "
+            f"Must be one of: {', '.join(sorted(VALID_STATUSES))}"
+        )
+        return status, errors
+
+    # Validate value constraints per status
+    if status == "measured":
+        if args.value is None:
+            errors.append("--status measured requires a numeric --value.")
+        elif args.value < 0:
+            errors.append(f"--status measured: value {args.value} is negative — verify this is intentional.")
+
+    elif status == "zero":
+        if args.value is None:
+            errors.append("--status zero requires --value 0.")
+        elif args.value != 0:
+            errors.append(
+                f"--status zero requires --value 0, but got {args.value}. "
+                "Use --status measured if the value is non-zero."
+            )
+
+    elif status in NO_VALUE_STATUSES:
+        if args.value is not None:
+            errors.append(
+                f"--status {status} should not include --value. "
+                "Remove --value or change --status to measured/zero."
+            )
+
+    return status, errors
+
+
+def _validate_common(args: argparse.Namespace, status: str) -> list[str]:
+    """Return non-fatal warnings for common fields."""
     warnings: list[str] = []
 
     if args.metric not in PRIORITY_METRICS:
@@ -92,10 +170,10 @@ def _validate(args: argparse.Namespace) -> list[str]:
             f"Priority metrics: {', '.join(sorted(PRIORITY_METRICS))}"
         )
 
-    if args.unit.lower() not in KNOWN_UNITS:
+    if not ISO_WEEK_RE.match(args.period):
         warnings.append(
-            f"unit '{args.unit}' is not a recognised unit. "
-            f"Known units: {', '.join(sorted(KNOWN_UNITS))}"
+            f"period '{args.period}' does not match ISO week format YYYY-Www "
+            "(e.g. 2026-W18). Observation recorded but grouping may be incorrect."
         )
 
     if args.source not in KNOWN_SOURCES:
@@ -104,31 +182,32 @@ def _validate(args: argparse.Namespace) -> list[str]:
             f"Known sources: {', '.join(sorted(KNOWN_SOURCES))}"
         )
 
-    if not ISO_WEEK_RE.match(args.period):
+    if args.unit and args.unit.lower() not in KNOWN_UNITS:
         warnings.append(
-            f"period '{args.period}' does not match ISO week format YYYY-Www "
-            f"(e.g. 2026-W18). Observation recorded but grouping may be incorrect."
+            f"unit '{args.unit}' is not a recognised unit. "
+            f"Known units: {', '.join(sorted(KNOWN_UNITS))}"
         )
 
-    if args.value < 0:
-        warnings.append(
-            f"value {args.value} is negative — verify this is intentional."
-        )
+    if status in VALUE_REQUIRED_STATUSES and not args.unit:
+        warnings.append(f"--unit is recommended for status '{status}'.")
 
     return warnings
 
 
-def _build_record(args: argparse.Namespace, now: datetime) -> dict[str, Any]:
+def _build_record(args: argparse.Namespace, status: str, now: datetime) -> dict[str, Any]:
     app_version = args.app_version or _get_git_sha()
     record: dict[str, Any] = {
         "date": now.isoformat(),
         "period": args.period,
         "metric": args.metric,
-        "value": args.value,
-        "unit": args.unit,
+        "status": status,
         "source": args.source,
         "app_version": app_version,
     }
+    if args.value is not None and status in VALUE_REQUIRED_STATUSES:
+        record["value"] = args.value
+    if args.unit and status in VALUE_REQUIRED_STATUSES:
+        record["unit"] = args.unit
     if args.channel:
         record["channel"] = args.channel
     if args.segment:
@@ -147,29 +226,43 @@ def main() -> None:
         description="V8 Manual Business Metrics Recorder — append one observation.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-  python vocalype-brain/scripts/add_business_observation.py \\
-      --metric downloads --value 12 --unit count \\
-      --source vercel --period 2026-W17 \\
-      --channel website --notes "manual dashboard entry"
+Statuses:
+  measured      — real numeric value from dashboard
+  zero          — confirmed zero (dashboard opened, result is 0)
+  unknown       — not checked this week
+  not_available — data source does not exist yet
+  not_applicable— metric not relevant at current stage
 
-  python vocalype-brain/scripts/add_business_observation.py \\
-      --metric mrr --value 420 --unit usd \\
+Examples:
+  # Measured:
+  add_business_observation.py --metric downloads --value 12 --unit count \\
+      --source vercel --period 2026-W18
+
+  # Confirmed zero:
+  add_business_observation.py --metric mrr --status zero --value 0 --unit usd \\
       --source stripe_dashboard --period 2026-W18
 
-  python vocalype-brain/scripts/add_business_observation.py \\
-      --metric first_successful_dictations --value 3 --unit count \\
-      --source supabase_dashboard --period 2026-W18 \\
-      --notes "from history table, distinct users"
+  # Unknown:
+  add_business_observation.py --metric website_visitors --status unknown \\
+      --source vercel_analytics --period 2026-W18 --notes "not checked"
+
+  # Not available:
+  add_business_observation.py --metric activation_attempts --status not_available \\
+      --source supabase_dashboard --period 2026-W18
+
+  # Not applicable:
+  add_business_observation.py --metric churned_users --status not_applicable \\
+      --source stripe_dashboard --period 2026-W18 --notes "no paying users yet"
         """,
     )
-    parser.add_argument("--metric",      required=True,              help="Metric name (see PRIORITY_METRICS)")
-    parser.add_argument("--value",       required=True, type=float,  help="Measured value (numeric)")
-    parser.add_argument("--unit",        required=True,              help="Unit: count, usd, percent, ratio, bool")
-    parser.add_argument("--source",      required=True,              help="Data source: stripe_dashboard, supabase_dashboard, vercel_analytics, etc.")
-    parser.add_argument("--period",      required=True,              help="ISO week period: YYYY-Www (e.g. 2026-W18)")
-    parser.add_argument("--channel",     default=None,               help="Optional: acquisition channel (website, tiktok, organic, etc.)")
-    parser.add_argument("--segment",     default=None,               help="Optional: user segment (all, trial, paid, free)")
+    parser.add_argument("--metric",      required=True,              help="Metric name")
+    parser.add_argument("--value",       default=None, type=float,   help="Numeric value (required for measured/zero)")
+    parser.add_argument("--unit",        default=None,               help="Unit: count, usd, percent, ratio, bool")
+    parser.add_argument("--status",      default=None,               help="measured|zero|unknown|not_available|not_applicable")
+    parser.add_argument("--source",      required=True,              help="Data source")
+    parser.add_argument("--period",      required=True,              help="ISO week: YYYY-Www (e.g. 2026-W18)")
+    parser.add_argument("--channel",     default=None,               help="Acquisition channel")
+    parser.add_argument("--segment",     default=None,               help="User segment")
     parser.add_argument("--app_version", default=None,               help="Git SHA (auto-detected if omitted)")
     parser.add_argument("--notes",       default=None,               help="Free-text notes")
     args = parser.parse_args()
@@ -177,11 +270,17 @@ Examples:
     ensure_brain_structure()
     now = datetime.now().replace(microsecond=0)
 
-    warnings = _validate(args)
-    for w in warnings:
-        print(f"  WARNING: {w}", file=sys.stderr)
+    status, errors = _resolve_status(args)
+    if errors:
+        for e in errors:
+            print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    record = _build_record(args, now)
+    warnings = _validate_common(args, status)
+    for w in warnings:
+        print(f"WARNING: {w}", file=sys.stderr)
+
+    record = _build_record(args, status, now)
     append_jsonl("data/business_observations.jsonl", record)
 
     divider = "=" * 60
@@ -191,7 +290,10 @@ Examples:
     print(f"  Date      : {record['date']}")
     print(f"  Period    : {record['period']}")
     print(f"  Metric    : {record['metric']}")
-    print(f"  Value     : {record['value']} {record['unit']}")
+    print(f"  Status    : {record['status']}")
+    if "value" in record:
+        unit_str = f" {record.get('unit', '')}" if record.get("unit") else ""
+        print(f"  Value     : {record['value']}{unit_str}")
     print(f"  Source    : {record['source']}")
     print(f"  Version   : {record['app_version']}")
     if args.channel:

@@ -1,1 +1,6 @@
 {"date": "2026-04-25T14:44:01", "period": "2026-W17", "metric": "downloads", "value": 1.0, "unit": "count", "source": "manual_validation", "app_version": "e53d648", "channel": "website", "notes": "validation sample"}
+{"date": "2026-04-25T15:07:31", "period": "2026-W17", "metric": "downloads", "status": "zero", "source": "manual_validation", "app_version": "e89199d", "value": 0.0, "unit": "count", "channel": "website", "notes": "confirmed zero sample"}
+{"date": "2026-04-25T15:07:31", "period": "2026-W17", "metric": "website_visitors", "status": "unknown", "source": "manual_validation", "app_version": "e89199d", "notes": "not checked sample"}
+{"date": "2026-04-25T15:07:31", "period": "2026-W17", "metric": "mrr", "status": "zero", "source": "manual_validation", "app_version": "e89199d", "value": 0.0, "unit": "usd", "notes": "confirmed zero revenue sample"}
+{"date": "2026-04-25T15:07:31", "period": "2026-W17", "metric": "churned_users", "status": "not_applicable", "source": "manual_validation", "app_version": "e89199d", "notes": "no paying users yet"}
+{"date": "2026-04-25T15:07:31", "period": "2026-W17", "metric": "activation_attempts", "status": "not_available", "source": "manual_validation", "app_version": "e89199d", "notes": "data source not connected yet"}

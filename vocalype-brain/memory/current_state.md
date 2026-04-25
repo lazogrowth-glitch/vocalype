@@ -2,13 +2,13 @@
 
 Last updated: 2026-04-24
 Latest commit: 706d6c0 — feat(app): add activation retry state for first dictation
-Brain commit: (pending commit) — feat(brain): add V7 paste_execute investigation proposal
+Brain commit: (pending) — docs(brain): V7 final status report
 
 ---
 
 ## Phase
 
-**V7 Phase 1 — Bottleneck Hypothesis Complete. 2/10 priority metrics at baseline (≥5 obs). Primary bottleneck identified: paste_execute (~645ms, 62% of p50). Investigation proposal written. Awaiting: (1) paste_execute mechanism investigation, (2) 8 remaining metrics, (3) baseline lock.**
+**V7 Phase 1 — COMPLETE. V7 Phase 2 — NOT STARTED. 2/10 metrics at baseline. Primary bottleneck identified (paste_execute, 645ms, 62% of p50). Bottleneck hypothesis + investigation proposal written. V7 final status report complete. Awaiting: (1) M1 manual session for 8 missing metrics, (2) lock_benchmark_baseline.py build, (3) paste_execute investigation, (4) V8 design.**
 
 ---
 
@@ -145,6 +145,7 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V7 pipeline logs search report | outputs/pipeline_logs_search_report.md |
 | V7 paste investigation proposal | outputs/product_patch_proposal_report.md |
 | Paste mechanism diagnosis (pending) | outputs/paste_mechanism_diagnosis.md |
+| V7 final status report | outputs/v7_final_status_report.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

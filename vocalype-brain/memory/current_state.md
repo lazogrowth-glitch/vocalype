@@ -20,12 +20,19 @@ Benchmarks pending: ≥5 post-fix `paste_latency_ms` observations not yet record
 Rollback still armed: `git checkout -- src-tauri/src/platform/clipboard.rs`
 Upgrades to FULL_KEEP when Slack/Teams/Word pass + benchmarks confirm median < 420ms.
 
+**Desktop launchers installed:** `C:\Users\ziani\Desktop\`
+- `Lancer Vocalype Brain.bat` — rapport unifié + mission package + ouvre les 2 fichiers clés
+- `Voir Action du Robot.bat` — ouvre weekly_action.md directement
+- `Generer Mission Claude.bat` — génère + ouvre v11_mission_package.md
+- `Enregistrer Resultat.bat` — lance tous les review scripts + ouvre rapports
+- `Voir Rapports Vocalype Brain.bat` — ouvre tous les rapports disponibles
+- `Stop Vocalype Brain.bat` — rappelle qu'il n'y a pas de daemon
+
 **Operating Mode weekly rhythm:**
-1. Founder: record V8 business data every Monday (~10 min, Stripe/Supabase/Vercel)
-2. Founder: record V9 content observations after each post
-3. Brain: V10 weekly action run once per week
-4. Brain: V11 executes the selected action safely
-5. Brain: V12 loop handles any confirmed bottleneck
+1. Founder: double-clic `Lancer Vocalype Brain.bat` → lit weekly_action.md → copie mission dans Claude
+2. Founder: record V8 business data every Monday (~10 min, Stripe/Supabase/Vercel)
+3. Founder: record V9 content observations after each post
+4. Brain: V10 weekly action run (via launcher), V11 executes safely, V12 loop for bottlenecks
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).

@@ -2,7 +2,59 @@
 
 Vocalype Brain is a local operational intelligence system for improving one SaaS product: Vocalype.
 
-It helps turn product observations, user feedback, model benchmarks, growth ideas, SaaS funnel work, and founder focus decisions into measurable daily actions.
+It turns product observations, benchmark data, business metrics, and content performance into a weekly prioritised action — then generates a safe, scoped mission package ready to send to Claude, Codex, or Aider.
+
+---
+
+## ⚡ Mode Opérationnel — Construction V1–V12 terminée
+
+**Le cerveau est construit. Il fonctionne maintenant en Mode Opérationnel.**
+
+Utilise les lanceurs sur ton Bureau Windows. Tu n'as pas besoin de taper des commandes.
+
+### Lanceurs Bureau (double-clique)
+
+| Fichier | Ce que ça fait |
+|---|---|
+| `Lancer Vocalype Brain.bat` | Lance le cycle complet : rapport unifié → action de la semaine → package mission → ouvre les deux fichiers |
+| `Voir Action du Robot.bat` | Ouvre directement `weekly_action.md` — l'action prioritaire de la semaine |
+| `Generer Mission Claude.bat` | Génère le package mission V11 et l'ouvre — prêt à coller dans Claude / Codex |
+| `Enregistrer Resultat.bat` | Lance tous les scripts de review et ouvre les rapports |
+| `Voir Rapports Vocalype Brain.bat` | Ouvre tous les rapports disponibles (benchmarks, business, contenu, résultats) |
+| `Stop Vocalype Brain.bat` | Rappelle qu'il n'y a pas de daemon — ferme les fenêtres terminal manuellement |
+
+### Rythme hebdomadaire (Mode Opérationnel)
+
+```
+Lundi       : enregistrer métriques V8 (Stripe / Supabase / Vercel, 10 min)
+Après post  : enregistrer observation V9 (contenu + performance 24-72h après)
+N'importe quand : lancer "Lancer Vocalype Brain.bat" → copier mission → envoyer à Claude
+Après exécution : "Enregistrer Résultat.bat" → review + commit
+```
+
+### Ce que le cerveau N'EST PAS
+
+Vocalype Brain n'est **pas** une ASI autonome, pas un CEO robot H24, pas un agent qui tourne en fond.
+
+C'est un **système d'exploitation pour une boucle** :
+
+```
+mesurer → décider → mission → exécuter → analyser → apprendre
+```
+
+Chaque script se lance, fait son travail, et s'arrête. Tu restes aux commandes.
+
+### Routage des modèles
+
+| Modèle | Quand l'utiliser |
+|---|---|
+| **Ollama local** (qwen3:8b, qwen2.5-coder:7b) | Rapports, résumés, priorités, génération de missions — travail de routine |
+| **DeepSeek V3/Flash** (si configuré) | Raisonnement long-contexte complexe, analyse multi-fichiers |
+| **Claude / Codex / Aider** | Implémentation produit sensible — Rust, auth, paiement, logique critique |
+
+Le cerveau génère le package mission. Toi, tu choisis quel modèle l'exécute.
+
+---
 
 ## What It Is Not
 
@@ -10,9 +62,9 @@ Vocalype Brain is not a general AI or autonomous ASI.
 
 It is a local operational intelligence system designed to compound improvements for one SaaS product: Vocalype.
 
-The goal is daily execution, not abstract intelligence.
+The goal is weekly execution, not abstract intelligence.
 
-It does not require paid APIs. V1 uses Markdown, JSON, JSONL, and standard-library Python scripts.
+It does not require paid APIs. The core uses Markdown, JSON, JSONL, and standard-library Python scripts.
 
 ## Core Rule
 

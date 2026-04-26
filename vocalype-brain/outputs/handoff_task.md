@@ -1,273 +1,396 @@
-# Vocalype — Implementation Handoff Task
+# handoff_task.md — Paste Delay Floor Reduction (V12 Experiment 1)
 
-Date: 2026-04-24T13:18:23
-Proposal: Fix: First successful dictation
+Date: 2026-04-26
 Task type: implementation_task
-Risk: low
-Safety class: product_proposal_only
+Prepared by: Vocalype Brain (V12 Phase 1)
+Supersedes: prior V6 handoff task (activation UI — separate scope)
+Status: AWAITING FOUNDER APPROVAL — do not implement until Section 11 is signed
 
 ---
 
-## Problem Statement
+## 1. Mission Title
 
-Implement distinct visual states for each activation phase (logged out, license pending, subscription inactive, ready) with clear error messaging.
+**Reduce the Windows clipboard restore delay floor from 450ms to 150ms.**
 
-## Why It Matters
+This is the first V12 continuous improvement experiment. It targets the dominant
+contributor to `paste_execute` latency: the hardcoded 450ms Windows restore floor
+in `src-tauri/src/platform/clipboard.rs:120`.
 
-Directly improves first successful dictation and activation success rate.
+Expected outcome: `paste_execute` latency 644ms → ~344ms (saving ~300ms, 47% reduction).
 
-## Approved Scope
+---
 
-Files the implementation model is allowed to modify:
+## 2. Task Type
 
-- `src/components/auth/AuthPortal.tsx`
-- `src/hooks/useAuthFlow.ts`
+`implementation_task`
 
-## Forbidden Scope
+All prerequisites satisfied:
+- Prior diagnosis: `vocalype-brain/outputs/paste_mechanism_diagnosis.md` ✅
+- Root cause confirmed: `vocalype-brain/outputs/paste_utils_diagnosis.md` ✅
+- Design: `vocalype-brain/outputs/v12_design_plan.md` ✅
+- Proposal written: this document ✅
+- Founder approval: ⬜ (Section 11 — must be signed before implementation begins)
 
-Files and patterns the implementation model must never touch:
+---
 
-- `backend/`
-- `src-tauri/`
-- `src/lib/auth/client.ts`
-- `src/lib/license/client.ts`
-- payment or billing logic
-- auth state logic (do not modify `deriveActivationStatus` or auth reducers)
-- license validation logic
-- Rust dictation runtime
-- `translation.json` / i18n files (add new keys only via correct key registration)
-
-## Existing Code Context
-
-The following excerpts are extracted read-only from the current codebase.
-Do not add lines that contradict what you see here.
-
-### `src/components/auth/AuthPortal.tsx` — Current Structure
-
-```tsx
-/* eslint-disable i18next/no-literal-string */
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { ExternalLink, Loader2, LogOut, ShieldAlert } from "lucide-react";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
-import { commands } from "@/bindings";
-import type { AuthPayload, AuthSession } from "@/lib/auth/types";
-import type { ActivationStatus } from "@/hooks/useAuthFlow";
-import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
-import { useModelStore } from "@/stores/modelStore";
-
-const MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
-
-const ModelDownloadBadge: React.FC = () => {
-  const {
-    downloadingModels,
-    extractingModels,
-    getDownloadProgress,
-    isFirstRun,
-  } = useModelStore();
-  const isDownloading = MODEL_ID in downloadingModels;
-  const isExtracting = MODEL_ID in extractingModels;
-  if (!isFirstRun && !isDownloading && !isExtracting) return null;
-
-  const progress = getDownloadProgress(MODEL_ID);
-  const pct = progress?.percentage ?? 0;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 16,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "min(100% - 32px, 360px)",
-        zIndex: 10,
-      }}
-    >
-      <div
-        style={{
-          borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(18,18,18,0.95)",
-          padding: "10px 14px",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 11,
-            color: "rgba(255,255,255,0.4)",
-            marginBottom: 6,
-          }}
-        >
-          <span>
-            {isExtracting
-              ? "Preparation du modele..."
-              : "Telechargement du modele vocal"}
-          </span>
-          {isDownloading && !isExtracting && pct > 0 && (
-            <span>{Math.round(pct)}%</span>
-          )}
-        </div>
-        <div
-          style={{
-            height: 3,
-            borderRadius: 99,
-            background: "rgba(255,255,255,0.08)",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              height: "100%",
-              borderRadius: 99,
-              background: "rgba(100,140,255,0.7)",
-              width: isExtracting ? "100%" : `${pct}%`,
-... (558 more lines not shown)
-```
-
-### `src/hooks/useAuthFlow.ts` — Current Structure
-
-```ts
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { listen } from "@tauri-apps/api/event";
-import { authClient } from "@/lib/auth/client";
-import type { AuthPayload, AuthSession } from "@/lib/auth/types";
-import { licenseClient } from "@/lib/license/client";
-import type { LicenseRuntimeState } from "@/lib/license/types";
-import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
-import { useSessionRefresh } from "./useSessionRefresh";
-
-export type ActivationStatus =
-  | "logged_out"
-  | "checking_activation"
-  | "subscription_inactive"
-  | "activation_failed"
-  | "ready";
-
-const isExpectedMissingLicenseMessage = (value: unknown) => {
-  const message =
-    value instanceof Error
-      ? value.message
-      : typeof value === "string"
-        ? value
-        : "";
-  return message.toLowerCase().includes("no stored license bundle");
-};
-
-const deriveActivationStatus = ({
-  session,
-  licenseState,
-  authLoading,
-  authSubmitting,
-  authError,
-}: {
-  session: AuthSession | null;
-  licenseState: LicenseRuntimeState | null;
-  authLoading: boolean;
-  authSubmitting: boolean;
-  authError: string | null;
-}): ActivationStatus => {
-  if (!session) return "logged_out";
-  if (!session.subscription.has_access) return "subscription_inactive";
-
-  if (
-    licenseState?.state === "online_valid" ||
-    licenseState?.state === "offline_valid"
-  ) {
-    return "ready";
-  }
-
-  if (authLoading || authSubmitting) return "checking_activation";
-  if (authError || licenseState?.reason === "Activation failed") {
-    return "activation_failed";
-  }
-
-  return "checking_activation";
-};
-
-export function useAuthFlow(
-  t: (key: string, options?: Record<string, unknown>) => string,
-) {
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authSubmitting, setAuthSubmitting] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [licenseState, setLicenseState] = useState<LicenseRuntimeState | null>(
-    null,
-  );
-  const [showTrialWelcome, setShowTrialWelcome] = useState(false);
-  const hasCompletedPostOnboardingInit = useRef(false);
-  const trialReminderShownRef = useRef(false);
-
-  const applySession = useCallback((nextSession: AuthSession | null) => {
-    setSession(nextSession);
-    setAuthError(null);
-
-    if (nextSession) {
-      void authClient.setStoredSession(nextSession);
-      return;
-    }
-... (485 more lines not shown)
-```
-
-## Implementation Instructions
-
-1. Implement distinct visual states for each activation phase (logged out, license pending, subscription inactive, ready) with clear error messaging.
-
-## Constraints
-
-- Keep the change small and measurable
-- Frontend-only — do not touch backend, auth client, license client, or Rust
-- No new dependencies
-- Use existing i18n keys if modifying user-facing strings; register new keys correctly
-- Do not widen scope beyond the approved files above
-- One logical change per commit
-
-## Validation
-
-Check if users can clearly see their activation status and proceed to dictation without errors.
-
-- `npm run lint`
-- `npm run format`
-- Manual test: all 5 activation states (logged_out, checking_activation, subscription_inactive, activation_failed, ready)
-- Manual test scenarios from `outputs/measure_activation_failure_points.md` Section 6
-
-## Rollback Plan
+## 3. Exact Product File Allowed
 
 ```
-git checkout -- src/components/auth/AuthPortal.tsx src/hooks/useAuthFlow.ts
+src-tauri/src/platform/clipboard.rs
 ```
 
-## Safety Rules
+**This is the only file the implementation model may modify.**
 
-- Do not modify product code outside the approved scope
-- Do not apply unrelated patches
-- Do not deploy
-- Do not delete files
-- Do not use --no-verify
-- Do not loosen safety rules
+No other file in `src-tauri/`, `src/`, `backend/`, or anywhere else may be
+touched. If the change requires modifying any other file, **stop immediately**
+and report — do not proceed.
 
-## What To Report After Implementation
+---
 
-- Every file changed (path + brief description)
-- Commands run and whether they passed
-- Exact UI/copy changes made
-- Manual test results for all activation states
-- Remaining risks or limitations
-- Suggested follow-up measurement task
+## 4. Exact Code Change
 
-## Benchmark Baseline (V7 will populate)
+### Current code (clipboard.rs:119–120, confirmed 2026-04-26)
 
-V7 will measure these metrics before and after implementation.
-Do not run benchmarks now — these are placeholders only.
+```rust
+#[cfg(target_os = "windows")]
+let restore_delay_ms = paste_delay_ms.max(450);
+```
 
-| Metric | Before | After |
+### Required change
+
+```rust
+#[cfg(target_os = "windows")]
+let restore_delay_ms = paste_delay_ms.max(150);
+```
+
+**Change summary:**
+- Replace the integer literal `450` with `150` on line 120.
+- That is the complete change — one token on one line.
+- No other lines, imports, signatures, struct fields, or comments are modified.
+
+### What must NOT change
+
+| Element | Location | Why it must not change |
 |---|---|---|
-| dictation_latency_ms | unknown | unknown |
-| transcription_error_rate | unknown | unknown |
-| activation_success_rate | unknown | unknown |
-| activation_failed_rate | unknown | unknown |
+| Sleep 1 — pre-Ctrl+V | clipboard.rs:87 | 60ms propagation delay. Not the primary target. Do not touch. |
+| Non-Windows restore floor | clipboard.rs:122–123 | `paste_delay_ms.max(250)` — different platform, not in scope. |
+| Sleep call itself | clipboard.rs:128 | Only the floor value changes, not the sleep call. |
+| All other lines in clipboard.rs | — | Not in scope. Do not touch. |
+| All other files | — | Not in scope. Do not touch. |
+
+---
+
+## 5. Forbidden Scope
+
+The following are **permanently forbidden** for this task. If any would be
+required to complete the change, **stop and report immediately**.
+
+```
+src/                      — no frontend changes
+backend/                  — no backend changes
+src-tauri/src/lib.rs      — no app bootstrap changes
+src-tauri/src/settings/   — no settings changes
+src-tauri/src/managers/   — no manager changes
+src/lib/auth/             — auth: forbidden
+src/lib/license/          — license: forbidden
+```
+
+Forbidden semantic areas (regardless of file path):
+```
+payment logic
+billing logic
+security logic
+audio capture runtime
+secrets / .env / secret_store
+translation.json
+```
+
+Additional experiment-specific restrictions:
+- Do **not** change the `paste_delay_ms` default value (settings/mod.rs).
+- Do **not** add a new user-facing setting for the restore delay.
+- Do **not** change Sleep 1 (the 60ms pre-Ctrl+V delay at line 87).
+- Do **not** change the non-Windows restore floor (line 123 — `max(250)`).
+- Do **not** run `cargo fmt` or `bun run format` — do not reformat the file.
+- Do **not** add comments, log messages, or documentation beyond what exists.
+- Do **not** attempt further optimisation (reduce Sleep 1, try 100ms, etc.).
+  This experiment tests 150ms only. Further experiments are separate tasks.
+
+---
+
+## 6. Benchmark Before / After Protocol
+
+### Before state (already recorded — do not re-measure)
+
+| Metric | Value | Sessions | SD | Source |
+|---|---|---|---|---|
+| `paste_execute` | ~644ms | 7 | ±1.2ms | `data/benchmark_observations.jsonl` |
+
+### After state (record post-implementation, Phase 5)
+
+Record **≥5 new `paste_execute` observations** after the change is applied and
+all 21 app test cases have passed.
+
+```bash
+python vocalype-brain/scripts/add_benchmark_observation.py \
+  --metric paste_latency_ms \
+  --value <measured_ms> \
+  --unit ms \
+  --source manual_founder \
+  --period 2026-W18 \
+  --notes "post-fix floor=150ms"
+```
+
+Repeat for each of ≥5 dictation sessions.
+
+### Pass criteria
+
+| Metric | Before | Target | Acceptable range |
+|---|---|---|---|
+| `paste_execute` | 644ms | ~344ms | 300ms – 420ms |
+| Paste success rate | 100% | 100% | must remain 100% |
+| Clipboard restore | 100% | 100% | must remain 100% |
+
+A `paste_execute` result outside the acceptable range is not automatically a
+failure — record and report it. A paste success rate below 100% **is** an
+immediate failure: revert before benchmarking.
+
+---
+
+## 7. Test App Protocol (Phase 4 — run before benchmarking)
+
+Test **all 7 apps** with **all 3 test cases** before recording any benchmark.
+If any test case fails, revert immediately (Section 8) and do not proceed.
+
+| App | Type | Risk | Reason included |
+|---|---|---|---|
+| Notepad | Native Win32 | Low | Baseline — must always pass |
+| VS Code | Electron | Medium | Most common dev tool; large Vocalype user base |
+| Chrome (address bar or search) | Browser | Medium | Fast clipboard; high user frequency |
+| Gmail in Chrome (compose window) | Web app | Medium | Common real-world paste target |
+| Slack (message input) | Electron | High | Historically slow clipboard consumption |
+| Microsoft Teams (chat input) | Electron | High | Historically slow clipboard consumption |
+| Microsoft Word (body text) | COM/native | Medium | Office suite; different paste path |
+
+### Test cases per app (3 per app, 21 total)
+
+| # | Test case | How to run | Pass criteria |
+|---|---|---|---|
+| T1 | Dictate a 5–8 word phrase | Use Vocalype normally; check insertion | Exact transcription inserted — no extra chars, no truncation, no old clipboard content |
+| T2 | Pre-load clipboard, then dictate | Copy "CLIPBOARD_TEST_XYZ" first, then dictate | Transcription pasted correctly AND clipboard restored to "CLIPBOARD_TEST_XYZ" |
+| T3 | Dictate twice in quick succession | Trigger two dictations ~2 seconds apart | Both dictations paste correctly — no interleaving, no duplication, no skipped paste |
+
+**All 21 must pass before Phase 5 (benchmarking) begins.**
+
+Record results in Section 10 (Implementation Report) of this file.
+
+---
+
+## 8. Rollback Rule
+
+Revert immediately if **any** of the following occurs:
+
+- Any of the 21 test cases fails (wrong text, missing text, old clipboard content)
+- Original clipboard content not restored after any paste
+- Vocalype crashes or throws an unhandled exception during paste
+- `paste_execute` benchmark median ≥ 600ms (no improvement — change may not have taken effect)
+- `git diff` shows more than one token changed
+
+### Rollback command
+
+```bash
+git checkout -- src-tauri/src/platform/clipboard.rs
+```
+
+This is the only rollback action. Reverts `clipboard.rs` to the last committed
+state (450ms floor). No other files affected. No build step required.
+
+After reverting:
+1. Record the failed floor value in `vocalype-brain/memory/lessons_learned.md`
+2. Report to founder: which test case failed, which app, what was observed
+3. Do not attempt to debug or fix the failure autonomously
+4. Do not try a different floor value without a new founder-approved `handoff_task.md`
+
+---
+
+## 9. Validation Commands
+
+Run in this exact order after applying the change:
+
+### Step 1 — Confirm diff is exactly one token
+
+```bash
+git diff -- src-tauri/src/platform/clipboard.rs
+```
+
+Expected output (approximately):
+```diff
+-    let restore_delay_ms = paste_delay_ms.max(450);
++    let restore_delay_ms = paste_delay_ms.max(150);
+```
+
+If the diff shows **any other change**, stop, revert, and report.
+
+### Step 2 — Confirm no whitespace issues
+
+```bash
+git diff --check src-tauri/src/platform/clipboard.rs
+```
+
+Expected: no output. If output appears, fix whitespace only — do not reformat.
+
+### Step 3 — Compile check
+
+```bash
+cargo check --manifest-path src-tauri/Cargo.toml
+```
+
+Expected: `Finished` with no errors. If errors appear, **stop and revert** —
+do not attempt to fix compile errors unrelated to this change.
+
+### Step 4 — Manual paste test
+
+Run Vocalype (dev mode or built binary). Execute all 21 test cases from
+Section 7. Do not skip. Do not benchmark before this step is complete.
+
+### Step 5 — Record benchmark observations
+
+Only after all 21 test cases pass:
+```bash
+python vocalype-brain/scripts/add_benchmark_observation.py \
+  --metric paste_latency_ms --value <ms> --unit ms \
+  --source manual_founder --period 2026-W18 --notes "post-fix floor=150ms"
+```
+
+### Step 6 — Commit (feat(app): only)
+
+```bash
+git add src-tauri/src/platform/clipboard.rs
+git diff --stat   # confirm only clipboard.rs
+git commit -m "feat(app): reduce Windows clipboard restore delay floor to 150ms"
+```
+
+---
+
+## 10. Stop Conditions
+
+Stop immediately and report when any of the following is true:
+
+| # | Condition | Action |
+|---|---|---|
+| HC-S1 | `clipboard.rs` not found at `src-tauri/src/platform/clipboard.rs` | Stop — file structure may have changed; report |
+| HC-S2 | Line 120 does not contain `paste_delay_ms.max(450)` | Stop — source changed since diagnosis; report actual content |
+| HC-S3 | Change requires more than one line or more than one file | Stop — scope wider than expected; report |
+| HC-S4 | `cargo check` fails | Stop — do not commit; revert; report full error |
+| HC-S5 | Any of the 21 test cases fails | Stop — revert immediately; record which app and case failed |
+| HC-S6 | Post-fix benchmark median ≥ 600ms | Stop — revert; change may not have taken effect; report |
+| HC-S7 | Temptation to also reduce Sleep 1 or try 100ms | Stop — scope-creep; this experiment is 150ms floor only |
+| HC-S8 | Section 11 (Founder Approval) is blank | Stop — do not implement; approval is the primary gate |
+| HC-S9 | `git diff --stat` shows files other than clipboard.rs | Stop — do not commit; revert all changes; report |
+
+---
+
+## 11. Implementation Report
+
+The implementation model fills in this section after completing the task.
+Write "n/a" if a section does not apply. Do not leave fields blank.
+
+```
+## Implementation Report
+
+Date:
+Implementor:
+
+Diff confirmed (paste git diff output here):
+
+
+cargo check result:
+  [ ] PASSED
+  [ ] FAILED — error:
+
+Test results — all 21 test cases:
+
+  Notepad:
+    T1 (dictate phrase):       [ ] PASS  [ ] FAIL — notes:
+    T2 (clipboard restore):    [ ] PASS  [ ] FAIL — notes:
+    T3 (quick succession):     [ ] PASS  [ ] FAIL — notes:
+
+  VS Code:
+    T1: [ ] PASS  [ ] FAIL — notes:
+    T2: [ ] PASS  [ ] FAIL — notes:
+    T3: [ ] PASS  [ ] FAIL — notes:
+
+  Chrome:
+    T1: [ ] PASS  [ ] FAIL — notes:
+    T2: [ ] PASS  [ ] FAIL — notes:
+    T3: [ ] PASS  [ ] FAIL — notes:
+
+  Gmail in Chrome:
+    T1: [ ] PASS  [ ] FAIL — notes:
+    T2: [ ] PASS  [ ] FAIL — notes:
+    T3: [ ] PASS  [ ] FAIL — notes:
+
+  Slack:
+    T1: [ ] PASS  [ ] FAIL — notes:
+    T2: [ ] PASS  [ ] FAIL — notes:
+    T3: [ ] PASS  [ ] FAIL — notes:
+
+  Teams:
+    T1: [ ] PASS  [ ] FAIL — notes:
+    T2: [ ] PASS  [ ] FAIL — notes:
+    T3: [ ] PASS  [ ] FAIL — notes:
+
+  Word:
+    T1: [ ] PASS  [ ] FAIL — notes:
+    T2: [ ] PASS  [ ] FAIL — notes:
+    T3: [ ] PASS  [ ] FAIL — notes:
+
+All 21 passed: [ ] YES  [ ] NO
+
+Post-fix benchmark observations:
+  observation 1: ___ms
+  observation 2: ___ms
+  observation 3: ___ms
+  observation 4: ___ms
+  observation 5: ___ms
+  median: ___ms
+
+Improvement vs baseline (644ms):
+  delta: ___ms    improvement: ___%
+
+Commit hash (feat(app):):
+
+Rollback triggered: [ ] YES — reason:    [ ] NO
+
+Product code touched:
+  src-tauri/src/platform/clipboard.rs — line 120 only
+
+Safe to proceed to Phase 6 (compare + learn): [ ] YES  [ ] NO
+```
+
+---
+
+## 12. Founder Approval
+
+**This section must be completed before any implementation begins.**
+The implementation model must read this section first. If it is blank, stop.
+
+```
+Proposed change:   paste_delay_ms.max(450)  →  paste_delay_ms.max(150)
+File:              src-tauri/src/platform/clipboard.rs
+Line:              120
+Context:           Windows-only (#[cfg(target_os = "windows")])
+Experiment:        V12 Experiment 1 — Windows restore delay floor
+Expected outcome:  paste_execute 644ms → ~344ms
+
+[ ] I approve this change for implementation.
+    Session date:     ____________________
+    Approved N value: 150ms   (or specify alternative: _____ms)
+
+Notes (optional):
+```
+
+---
+
+*Gate G6 is now satisfied — `handoff_task.md` exists.*
+*V11 can generate an implementation mission package once Section 12 is signed.*
+*Implementation is blocked until the Founder Approval checkbox is checked.*

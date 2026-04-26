@@ -1,8 +1,8 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-26
-Latest commit: docs(brain): close V11 operating loop (4cafbb5)
-Brain phase: V12 design complete — Phase 1 proposal pending
+Latest commit: docs(brain): design V12 continuous improvement loop (29dc5da)
+Brain phase: V12 Phase 1 complete — handoff_task.md written, awaiting founder approval
 
 ---
 
@@ -17,13 +17,12 @@ Last commits: `8a875e6` (paste_mechanism_diagnosis.md), `5958e99` (paste_utils_d
 Sleep 1 = 60ms (pre-Ctrl+V propagation). Sleep 2 = 450ms Windows floor (post-Ctrl+V restore).
 Total = ~644ms. Fix target: `clipboard.rs:120` — reduce `paste_delay_ms.max(450)` floor.
 
-**V12 status: DESIGN COMPLETE — Phase 1 (proposal) ready to execute.**
-Design: `outputs/v12_design_plan.md` — 16 sections, 7-phase improvement loop, 9 safety gates.
-V12 Phase 1 = write `outputs/handoff_task.md` (paste delay floor proposal, N=150ms starting value).
-V12 Phase 2 = founder approval of N value in `handoff_task.md`.
-V12 Phase 3 = V11 generates implementation package → implementation model applies clipboard.rs:120 change.
-V12 Phases 4–7 = test (21 test cases) → measure (≥5 benchmarks) → compare → learn.
-Exact Phase 1 prompt: `outputs/v12_design_plan.md` Section 16.
+**V12 status: Phase 1 COMPLETE — awaiting founder approval (Gate G4).**
+Design: `outputs/v12_design_plan.md` — 16 sections, 7-phase loop, 9 safety gates.
+Proposal: `outputs/handoff_task.md` — paste_delay_ms.max(450) → max(150), clipboard.rs:120 only.
+**NEXT: Founder signs Section 12 of handoff_task.md to unblock Phase 3 (implementation).**
+V12 Phase 3 = V11 generates implementation package → implementation model applies 1-line change.
+V12 Phases 4–7 = test (7 apps × 3 cases = 21 total) → measure (≥5 benchmarks) → compare → learn.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -101,12 +100,12 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **V12 Phase 1 — Write paste delay proposal** (`proposal_task`):
-   - Read: `operating_contract.md`, `current_state.md`, `v12_design_plan.md`, `paste_utils_diagnosis.md`
-   - Create: `outputs/handoff_task.md` — paste delay floor reduction proposal (N=150ms starting value)
-   - Read clipboard.rs:120 first to confirm exact current code before writing proposal
-   - Do not modify clipboard.rs — proposal only
-   - Exact prompt: `outputs/v12_design_plan.md` Section 16
+1. **V12 Phase 2 — Founder approval** (founder action — no Brain session needed):
+   - Open `vocalype-brain/outputs/handoff_task.md`
+   - Read Section 12 (Founder Approval)
+   - Check the approval checkbox and enter today's date
+   - Confirm approved N value (150ms recommended, or specify alternative)
+   - Save the file — this satisfies Gate G4 and unblocks Phase 3 (implementation)
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
@@ -203,7 +202,7 @@ Future prompts may reference the contract instead of repeating safety rules:
 | Paste mechanism diagnosis | outputs/paste_mechanism_diagnosis.md |
 | Paste utils diagnosis | outputs/paste_utils_diagnosis.md |
 | **V12 design plan** | **outputs/v12_design_plan.md** |
-| **V12 paste proposal (pending)** | **outputs/handoff_task.md** |
+| **V12 paste proposal** | **outputs/handoff_task.md** |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

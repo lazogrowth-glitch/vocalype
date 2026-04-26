@@ -49,11 +49,6 @@ if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_run_report.md" 
     echo   agent_run_report.md ouvert.
 )
 
-if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\v11_mission_package.md" (
-    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\v11_mission_package.md"
-    echo   v11_mission_package.md ouvert.
-)
-
 if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md" (
     start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md"
     echo   deepseek_response.md ouvert.
@@ -62,6 +57,10 @@ if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md"
 echo.
 echo ============================================================
 echo   FAIT. Lis agent_recommendation.md pour la prochaine etape.
+echo.
+echo   Si agent_recommendation.md demande une mission Claude/Codex,
+echo   ouvre manuellement :
+echo     vocalype-brain\outputs\v11_mission_package.md
 echo.
 echo   Modes externes disponibles :
 echo     off     = jamais appeler DeepSeek, preparer context_pack seulement

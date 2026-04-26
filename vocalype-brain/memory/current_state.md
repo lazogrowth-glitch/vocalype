@@ -2,26 +2,20 @@
 
 Last updated: 2026-04-25
 Latest commit: docs(brain): close V10 unified decision phase
-Brain phase: V11 Operating Loop — design complete, Phase 1 implementation is next
+Brain phase: V11 Phase 1 COMPLETE — mission package generator live
 
 ---
 
 ## Phase
 
-**V11 Operating Loop — design complete. Phase 1 implementation pending.**
-V11 converts V10 weekly_action.md into a safe, scoped mission package for execution.
-Design plan: `outputs/v11_design_plan.md` — 15 sections.
-Phase 1 = `generate_mission_package.py` → `v11_mission_package.md` + `v11_gate_report.md`.
-Use exact prompt from `outputs/v11_design_plan.md` Section 15 to implement.
+**V11 Phase 1 — COMPLETE. `generate_v11_mission_package.py` live.**
+V11 reads weekly_action.md, runs 8 safety gates, writes `v11_mission_package.md` + `v11_mission_package_report.md`.
+Execution log: `data/v11_execution_log.jsonl` — 2 PENDING records (PB-1, product_investigation).
 
-Current weekly action (from V10): PB-1 — product_investigation, measurement_task.
-Target: read-only inspection of `src-tauri/src/actions/paste.rs` → `outputs/paste_mechanism_diagnosis.md`.
-8 questions defined in `v11_design_plan.md` Section 9.
-Diagnosis schema defined in `v11_design_plan.md` Section 9.
-
-5 supported action types: product_investigation, product_implementation, business_data_entry, distribution_data_entry, hold.
-8 safety gates: all must pass before mission package is written.
-Execution log: `data/v11_execution_log.jsonl` — append-only.
+Current mission package: PB-1 — read-only inspection of `src-tauri/src/actions/paste.rs`.
+Expected output: `outputs/paste_mechanism_diagnosis.md`.
+Next step: send `outputs/v11_mission_package.md` to Claude/Codex/Aider for execution.
+Safety verdict: SAFE TO SEND. All 8 gates passed.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -100,10 +94,11 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Implement V11 Phase 1** (next Brain session):
-   - Use exact prompt from `outputs/v11_design_plan.md` Section 15
-   - Creates: `generate_mission_package.py`, `v11_mission_package.md`, `v11_gate_report.md`
-   - First mission package: PB-1 product_investigation → paste_mechanism_diagnosis.md
+1. **Execute PB-1 mission** (next Brain session):
+   - Read `outputs/v11_mission_package.md` and follow it exactly
+   - Inspect `src-tauri/src/actions/paste.rs` (read-only)
+   - Write `outputs/paste_mechanism_diagnosis.md` — answer all 8 questions
+   - No product code modifications — diagnosis only
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
@@ -194,9 +189,9 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V10 weekly action | outputs/weekly_action.md |
 | **V10 closure report** | **outputs/v10_closure_report.md** |
 | **V11 design plan** | **outputs/v11_design_plan.md** |
-| V11 mission package (pending) | outputs/v11_mission_package.md |
-| V11 gate report (pending) | outputs/v11_gate_report.md |
-| V11 execution log (pending) | data/v11_execution_log.jsonl |
+| **V11 mission package** | **outputs/v11_mission_package.md** |
+| V11 mission package report | outputs/v11_mission_package_report.md |
+| V11 execution log | data/v11_execution_log.jsonl |
 | Paste mechanism diagnosis (pending) | outputs/paste_mechanism_diagnosis.md |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |

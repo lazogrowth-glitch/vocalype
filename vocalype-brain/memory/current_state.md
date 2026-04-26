@@ -27,6 +27,15 @@ Upgrades to FULL_KEEP when Slack/Teams/Word pass + benchmarks confirm median < 4
 - `Enregistrer Resultat.bat` — lance tous les review scripts + ouvre rapports
 - `Voir Rapports Vocalype Brain.bat` — ouvre tous les rapports disponibles
 - `Stop Vocalype Brain.bat` — rappelle qu'il n'y a pas de daemon
+- `Creer Context DeepSeek.bat` — construit context_pack.md pour modèle externe (DeepSeek/Claude)
+
+**Model Routing Pack:** `config/model_routing.json` — 5 rôles définis
+- `local_fast` → qwen2.5:1.5b (routine, privé)
+- `local_coder` → qwen2.5-coder:7b (code review, privé)
+- `local_critic` → qwen3:8b (safety review, privé)
+- `deepseek_long_context` → DeepSeek API (raisonnement long, nécessite DEEPSEEK_API_KEY)
+- `external_implementation_manual` → Claude/Codex (implémentation sensible, manuel)
+API key : jamais dans git — variable d'environnement Windows ou .env local exclus.
 
 **Operating Mode weekly rhythm:**
 1. Founder: double-clic `Lancer Vocalype Brain.bat` → lit weekly_action.md → copie mission dans Claude

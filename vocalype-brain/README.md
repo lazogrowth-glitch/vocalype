@@ -46,13 +46,26 @@ Chaque script se lance, fait son travail, et s'arrête. Tu restes aux commandes.
 
 ### Routage des modèles
 
-| Modèle | Quand l'utiliser |
-|---|---|
-| **Ollama local** (qwen3:8b, qwen2.5-coder:7b) | Rapports, résumés, priorités, génération de missions — travail de routine |
-| **DeepSeek V3/Flash** (si configuré) | Raisonnement long-contexte complexe, analyse multi-fichiers |
-| **Claude / Codex / Aider** | Implémentation produit sensible — Rust, auth, paiement, logique critique |
+| Modèle | Tâches | Données envoyées |
+|---|---|---|
+| **Ollama local** (qwen3:8b, qwen2.5-coder:7b) | Rapports, résumés, priorités, génération missions | Rien ne quitte ta machine |
+| **DeepSeek Flash** (si `DEEPSEEK_API_KEY` configuré) | Raisonnement long-contexte, analyse multi-fichiers | Seulement `context_pack.md` (mémoire Brain uniquement) |
+| **Claude / Codex / Aider** | Implémentation produit sensible — Rust, auth, paiement | Seulement `v11_mission_package.md` — toujours copié/collé manuellement |
 
 Le cerveau génère le package mission. Toi, tu choisis quel modèle l'exécute.
+
+**Clés API :** jamais commises dans git. Configure `DEEPSEEK_API_KEY` comme variable d'environnement Windows ou dans un `.env` local exclu du dépôt. Vérifie avec `Creer Context DeepSeek.bat`.
+
+```bash
+# Vérifier la configuration DeepSeek
+python vocalype-brain/scripts/check_deepseek_setup.py
+
+# Construire le pack de contexte pour modèle externe
+python vocalype-brain/scripts/build_context_pack.py
+
+# Recommandation de routage
+python vocalype-brain/scripts/model_route_decision.py --task-type long_reasoning
+```
 
 ---
 

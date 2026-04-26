@@ -1,0 +1,113 @@
+{
+  "_comment": "Vocalype Brain — Model Routing Configuration",
+  "_version": "1.0.0",
+  "_date": "2026-04-26",
+  "_note": "Do not store API keys in this file. Use environment variables or a local .env file excluded from git.",
+
+  "roles": {
+
+    "local_fast": {
+      "description": "Quick classification, triage, simple summaries, data entry helpers",
+      "provider": "ollama",
+      "model": "qwen2.5:1.5b",
+      "fallback_model": "qwen3:4b",
+      "fallback_2_model": "qwen3:8b",
+      "temperature": 0.1,
+      "keep_alive": "0",
+      "use_for": ["simple_report", "data_entry", "triage", "quick_classification"],
+      "privacy": "local — no data leaves the machine"
+    },
+
+    "local_coder": {
+      "description": "Code analysis, diff review, script generation, implementation review",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:7b",
+      "fallback_model": "qwen3:8b",
+      "temperature": 0.1,
+      "keep_alive": "0",
+      "use_for": ["code_review", "diff_analysis", "script_generation", "implementation_review"],
+      "privacy": "local — no data leaves the machine"
+    },
+
+    "local_critic": {
+      "description": "Scope review, safety review, risk detection, sensitive-file detection",
+      "provider": "ollama",
+      "model": "qwen3:8b",
+      "temperature": 0.1,
+      "keep_alive": "0",
+      "use_for": ["safety_review", "scope_review", "risk_detection", "gate_check"],
+      "privacy": "local — no data leaves the machine"
+    },
+
+    "deepseek_long_context": {
+      "description": "Long-context reasoning: cross-file analysis, multi-layer synthesis, complex diagnosis",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "api_base_env": "DEEPSEEK_API_BASE",
+      "api_base_default": "https://api.deepseek.com/v1",
+      "temperature": 0.1,
+      "use_for": ["long_reasoning", "multi_file_analysis", "cross_layer_synthesis"],
+      "privacy": "EXTERNAL API — only sends files explicitly included in context_pack.md",
+      "requires_approval": true,
+      "approval_note": "Founder must review context_pack.md before sending to DeepSeek"
+    },
+
+    "external_implementation_manual": {
+      "description": "Sensitive product implementation — Rust, auth, payment, core logic",
+      "provider": "manual",
+      "models": ["Claude (claude.ai)", "Codex (GitHub Copilot)", "Aider"],
+      "use_for": ["product_implementation", "sensitive_code", "rust_changes", "auth_changes"],
+      "privacy": "EXTERNAL — founder manually selects and pastes only the v11_mission_package.md",
+      "requires_approval": true,
+      "approval_note": "Founder always manually sends the mission package — never automated",
+      "auto_send": false
+    }
+
+  },
+
+  "task_routing": {
+    "simple_report":            "local_fast",
+    "data_entry":               "local_fast",
+    "triage":                   "local_fast",
+    "code_review":              "local_coder",
+    "diff_analysis":            "local_coder",
+    "implementation_review":    "local_coder",
+    "safety_review":            "local_critic",
+    "scope_review":             "local_critic",
+    "long_reasoning":           "deepseek_long_context",
+    "multi_file_analysis":      "deepseek_long_context",
+    "product_implementation":   "external_implementation_manual",
+    "sensitive_code":           "external_implementation_manual",
+    "auth_changes":             "external_implementation_manual",
+    "payment_changes":          "external_implementation_manual",
+    "rust_runtime_changes":     "external_implementation_manual"
+  },
+
+  "forbidden_in_context_pack": [
+    ".env",
+    "*.env",
+    "secrets",
+    "secret_store",
+    "backend/",
+    "src-tauri/",
+    "src/lib/auth/",
+    "src/lib/license/",
+    "payment",
+    "billing",
+    "security",
+    "translation.json",
+    "*.key",
+    "*.pem",
+    "*.p12"
+  ],
+
+  "always_manual_approval": [
+    "auth_changes",
+    "payment_changes",
+    "rust_runtime_changes",
+    "audio_runtime_changes",
+    "license_validation_changes",
+    "security_changes"
+  ]
+}

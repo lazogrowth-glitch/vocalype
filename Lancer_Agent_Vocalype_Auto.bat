@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
 setlocal
-title Vocalype Brain — Agent Auto (Routage Intelligent)
+title Vocalype Brain - Agent Auto
 set "REPO=C:\developer\sas\vocalype"
-cd /d "%REPO%"
+cd /d "C:\developer\sas\vocalype"
 
 echo ============================================================
-echo   VOCALYPE BRAIN — AGENT AUTO
+echo   VOCALYPE BRAIN - AGENT AUTO
 echo   Classifie l'action, route vers le bon outil
 echo ============================================================
 echo.
@@ -24,7 +24,7 @@ if defined VOCALYPE_BRAIN_EXTERNAL_MODE (
 echo.
 
 echo [Agent] Lancement du routeur operationnel...
-python vocalype-brain\scripts\run_operating_agent.py
+python "C:\developer\sas\vocalype\vocalype-brain\scripts\run_operating_agent.py"
 if errorlevel 1 (
     echo.
     echo   ERREUR : run_operating_agent.py a echoue.
@@ -37,25 +37,25 @@ if errorlevel 1 (
 echo.
 echo [Ouverture] Lecture des resultats...
 
-if exist "vocalype-brain\outputs\agent_recommendation.md" (
-    start "" "vocalype-brain\outputs\agent_recommendation.md"
+if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_recommendation.md" (
+    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_recommendation.md"
     echo   agent_recommendation.md ouvert.
 ) else (
     echo   AVERTISSEMENT : agent_recommendation.md introuvable.
 )
 
-if exist "vocalype-brain\outputs\agent_run_report.md" (
-    start "" "vocalype-brain\outputs\agent_run_report.md"
+if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_run_report.md" (
+    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_run_report.md"
     echo   agent_run_report.md ouvert.
 )
 
-if exist "vocalype-brain\outputs\v11_mission_package.md" (
-    start "" "vocalype-brain\outputs\v11_mission_package.md"
+if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\v11_mission_package.md" (
+    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\v11_mission_package.md"
     echo   v11_mission_package.md ouvert.
 )
 
-if exist "vocalype-brain\outputs\deepseek_response.md" (
-    start "" "vocalype-brain\outputs\deepseek_response.md"
+if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md" (
+    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md"
     echo   deepseek_response.md ouvert.
 )
 
@@ -69,9 +69,9 @@ echo     confirm = (DEFAUT) preparer context_pack + instructions fondateur
 echo     auto    = appeler DeepSeek si DEEPSEEK_API_KEY configure
 echo.
 echo   Pour activer auto (PowerShell) :
-echo     $env:VOCALYPE_BRAIN_EXTERNAL_MODE = "auto"
+    echo     $env:VOCALYPE_BRAIN_EXTERNAL_MODE = "auto"
 echo   Pour activer auto (CMD) :
-echo     set VOCALYPE_BRAIN_EXTERNAL_MODE=auto
+    echo     set VOCALYPE_BRAIN_EXTERNAL_MODE=auto
 echo ============================================================
 echo.
 pause

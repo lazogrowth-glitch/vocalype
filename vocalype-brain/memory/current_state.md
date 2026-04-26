@@ -1,8 +1,8 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-26
-Latest commit: docs(brain): diagnose paste utils latency root cause (5958e99)
-Brain phase: V11 CLOSED — V12 design pending
+Latest commit: docs(brain): close V11 operating loop (4cafbb5)
+Brain phase: V12 design complete — Phase 1 proposal pending
 
 ---
 
@@ -17,10 +17,13 @@ Last commits: `8a875e6` (paste_mechanism_diagnosis.md), `5958e99` (paste_utils_d
 Sleep 1 = 60ms (pre-Ctrl+V propagation). Sleep 2 = 450ms Windows floor (post-Ctrl+V restore).
 Total = ~644ms. Fix target: `clipboard.rs:120` — reduce `paste_delay_ms.max(450)` floor.
 
-**V12 status: READY TO DESIGN.**
-Entry gates all satisfied: prior diagnosis exists (G5 ✅), fix target identified, no V8/V9 dependency.
-V12 Phase 1 = write `outputs/handoff_task.md` (paste delay reduction proposal).
-V12 Phase 2 = oversee implementation + benchmark comparison.
+**V12 status: DESIGN COMPLETE — Phase 1 (proposal) ready to execute.**
+Design: `outputs/v12_design_plan.md` — 16 sections, 7-phase improvement loop, 9 safety gates.
+V12 Phase 1 = write `outputs/handoff_task.md` (paste delay floor proposal, N=150ms starting value).
+V12 Phase 2 = founder approval of N value in `handoff_task.md`.
+V12 Phase 3 = V11 generates implementation package → implementation model applies clipboard.rs:120 change.
+V12 Phases 4–7 = test (21 test cases) → measure (≥5 benchmarks) → compare → learn.
+Exact Phase 1 prompt: `outputs/v12_design_plan.md` Section 16.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -98,12 +101,12 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Design V12 Continuous Improvement Loop** (next Brain session — `planning_only`):
-   - Read: `operating_contract.md`, `current_state.md`, `paste_mechanism_diagnosis.md`, `paste_utils_diagnosis.md`, `v11_closure_report.md`
-   - Create: `outputs/v12_design_plan.md` — 15 sections covering proposal → implement → measure → compare loop
-   - Do not create `handoff_task.md` yet — design only
-   - Exact prompt in `outputs/v11_closure_report.md` Section 10
-   - Do not commit until founder approves design
+1. **V12 Phase 1 — Write paste delay proposal** (`proposal_task`):
+   - Read: `operating_contract.md`, `current_state.md`, `v12_design_plan.md`, `paste_utils_diagnosis.md`
+   - Create: `outputs/handoff_task.md` — paste delay floor reduction proposal (N=150ms starting value)
+   - Read clipboard.rs:120 first to confirm exact current code before writing proposal
+   - Do not modify clipboard.rs — proposal only
+   - Exact prompt: `outputs/v12_design_plan.md` Section 16
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
@@ -199,7 +202,7 @@ Future prompts may reference the contract instead of repeating safety rules:
 | **V11 closure report** | **outputs/v11_closure_report.md** |
 | Paste mechanism diagnosis | outputs/paste_mechanism_diagnosis.md |
 | Paste utils diagnosis | outputs/paste_utils_diagnosis.md |
-| **V12 design plan (pending)** | **outputs/v12_design_plan.md** |
+| **V12 design plan** | **outputs/v12_design_plan.md** |
 | **V12 paste proposal (pending)** | **outputs/handoff_task.md** |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |

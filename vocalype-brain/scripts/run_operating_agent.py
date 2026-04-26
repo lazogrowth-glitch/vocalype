@@ -215,6 +215,9 @@ def _run_script(script_name: str, log: list[dict], dry_run: bool = False) -> boo
         entry["stderr"] = result.stderr.strip()[-600:] if result.stderr else ""
     log.append(entry)
 
+    # Always store stdout tail so callers can inspect output (e.g. G7 gate failures)
+    entry["stdout_tail"] = result.stdout.strip()[-800:] if result.stdout else ""
+
     if ok:
         _p(f"  [OK] {script_path.name} completed.")
     else:
@@ -228,6 +231,27 @@ def _run_script(script_name: str, log: list[dict], dry_run: bool = False) -> boo
         for line in combined[-8:]:
             _p(f"      {line}")
     return ok
+
+
+# ---------------------------------------------------------------------------
+# V11 gate failure detection
+# ---------------------------------------------------------------------------
+def _is_duplicate_complete_failure(output_text: str) -> bool:
+    """
+    Return True if generate_v11_mission_package.py failed because the current
+    weekly action is already marked COMPLETE in the execution log (G7 gate).
+
+    Matches strings like:
+      "G7 FAILED: duplicate COMPLETE action in execution log"
+      "BLOCKED: G7 FAILED"
+      "duplicate COMPLETE action"
+    """
+    text_lower = output_text.lower()
+    return (
+        "duplicate complete action" in text_lower
+        or ("g7 failed" in text_lower)
+        or ("blocked: g7" in text_lower)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -487,6 +511,7 @@ def _write_agent_run_report(
     deepseek_error: str | None,
     context_built: bool,
     dry_run: bool,
+    v11_blocked_detail: str | None = None,
 ) -> None:
     """Write agent_run_report.md -- technical audit."""
     lines = [
@@ -494,6 +519,22 @@ def _write_agent_run_report(
         f"Generated: {timestamp}\n",
         f"Dry run: {'YES' if dry_run else 'NO'}\n\n",
         "---\n\n",
+    ]
+
+    # Prominent block notice at the top when the action is already complete
+    if v11_blocked_detail:
+        lines += [
+            "## [BLOCKED] Current Action Already Completed\n\n",
+            "The V11 mission package generator was blocked by safety gate **G7**.\n\n",
+            f"**Exact error:** `{v11_blocked_detail}`\n\n",
+            "**What this means:** The current weekly action is already marked COMPLETE\n"
+            "in the execution log. The stale `v11_mission_package.md` was NOT recommended.\n\n",
+            "**Next safe action:** Record new V8/V9 data so V10 selects a fresh action,\n"
+            "then re-run this agent.\n\n",
+            "---\n\n",
+        ]
+
+    lines += [
         "## Classification\n\n",
         f"| Field | Value |\n|---|---|\n",
         f"| Raw action type | `{action_type}` |\n",
@@ -561,7 +602,43 @@ def _write_agent_recommendation(
 
     body: list[str] = []
 
-    if route == "hold":
+    if route == "completed_action_blocked":
+        body = [
+            "## Recommended Action: HOLD -- Current action is already COMPLETE\n\n",
+            "> **The V11 mission package generator was blocked by safety gate G7.**\n",
+            "> The current weekly action is already marked COMPLETE in the execution log.\n\n",
+            "**Do NOT send any mission package to Claude/Codex this cycle.**\n",
+            "The existing `v11_mission_package.md` may be stale -- do not use it.\n\n",
+            "---\n\n",
+            "### Why this happened\n\n",
+            "The Brain's weekly action (`weekly_action.md`) is pointing to a task that was\n",
+            "already completed in a previous session. The V11 generator's G7 gate correctly\n",
+            "blocked it to prevent sending a duplicate or outdated mission.\n\n",
+            "### Next safe actions\n\n",
+            "**Option A -- Record new data (recommended):**\n\n",
+            "  Record V8 business metrics (Stripe / Supabase / Vercel, 10 min):\n",
+            "  ```\n",
+            "  python vocalype-brain/scripts/add_business_observation.py --metric <m> ...\n",
+            "  ```\n",
+            "  Record V9 content performance (after each post):\n",
+            "  ```\n",
+            "  python vocalype-brain/scripts/add_content_observation.py --platform <p> ...\n",
+            "  ```\n",
+            "  Then re-run this agent. V10 will select a fresh action.\n\n",
+            "**Option B -- Review the completed action:**\n\n",
+            "  - Open `vocalype-brain/outputs/weekly_action.md` to see what action was completed\n",
+            "  - Open `vocalype-brain/data/v11_execution_log.jsonl` to see COMPLETE records\n",
+            "  - Do NOT manually edit the execution log\n\n",
+            "**Option C -- Record V12 benchmarks (if V12 Phase 4 is still pending):**\n\n",
+            "  Record >=5 post-fix `paste_latency_ms` observations to close V12:\n",
+            "  ```\n",
+            "  python vocalype-brain/scripts/add_benchmark_observation.py \\\n",
+            '    --metric paste_latency_ms --value <ms> --notes "post-fix floor=150ms"\n',
+            "  ```\n\n",
+            "**No Claude/Codex mission should be sent this cycle.**\n",
+        ]
+
+    elif route == "hold":
         body = [
             "## Recommended Action: HOLD\n\n",
             "No action needed this week. All signals are healthy.\n\n",
@@ -752,6 +829,8 @@ def main() -> None:
     _p("")
 
     # ---- Step 2: Run operating cycle ----
+    v11_blocked_detail: str | None = None  # set if G7 duplicate-COMPLETE gate fires
+
     if args.skip_report_gen:
         _p("  [skip] Skipping report generation (--skip-report-gen)")
         log.append({"step": "report_gen", "status": "skipped"})
@@ -760,7 +839,20 @@ def main() -> None:
         _run_script("generate_unified_report.py", log, dry_run=args.dry_run)
         _p("")
         _p("[2/2] Generating V11 mission package ...")
-        _run_script("generate_v11_mission_package.py", log, dry_run=args.dry_run)
+        v11_ok = _run_script("generate_v11_mission_package.py", log, dry_run=args.dry_run)
+        if not v11_ok and not args.dry_run:
+            # Inspect stdout of the last log entry for the G7 duplicate-COMPLETE failure
+            last_stdout = log[-1].get("stdout_tail", "") if log else ""
+            if _is_duplicate_complete_failure(last_stdout):
+                # Extract the exact error line for the report
+                for line in last_stdout.splitlines():
+                    if "duplicate complete" in line.lower() or "g7 failed" in line.lower() or "blocked" in line.lower():
+                        v11_blocked_detail = line.strip()
+                        break
+                if not v11_blocked_detail:
+                    v11_blocked_detail = "G7 FAILED: duplicate COMPLETE action in execution log"
+                _p(f"  [!] ACTION ALREADY COMPLETE -- {v11_blocked_detail}")
+                _p("      Stale mission package will NOT be recommended.")
         _p("")
 
     # ---- Step 3: Classify ----
@@ -774,6 +866,16 @@ def main() -> None:
         log.append({"step": "read_weekly_action", "status": "missing"})
 
     route, action_type, classification_reason = _classify(action_text)
+
+    # Override: if V11 was blocked by G7 (duplicate COMPLETE), force a safe hold route
+    if v11_blocked_detail:
+        original_route = route
+        route = "completed_action_blocked"
+        classification_reason = (
+            f"V11 blocked (G7 duplicate COMPLETE) -- original route was '{original_route}'. "
+            "Stale mission package suppressed."
+        )
+
     _p(f"  Action type   : {action_type}")
     _p(f"  Route         : {route}")
     _p(f"  Reason        : {classification_reason}")
@@ -794,7 +896,13 @@ def main() -> None:
 
     _p(f"[4] Executing route: {route} ...")
 
-    if route in ("simple_report", "data_entry"):
+    if route == "completed_action_blocked":
+        _p("  -> Current action already COMPLETE. Stale mission NOT recommended.")
+        _p("     Record new V8/V9 data, then re-run to get a fresh action.")
+        log.append({"step": "route_exec", "status": "completed_action_blocked",
+                    "detail": v11_blocked_detail or ""})
+
+    elif route in ("simple_report", "data_entry"):
         _p("  -> Local tools only. No external API needed.")
         log.append({"step": "route_exec", "status": "local_only", "route": route})
 
@@ -862,6 +970,7 @@ def main() -> None:
             deepseek_error=deepseek_error,
             context_built=context_built,
             dry_run=args.dry_run,
+            v11_blocked_detail=v11_blocked_detail,
         )
         _write_agent_recommendation(
             route=route,
@@ -894,8 +1003,12 @@ def main() -> None:
         _p("    vocalype-brain/outputs/external_context_audit.md")
     if deepseek_called:
         _p("    vocalype-brain/outputs/deepseek_response.md")
-    if MISSION_PACKAGE_PATH.exists() and route in ("product_implementation", "sensitive_code"):
+    # Only show mission package if route genuinely requires it AND V11 was not blocked
+    if MISSION_PACKAGE_PATH.exists() and route in ("product_implementation", "sensitive_code") \
+            and not v11_blocked_detail:
         _p("    vocalype-brain/outputs/v11_mission_package.md")
+    if v11_blocked_detail:
+        _p("  [!] Stale v11_mission_package.md suppressed -- action already complete")
     _p("=" * 60)
     _p("")
 

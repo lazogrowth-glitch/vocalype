@@ -1,8 +1,8 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-26
-Latest commit: docs(brain): design V12 continuous improvement loop (29dc5da)
-Brain phase: V12 Phase 1 complete — handoff_task.md written, awaiting founder approval
+Latest commit: perf(app): reduce Windows paste restore delay floor (f842401)
+Brain phase: V12 Phase 4 in progress — smoke tests partial, Slack/Teams/Word pending
 
 ---
 
@@ -17,12 +17,11 @@ Last commits: `8a875e6` (paste_mechanism_diagnosis.md), `5958e99` (paste_utils_d
 Sleep 1 = 60ms (pre-Ctrl+V propagation). Sleep 2 = 450ms Windows floor (post-Ctrl+V restore).
 Total = ~644ms. Fix target: `clipboard.rs:120` — reduce `paste_delay_ms.max(450)` floor.
 
-**V12 status: Phase 1 COMPLETE — awaiting founder approval (Gate G4).**
-Design: `outputs/v12_design_plan.md` — 16 sections, 7-phase loop, 9 safety gates.
-Proposal: `outputs/handoff_task.md` — paste_delay_ms.max(450) → max(150), clipboard.rs:120 only.
-**NEXT: Founder signs Section 12 of handoff_task.md to unblock Phase 3 (implementation).**
-V12 Phase 3 = V11 generates implementation package → implementation model applies 1-line change.
-V12 Phases 4–7 = test (7 apps × 3 cases = 21 total) → measure (≥5 benchmarks) → compare → learn.
+**V12 status: Phase 4 PARTIAL — PROVISIONAL_KEEP.**
+Product commit f842401 applied: `paste_delay_ms.max(450)` → `max(150)` at clipboard.rs:120.
+Smoke tests: Notepad ✅ VS Code ✅ Chrome ✅ Gmail ✅ — Slack ⬜ Teams ⬜ Word ⬜
+Phase 5 (benchmarks) blocked until Phase 4 fully complete.
+**Rollback still active:** if Slack/Teams/Word fails → `git checkout -- src-tauri/src/platform/clipboard.rs`
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -100,12 +99,13 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **V12 Phase 2 — Founder approval** (founder action — no Brain session needed):
-   - Open `vocalype-brain/outputs/handoff_task.md`
-   - Read Section 12 (Founder Approval)
-   - Check the approval checkbox and enter today's date
-   - Confirm approved N value (150ms recommended, or specify alternative)
-   - Save the file — this satisfies Gate G4 and unblocks Phase 3 (implementation)
+1. **V12 Phase 4 — Complete test matrix** (founder — no Brain session):
+   - Open Vocalype built from `f842401`
+   - Test Slack: T1 (dictate), T2 (clipboard restore), T3 (quick succession)
+   - Test Teams: T1, T2, T3
+   - Test Word: T1, T2, T3
+   - If any fails → `git checkout -- src-tauri/src/platform/clipboard.rs` immediately
+   - If all pass → proceed to Phase 5 (record benchmarks)
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`

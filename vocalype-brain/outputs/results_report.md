@@ -1,6 +1,6 @@
 # Vocalype Brain — Results Report
 
-Date: 2026-04-24
+Date: 2026-04-26
 
 ## Recent Results
 
@@ -10,8 +10,35 @@ Date: 2026-04-24
 - 2026-04-24T09:09:56: Frontend clarity pass for first successful dictation -> keep
 - 2026-04-24T09:43:29: Frontend clarity pass for first successful dictation -> keep
 - 2026-04-24T13:18:23: Fix: First successful dictation — activation_failed retry state -> keep
+- 2026-04-26T00:00:00: V12 Experiment 1 — Windows paste restore delay floor 450ms → 150ms -> **provisional_keep** (Slack/Teams/Word + benchmarks pending)
 
-## Latest Result — V6 Handoff Validation
+## Latest Result — V12 Experiment 1 (PROVISIONAL_KEEP)
+
+**Task:** V12 Experiment 1 — Reduce Windows paste restore delay floor 450ms → 150ms
+**Source:** V12 continuous improvement loop
+**Product commit:** f842401 — perf(app): reduce Windows paste restore delay floor
+**Brain commits:** 4c5d593 (handoff task), 29dc5da (V12 design), 4cafbb5 (V11 closure)
+**Files changed:** `src-tauri/src/platform/clipboard.rs` line 120 only
+
+**What shipped:**
+- `paste_delay_ms.max(450)` → `paste_delay_ms.max(150)` — one token, one line
+- Windows-only (`#[cfg(target_os = "windows")]`) — other platforms unchanged
+- Expected saving: ~300ms (paste_execute 644ms → ~344ms)
+
+**Smoke tests (founder, 2026-04-26):**
+- Notepad ✅ | VS Code ✅ | Chrome ✅ | Gmail ✅ — all 12 cases passed
+- Slack ⬜ | Teams ⬜ | Word ⬜ — 9 cases still pending
+
+**Checks passed:**
+- `git diff` — exactly 1 token changed ✅
+- `git diff --check` — no whitespace issues ✅
+- `cargo check` — Finished in 11.58s, no errors ✅
+- Translation check — 16/16 languages complete ✅
+
+**Decision: PROVISIONAL_KEEP**
+Becomes FULL_KEEP when: Slack + Teams + Word pass all cases AND ≥5 post-fix benchmarks confirm median < 420ms.
+
+## Previous Latest Result — V6 Handoff Validation
 
 **Task:** Fix: First successful dictation — activation_failed retry state
 **Source:** V6 handoff loop
@@ -72,5 +99,6 @@ Date: 2026-04-24
 
 ## Recommended Next Action
 
-- Run manual test: all 5 activation states to confirm retry button and fallback message work.
-- Plan V7: Real Product Benchmark Loop.
+1. **Complete V12 Phase 4** (founder — no Brain session): Test Slack (3 cases), Teams (3 cases), Word (3 cases) with Vocalype built from `f842401`. If any fails → `git checkout -- src-tauri/src/platform/clipboard.rs`.
+2. **Record V12 Phase 5 benchmarks** (founder): ≥5 `paste_latency_ms` observations via `add_benchmark_observation.py --notes "post-fix floor=150ms"`.
+3. **Close V12** (Brain session): Run `generate_unified_report.py`, update `wins.md`, write V12 closure report.

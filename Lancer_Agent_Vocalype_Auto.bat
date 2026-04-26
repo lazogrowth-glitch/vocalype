@@ -49,14 +49,14 @@ if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_run_report.md" 
     echo   agent_run_report.md ouvert.
 )
 
-if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\next_product_bottleneck.md" (
-    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\next_product_bottleneck.md"
-    echo   next_product_bottleneck.md ouvert.
-)
-
 if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\fresh_investigation_mission.md" (
     start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\fresh_investigation_mission.md"
     echo   fresh_investigation_mission.md ouvert.
+)
+
+if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\next_product_bottleneck.md" (
+    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\next_product_bottleneck.md"
+    echo   next_product_bottleneck.md ouvert.
 )
 
 if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md" (
@@ -66,10 +66,13 @@ if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md"
 
 echo.
 echo ============================================================
-echo   FAIT. Lis agent_recommendation.md pour la prochaine etape.
+echo   FAIT.
 echo.
-echo   Si fresh_investigation_mission.md a ete ouvert :
-echo     Approuve l'investigation, puis copie le contenu dans Claude Code.
+echo   Si fresh_investigation_mission.md s'ouvre :
+echo     copie-colle ce fichier dans Claude/Codex.
+echo.
+echo   Si aucune mission fraiche ne s'ouvre :
+echo     lis agent_recommendation.md pour la prochaine action.
 echo.
 echo   Modes externes disponibles :
 echo     off     = jamais appeler DeepSeek, preparer context_pack seulement

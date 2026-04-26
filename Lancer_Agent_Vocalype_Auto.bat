@@ -39,39 +39,45 @@ echo [Ouverture] Lecture des resultats...
 
 if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_recommendation.md" (
     start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_recommendation.md"
-    echo   agent_recommendation.md ouvert.
+    echo   [OUVERT] agent_recommendation.md
 ) else (
-    echo   AVERTISSEMENT : agent_recommendation.md introuvable.
+    echo   [MANQUANT] agent_recommendation.md introuvable.
 )
 
 if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_run_report.md" (
     start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_run_report.md"
-    echo   agent_run_report.md ouvert.
+    echo   [OUVERT] agent_run_report.md
+) else (
+    echo   [MANQUANT] agent_run_report.md introuvable.
 )
 
 if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\fresh_investigation_mission.md" (
     start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\fresh_investigation_mission.md"
-    echo   fresh_investigation_mission.md ouvert.
+    echo   [OUVERT] fresh_investigation_mission.md -- copie-colle dans Claude/Codex
+) else (
+    echo   [--] fresh_investigation_mission.md : pas cree -- aucune mission fraiche ce cycle
 )
 
 if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\next_product_bottleneck.md" (
     start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\next_product_bottleneck.md"
-    echo   next_product_bottleneck.md ouvert.
+    echo   [OUVERT] next_product_bottleneck.md
+) else (
+    echo   [--] next_product_bottleneck.md : pas cree ce cycle
 )
 
 if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md" (
     start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md"
-    echo   deepseek_response.md ouvert.
+    echo   [OUVERT] deepseek_response.md
 )
 
 echo.
 echo ============================================================
 echo   FAIT.
 echo.
-echo   Si fresh_investigation_mission.md s'ouvre :
+echo   Si fresh_investigation_mission.md s'est ouvert :
 echo     copie-colle ce fichier dans Claude/Codex.
 echo.
-echo   Si aucune mission fraiche ne s'ouvre :
+echo   Si aucune mission fraiche ne s'est ouverte :
 echo     lis agent_recommendation.md pour la prochaine action.
 echo.
 echo   Modes externes disponibles :

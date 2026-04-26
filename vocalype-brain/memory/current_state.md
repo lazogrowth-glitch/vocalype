@@ -1,21 +1,26 @@
 # Vocalype Brain — Current State
 
-Last updated: 2026-04-25
-Latest commit: docs(brain): close V10 unified decision phase
-Brain phase: V11 Phase 1 COMPLETE — mission package generator live
+Last updated: 2026-04-26
+Latest commit: docs(brain): diagnose paste utils latency root cause (5958e99)
+Brain phase: V11 CLOSED — V12 design pending
 
 ---
 
 ## Phase
 
-**V11 Phase 1 — COMPLETE. `generate_v11_mission_package.py` live.**
-V11 reads weekly_action.md, runs 8 safety gates, writes `v11_mission_package.md` + `v11_mission_package_report.md`.
-Execution log: `data/v11_execution_log.jsonl` — 2 PENDING records (PB-1, product_investigation).
+**V11 CLOSED. First full measurement cycle complete.**
+V11 executed PB-1 (paste.rs investigation) → confirmed root cause in `platform/clipboard.rs`.
+Execution log: `data/v11_execution_log.jsonl` — 4 records (2 PENDING, 2 COMPLETE).
+Last commits: `8a875e6` (paste_mechanism_diagnosis.md), `5958e99` (paste_utils_diagnosis.md).
 
-Current mission package: PB-1 — read-only inspection of `src-tauri/src/actions/paste.rs`.
-Expected output: `outputs/paste_mechanism_diagnosis.md`.
-Next step: send `outputs/v11_mission_package.md` to Claude/Codex/Aider for execution.
-Safety verdict: SAFE TO SEND. All 8 gates passed.
+**Root cause confirmed:** two `thread::sleep` calls in `paste_via_clipboard()` (clipboard.rs:87, 120+128).
+Sleep 1 = 60ms (pre-Ctrl+V propagation). Sleep 2 = 450ms Windows floor (post-Ctrl+V restore).
+Total = ~644ms. Fix target: `clipboard.rs:120` — reduce `paste_delay_ms.max(450)` floor.
+
+**V12 status: READY TO DESIGN.**
+Entry gates all satisfied: prior diagnosis exists (G5 ✅), fix target identified, no V8/V9 dependency.
+V12 Phase 1 = write `outputs/handoff_task.md` (paste delay reduction proposal).
+V12 Phase 2 = oversee implementation + benchmark comparison.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -44,7 +49,6 @@ V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each 
 
 ## What Does Not Exist Yet
 - `correlate_content_business.py` — V9 Phase 2 script (not yet built)
-- `correlate_content_business.py` — V9 Phase 2 script (designed, not yet built)
 - `compare_content_experiments.py` — V9 Phase 3 script (not yet designed)
 - `lock_business_baseline.py` — V8 Phase 2 script (designed, not yet built)
 - `fetch_business_metrics.py` — V8 Phase 2 automated pull script (designed, not yet built)
@@ -53,8 +57,8 @@ V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each 
 - `lock_benchmark_baseline.py` — V7 Phase 2 script (designed, not yet built)
 - `compare_benchmarks.py` — V7 Phase 2 script (designed, not yet built)
 - `benchmark_baseline.jsonl` — V7 locked baseline (not yet created)
-- `paste_mechanism_diagnosis.md` — V7 read-only investigation output (not yet run)
-- `idle_background_transcription_diagnosis.md` — V7 Track B output (not yet run)
+- `outputs/handoff_task.md` — V12 Phase 1 paste delay reduction proposal (not yet written — V12 Phase 1 task)
+- `idle_background_transcription_diagnosis.md` — V7 Track B output (not yet run — separate from paste fix)
 - Event tracking — no instrumentation in product code (separate V7.5 task if needed)
 
 ---
@@ -94,11 +98,12 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Execute PB-1 mission** (next Brain session):
-   - Read `outputs/v11_mission_package.md` and follow it exactly
-   - Inspect `src-tauri/src/actions/paste.rs` (read-only)
-   - Write `outputs/paste_mechanism_diagnosis.md` — answer all 8 questions
-   - No product code modifications — diagnosis only
+1. **Design V12 Continuous Improvement Loop** (next Brain session — `planning_only`):
+   - Read: `operating_contract.md`, `current_state.md`, `paste_mechanism_diagnosis.md`, `paste_utils_diagnosis.md`, `v11_closure_report.md`
+   - Create: `outputs/v12_design_plan.md` — 15 sections covering proposal → implement → measure → compare loop
+   - Do not create `handoff_task.md` yet — design only
+   - Exact prompt in `outputs/v11_closure_report.md` Section 10
+   - Do not commit until founder approves design
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
@@ -106,16 +111,16 @@ Future prompts may reference the contract instead of repeating safety rules:
    - Review: `python vocalype-brain/scripts/review_content_performance.py`
    - Snapshot: `python vocalype-brain/scripts/weekly_content_snapshot.py`
 
-2. **Record real V8 business observations** (10-min weekly session — founder task):
+3. **Record real V8 business observations** (10-min weekly session — founder task):
    - Open Stripe → record `mrr`, `paid_conversions`, `trial_starts`, `churned_users`, `refunds`
    - Open Supabase → record `account_signups`, `activation_attempts`, `first_successful_dictations`
    - Open Vercel → record `website_visitors`, `downloads`
    - Record each: `python vocalype-brain/scripts/add_business_observation.py --metric <m> --value <v> --unit <u> --source <s> --period <YYYY-Www>`
    - Review: `python vocalype-brain/scripts/review_business_metrics.py`
 
-3. **V7 product investigations** (parallel track, lower priority until V9 Phase 1 done):
-   - Track A: read-only investigation of `src-tauri/src/actions/paste.rs` → `paste_mechanism_diagnosis.md`
-   - Track B: read-only investigation of audio manager → `idle_background_transcription_diagnosis.md`
+4. **V7 Track B** (lower priority — separate from paste fix):
+   - Read-only investigation of audio manager → `idle_background_transcription_diagnosis.md`
+   - Separate from PB-1 — do not bundle with paste fix work
 
 ---
 
@@ -169,7 +174,6 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V7 bottleneck hypothesis | outputs/v7_bottleneck_hypothesis.md |
 | V7 pipeline logs search report | outputs/pipeline_logs_search_report.md |
 | V7 paste investigation proposal | outputs/product_patch_proposal_report.md |
-| Paste mechanism diagnosis (pending) | outputs/paste_mechanism_diagnosis.md |
 | V7 final status report | outputs/v7_final_status_report.md |
 | V7 closure report + V8 entry | outputs/v7_closure_report.md |
 | V8 design plan | outputs/v8_design_plan.md |
@@ -192,7 +196,11 @@ Future prompts may reference the contract instead of repeating safety rules:
 | **V11 mission package** | **outputs/v11_mission_package.md** |
 | V11 mission package report | outputs/v11_mission_package_report.md |
 | V11 execution log | data/v11_execution_log.jsonl |
-| Paste mechanism diagnosis (pending) | outputs/paste_mechanism_diagnosis.md |
+| **V11 closure report** | **outputs/v11_closure_report.md** |
+| Paste mechanism diagnosis | outputs/paste_mechanism_diagnosis.md |
+| Paste utils diagnosis | outputs/paste_utils_diagnosis.md |
+| **V12 design plan (pending)** | **outputs/v12_design_plan.md** |
+| **V12 paste proposal (pending)** | **outputs/handoff_task.md** |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

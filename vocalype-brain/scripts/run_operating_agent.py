@@ -44,14 +44,16 @@ BRAIN_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = BRAIN_ROOT.parent
 SCRIPTS_DIR = Path(__file__).resolve().parent
 
-CONFIG_PATH           = BRAIN_ROOT / "config"  / "model_routing.json"
-WEEKLY_ACTION_PATH    = BRAIN_ROOT / "outputs" / "weekly_action.md"
-MISSION_PACKAGE_PATH  = BRAIN_ROOT / "outputs" / "v11_mission_package.md"
-CONTEXT_PACK_PATH     = BRAIN_ROOT / "outputs" / "context_pack.md"
-AGENT_RUN_REPORT_PATH = BRAIN_ROOT / "outputs" / "agent_run_report.md"
-AGENT_RECOMMEND_PATH  = BRAIN_ROOT / "outputs" / "agent_recommendation.md"
-EXTERNAL_AUDIT_PATH   = BRAIN_ROOT / "outputs" / "external_context_audit.md"
-DEEPSEEK_RESP_PATH    = BRAIN_ROOT / "outputs" / "deepseek_response.md"
+CONFIG_PATH              = BRAIN_ROOT / "config"  / "model_routing.json"
+WEEKLY_ACTION_PATH       = BRAIN_ROOT / "outputs" / "weekly_action.md"
+MISSION_PACKAGE_PATH     = BRAIN_ROOT / "outputs" / "v11_mission_package.md"
+CONTEXT_PACK_PATH        = BRAIN_ROOT / "outputs" / "context_pack.md"
+AGENT_RUN_REPORT_PATH    = BRAIN_ROOT / "outputs" / "agent_run_report.md"
+AGENT_RECOMMEND_PATH     = BRAIN_ROOT / "outputs" / "agent_recommendation.md"
+EXTERNAL_AUDIT_PATH      = BRAIN_ROOT / "outputs" / "external_context_audit.md"
+DEEPSEEK_RESP_PATH       = BRAIN_ROOT / "outputs" / "deepseek_response.md"
+NEXT_BOTTLENECK_PATH     = BRAIN_ROOT / "outputs" / "next_product_bottleneck.md"
+BENCHMARK_OBS_PATH       = BRAIN_ROOT / "data"    / "benchmark_observations.jsonl"
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -473,6 +475,211 @@ def _call_deepseek(log: list[dict]) -> tuple[str | None, str | None]:
 
 
 # ---------------------------------------------------------------------------
+# Next product bottleneck selector
+# ---------------------------------------------------------------------------
+def _load_benchmark_observations() -> list[dict]:
+    """Load all benchmark observations from the JSONL store."""
+    if not BENCHMARK_OBS_PATH.exists():
+        return []
+    obs: list[dict] = []
+    for line in BENCHMARK_OBS_PATH.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if line:
+            try:
+                obs.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return obs
+
+
+def _select_next_product_bottleneck() -> dict:
+    """
+    Inspect existing Brain data and select the next unresolved product bottleneck.
+
+    Priority order (operating_contract.md Section 5):
+      1. Safety / stability issue with evidence
+      2. RAM growth / idle background inference loop
+      3. Latency bottleneck not yet benchmarked post-fix
+      4. Transcription quality measurement gap
+      5. First successful dictation / activation issue
+      6. Distribution / business data only if no product bottleneck exists
+    """
+    observations = _load_benchmark_observations()
+
+    # Index observations by metric name
+    by_metric: dict[str, list[dict]] = {}
+    for obs in observations:
+        m = obs.get("metric", "")
+        if m:
+            by_metric.setdefault(m, []).append(obs)
+
+    # --- Priority 1/2: Idle background inference loop / RAM growth ---
+    # Evidence: idle_background_inference_loop observation OR the observation file
+    idle_loop_obs   = by_metric.get("idle_background_inference_loop", [])
+    ram_growth_obs  = by_metric.get("memory_growth_mb", [])
+    idle_ram_obs    = by_metric.get("app_idle_ram_mb", [])
+    idle_obs_file   = BRAIN_ROOT / "outputs" / "idle_background_transcription_observation.md"
+
+    if idle_loop_obs or ram_growth_obs or idle_obs_file.exists():
+        evidence: list[str] = []
+        if idle_loop_obs:
+            evidence.append(
+                f"idle_background_inference_loop: {len(idle_loop_obs)} confirmed observation(s)"
+            )
+        if ram_growth_obs:
+            max_growth = max(o.get("value", 0) for o in ram_growth_obs)
+            evidence.append(f"memory_growth_mb: max observed = {max_growth:.0f} MB while idle")
+        if len(idle_ram_obs) >= 2:
+            vals = sorted(o.get("value", 0) for o in idle_ram_obs)
+            evidence.append(
+                f"app_idle_ram_mb: {vals[0]:.0f} MB (start) -> {vals[-1]:.0f} MB "
+                f"(+{vals[-1] - vals[0]:.0f} MB over ~15 min idle)"
+            )
+        if idle_obs_file.exists():
+            evidence.append(
+                "idle_background_transcription_observation.md: present (severity=HIGH)"
+            )
+        evidence.append(
+            "Log pattern: repeated chunk processing + 'Transcription result is empty' "
+            "every ~1-2s with no user dictation in progress"
+        )
+        return {
+            "bottleneck_id":       "idle_background_inference_loop",
+            "title":               "Idle Background Inference Loop / RAM Growth",
+            "priority":            1,
+            "evidence":            evidence,
+            "task_type":           "product_investigation",
+            "route":               "sensitive_code",
+            "requires_approval":   True,
+            "goal": (
+                "Diagnose why Vocalype runs inference and grows RAM while idle "
+                "(no dictation in progress). Read-only inspection of the audio manager. "
+                "No code changes during this investigation."
+            ),
+            "investigation_output": "outputs/idle_background_transcription_diagnosis.md",
+            "files_to_read": [
+                "src-tauri/src/managers/audio.rs  (read-only)",
+                "src-tauri/src/managers/transcription.rs  (read-only)",
+                "%LOCALAPPDATA%\\com.vocalype.desktop\\logs\\vocalype.log",
+            ],
+            "forbidden": (
+                "Do NOT modify src-tauri/ during investigation. "
+                "Read-only inspection only. No code changes."
+            ),
+        }
+
+    # --- Priority 3: Paste latency — post-fix benchmarks pending ---
+    paste_obs = by_metric.get("paste_latency_ms", [])
+    post_fix_obs = [o for o in paste_obs if "post-fix" in o.get("notes", "").lower()]
+    v12_result = BRAIN_ROOT / "outputs" / "v12_experiment_result.md"
+    if paste_obs and len(post_fix_obs) < 5:
+        evidence = [
+            f"paste_latency_ms: {len(paste_obs)} total obs, "
+            f"{len(post_fix_obs)} post-fix obs (need >=5 to close V12)",
+            "V12 status: PROVISIONAL_KEEP -- Slack/Teams/Word test matrix pending",
+        ]
+        if v12_result.exists():
+            evidence.append("v12_experiment_result.md: PROVISIONAL_KEEP confirmed")
+        return {
+            "bottleneck_id":       "paste_latency_pending_benchmarks",
+            "title":               "Paste Latency -- V12 Benchmarks Pending",
+            "priority":            3,
+            "evidence":            evidence,
+            "task_type":           "measurement_task",
+            "route":               "data_entry",
+            "requires_approval":   False,
+            "goal": (
+                "Complete V12 Phase 4: test Slack (T1/T2/T3), Teams (T1/T2/T3), "
+                "Word (T1/T2/T3), then record >=5 post-fix paste_latency_ms observations "
+                "to close V12 and upgrade to FULL_KEEP."
+            ),
+            "investigation_output": None,
+            "files_to_read": [],
+            "forbidden": "Do not modify product code. Record observations only.",
+        }
+
+    # --- Fallback: insufficient data ---
+    return {
+        "bottleneck_id":       "insufficient_product_data",
+        "title":               "Insufficient Product Benchmark Data",
+        "priority":            5,
+        "evidence":            ["Fewer than 5 observations for priority metrics"],
+        "task_type":           "measurement_task",
+        "route":               "data_entry",
+        "requires_approval":   False,
+        "goal":                "Record more benchmark observations to identify the next bottleneck.",
+        "investigation_output": None,
+        "files_to_read": [],
+        "forbidden":           "Do not modify product code.",
+    }
+
+
+def _write_next_bottleneck_report(bottleneck: dict) -> None:
+    """Write next_product_bottleneck.md with the selected bottleneck and investigation plan."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    b = bottleneck
+
+    lines = [
+        "# Vocalype Brain -- Next Product Bottleneck\n\n",
+        f"Generated: {timestamp}\n",
+        f"Bottleneck ID: `{b['bottleneck_id']}` | Priority: {b['priority']}\n\n",
+        "---\n\n",
+        f"## Selected Bottleneck\n\n**{b['title']}**\n\n",
+        f"Task type: `{b['task_type']}` | Route: `{b['route']}`\n\n",
+        f"**Goal:** {b['goal']}\n\n",
+        "---\n\n",
+        "## Evidence\n\n",
+    ]
+    for ev in b["evidence"]:
+        lines.append(f"- {ev}\n")
+    lines.append("\n")
+
+    if b.get("files_to_read"):
+        lines.append("## Files to Read (Investigation)\n\n")
+        for f in b["files_to_read"]:
+            lines.append(f"- `{f}`\n")
+        lines.append("\n")
+
+    if b.get("investigation_output"):
+        lines.append(f"## Expected Output\n\n`{b['investigation_output']}`\n\n")
+
+    lines += [
+        "## Safety Rules\n\n",
+        f"- {b['forbidden']}\n",
+        "- No product code modifications during investigation\n",
+        "- Founder reviews all outputs before any implementation\n",
+        "- Operating contract Section 3 and Section 6 apply\n\n",
+        "---\n\n",
+        "## How to Proceed\n\n",
+    ]
+
+    if b["route"] == "sensitive_code":
+        lines += [
+            "1. Get explicit per-session founder approval\n",
+            "2. Run `generate_v11_mission_package.py` once execution log is cleared\n",
+            "   (or create a direct investigation mission)\n",
+            "3. Send to Claude Code for **read-only diagnosis only**\n",
+            "4. Claude writes `" + (b.get("investigation_output") or "diagnosis.md") + "` -- no code edits\n",
+            "5. Review diagnosis before any follow-up implementation\n",
+        ]
+    elif b["route"] == "data_entry":
+        lines += [
+            "1. Follow the measurement steps in the Goal section above\n",
+            "2. Record observations with `add_benchmark_observation.py`\n",
+            "3. Re-run the agent after recording -- V10 will select a fresh action\n",
+        ]
+    else:
+        lines += [
+            "1. Open `weekly_action.md` and follow the action instructions\n",
+            "2. Use the appropriate launcher or CLI script\n",
+        ]
+
+    NEXT_BOTTLENECK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    NEXT_BOTTLENECK_PATH.write_text("".join(lines), encoding="utf-8")
+    _p(f"  [OK] next_product_bottleneck.md written (bottleneck: {b['bottleneck_id']}).")
+
+
+# ---------------------------------------------------------------------------
 # Output writers
 # ---------------------------------------------------------------------------
 def _write_deepseek_response(content: str) -> None:
@@ -589,6 +796,7 @@ def _write_agent_recommendation(
     deepseek_error: str | None,
     context_built: bool,
     dry_run: bool,
+    next_bottleneck: dict | None = None,
 ) -> None:
     """Write agent_recommendation.md -- founder-facing next action."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -604,38 +812,75 @@ def _write_agent_recommendation(
 
     if route == "completed_action_blocked":
         body = [
-            "## Recommended Action: HOLD -- Current action is already COMPLETE\n\n",
-            "> **The V11 mission package generator was blocked by safety gate G7.**\n",
-            "> The current weekly action is already marked COMPLETE in the execution log.\n\n",
-            "**Do NOT send any mission package to Claude/Codex this cycle.**\n",
-            "The existing `v11_mission_package.md` may be stale -- do not use it.\n\n",
+            "## Current Weekly Action: ALREADY COMPLETE\n\n",
+            "> **V11 blocked by safety gate G7 -- duplicate COMPLETE action in execution log.**\n",
+            "> The existing `v11_mission_package.md` is stale. Do NOT send it to Claude/Codex.\n\n",
+        ]
+
+        # --- Fresh bottleneck section ---
+        if next_bottleneck:
+            nb = next_bottleneck
+            body += [
+                "---\n\n",
+                f"## Fresh Next Product Bottleneck Selected\n\n",
+                f"**{nb['title']}**\n\n",
+                f"| Field | Value |\n|---|---|\n",
+                f"| Bottleneck ID | `{nb['bottleneck_id']}` |\n",
+                f"| Priority | {nb['priority']} |\n",
+                f"| Task type | `{nb['task_type']}` |\n",
+                f"| Route | `{nb['route']}` |\n",
+                f"| Requires approval | {'YES' if nb.get('requires_approval') else 'NO'} |\n\n",
+                "**Goal:** " + nb["goal"] + "\n\n",
+                "**Evidence:**\n\n",
+            ]
+            for ev in nb["evidence"]:
+                body.append(f"- {ev}\n")
+            body.append("\n")
+
+            # Route-specific action steps
+            if nb["route"] == "sensitive_code":
+                body += [
+                    "**How to proceed (read-only investigation):**\n\n",
+                    "1. This is a `sensitive_code` route -- per-session founder approval required\n",
+                    "2. Open `vocalype-brain/outputs/next_product_bottleneck.md` for full details\n",
+                    "3. If approved: send a read-only diagnosis mission to Claude Code\n",
+                    "   - Claude reads `src-tauri/` audio/runtime managers only\n",
+                    "   - Claude writes `" + (nb.get("investigation_output") or "diagnosis.md") + "` -- no code edits\n",
+                    "4. Founder reviews diagnosis before any implementation\n\n",
+                    "**Files to read (investigation only):**\n\n",
+                ]
+                for f in nb.get("files_to_read", []):
+                    body.append(f"- `{f}`\n")
+                body.append("\n")
+                body.append(f"**Safety:** {nb['forbidden']}\n\n")
+            elif nb["route"] == "data_entry":
+                body += [
+                    "**How to proceed:**\n\n",
+                    "1. Open `vocalype-brain/outputs/next_product_bottleneck.md` for details\n",
+                    "2. Follow the measurement steps to record observations\n",
+                    "3. Re-run this agent -- V10 will select a fresh action once data is in\n\n",
+                ]
+        else:
+            body.append("No fresh bottleneck could be selected from available data.\n\n")
+
+        # --- Always-present fallback options ---
+        body += [
             "---\n\n",
-            "### Why this happened\n\n",
-            "The Brain's weekly action (`weekly_action.md`) is pointing to a task that was\n",
-            "already completed in a previous session. The V11 generator's G7 gate correctly\n",
-            "blocked it to prevent sending a duplicate or outdated mission.\n\n",
-            "### Next safe actions\n\n",
-            "**Option A -- Record new data (recommended):**\n\n",
-            "  Record V8 business metrics (Stripe / Supabase / Vercel, 10 min):\n",
-            "  ```\n",
-            "  python vocalype-brain/scripts/add_business_observation.py --metric <m> ...\n",
-            "  ```\n",
-            "  Record V9 content performance (after each post):\n",
-            "  ```\n",
-            "  python vocalype-brain/scripts/add_content_observation.py --platform <p> ...\n",
-            "  ```\n",
-            "  Then re-run this agent. V10 will select a fresh action.\n\n",
-            "**Option B -- Review the completed action:**\n\n",
-            "  - Open `vocalype-brain/outputs/weekly_action.md` to see what action was completed\n",
-            "  - Open `vocalype-brain/data/v11_execution_log.jsonl` to see COMPLETE records\n",
-            "  - Do NOT manually edit the execution log\n\n",
-            "**Option C -- Record V12 benchmarks (if V12 Phase 4 is still pending):**\n\n",
-            "  Record >=5 post-fix `paste_latency_ms` observations to close V12:\n",
-            "  ```\n",
-            "  python vocalype-brain/scripts/add_benchmark_observation.py \\\n",
-            '    --metric paste_latency_ms --value <ms> --notes "post-fix floor=150ms"\n',
-            "  ```\n\n",
-            "**No Claude/Codex mission should be sent this cycle.**\n",
+            "## Other Options If Not Proceeding With Investigation\n\n",
+            "**Record V8 business metrics** (Stripe / Supabase / Vercel, 10 min):\n",
+            "```\n",
+            "python vocalype-brain/scripts/add_business_observation.py --metric <m> ...\n",
+            "```\n\n",
+            "**Record V9 content performance** (after each post):\n",
+            "```\n",
+            "python vocalype-brain/scripts/add_content_observation.py --platform <p> ...\n",
+            "```\n\n",
+            "**Record V12 post-fix benchmarks** (if Slack/Teams/Word tests still pending):\n",
+            "```\n",
+            "python vocalype-brain/scripts/add_benchmark_observation.py \\\n",
+            '  --metric paste_latency_ms --value <ms> --notes "post-fix floor=150ms"\n',
+            "```\n\n",
+            "**No Claude/Codex mission should be sent based on the stale weekly action.**\n",
         ]
 
     elif route == "hold":
@@ -868,6 +1113,8 @@ def main() -> None:
     route, action_type, classification_reason = _classify(action_text)
 
     # Override: if V11 was blocked by G7 (duplicate COMPLETE), force a safe hold route
+    # and select a fresh product bottleneck to give the founder a concrete next action
+    next_bottleneck: dict | None = None
     if v11_blocked_detail:
         original_route = route
         route = "completed_action_blocked"
@@ -875,6 +1122,11 @@ def main() -> None:
             f"V11 blocked (G7 duplicate COMPLETE) -- original route was '{original_route}'. "
             "Stale mission package suppressed."
         )
+        if not args.dry_run:
+            _p("[3b] Selecting next product bottleneck ...")
+            next_bottleneck = _select_next_product_bottleneck()
+            _p(f"  Selected: {next_bottleneck['bottleneck_id']} (priority {next_bottleneck['priority']})")
+            _write_next_bottleneck_report(next_bottleneck)
 
     _p(f"  Action type   : {action_type}")
     _p(f"  Route         : {route}")
@@ -983,6 +1235,7 @@ def main() -> None:
             deepseek_error=deepseek_error,
             context_built=context_built,
             dry_run=args.dry_run,
+            next_bottleneck=next_bottleneck,
         )
     else:
         _p("  [dry-run] Skipping file writes.")
@@ -1009,6 +1262,8 @@ def main() -> None:
         _p("    vocalype-brain/outputs/v11_mission_package.md")
     if v11_blocked_detail:
         _p("  [!] Stale v11_mission_package.md suppressed -- action already complete")
+    if next_bottleneck:
+        _p(f"    vocalype-brain/outputs/next_product_bottleneck.md  ({next_bottleneck['bottleneck_id']})")
     _p("=" * 60)
     _p("")
 

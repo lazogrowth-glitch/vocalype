@@ -117,7 +117,7 @@ fn paste_via_clipboard(
     // Give the target app enough time to consume clipboard content before restore.
     // Too-short delays can cause apparent "paste did nothing" on some apps.
     #[cfg(target_os = "windows")]
-    let restore_delay_ms = paste_delay_ms.max(450);
+    let restore_delay_ms = paste_delay_ms.max(150);
 
     #[cfg(not(target_os = "windows"))]
     let restore_delay_ms = paste_delay_ms.max(250);

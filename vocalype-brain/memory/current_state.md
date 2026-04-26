@@ -1,7 +1,7 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-26
-Latest commit: docs(brain): record V12 paste delay experiment result (f04f5b0)
+Latest commit: chore(brain): simplify operating mode launchers
 Brain phase: OPERATING MODE — construction complete (V1–V12)
 
 ---
@@ -20,15 +20,23 @@ Benchmarks pending: ≥5 post-fix `paste_latency_ms` observations not yet record
 Rollback still armed: `git checkout -- src-tauri/src/platform/clipboard.rs`
 Upgrades to FULL_KEEP when Slack/Teams/Word pass + benchmarks confirm median < 420ms.
 
-**Desktop launchers installed:** `C:\Users\ziani\Desktop\`
-- `Lancer Agent Vocalype Auto.bat` — **bouton principal** : cycle complet + classification auto + routage intelligent
-- `Lancer Vocalype Brain.bat` — cycle manuel : rapport unifié + mission package + ouvre les 2 fichiers clés
+**Desktop launchers — Bureau simplifié:**
+- `Lancer Agent Vocalype Auto.bat` — **SEUL bouton principal** sur le Bureau
+
+**Dossier avancé** : `C:\Users\ziani\Desktop\Vocalype Brain - Avancé\`
+- `Lancer Vocalype Brain.bat` — cycle manuel
 - `Voir Action du Robot.bat` — ouvre weekly_action.md directement
 - `Generer Mission Claude.bat` — génère + ouvre v11_mission_package.md
 - `Enregistrer Resultat.bat` — lance tous les review scripts + ouvre rapports
 - `Voir Rapports Vocalype Brain.bat` — ouvre tous les rapports disponibles
 - `Stop Vocalype Brain.bat` — rappelle qu'il n'y a pas de daemon
-- `Creer Context DeepSeek.bat` — construit context_pack.md pour modèle externe (DeepSeek/Claude)
+- `Creer Context DeepSeek.bat` — construit context_pack.md pour modèle externe
+
+**Workflow normal (4 étapes) :**
+1. Double-clic `Lancer Agent Vocalype Auto` → lit `agent_recommendation.md`
+2. Si mission produit → copier `v11_mission_package.md` dans Claude / Codex
+3. Laisser Claude exécuter → review diff avant commit
+4. Si besoin → dossier Avancé → `Enregistrer Resultat.bat`
 
 **Model Routing Pack:** `config/model_routing.json` — 5 rôles définis
 - `local_fast` → qwen2.5:1.5b (routine, privé)
@@ -47,10 +55,10 @@ API key : jamais dans git — variable d'environnement Windows ou .env local exc
 - Sorties : `agent_run_report.md`, `agent_recommendation.md`, `external_context_audit.md`, `deepseek_response.md`
 
 **Operating Mode weekly rhythm:**
-1. Founder: double-clic `Lancer Vocalype Brain.bat` → lit weekly_action.md → copie mission dans Claude
+1. Founder: double-clic `Lancer Agent Vocalype Auto.bat` → lit `agent_recommendation.md` → copie mission dans Claude
 2. Founder: record V8 business data every Monday (~10 min, Stripe/Supabase/Vercel)
 3. Founder: record V9 content observations after each post
-4. Brain: V10 weekly action run (via launcher), V11 executes safely, V12 loop for bottlenecks
+4. After Claude finishes → dossier Avancé → `Enregistrer Resultat.bat` si nécessaire
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).

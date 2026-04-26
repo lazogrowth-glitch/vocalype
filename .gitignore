@@ -128,3 +128,9 @@ cargo-test-warnings*.txt
 .env
 .env
 parakeet_test_150.zip
+
+# Vocalype Brain — runtime outputs (generated on each run, never committed)
+vocalype-brain/outputs/agent_recommendation.md
+vocalype-brain/outputs/agent_run_report.md
+vocalype-brain/outputs/context_pack.md
+vocalype-brain/outputs/model_route_decision.md

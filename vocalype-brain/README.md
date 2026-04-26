@@ -12,39 +12,58 @@ It turns product observations, benchmark data, business metrics, and content per
 
 Utilise les lanceurs sur ton Bureau Windows. Tu n'as pas besoin de taper des commandes.
 
-### Lanceurs Bureau (double-clique)
+### Bureau Windows — UN seul bouton principal
 
-| Fichier | Ce que ça fait |
+**Double-clique sur :**
+
+> **`Lancer Agent Vocalype Auto.bat`**
+
+C'est tout. Le Brain fait le reste.
+
+Les autres boutons sont rangés dans le dossier **`Vocalype Brain - Avancé`** sur le Bureau.
+Tu n'en as besoin que dans des cas spécifiques (voir ci-dessous).
+
+### Workflow normal (4 étapes)
+
+```
+1. Double-clic : Lancer Agent Vocalype Auto
+   -> rapport généré -> action classifiée -> recommendation ouverte
+
+2. Lis : agent_recommendation.md
+   -> que faire cette semaine ?
+
+3. Si mission produit nécessaire :
+   -> copie v11_mission_package.md dans Claude / Codex
+   -> laisse Claude exécuter
+   -> review le diff avant de commit
+
+4. Après que Claude ait fini (si besoin) :
+   -> dossier Avancé -> Enregistrer Resultat.bat
+```
+
+**Pas de V13. Le Mode Opérationnel continue.**
+
+### Dossier Avancé — Bureau / Vocalype Brain - Avancé
+
+Ces boutons existent mais ne sont pas nécessaires au quotidien :
+
+| Fichier | Quand l'utiliser |
 |---|---|
-| **`Lancer Agent Vocalype Auto.bat`** | **Bouton principal intelligent** : cycle complet + classification auto + routage (local / DeepSeek / Claude) |
-| `Lancer Vocalype Brain.bat` | Cycle manuel : rapport unifié + package mission + ouvre les deux fichiers |
-| `Voir Action du Robot.bat` | Ouvre directement `weekly_action.md` — l'action prioritaire de la semaine |
-| `Generer Mission Claude.bat` | Génère le package mission V11 et l'ouvre — prêt à coller dans Claude / Codex |
-| `Enregistrer Resultat.bat` | Lance tous les scripts de review et ouvre les rapports |
-| `Voir Rapports Vocalype Brain.bat` | Ouvre tous les rapports disponibles (benchmarks, business, contenu, résultats) |
-| `Stop Vocalype Brain.bat` | Rappelle qu'il n'y a pas de daemon — ferme les fenêtres terminal manuellement |
-| `Creer Context DeepSeek.bat` | Prépare `context_pack.md` manuellement pour DeepSeek ou Claude |
-
-### Rythme hebdomadaire (Mode Opérationnel)
-
-```
-Lundi       : enregistrer métriques V8 (Stripe / Supabase / Vercel, 10 min)
-Après post  : enregistrer observation V9 (contenu + performance 24-72h après)
-N'importe quand : double-clic "Lancer Agent Vocalype Auto.bat"
-                  -> classe l'action -> route vers le bon outil -> ouvre les rapports
-Après exécution : "Enregistrer Résultat.bat" -> review + commit
-```
+| `Lancer Vocalype Brain.bat` | Cycle manuel sans l'agent auto |
+| `Voir Action du Robot.bat` | Ouvrir `weekly_action.md` directement |
+| `Generer Mission Claude.bat` | Régénérer le package mission manuellement |
+| `Enregistrer Resultat.bat` | Après qu'une mission Claude soit terminée |
+| `Voir Rapports Vocalype Brain.bat` | Parcourir tous les rapports disponibles |
+| `Stop Vocalype Brain.bat` | Rappel : pas de daemon, rien à stopper |
+| `Creer Context DeepSeek.bat` | Préparer `context_pack.md` pour DeepSeek / Claude manuellement |
 
 ### Agent Auto — Routage intelligent
 
-"Lancer Agent Vocalype Auto" est le bouton principal. Il fait tout automatiquement :
+`Lancer Agent Vocalype Auto` décide automatiquement du bon outil :
 
-1. Lance le cycle Brain (rapport unifié + package mission)
-2. Lit `weekly_action.md` et classifie l'action
-3. Route vers le bon outil :
-   - **Routine / rapport** → outils locaux uniquement, rien ne quitte la machine
-   - **Raisonnement long-contexte** → DeepSeek (si configuré et autorisé) ou instructions pour Claude manuel
-   - **Implémentation produit sensible** → package mission Claude/Codex, jamais automatique
+- **Tâche routine / rapport** → outils locaux uniquement, rien ne quitte la machine
+- **Raisonnement long-contexte** → DeepSeek (si configuré et autorisé) ou instructions pour Claude manuel
+- **Implémentation produit sensible** → package mission Claude/Codex, jamais automatique
 
 **Mode externe** (`VOCALYPE_BRAIN_EXTERNAL_MODE`) :
 - `off` → jamais d'API externe, prépare `context_pack.md` seulement

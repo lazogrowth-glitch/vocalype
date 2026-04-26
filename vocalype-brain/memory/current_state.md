@@ -2,21 +2,23 @@
 
 Last updated: 2026-04-25
 Latest commit: feat(brain): add V10 unified weekly decision report
-Brain phase: V10 Phase 1 COMPLETE — unified decision engine live
+Brain phase: V10 CLOSED — V11 Operating Loop design is next
 
 ---
 
 ## Phase
 
-**V10 Phase 1 — COMPLETE. `generate_unified_report.py` live.**
-Joins V7 (product) + V8 (business) + V9 (distribution) by ISO week period key.
-Answers each week: "Is the constraint product, funnel, or distribution?"
-Run: `python vocalype-brain/scripts/generate_unified_report.py`
-Outputs: `outputs/unified_weekly_report.md` + `outputs/weekly_action.md`
+**V10 CLOSED. V11 Operating Loop — design pending.**
+V10 Phase 1 complete: `generate_unified_report.py` joins V7+V8+V9, runs rule-based bottleneck matrix.
+V10 closure report: `outputs/v10_closure_report.md`
 
-Current output (2026-W17): bottleneck=product, confidence=MEDIUM.
-Action: Investigate `paste_execute` root cause — read-only inspection of src-tauri/src/actions/paste.rs.
+Current diagnosis (2026-W17): bottleneck=product, confidence=MEDIUM.
+Current weekly action: PB-1 — read-only investigation of `src-tauri/src/actions/paste.rs` → `outputs/paste_mechanism_diagnosis.md`.
 V7: 43 obs, paste=644ms (threshold >300ms), RAM+110MB. V8: 0 real obs. V9: 0 real obs.
+
+V11 mandate: execution loop — reads V10 weekly action, classifies it (measurement/proposal/implementation), executes PB-1.
+V11 entry gate: none — ready to design immediately.
+Use exact prompt from `outputs/v10_closure_report.md` Section 10 to design V11.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -95,10 +97,10 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **V10 weekly action: paste_execute investigation** (next Brain session):
-   - Read-only inspection of `src-tauri/src/actions/paste.rs`
-   - Output: `outputs/paste_mechanism_diagnosis.md`
-   - This is V7 backlog item PB-1 — no code changes during investigation
+1. **Design V11 Operating Loop** (next Brain session):
+   - Use exact prompt from `outputs/v10_closure_report.md` Section 10
+   - V11 = execution loop: reads weekly_action.md → classifies → executes PB-1 (paste.rs read-only investigation)
+   - No product code access during V11 design — planning_only
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
@@ -185,8 +187,9 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V9 weekly content snapshot | outputs/weekly_content_snapshot.md |
 | V9 closure report | outputs/v9_closure_report.md |
 | **V10 design plan** | **outputs/v10_design_plan.md** |
-| V10 unified weekly report (pending) | outputs/unified_weekly_report.md |
-| V10 weekly action (pending) | outputs/weekly_action.md |
+| V10 unified weekly report | outputs/unified_weekly_report.md |
+| V10 weekly action | outputs/weekly_action.md |
+| **V10 closure report** | **outputs/v10_closure_report.md** |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

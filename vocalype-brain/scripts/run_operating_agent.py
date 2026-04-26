@@ -53,6 +53,7 @@ AGENT_RECOMMEND_PATH     = BRAIN_ROOT / "outputs" / "agent_recommendation.md"
 EXTERNAL_AUDIT_PATH      = BRAIN_ROOT / "outputs" / "external_context_audit.md"
 DEEPSEEK_RESP_PATH       = BRAIN_ROOT / "outputs" / "deepseek_response.md"
 NEXT_BOTTLENECK_PATH     = BRAIN_ROOT / "outputs" / "next_product_bottleneck.md"
+FRESH_MISSION_PATH       = BRAIN_ROOT / "outputs" / "fresh_investigation_mission.md"
 BENCHMARK_OBS_PATH       = BRAIN_ROOT / "data"    / "benchmark_observations.jsonl"
 
 # ---------------------------------------------------------------------------
@@ -680,6 +681,112 @@ def _write_next_bottleneck_report(bottleneck: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Fresh investigation mission writer
+# ---------------------------------------------------------------------------
+def _write_fresh_investigation_mission(bottleneck: dict) -> None:
+    """
+    Write fresh_investigation_mission.md -- a copy-pasteable read-only diagnosis
+    mission for Claude Code, generated from the selected next product bottleneck.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    b = bottleneck
+
+    output_file = b.get("investigation_output") or "outputs/diagnosis.md"
+    files_to_read = b.get("files_to_read", [])
+    forbidden = b.get("forbidden", "Do not modify product code.")
+
+    lines = [
+        "# Vocalype Brain -- Fresh Investigation Mission\n\n",
+        f"Generated: {timestamp}\n",
+        f"Bottleneck: `{b['bottleneck_id']}` (priority {b['priority']})\n\n",
+        "> **COPY-PASTEABLE MISSION** -- paste this entire document into Claude Code.\n",
+        "> This is a READ-ONLY investigation. No code changes are permitted.\n\n",
+        "---\n\n",
+        "## Mission Briefing\n\n",
+        f"**Title:** {b['title']}\n\n",
+        f"**Goal:** {b['goal']}\n\n",
+        "---\n\n",
+        "## Context Files to Read First\n\n",
+        "Before starting the investigation, read these Brain memory files:\n\n",
+        "1. `vocalype-brain/memory/operating_contract.md` -- safety rules and operating boundaries\n",
+        "2. `vocalype-brain/memory/current_state.md` -- current Brain state and history\n",
+        "3. `vocalype-brain/outputs/next_product_bottleneck.md` -- bottleneck evidence and plan\n",
+    ]
+    idle_obs_file = BRAIN_ROOT / "outputs" / "idle_background_transcription_observation.md"
+    if idle_obs_file.exists():
+        lines.append(
+            "4. `vocalype-brain/outputs/idle_background_transcription_observation.md`"
+            " -- severity=HIGH observation (read this for concrete log evidence)\n"
+        )
+    lines.append("\n")
+
+    lines += [
+        "---\n\n",
+        "## Product Files to Inspect (Read-Only)\n\n",
+        "**READ ONLY. Do not modify any of these files.**\n\n",
+    ]
+    for f in files_to_read:
+        lines.append(f"- `{f}`\n")
+    lines += [
+        "\n",
+        "---\n\n",
+        "## Investigation Questions\n\n",
+        "Answer each question with specific evidence (file:line references):\n\n",
+        "1. **Where does the audio loop run when no dictation is in progress?**\n",
+        "   - Which function or timer starts the inference loop?\n",
+        "   - Is there a guard that should stop processing when idle?\n\n",
+        "2. **Why does RAM grow continuously while idle?**\n",
+        "   - What objects are allocated per-cycle and not released?\n",
+        "   - Is there a buffer, channel, or accumulation that never drains?\n\n",
+        "3. **What causes repeated 'Transcription result is empty' log entries?**\n",
+        "   - Is audio being captured from silence and sent to the model?\n",
+        "   - Is VAD (voice activity detection) running and filtering correctly?\n\n",
+        "4. **What is the minimum safe fix?**\n",
+        "   - Describe the change in plain English (no code yet)\n",
+        "   - What is the blast radius? What could break?\n",
+        "   - Is a read-only investigation enough, or is a full implementation mission needed?\n\n",
+        "---\n\n",
+        "## Deliverable\n\n",
+        f"Write a single output file: `vocalype-brain/{output_file}`\n\n",
+        "Required sections:\n\n",
+        "1. **Root Cause** -- what causes the idle inference loop\n",
+        "2. **Evidence** -- exact file:line references supporting the diagnosis\n",
+        "3. **RAM Growth Mechanism** -- how RAM accumulates while idle\n",
+        "4. **Proposed Fix (plain English)** -- describe the change; do not write code\n",
+        "5. **Blast Radius** -- what could break, what tests are needed\n",
+        "6. **Recommended Next Step** -- investigation only, or implementation mission needed?\n\n",
+        "---\n\n",
+        "## Safety Rules (MANDATORY)\n\n",
+        f"- **{forbidden}**\n",
+        "- Do NOT modify any file under `src-tauri/`, `src/`, or `backend/`\n",
+        "- Do NOT run `cargo build`, `cargo test`, or any build command\n",
+        f"- Write ONLY to `vocalype-brain/{output_file}`\n",
+        "- If you discover a critical safety issue, STOP and report it in the output file\n",
+        "- The founder reviews the diagnosis before any implementation is authorized\n\n",
+        "---\n\n",
+        "## Stop Conditions\n\n",
+        "Stop immediately if you encounter:\n\n",
+        "- Any auth, payment, billing, or security logic\n",
+        "- A scope larger than audio manager read-only inspection\n",
+        "- Instructions to write product code\n",
+        "- Uncertainty about the safety of a proposed change\n\n",
+        "---\n\n",
+        "## Evidence Summary (from Vocalype Brain data)\n\n",
+    ]
+    for ev in b["evidence"]:
+        lines.append(f"- {ev}\n")
+    lines += [
+        "\n",
+        "---\n\n",
+        "*Generated by Vocalype Brain Operating Mode -- founder review required before sending.*\n",
+    ]
+
+    FRESH_MISSION_PATH.parent.mkdir(parents=True, exist_ok=True)
+    FRESH_MISSION_PATH.write_text("".join(lines), encoding="utf-8")
+    _p(f"  [OK] fresh_investigation_mission.md written ({b['bottleneck_id']}).")
+
+
+# ---------------------------------------------------------------------------
 # Output writers
 # ---------------------------------------------------------------------------
 def _write_deepseek_response(content: str) -> None:
@@ -987,24 +1094,67 @@ def _write_agent_recommendation(
         ]
 
     elif route == "sensitive_code":
-        body = [
-            "## Recommended Action: SENSITIVE CODE (explicit approval required)\n\n",
-            f"Reason: {classification_reason}\n\n",
-            "**This route requires per-session founder approval before any model.**\n\n",
-            "Sensitive areas (never automated):\n",
-            "  - auth / license validation\n",
-            "  - payment / billing logic\n",
-            "  - security logic\n",
-            "  - Rust dictation runtime (src-tauri/)\n",
-            "  - audio capture runtime\n\n",
-            "**Steps:**\n\n",
-            "  1. Confirm task is in scope (operating_contract.md Section 6)\n",
-            "  2. Get explicit per-session founder approval\n",
-            "  3. Generate mission package with safety gates G5/G6\n",
-            "  4. Founder reviews and sends to Claude manually\n",
-            "  5. Founder reviews diff before commit\n\n",
-            "If in doubt, classify as planning_only first.\n",
-        ]
+        if next_bottleneck:
+            # Arrived here via completed_action_blocked -> fresh bottleneck selected
+            nb = next_bottleneck
+            body = [
+                "## Previous Action: COMPLETE (blocked) -- Fresh Investigation Selected\n\n",
+                "> The previous weekly action is already marked COMPLETE (V11 G7 gate).\n",
+                "> A fresh product bottleneck was automatically selected as the next action.\n\n",
+                f"**Bottleneck:** {nb['title']}\n\n",
+                "| Field | Value |\n|---|---|\n",
+                f"| ID | `{nb['bottleneck_id']}` |\n",
+                f"| Priority | {nb['priority']} |\n",
+                f"| Task type | `{nb['task_type']}` |\n",
+                f"| Requires approval | {'YES' if nb.get('requires_approval') else 'NO'} |\n\n",
+                "**Goal:** " + nb["goal"] + "\n\n",
+                "**Evidence:**\n\n",
+            ]
+            for ev in nb["evidence"]:
+                body.append(f"- {ev}\n")
+            body += [
+                "\n",
+                "---\n\n",
+                "## Action: SENSITIVE CODE -- Explicit Approval Required\n\n",
+                "This is a **read-only investigation** of Rust/audio runtime code.\n\n",
+                "**Per-session founder approval is required before sending to Claude Code.**\n\n",
+                "**Steps:**\n\n",
+                "1. Read `vocalype-brain/outputs/next_product_bottleneck.md` -- full evidence\n",
+                "2. Read `vocalype-brain/outputs/fresh_investigation_mission.md` -- the mission\n",
+                "3. Decide: approve this investigation? (operating_contract.md Section 6)\n",
+                "4. If approved: copy `fresh_investigation_mission.md` and paste into Claude Code\n",
+                "   - Claude reads `src-tauri/` audio/runtime managers only (read-only)\n",
+                "   - Claude writes `vocalype-brain/"
+                + (nb.get("investigation_output") or "outputs/diagnosis.md")
+                + "` -- NO code edits\n",
+                "5. Founder reviews the diagnosis before any implementation\n\n",
+                "**Files for Claude to read (investigation only):**\n\n",
+            ]
+            for f in nb.get("files_to_read", []):
+                body.append(f"- `{f}`\n")
+            body += [
+                "\n",
+                f"**Safety:** {nb['forbidden']}\n\n",
+            ]
+        else:
+            body = [
+                "## Recommended Action: SENSITIVE CODE (explicit approval required)\n\n",
+                f"Reason: {classification_reason}\n\n",
+                "**This route requires per-session founder approval before any model.**\n\n",
+                "Sensitive areas (never automated):\n",
+                "  - auth / license validation\n",
+                "  - payment / billing logic\n",
+                "  - security logic\n",
+                "  - Rust dictation runtime (src-tauri/)\n",
+                "  - audio capture runtime\n\n",
+                "**Steps:**\n\n",
+                "  1. Confirm task is in scope (operating_contract.md Section 6)\n",
+                "  2. Get explicit per-session founder approval\n",
+                "  3. Generate mission package with safety gates G5/G6\n",
+                "  4. Founder reviews and sends to Claude manually\n",
+                "  5. Founder reviews diff before commit\n\n",
+                "If in doubt, classify as planning_only first.\n",
+            ]
 
     else:
         body = [
@@ -1127,6 +1277,15 @@ def main() -> None:
             next_bottleneck = _select_next_product_bottleneck()
             _p(f"  Selected: {next_bottleneck['bottleneck_id']} (priority {next_bottleneck['priority']})")
             _write_next_bottleneck_report(next_bottleneck)
+            # Override route to the fresh bottleneck's route (e.g. sensitive_code)
+            route = next_bottleneck["route"]
+            classification_reason = (
+                f"V11 blocked (G7 duplicate COMPLETE) -- fresh bottleneck selected: "
+                f"'{next_bottleneck['bottleneck_id']}' (priority {next_bottleneck['priority']}). "
+                f"Route overridden to '{route}'."
+            )
+            _p(f"  Route overridden to: {route}")
+            _write_fresh_investigation_mission(next_bottleneck)
 
     _p(f"  Action type   : {action_type}")
     _p(f"  Route         : {route}")
@@ -1198,11 +1357,14 @@ def main() -> None:
                 log.append({"step": "deepseek_call", "status": "skipped_no_key"})
 
     elif route in ("product_implementation", "sensitive_code"):
-        _p(f"  -> Manual Claude/Codex mission. Mission package path:")
-        if MISSION_PACKAGE_PATH.exists():
+        if next_bottleneck and FRESH_MISSION_PATH.exists():
+            _p("  -> Fresh investigation mission ready. Read-only diagnosis for Claude Code.")
+            _p(f"     {FRESH_MISSION_PATH}")
+        elif MISSION_PACKAGE_PATH.exists():
+            _p("  -> Manual Claude/Codex mission. Mission package path:")
             _p(f"     {MISSION_PACKAGE_PATH}")
         else:
-            _p("     [!] v11_mission_package.md not found -- run generate_v11_mission_package.py")
+            _p("  [!] No mission file found -- run generate_v11_mission_package.py or check bottleneck selection")
         log.append({"step": "route_exec", "status": "manual_mission", "route": route})
 
     _p("")
@@ -1264,6 +1426,8 @@ def main() -> None:
         _p("  [!] Stale v11_mission_package.md suppressed -- action already complete")
     if next_bottleneck:
         _p(f"    vocalype-brain/outputs/next_product_bottleneck.md  ({next_bottleneck['bottleneck_id']})")
+    if next_bottleneck and FRESH_MISSION_PATH.exists():
+        _p("    vocalype-brain/outputs/fresh_investigation_mission.md  (copy-paste to Claude Code)")
     _p("=" * 60)
     _p("")
 

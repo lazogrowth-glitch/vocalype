@@ -17,6 +17,27 @@ For each lesson, capture:
 
 - 2026-04-24 V3.5 lesson: Approved patch application must require explicit --approve and must refuse patches without Apply Instructions.
 
+## 2026-04-26 — V12 Closure: Construction vs. Operating Mode
+
+**What was attempted:** Closed V12 as the final Brain construction version and declared Operating Mode.
+
+**What happened:**
+- 12 construction versions (V1–V12) were built over the course of this session series.
+- Each version added one layer: patches, handoffs, benchmarks, business metrics, content, decisions, missions, improvement loops.
+- By V12, the Brain had more infrastructure than real data to run through it.
+- V8 had 0 business observations. V9 had 0 content performance observations. V10 was choosing actions from structural priors.
+- The decision to enter Operating Mode was correct: additional infrastructure would not improve the Brain's outputs; real data would.
+
+**Why it mattered:**
+Building the brain before getting users is a classic founder trap: optimising a system that has no input signal. The brain is now complete. Every further improvement requires real data — users, conversions, content performance — not another version.
+
+**Lessons:**
+1. **Infrastructure without data is a model, not a system.** The Brain can only be as good as the observations flowing into it. V8/V9 with zero real records means V10 is deciding on structure, not signal.
+2. **Stop building when the loop is complete.** The improvement loop ran end-to-end in V12. That is the stopping condition for construction. More versions would be scope creep.
+3. **PROVISIONAL_KEEP is a legitimate decision.** Entering Operating Mode with an incomplete test matrix is an honest trade-off, not a failure. Record the deferred items, keep the rollback armed, move on.
+4. **The highest-leverage action after building is getting users.** Not more Brain sessions. Not V13. Users, data, and the weekly operating rhythm.
+5. **Construction phases have natural end points.** V12 ending the construction phase is not a milestone to celebrate — it is a transition to start. The real work begins in Operating Mode.
+
 ## 2026-04-26 — V12 Experiment 1: Windows Paste Restore Delay Floor
 
 **What was attempted:** Reduced Windows clipboard restore delay floor from 450ms to 150ms

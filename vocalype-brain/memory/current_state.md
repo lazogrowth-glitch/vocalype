@@ -1,27 +1,31 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-26
-Latest commit: perf(app): reduce Windows paste restore delay floor (f842401)
-Brain phase: V12 Phase 4 in progress — smoke tests partial, Slack/Teams/Word pending
+Latest commit: docs(brain): record V12 paste delay experiment result (f04f5b0)
+Brain phase: OPERATING MODE — construction complete (V1–V12)
 
 ---
 
 ## Phase
 
-**V11 CLOSED. First full measurement cycle complete.**
-V11 executed PB-1 (paste.rs investigation) → confirmed root cause in `platform/clipboard.rs`.
-Execution log: `data/v11_execution_log.jsonl` — 4 records (2 PENDING, 2 COMPLETE).
-Last commits: `8a875e6` (paste_mechanism_diagnosis.md), `5958e99` (paste_utils_diagnosis.md).
+**OPERATING MODE. Construction phase V1–V12 complete.**
 
-**Root cause confirmed:** two `thread::sleep` calls in `paste_via_clipboard()` (clipboard.rs:87, 120+128).
-Sleep 1 = 60ms (pre-Ctrl+V propagation). Sleep 2 = 450ms Windows floor (post-Ctrl+V restore).
-Total = ~644ms. Fix target: `clipboard.rs:120` — reduce `paste_delay_ms.max(450)` floor.
+All Brain infrastructure layers are built and exercised. No new Brain versions are needed.
+The Brain now runs existing loops — it does not build new ones.
 
-**V12 status: Phase 4 PARTIAL — PROVISIONAL_KEEP.**
-Product commit f842401 applied: `paste_delay_ms.max(450)` → `max(150)` at clipboard.rs:120.
-Smoke tests: Notepad ✅ VS Code ✅ Chrome ✅ Gmail ✅ — Slack ⬜ Teams ⬜ Word ⬜
-Phase 5 (benchmarks) blocked until Phase 4 fully complete.
-**Rollback still active:** if Slack/Teams/Word fails → `git checkout -- src-tauri/src/platform/clipboard.rs`
+**V12 CLOSED — PROVISIONAL_KEEP.**
+Product commit `f842401`: `paste_delay_ms.max(450)` → `max(150)` at clipboard.rs:120.
+Smoke tests: Notepad ✅ VS Code ✅ Chrome ✅ Gmail ✅ | Slack ⬜ Teams ⬜ Word ⬜ (deferred)
+Benchmarks pending: ≥5 post-fix `paste_latency_ms` observations not yet recorded.
+Rollback still armed: `git checkout -- src-tauri/src/platform/clipboard.rs`
+Upgrades to FULL_KEEP when Slack/Teams/Word pass + benchmarks confirm median < 420ms.
+
+**Operating Mode weekly rhythm:**
+1. Founder: record V8 business data every Monday (~10 min, Stripe/Supabase/Vercel)
+2. Founder: record V9 content observations after each post
+3. Brain: V10 weekly action run once per week
+4. Brain: V11 executes the selected action safely
+5. Brain: V12 loop handles any confirmed bottleneck
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -48,19 +52,19 @@ V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each 
 
 - **V7 Phase 1 — Manual Benchmark Recorder**: `add_benchmark_observation.py` (CLI recorder) + `review_benchmarks.py` (report generator). Both validated. First observation recorded (`total_dictation_latency_ms = 2400ms`, first_dictation, parakeet, windows_4060). Waiting for ≥5 observations per priority metric.
 
-## What Does Not Exist Yet
+## What Does Not Exist Yet (deferred to Operating Mode)
 - `correlate_content_business.py` — V9 Phase 2 script (not yet built)
 - `compare_content_experiments.py` — V9 Phase 3 script (not yet designed)
 - `lock_business_baseline.py` — V8 Phase 2 script (designed, not yet built)
 - `fetch_business_metrics.py` — V8 Phase 2 automated pull script (designed, not yet built)
 - `correlate_metrics.py` — V8 Phase 2 V7×V8 correlation script (designed, not yet built)
-- `data/business_baseline.jsonl` — V8 locked baseline (not yet created)
+- `data/business_baseline.jsonl` — V8 locked baseline (not yet created — needs real data first)
 - `lock_benchmark_baseline.py` — V7 Phase 2 script (designed, not yet built)
 - `compare_benchmarks.py` — V7 Phase 2 script (designed, not yet built)
 - `benchmark_baseline.jsonl` — V7 locked baseline (not yet created)
-- `outputs/handoff_task.md` — V12 Phase 1 paste delay reduction proposal (not yet written — V12 Phase 1 task)
-- `idle_background_transcription_diagnosis.md` — V7 Track B output (not yet run — separate from paste fix)
-- Event tracking — no instrumentation in product code (separate V7.5 task if needed)
+- `idle_background_transcription_diagnosis.md` — V7 Track B (next V11 investigation when V10 selects it)
+- Post-fix `paste_latency_ms` benchmarks — ≥5 observations needed (founder task, after Slack/Teams/Word tests)
+- Event tracking — no instrumentation in product code (separate task if V10 selects it)
 
 ---
 
@@ -99,13 +103,14 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **V12 Phase 4 — Complete test matrix** (founder — no Brain session):
-   - Open Vocalype built from `f842401`
-   - Test Slack: T1 (dictate), T2 (clipboard restore), T3 (quick succession)
-   - Test Teams: T1, T2, T3
-   - Test Word: T1, T2, T3
+1. **OM-1: Complete V12 Phase 4** (founder — no Brain session, ~15 min):
+   - Test Slack (T1/T2/T3), Teams (T1/T2/T3), Word (T1/T2/T3) with Vocalype `f842401`
    - If any fails → `git checkout -- src-tauri/src/platform/clipboard.rs` immediately
-   - If all pass → proceed to Phase 5 (record benchmarks)
+   - If all pass → record ≥5 post-fix `paste_latency_ms` benchmarks (`add_benchmark_observation.py --notes "post-fix floor=150ms"`)
+
+2. **OM-2: V10 weekly action run** (next Brain session after real data exists):
+   - Run `generate_unified_report.py` → review `weekly_action.md` — expect RAM or inference loop as next priority
+   - This is the standard operating rhythm — not a new Brain version
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`
@@ -203,6 +208,8 @@ Future prompts may reference the contract instead of repeating safety rules:
 | Paste utils diagnosis | outputs/paste_utils_diagnosis.md |
 | **V12 design plan** | **outputs/v12_design_plan.md** |
 | **V12 paste proposal** | **outputs/handoff_task.md** |
+| **V12 experiment result** | **outputs/v12_experiment_result.md** |
+| **V12 closure report** | **outputs/v12_closure_report.md** |
 | Patch proposal files | patches/ |
 | Quality signals | data/quality_observations.jsonl |
 | Quality report | outputs/quality_report.md |

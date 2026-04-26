@@ -16,21 +16,42 @@ Utilise les lanceurs sur ton Bureau Windows. Tu n'as pas besoin de taper des com
 
 | Fichier | Ce que ça fait |
 |---|---|
-| `Lancer Vocalype Brain.bat` | Lance le cycle complet : rapport unifié → action de la semaine → package mission → ouvre les deux fichiers |
+| **`Lancer Agent Vocalype Auto.bat`** | **Bouton principal intelligent** : cycle complet + classification auto + routage (local / DeepSeek / Claude) |
+| `Lancer Vocalype Brain.bat` | Cycle manuel : rapport unifié + package mission + ouvre les deux fichiers |
 | `Voir Action du Robot.bat` | Ouvre directement `weekly_action.md` — l'action prioritaire de la semaine |
 | `Generer Mission Claude.bat` | Génère le package mission V11 et l'ouvre — prêt à coller dans Claude / Codex |
 | `Enregistrer Resultat.bat` | Lance tous les scripts de review et ouvre les rapports |
 | `Voir Rapports Vocalype Brain.bat` | Ouvre tous les rapports disponibles (benchmarks, business, contenu, résultats) |
 | `Stop Vocalype Brain.bat` | Rappelle qu'il n'y a pas de daemon — ferme les fenêtres terminal manuellement |
+| `Creer Context DeepSeek.bat` | Prépare `context_pack.md` manuellement pour DeepSeek ou Claude |
 
 ### Rythme hebdomadaire (Mode Opérationnel)
 
 ```
 Lundi       : enregistrer métriques V8 (Stripe / Supabase / Vercel, 10 min)
 Après post  : enregistrer observation V9 (contenu + performance 24-72h après)
-N'importe quand : lancer "Lancer Vocalype Brain.bat" → copier mission → envoyer à Claude
-Après exécution : "Enregistrer Résultat.bat" → review + commit
+N'importe quand : double-clic "Lancer Agent Vocalype Auto.bat"
+                  -> classe l'action -> route vers le bon outil -> ouvre les rapports
+Après exécution : "Enregistrer Résultat.bat" -> review + commit
 ```
+
+### Agent Auto — Routage intelligent
+
+"Lancer Agent Vocalype Auto" est le bouton principal. Il fait tout automatiquement :
+
+1. Lance le cycle Brain (rapport unifié + package mission)
+2. Lit `weekly_action.md` et classifie l'action
+3. Route vers le bon outil :
+   - **Routine / rapport** → outils locaux uniquement, rien ne quitte la machine
+   - **Raisonnement long-contexte** → DeepSeek (si configuré et autorisé) ou instructions pour Claude manuel
+   - **Implémentation produit sensible** → package mission Claude/Codex, jamais automatique
+
+**Mode externe** (`VOCALYPE_BRAIN_EXTERNAL_MODE`) :
+- `off` → jamais d'API externe, prépare `context_pack.md` seulement
+- `confirm` → **(défaut)** prépare `context_pack.md` + instructions fondateur, n'appelle PAS l'API
+- `auto` → appelle DeepSeek pour les tâches `long_reasoning` si `DEEPSEEK_API_KEY` est configuré
+
+Le code produit n'est **jamais** modifié automatiquement par ce routeur.
 
 ### Ce que le cerveau N'EST PAS
 

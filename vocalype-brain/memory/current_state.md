@@ -21,7 +21,8 @@ Rollback still armed: `git checkout -- src-tauri/src/platform/clipboard.rs`
 Upgrades to FULL_KEEP when Slack/Teams/Word pass + benchmarks confirm median < 420ms.
 
 **Desktop launchers installed:** `C:\Users\ziani\Desktop\`
-- `Lancer Vocalype Brain.bat` — rapport unifié + mission package + ouvre les 2 fichiers clés
+- `Lancer Agent Vocalype Auto.bat` — **bouton principal** : cycle complet + classification auto + routage intelligent
+- `Lancer Vocalype Brain.bat` — cycle manuel : rapport unifié + mission package + ouvre les 2 fichiers clés
 - `Voir Action du Robot.bat` — ouvre weekly_action.md directement
 - `Generer Mission Claude.bat` — génère + ouvre v11_mission_package.md
 - `Enregistrer Resultat.bat` — lance tous les review scripts + ouvre rapports
@@ -36,6 +37,14 @@ Upgrades to FULL_KEEP when Slack/Teams/Word pass + benchmarks confirm median < 4
 - `deepseek_long_context` → DeepSeek API (raisonnement long, nécessite DEEPSEEK_API_KEY)
 - `external_implementation_manual` → Claude/Codex (implémentation sensible, manuel)
 API key : jamais dans git — variable d'environnement Windows ou .env local exclus.
+
+**Supervised Auto-Router:** `scripts/run_operating_agent.py`
+- Lance le cycle Brain, classifie l'action, route vers local/DeepSeek/Claude
+- Contrôlé par `VOCALYPE_BRAIN_EXTERNAL_MODE` : off | confirm (défaut) | auto
+- `confirm` = prépare context_pack.md + instructions, n'appelle PAS DeepSeek
+- `auto` = appelle DeepSeek uniquement pour `long_reasoning` si DEEPSEEK_API_KEY est défini
+- Ne modifie jamais le code produit. Ne déploie rien. Pas de daemon.
+- Sorties : `agent_run_report.md`, `agent_recommendation.md`, `external_context_audit.md`, `deepseek_response.md`
 
 **Operating Mode weekly rhythm:**
 1. Founder: double-clic `Lancer Vocalype Brain.bat` → lit weekly_action.md → copie mission dans Claude

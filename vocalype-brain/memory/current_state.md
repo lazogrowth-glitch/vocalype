@@ -1,23 +1,22 @@
 # Vocalype Brain — Current State
 
 Last updated: 2026-04-25
-Latest commit: 640f30e — docs(brain): close V9 growth distribution phase
-Brain phase: V10 design complete — Phase 1 implementation is next
+Latest commit: feat(brain): add V10 unified weekly decision report
+Brain phase: V10 Phase 1 COMPLETE — unified decision engine live
 
 ---
 
 ## Phase
 
-**V10 Design — Unified Decision Engine. Design plan written. Phase 1 implementation pending.**
-V10 joins V7 (product) + V8 (business) + V9 (distribution) by ISO week period key.
+**V10 Phase 1 — COMPLETE. `generate_unified_report.py` live.**
+Joins V7 (product) + V8 (business) + V9 (distribution) by ISO week period key.
 Answers each week: "Is the constraint product, funnel, or distribution?"
-Rule-based decision matrix, confidence levels, graceful degradation on empty layers.
-Design plan: `outputs/v10_design_plan.md` — 15 sections.
-Phase 1 = single script `generate_unified_report.py` → `unified_weekly_report.md` + `weekly_action.md`.
-Use exact prompt from `v10_design_plan.md` Section 15 to implement.
+Run: `python vocalype-brain/scripts/generate_unified_report.py`
+Outputs: `outputs/unified_weekly_report.md` + `outputs/weekly_action.md`
 
-Current expected output: V7 product constraint MEDIUM confidence (paste_execute=645ms known).
-V8 and V9: INSUFFICIENT DATA — 0 real observations in both layers.
+Current output (2026-W17): bottleneck=product, confidence=MEDIUM.
+Action: Investigate `paste_execute` root cause — read-only inspection of src-tauri/src/actions/paste.rs.
+V7: 43 obs, paste=644ms (threshold >300ms), RAM+110MB. V8: 0 real obs. V9: 0 real obs.
 
 V8 status: CLOSED. Infrastructure complete. Real business observations = 0 (founder Monday session pending).
 V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each Monday (10 min).
@@ -45,10 +44,6 @@ V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each 
 - **V7 Phase 1 — Manual Benchmark Recorder**: `add_benchmark_observation.py` (CLI recorder) + `review_benchmarks.py` (report generator). Both validated. First observation recorded (`total_dictation_latency_ms = 2400ms`, first_dictation, parakeet, windows_4060). Waiting for ≥5 observations per priority metric.
 
 ## What Does Not Exist Yet
-
-- `generate_unified_report.py` — V10 Phase 1 script (designed, not yet built)
-- `unified_weekly_report.md` — V10 cross-layer report (not yet generated)
-- `weekly_action.md` — V10 weekly action (not yet generated)
 - `correlate_content_business.py` — V9 Phase 2 script (not yet built)
 - `correlate_content_business.py` — V9 Phase 2 script (designed, not yet built)
 - `compare_content_experiments.py` — V9 Phase 3 script (not yet designed)
@@ -100,9 +95,10 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **Implement V10 Phase 1** (next Brain session):
-   - Use exact prompt from `vocalype-brain/outputs/v10_design_plan.md` Section 15
-   - Creates: `generate_unified_report.py`, `unified_weekly_report.md`, `weekly_action.md`
+1. **V10 weekly action: paste_execute investigation** (next Brain session):
+   - Read-only inspection of `src-tauri/src/actions/paste.rs`
+   - Output: `outputs/paste_mechanism_diagnosis.md`
+   - This is V7 backlog item PB-1 — no code changes during investigation
 
 2. **Record real content observations** (after each post — founder task):
    - After publishing: `python vocalype-brain/scripts/add_content_observation.py --platform <p> --content_type <t> --hook "<h>" --niche <n> --target_user "<u>" --cta "<c>" --period <YYYY-Www> --source manual_founder`

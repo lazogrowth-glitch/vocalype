@@ -17,6 +17,46 @@ For each lesson, capture:
 
 - 2026-04-24 V3.5 lesson: Approved patch application must require explicit --approve and must refuse patches without Apply Instructions.
 
+## 2026-04-26 — Idle Background Inference Loop: Confirm Settings Before Proposing Fix
+
+**What was attempted:** Read-only investigation of the idle background inference loop.
+Diagnosed two root causes (RC-1: wake-word silence gate missing; RC-2: stuck recording
+session). Then confirmed local settings before recommending a fix path.
+
+**What happened:**
+- RC-1 (wake-word) was the leading hypothesis from the observation file.
+- Settings inspection revealed `wake_word_enabled = false` — RC-1 is NOT active on this machine.
+- `always_on_microphone = true` + VAD hangover (600 ms, threshold 0.28) causes ambient
+  noise to slowly accumulate as "speech" frames in a stuck recording session.
+- The `[worker] processing chunk idx=83..99` pattern is from `actions/transcribe.rs:846`
+  — only active during a live recording session, not from wake-word.
+- The stop signal was silently dropped (binding_id mismatch guard at `transcribe.rs:1169`
+  is the most likely candidate) or the user left a recording running unintentionally.
+
+**Why it mattered:**
+If the settings check had been skipped, a silence-gate patch to `wake_word.rs` would have
+been implemented for a bug that does not exist on this machine. The fix would have been
+correct in principle but wasted. The real fix target is the stuck-session stop path.
+
+**Lessons:**
+1. **Always inspect local settings before writing a product patch proposal.** Hypotheses
+   built from log patterns can point to wrong code paths when a feature is disabled.
+2. **`wake_word_enabled` gates all wake-word activity.** If false, `run_wake_word_loop`
+   never starts. Silence-gate and last_activity fixes are only needed when it is true.
+3. **`always_on_microphone = true` keeps the VAD running.** When a recording session is
+   stuck, ambient noise frames accumulate at the VAD hangover rate (600 ms at threshold
+   0.28). This is slow but continuous — consistent with +7 MB/min growth.
+4. **`model_unload_timeout = "never"` is intentional on this machine.** Do not treat it
+   as a bug — the 500 MB model RAM footprint is by design for this user.
+5. **The stop path is load-bearing.** A recording that never stops will run indefinitely
+   until app restart. The binding_id mismatch guard (`transcribe.rs:1169`) is a silent
+   no-op path that must be understood before writing a defensive timeout.
+6. **Diagnosis before implementation is mandatory for Rust audio runtime changes.** The
+   operating contract rule ("measure → diagnose → propose → implement small → test") is
+   not bureaucracy — it prevented implementing the wrong fix here.
+
+---
+
 ## 2026-04-26 — V12 Closure: Construction vs. Operating Mode
 
 **What was attempted:** Closed V12 as the final Brain construction version and declared Operating Mode.

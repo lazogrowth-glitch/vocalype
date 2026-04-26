@@ -12,7 +12,42 @@ Date: 2026-04-26
 - 2026-04-24T13:18:23: Fix: First successful dictation — activation_failed retry state -> keep
 - 2026-04-26T00:00:00: V12 Experiment 1 — Windows paste restore delay floor 450ms → 150ms -> **provisional_keep** (Slack/Teams/Word + benchmarks pending)
 
-## Latest Result — V12 Experiment 1 (PROVISIONAL_KEEP)
+## Latest Result — Idle Background Inference Loop Diagnosis (KEEP)
+
+**Task:** Idle background inference loop / RAM growth — read-only investigation + settings confirmation
+**Source:** Claude Code investigation mission (Operating Mode)
+**Brain files:** `idle_background_transcription_diagnosis.md`, `idle_background_diagnosis_result.md`
+**Product code touched:** None
+
+**What was found:**
+
+Local settings (`%APPDATA%\com.vocalype.desktop\settings_store.json`):
+- `wake_word_enabled = false` — RC-1 (wake-word silence-gate) NOT active on this machine
+- `always_on_microphone = true` — mic stream permanently open
+- `model_unload_timeout = "never"` — model resident by design
+- `selected_model = parakeet-tdt-0.6b-v3-multilingual`
+
+**Root cause confirmed:** RC-2 — stuck recording session (chunking worker).
+The `[worker] processing chunk idx=83..99` pattern comes from `actions/transcribe.rs:846`
+and is only active during a live recording. The session never received a stop signal,
+so the VAD-gated chunking sampler ran indefinitely on ambient audio.
+
+**Key code paths confirmed:**
+- Sampler exits only when `snapshot_recording()` returns `None` (`transcribe.rs:685–688`)
+- Silent drop path: `stop_transcription_action` ignores stops when `active_binding_id` mismatches (`transcribe.rs:1169–1176`)
+- VAD hangover = 600 ms at Parakeet V3 threshold 0.28 → ambient noise accumulates slowly
+
+**Decision: KEEP**
+Diagnosis is complete and confirmed. Separate implementation mission needed.
+
+**Recommended next step:**
+Investigate the stop path (binding_id mismatch) then implement a defensive sampler timeout
+as the minimum safe fix. Wake-word silence gate (Fix A) is a valid future improvement
+for machines where `wake_word_enabled = true`.
+
+---
+
+## Previous Latest Result — V12 Experiment 1 (PROVISIONAL_KEEP)
 
 **Task:** V12 Experiment 1 — Reduce Windows paste restore delay floor 450ms → 150ms
 **Source:** V12 continuous improvement loop

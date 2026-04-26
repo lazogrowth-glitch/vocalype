@@ -95,7 +95,7 @@ V8 real data needed: record weekly metrics from Stripe / Supabase / Vercel each 
 - `lock_benchmark_baseline.py` — V7 Phase 2 script (designed, not yet built)
 - `compare_benchmarks.py` — V7 Phase 2 script (designed, not yet built)
 - `benchmark_baseline.jsonl` — V7 locked baseline (not yet created)
-- `idle_background_transcription_diagnosis.md` — V7 Track B (next V11 investigation when V10 selects it)
+- ~~`idle_background_transcription_diagnosis.md`~~ — **DONE 2026-04-26**: RC-1 (wake-word, NOT active: wake_word_enabled=false), RC-2 (stuck recording session, CONFIRMED). Next: investigate stop_transcription_action binding_id mismatch → implement defensive sampler timeout.
 - Post-fix `paste_latency_ms` benchmarks — ≥5 observations needed (founder task, after Slack/Teams/Word tests)
 - Event tracking — no instrumentation in product code (separate task if V10 selects it)
 
@@ -158,9 +158,12 @@ Future prompts may reference the contract instead of repeating safety rules:
    - Record each: `python vocalype-brain/scripts/add_business_observation.py --metric <m> --value <v> --unit <u> --source <s> --period <YYYY-Www>`
    - Review: `python vocalype-brain/scripts/review_business_metrics.py`
 
-4. **V7 Track B** (lower priority — separate from paste fix):
-   - Read-only investigation of audio manager → `idle_background_transcription_diagnosis.md`
-   - Separate from PB-1 — do not bundle with paste fix work
+4. **V7 Track B — DIAGNOSIS COMPLETE (2026-04-26):**
+   - `idle_background_transcription_diagnosis.md` written — RC-2 confirmed (stuck recording)
+   - `idle_background_diagnosis_result.md` written — wake_word_enabled=false confirmed
+   - **Next action:** Implementation mission — investigate `stop_transcription_action` binding_id
+     mismatch at `transcribe.rs:1169–1176`, then add defensive sampler timeout (RC-2 fix)
+   - Wake-word silence gate (RC-1 Fix A) valid for future when wake_word_enabled=true
 
 ---
 
@@ -237,6 +240,8 @@ Future prompts may reference the contract instead of repeating safety rules:
 | V11 mission package report | outputs/v11_mission_package_report.md |
 | V11 execution log | data/v11_execution_log.jsonl |
 | **V11 closure report** | **outputs/v11_closure_report.md** |
+| Idle background diagnosis | outputs/idle_background_transcription_diagnosis.md |
+| Idle background diagnosis result | outputs/idle_background_diagnosis_result.md |
 | Paste mechanism diagnosis | outputs/paste_mechanism_diagnosis.md |
 | Paste utils diagnosis | outputs/paste_utils_diagnosis.md |
 | **V12 design plan** | **outputs/v12_design_plan.md** |

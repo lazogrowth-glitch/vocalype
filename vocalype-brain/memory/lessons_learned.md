@@ -103,6 +103,41 @@ Building the brain before getting users is a classic founder trap: optimising a 
 5. **Do not record post-fix benchmarks before Electron app tests complete.** If Slack or Teams fails, the change must be reverted, making any recorded benchmarks meaningless.
 6. **Provisional KEEP is the correct intermediate state.** Smoke test pass ≠ full validation. Recording `provisional_keep` preserves the signal without overclaiming.
 
+## 2026-04-26 — RC-2 Patch 1: Log First, Then Fix
+
+**What was attempted:** Logging-only diagnostic patch to `src-tauri/src/actions/transcribe.rs`
+to diagnose why a recording session can keep running after the user stops dictating.
+
+**What happened:**
+- 5 targeted changes: 2 log-level promotions (`debug` → `info`/`warn`), 3 new log lines.
+- `cargo check` passed in 11.10 s. No other files changed. Translation check 16/16.
+- The binding_id mismatch guard (Path 2B) was previously a silent `debug!` — now a `warn!`.
+  If a stop signal is ever dropped by that guard, it will appear in app logs immediately.
+- The sampler exit log makes it possible to confirm whether the sampler was still running
+  at the time of a stuck-session event (by its absence in logs).
+
+**Why it mattered:**
+Patch 2 (defensive sampler timeout) requires knowing correct threshold values. A 10-minute
+timeout chosen without log data could terminate legitimate long dictations. The logging patch
+collects exactly the data needed — session duration and chunk count at the time of the event.
+Shipping Patch 2 without this data would be guessing.
+
+**Lessons:**
+1. **Promote silent debug guards to warn before fixing them.** The binding_id mismatch
+   `debug!` at `transcribe.rs:1170` was invisible in normal log levels. Promoting it to
+   `warn!` costs nothing and immediately surfaces the drop if it occurs.
+2. **Logging-only patches are zero-risk, zero-blast-radius instrument insertions.** They
+   should be the default first step for any Rust audio-runtime investigation where the
+   root cause is unconfirmed between multiple hypotheses.
+3. **Sequence: log → observe → confirm → parameterize → fix.** For timing-sensitive Rust
+   code, never jump directly to a defensive timeout without observing at least one real
+   instance of the bug in instrumented logs.
+4. **Worker exit logs already existed** (`[worker] received None sentinel — exiting`,
+   `[worker] cancel_flag set — exiting`). Always read the existing log coverage before
+   adding new ones — avoids duplicate instrumentation.
+
+---
+
 ## 2026-04-24 — V6 Handoff Validation
 
 **What was attempted:** V6 Product Implementation Handoff Loop generated a scoped task from the approved "Fix: First successful dictation" proposal. Claude implemented it, then committed.

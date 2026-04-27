@@ -11,8 +11,46 @@ Date: 2026-04-26
 - 2026-04-24T09:43:29: Frontend clarity pass for first successful dictation -> keep
 - 2026-04-24T13:18:23: Fix: First successful dictation — activation_failed retry state -> keep
 - 2026-04-26T00:00:00: V12 Experiment 1 — Windows paste restore delay floor 450ms → 150ms -> **provisional_keep** (Slack/Teams/Word + benchmarks pending)
+- 2026-04-26T00:00:00: RC-2 Patch 1 — stuck recording diagnostic logs -> **keep**
 
-## Latest Result — Idle Background Inference Loop Diagnosis (KEEP)
+## Latest Result — RC-2 Patch 1: Stuck Recording Diagnostic Logs (KEEP)
+
+**Task:** Add logging-only instrumentation to diagnose stuck recording session (RC-2)
+**Source:** Claude Code implementation mission (Operating Mode, founder approved)
+**Product commit:** `0820936` — `chore(app): add stuck recording diagnostic logs`
+**Files changed:** `src-tauri/src/actions/transcribe.rs` only
+**Product code touched:** Yes — approved single file, logging-only
+
+**What was added:**
+
+| Log | Level | Location | Condition |
+|---|---|---|---|
+| `stop_transcription_action called binding={id}` | `info` | `stop_transcription_action` entry | Always |
+| `binding_id mismatch — received='{x}' active={y}; stop signal dropped` | `warn` | binding_id guard | When mismatch occurs |
+| `[sampler] still running after {N}s ({M} chunks dispatched) — possible stuck session` | `warn` | sampler loop | ≥300 s elapsed, then every 60 s |
+| `[sampler] exiting — ran {N}s, {M} chunks dispatched` | `info` | sampler exit | Always |
+
+**Behavior changed:** No. Pure logging. No control flow change. No new dependencies.
+
+**Checks passed:**
+- `cargo check` — Finished dev profile in 11.10s, 0 errors ✅
+- `git diff --check` — whitespace-ok ✅
+- Translation check — 16/16 languages ✅
+
+**Decision: KEEP**
+
+**Recommended next step:**
+Run Vocalype normally until the stuck-session issue reproduces (mic runs without user dictating,
+RAM growing). Then inspect app logs for:
+1. Did `warn! stop_transcription_action: binding_id mismatch` appear? → Path 2B confirmed
+2. Did `warn! [sampler] still running after 300s` appear? → RC-2 active, sampler still alive
+3. Did `info! [sampler] exiting` appear shortly after a stop? → session stopped cleanly
+
+This log evidence determines parameters for Patch 2 (defensive sampler timeout).
+
+---
+
+## Previous Latest Result — Idle Background Inference Loop Diagnosis (KEEP)
 
 **Task:** Idle background inference loop / RAM growth — read-only investigation + settings confirmation
 **Source:** Claude Code investigation mission (Operating Mode)

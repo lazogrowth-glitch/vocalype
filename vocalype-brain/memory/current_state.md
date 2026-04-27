@@ -158,11 +158,17 @@ Future prompts may reference the contract instead of repeating safety rules:
    - Record each: `python vocalype-brain/scripts/add_business_observation.py --metric <m> --value <v> --unit <u> --source <s> --period <YYYY-Www>`
    - Review: `python vocalype-brain/scripts/review_business_metrics.py`
 
-4. **V7 Track B — DIAGNOSIS COMPLETE (2026-04-26):**
+4. **V7 Track B — PATCH 1 SHIPPED (2026-04-26):**
    - `idle_background_transcription_diagnosis.md` written — RC-2 confirmed (stuck recording)
    - `idle_background_diagnosis_result.md` written — wake_word_enabled=false confirmed
-   - **Next action:** Implementation mission — investigate `stop_transcription_action` binding_id
-     mismatch at `transcribe.rs:1169–1176`, then add defensive sampler timeout (RC-2 fix)
+   - `stuck_recording_patch_proposal.md` written — Option D approved (log first, timeout second)
+   - Product commit `0820936`: logging-only diagnostic instrumentation in `transcribe.rs`
+     - `stop_transcription_action` entry → `info!`
+     - binding_id mismatch guard → `warn!` (silent drop now visible)
+     - sampler: warns after 5 min running, logs exit with elapsed + chunk count
+   - **Next action (founder):** Run Vocalype until issue reproduces → inspect logs →
+     confirm Path 2A (no stop sent) vs Path 2B (binding_id mismatch silent drop)
+   - **After logs confirm cause:** Authorize Patch 2 (defensive sampler timeout, separate mission)
    - Wake-word silence gate (RC-1 Fix A) valid for future when wake_word_enabled=true
 
 ---
@@ -242,6 +248,7 @@ Future prompts may reference the contract instead of repeating safety rules:
 | **V11 closure report** | **outputs/v11_closure_report.md** |
 | Idle background diagnosis | outputs/idle_background_transcription_diagnosis.md |
 | Idle background diagnosis result | outputs/idle_background_diagnosis_result.md |
+| RC-2 stuck recording patch proposal | outputs/stuck_recording_patch_proposal.md |
 | Paste mechanism diagnosis | outputs/paste_mechanism_diagnosis.md |
 | Paste utils diagnosis | outputs/paste_utils_diagnosis.md |
 | **V12 design plan** | **outputs/v12_design_plan.md** |

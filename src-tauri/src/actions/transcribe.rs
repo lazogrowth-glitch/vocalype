@@ -679,8 +679,24 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             // silently discarded by the timestamp-based overlap trimmer.
             let mut skip_overlap_next_chunk = false;
 
+            // Diagnostic-only counters for stuck-session detection (no behaviour change).
+            let sampler_start = Instant::now();
+            let mut chunks_dispatched: u64 = 0;
+            let mut last_warn_secs: u64 = 0;
+
             loop {
                 std::thread::sleep(std::time::Duration::from_millis(CHUNK_SAMPLER_POLL_MS));
+
+                // Diagnostic: warn if a session has been running unusually long.
+                // Threshold: ≥300 s elapsed, then every 60 s. No behaviour change.
+                let elapsed_secs = sampler_start.elapsed().as_secs();
+                if elapsed_secs >= 300 && elapsed_secs.saturating_sub(last_warn_secs) >= 60 {
+                    warn!(
+                        "[sampler] session_id={} still running after {}s ({} chunks dispatched) — possible stuck session (diagnostic)",
+                        session_id, elapsed_secs, chunks_dispatched
+                    );
+                    last_warn_secs = elapsed_secs;
+                }
 
                 let snapshot = match rm_s.snapshot_recording() {
                     Some(s) => s,
@@ -801,6 +817,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
                             s.last_committed_idx = chunk_end;
                             s.next_chunk_idx += 1;
+                            chunks_dispatched += 1;
                         }
                         Err(_) => {
                             pending_s.fetch_sub(1, Ordering::Relaxed);
@@ -809,6 +826,12 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     }
                 }
             }
+            // Diagnostic: log sampler exit for stuck-session diagnosis.
+            info!(
+                "[sampler] exiting — ran {}s, {} chunks dispatched",
+                sampler_start.elapsed().as_secs(),
+                chunks_dispatched
+            );
         });
 
         let results_w = Arc::clone(&results);
@@ -1153,7 +1176,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
     shortcut::unregister_action_shortcuts(app);
 
     let stop_time = Instant::now();
-    debug!("TranscribeAction::stop called for binding: {}", binding_id);
+    info!("stop_transcription_action called binding={}", binding_id);
 
     let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() else {
         error!("TranscriptionCoordinator not initialized");
@@ -1167,8 +1190,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
         return;
     };
     if coordinator.active_binding_id().as_deref() != Some(binding_id) {
-        debug!(
-            "Ignoring stop for '{}' because active binding is {:?}",
+        warn!(
+            "stop_transcription_action: binding_id mismatch — received='{}' active={:?}; stop signal dropped (diagnostic)",
             binding_id,
             coordinator.active_binding_id()
         );

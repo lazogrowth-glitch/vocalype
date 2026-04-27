@@ -1505,6 +1505,58 @@ def _write_agent_recommendation(
                 "---\n\n",
                 "**Route: `data_entry`** -- local steps only, no LLM, no external API.\n",
             ]
+
+        elif route == "data_entry" and nb_id == "insufficient_product_data":
+            # Determine current ISO week for CLI commands
+            current_week = datetime.now().strftime("%G-W%V")
+            body = [
+                "## Recommended Action: ENREGISTRER DES DONNEES REELLES\n\n",
+                "> **Do NOT send this to Claude or Codex.**\n",
+                "> Ce sont des donnees reelles -- seul le fondateur peut les fournir.\n\n",
+                "---\n\n",
+                "### Priorite 1 — Benchmarks post-fix paste_latency_ms (besoin >= 5)\n\n",
+                "Utilise Vocalype normalement. Apres chaque dictee, estime ou chronometre\n",
+                "le temps entre la fin de dictee et l'apparition du texte dans l'app cible.\n\n",
+                "```\n",
+                "python vocalype-brain/scripts/add_benchmark_observation.py ^\n",
+                f"  --metric paste_latency_ms --value <ms_mesure> ^\n",
+                f"  --unit ms --source manual_founder ^\n",
+                f'  --notes "post-fix floor=150ms" ^\n',
+                f"  --period 2026-W17\n",
+                "```\n\n",
+                "Repeter >= 5 fois (une ligne par observation). Valeur typique attendue: 150-400ms.\n\n",
+                "---\n\n",
+                "### Priorite 2 — Metriques business V8 (~10 min, chaque lundi)\n\n",
+                "**Stripe** (ouvrir dashboard.stripe.com) :\n",
+                "```\n",
+                f"python vocalype-brain/scripts/add_business_observation.py --metric mrr --value <eur> --unit eur --source stripe --period {current_week}\n",
+                f"python vocalype-brain/scripts/add_business_observation.py --metric paid_conversions --value <n> --unit count --source stripe --period {current_week}\n",
+                f"python vocalype-brain/scripts/add_business_observation.py --metric trial_starts --value <n> --unit count --source stripe --period {current_week}\n",
+                f"python vocalype-brain/scripts/add_business_observation.py --metric churned_users --value <n> --unit count --source stripe --period {current_week}\n",
+                "```\n\n",
+                "**Supabase** (ouvrir app.supabase.com) :\n",
+                "```\n",
+                f"python vocalype-brain/scripts/add_business_observation.py --metric account_signups --value <n> --unit count --source supabase --period {current_week}\n",
+                f"python vocalype-brain/scripts/add_business_observation.py --metric first_successful_dictations --value <n> --unit count --source supabase --period {current_week}\n",
+                "```\n\n",
+                "**Vercel** (ouvrir vercel.com/analytics) :\n",
+                "```\n",
+                f"python vocalype-brain/scripts/add_business_observation.py --metric website_visitors --value <n> --unit count --source vercel --period {current_week}\n",
+                f"python vocalype-brain/scripts/add_business_observation.py --metric downloads --value <n> --unit count --source vercel --period {current_week}\n",
+                "```\n\n",
+                "---\n\n",
+                "### Priorite 3 — Contenu V9 (apres chaque publication)\n\n",
+                "```\n",
+                f"python vocalype-brain/scripts/add_content_observation.py --platform tiktok --content_type demo --period {current_week} ...\n",
+                "```\n\n",
+                "---\n\n",
+                "**Relancer l'agent** apres avoir enregistre des donnees :\n",
+                "```\n",
+                "python vocalype-brain/scripts/run_operating_agent.py\n",
+                "```\n\n",
+                "**Route: `data_entry`** -- aucun LLM, aucune API externe. Donnees fondateur uniquement.\n",
+            ]
+
         else:
             body = [
                 "## Recommended Action: LOCAL TOOLS\n\n",

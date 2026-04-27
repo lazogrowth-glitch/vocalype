@@ -69,6 +69,7 @@ FRESH_MISSION_PATH       = BRAIN_ROOT / "outputs" / "fresh_investigation_mission
 BENCHMARK_OBS_PATH       = BRAIN_ROOT / "data"    / "benchmark_observations.jsonl"
 RESULTS_JSONL_PATH       = BRAIN_ROOT / "data"    / "results.jsonl"
 V11_EXEC_LOG_PATH        = BRAIN_ROOT / "data"    / "v11_execution_log.jsonl"
+AGENT_ROUTE_PATH         = BRAIN_ROOT / "outputs" / "agent_route.txt"
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -134,6 +135,90 @@ BLOCKED_LIFECYCLE_STATES = {
     LC_VERIFIED_REVERT,
     LC_CLOSED,
 }
+
+# ---------------------------------------------------------------------------
+# Route contract
+# ---------------------------------------------------------------------------
+# ONE ROUTE = ONE AUTHORIZED BEHAVIOR.
+# Each route declares exactly what it is and is not allowed to do.
+# enforce_route_contract() uses this table to delete forbidden files
+# and prevent the launcher from opening the wrong outputs.
+#
+# forbidden_files: list of Path objects that must NOT exist after this route runs.
+# may_generate_claude_mission: whether fresh_investigation_mission.md may be written.
+# may_call_deepseek: whether the DeepSeek API call is ever allowed.
+# opens_fresh_mission: whether the launcher should open fresh_investigation_mission.md.
+# founder_message_type: controls which branch _write_agent_recommendation() uses.
+
+# Forward-declared as a function so Path constants are available at call time.
+def _build_route_contract() -> dict[str, dict]:
+    return {
+        "data_entry": {
+            "description": "Local measurement or founder data entry (benchmarks, V8/V9 obs)",
+            "may_generate_claude_mission": False,
+            "may_call_deepseek":          False,
+            "opens_fresh_mission":        False,
+            "founder_message_type":       "local_steps",
+            "forbidden_files":            [FRESH_MISSION_PATH],
+        },
+        "simple_report": {
+            "description": "Brain-only report or local analysis",
+            "may_generate_claude_mission": False,
+            "may_call_deepseek":          False,
+            "opens_fresh_mission":        False,
+            "founder_message_type":       "local_steps",
+            "forbidden_files":            [FRESH_MISSION_PATH],
+        },
+        "hold": {
+            "description": "No action -- insufficient data or nothing to do this cycle",
+            "may_generate_claude_mission": False,
+            "may_call_deepseek":          False,
+            "opens_fresh_mission":        False,
+            "founder_message_type":       "hold",
+            "forbidden_files":            [FRESH_MISSION_PATH],
+        },
+        "observation_wait": {
+            "description": "Patch/diagnostic already shipped; waiting for real-world evidence",
+            "may_generate_claude_mission": False,
+            "may_call_deepseek":          False,
+            "opens_fresh_mission":        False,
+            "founder_message_type":       "observation_wait",
+            "forbidden_files":            [FRESH_MISSION_PATH],
+        },
+        "long_reasoning": {
+            "description": "Long-context Brain review via DeepSeek or manual claude.ai",
+            "may_generate_claude_mission": False,
+            "may_call_deepseek":          True,
+            "opens_fresh_mission":        False,
+            "founder_message_type":       "deepseek_or_manual",
+            "forbidden_files":            [FRESH_MISSION_PATH],
+        },
+        "sensitive_code": {
+            "description": "Rust/audio/security inspection or product implementation mission",
+            "may_generate_claude_mission": True,
+            "may_call_deepseek":          False,
+            "opens_fresh_mission":        True,
+            "founder_message_type":       "send_to_claude",
+            "forbidden_files":            [],
+        },
+        "product_implementation": {
+            "description": "Product implementation -- manual Claude/Codex mission required",
+            "may_generate_claude_mission": True,
+            "may_call_deepseek":          False,
+            "opens_fresh_mission":        True,
+            "founder_message_type":       "send_to_claude",
+            "forbidden_files":            [],
+        },
+        "completed_action_blocked": {
+            "description": "Current V11 action already COMPLETE; stale mission suppressed",
+            "may_generate_claude_mission": False,
+            "may_call_deepseek":          False,
+            "opens_fresh_mission":        False,
+            "founder_message_type":       "stale_suppressed",
+            "forbidden_files":            [FRESH_MISSION_PATH],
+        },
+    }
+
 
 # result_status values from results.jsonl -> lifecycle state mapping
 RESULT_STATUS_TO_LIFECYCLE: dict[str, str] = {
@@ -432,6 +517,76 @@ def _observation_wait_recommendation(bottleneck_id: str) -> list[str]:
         "Waiting for real-world observation data before the next step.\n\n",
         "Record new evidence (logs, benchmarks, or test results) and re-run this agent.\n\n",
     ]
+
+
+# ---------------------------------------------------------------------------
+# Route contract enforcement
+# ---------------------------------------------------------------------------
+
+def enforce_route_contract(
+    route: str,
+    dry_run: bool = False,
+) -> list[str]:
+    """
+    Delete files that are forbidden for this route, then return the list of
+    suppressed file names.  Call this AFTER all outputs have been written so
+    any file that should not exist gets cleaned up.
+
+    Writes nothing to disk beyond deletions; callers are responsible for
+    recording suppressed items in the run report.
+    """
+    contract = _build_route_contract().get(route, {})
+    forbidden: list[Path] = contract.get("forbidden_files", [])
+    suppressed: list[str] = []
+    for path in forbidden:
+        if isinstance(path, Path) and path.exists():
+            if not dry_run:
+                path.unlink()
+            suppressed.append(path.name)
+    return suppressed
+
+
+def _route_authorized_summary(route: str) -> str:
+    """One-line human-readable summary of what the route is authorized to do."""
+    contract = _build_route_contract().get(route, {})
+    parts: list[str] = []
+    if contract.get("may_generate_claude_mission"):
+        parts.append("generate Claude/Codex mission")
+    if contract.get("may_call_deepseek"):
+        parts.append("call DeepSeek (if key set + auto mode)")
+    if not parts:
+        parts.append("local output only")
+    return ", ".join(parts)
+
+
+def _route_next_human_action(route: str, next_bottleneck: dict | None) -> str:
+    """One-line instruction for the founder printed at the end of the run."""
+    nb_id = (next_bottleneck or {}).get("bottleneck_id", "")
+    if route == "data_entry":
+        return (
+            "Follow local measurement steps in agent_recommendation.md. "
+            "Do NOT send anything to Claude/Codex."
+        )
+    if route in ("simple_report", "hold"):
+        return "Read agent_recommendation.md. No external action needed."
+    if route == "observation_wait":
+        return (
+            "Wait for real-world log evidence. "
+            "Read agent_recommendation.md for exact log patterns to look for."
+        )
+    if route == "long_reasoning":
+        return (
+            "Review context_pack.md, then paste into claude.ai or enable auto mode "
+            "to call DeepSeek."
+        )
+    if route in ("sensitive_code", "product_implementation"):
+        return (
+            "Open fresh_investigation_mission.md (if present) and send it to Claude/Codex manually. "
+            "Founder review required before any commit."
+        )
+    if route == "completed_action_blocked":
+        return "Current weekly action is stale. Read agent_recommendation.md for next steps."
+    return "Read agent_recommendation.md."
 
 
 # ---------------------------------------------------------------------------
@@ -1314,18 +1469,56 @@ def _write_agent_recommendation(
         ]
 
     elif route in ("simple_report", "data_entry"):
-        body = [
-            "## Recommended Action: LOCAL TOOLS\n\n",
-            f"This task (`{action_type}`) is handled locally -- no LLM needed.\n\n",
-            "**What to do:**\n\n",
-            "- For report generation: already done by this script\n",
-            "- For data entry: use the appropriate CLI script:\n",
-            "  - `python vocalype-brain/scripts/add_benchmark_observation.py ...`\n",
-            "  - `python vocalype-brain/scripts/add_business_observation.py ...`\n",
-            "  - `python vocalype-brain/scripts/add_content_observation.py ...`\n",
-            "- Review: open `weekly_action.md` and `unified_weekly_report.md`\n\n",
-            "No external API call needed.\n",
-        ]
+        # Build route-specific body based on selected bottleneck (if available)
+        nb_id = (next_bottleneck or {}).get("bottleneck_id", "")
+
+        if route == "data_entry" and nb_id == "paste_latency_pending_benchmarks":
+            body = [
+                "## Recommended Action: LOCAL MEASUREMENT STEPS\n\n",
+                "> **Do NOT send this to Claude or Codex.**\n",
+                "> This is a founder data-entry task. No LLM or external API is needed.\n\n",
+                "---\n\n",
+                "### What to do: Complete V12 Paste Benchmark\n\n",
+                "**Step 1 — Smoke test remaining apps** (if not yet done):\n\n",
+                "- [ ] Slack: T1 (short), T2 (medium), T3 (long) -- paste into Slack message box\n",
+                "- [ ] Teams: T1, T2, T3 -- paste into Teams chat\n",
+                "- [ ] Word: T1, T2, T3 -- paste into Word document\n\n",
+                "If any test fails -> revert immediately:\n",
+                "```\n",
+                "git checkout -- src-tauri/src/platform/clipboard.rs\n",
+                "cargo build --release\n",
+                "```\n\n",
+                "**Step 2 — Record post-fix paste latency benchmarks** (need >= 5):\n\n",
+                "```\n",
+                "python vocalype-brain/scripts/add_benchmark_observation.py \\\n",
+                '  --metric paste_latency_ms --value <measured_ms> \\\n',
+                '  --unit ms --source manual_founder \\\n',
+                '  --notes "post-fix floor=150ms" \\\n',
+                '  --period 2026-W17\n',
+                "```\n\n",
+                "Run once per observation. Repeat until >= 5 post-fix observations exist.\n\n",
+                "**Step 3 — Re-run this agent** once >= 5 post-fix observations are recorded:\n\n",
+                "```\n",
+                "python vocalype-brain/scripts/run_operating_agent.py\n",
+                "```\n\n",
+                "V12 will upgrade from PROVISIONAL_KEEP to FULL_KEEP automatically.\n\n",
+                "---\n\n",
+                "**Route: `data_entry`** -- local steps only, no LLM, no external API.\n",
+            ]
+        else:
+            body = [
+                "## Recommended Action: LOCAL TOOLS\n\n",
+                "> **Do NOT send this to Claude or Codex.** Local data entry only.\n\n",
+                f"This task (`{action_type}`) is handled locally -- no LLM needed.\n\n",
+                "**What to do:**\n\n",
+                "- For report generation: already done by this script\n",
+                "- For data entry: use the appropriate CLI script:\n",
+                "  - `python vocalype-brain/scripts/add_benchmark_observation.py ...`\n",
+                "  - `python vocalype-brain/scripts/add_business_observation.py ...`\n",
+                "  - `python vocalype-brain/scripts/add_content_observation.py ...`\n",
+                "- Review: open `weekly_action.md` and `unified_weekly_report.md`\n\n",
+                "No external API call needed.\n",
+            ]
 
     elif route == "long_reasoning":
         if external_mode == EXTERNAL_MODE_OFF:
@@ -1656,16 +1849,20 @@ def main() -> None:
                 _p(f"  Route overridden to: {route}")
                 _write_fresh_investigation_mission(next_bottleneck)
     else:
-        # V11 not blocked -- still check if the selected action needs lifecycle gating
+        # V11 not blocked -- lifecycle-aware bottleneck selector determines final route.
+        # The weekly_action.md classification is treated as an initial signal only;
+        # the bottleneck lifecycle state is authoritative.
         if not args.dry_run:
-            _p("[3c] Checking lifecycle for current bottleneck selection ...")
+            _p("[3c] Lifecycle-aware bottleneck selection (V11 not blocked) ...")
             candidate = _select_next_product_bottleneck(
                 blocked_ids=blocked_ids, lifecycle_map=lifecycle_map
             )
             nb_lc = candidate.get("lifecycle_state", LC_NEW)
+            nb_route = candidate.get("route", route)
+            next_bottleneck = candidate
+
             if should_skip_action(nb_lc):
-                # The top bottleneck is blocked even without a V11 block
-                next_bottleneck = candidate
+                # Top bottleneck blocked -- route to observation_wait
                 route = "observation_wait"
                 classification_reason = (
                     f"Top bottleneck '{candidate['bottleneck_id']}' is in lifecycle state "
@@ -1674,13 +1871,36 @@ def main() -> None:
                 )
                 _p(f"  [!] Bottleneck '{candidate['bottleneck_id']}' "
                    f"lifecycle={nb_lc} -- route -> observation_wait")
-                # Suppress stale fresh_investigation_mission
                 if FRESH_MISSION_PATH.exists():
                     FRESH_MISSION_PATH.unlink()
                     _p("  [OK] Deleted stale fresh_investigation_mission.md")
+
+            elif nb_route != route and candidate["bottleneck_id"] != "insufficient_product_data":
+                # Bottleneck's route differs from weekly_action.md classification.
+                # The lifecycle-aware selector is authoritative -- override.
+                old_route = route
+                route = nb_route
+                classification_reason = (
+                    f"Lifecycle-aware selector chose '{candidate['bottleneck_id']}' "
+                    f"(lifecycle={nb_lc}, route={nb_route}); "
+                    f"overrides weekly_action.md classification '{old_route}'."
+                )
+                _p(f"  Bottleneck '{candidate['bottleneck_id']}' "
+                   f"lifecycle={nb_lc} -- route overridden {old_route} -> {route}")
+                _write_next_bottleneck_report(candidate)
+                # Only write fresh mission if new route authorizes it
+                if _build_route_contract().get(route, {}).get("may_generate_claude_mission"):
+                    _write_fresh_investigation_mission(candidate)
+                elif FRESH_MISSION_PATH.exists():
+                    FRESH_MISSION_PATH.unlink()
+                    _p("  [OK] Deleted stale fresh_investigation_mission.md "
+                       f"(not authorized for route '{route}')")
+
             else:
                 _p(f"  Bottleneck '{candidate['bottleneck_id']}' "
-                   f"lifecycle={nb_lc} -- eligible for mission")
+                   f"lifecycle={nb_lc} -- route '{route}' confirmed")
+                if _build_route_contract().get(route, {}).get("may_generate_claude_mission"):
+                    _write_next_bottleneck_report(candidate)
 
     _p(f"  Action type   : {action_type}")
     _p(f"  Route         : {route}")
@@ -1778,6 +1998,7 @@ def main() -> None:
 
     # ---- Step 5: Write outputs ----
     _p("[5] Writing outputs ...")
+    suppressed_files: list[str] = []
     if not args.dry_run:
         _write_agent_run_report(
             timestamp=timestamp,
@@ -1810,17 +2031,45 @@ def main() -> None:
             next_bottleneck=next_bottleneck,
             skipped_actions=skipped_actions,
         )
+
+        # Enforce route contract: delete forbidden files, write route marker
+        suppressed_files = enforce_route_contract(route, dry_run=False)
+        if suppressed_files:
+            _p(f"  [OK] Route contract enforced -- suppressed: {', '.join(suppressed_files)}")
+        AGENT_ROUTE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        AGENT_ROUTE_PATH.write_text(route, encoding="utf-8")
+        _p(f"  [OK] agent_route.txt written: {route}")
+
+        # Append suppression notice to run report if any files were deleted
+        if suppressed_files:
+            try:
+                existing = AGENT_RUN_REPORT_PATH.read_text(encoding="utf-8", errors="replace")
+                notice = (
+                    "\n---\n\n"
+                    "## Route Contract Enforcement\n\n"
+                    f"Route `{route}` forbids: {', '.join(f'`{f}`' for f in suppressed_files)}\n\n"
+                    "The following files were **deleted** to enforce the route contract:\n\n"
+                    + "".join(f"- `{f}` -- suppressed (not authorized for route `{route}`)\n"
+                              for f in suppressed_files)
+                    + "\nThe launcher will not open these files for this route.\n"
+                )
+                AGENT_RUN_REPORT_PATH.write_text(existing + notice, encoding="utf-8")
+            except Exception:
+                pass
     else:
         _p("  [dry-run] Skipping file writes.")
 
     _p("")
     _p("=" * 60)
     _p("  DONE")
-    _p(f"  Route        : {route}")
-    _p(f"  External mode: {external_mode}")
-    _p(f"  DeepSeek key : {'YES' if deepseek_ok else 'NO'}")
-    _p(f"  DeepSeek call: {'YES' if deepseek_called else 'NO'}")
-    _p(f"  Context built: {'YES' if context_built else 'NO'}")
+    _p(f"  Final route       : {route}")
+    _p(f"  Authorized for    : {_route_authorized_summary(route)}")
+    _p(f"  External mode     : {external_mode}")
+    _p(f"  DeepSeek key      : {'YES' if deepseek_ok else 'NO'}")
+    _p(f"  DeepSeek call     : {'YES' if deepseek_called else 'NO'}")
+    _p(f"  Context built     : {'YES' if context_built else 'NO'}")
+    if suppressed_files:
+        _p(f"  Suppressed files  : {', '.join(suppressed_files)}")
     _p("")
     _p("  Open:")
     _p("    vocalype-brain/outputs/agent_recommendation.md")
@@ -1829,16 +2078,17 @@ def main() -> None:
         _p("    vocalype-brain/outputs/external_context_audit.md")
     if deepseek_called:
         _p("    vocalype-brain/outputs/deepseek_response.md")
-    # Only show mission package if route genuinely requires it AND V11 was not blocked
-    if MISSION_PACKAGE_PATH.exists() and route in ("product_implementation", "sensitive_code") \
-            and not v11_blocked_detail:
-        _p("    vocalype-brain/outputs/v11_mission_package.md")
-    if v11_blocked_detail:
-        _p("  [!] Stale v11_mission_package.md suppressed -- action already complete")
+    if route in ("sensitive_code", "product_implementation") and not v11_blocked_detail:
+        if MISSION_PACKAGE_PATH.exists():
+            _p("    vocalype-brain/outputs/v11_mission_package.md")
+        if FRESH_MISSION_PATH.exists():
+            _p("    vocalype-brain/outputs/fresh_investigation_mission.md  (send to Claude manually)")
     if next_bottleneck:
         _p(f"    vocalype-brain/outputs/next_product_bottleneck.md  ({next_bottleneck['bottleneck_id']})")
-    if next_bottleneck and FRESH_MISSION_PATH.exists():
-        _p("    vocalype-brain/outputs/fresh_investigation_mission.md  (copy-paste to Claude Code)")
+    if v11_blocked_detail:
+        _p("  [!] Stale v11_mission_package.md suppressed -- action already complete")
+    _p("")
+    _p(f"  Next action: {_route_next_human_action(route, next_bottleneck)}")
     _p("=" * 60)
     _p("")
 

@@ -6,8 +6,20 @@ Supervised automatic model router for the Brain operating cycle.
 What it does:
   1. Runs the Brain operating cycle (unified report + mission package).
   2. Reads weekly_action.md and classifies the current action.
-  3. Routes to local tools, DeepSeek API, or Claude/Codex manual workflow.
-  4. Writes a full audit report and a founder-facing recommendation.
+  3. Checks action lifecycle state -- skips actions already handled.
+  4. Routes to local tools, DeepSeek API, or Claude/Codex manual workflow.
+  5. Writes a full audit report and a founder-facing recommendation.
+
+Action lifecycle states (checked before routing):
+  NEW              -- not investigated; can generate diagnosis/proposal mission
+  DIAGNOSED        -- root cause found; needs proposal or patch decision
+  PATCH_PROPOSED   -- patch proposed; waiting for founder approval
+  PATCH_SHIPPED    -- code patch committed; needs result recording or observation
+  OBSERVATION_WAIT -- logging/diagnostic patch shipped; waiting for real-world
+                      reproduction or benchmark data; must NOT generate new mission
+  VERIFIED_KEEP    -- patch validated and kept; action is closed
+  VERIFIED_REVERT  -- patch reverted; action closed, may create follow-up
+  CLOSED           -- no further action unless new evidence appears
 
 VOCALYPE_BRAIN_EXTERNAL_MODE controls DeepSeek API usage:
   off     -- never call external API; only prepare context_pack.md if needed
@@ -55,6 +67,8 @@ DEEPSEEK_RESP_PATH       = BRAIN_ROOT / "outputs" / "deepseek_response.md"
 NEXT_BOTTLENECK_PATH     = BRAIN_ROOT / "outputs" / "next_product_bottleneck.md"
 FRESH_MISSION_PATH       = BRAIN_ROOT / "outputs" / "fresh_investigation_mission.md"
 BENCHMARK_OBS_PATH       = BRAIN_ROOT / "data"    / "benchmark_observations.jsonl"
+RESULTS_JSONL_PATH       = BRAIN_ROOT / "data"    / "results.jsonl"
+V11_EXEC_LOG_PATH        = BRAIN_ROOT / "data"    / "v11_execution_log.jsonl"
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -99,6 +113,37 @@ FORBIDDEN_PATTERNS: list[str] = [
     "translation.json", ".key", ".pem", ".p12", "api_key",
     "password", "token",
 ]
+
+# ---------------------------------------------------------------------------
+# Action lifecycle states
+# ---------------------------------------------------------------------------
+LC_NEW              = "NEW"
+LC_DIAGNOSED        = "DIAGNOSED"
+LC_PATCH_PROPOSED   = "PATCH_PROPOSED"
+LC_PATCH_SHIPPED    = "PATCH_SHIPPED"
+LC_OBSERVATION_WAIT = "OBSERVATION_WAIT"
+LC_VERIFIED_KEEP    = "VERIFIED_KEEP"
+LC_VERIFIED_REVERT  = "VERIFIED_REVERT"
+LC_CLOSED           = "CLOSED"
+
+# States that block new mission generation for the same action.
+BLOCKED_LIFECYCLE_STATES = {
+    LC_PATCH_SHIPPED,
+    LC_OBSERVATION_WAIT,
+    LC_VERIFIED_KEEP,
+    LC_VERIFIED_REVERT,
+    LC_CLOSED,
+}
+
+# result_status values from results.jsonl -> lifecycle state mapping
+RESULT_STATUS_TO_LIFECYCLE: dict[str, str] = {
+    "keep":             LC_VERIFIED_KEEP,
+    "provisional_keep": LC_PATCH_SHIPPED,   # shipped but incomplete validation
+    "needs_manual_test":LC_PATCH_SHIPPED,
+    "revert":           LC_VERIFIED_REVERT,
+    "reverted":         LC_VERIFIED_REVERT,
+    "closed":           LC_CLOSED,
+}
 
 # DeepSeek model (from model_routing.json role: deepseek_long_context)
 DEEPSEEK_DEFAULT_MODEL   = "deepseek-chat"
@@ -180,6 +225,213 @@ def _load_config() -> dict:
         except Exception:
             pass
     return {}
+
+
+# ---------------------------------------------------------------------------
+# Action lifecycle helpers
+# ---------------------------------------------------------------------------
+
+def normalize_action_key(raw: str) -> str:
+    """
+    Produce a stable lowercase key from an action title or bottleneck_id.
+    Strips punctuation, normalises whitespace, lowercases.
+    Used to match results.jsonl entries to bottleneck IDs.
+
+    Examples:
+      "idle_background_inference_loop"  -> "idle_background_inference_loop"
+      "Idle Background Inference Loop / RAM Growth" -> "idle_background_inference_loop_ram_growth"
+      "RC-2 Patch 1 -- stuck recording diagnostic logs" -> "rc2_patch_1_stuck_recording_diagnostic_logs"
+    """
+    s = raw.lower()
+    s = re.sub(r"[^a-z0-9]+", "_", s)
+    s = s.strip("_")
+    return s
+
+
+def _load_jsonl(path: Path) -> list[dict]:
+    """Load all valid JSON objects from a JSONL file."""
+    if not path.exists():
+        return []
+    rows: list[dict] = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if line:
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return rows
+
+
+def infer_action_state_from_results(bottleneck_id: str, results: list[dict]) -> str:
+    """
+    Inspect results.jsonl rows to infer the current lifecycle state for a given
+    bottleneck_id.  Returns the state from the LATEST matching result (by date).
+
+    Matching strategy (most-to-least specific):
+      1. Exact match on 'bottleneck_id' field (if present in the result row).
+      2. Normalized key match on 'title' field (substring).
+      3. Normalized key match on 'summary' field (substring).
+
+    State inference per row:
+      - Explicit 'lifecycle_state' field in the row overrides everything.
+      - behavior_changed=False + status=keep  -> OBSERVATION_WAIT
+        (logging/diagnostic patch shipped; waiting for real-world evidence)
+      - behavior_changed=True  + status=keep  -> VERIFIED_KEEP
+      - behavior_changed=True  + status=revert -> VERIFIED_REVERT
+      - behavior_changed=None  + status=keep  -> DIAGNOSED
+        (read-only investigation or brain-only change; product not patched yet)
+      - Everything else: RESULT_STATUS_TO_LIFECYCLE mapping.
+
+    Ordering: latest result date wins (most recent state supersedes earlier ones).
+    """
+    norm_bid = normalize_action_key(bottleneck_id)
+    candidates: list[tuple[str, str]] = []   # (date_str, lifecycle_state)
+
+    for row in results:
+        # --- Match check ---
+        matched = False
+        if normalize_action_key(row.get("bottleneck_id", "")) == norm_bid:
+            matched = True
+        elif norm_bid in normalize_action_key(row.get("title", "")):
+            matched = True
+        elif norm_bid in normalize_action_key(row.get("summary", "")):
+            matched = True
+
+        if not matched:
+            continue
+
+        # --- State inference ---
+        # 1. Explicit lifecycle_state field is always authoritative
+        explicit_lc = row.get("lifecycle_state", "")
+        if explicit_lc in {
+            LC_NEW, LC_DIAGNOSED, LC_PATCH_PROPOSED, LC_PATCH_SHIPPED,
+            LC_OBSERVATION_WAIT, LC_VERIFIED_KEEP, LC_VERIFIED_REVERT, LC_CLOSED,
+        }:
+            state = explicit_lc
+        else:
+            result_status = row.get("result_status", "").lower()
+            behavior_changed = row.get("behavior_changed", None)  # bool or None
+
+            if isinstance(behavior_changed, bool) and not behavior_changed and result_status == "keep":
+                # Logging/diagnostic-only patch -- no behaviour change, waiting for evidence
+                state = LC_OBSERVATION_WAIT
+            elif isinstance(behavior_changed, bool) and behavior_changed and result_status == "keep":
+                state = LC_VERIFIED_KEEP
+            elif isinstance(behavior_changed, bool) and behavior_changed \
+                    and result_status in ("revert", "reverted"):
+                state = LC_VERIFIED_REVERT
+            elif behavior_changed is None and result_status == "keep":
+                # Read-only investigation or brain-only change (no product behaviour touched)
+                state = LC_DIAGNOSED
+            else:
+                state = RESULT_STATUS_TO_LIFECYCLE.get(result_status, LC_NEW)
+
+        date_str = row.get("date", "")
+        candidates.append((date_str, state))
+
+    if not candidates:
+        return LC_NEW
+
+    # Latest date (lexicographic sort is fine for ISO-8601 strings) wins.
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
+
+
+def load_action_lifecycle_map(bottleneck_ids: list[str]) -> dict[str, str]:
+    """
+    Build a mapping of {bottleneck_id -> lifecycle_state} by reading
+    results.jsonl and v11_execution_log.jsonl.
+
+    Also checks the execution log: if an action is in COMPLETE status in
+    v11_execution_log.jsonl, it is at minimum DIAGNOSED (may be superseded
+    by a higher state from results.jsonl).
+    """
+    results = _load_jsonl(RESULTS_JSONL_PATH)
+    exec_log = _load_jsonl(V11_EXEC_LOG_PATH)
+
+    # Build exec_log lookup: normalized action_summary -> status
+    exec_complete: set[str] = set()
+    for row in exec_log:
+        if row.get("status", "").upper() == "COMPLETE":
+            exec_complete.add(normalize_action_key(row.get("action_summary", "")))
+
+    state_map: dict[str, str] = {}
+    for bid in bottleneck_ids:
+        state = infer_action_state_from_results(bid, results)
+        # If execution log marks this action complete but results say NEW, upgrade to DIAGNOSED
+        if state == LC_NEW:
+            norm = normalize_action_key(bid)
+            for key in exec_complete:
+                if norm in key or key in norm:
+                    state = LC_DIAGNOSED
+                    break
+        state_map[bid] = state
+
+    return state_map
+
+
+def should_skip_action(lifecycle_state: str) -> bool:
+    """Return True if the action must not generate a new mission."""
+    return lifecycle_state in BLOCKED_LIFECYCLE_STATES
+
+
+def _observation_wait_recommendation(bottleneck_id: str) -> list[str]:
+    """
+    Return a founder-readable instruction block for an OBSERVATION_WAIT action.
+    Generic by default; specialised for known bottleneck IDs.
+    """
+    if "idle_background" in bottleneck_id or "stuck_recording" in bottleneck_id:
+        return [
+            "## Action: OBSERVATION_WAIT -- Diagnostic Patch Already Shipped\n\n",
+            "**What was done:**\n\n",
+            "- Root cause diagnosed: RC-2 stuck recording session in chunking sampler\n",
+            "- Logging-only patch committed: `0820936` (chore(app): add stuck recording diagnostic logs)\n",
+            "- `stop_transcription_action` entry now logged at `info` level\n",
+            "- binding_id mismatch guard now logs at `warn` level (silent drops are now visible)\n",
+            "- Sampler thread warns after 5 min running; logs exit with elapsed time + chunk count\n\n",
+            "**What is needed next (founder task -- no Brain session):**\n\n",
+            "1. Use Vocalype normally (dictate, stop, repeat) until the issue reproduces\n",
+            "   (mic running, RAM growing, no active dictation in progress)\n",
+            "2. Collect the app logs (Windows Event Log or Vocalype log file)\n",
+            "3. Look for these specific log entries:\n\n",
+            "   ```\n",
+            "   warn  stop_transcription_action: binding_id mismatch -- received='...' active=...;\n",
+            "         stop signal dropped (diagnostic)\n",
+            "   warn  [sampler] session_id=... still running after 300s (N chunks dispatched)\n",
+            "         -- possible stuck session (diagnostic)\n",
+            "   info  [sampler] exiting -- ran Ns, M chunks dispatched\n",
+            "   ```\n\n",
+            "4. Record what you find:\n",
+            "   - Was a `binding_id mismatch` warn visible? -> Path 2B confirmed\n",
+            "   - Was `[sampler] still running` warn visible? -> RC-2 still active\n",
+            "   - Was `[sampler] exiting` missing? -> sampler never stopped\n\n",
+            "5. Once you have log evidence, start a new Brain session and share the logs\n",
+            "   -> Patch 2 (defensive sampler timeout) can then be sized correctly\n\n",
+            "**Do NOT open fresh_investigation_mission.md -- it is stale.**\n",
+            "**Do NOT start a new investigation mission for this action.**\n\n",
+        ]
+
+    if "paste_latency" in bottleneck_id:
+        return [
+            "## Action: OBSERVATION_WAIT -- Post-Fix Benchmarks Needed\n\n",
+            "Patch was shipped (V12, commit `f842401`). Waiting for:\n\n",
+            "- Slack, Teams, Word smoke tests (T1/T2/T3 each)\n",
+            "- 5 or more post-fix `paste_latency_ms` benchmark observations\n\n",
+            "Run when ready:\n",
+            "```\n",
+            "python vocalype-brain/scripts/add_benchmark_observation.py \\\n",
+            '  --metric paste_latency_ms --value <ms> --notes "post-fix floor=150ms"\n',
+            "```\n\n",
+        ]
+
+    # Generic
+    return [
+        "## Action: OBSERVATION_WAIT\n\n",
+        f"Action `{bottleneck_id}` has a patch or diagnostic change already shipped.\n\n",
+        "Waiting for real-world observation data before the next step.\n\n",
+        "Record new evidence (logs, benchmarks, or test results) and re-run this agent.\n\n",
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -493,9 +745,13 @@ def _load_benchmark_observations() -> list[dict]:
     return obs
 
 
-def _select_next_product_bottleneck() -> dict:
+def _select_next_product_bottleneck(
+    blocked_ids: set[str] | None = None,
+    lifecycle_map: dict[str, str] | None = None,
+) -> dict:
     """
     Inspect existing Brain data and select the next unresolved product bottleneck.
+    Skips any bottleneck whose lifecycle_state is in BLOCKED_LIFECYCLE_STATES.
 
     Priority order (operating_contract.md Section 5):
       1. Safety / stability issue with evidence
@@ -505,6 +761,8 @@ def _select_next_product_bottleneck() -> dict:
       5. First successful dictation / activation issue
       6. Distribution / business data only if no product bottleneck exists
     """
+    blocked_ids = blocked_ids or set()
+    lifecycle_map = lifecycle_map or {}
     observations = _load_benchmark_observations()
 
     # Index observations by metric name
@@ -516,13 +774,16 @@ def _select_next_product_bottleneck() -> dict:
 
     # --- Priority 1/2: Idle background inference loop / RAM growth ---
     # Evidence: idle_background_inference_loop observation OR the observation file
+    idle_bid        = "idle_background_inference_loop"
     idle_loop_obs   = by_metric.get("idle_background_inference_loop", [])
     ram_growth_obs  = by_metric.get("memory_growth_mb", [])
     idle_ram_obs    = by_metric.get("app_idle_ram_mb", [])
     idle_obs_file   = BRAIN_ROOT / "outputs" / "idle_background_transcription_observation.md"
 
-    if idle_loop_obs or ram_growth_obs or idle_obs_file.exists():
+    if (idle_loop_obs or ram_growth_obs or idle_obs_file.exists()) \
+            and idle_bid not in blocked_ids:
         evidence: list[str] = []
+        lc_state = lifecycle_map.get(idle_bid, LC_NEW)
         if idle_loop_obs:
             evidence.append(
                 f"idle_background_inference_loop: {len(idle_loop_obs)} confirmed observation(s)"
@@ -544,10 +805,12 @@ def _select_next_product_bottleneck() -> dict:
             "Log pattern: repeated chunk processing + 'Transcription result is empty' "
             "every ~1-2s with no user dictation in progress"
         )
+        evidence.append(f"Lifecycle state: {lc_state}")
         return {
-            "bottleneck_id":       "idle_background_inference_loop",
+            "bottleneck_id":       idle_bid,
             "title":               "Idle Background Inference Loop / RAM Growth",
             "priority":            1,
+            "lifecycle_state":     lc_state,
             "evidence":            evidence,
             "task_type":           "product_investigation",
             "route":               "sensitive_code",
@@ -570,21 +833,25 @@ def _select_next_product_bottleneck() -> dict:
         }
 
     # --- Priority 3: Paste latency — post-fix benchmarks pending ---
-    paste_obs = by_metric.get("paste_latency_ms", [])
+    paste_bid    = "paste_latency_pending_benchmarks"
+    paste_obs    = by_metric.get("paste_latency_ms", [])
     post_fix_obs = [o for o in paste_obs if "post-fix" in o.get("notes", "").lower()]
-    v12_result = BRAIN_ROOT / "outputs" / "v12_experiment_result.md"
-    if paste_obs and len(post_fix_obs) < 5:
+    v12_result   = BRAIN_ROOT / "outputs" / "v12_experiment_result.md"
+    if paste_obs and len(post_fix_obs) < 5 and paste_bid not in blocked_ids:
+        lc_state = lifecycle_map.get(paste_bid, LC_NEW)
         evidence = [
             f"paste_latency_ms: {len(paste_obs)} total obs, "
             f"{len(post_fix_obs)} post-fix obs (need >=5 to close V12)",
             "V12 status: PROVISIONAL_KEEP -- Slack/Teams/Word test matrix pending",
+            f"Lifecycle state: {lc_state}",
         ]
         if v12_result.exists():
             evidence.append("v12_experiment_result.md: PROVISIONAL_KEEP confirmed")
         return {
-            "bottleneck_id":       "paste_latency_pending_benchmarks",
+            "bottleneck_id":       paste_bid,
             "title":               "Paste Latency -- V12 Benchmarks Pending",
             "priority":            3,
+            "lifecycle_state":     lc_state,
             "evidence":            evidence,
             "task_type":           "measurement_task",
             "route":               "data_entry",
@@ -599,11 +866,12 @@ def _select_next_product_bottleneck() -> dict:
             "forbidden": "Do not modify product code. Record observations only.",
         }
 
-    # --- Fallback: insufficient data ---
+    # --- Fallback: all known bottlenecks blocked or insufficient data ---
     return {
         "bottleneck_id":       "insufficient_product_data",
         "title":               "Insufficient Product Benchmark Data",
         "priority":            5,
+        "lifecycle_state":     LC_NEW,
         "evidence":            ["Fewer than 5 observations for priority metrics"],
         "task_type":           "measurement_task",
         "route":               "data_entry",
@@ -826,6 +1094,9 @@ def _write_agent_run_report(
     context_built: bool,
     dry_run: bool,
     v11_blocked_detail: str | None = None,
+    lifecycle_map: dict[str, str] | None = None,
+    selected_bottleneck_id: str | None = None,
+    skipped_actions: list[dict] | None = None,
 ) -> None:
     """Write agent_run_report.md -- technical audit."""
     lines = [
@@ -847,6 +1118,33 @@ def _write_agent_run_report(
             "then re-run this agent.\n\n",
             "---\n\n",
         ]
+
+    # Lifecycle state section
+    if lifecycle_map or skipped_actions:
+        lines += ["## Action Lifecycle State\n\n"]
+        if selected_bottleneck_id:
+            sel_state = (lifecycle_map or {}).get(selected_bottleneck_id, LC_NEW)
+            lines.append(
+                f"| Field | Value |\n|---|---|\n"
+                f"| Selected action | `{selected_bottleneck_id}` |\n"
+                f"| Inferred state | `{sel_state}` |\n"
+                f"| Final route | `{route}` |\n\n"
+            )
+        if skipped_actions:
+            lines.append("**Skipped actions (lifecycle state blocked):**\n\n")
+            for sk in skipped_actions:
+                lines.append(
+                    f"- `{sk['bottleneck_id']}` -- state=`{sk['lifecycle_state']}` "
+                    f"(reason: {sk['reason']})\n"
+                )
+            lines.append("\n")
+        if lifecycle_map:
+            lines.append("**Full lifecycle map:**\n\n")
+            lines.append("| Bottleneck ID | State |\n|---|---|\n")
+            for bid, state in sorted(lifecycle_map.items()):
+                lines.append(f"| `{bid}` | `{state}` |\n")
+            lines.append("\n")
+        lines.append("---\n\n")
 
     lines += [
         "## Classification\n\n",
@@ -904,20 +1202,38 @@ def _write_agent_recommendation(
     context_built: bool,
     dry_run: bool,
     next_bottleneck: dict | None = None,
+    skipped_actions: list[dict] | None = None,
 ) -> None:
     """Write agent_recommendation.md -- founder-facing next action."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
+    lc_state = (next_bottleneck or {}).get("lifecycle_state", "")
     header = [
         "# Vocalype Brain -- Agent Recommendation\n\n",
         f"Generated: {timestamp}\n",
-        f"Route: `{route}` | Action type: `{action_type}`\n\n",
+        f"Route: `{route}` | Action type: `{action_type}`"
+        + (f" | Lifecycle: `{lc_state}`" if lc_state else "")
+        + "\n\n",
         "---\n\n",
     ]
 
     body: list[str] = []
 
-    if route == "completed_action_blocked":
+    if route == "observation_wait":
+        bid = (next_bottleneck or {}).get("bottleneck_id", "unknown")
+        body = _observation_wait_recommendation(bid)
+        if skipped_actions:
+            body += [
+                "---\n\n",
+                "## Skipped Actions (lifecycle state blocked)\n\n",
+            ]
+            for sk in skipped_actions:
+                body.append(
+                    f"- `{sk['bottleneck_id']}` -- `{sk['lifecycle_state']}`: {sk['reason']}\n"
+                )
+            body.append("\n")
+
+    elif route == "completed_action_blocked":
         body = [
             "## Current Weekly Action: ALREADY COMPLETE\n\n",
             "> **V11 blocked by safety gate G7 -- duplicate COMPLETE action in execution log.**\n",
@@ -1265,6 +1581,38 @@ def main() -> None:
     # Override: if V11 was blocked by G7 (duplicate COMPLETE), force a safe hold route
     # and select a fresh product bottleneck to give the founder a concrete next action
     next_bottleneck: dict | None = None
+    skipped_actions: list[dict] = []
+
+    # ---- Step 3b: Build action lifecycle map ----
+    # Always build the lifecycle map, even if V11 was not blocked.
+    # This prevents the bottleneck selector from re-selecting already-handled actions.
+    known_bottleneck_ids = [
+        "idle_background_inference_loop",
+        "paste_latency_pending_benchmarks",
+        "insufficient_product_data",
+    ]
+    lifecycle_map: dict[str, str] = {}
+    if not args.dry_run:
+        _p("[3b] Building action lifecycle map ...")
+        lifecycle_map = load_action_lifecycle_map(known_bottleneck_ids)
+        blocked_ids: set[str] = {
+            bid for bid, state in lifecycle_map.items()
+            if should_skip_action(state)
+        }
+        for bid in blocked_ids:
+            skipped_actions.append({
+                "bottleneck_id":   bid,
+                "lifecycle_state": lifecycle_map[bid],
+                "reason":          f"state={lifecycle_map[bid]} -- no new mission needed",
+            })
+        for bid, state in lifecycle_map.items():
+            _p(f"  Lifecycle: {bid} -> {state}")
+        if blocked_ids:
+            _p(f"  Blocked (will not generate mission): {', '.join(sorted(blocked_ids))}")
+        _p("")
+    else:
+        blocked_ids = set()
+
     if v11_blocked_detail:
         original_route = route
         route = "completed_action_blocked"
@@ -1273,19 +1621,66 @@ def main() -> None:
             "Stale mission package suppressed."
         )
         if not args.dry_run:
-            _p("[3b] Selecting next product bottleneck ...")
-            next_bottleneck = _select_next_product_bottleneck()
-            _p(f"  Selected: {next_bottleneck['bottleneck_id']} (priority {next_bottleneck['priority']})")
-            _write_next_bottleneck_report(next_bottleneck)
-            # Override route to the fresh bottleneck's route (e.g. sensitive_code)
-            route = next_bottleneck["route"]
-            classification_reason = (
-                f"V11 blocked (G7 duplicate COMPLETE) -- fresh bottleneck selected: "
-                f"'{next_bottleneck['bottleneck_id']}' (priority {next_bottleneck['priority']}). "
-                f"Route overridden to '{route}'."
+            _p("[3c] Selecting next product bottleneck (lifecycle-aware) ...")
+            next_bottleneck = _select_next_product_bottleneck(
+                blocked_ids=blocked_ids, lifecycle_map=lifecycle_map
             )
-            _p(f"  Route overridden to: {route}")
-            _write_fresh_investigation_mission(next_bottleneck)
+            _p(f"  Selected: {next_bottleneck['bottleneck_id']} "
+               f"(priority {next_bottleneck['priority']}, "
+               f"state={next_bottleneck.get('lifecycle_state', '?')})")
+            _write_next_bottleneck_report(next_bottleneck)
+
+            nb_lc = next_bottleneck.get("lifecycle_state", LC_NEW)
+            if should_skip_action(nb_lc):
+                # All bottlenecks are blocked -- route to OBSERVATION_WAIT
+                route = "observation_wait"
+                classification_reason = (
+                    f"All known bottlenecks blocked by lifecycle state. "
+                    f"Top bottleneck '{next_bottleneck['bottleneck_id']}' "
+                    f"is in state '{nb_lc}'. "
+                    "Routing to OBSERVATION_WAIT -- waiting for new evidence."
+                )
+                _p(f"  [!] Top bottleneck is blocked ({nb_lc}) -- route -> observation_wait")
+                # Suppress fresh_investigation_mission for OBSERVATION_WAIT
+                if FRESH_MISSION_PATH.exists():
+                    FRESH_MISSION_PATH.unlink()
+                    _p("  [OK] Deleted stale fresh_investigation_mission.md")
+            else:
+                # Override route to the fresh bottleneck's route (e.g. sensitive_code)
+                route = next_bottleneck["route"]
+                classification_reason = (
+                    f"V11 blocked (G7 duplicate COMPLETE) -- fresh bottleneck selected: "
+                    f"'{next_bottleneck['bottleneck_id']}' (priority {next_bottleneck['priority']}). "
+                    f"Route overridden to '{route}'."
+                )
+                _p(f"  Route overridden to: {route}")
+                _write_fresh_investigation_mission(next_bottleneck)
+    else:
+        # V11 not blocked -- still check if the selected action needs lifecycle gating
+        if not args.dry_run:
+            _p("[3c] Checking lifecycle for current bottleneck selection ...")
+            candidate = _select_next_product_bottleneck(
+                blocked_ids=blocked_ids, lifecycle_map=lifecycle_map
+            )
+            nb_lc = candidate.get("lifecycle_state", LC_NEW)
+            if should_skip_action(nb_lc):
+                # The top bottleneck is blocked even without a V11 block
+                next_bottleneck = candidate
+                route = "observation_wait"
+                classification_reason = (
+                    f"Top bottleneck '{candidate['bottleneck_id']}' is in lifecycle state "
+                    f"'{nb_lc}' -- cannot generate new mission. "
+                    "Routing to OBSERVATION_WAIT."
+                )
+                _p(f"  [!] Bottleneck '{candidate['bottleneck_id']}' "
+                   f"lifecycle={nb_lc} -- route -> observation_wait")
+                # Suppress stale fresh_investigation_mission
+                if FRESH_MISSION_PATH.exists():
+                    FRESH_MISSION_PATH.unlink()
+                    _p("  [OK] Deleted stale fresh_investigation_mission.md")
+            else:
+                _p(f"  Bottleneck '{candidate['bottleneck_id']}' "
+                   f"lifecycle={nb_lc} -- eligible for mission")
 
     _p(f"  Action type   : {action_type}")
     _p(f"  Route         : {route}")
@@ -1296,6 +1691,7 @@ def main() -> None:
         "action_type": action_type,
         "route": route,
         "reason": classification_reason,
+        "skipped_actions": [s["bottleneck_id"] for s in skipped_actions],
     })
     _p("")
 
@@ -1307,7 +1703,18 @@ def main() -> None:
 
     _p(f"[4] Executing route: {route} ...")
 
-    if route == "completed_action_blocked":
+    if route == "observation_wait":
+        bid = (next_bottleneck or {}).get("bottleneck_id", "unknown")
+        lc  = (next_bottleneck or {}).get("lifecycle_state", "OBSERVATION_WAIT")
+        _p(f"  -> OBSERVATION_WAIT: '{bid}' is in state '{lc}'.")
+        _p("     Patch/diagnostic already shipped. Waiting for real-world evidence.")
+        _p("     No new mission generated. fresh_investigation_mission.md suppressed.")
+        log.append({
+            "step": "route_exec", "status": "observation_wait",
+            "bottleneck_id": bid, "lifecycle_state": lc,
+        })
+
+    elif route == "completed_action_blocked":
         _p("  -> Current action already COMPLETE. Stale mission NOT recommended.")
         _p("     Record new V8/V9 data, then re-run to get a fresh action.")
         log.append({"step": "route_exec", "status": "completed_action_blocked",
@@ -1385,6 +1792,9 @@ def main() -> None:
             context_built=context_built,
             dry_run=args.dry_run,
             v11_blocked_detail=v11_blocked_detail,
+            lifecycle_map=lifecycle_map,
+            selected_bottleneck_id=(next_bottleneck or {}).get("bottleneck_id"),
+            skipped_actions=skipped_actions,
         )
         _write_agent_recommendation(
             route=route,
@@ -1398,6 +1808,7 @@ def main() -> None:
             context_built=context_built,
             dry_run=args.dry_run,
             next_bottleneck=next_bottleneck,
+            skipped_actions=skipped_actions,
         )
     else:
         _p("  [dry-run] Skipping file writes.")

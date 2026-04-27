@@ -13,7 +13,36 @@ Date: 2026-04-26
 - 2026-04-26T00:00:00: V12 Experiment 1 — Windows paste restore delay floor 450ms → 150ms -> **provisional_keep** (Slack/Teams/Word + benchmarks pending)
 - 2026-04-26T00:00:00: RC-2 Patch 1 — stuck recording diagnostic logs -> **keep**
 
-## Latest Result — RC-2 Patch 1: Stuck Recording Diagnostic Logs (KEEP)
+## Latest Result — V12 Smoke Test Complete (PROVISIONAL_KEEP)
+
+**Task:** V12 paste delay patch smoke test — all 21 cases across 7 apps
+**Date:** 2026-04-27
+**Source:** Founder smoke test (Operating Mode, data_entry route)
+**Product commit tested:** `f842401` — `perf(app): reduce Windows paste restore delay floor`
+**Product code touched:** No — Brain memory recording only
+
+**Smoke test matrix (7 apps × 3 cases = 21 total):**
+
+| App | Category | Result |
+|---|---|---|
+| Notepad | Native Win32 | ✅ PASS (T1/T2/T3) |
+| VS Code | Electron | ✅ PASS (T1/T2/T3) |
+| Chrome | Blink browser | ✅ PASS (T1/T2/T3) |
+| Gmail | Web (Chrome) | ✅ PASS (T1/T2/T3) |
+| Slack | Electron | ✅ PASS (T1/T2/T3) |
+| Teams | Electron | ✅ PASS (T1/T2/T3) |
+| Word | Office/Win32 | ✅ PASS (T1/T2/T3) |
+
+**21/21 cases passed. No paste failure. No clipboard restore failure.**
+
+**Decision: PROVISIONAL_KEEP (maintained)**
+- All smoke tests passed — patch confirmed stable across native, Electron, browser, and Office apps
+- Remaining: ≥5 post-fix `paste_latency_ms` observations to confirm median < 420ms → upgrades to FULL_KEEP
+- Lifecycle: `paste_latency_pending_benchmarks` → `PATCH_SHIPPED` (no longer re-selected as NEW)
+
+---
+
+## Previous Latest Result — RC-2 Patch 1: Stuck Recording Diagnostic Logs (KEEP)
 
 **Task:** Add logging-only instrumentation to diagnose stuck recording session (RC-2)
 **Source:** Claude Code implementation mission (Operating Mode, founder approved)

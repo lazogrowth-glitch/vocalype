@@ -138,6 +138,41 @@ Shipping Patch 2 without this data would be guessing.
 
 ---
 
+## 2026-04-27 — V12 Smoke Test: Full Matrix Validates 150ms Floor
+
+**What was attempted:** Smoke-tested the V12 paste delay patch (450ms → 150ms floor) across
+all 7 app targets: Notepad, VS Code, Chrome, Gmail, Slack, Teams, Word (21 cases total).
+
+**What happened:**
+- All 21 cases passed. No paste failure. No clipboard restore failure.
+- Electron apps (VS Code, Slack, Teams) all passed — the earlier concern about Slack/Teams IPC
+  model was resolved by direct testing.
+- Word (Office/Win32) also passed — no conflict with Office clipboard API at 150ms floor.
+- Decision remains PROVISIONAL_KEEP (not upgraded to FULL_KEEP) because ≥5 post-fix
+  `paste_latency_ms` benchmark observations are still needed to confirm median < 420ms.
+
+**Why it mattered:**
+The prior V12 result was incomplete — Slack, Teams, and Word were deferred. This session
+closes the smoke test phase. The patch is now confirmed stable across every major Windows
+app category (native, Electron, browser, Office). The remaining validation is quantitative
+(latency benchmarks), not qualitative (pass/fail smoke tests).
+
+**Lessons:**
+1. **Full smoke test coverage matters — don't defer Electron until last.** VS Code (Electron)
+   passing early was encouraging but insufficient. Slack and Teams have different IPC models
+   and must be tested directly. Both passed at 150ms, confirming the floor is safe for all
+   Electron variants tested.
+2. **150ms is safe for Office apps.** Word uses a native Win32 clipboard API that could have
+   been sensitive to short delays. It was not — all 3 cases passed cleanly.
+3. **PROVISIONAL_KEEP → FULL_KEEP requires benchmark evidence, not just smoke tests.**
+   Smoke tests confirm absence of regression. Benchmarks confirm presence of improvement.
+   Both are required to close a performance patch cleanly.
+4. **Record smoke test results before recording benchmarks.** The lifecycle state
+   `PATCH_SHIPPED` correctly blocks re-investigation, while benchmarks in a separate step
+   provide the final quantitative gate for FULL_KEEP.
+
+---
+
 ## 2026-04-24 — V6 Handoff Validation
 
 **What was attempted:** V6 Product Implementation Handoff Loop generated a scoped task from the approved "Fix: First successful dictation" proposal. Claude implemented it, then committed.

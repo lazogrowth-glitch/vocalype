@@ -15,10 +15,11 @@ The Brain now runs existing loops — it does not build new ones.
 
 **V12 CLOSED — PROVISIONAL_KEEP.**
 Product commit `f842401`: `paste_delay_ms.max(450)` → `max(150)` at clipboard.rs:120.
-Smoke tests: Notepad ✅ VS Code ✅ Chrome ✅ Gmail ✅ | Slack ⬜ Teams ⬜ Word ⬜ (deferred)
+Smoke tests: Notepad ✅ VS Code ✅ Chrome ✅ Gmail ✅ Slack ✅ Teams ✅ Word ✅ — 21/21 PASS (2026-04-27)
 Benchmarks pending: ≥5 post-fix `paste_latency_ms` observations not yet recorded.
 Rollback still armed: `git checkout -- src-tauri/src/platform/clipboard.rs`
-Upgrades to FULL_KEEP when Slack/Teams/Word pass + benchmarks confirm median < 420ms.
+Upgrades to FULL_KEEP when ≥5 benchmarks confirm median < 420ms.
+Lifecycle: `paste_latency_pending_benchmarks` → `PATCH_SHIPPED` (smoke test phase closed).
 
 **Desktop launchers — Bureau simplifié:**
 - `Lancer Agent Vocalype Auto.bat` — **SEUL bouton principal** sur le Bureau
@@ -136,10 +137,11 @@ Future prompts may reference the contract instead of repeating safety rules:
 
 ## Top Recommended Next Actions
 
-1. **OM-1: Complete V12 Phase 4** (founder — no Brain session, ~15 min):
-   - Test Slack (T1/T2/T3), Teams (T1/T2/T3), Word (T1/T2/T3) with Vocalype `f842401`
-   - If any fails → `git checkout -- src-tauri/src/platform/clipboard.rs` immediately
-   - If all pass → record ≥5 post-fix `paste_latency_ms` benchmarks (`add_benchmark_observation.py --notes "post-fix floor=150ms"`)
+1. **OM-1: Complete V12 Phase 5 — post-fix benchmarks** (founder — no Brain session, ~10 min):
+   - Smoke tests DONE (21/21 PASS, 2026-04-27) — no more app tests needed
+   - Record ≥5 post-fix `paste_latency_ms` observations:
+     `python vocalype-brain/scripts/add_benchmark_observation.py --metric paste_latency_ms --value <ms> --unit ms --source manual_founder --notes "post-fix floor=150ms" --period 2026-W17`
+   - Re-run agent after ≥5 observations → upgrades from PROVISIONAL_KEEP to FULL_KEEP automatically
 
 2. **OM-2: V10 weekly action run** (next Brain session after real data exists):
    - Run `generate_unified_report.py` → review `weekly_action.md` — expect RAM or inference loop as next priority

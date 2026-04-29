@@ -717,7 +717,10 @@ pub fn parakeet_builtin_correction_terms_with_profile(
 }
 
 pub fn parakeet_builtin_correction_terms(selected_language: &str) -> Vec<String> {
-    parakeet_builtin_correction_terms_with_profile(selected_language, ParakeetDomainProfile::General)
+    parakeet_builtin_correction_terms_with_profile(
+        selected_language,
+        ParakeetDomainProfile::Recruiting,
+    )
 }
 
 fn looks_like_developer_dictation(text: &str) -> bool {
@@ -894,7 +897,7 @@ pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -
     normalize_parakeet_phrase_variants_with_profile(
         text,
         selected_language,
-        ParakeetDomainProfile::General,
+        ParakeetDomainProfile::Recruiting,
     )
 }
 
@@ -1879,7 +1882,11 @@ pub fn finalize_parakeet_text_with_profile(
 }
 
 pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
-    finalize_parakeet_text_with_profile(text, selected_language, ParakeetDomainProfile::General)
+    finalize_parakeet_text_with_profile(
+        text,
+        selected_language,
+        ParakeetDomainProfile::Recruiting,
+    )
 }
 
 fn normalize_english_numbers(text: &str) -> String {
@@ -2508,9 +2515,10 @@ mod tests {
 
     #[test]
     fn applies_dev_terms_when_context_is_developer_dictation() {
-        let normalized = finalize_parakeet_text(
+        let normalized = finalize_parakeet_text_with_profile(
             "In React code I need use state and pg vector for the database.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(normalized.contains("useState"), "got: {normalized}");
         assert!(normalized.contains("pgvector"), "got: {normalized}");

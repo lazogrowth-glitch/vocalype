@@ -527,14 +527,7 @@ impl TranscriptionManager {
             .try_state::<crate::session_glossary::SessionGlossaryState>()
             .and_then(|state| state.0.lock().ok().map(|g| g.as_vec()))
             .unwrap_or_default();
-        let correction_profile = if matches!(
-            app_context.as_ref().map(|context| context.category),
-            Some(crate::context_detector::AppContextCategory::Code)
-        ) {
-            ParakeetDomainProfile::General
-        } else {
-            ParakeetDomainProfile::Recruiting
-        };
+        let correction_profile = ParakeetDomainProfile::Recruiting;
         let correction_terms = build_correction_terms(
             &settings,
             &session_keyterms,
@@ -1197,31 +1190,8 @@ impl TranscriptionManager {
         } else {
             raw_result
         };
-        // In code context, try to recover camelCase identifiers that Parakeet
-        // split into separate words (e.g. "use state" → "useState").
-        // Merge custom_words + session glossary so clipboard-discovered
-        // identifiers (e.g. `handleClick` → "handle click") are also recovered.
-        let learned_result = if matches!(
-            app_context.as_ref().map(|c| c.category),
-            Some(crate::context_detector::AppContextCategory::Code)
-        ) && (!settings.custom_words.is_empty()
-            || !session_glossary_terms.is_empty())
-        {
-            let mut split_words = settings.custom_words.clone();
-            split_words.extend(session_glossary_terms.iter().cloned());
-            crate::vocabulary_store::apply_custom_word_splits(&learned_result, &split_words)
-        } else {
-            learned_result
-        };
-
-        let profile = if matches!(
-            app_context.as_ref().map(|context| context.category),
-            Some(crate::context_detector::AppContextCategory::Code)
-        ) {
-            ParakeetDomainProfile::General
-        } else {
-            ParakeetDomainProfile::Recruiting
-        };
+        let learned_result = learned_result;
+        let profile = ParakeetDomainProfile::Recruiting;
 
         let active_correction_terms =
             correction_terms_for_text(&learned_result, &correction_terms, profile);

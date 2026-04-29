@@ -18,18 +18,12 @@ impl TranscriptionManager {
         let english_backbone = root
             .join("quant-sweeps")
             .join("encoder-quint8-attn-proj-perchannel");
-        let portuguese_backbone = root.join("parakeet-mixed-encoder-float");
-
         match language.as_str() {
-            "en" | "auto" => vec![
+            "en" => vec![
                 ("english-perchannel", english_backbone),
                 ("default-late12", default_backbone),
             ],
-            "pt" => vec![
-                ("portuguese-mixedfloat", portuguese_backbone),
-                ("default-late12", default_backbone),
-            ],
-            "fr" | "es" => vec![("default-late12", default_backbone)],
+            "fr" | "es" | "auto" => vec![("default-late12", default_backbone)],
             _ => vec![("default-late12", default_backbone)],
         }
     }

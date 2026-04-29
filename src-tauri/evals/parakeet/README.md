@@ -34,6 +34,8 @@ the primary product benchmark.
 
 Use this pack first when deciding whether a Parakeet change is good enough for
 the current product path.
+It is also the fastest pack to use when verifying that another machine has
+pulled the latest Parakeet runtime changes correctly.
 
 ## Secondary Packs
 

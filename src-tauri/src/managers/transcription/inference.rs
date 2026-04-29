@@ -19,6 +19,7 @@ const PARAKEET_SHORT_PHRASE_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
                                                              // Tail pad applied to ALL recordings so the last word is never cut off.
 const PARAKEET_TAIL_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
 const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = 24;
+const PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES: usize = 3 * 16_000; // 3 s at 16 kHz
 
 fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
     if samples.is_empty() {
@@ -181,6 +182,44 @@ fn maybe_prefer_richer_short_phrase_hypothesis(
     }
 
     None
+}
+
+fn choose_best_short_phrase_hypothesis(
+    candidates: &[String],
+    selected_language: &str,
+) -> Option<String> {
+    use std::collections::HashMap;
+
+    let mut groups: HashMap<Vec<String>, Vec<(String, usize, usize)>> = HashMap::new();
+    for candidate in candidates {
+        let tokens = tokenize_words(candidate);
+        if tokens.is_empty() {
+            continue;
+        }
+        let content: Vec<String> = tokens
+            .iter()
+            .filter(|word| !is_function_word(word, selected_language))
+            .cloned()
+            .collect();
+        let function_count = tokens
+            .iter()
+            .filter(|word| is_function_word(word, selected_language))
+            .count();
+        groups
+            .entry(content)
+            .or_default()
+            .push((candidate.clone(), function_count, tokens.len()));
+    }
+
+    let best_group = groups
+        .into_iter()
+        .max_by_key(|(content, variants)| (variants.len(), content.len()))?;
+
+    best_group
+        .1
+        .into_iter()
+        .max_by_key(|(_, function_count, token_count)| (*function_count, *token_count))
+        .map(|(text, _, _)| text)
 }
 
 /// For short phrases (< 5 s), pad with silence on both sides so the encoder
@@ -889,12 +928,15 @@ impl TranscriptionManager {
                                     );
                                     let mut display_text = result.text.clone();
                                     if is_short_phrase {
+                                        let mut short_phrase_candidates = vec![display_text.clone()];
                                         if let Ok(word_result) = parakeet_engine.transcribe_samples(
                                             decode_audio.clone(),
                                             16_000,
                                             1,
                                             Some(ParakeetTimestampMode::Words),
                                         ) {
+                                            short_phrase_candidates
+                                                .push(word_result.text.clone());
                                             if let Some(preferred) =
                                                 maybe_prefer_richer_short_phrase_hypothesis(
                                                     &display_text,
@@ -904,6 +946,38 @@ impl TranscriptionManager {
                                             {
                                                 display_text = preferred;
                                             }
+                                        }
+                                        if audio.len() <= PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES {
+                                            if let Ok(raw_sentence_result) =
+                                                parakeet_engine.transcribe_samples(
+                                                    audio.clone(),
+                                                    16_000,
+                                                    1,
+                                                    Some(ParakeetTimestampMode::Sentences),
+                                                )
+                                            {
+                                                short_phrase_candidates
+                                                    .push(raw_sentence_result.text);
+                                            }
+                                            if let Ok(raw_word_result) = parakeet_engine
+                                                .transcribe_samples(
+                                                    audio.clone(),
+                                                    16_000,
+                                                    1,
+                                                    Some(ParakeetTimestampMode::Words),
+                                                )
+                                            {
+                                                short_phrase_candidates
+                                                    .push(raw_word_result.text);
+                                            }
+                                        }
+                                        if let Some(best_short_candidate) =
+                                            choose_best_short_phrase_hypothesis(
+                                                &short_phrase_candidates,
+                                                &settings.selected_language,
+                                            )
+                                        {
+                                            display_text = best_short_candidate;
                                         }
                                     }
                                     if should_attempt_parakeet_sentence_rescue(
@@ -1375,5 +1449,17 @@ mod tests {
             "en",
         );
         assert!(preferred.is_none());
+    }
+
+    #[test]
+    fn chooses_best_short_phrase_candidate_from_same_content_group() {
+        let candidates = vec![
+            "arrete parler".to_string(),
+            "arrete de parler".to_string(),
+            "arrête de parler".to_string(),
+            "arrete support parler".to_string(),
+        ];
+        let chosen = choose_best_short_phrase_hypothesis(&candidates, "fr");
+        assert_eq!(chosen.as_deref(), Some("arrete de parler"));
     }
 }

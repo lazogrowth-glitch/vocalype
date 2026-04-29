@@ -46,6 +46,143 @@ fn should_attempt_parakeet_sentence_rescue(text: &str, is_short_phrase: bool) ->
     word_count <= PARAKEET_SENTENCE_RESCUE_MAX_WORDS
 }
 
+fn tokenize_words(text: &str) -> Vec<String> {
+    text.split_whitespace()
+        .map(|word| {
+            word.trim_matches(|c: char| !c.is_alphanumeric() && c != '\'' && c != '’')
+                .to_lowercase()
+        })
+        .filter(|word| !word.is_empty())
+        .collect()
+}
+
+fn is_function_word(word: &str, selected_language: &str) -> bool {
+    match selected_language {
+        lang if lang.starts_with("fr") => matches!(
+            word,
+            "de"
+                | "du"
+                | "des"
+                | "le"
+                | "la"
+                | "les"
+                | "un"
+                | "une"
+                | "et"
+                | "à"
+                | "au"
+                | "aux"
+                | "en"
+                | "ce"
+                | "ces"
+                | "se"
+                | "que"
+                | "qui"
+                | "je"
+                | "tu"
+                | "il"
+                | "elle"
+                | "on"
+                | "nous"
+                | "vous"
+                | "ils"
+                | "elles"
+        ),
+        lang if lang.starts_with("es") => matches!(
+            word,
+            "de"
+                | "del"
+                | "la"
+                | "las"
+                | "el"
+                | "los"
+                | "un"
+                | "una"
+                | "y"
+                | "a"
+                | "en"
+                | "que"
+                | "se"
+                | "me"
+                | "te"
+                | "lo"
+                | "le"
+        ),
+        _ => matches!(
+            word,
+            "a"
+                | "an"
+                | "the"
+                | "to"
+                | "of"
+                | "for"
+                | "and"
+                | "or"
+                | "in"
+                | "on"
+                | "at"
+                | "with"
+                | "from"
+                | "that"
+                | "this"
+                | "these"
+                | "those"
+        ),
+    }
+}
+
+fn maybe_prefer_richer_short_phrase_hypothesis(
+    primary_text: &str,
+    alternate_text: &str,
+    selected_language: &str,
+) -> Option<String> {
+    let primary_tokens = tokenize_words(primary_text);
+    let alternate_tokens = tokenize_words(alternate_text);
+    if primary_tokens.is_empty() || alternate_tokens.is_empty() || primary_tokens == alternate_tokens {
+        return None;
+    }
+
+    let primary_content: Vec<&str> = primary_tokens
+        .iter()
+        .map(String::as_str)
+        .filter(|word| !is_function_word(word, selected_language))
+        .collect();
+    let alternate_content: Vec<&str> = alternate_tokens
+        .iter()
+        .map(String::as_str)
+        .filter(|word| !is_function_word(word, selected_language))
+        .collect();
+
+    if primary_content != alternate_content {
+        return None;
+    }
+
+    let primary_function_count = primary_tokens
+        .iter()
+        .filter(|word| is_function_word(word, selected_language))
+        .count();
+    let alternate_function_count = alternate_tokens
+        .iter()
+        .filter(|word| is_function_word(word, selected_language))
+        .count();
+
+    if alternate_tokens.len() > primary_tokens.len()
+        && alternate_function_count > primary_function_count
+        && alternate_tokens.len() <= primary_tokens.len() + 2
+    {
+        return Some(alternate_text.to_string());
+    }
+
+    if primary_tokens.len() > alternate_tokens.len()
+        && primary_function_count > alternate_function_count
+        && primary_tokens.len() <= alternate_tokens.len() + 2
+    {
+        return Some(primary_text.to_string());
+    }
+
+    None
+}
+
 /// For short phrases (< 5 s), pad with silence on both sides so the encoder
 /// has enough context and doesn't start decoding mid-phoneme.
 fn pad_short_phrase(samples: &[f32]) -> Vec<f32> {
@@ -751,6 +888,24 @@ impl TranscriptionManager {
                                         &settings.selected_language,
                                     );
                                     let mut display_text = result.text.clone();
+                                    if is_short_phrase {
+                                        if let Ok(word_result) = parakeet_engine.transcribe_samples(
+                                            decode_audio.clone(),
+                                            16_000,
+                                            1,
+                                            Some(ParakeetTimestampMode::Words),
+                                        ) {
+                                            if let Some(preferred) =
+                                                maybe_prefer_richer_short_phrase_hypothesis(
+                                                    &display_text,
+                                                    &word_result.text,
+                                                    &settings.selected_language,
+                                                )
+                                            {
+                                                display_text = preferred;
+                                            }
+                                        }
+                                    }
                                     if should_attempt_parakeet_sentence_rescue(
                                         &display_text,
                                         is_short_phrase,
@@ -1200,5 +1355,25 @@ mod tests {
             ParakeetDomainProfile::Recruiting,
         );
         assert!(filtered_with_match.iter().any(|t| t == "OpenAI"));
+    }
+
+    #[test]
+    fn prefers_short_phrase_hypothesis_with_same_content_and_more_function_words() {
+        let preferred = maybe_prefer_richer_short_phrase_hypothesis(
+            "arrete parler",
+            "arrete de parler",
+            "fr",
+        );
+        assert_eq!(preferred.as_deref(), Some("arrete de parler"));
+    }
+
+    #[test]
+    fn does_not_prefer_different_content_short_phrase_hypothesis() {
+        let preferred = maybe_prefer_richer_short_phrase_hypothesis(
+            "send the report",
+            "send the support",
+            "en",
+        );
+        assert!(preferred.is_none());
     }
 }

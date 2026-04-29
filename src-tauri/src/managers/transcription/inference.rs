@@ -276,6 +276,13 @@ fn build_correction_terms(
     profile: ParakeetDomainProfile,
 ) -> Vec<String> {
     let mut terms = settings.custom_words.clone();
+    let parakeet_builtins = parakeet_builtin_correction_terms_with_profile(
+        &settings.selected_language,
+        profile,
+    );
+    if let Some(vocalype_term) = parakeet_builtins.into_iter().find(|term| term == "Vocalype") {
+        terms.push(vocalype_term);
+    }
 
     // Passive Session Glossary terms: project-specific identifiers extracted
     // from clipboard while the developer codes. Keep them scoped to the
@@ -1405,7 +1412,7 @@ mod tests {
 
         assert!(!corrections.iter().any(|term| term == "useState"));
         assert!(!corrections.iter().any(|term| term == "handleClick"));
-        assert!(!corrections.iter().any(|term| term == "Vocalype"));
+        assert!(corrections.iter().any(|term| term == "Vocalype"));
     }
 
     #[test]

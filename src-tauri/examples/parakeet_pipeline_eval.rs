@@ -15,8 +15,9 @@ use vocalype_app_lib::model_ids::{
     PARAKEET_V3_ENGLISH_ID, PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID,
 };
 use vocalype_app_lib::parakeet_text::{
-    finalize_parakeet_text, maybe_prefer_sentence_punctuation, parakeet_builtin_correction_terms,
-    parakeet_chunk_ends_sentence, should_attempt_sentence_punctuation,
+    finalize_parakeet_text_with_profile, maybe_prefer_sentence_punctuation,
+    parakeet_builtin_correction_terms_with_profile, parakeet_chunk_ends_sentence,
+    should_attempt_sentence_punctuation, ParakeetDomainProfile,
 };
 
 const SAMPLE_RATE: u32 = 16_000;
@@ -215,13 +216,28 @@ fn run_chunked_pipeline(
     }
     let corrected = apply_custom_words(
         &assembled,
-        &parakeet_builtin_correction_terms(selected_language),
+        &parakeet_builtin_correction_terms_with_profile(
+            selected_language,
+            eval_domain_profile(),
+        ),
         0.24,
     );
     Ok((
-        finalize_parakeet_text(&corrected, selected_language),
+        finalize_parakeet_text_with_profile(&corrected, selected_language, eval_domain_profile()),
         next_idx,
     ))
+}
+
+fn eval_domain_profile() -> ParakeetDomainProfile {
+    match std::env::var("VOCALYPE_EVAL_DOMAIN_PROFILE")
+        .ok()
+        .as_deref()
+        .map(|s| s.trim().to_ascii_lowercase())
+        .as_deref()
+    {
+        Some("general") | Some("code") | Some("developer") => ParakeetDomainProfile::General,
+        _ => ParakeetDomainProfile::Recruiting,
+    }
 }
 
 fn transcribe_parakeet_chunk(

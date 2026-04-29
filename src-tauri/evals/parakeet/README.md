@@ -3,6 +3,16 @@
 This folder holds the local evaluation corpus used to diagnose and improve
 `Parakeet V3` in realistic dictation scenarios.
 
+Current product focus is recruiter-style dictation:
+
+- interview answers
+- scheduling and follow-up language
+- natural, hesitant spoken English
+- a small bilingual French slice
+
+Legacy dev/product-heavy samples are still preserved, but they are no longer
+the primary product benchmark.
+
 ## Layout
 
 - `dataset_manifest.json`: sample metadata and reference texts
@@ -17,17 +27,40 @@ This folder holds the local evaluation corpus used to diagnose and improve
 - mono preferred
 - one file per sample id
 
+## Primary Pack
+
+- `dataset_manifest_recruiting_32.json`: recruiter-first benchmark
+- `RECRUITING_PACK_32.md`: pack scope and rationale
+
+Use this pack first when deciding whether a Parakeet change is good enough for
+the current product path.
+
+## Secondary Packs
+
+- `dataset_manifest_combined_current.json`: broader local pack, cleaned of the
+  old dev-heavy cases in the main manifest
+- `dataset_manifest_english_20.json`: English-focused pack
+- `dataset_manifest_natural_24.json`: natural spoken English pack
+- `dataset_manifest_long_form_18.json`: long-form speech pack
+
+## Legacy Dev Manifests
+
+- `dataset_manifest_combined_current.legacy-dev.json`
+- `dataset_manifest_english_20.legacy-dev.json`
+- `dataset_manifest_long_form_18.legacy-dev.json`
+- `dataset_manifest_natural_24.legacy-dev.json`
+
+These are kept for archaeology and regression hunting, not as the main
+shipping benchmark.
+
 ## Recommended Scenarios
 
 - `long_no_pause_fr`
 - `fast_dictation_fr`
 - `low_volume_fr`
 - `light_noise_fr`
-- `franglais_terms`
-- `proper_nouns`
 - `cheap_laptop_mic`
 - `end_truncation_fr`
-- `english_control`
 - `natural_chat_en`
 - `free_form_en`
 - `accent_en`
@@ -37,13 +70,13 @@ This folder holds the local evaluation corpus used to diagnose and improve
 - `conversation_en`
 - `interruption_en`
 - `cheap_mic_en`
-- `code_switch_en`
 - `messy_thought_en`
 - `far_mic_en`
 - `overlap_speech_en`
 
 ## Ready Packs
 
+- `dataset_manifest_recruiting_32.json`: recruiter-first benchmark
 - `dataset_manifest_english_20.json`: clean English benchmark
 - `dataset_manifest_natural_24.json`: more realistic English benchmark
 - `NATURAL_PACK_24.md`: recording guidance for the realistic pack
@@ -90,18 +123,21 @@ npm run eval:parakeet -- -Mode pipeline -ModelDir C:\models\parakeet-v3 -ModelId
 
 ## Run the Real Pipeline Evaluator
 
-Use this to exercise a chunked `Parakeet V3` pipeline against the WAV files:
+Use this to exercise a chunked `Parakeet V3` pipeline against the WAV files.
+The evaluator now defaults to the same recruiting-oriented cleanup profile used
+by the runtime. Set `VOCALYPE_EVAL_DOMAIN_PROFILE=general` only when you
+explicitly want the legacy general/dev-style cleanup.
 
 ```powershell
 cd src-tauri
-cargo run --example parakeet_pipeline_eval -- <model_dir> .\evals\parakeet\dataset_manifest.json parakeet-tdt-0.6b-v3-multilingual .\evals\parakeet\reports\pipeline-eval.json
+cargo run --example parakeet_pipeline_eval -- <model_dir> .\evals\parakeet\dataset_manifest_recruiting_32.json parakeet-tdt-0.6b-v3-multilingual .\evals\parakeet\reports\pipeline-eval.json
 ```
 
 Example English control run:
 
 ```powershell
 cd src-tauri
-cargo run --example parakeet_pipeline_eval -- <model_dir> .\evals\parakeet\dataset_manifest.json parakeet-tdt-0.6b-v3-multilingual .\evals\parakeet\reports\pipeline-eval-en.json
+cargo run --example parakeet_pipeline_eval -- <model_dir> .\evals\parakeet\dataset_manifest_english_20.json parakeet-tdt-0.6b-v3-multilingual .\evals\parakeet\reports\pipeline-eval-en.json
 ```
 
 ## How to Grow the Dataset

@@ -12,8 +12,12 @@ Traffic priority:
 - ES, FR, and PT must not regress.
 - Hindi is currently excluded from Parakeet V3 evals because this model path does not support it well enough.
 
-Do not accept a change just because one benchmark improves. A change must pass both:
-- Local Vocalype set: `src-tauri/evals/parakeet/dataset_manifest_combined_current.json`
+Do not accept a change just because one benchmark improves. A change must pass:
+- Recruiter-first local set: `src-tauri/evals/parakeet/dataset_manifest_recruiting_32.json`
+- At least one broader local pack when relevant:
+  - `src-tauri/evals/parakeet/dataset_manifest_combined_current.json`
+  - `src-tauri/evals/parakeet/dataset_manifest_natural_24.json`
+  - `src-tauri/evals/parakeet/dataset_manifest_long_form_18.json`
 - External FLEURS EN/ES/FR/PT set: `src-tauri/evals/parakeet/external/fleurs_supported_400/dataset_manifest_external.json`
 
 ## Metrics
@@ -37,7 +41,13 @@ Do not accept a change just because one benchmark improves. A change must pass b
 
 ## Eval Commands
 
-Local 70:
+Recruiter 32:
+
+```powershell
+cargo run --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval -- "$env:APPDATA\com.vocalype.desktop\models\parakeet-tdt-0.6b-v3-int8" .\src-tauri\evals\parakeet\dataset_manifest_recruiting_32.json parakeet_v3_multilingual .\src-tauri\evals\parakeet\YOUR_RECRUITING_REPORT.json
+```
+
+Broader local pack:
 
 ```powershell
 cargo run --manifest-path .\src-tauri\Cargo.toml --example parakeet_pipeline_eval -- "$env:APPDATA\com.vocalype.desktop\models\parakeet-tdt-0.6b-v3-int8" .\src-tauri\evals\parakeet\dataset_manifest_combined_current.json parakeet_v3_multilingual .\src-tauri\evals\parakeet\YOUR_LOCAL_REPORT.json

@@ -88,9 +88,11 @@ fn build_correction_terms(
     let mut terms = settings.custom_words.clone();
 
     // Passive Session Glossary terms: project-specific identifiers extracted
-    // from clipboard while the developer codes. Injected regardless of model
-    // so cloud engines (Gemini, Groq) also benefit.
-    terms.extend(session_glossary_terms.iter().cloned());
+    // from clipboard while the developer codes. Keep them scoped to the
+    // general/code profile so recruiting dictation never inherits dev jargon.
+    if profile == ParakeetDomainProfile::General {
+        terms.extend(session_glossary_terms.iter().cloned());
+    }
 
     if matches!(active_model_id, Some(id) if is_parakeet_v3_model_id(id)) {
         terms.extend(parakeet_builtin_correction_terms_with_profile(
@@ -1071,6 +1073,24 @@ mod tests {
 
         assert!(corrections.iter().any(|term| term == "Parakeet V3"));
         assert!(corrections.iter().any(|term| term == "Yassine"));
+        assert!(corrections.iter().any(|term| term == "Vocalype"));
+    }
+
+    #[test]
+    fn recruiting_profile_excludes_session_glossary_terms() {
+        let mut settings = crate::settings::get_default_settings();
+        settings.selected_language = "en".to_string();
+
+        let corrections = build_correction_terms(
+            &settings,
+            &[],
+            &["useState".to_string(), "handleClick".to_string()],
+            Some("parakeet-tdt-0.6b-v3-multilingual"),
+            ParakeetDomainProfile::Recruiting,
+        );
+
+        assert!(!corrections.iter().any(|term| term == "useState"));
+        assert!(!corrections.iter().any(|term| term == "handleClick"));
         assert!(corrections.iter().any(|term| term == "Vocalype"));
     }
 }

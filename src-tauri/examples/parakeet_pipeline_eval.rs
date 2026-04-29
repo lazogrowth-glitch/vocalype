@@ -377,7 +377,7 @@ fn should_attempt_full_audio_recovery(
     assembled: &str,
 ) -> bool {
     let duration_secs = sample_count as f32 / SAMPLE_RATE as f32;
-    if !(6.0..=45.0).contains(&duration_secs) {
+    if !(6.0..=35.0).contains(&duration_secs) {
         return false;
     }
 
@@ -387,8 +387,7 @@ fn should_attempt_full_audio_recovery(
         .iter()
         .take(results.len().saturating_sub(1))
         .any(|text| text.trim().is_empty())
-        && assembled_words_per_sec <= 1.45;
-    let severe_low_density = assembled_words_per_sec <= 1.05 && duration_secs >= 12.0;
+        && assembled_words_per_sec <= 1.20;
 
     let final_chunk_secs = estimate_final_chunk_secs(sample_count, results.len(), profile);
     let final_chunk_words = results
@@ -397,17 +396,16 @@ fn should_attempt_full_audio_recovery(
         .unwrap_or(0);
     let final_chunk_words_per_sec = final_chunk_words as f32 / final_chunk_secs.max(0.1);
     let short_final_chunk = final_chunk_secs >= 1.0
-        && final_chunk_secs <= 6.0
-        && final_chunk_words <= 2
-        && assembled_words_per_sec <= 2.5;
-    let sparse_final_chunk = final_chunk_secs >= 3.0
-        && final_chunk_words_per_sec <= 0.35
-        && assembled_words_per_sec <= 2.0;
+        && final_chunk_secs <= 4.5
+        && final_chunk_words <= 1
+        && assembled_words_per_sec <= 2.2;
+    let sparse_final_chunk = final_chunk_secs >= 4.0
+        && final_chunk_words_per_sec <= 0.18
+        && assembled_words_per_sec <= 1.8;
     let empty_final_chunk =
-        final_chunk_words == 0 && final_chunk_secs >= 2.0 && assembled_words_per_sec <= 2.5;
+        final_chunk_words == 0 && final_chunk_secs >= 2.0 && assembled_words_per_sec <= 2.3;
 
     empty_boundary
-        || severe_low_density
         || short_final_chunk
         || sparse_final_chunk
         || empty_final_chunk

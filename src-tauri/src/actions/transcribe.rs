@@ -166,7 +166,7 @@ fn should_attempt_full_audio_recovery(
     assembled: &str,
 ) -> bool {
     let duration_secs = sample_count as f32 / 16_000.0;
-    if !(5.0..=50.0).contains(&duration_secs) {
+    if !(6.0..=35.0).contains(&duration_secs) {
         return false;
     }
 
@@ -175,22 +175,20 @@ fn should_attempt_full_audio_recovery(
     let final_chunk_secs = summary.final_chunk_samples as f32 / 16_000.0;
     let final_chunk_words_per_sec = summary.final_chunk_words as f32 / final_chunk_secs.max(0.1);
 
-    let low_density = assembled_words_per_sec <= 1.35;
-    let severe_low_density = assembled_words_per_sec <= 0.95 && duration_secs >= 12.0;
+    let low_density = assembled_words_per_sec <= 1.20;
     let empty_boundary = summary.empty_nonfinal_chunks > 0 && low_density;
     let short_final_chunk = final_chunk_secs >= 1.0
-        && final_chunk_secs <= 6.0
-        && summary.final_chunk_words <= 2
-        && assembled_words_per_sec <= 2.5;
-    let sparse_final_chunk = final_chunk_secs >= 3.0
-        && final_chunk_words_per_sec <= 0.25
-        && assembled_words_per_sec <= 2.0;
+        && final_chunk_secs <= 4.5
+        && summary.final_chunk_words <= 1
+        && assembled_words_per_sec <= 2.2;
+    let sparse_final_chunk = final_chunk_secs >= 4.0
+        && final_chunk_words_per_sec <= 0.18
+        && assembled_words_per_sec <= 1.8;
     // Empty final chunk with any density: ending was likely cut
     let empty_final_chunk =
-        summary.final_chunk_words == 0 && final_chunk_secs >= 2.0 && assembled_words_per_sec <= 2.5;
+        summary.final_chunk_words == 0 && final_chunk_secs >= 2.0 && assembled_words_per_sec <= 2.3;
 
     empty_boundary
-        || severe_low_density
         || short_final_chunk
         || sparse_final_chunk
         || empty_final_chunk

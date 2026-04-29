@@ -25,6 +25,7 @@ const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000;
 const PARAKEET_LOW_ENERGY_RMS_THRESHOLD: f32 = 0.05;
 const PARAKEET_LOW_ENERGY_TARGET_RMS: f32 = 0.1;
 const PARAKEET_LOW_ENERGY_MAX_GAIN: f32 = 4.5;
+const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = 24;
 
 #[derive(Debug, Clone, Copy)]
 struct ChunkProfile {
@@ -255,7 +256,7 @@ fn transcribe_parakeet_chunk(
         Some(TimestampMode::Words),
     )?;
     let mut preferred_text = result.text.clone();
-    if should_attempt_sentence_punctuation(&preferred_text) {
+    if should_attempt_parakeet_sentence_rescue(&preferred_text, overlap_cutoff_secs <= 0.0) {
         if let Ok(sentence_result) = engine.transcribe_samples(
             decode_audio.clone(),
             SAMPLE_RATE,
@@ -315,6 +316,18 @@ fn transcribe_parakeet_chunk(
     } else {
         Ok(trimmed)
     }
+}
+
+fn should_attempt_parakeet_sentence_rescue(text: &str, is_shortish: bool) -> bool {
+    if !should_attempt_sentence_punctuation(text) {
+        return false;
+    }
+
+    if is_shortish {
+        return true;
+    }
+
+    text.split_whitespace().count() <= PARAKEET_SENTENCE_RESCUE_MAX_WORDS
 }
 
 fn assemble_parakeet_results(results: &[String]) -> String {

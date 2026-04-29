@@ -18,6 +18,7 @@ const PARAKEET_SHORT_PHRASE_SAMPLES: usize = 5 * 16_000; // 5 s at 16 kHz
 const PARAKEET_SHORT_PHRASE_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
                                                              // Tail pad applied to ALL recordings so the last word is never cut off.
 const PARAKEET_TAIL_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
+const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = 24;
 
 fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
     if samples.is_empty() {
@@ -30,6 +31,19 @@ fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
         .map(|sample| sample.abs())
         .fold(0.0_f32, f32::max);
     ((sum / samples.len() as f32).sqrt(), peak)
+}
+
+fn should_attempt_parakeet_sentence_rescue(text: &str, is_short_phrase: bool) -> bool {
+    if !should_attempt_sentence_punctuation(text) {
+        return false;
+    }
+
+    if is_short_phrase {
+        return true;
+    }
+
+    let word_count = text.split_whitespace().count();
+    word_count <= PARAKEET_SENTENCE_RESCUE_MAX_WORDS
 }
 
 /// For short phrases (< 5 s), pad with silence on both sides so the encoder
@@ -649,20 +663,21 @@ impl TranscriptionManager {
                                     gain
                                 );
                             }
-                            let base_audio = boosted_audio
-                                .as_ref()
-                                .map(|(samples, _)| samples.clone())
-                                .unwrap_or_else(|| audio.clone());
-
                             // Short phrases (< 5 s): add silence padding on both sides so the
                             // encoder has enough context and go straight to Sentences mode —
                             // Words timestamps are unstable on clips this short.
                             // Longer clips: still add trailing silence so the last word is
                             // never cut off at the encoder boundary.
                             let decode_audio = if is_short_phrase {
-                                pad_short_phrase(&base_audio)
+                                boosted_audio
+                                    .as_ref()
+                                    .map(|(samples, _)| pad_short_phrase(samples))
+                                    .unwrap_or_else(|| pad_short_phrase(&audio))
                             } else {
-                                pad_audio_tail(&base_audio)
+                                boosted_audio
+                                    .as_ref()
+                                    .map(|(samples, _)| pad_audio_tail(samples))
+                                    .unwrap_or_else(|| pad_audio_tail(&audio))
                             };
 
                             // Language bias disabled: Parakeet TDT auto-detects language via
@@ -694,7 +709,10 @@ impl TranscriptionManager {
                                         &settings.selected_language,
                                     );
                                     let mut display_text = result.text.clone();
-                                    if should_attempt_sentence_punctuation(&display_text) {
+                                    if should_attempt_parakeet_sentence_rescue(
+                                        &display_text,
+                                        is_short_phrase,
+                                    ) {
                                         if let Ok(sentence_result) = parakeet_engine
                                             .transcribe_samples(
                                                 decode_audio.clone(),
@@ -1074,6 +1092,22 @@ mod tests {
         assert!(corrections.iter().any(|term| term == "Parakeet V3"));
         assert!(corrections.iter().any(|term| term == "Yassine"));
         assert!(corrections.iter().any(|term| term == "Vocalype"));
+    }
+
+    #[test]
+    fn sentence_rescue_prefers_short_or_small_outputs() {
+        assert!(should_attempt_parakeet_sentence_rescue(
+            "this is a short sentence without punctuation",
+            true,
+        ));
+        assert!(should_attempt_parakeet_sentence_rescue(
+            "this is still a fairly small output without punctuation",
+            false,
+        ));
+        assert!(!should_attempt_parakeet_sentence_rescue(
+            "this is a longer transcription output that keeps going across many words and should not trigger a second sentence mode rescue pass because the latency cost is no longer worth it",
+            false,
+        ));
     }
 
     #[test]

@@ -293,6 +293,9 @@ pub fn deduplicate_boundary_n(prev: &str, next: &str, max_words: usize) -> Strin
             .map(|w| boundary_word_key(w))
             .collect();
         if prev_suffix.iter().all(|w| !w.is_empty()) && prev_suffix == next_prefix {
+            if n == 1 && is_boundary_function_word(&prev_suffix[0]) {
+                continue;
+            }
             return next_words[n..].join(" ");
         }
     }
@@ -303,6 +306,30 @@ fn boundary_word_key(word: &str) -> String {
     word.to_lowercase()
         .trim_matches(|c: char| !c.is_alphanumeric())
         .to_string()
+}
+
+fn is_boundary_function_word(word: &str) -> bool {
+    matches!(
+        word,
+        "a"
+            | "an"
+            | "the"
+            | "le"
+            | "la"
+            | "les"
+            | "un"
+            | "une"
+            | "des"
+            | "du"
+            | "de"
+            | "d"
+            | "el"
+            | "los"
+            | "las"
+            | "lo"
+            | "del"
+            | "al"
+    )
 }
 
 #[cfg(test)]
@@ -358,6 +385,12 @@ mod tests {
             deduplicate_boundary_n("hello ...", "... world", 3),
             "... world"
         );
+    }
+
+    #[test]
+    fn test_deduplicate_boundary_keeps_single_function_word_overlap() {
+        assert_eq!(deduplicate_boundary_n("we saw the", "the candidate arrived", 3), "the candidate arrived");
+        assert_eq!(deduplicate_boundary_n("on a", "a call with hr", 3), "a call with hr");
     }
 
     #[test]

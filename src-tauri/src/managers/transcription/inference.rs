@@ -133,6 +133,48 @@ fn build_correction_terms(
 
     deduped
 }
+
+fn term_is_risky_proper_noun(term: &str) -> bool {
+    let trimmed = term.trim();
+    if trimmed.is_empty() || trimmed.contains(' ') {
+        return false;
+    }
+
+    let has_letter = trimmed.chars().any(|c| c.is_alphabetic());
+    if !has_letter {
+        return false;
+    }
+
+    let has_upper = trimmed.chars().any(|c| c.is_uppercase());
+    let all_upper = trimmed
+        .chars()
+        .filter(|c| c.is_alphabetic())
+        .all(|c| c.is_uppercase());
+
+    has_upper || all_upper
+}
+
+fn correction_terms_for_text(
+    text: &str,
+    correction_terms: &[String],
+    profile: ParakeetDomainProfile,
+) -> Vec<String> {
+    if profile == ParakeetDomainProfile::General {
+        return correction_terms.to_vec();
+    }
+
+    let lower_text = text.to_lowercase();
+    correction_terms
+        .iter()
+        .filter(|term| {
+            if !term_is_risky_proper_noun(term) {
+                return true;
+            }
+            lower_text.contains(&term.to_lowercase())
+        })
+        .cloned()
+        .collect()
+}
 /// Maps a whichlang ISO 639-3 `Lang` variant to a BCP-47 two-letter code.
 /// Only covers the languages that Parakeet V3 Multilingual supports.
 fn whichlang_to_bcp47(lang: Lang) -> Option<&'static str> {
@@ -934,21 +976,28 @@ impl TranscriptionManager {
             learned_result
         };
 
-        let corrected_result = if !correction_terms.is_empty() {
-            apply_custom_words(&learned_result, &correction_terms, correction_threshold)
+        let profile = if matches!(
+            app_context.as_ref().map(|context| context.category),
+            Some(crate::context_detector::AppContextCategory::Code)
+        ) {
+            ParakeetDomainProfile::General
+        } else {
+            ParakeetDomainProfile::Recruiting
+        };
+
+        let active_correction_terms =
+            correction_terms_for_text(&learned_result, &correction_terms, profile);
+        let corrected_result = if !active_correction_terms.is_empty() {
+            apply_custom_words(
+                &learned_result,
+                &active_correction_terms,
+                correction_threshold,
+            )
         } else {
             learned_result
         };
         let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
-            let profile = if matches!(
-                app_context.as_ref().map(|context| context.category),
-                Some(crate::context_detector::AppContextCategory::Code)
-            ) {
-                ParakeetDomainProfile::General
-            } else {
-                ParakeetDomainProfile::Recruiting
-            };
             finalize_parakeet_text_with_profile(
                 &corrected_result,
                 &settings.selected_language,
@@ -1126,5 +1175,30 @@ mod tests {
         assert!(!corrections.iter().any(|term| term == "useState"));
         assert!(!corrections.iter().any(|term| term == "handleClick"));
         assert!(corrections.iter().any(|term| term == "Vocalype"));
+    }
+
+    #[test]
+    fn recruiting_profile_filters_risky_proper_nouns_unless_already_present() {
+        let terms = vec![
+            "OpenAI".to_string(),
+            "candidate".to_string(),
+            "CRM".to_string(),
+        ];
+
+        let filtered = correction_terms_for_text(
+            "the candidate said the workflow feels smooth",
+            &terms,
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert!(filtered.iter().any(|t| t == "candidate"));
+        assert!(!filtered.iter().any(|t| t == "OpenAI"));
+        assert!(!filtered.iter().any(|t| t == "CRM"));
+
+        let filtered_with_match = correction_terms_for_text(
+            "we reviewed openai notes from the call",
+            &terms,
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert!(filtered_with_match.iter().any(|t| t == "OpenAI"));
     }
 }

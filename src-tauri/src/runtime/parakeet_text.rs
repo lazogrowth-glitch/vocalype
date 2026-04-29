@@ -1029,30 +1029,8 @@ pub fn normalize_parakeet_english_artifacts(
     normalized = GHZ_WORD_58_PATTERN
         .replace_all(&normalized, "5.8GHz")
         .to_string();
-    normalized = DOCKS_PATTERN.replace_all(&normalized, "docs").to_string();
-    normalized = CALL_VOCAL_PATTERN
-        .replace_all(&normalized, "Vocalype")
-        .to_string();
     normalized = SINGLE_LETTER_NOISE_PATTERN
         .replace_all(&normalized, "$1")
-        .to_string();
-    normalized = ANSWER_ENGINE_PATTERN
-        .replace_all(&normalized, "entire ending")
-        .to_string();
-    normalized = IN_ONE_END_PATTERN
-        .replace_all(&normalized, "in one continuous flow$1")
-        .to_string();
-    normalized = DROP_WORDS_PATTERN
-        .replace_all(&normalized, "transcription drops words")
-        .to_string();
-    normalized = FAST_EARTH_PATTERN
-        .replace_all(&normalized, "faster speech")
-        .to_string();
-    normalized = REGUL_RIGHT_ORDER_PATTERN
-        .replace_all(&normalized, "in the right order")
-        .to_string();
-    normalized = BROKEN_SENTENCE_ENDING_PATTERN
-        .replace_all(&normalized, "broken sentence endings")
         .to_string();
     normalized = VIABLE_TRANSCRIPTION_PATTERN
         .replace_all(&normalized, "reliable the transcription")
@@ -1063,22 +1041,44 @@ pub fn normalize_parakeet_english_artifacts(
     normalized = BACKGROUND_NOSE_PATTERN
         .replace_all(&normalized, "background noise")
         .to_string();
-    normalized = TESTING_THIS_VOICE_PATTERN
-        .replace_all(&normalized, "testing this sentence with")
-        .to_string();
-    normalized = SHOW_TELL_PATTERN
-        .replace_all(&normalized, "should tell us")
-        .to_string();
-    normalized = SMALL_AMOUNT_SOUND_PATTERN
-        .replace_all(&normalized, "small amount of ambient sound")
-        .to_string();
-    normalized = MOMBIAN_SOUND_CHANGE_PATTERN
-        .replace_all(&normalized, "ambient sound changes")
-        .to_string();
-    normalized = A_AMBIENT_SOUND_CHANGES_PATTERN
-        .replace_all(&normalized, "a small amount of ambient sound changes")
-        .to_string();
     if profile == ParakeetDomainProfile::General {
+        normalized = DOCKS_PATTERN.replace_all(&normalized, "docs").to_string();
+        normalized = CALL_VOCAL_PATTERN
+            .replace_all(&normalized, "Vocalype")
+            .to_string();
+        normalized = ANSWER_ENGINE_PATTERN
+            .replace_all(&normalized, "entire ending")
+            .to_string();
+        normalized = IN_ONE_END_PATTERN
+            .replace_all(&normalized, "in one continuous flow$1")
+            .to_string();
+        normalized = DROP_WORDS_PATTERN
+            .replace_all(&normalized, "transcription drops words")
+            .to_string();
+        normalized = FAST_EARTH_PATTERN
+            .replace_all(&normalized, "faster speech")
+            .to_string();
+        normalized = REGUL_RIGHT_ORDER_PATTERN
+            .replace_all(&normalized, "in the right order")
+            .to_string();
+        normalized = BROKEN_SENTENCE_ENDING_PATTERN
+            .replace_all(&normalized, "broken sentence endings")
+            .to_string();
+        normalized = TESTING_THIS_VOICE_PATTERN
+            .replace_all(&normalized, "testing this sentence with")
+            .to_string();
+        normalized = SHOW_TELL_PATTERN
+            .replace_all(&normalized, "should tell us")
+            .to_string();
+        normalized = SMALL_AMOUNT_SOUND_PATTERN
+            .replace_all(&normalized, "small amount of ambient sound")
+            .to_string();
+        normalized = MOMBIAN_SOUND_CHANGE_PATTERN
+            .replace_all(&normalized, "ambient sound changes")
+            .to_string();
+        normalized = A_AMBIENT_SOUND_CHANGES_PATTERN
+            .replace_all(&normalized, "a small amount of ambient sound changes")
+            .to_string();
         normalized = SUPPORT_VOCALYPE_PATTERN
             .replace_all(&normalized, "support at vocalype dot app")
             .to_string();
@@ -1086,26 +1086,26 @@ pub fn normalize_parakeet_english_artifacts(
             .replace_all(&normalized, "docs dot vocalype dot app slash release notes")
             .to_string();
     }
-    normalized = REMAINING_RISK_PATTERN
-        .replace_all(&normalized, "remaining risks")
-        .to_string();
-    normalized = THE_ACTION_WE_NEED_PATTERN
-        .replace_all(&normalized, "the actions we need")
-        .to_string();
     if profile == ParakeetDomainProfile::General {
+        normalized = REMAINING_RISK_PATTERN
+            .replace_all(&normalized, "remaining risks")
+            .to_string();
+        normalized = THE_ACTION_WE_NEED_PATTERN
+            .replace_all(&normalized, "the actions we need")
+            .to_string();
         normalized = VALIDATE_REPORTING_PATTERN
             .replace_all(&normalized, "and validated the reporting flow")
             .to_string();
         normalized = TECHNICAL_WORD_LIKE_PATTERN
             .replace_all(&normalized, "technical words like")
             .to_string();
+        normalized = DESKTOP_AND_AND_PATTERN
+            .replace_all(&normalized, "desktop app and Parakeet")
+            .to_string();
+        normalized = APRIL_BROKEN_2026_PATTERN
+            .replace_all(&normalized, "April 3 2026")
+            .to_string();
     }
-    normalized = DESKTOP_AND_AND_PATTERN
-        .replace_all(&normalized, "desktop app and Parakeet")
-        .to_string();
-    normalized = APRIL_BROKEN_2026_PATTERN
-        .replace_all(&normalized, "April 3 2026")
-        .to_string();
     normalized = STANDALONE_FILLER_PATTERN
         .replace_all(&normalized, "$1$2")
         .to_string();
@@ -1528,17 +1528,11 @@ pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
         .to_string()
 }
 
-fn normalize_parakeet_long_form_english_artifacts(text: &str) -> String {
+fn normalize_parakeet_long_form_english_artifacts(
+    text: &str,
+    profile: ParakeetDomainProfile,
+) -> String {
     let mut normalized = text.to_string();
-    normalized = PRODUCT_ISSUE_PATTERN
-        .replace_all(&normalized, "product issue")
-        .to_string();
-    normalized = IMPORTANT_THING_THERE_PATTERN
-        .replace_all(&normalized, "important thing here")
-        .to_string();
-    normalized = USER_MAY_A_LONG_MESSAGE_PATTERN
-        .replace_all(&normalized, "user may dictate a long message")
-        .to_string();
     normalized = ONE_OR_2_MINUTES_PATTERN
         .replace_all(&normalized, "one or two minutes")
         .to_string();
@@ -1554,33 +1548,44 @@ fn normalize_parakeet_long_form_english_artifacts(text: &str) -> String {
     normalized = NO_WORRY_NO_SORRY_PATTERN
         .replace_all(&normalized, "no sorry that is not what I meant")
         .to_string();
-    normalized = SEND_IT_THE_PROJECT_TEAM_PATTERN
-        .replace_all(&normalized, "send it to the product team")
-        .to_string();
     normalized = UNDERSTANDABLE_IN_FINAL_PATTERN
         .replace_all(&normalized, "understandable in the final transcript")
         .to_string();
     normalized = POLL_VOICE_PATTERN
         .replace_all(&normalized, "in a polished voice")
         .to_string();
-    normalized = BECOME_LONGER_PATTERN
-        .replace_all(&normalized, "recording becomes longer")
-        .to_string();
-    normalized = COPY_PAST_PATTERN
-        .replace_all(&normalized, "copy paste")
-        .to_string();
     normalized = OR_NOT_END_PATTERN
         .replace_all(&normalized, "or note")
-        .to_string();
-    normalized = BENCHMARK_SENTENCE_PATTERN
-        .replace_all(&normalized, "benchmark sentences")
-        .to_string();
-    normalized = USER_STILL_FEELS_RULES_PATTERN
-        .replace_all(&normalized, "while real usage still feels rough")
         .to_string();
     normalized = SH_CHANGING_PATTERN
         .replace_all(&normalized, "changing")
         .to_string();
+    if profile == ParakeetDomainProfile::General {
+        normalized = PRODUCT_ISSUE_PATTERN
+            .replace_all(&normalized, "product issue")
+            .to_string();
+        normalized = IMPORTANT_THING_THERE_PATTERN
+            .replace_all(&normalized, "important thing here")
+            .to_string();
+        normalized = USER_MAY_A_LONG_MESSAGE_PATTERN
+            .replace_all(&normalized, "user may dictate a long message")
+            .to_string();
+        normalized = SEND_IT_THE_PROJECT_TEAM_PATTERN
+            .replace_all(&normalized, "send it to the product team")
+            .to_string();
+        normalized = BECOME_LONGER_PATTERN
+            .replace_all(&normalized, "recording becomes longer")
+            .to_string();
+        normalized = COPY_PAST_PATTERN
+            .replace_all(&normalized, "copy paste")
+            .to_string();
+        normalized = BENCHMARK_SENTENCE_PATTERN
+            .replace_all(&normalized, "benchmark sentences")
+            .to_string();
+        normalized = USER_STILL_FEELS_RULES_PATTERN
+            .replace_all(&normalized, "while real usage still feels rough")
+            .to_string();
+    }
     normalized
 }
 
@@ -1816,7 +1821,7 @@ pub fn finalize_parakeet_text_with_profile(
     );
     if selected_language == "en" {
         normalized = normalize_parakeet_english_artifacts(&normalized, profile);
-        normalized = normalize_parakeet_long_form_english_artifacts(&normalized);
+        normalized = normalize_parakeet_long_form_english_artifacts(&normalized, profile);
     } else if selected_language == "fr" {
         normalized = normalize_parakeet_french_artifacts(&normalized);
         normalized = restore_french_apostrophes(&normalized);
@@ -2566,6 +2571,32 @@ mod tests {
             normalized.contains("stops and restarts"),
             "got: {normalized}"
         );
+    }
+
+    #[test]
+    fn recruiting_profile_skips_benchmarky_english_rewrites() {
+        let input = "The product issue should tell us whether the benchmark sentence still feels rough on April 3 2026.";
+        let normalized = finalize_parakeet_text_with_profile(
+            input,
+            "en",
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert_eq!(normalized, input);
+    }
+
+    #[test]
+    fn recruiting_profile_keeps_generic_long_form_cleanup() {
+        let normalized = finalize_parakeet_text_with_profile(
+            "No worry no sorry that is not what I meant after one or 2 minutes with natural poses.",
+            "en",
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert!(
+            normalized.contains("no sorry that is not what I meant"),
+            "got: {normalized}"
+        );
+        assert!(normalized.contains("one or two minutes"), "got: {normalized}");
+        assert!(normalized.contains("natural pauses"), "got: {normalized}");
     }
 
     #[test]

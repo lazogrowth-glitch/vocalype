@@ -222,6 +222,62 @@ fn choose_best_short_phrase_hypothesis(
         .map(|(text, _, _)| text)
 }
 
+fn parakeet_language_bias_hint(selected_language: &str) -> Option<&'static str> {
+    let normalized = selected_language
+        .split('-')
+        .next()
+        .unwrap_or(selected_language)
+        .to_ascii_lowercase();
+    match normalized.as_str() {
+        "fr" => Some("fr"),
+        "es" => Some("es"),
+        "pt" => Some("pt"),
+        "de" => Some("de"),
+        "it" => Some("it"),
+        "nl" => Some("nl"),
+        "tr" => Some("tr"),
+        "ja" => Some("ja"),
+        "zh" => Some("zh"),
+        "ar" => Some("ar"),
+        "ko" => Some("ko"),
+        "hi" => Some("hi"),
+        "ru" => Some("ru"),
+        "uk" => Some("uk"),
+        "bg" => Some("bg"),
+        _ => None,
+    }
+}
+
+fn should_retry_parakeet_with_language_bias(
+    text: &str,
+    selected_language: &str,
+    is_short_phrase: bool,
+) -> bool {
+    if is_short_phrase || parakeet_language_bias_hint(selected_language).is_none() {
+        return false;
+    }
+    has_language_drift(text, selected_language)
+}
+
+fn should_prefer_language_biased_retry(
+    primary_text: &str,
+    retry_text: &str,
+    selected_language: &str,
+) -> bool {
+    let primary_drift = has_language_drift(primary_text, selected_language);
+    let retry_drift = has_language_drift(retry_text, selected_language);
+    if primary_drift && !retry_drift {
+        return true;
+    }
+    if primary_drift == retry_drift {
+        let primary_words = tokenize_words(primary_text);
+        let retry_words = tokenize_words(retry_text);
+        return retry_words.len() > primary_words.len()
+            && retry_words.len() <= primary_words.len() + 3;
+    }
+    false
+}
+
 /// For short phrases (< 5 s), pad with silence on both sides so the encoder
 /// has enough context and doesn't start decoding mid-phoneme.
 fn pad_short_phrase(samples: &[f32]) -> Vec<f32> {
@@ -924,11 +980,49 @@ impl TranscriptionManager {
                                 },
                             ) {
                                 Ok(result) => {
+                                    let mut selected_result = result;
                                     check_parakeet_language_drift(
-                                        &result.text,
+                                        &selected_result.text,
                                         &settings.selected_language,
                                     );
-                                    let mut display_text = result.text.clone();
+
+                                    if should_retry_parakeet_with_language_bias(
+                                        &selected_result.text,
+                                        &settings.selected_language,
+                                        is_short_phrase,
+                                    ) {
+                                        if let Some(language_hint) =
+                                            parakeet_language_bias_hint(&settings.selected_language)
+                                        {
+                                            info!(
+                                                "Parakeet long-form drift detected, retrying chunk with {} language bias",
+                                                language_hint
+                                            );
+                                            parakeet_engine.set_language(Some(language_hint));
+                                            let biased_retry = parakeet_engine.transcribe_samples(
+                                                decode_audio.clone(),
+                                                16_000,
+                                                1,
+                                                Some(ParakeetTimestampMode::Words),
+                                            );
+                                            parakeet_engine.set_language(None);
+                                            if let Ok(biased_result) = biased_retry {
+                                                if should_prefer_language_biased_retry(
+                                                    &selected_result.text,
+                                                    &biased_result.text,
+                                                    &settings.selected_language,
+                                                ) {
+                                                    info!(
+                                                        "Accepted Parakeet language-biased retry for selected language {}",
+                                                        settings.selected_language
+                                                    );
+                                                    selected_result = biased_result;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    let mut display_text = selected_result.text.clone();
                                     if is_short_phrase {
                                         let mut short_phrase_candidates = vec![display_text.clone()];
                                         if let Ok(word_result) = parakeet_engine.transcribe_samples(
@@ -1010,7 +1104,7 @@ impl TranscriptionManager {
                                     // Words mode (long phrase): convert per-word timed tokens to
                                     // TranscriptionSegment so the chunking worker can trim the
                                     // overlap prefix by timestamp (immune to non-determinism).
-                                    let segments: Vec<transcribe_rs::TranscriptionSegment> = result
+                                    let segments: Vec<transcribe_rs::TranscriptionSegment> = selected_result
                                         .tokens
                                         .iter()
                                         .map(|t| transcribe_rs::TranscriptionSegment {
@@ -1457,5 +1551,38 @@ mod tests {
         ];
         let chosen = choose_best_short_phrase_hypothesis(&candidates, "fr");
         assert_eq!(chosen.as_deref(), Some("arrete de parler"));
+    }
+
+    #[test]
+    fn normalizes_parakeet_language_bias_hints() {
+        assert_eq!(parakeet_language_bias_hint("fr-CA"), Some("fr"));
+        assert_eq!(parakeet_language_bias_hint("es-MX"), Some("es"));
+        assert_eq!(parakeet_language_bias_hint("en"), None);
+        assert_eq!(parakeet_language_bias_hint("auto"), None);
+    }
+
+    #[test]
+    fn retries_language_bias_only_for_long_explicit_drift() {
+        let drifted = "my application can connect customers with car washers and help them find the best niche in montreal before they launch";
+        assert!(should_retry_parakeet_with_language_bias(drifted, "fr", false));
+        assert!(!should_retry_parakeet_with_language_bias(drifted, "auto", false));
+        assert!(!should_retry_parakeet_with_language_bias(drifted, "fr", true));
+        assert!(!should_retry_parakeet_with_language_bias(drifted, "en", false));
+    }
+
+    #[test]
+    fn prefers_language_biased_retry_when_it_fixes_drift() {
+        let drifted = "my application can connect customers with car washers and help them find the best niche in montreal before they launch";
+        let recovered = "mon application peut connecter des clients avec des laveurs de voitures et les aider a trouver la meilleure niche a montreal avant de se lancer";
+        assert!(should_prefer_language_biased_retry(
+            drifted,
+            recovered,
+            "fr",
+        ));
+        assert!(!should_prefer_language_biased_retry(
+            recovered,
+            drifted,
+            "fr",
+        ));
     }
 }

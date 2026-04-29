@@ -1,459 +1,459 @@
-﻿{
-    "version":  1,
-    "samples":  [
-                    {
-                        "sample_id":  "natural_chat_en_001",
-                        "scenario":  "natural_chat_en",
-                        "audio_path":  "audio/natural_chat_en_001.wav",
-                        "reference_text":  "Hey, I just wanted to check if you saw my last message, because I think we still need to fix that issue before the release.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "natural",
-                                     "chat",
-                                     "conversational"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "natural_chat_en_002",
-                        "scenario":  "natural_chat_en",
-                        "audio_path":  "audio/natural_chat_en_002.wav",
-                        "reference_text":  "Yeah, so I was thinking maybe we should push that change tomorrow instead of tonight, just to be safe.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "natural",
-                                     "chat",
-                                     "conversational"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "free_form_en_001",
-                        "scenario":  "free_form_en",
-                        "audio_path":  "audio/free_form_en_001.wav",
-                        "reference_text":  "Okay, let me explain this properly: the app works most of the time, but once in a while the transcript skips a few words near the end, and that is what I want to fix first.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "20_40s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "free_form",
-                                     "long",
-                                     "natural"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "free_form_en_002",
-                        "scenario":  "free_form_en",
-                        "audio_path":  "audio/free_form_en_002.wav",
-                        "reference_text":  "I am not reading this like a robot. I am trying to speak naturally and leave little hesitations in the sentence, the way I normally would in real life.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "20_40s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "free_form",
-                                     "hesitation",
-                                     "natural"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "accent_en_001",
-                        "scenario":  "accent_en",
-                        "audio_path":  "audio/accent_en_001.wav",
-                        "reference_text":  "Today, I want to test how well the model handles my accent when I am speaking at a regular pace with everyday words.",
-                        "language":  "en",
-                        "accent":  "user_accent_a",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "accent",
-                                     "everyday"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "accent_en_002",
-                        "scenario":  "accent_en",
-                        "audio_path":  "audio/accent_en_002.wav",
-                        "reference_text":  "This sample is here to check whether the system still keeps the words clean when the pronunciation is less standard.",
-                        "language":  "en",
-                        "accent":  "user_accent_b",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "accent",
-                                     "everyday"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "dirty_noise_en_001",
-                        "scenario":  "dirty_noise_en",
-                        "audio_path":  "audio/dirty_noise_en_001.wav",
-                        "reference_text":  "I am recording this with more background noise on purpose, to see whether the transcript stays usable in a messy room.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "moderate",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "noise",
-                                     "real_world",
-                                     "moderate_noise"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "dirty_noise_en_002",
-                        "scenario":  "dirty_noise_en",
-                        "audio_path":  "audio/dirty_noise_en_002.wav",
-                        "reference_text":  "There is some real noise around me right now, and I want to know if the model still catches the main sentence correctly.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "heavy",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "noise",
-                                     "real_world",
-                                     "heavy_noise"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "very_low_volume_en_001",
-                        "scenario":  "very_low_volume_en",
-                        "audio_path":  "audio/very_low_volume_en_001.wav",
-                        "reference_text":  "I am speaking very softly now, and I want to see if the transcript still keeps the right words without turning strange.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "low_volume",
-                                     "soft_voice"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "very_low_volume_en_002",
-                        "scenario":  "very_low_volume_en",
-                        "audio_path":  "audio/very_low_volume_en_002.wav",
-                        "reference_text":  "This is another quiet sample, because I want to know exactly where the model starts failing when the microphone input is too weak.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "low_volume",
-                                     "soft_voice"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "weird_pauses_en_001",
-                        "scenario":  "weird_pauses_en",
-                        "audio_path":  "audio/weird_pauses_en_001.wav",
-                        "reference_text":  "I want to test a sentence where I pause in odd places, because some people do not speak in a smooth, continuous rhythm.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "pauses",
-                                     "odd_pacing"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "weird_pauses_en_002",
-                        "scenario":  "weird_pauses_en",
-                        "audio_path":  "audio/weird_pauses_en_002.wav",
-                        "reference_text":  "This recording has little stops and restarts in the middle of the thought, so we can see if chunking still behaves well.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "pauses",
-                                     "odd_pacing"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "conversation_en_001",
-                        "scenario":  "conversation_en",
-                        "audio_path":  "audio/conversation_en_001.wav",
-                        "reference_text":  "No, I mean not that button, the other one on the left. Yeah, that one. Okay, now try it again.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "short",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "conversation",
-                                     "informal"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "conversation_en_002",
-                        "scenario":  "conversation_en",
-                        "audio_path":  "audio/conversation_en_002.wav",
-                        "reference_text":  "Wait, hold on, I think I got it now. Can you send me the latest version before I test it again?",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "short",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "conversation",
-                                     "informal"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "interruption_en_001",
-                        "scenario":  "interruption_en",
-                        "audio_path":  "audio/interruption_en_001.wav",
-                        "reference_text":  "I was going to say we should probably ship this on Friday. Actually, wait, no, maybe Monday is safer.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "interruption",
-                                     "self_correction"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "interruption_en_002",
-                        "scenario":  "interruption_en",
-                        "audio_path":  "audio/interruption_en_002.wav",
-                        "reference_text":  "Send the report to the team... no, sorry, send it to the product channel first, and then forward it to the team.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "interruption",
-                                     "self_correction"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "cheap_mic_en_001",
-                        "scenario":  "cheap_mic_en",
-                        "audio_path":  "audio/cheap_mic_en_001.wav",
-                        "reference_text":  "This sample is meant to simulate a cheap laptop microphone, where the signal is less clean and a bit more harsh.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "light",
-                        "mic_type":  "laptop",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "cheap_mic",
-                                     "laptop"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "cheap_mic_en_002",
-                        "scenario":  "cheap_mic_en",
-                        "audio_path":  "audio/cheap_mic_en_002.wav",
-                        "reference_text":  "I want to know whether the transcript still comes out clean when the hardware quality is average at best.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "light",
-                        "mic_type":  "laptop",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "cheap_mic",
-                                     "laptop"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "code_switch_en_001",
-                        "scenario":  "code_switch_en",
-                        "audio_path":  "audio/code_switch_en_001.wav",
-                        "reference_text":  "I am mostly speaking English here, but I might drop a small French word like bonjour, just to see what happens.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "code_switch",
-                                     "mixed_language"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "code_switch_en_002",
-                        "scenario":  "code_switch_en",
-                        "audio_path":  "audio/code_switch_en_002.wav",
-                        "reference_text":  "This is still an English sample, but I am adding a couple of foreign-sounding words to make the recognition work harder.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "code_switch",
-                                     "mixed_language"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "messy_thought_en_001",
-                        "scenario":  "messy_thought_en",
-                        "audio_path":  "audio/messy_thought_en_001.wav",
-                        "reference_text":  "Okay, so the thing is, I kind of know what I want to say, but I am figuring it out while I talk, and that is more realistic than reading.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "20_40s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "messy",
-                                     "natural",
-                                     "free_form"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "messy_thought_en_002",
-                        "scenario":  "messy_thought_en",
-                        "audio_path":  "audio/messy_thought_en_002.wav",
-                        "reference_text":  "I am changing direction a little inside the sentence, because I want this test to feel like actual speech and not like a script.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "messy",
-                                     "natural",
-                                     "free_form"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "far_mic_en_001",
-                        "scenario":  "far_mic_en",
-                        "audio_path":  "audio/far_mic_en_001.wav",
-                        "reference_text":  "I am standing a little farther from the microphone now, so the app can be tested in a less ideal setup.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "light",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "distance",
-                                     "mic",
-                                     "real_world"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "far_mic_en_002",
-                        "scenario":  "far_mic_en",
-                        "audio_path":  "audio/far_mic_en_002.wav",
-                        "reference_text":  "This one should tell us how quickly the quality drops once the microphone is no longer close to the speaker.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "light",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "normal",
-                        "tags":  [
-                                     "english",
-                                     "distance",
-                                     "mic",
-                                     "real_world"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "overlap_speech_en_001",
-                        "scenario":  "overlap_speech_en",
-                        "audio_path":  "audio/overlap_speech_en_001.wav",
-                        "reference_text":  "I am speaking with a bit of urgency, and not much separation between ideas, so the chunk boundaries get a harder workout.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "fast",
-                        "tags":  [
-                                     "english",
-                                     "overlap",
-                                     "fast",
-                                     "chunking"
-                                 ]
-                    },
-                    {
-                        "sample_id":  "overlap_speech_en_002",
-                        "scenario":  "overlap_speech_en",
-                        "audio_path":  "audio/overlap_speech_en_002.wav",
-                        "reference_text":  "This sample should stress the handoff between chunks, because I keep going without much breathing room.",
-                        "language":  "en",
-                        "accent":  "north_american",
-                        "noise_level":  "quiet",
-                        "mic_type":  "unknown",
-                        "duration_bucket":  "8_20s",
-                        "speech_rate":  "fast",
-                        "tags":  [
-                                     "english",
-                                     "overlap",
-                                     "fast",
-                                     "chunking"
-                                 ]
-                    }
-                ]
+{
+  "version": 1,
+  "samples": [
+    {
+      "sample_id": "natural_chat_en_001",
+      "scenario": "natural_chat_en",
+      "audio_path": "audio/natural_chat_en_001.wav",
+      "reference_text": "Hey, I just wanted to check if you saw my last message, because I think we still need to fix that issue before the release.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "natural",
+        "chat",
+        "conversational"
+      ]
+    },
+    {
+      "sample_id": "natural_chat_en_002",
+      "scenario": "natural_chat_en",
+      "audio_path": "audio/natural_chat_en_002.wav",
+      "reference_text": "Yeah, so I was thinking maybe we should push that change tomorrow instead of tonight, just to be safe.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "natural",
+        "chat",
+        "conversational"
+      ]
+    },
+    {
+      "sample_id": "free_form_en_001",
+      "scenario": "free_form_en",
+      "audio_path": "audio/free_form_en_001.wav",
+      "reference_text": "Okay, let me explain this properly: the app works most of the time, but once in a while the transcript skips a few words near the end, and that is what I want to fix first.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "20_40s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "free_form",
+        "long",
+        "natural"
+      ]
+    },
+    {
+      "sample_id": "free_form_en_002",
+      "scenario": "free_form_en",
+      "audio_path": "audio/free_form_en_002.wav",
+      "reference_text": "I am not reading this like a robot. I am trying to speak naturally and leave little hesitations in the sentence, the way I normally would in real life.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "20_40s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "free_form",
+        "hesitation",
+        "natural"
+      ]
+    },
+    {
+      "sample_id": "accent_en_001",
+      "scenario": "accent_en",
+      "audio_path": "audio/accent_en_001.wav",
+      "reference_text": "Today, I want to test how well the model handles my accent when I am speaking at a regular pace with everyday words.",
+      "language": "en",
+      "accent": "user_accent_a",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "accent",
+        "everyday"
+      ]
+    },
+    {
+      "sample_id": "accent_en_002",
+      "scenario": "accent_en",
+      "audio_path": "audio/accent_en_002.wav",
+      "reference_text": "This sample is here to check whether the system still keeps the words clean when the pronunciation is less standard.",
+      "language": "en",
+      "accent": "user_accent_b",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "accent",
+        "everyday"
+      ]
+    },
+    {
+      "sample_id": "dirty_noise_en_001",
+      "scenario": "dirty_noise_en",
+      "audio_path": "audio/dirty_noise_en_001.wav",
+      "reference_text": "I am recording this with more background noise on purpose, to see whether the transcript stays usable in a messy room.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "moderate",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "noise",
+        "real_world",
+        "moderate_noise"
+      ]
+    },
+    {
+      "sample_id": "dirty_noise_en_002",
+      "scenario": "dirty_noise_en",
+      "audio_path": "audio/dirty_noise_en_002.wav",
+      "reference_text": "There is some real noise around me right now, and I want to know if the model still catches the main sentence correctly.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "heavy",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "noise",
+        "real_world",
+        "heavy_noise"
+      ]
+    },
+    {
+      "sample_id": "very_low_volume_en_001",
+      "scenario": "very_low_volume_en",
+      "audio_path": "audio/very_low_volume_en_001.wav",
+      "reference_text": "I am speaking very softly now, and I want to see if the transcript still keeps the right words without turning strange.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "low_volume",
+        "soft_voice"
+      ]
+    },
+    {
+      "sample_id": "very_low_volume_en_002",
+      "scenario": "very_low_volume_en",
+      "audio_path": "audio/very_low_volume_en_002.wav",
+      "reference_text": "This is another quiet sample, because I want to know exactly where the model starts failing when the microphone input is too weak.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "low_volume",
+        "soft_voice"
+      ]
+    },
+    {
+      "sample_id": "weird_pauses_en_001",
+      "scenario": "weird_pauses_en",
+      "audio_path": "audio/weird_pauses_en_001.wav",
+      "reference_text": "I want to test a sentence where I pause in odd places, because some people do not speak in a smooth, continuous rhythm.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "pauses",
+        "odd_pacing"
+      ]
+    },
+    {
+      "sample_id": "weird_pauses_en_002",
+      "scenario": "weird_pauses_en",
+      "audio_path": "audio/weird_pauses_en_002.wav",
+      "reference_text": "This recording has little stops and restarts in the middle of the thought, so we can see if chunking still behaves well.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "pauses",
+        "odd_pacing"
+      ]
+    },
+    {
+      "sample_id": "conversation_en_001",
+      "scenario": "conversation_en",
+      "audio_path": "audio/conversation_en_001.wav",
+      "reference_text": "No, I mean not that button, the other one on the left. Yeah, that one. Okay, now try it again.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "short",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "conversation",
+        "informal"
+      ]
+    },
+    {
+      "sample_id": "conversation_en_002",
+      "scenario": "conversation_en",
+      "audio_path": "audio/conversation_en_002.wav",
+      "reference_text": "Wait, hold on, I think I got it now. Can you send me the latest version before I test it again?",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "short",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "conversation",
+        "informal"
+      ]
+    },
+    {
+      "sample_id": "interruption_en_001",
+      "scenario": "interruption_en",
+      "audio_path": "audio/interruption_en_001.wav",
+      "reference_text": "I was going to say we should probably ship this on Friday. Actually, wait, no, maybe Monday is safer.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "interruption",
+        "self_correction"
+      ]
+    },
+    {
+      "sample_id": "interruption_en_002",
+      "scenario": "interruption_en",
+      "audio_path": "audio/interruption_en_002.wav",
+      "reference_text": "Send the report to the team... no, sorry, send it to the product channel first, and then forward it to the team.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "interruption",
+        "self_correction"
+      ]
+    },
+    {
+      "sample_id": "cheap_mic_en_001",
+      "scenario": "cheap_mic_en",
+      "audio_path": "audio/cheap_mic_en_001.wav",
+      "reference_text": "This sample is meant to simulate a cheap laptop microphone, where the signal is less clean and a bit more harsh.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "light",
+      "mic_type": "laptop",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "cheap_mic",
+        "laptop"
+      ]
+    },
+    {
+      "sample_id": "cheap_mic_en_002",
+      "scenario": "cheap_mic_en",
+      "audio_path": "audio/cheap_mic_en_002.wav",
+      "reference_text": "I want to know whether the transcript still comes out clean when the hardware quality is average at best.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "light",
+      "mic_type": "laptop",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "cheap_mic",
+        "laptop"
+      ]
+    },
+    {
+      "sample_id": "code_switch_en_001",
+      "scenario": "code_switch_en",
+      "audio_path": "audio/code_switch_en_001.wav",
+      "reference_text": "I am mostly speaking English here, but I might drop a small French word like bonjour, just to see what happens.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "code_switch",
+        "mixed_language"
+      ]
+    },
+    {
+      "sample_id": "code_switch_en_002",
+      "scenario": "code_switch_en",
+      "audio_path": "audio/code_switch_en_002.wav",
+      "reference_text": "This is still an English sample, but I am adding a couple of foreign-sounding words to make the recognition work harder.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "code_switch",
+        "mixed_language"
+      ]
+    },
+    {
+      "sample_id": "messy_thought_en_001",
+      "scenario": "messy_thought_en",
+      "audio_path": "audio/messy_thought_en_001.wav",
+      "reference_text": "Okay, so the thing is, I kind of know what I want to say, but I am figuring it out while I talk, and that is more realistic than reading.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "20_40s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "messy",
+        "natural",
+        "free_form"
+      ]
+    },
+    {
+      "sample_id": "messy_thought_en_002",
+      "scenario": "messy_thought_en",
+      "audio_path": "audio/messy_thought_en_002.wav",
+      "reference_text": "I am changing direction a little inside the sentence, because I want this test to feel like actual speech and not like a script.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "messy",
+        "natural",
+        "free_form"
+      ]
+    },
+    {
+      "sample_id": "far_mic_en_001",
+      "scenario": "far_mic_en",
+      "audio_path": "audio/far_mic_en_001.wav",
+      "reference_text": "I am standing a little farther from the microphone now, so the app can be tested in a less ideal setup.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "light",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "distance",
+        "mic",
+        "real_world"
+      ]
+    },
+    {
+      "sample_id": "far_mic_en_002",
+      "scenario": "far_mic_en",
+      "audio_path": "audio/far_mic_en_002.wav",
+      "reference_text": "This one should tell us how quickly the quality drops once the microphone is no longer close to the speaker.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "light",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "distance",
+        "mic",
+        "real_world"
+      ]
+    },
+    {
+      "sample_id": "overlap_speech_en_001",
+      "scenario": "overlap_speech_en",
+      "audio_path": "audio/overlap_speech_en_001.wav",
+      "reference_text": "I am speaking with a bit of urgency, and not much separation between ideas, so the chunk boundaries get a harder workout.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "fast",
+      "tags": [
+        "english",
+        "overlap",
+        "fast",
+        "chunking"
+      ]
+    },
+    {
+      "sample_id": "overlap_speech_en_002",
+      "scenario": "overlap_speech_en",
+      "audio_path": "audio/overlap_speech_en_002.wav",
+      "reference_text": "This sample should stress the handoff between chunks, because I keep going without much breathing room.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "fast",
+      "tags": [
+        "english",
+        "overlap",
+        "fast",
+        "chunking"
+      ]
+    }
+  ]
 }

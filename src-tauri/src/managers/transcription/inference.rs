@@ -1,7 +1,8 @@
 use super::*;
 use crate::parakeet_text::{
-    finalize_parakeet_text, maybe_prefer_sentence_punctuation, parakeet_builtin_correction_terms,
-    should_attempt_sentence_punctuation,
+    finalize_parakeet_text_with_profile, maybe_prefer_sentence_punctuation,
+    parakeet_builtin_correction_terms_with_profile, should_attempt_sentence_punctuation,
+    ParakeetDomainProfile,
 };
 use crate::session_keyterms::build_session_keyterms;
 use whichlang::Lang;
@@ -82,6 +83,7 @@ fn build_correction_terms(
     session_keyterms: &[String],
     session_glossary_terms: &[String],
     active_model_id: Option<&str>,
+    profile: ParakeetDomainProfile,
 ) -> Vec<String> {
     let mut terms = settings.custom_words.clone();
 
@@ -91,8 +93,9 @@ fn build_correction_terms(
     terms.extend(session_glossary_terms.iter().cloned());
 
     if matches!(active_model_id, Some(id) if is_parakeet_v3_model_id(id)) {
-        terms.extend(parakeet_builtin_correction_terms(
+        terms.extend(parakeet_builtin_correction_terms_with_profile(
             &settings.selected_language,
+            profile,
         ));
         terms.extend(session_keyterms.iter().cloned());
     }
@@ -281,11 +284,20 @@ impl TranscriptionManager {
             .try_state::<crate::session_glossary::SessionGlossaryState>()
             .and_then(|state| state.0.lock().ok().map(|g| g.as_vec()))
             .unwrap_or_default();
+        let correction_profile = if matches!(
+            app_context.as_ref().map(|context| context.category),
+            Some(crate::context_detector::AppContextCategory::Code)
+        ) {
+            ParakeetDomainProfile::General
+        } else {
+            ParakeetDomainProfile::Recruiting
+        };
         let correction_terms = build_correction_terms(
             &settings,
             &session_keyterms,
             &session_glossary_terms,
             active_model_id.as_deref(),
+            correction_profile,
         );
         let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
@@ -909,7 +921,19 @@ impl TranscriptionManager {
         };
         let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
-            finalize_parakeet_text(&corrected_result, &settings.selected_language)
+            let profile = if matches!(
+                app_context.as_ref().map(|context| context.category),
+                Some(crate::context_detector::AppContextCategory::Code)
+            ) {
+                ParakeetDomainProfile::General
+            } else {
+                ParakeetDomainProfile::Recruiting
+            };
+            finalize_parakeet_text_with_profile(
+                &corrected_result,
+                &settings.selected_language,
+                profile,
+            )
         } else {
             corrected_result
         };
@@ -972,7 +996,7 @@ impl TranscriptionManager {
 mod tests {
     use super::*;
     use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
-    use crate::parakeet_text::normalize_parakeet_phrase_variants;
+    use crate::parakeet_text::{finalize_parakeet_text, normalize_parakeet_phrase_variants};
     use crate::session_keyterms::build_session_keyterms;
 
     #[test]
@@ -1042,6 +1066,7 @@ mod tests {
             &session_keyterms.terms,
             &[],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
+            ParakeetDomainProfile::General,
         );
 
         assert!(corrections.iter().any(|term| term == "Parakeet V3"));

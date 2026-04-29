@@ -1,0 +1,347 @@
+{
+    "version":  1,
+    "samples":  [
+                    {
+                        "sample_id":  "normal_en_001",
+                        "scenario":  "normal_en",
+                        "audio_path":  "audio/normal_en_001.wav",
+                        "reference_text":  "Today I want to test a normal English sentence to check whether the transcription feels clean and natural.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "normal",
+                                     "clean"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "normal_en_002",
+                        "scenario":  "normal_en",
+                        "audio_path":  "audio/normal_en_002.wav",
+                        "reference_text":  "I am speaking at a regular pace with a clear voice to see if Parakeet V3 captures every word correctly.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "normal",
+                                     "clean"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "long_no_pause_en_001",
+                        "scenario":  "long_no_pause_en",
+                        "audio_path":  "audio/long_no_pause_en_001.wav",
+                        "reference_text":  "I want to test a longer sentence without taking a real pause so we can see whether the model keeps the entire ending correctly when I continue speaking in one continuous flow.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "long",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "long",
+                                     "no_pause"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "long_no_pause_en_002",
+                        "scenario":  "long_no_pause_en",
+                        "audio_path":  "audio/long_no_pause_en_002.wav",
+                        "reference_text":  "This is another long dictation sample where I keep talking without stopping because I want to know if the transcription drops words near the end of the sentence.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "long",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "long",
+                                     "no_pause"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "fast_dictation_en_001",
+                        "scenario":  "fast_dictation_en",
+                        "audio_path":  "audio/fast_dictation_en_001.wav",
+                        "reference_text":  "I am going to speak a little faster than usual to verify that the model can still follow the rhythm and keep the words in the right order.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "fast",
+                        "tags":  [
+                                     "english",
+                                     "fast",
+                                     "dictation"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "fast_dictation_en_002",
+                        "scenario":  "fast_dictation_en",
+                        "audio_path":  "audio/fast_dictation_en_002.wav",
+                        "reference_text":  "This quick sample should help us measure whether faster speech creates missing words repeated words or broken sentence endings.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "fast",
+                        "tags":  [
+                                     "english",
+                                     "fast",
+                                     "dictation"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "low_volume_en_001",
+                        "scenario":  "low_volume_en",
+                        "audio_path":  "audio/low_volume_en_001.wav",
+                        "reference_text":  "I am speaking with a lower voice on purpose to test whether the model still understands me when the microphone input is softer.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "low_volume",
+                                     "quiet"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "low_volume_en_002",
+                        "scenario":  "low_volume_en",
+                        "audio_path":  "audio/low_volume_en_002.wav",
+                        "reference_text":  "This quiet recording is here to measure how reliable the transcription stays when my voice is low but still understandable.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "low_volume",
+                                     "quiet"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "light_noise_en_001",
+                        "scenario":  "light_noise_en",
+                        "audio_path":  "audio/light_noise_en_001.wav",
+                        "reference_text":  "I am testing this sentence with a little background noise to see if the model stays stable in a more realistic environment.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "light",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "light_noise",
+                                     "ambient"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "light_noise_en_002",
+                        "scenario":  "light_noise_en",
+                        "audio_path":  "audio/light_noise_en_002.wav",
+                        "reference_text":  "This recording should tell us whether a small amount of ambient sound changes the transcription quality in a meaningful way.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "light",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "light_noise",
+                                     "ambient"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "proper_nouns_en_001",
+                        "scenario":  "proper_nouns_en",
+                        "audio_path":  "audio/proper_nouns_en_001.wav",
+                        "reference_text":  "Tomorrow, I need to send a message to Yassine, review the Vocalype roadmap on GitHub, and prepare notes for OpenAI and Microsoft.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "proper_nouns",
+                                     "brands",
+                                     "names"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "proper_nouns_en_002",
+                        "scenario":  "proper_nouns_en",
+                        "audio_path":  "audio/proper_nouns_en_002.wav",
+                        "reference_text":  "I want to confirm that Parakeet V3 correctly transcribes names like Vocalype, GitHub, OpenAI, Microsoft, and Yassine.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "proper_nouns",
+                                     "brands",
+                                     "names"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "numbers_dates_en_001",
+                        "scenario":  "numbers_dates_en",
+                        "audio_path":  "audio/numbers_dates_en_001.wav",
+                        "reference_text":  "The meeting is scheduled for April 3, 2026, at 2:45 PM, and the budget update is 12.5 percent.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "long",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "numbers",
+                                     "dates"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "numbers_dates_en_002",
+                        "scenario":  "numbers_dates_en",
+                        "audio_path":  "audio/numbers_dates_en_002.wav",
+                        "reference_text":  "Please remind me to send 4 reports by March 18, 2026, and include a total cost of 275 dollars.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "numbers",
+                                     "dates"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "email_url_en_001",
+                        "scenario":  "email_url_en",
+                        "audio_path":  "audio/email_url_en_001.wav",
+                        "reference_text":  "Send the summary to support at vocalype dot app, and then open github dot com slash vocalype slash desktop.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "email",
+                                     "url"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "email_url_en_002",
+                        "scenario":  "email_url_en",
+                        "audio_path":  "audio/email_url_en_002.wav",
+                        "reference_text":  "My email is alex dot martin at example dot com, and the document lives on docs dot vocalype dot app slash release notes.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "long",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "email",
+                                     "url"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "meeting_style_en_001",
+                        "scenario":  "meeting_style_en",
+                        "audio_path":  "audio/meeting_style_en_001.wav",
+                        "reference_text":  "Before the next meeting, I want to review the dashboard, fix the reporting issue, and confirm the release plan with the team.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "meeting",
+                                     "business"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "meeting_style_en_002",
+                        "scenario":  "meeting_style_en",
+                        "audio_path":  "audio/meeting_style_en_002.wav",
+                        "reference_text":  "During the call, I will explain the bug, the timeline, the remaining risks, and the actions we need to finish this week.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "meeting",
+                                     "business"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "technical_en_001",
+                        "scenario":  "technical_en",
+                        "audio_path":  "audio/technical_en_001.wav",
+                        "reference_text":  "I pushed the latest build to GitHub, fixed the dashboard rendering bug, and validated the reporting flow in the desktop app.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "technical",
+                                     "product"
+                                 ]
+                    },
+                    {
+                        "sample_id":  "technical_en_002",
+                        "scenario":  "technical_en",
+                        "audio_path":  "audio/technical_en_002.wav",
+                        "reference_text":  "This sample checks whether technical words like build, dashboard, reporting, desktop app, and Parakeet V3 are preserved correctly.",
+                        "language":  "en",
+                        "accent":  "unknown",
+                        "noise_level":  "quiet",
+                        "mic_type":  "unknown",
+                        "duration_bucket":  "short",
+                        "speech_rate":  "normal",
+                        "tags":  [
+                                     "english",
+                                     "technical",
+                                     "product"
+                                 ]
+                    }
+                ]
+}

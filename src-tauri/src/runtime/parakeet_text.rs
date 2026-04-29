@@ -1,6 +1,12 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ParakeetDomainProfile {
+    General,
+    Recruiting,
+}
+
 static PARAKEET_V3_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
         r"(?i)\bparak(?:eet|et|ate|it|eat|aet|id)?\s+(?:de\s+)?(?:v\s*(?:3|three|tree|trois)|vit(?:ry|ri))\b",
@@ -701,14 +707,21 @@ pub fn parakeet_chunk_ends_sentence(previous: &str, next: &str) -> bool {
     next_sentence_starts_upper(next)
 }
 
-pub fn parakeet_builtin_correction_terms(selected_language: &str) -> Vec<String> {
+pub fn parakeet_builtin_correction_terms_with_profile(
+    selected_language: &str,
+    profile: ParakeetDomainProfile,
+) -> Vec<String> {
     let mut terms = vec!["Vocalype".to_string()];
 
-    if selected_language == "en" {
+    if selected_language == "en" && profile == ParakeetDomainProfile::General {
         terms.push("Yassine".to_string());
     }
 
     terms
+}
+
+pub fn parakeet_builtin_correction_terms(selected_language: &str) -> Vec<String> {
+    parakeet_builtin_correction_terms_with_profile(selected_language, ParakeetDomainProfile::General)
 }
 
 fn looks_like_developer_dictation(text: &str) -> bool {
@@ -843,7 +856,11 @@ fn normalize_dev_tech_terms(text: &str) -> String {
     s
 }
 
-pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -> String {
+pub fn normalize_parakeet_phrase_variants_with_profile(
+    text: &str,
+    selected_language: &str,
+    profile: ParakeetDomainProfile,
+) -> String {
     let mut normalized = PARAKEET_V3_PATTERN
         .replace_all(text, "Parakeet V3")
         .to_string();
@@ -860,7 +877,7 @@ pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -
         .replace_all(&normalized, "Vocalype")
         .to_string();
 
-    if looks_like_developer_dictation(&normalized) {
+    if profile == ParakeetDomainProfile::General && looks_like_developer_dictation(&normalized) {
         normalized = normalize_dev_tech_terms(&normalized);
     }
 
@@ -875,6 +892,14 @@ pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -
     }
 
     normalized
+}
+
+pub fn normalize_parakeet_phrase_variants(text: &str, selected_language: &str) -> String {
+    normalize_parakeet_phrase_variants_with_profile(
+        text,
+        selected_language,
+        ParakeetDomainProfile::General,
+    )
 }
 
 pub fn cleanup_parakeet_tail_artifacts(text: &str) -> String {
@@ -926,7 +951,10 @@ fn restore_french_apostrophes(text: &str) -> String {
         .to_string()
 }
 
-pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
+pub fn normalize_parakeet_english_artifacts(
+    text: &str,
+    profile: ParakeetDomainProfile,
+) -> String {
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
     normalized = F05_PATTERN.replace_all(&normalized, "802.11").to_string();
     normalized = B01_PATTERN_1.replace_all(&normalized, "1920").to_string();
@@ -972,9 +1000,11 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     normalized = DOT_UP_PATTERN
         .replace_all(&normalized, "dot app")
         .to_string();
-    normalized = GITHUB_DOT_COM_PATTERN
-        .replace_all(&normalized, "GitHub dot com")
-        .to_string();
+    if profile == ParakeetDomainProfile::General {
+        normalized = GITHUB_DOT_COM_PATTERN
+            .replace_all(&normalized, "GitHub dot com")
+            .to_string();
+    }
     normalized = EXAMPLE_DOT_COM_PATTERN
         .replace_all(&normalized, "example dot com")
         .to_string();
@@ -1048,24 +1078,28 @@ pub fn normalize_parakeet_english_artifacts(text: &str) -> String {
     normalized = A_AMBIENT_SOUND_CHANGES_PATTERN
         .replace_all(&normalized, "a small amount of ambient sound changes")
         .to_string();
-    normalized = SUPPORT_VOCALYPE_PATTERN
-        .replace_all(&normalized, "support at vocalype dot app")
-        .to_string();
-    normalized = DOCS_VOCALYPE_PATTERN
-        .replace_all(&normalized, "docs dot vocalype dot app slash release notes")
-        .to_string();
+    if profile == ParakeetDomainProfile::General {
+        normalized = SUPPORT_VOCALYPE_PATTERN
+            .replace_all(&normalized, "support at vocalype dot app")
+            .to_string();
+        normalized = DOCS_VOCALYPE_PATTERN
+            .replace_all(&normalized, "docs dot vocalype dot app slash release notes")
+            .to_string();
+    }
     normalized = REMAINING_RISK_PATTERN
         .replace_all(&normalized, "remaining risks")
         .to_string();
     normalized = THE_ACTION_WE_NEED_PATTERN
         .replace_all(&normalized, "the actions we need")
         .to_string();
-    normalized = VALIDATE_REPORTING_PATTERN
-        .replace_all(&normalized, "and validated the reporting flow")
-        .to_string();
-    normalized = TECHNICAL_WORD_LIKE_PATTERN
-        .replace_all(&normalized, "technical words like")
-        .to_string();
+    if profile == ParakeetDomainProfile::General {
+        normalized = VALIDATE_REPORTING_PATTERN
+            .replace_all(&normalized, "and validated the reporting flow")
+            .to_string();
+        normalized = TECHNICAL_WORD_LIKE_PATTERN
+            .replace_all(&normalized, "technical words like")
+            .to_string();
+    }
     normalized = DESKTOP_AND_AND_PATTERN
         .replace_all(&normalized, "desktop app and Parakeet")
         .to_string();
@@ -1770,10 +1804,18 @@ fn capitalize_first(text: &str) -> String {
     }
 }
 
-pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
-    let mut normalized = normalize_parakeet_phrase_variants(text, selected_language);
+pub fn finalize_parakeet_text_with_profile(
+    text: &str,
+    selected_language: &str,
+    profile: ParakeetDomainProfile,
+) -> String {
+    let mut normalized = normalize_parakeet_phrase_variants_with_profile(
+        text,
+        selected_language,
+        profile,
+    );
     if selected_language == "en" {
-        normalized = normalize_parakeet_english_artifacts(&normalized);
+        normalized = normalize_parakeet_english_artifacts(&normalized, profile);
         normalized = normalize_parakeet_long_form_english_artifacts(&normalized);
     } else if selected_language == "fr" {
         normalized = normalize_parakeet_french_artifacts(&normalized);
@@ -1833,6 +1875,10 @@ pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
         .replace_all(normalized.trim(), " ")
         .to_string();
     capitalize_first(&normalized)
+}
+
+pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
+    finalize_parakeet_text_with_profile(text, selected_language, ParakeetDomainProfile::General)
 }
 
 fn normalize_english_numbers(text: &str) -> String {
@@ -2467,6 +2513,59 @@ mod tests {
         );
         assert!(normalized.contains("useState"), "got: {normalized}");
         assert!(normalized.contains("pgvector"), "got: {normalized}");
+    }
+
+    #[test]
+    fn recruiting_profile_skips_dev_phrase_normalization() {
+        let normalized = finalize_parakeet_text_with_profile(
+            "In React code I need use state and pg vector for the database.",
+            "en",
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert!(!normalized.contains("useState"), "got: {normalized}");
+        assert!(!normalized.contains("pgvector"), "got: {normalized}");
+        assert!(normalized.contains("use state"), "got: {normalized}");
+    }
+
+    #[test]
+    fn recruiting_profile_skips_dev_product_cleanup() {
+        let input =
+            "Please send support Vocalype dot app and docs dot Vocalype slash release notes to GitHub dot com so the technical word like flow stays visible.";
+        let normalized = finalize_parakeet_text_with_profile(
+            input,
+            "en",
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert!(
+            normalized.contains("support Vocalype dot app"),
+            "got: {normalized}"
+        );
+        assert!(
+            normalized.contains("docs dot Vocalype slash release notes"),
+            "got: {normalized}"
+        );
+        assert!(
+            normalized.contains("GitHub dot com"),
+            "got: {normalized}"
+        );
+        assert!(
+            normalized.contains("technical word like"),
+            "got: {normalized}"
+        );
+        assert_eq!(normalized, input);
+    }
+
+    #[test]
+    fn recruiting_profile_keeps_general_english_cleanup() {
+        let normalized = finalize_parakeet_text_with_profile(
+            "This uh recording um has little stops and we start in the middle of the thought.",
+            "en",
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert!(
+            normalized.contains("stops and restarts"),
+            "got: {normalized}"
+        );
     }
 
     #[test]

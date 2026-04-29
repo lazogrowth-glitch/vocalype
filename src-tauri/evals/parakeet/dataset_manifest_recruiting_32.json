@@ -1,0 +1,538 @@
+{
+  "version": 1,
+  "samples": [
+    {
+      "sample_id": "long_no_pause_fr_001",
+      "scenario": "long_no_pause_fr",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\long_no_pause_fr_001.wav",
+      "reference_text": "Bonjour, je veux tester une phrase longue sans faire de pause, pour voir si Parakeet V3 coupe des mots à la fin quand je parle longtemps, de manière continue.",
+      "language": "fr",
+      "accent": "france_standard",
+      "noise_level": "quiet",
+      "mic_type": "laptop",
+      "duration_bucket": "20_40s",
+      "speech_rate": "normal",
+      "tags": [
+        "long",
+        "no_pause",
+        "french",
+        "dictation"
+      ]
+    },
+    {
+      "sample_id": "fast_dictation_fr_001",
+      "scenario": "fast_dictation_fr",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\fast_dictation_fr_001.wav",
+      "reference_text": "Je vais dicter rapidement cette phrase pour vérifier si le modèle suit correctement quand le débit de parole augmente et que les mots arrivent presque sans interruption.",
+      "language": "fr",
+      "accent": "france_standard",
+      "noise_level": "quiet",
+      "mic_type": "built_in_array",
+      "duration_bucket": "8_20s",
+      "speech_rate": "very_fast",
+      "tags": [
+        "fast",
+        "french",
+        "dictation"
+      ]
+    },
+    {
+      "sample_id": "low_volume_fr_001",
+      "scenario": "low_volume_fr",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\low_volume_fr_001.wav",
+      "reference_text": "Je parle volontairement avec une voix plus basse, pour vérifier si le modèle comprend encore correctement le texte, même quand le volume du micro est plus faible.",
+      "language": "fr",
+      "accent": "france_standard",
+      "noise_level": "quiet",
+      "mic_type": "laptop",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "low_volume",
+        "french",
+        "dictation"
+      ]
+    },
+    {
+      "sample_id": "long_form_fr_001",
+      "scenario": "long_form_fr",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\long_form_fr_001.wav",
+      "reference_text": "Bonjour, je suis en train de faire un vrai test de dictée longue pour voir si le modèle garde bien tous les mots du début jusqu'à la fin, sans couper la phrase au milieu et sans oublier des morceaux quand je continue à parler pendant beaucoup plus longtemps que dans les petits tests rapides.",
+      "language": "fr",
+      "duration_bucket": "15_30s",
+      "speech_rate": "normal",
+      "tags": [
+        "french",
+        "long_form",
+        "drift_check"
+      ]
+    },
+    {
+      "sample_id": "long_form_fr_002",
+      "scenario": "long_form_fr",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\long_form_fr_002.wav",
+      "reference_text": "Je veux maintenant parler de manière plus naturelle, avec quelques hésitations et quelques pauses, parce que dans la vraie vie, on ne parle pas comme un texte parfaitement écrit, et ce que je veux vérifier, c'est si la transcription reste cohérente, lisible et fidèle, même quand le rythme devient plus irrégulier.",
+      "language": "fr",
+      "duration_bucket": "15_30s",
+      "speech_rate": "normal",
+      "tags": [
+        "french",
+        "natural",
+        "hesitation",
+        "drift_check"
+      ]
+    },
+    {
+      "sample_id": "pausey_fr_001",
+      "scenario": "pausey_fr",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\pausey_fr_001.wav",
+      "reference_text": "Je fais ce test avec des pauses normales, parce que parfois on commence une idée, on s'arrête un instant pour réfléchir, puis on reprend la phrase, et je veux voir si l'application garde bien le sens général sans mettre trop de ponctuation ou couper des morceaux juste après une petite pause.",
+      "language": "fr",
+      "duration_bucket": "30_45s",
+      "speech_rate": "normal",
+      "tags": [
+        "french",
+        "pauses",
+        "punctuation",
+        "drift_check"
+      ]
+    },
+    {
+      "sample_id": "self_correct_fr_001",
+      "scenario": "self_correct_fr",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\self_correct_fr_001.wav",
+      "reference_text": "Demain, je dois envoyer le rapport au support... non, attends, ce n'est pas ça. Je veux dire à l'équipe produit d'abord, puis ensuite au support, et ce test doit montrer si les auto-corrections parlées restent compréhensibles dans le texte final sans créer de répétitions bizarres.",
+      "language": "fr",
+      "duration_bucket": "15_30s",
+      "speech_rate": "normal",
+      "tags": [
+        "french",
+        "self_correction",
+        "drift_check"
+      ]
+    },
+    {
+      "sample_id": "very_long_fr_001",
+      "scenario": "very_long_fr",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\very_long_fr_001.wav",
+      "reference_text": "Je termine avec une dictée française plus longue pour voir si l'application reste stable sur une durée plus importante, parce que le vrai problème ne se voit pas toujours sur des phrases courtes, et ce qui nous intéresse maintenant, c'est de savoir si, au bout de trente secondes, une minute ou presque deux minutes, la transcription continue de suivre correctement, sans passer soudainement en anglais, sans perdre des mots importants et sans transformer la structure de la phrase en quelque chose de difficile à relire.",
+      "language": "fr",
+      "duration_bucket": "45_90s",
+      "speech_rate": "normal",
+      "tags": [
+        "french",
+        "very_long",
+        "language_drift",
+        "endurance"
+      ]
+    },
+    {
+      "sample_id": "normal_en_001",
+      "scenario": "normal_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\normal_en_001.wav",
+      "reference_text": "Today I want to test a normal English sentence to check whether the transcription feels clean and natural.",
+      "language": "en",
+      "accent": "unknown",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "short",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "normal",
+        "clean"
+      ]
+    },
+    {
+      "sample_id": "normal_en_002",
+      "scenario": "normal_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\normal_en_002.wav",
+      "reference_text": "I am speaking at a regular pace with a clear voice to see if Parakeet V3 captures every word correctly.",
+      "language": "en",
+      "accent": "unknown",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "short",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "normal",
+        "clean"
+      ]
+    },
+    {
+      "sample_id": "numbers_dates_en_001",
+      "scenario": "numbers_dates_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\numbers_dates_en_001.wav",
+      "reference_text": "The meeting is scheduled for April 3, 2026, at 2:45 PM, and the budget update is 12.5 percent.",
+      "language": "en",
+      "accent": "unknown",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "long",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "numbers",
+        "dates"
+      ]
+    },
+    {
+      "sample_id": "numbers_dates_en_002",
+      "scenario": "numbers_dates_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\numbers_dates_en_002.wav",
+      "reference_text": "Please remind me to send 4 reports by March 18, 2026, and include a total cost of 275 dollars.",
+      "language": "en",
+      "accent": "unknown",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "short",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "numbers",
+        "dates"
+      ]
+    },
+    {
+      "sample_id": "natural_chat_en_001",
+      "scenario": "natural_chat_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\natural_chat_en_001.wav",
+      "reference_text": "Hey, I just wanted to check if you saw my last message, because I think we still need to fix that issue before the release.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "natural",
+        "chat",
+        "conversational"
+      ]
+    },
+    {
+      "sample_id": "natural_chat_en_002",
+      "scenario": "natural_chat_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\natural_chat_en_002.wav",
+      "reference_text": "Yeah, so I was thinking maybe we should push that change tomorrow instead of tonight, just to be safe.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "natural",
+        "chat",
+        "conversational"
+      ]
+    },
+    {
+      "sample_id": "free_form_en_001",
+      "scenario": "free_form_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\free_form_en_001.wav",
+      "reference_text": "Okay, let me explain this properly: the app works most of the time, but once in a while the transcript skips a few words near the end, and that is what I want to fix first.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "20_40s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "free_form",
+        "long",
+        "natural"
+      ]
+    },
+    {
+      "sample_id": "free_form_en_002",
+      "scenario": "free_form_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\free_form_en_002.wav",
+      "reference_text": "I am not reading this like a robot. I am trying to speak naturally and leave little hesitations in the sentence, the way I normally would in real life.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "20_40s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "free_form",
+        "hesitation",
+        "natural"
+      ]
+    },
+    {
+      "sample_id": "accent_en_001",
+      "scenario": "accent_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\accent_en_001.wav",
+      "reference_text": "Today, I want to test how well the model handles my accent when I am speaking at a regular pace with everyday words.",
+      "language": "en",
+      "accent": "user_accent_a",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "accent",
+        "everyday"
+      ]
+    },
+    {
+      "sample_id": "accent_en_002",
+      "scenario": "accent_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\accent_en_002.wav",
+      "reference_text": "This sample is here to check whether the system still keeps the words clean when the pronunciation is less standard.",
+      "language": "en",
+      "accent": "user_accent_b",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "accent",
+        "everyday"
+      ]
+    },
+    {
+      "sample_id": "dirty_noise_en_001",
+      "scenario": "dirty_noise_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\dirty_noise_en_001.wav",
+      "reference_text": "I am recording this with more background noise on purpose, to see whether the transcript stays usable in a messy room.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "moderate",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "noise",
+        "real_world",
+        "moderate_noise"
+      ]
+    },
+    {
+      "sample_id": "dirty_noise_en_002",
+      "scenario": "dirty_noise_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\dirty_noise_en_002.wav",
+      "reference_text": "There is some real noise around me right now, and I want to know if the model still catches the main sentence correctly.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "heavy",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "noise",
+        "real_world",
+        "heavy_noise"
+      ]
+    },
+    {
+      "sample_id": "weird_pauses_en_001",
+      "scenario": "weird_pauses_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\weird_pauses_en_001.wav",
+      "reference_text": "I want to test a sentence where I pause in odd places, because some people do not speak in a smooth, continuous rhythm.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "pauses",
+        "odd_pacing"
+      ]
+    },
+    {
+      "sample_id": "weird_pauses_en_002",
+      "scenario": "weird_pauses_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\weird_pauses_en_002.wav",
+      "reference_text": "This recording has little stops and restarts in the middle of the thought, so we can see if chunking still behaves well.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "pauses",
+        "odd_pacing"
+      ]
+    },
+    {
+      "sample_id": "conversation_en_001",
+      "scenario": "conversation_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\conversation_en_001.wav",
+      "reference_text": "No, I mean not that button, the other one on the left. Yeah, that one. Okay, now try it again.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "short",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "conversation",
+        "informal"
+      ]
+    },
+    {
+      "sample_id": "conversation_en_002",
+      "scenario": "conversation_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\conversation_en_002.wav",
+      "reference_text": "Wait, hold on, I think I got it now. Can you send me the latest version before I test it again?",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "short",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "conversation",
+        "informal"
+      ]
+    },
+    {
+      "sample_id": "interruption_en_001",
+      "scenario": "interruption_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\interruption_en_001.wav",
+      "reference_text": "I was going to say we should probably ship this on Friday. Actually, wait, no, maybe Monday is safer.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "interruption",
+        "self_correction"
+      ]
+    },
+    {
+      "sample_id": "interruption_en_002",
+      "scenario": "interruption_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\interruption_en_002.wav",
+      "reference_text": "Send the report to the team... no, sorry, send it to the product channel first, and then forward it to the team.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "quiet",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "interruption",
+        "self_correction"
+      ]
+    },
+    {
+      "sample_id": "far_mic_en_001",
+      "scenario": "far_mic_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\far_mic_en_001.wav",
+      "reference_text": "I am standing a little farther from the microphone now, so the app can be tested in a less ideal setup.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "light",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "distance",
+        "mic",
+        "real_world"
+      ]
+    },
+    {
+      "sample_id": "far_mic_en_002",
+      "scenario": "far_mic_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\far_mic_en_002.wav",
+      "reference_text": "This one should tell us how quickly the quality drops once the microphone is no longer close to the speaker.",
+      "language": "en",
+      "accent": "north_american",
+      "noise_level": "light",
+      "mic_type": "unknown",
+      "duration_bucket": "8_20s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "distance",
+        "mic",
+        "real_world"
+      ]
+    },
+    {
+      "sample_id": "long_form_en_001",
+      "scenario": "long_form_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\long_form_en_001.wav",
+      "reference_text": "Today, I want to run a real long-form dictation test to see whether the model can keep the full meaning of what I say from the beginning to the end of the recording, without dropping words in the middle of the sentence and without losing the final part when I continue speaking for much longer than in the short tests we used before.",
+      "language": "en",
+      "duration_bucket": "30_45s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "long_form",
+        "dictation",
+        "endurance"
+      ]
+    },
+    {
+      "sample_id": "pausey_en_001",
+      "scenario": "pausey_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\pausey_en_001.wav",
+      "reference_text": "I want to test how the app behaves when I speak with natural pauses, because in real life people do not usually speak in one continuous stream. They stop for a second to think, they take a breath, they restart the sentence, and then they continue, so this test should help us see whether those pauses create strange punctuation, weird cuts, or missing pieces in the final transcript.",
+      "language": "en",
+      "duration_bucket": "30_60s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "pauses",
+        "punctuation",
+        "natural"
+      ]
+    },
+    {
+      "sample_id": "self_correct_en_001",
+      "scenario": "self_correct_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\self_correct_en_001.wav",
+      "reference_text": "Tomorrow, I need to send the report to support... no, sorry, that is not what I meant. I need to send it to the product team first, and then after that I can forward it to support, because I want this test to show whether self-corrections remain understandable in the final transcript and whether the app keeps both the original idea and the correction in a sensible way.",
+      "language": "en",
+      "duration_bucket": "30_60s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "self_correction",
+        "reformulation",
+        "long_form"
+      ]
+    },
+    {
+      "sample_id": "conversation_long_en_001",
+      "scenario": "conversation_long_en",
+      "audio_path": "C:\\developer\\sas\\imported-parakeet-test-150\\parakeet_test_150\\local\\conversation_long_en_001.wav",
+      "reference_text": "Okay, so imagine I am explaining something casually to a teammate, and I am not trying to read in a polished voice. I am just speaking the way I normally would and saying that the app works pretty well most of the time, but when the recording becomes longer and the speech is more spontaneous, the real question is whether the transcript still feels like something a person would actually want to copy-paste into a message, document, or note.",
+      "language": "en",
+      "duration_bucket": "30_60s",
+      "speech_rate": "normal",
+      "tags": [
+        "english",
+        "conversation",
+        "long_form",
+        "spontaneous"
+      ]
+    }
+  ]
+}

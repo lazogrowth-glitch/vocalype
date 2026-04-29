@@ -711,13 +711,9 @@ pub fn parakeet_builtin_correction_terms_with_profile(
     selected_language: &str,
     profile: ParakeetDomainProfile,
 ) -> Vec<String> {
-    let mut terms = vec!["Vocalype".to_string()];
-
-    if selected_language == "en" && profile == ParakeetDomainProfile::General {
-        terms.push("Yassine".to_string());
-    }
-
-    terms
+    let _ = selected_language;
+    let _ = profile;
+    Vec::new()
 }
 
 pub fn parakeet_builtin_correction_terms(selected_language: &str) -> Vec<String> {

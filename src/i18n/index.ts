@@ -26,13 +26,11 @@ for (const [path, module] of Object.entries(localeModules)) {
 }
 
 // Build supported languages list from discovered locales + metadata
+// Only include languages that have explicit metadata entries
 export const SUPPORTED_LANGUAGES = Object.keys(resources)
+  .filter((code) => LANGUAGE_METADATA[code] !== undefined)
   .map((code) => {
     const meta = LANGUAGE_METADATA[code];
-    if (!meta) {
-      console.warn(`Missing metadata for locale "${code}" in languages.ts`);
-      return { code, name: code, nativeName: code, priority: undefined };
-    }
     return {
       code,
       name: meta.name,

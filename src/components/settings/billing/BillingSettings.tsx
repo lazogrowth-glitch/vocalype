@@ -26,6 +26,15 @@ function formatDate(iso: string | null | undefined): string {
   }
 }
 
+function isPlaceholderDate(iso: string | null | undefined): boolean {
+  if (!iso) return false;
+  try {
+    return new Date(iso).getFullYear() >= 2090;
+  } catch {
+    return false;
+  }
+}
+
 function UsageBar({ used, limit }: { used: number; limit: number }) {
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const isHigh = pct >= 80;
@@ -102,19 +111,19 @@ export const BillingSettings: React.FC = () => {
 
   // Tier label
   const tierLabel = isTrialing
-    ? t("billing.tier.trial", { defaultValue: "Premium (trial)" })
+    ? t("billing.tier.trial")
     : isPremium
-      ? t("billing.tier.premium", { defaultValue: "Premium" })
-      : t("billing.tier.basic", { defaultValue: "Basic" });
+      ? t("billing.tier.premium")
+      : t("billing.tier.basic");
 
   // Status label
   const statusLabel: Record<string, string> = {
-    trialing: t("billing.status.trialing", { defaultValue: "Trialing" }),
-    active: t("billing.status.active", { defaultValue: "Active" }),
-    past_due: t("billing.status.pastDue", { defaultValue: "Past due" }),
-    canceled: t("billing.status.canceled", { defaultValue: "Canceled" }),
-    incomplete: t("billing.status.incomplete", { defaultValue: "Incomplete" }),
-    inactive: t("billing.status.inactive", { defaultValue: "Inactive" }),
+    trialing: t("billing.status.trialing"),
+    active: t("billing.status.active"),
+    past_due: t("billing.status.pastDue"),
+    canceled: t("billing.status.canceled"),
+    incomplete: t("billing.status.incomplete"),
+    inactive: t("billing.status.inactive"),
   };
 
   return (
@@ -133,7 +142,7 @@ export const BillingSettings: React.FC = () => {
         </div>
         <div>
           <h1 className="text-[15px] font-semibold text-white/90">
-            {t("billing.title", { defaultValue: "Billing & Subscription" })}
+            {t("billing.title")}
           </h1>
           <p className="text-[12px] text-white/40">
             {session?.user?.email ?? ""}
@@ -142,33 +151,25 @@ export const BillingSettings: React.FC = () => {
       </section>
 
       {/* Current plan */}
-      <SettingsGroup
-        title={t("billing.plan.title", { defaultValue: "Current plan" })}
-      >
+      <SettingsGroup title={t("billing.plan.title")}>
         <SettingContainer
           title={tierLabel}
           description={
             sub?.status
               ? (statusLabel[sub.status] ?? sub.status)
-              : t("billing.plan.noSubscription", {
-                  defaultValue: "No active subscription",
-                })
+              : t("billing.plan.noSubscription")
           }
           grouped={false}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isTrialing && trialEndsAt && (
               <span className="text-[12px] text-white/40">
-                {t("billing.plan.trialEnds", {
-                  defaultValue: "Ends {{date}}",
-                  date: formatDate(trialEndsAt),
-                })}
+                {t("billing.plan.trialEnds", { date: formatDate(trialEndsAt) })}
               </span>
             )}
             {isPremium && !isTrialing && sub?.current_period_ends_at && (
               <span className="text-[12px] text-white/40">
                 {t("billing.plan.renewsOn", {
-                  defaultValue: "Renews {{date}}",
                   date: formatDate(sub.current_period_ends_at),
                 })}
               </span>
@@ -215,15 +216,13 @@ export const BillingSettings: React.FC = () => {
 
       {/* Local stats */}
       {stats && (
-        <SettingsGroup
-          title={t("billing.stats.title", { defaultValue: "All-time stats" })}
-        >
+        <SettingsGroup title={t("billing.stats.title")}>
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
           >
             <div className="voca-surface" style={{ padding: "24px" }}>
               <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
-                {t("billing.stats.words", { defaultValue: "Words dictated" })}
+                {t("billing.stats.words")}
               </p>
               <p
                 style={{ marginTop: 4 }}
@@ -234,9 +233,7 @@ export const BillingSettings: React.FC = () => {
             </div>
             <div className="voca-surface" style={{ padding: "24px" }}>
               <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">
-                {t("billing.stats.sessions", {
-                  defaultValue: "Total sessions",
-                })}
+                {t("billing.stats.sessions")}
               </p>
               <p
                 style={{ marginTop: 4 }}
@@ -268,18 +265,11 @@ export const BillingSettings: React.FC = () => {
       )}
 
       {/* Actions */}
-      <SettingsGroup
-        title={t("billing.actions.title", { defaultValue: "Actions" })}
-      >
-        {canManageBilling && (
+      <SettingsGroup title={t("billing.actions.title")}>
+        {isPremium || isTrialing ? (
           <SettingContainer
-            title={t("billing.actions.manage.title", {
-              defaultValue: "Manage subscription",
-            })}
-            description={t("billing.actions.manage.description", {
-              defaultValue:
-                "Update payment method, cancel, or change plan via Stripe.",
-            })}
+            title={t("billing.actions.manage.title")}
+            description={t("billing.actions.manage.description")}
             grouped={false}
           >
             <Button
@@ -291,24 +281,21 @@ export const BillingSettings: React.FC = () => {
               <ExternalLink size={13} className="mr-1.5" />
               {portalLoading
                 ? t("common.loading", { defaultValue: "Loading…" })
-                : t("billing.actions.manage.button", {
-                    defaultValue: "Manage →",
-                  })}
+                : t("billing.actions.manage.button")}
             </Button>
           </SettingContainer>
-        )}
-        {!canManageBilling && (
+        ) : (
           <SettingContainer
-            title={t("billing.actions.upgrade.title", {
-              defaultValue: isTrialing
-                ? "Start Premium subscription"
-                : "Upgrade to Premium",
-            })}
-            description={t("billing.actions.upgrade.description", {
-              defaultValue: isTrialing
-                ? "Start your paid subscription via Stripe before the trial ends."
-                : "Start your premium subscription via Stripe.",
-            })}
+            title={t(
+              isTrialing
+                ? "billing.actions.upgrade.titleTrial"
+                : "billing.actions.upgrade.title",
+            )}
+            description={t(
+              isTrialing
+                ? "billing.actions.upgrade.descriptionTrial"
+                : "billing.actions.upgrade.description",
+            )}
             grouped={false}
           >
             <Button
@@ -317,9 +304,7 @@ export const BillingSettings: React.FC = () => {
               onClick={() => void handleUpgrade()}
             >
               <Zap size={13} className="mr-1.5" />
-              {t("billing.actions.upgrade.button", {
-                defaultValue: "Upgrade →",
-              })}
+              {t("billing.actions.upgrade.button")}
             </Button>
           </SettingContainer>
         )}

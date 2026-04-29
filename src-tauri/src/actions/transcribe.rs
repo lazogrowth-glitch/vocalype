@@ -18,7 +18,6 @@ use crate::model_ids::is_parakeet_v3_model_id;
 use crate::parakeet_quality::{
     ParakeetDiagnosticsState, ParakeetSessionCompletion, ParakeetSessionStart,
 };
-use crate::post_processing::{cleanup_assembled_transcription_with_strategy, ChunkCleanupStrategy};
 use crate::runtime_observability::{
     emit_runtime_error_with_context, RuntimeErrorStage, TranscriptionLifecycleState,
 };
@@ -80,12 +79,6 @@ struct TranscriptionResult {
     chunk_count: usize,
     status: TranscriptionStatus,
     failed_chunk_count: usize,
-}
-
-#[derive(Clone, Debug)]
-struct AdaptiveCleanupSessionStrategy {
-    llm_cleanup: ChunkCleanupStrategy,
-    reason: String,
 }
 
 fn preview_text(text: &str, max_chars: usize) -> String {
@@ -342,59 +335,6 @@ fn empty_transcription_error(samples: &[f32]) -> (&'static str, String, &'static
             "No speech detected in the captured audio; paste skipped".to_string(),
             "no-speech",
         )
-    }
-}
-
-fn derive_adaptive_cleanup_strategy(
-    selected_language: &str,
-    samples: &[f32],
-    chunk_count: usize,
-    failed_chunk_count: usize,
-    is_parakeet_v3: bool,
-) -> AdaptiveCleanupSessionStrategy {
-    let duration_seconds = samples.len() as f32 / 16_000.0;
-    let long_form = duration_seconds >= 35.0 || chunk_count >= 4;
-    let fragile_multi_chunk = chunk_count >= 3 || failed_chunk_count > 0;
-    let preserve_self_corrections = long_form || duration_seconds >= 20.0;
-    let preserve_filler_structure = long_form || duration_seconds >= 25.0;
-    let conservative_punctuation = fragile_multi_chunk || long_form || is_parakeet_v3;
-    let selected_language_hint = if selected_language == "auto" || selected_language.is_empty() {
-        None
-    } else {
-        Some(crate::post_processing::language_code_to_name(selected_language).to_string())
-    };
-
-    let mut reasons = Vec::new();
-    if chunk_count >= 2 {
-        reasons.push("multi_chunk");
-    }
-    if long_form {
-        reasons.push("long_form");
-    }
-    if failed_chunk_count > 0 {
-        reasons.push("partial_chunks");
-    }
-    if is_parakeet_v3 {
-        reasons.push("parakeet");
-    }
-    if selected_language_hint.is_some() {
-        reasons.push("language_locked");
-    }
-
-    AdaptiveCleanupSessionStrategy {
-        llm_cleanup: ChunkCleanupStrategy {
-            multi_chunk: chunk_count >= 2,
-            long_form,
-            preserve_self_corrections,
-            preserve_filler_structure,
-            conservative_punctuation,
-            selected_language_hint,
-        },
-        reason: if reasons.is_empty() {
-            "default".to_string()
-        } else {
-            reasons.join(",")
-        },
     }
 }
 
@@ -1606,7 +1546,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     )),
                 );
             }
-            let is_parakeet_chunked = parakeet_summary.is_some();
+            let _is_parakeet_chunked = parakeet_summary.is_some();
             if let Some(summary) = parakeet_summary {
                 if let Some(state) = ah.try_state::<ParakeetDiagnosticsState>() {
                     if let Some(snapshot) =
@@ -1627,53 +1567,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 assembled.split_whitespace().count()
             );
 
-            let chunk_cleanup_started = Instant::now();
-            let cleanup_strategy = derive_adaptive_cleanup_strategy(
-                &settings.selected_language,
-                &all_samples,
-                chunk_count,
-                failed_chunk_count,
-                is_parakeet_chunked,
-            );
-            // Detect language drift on the assembled output — used to decide
-            // whether to skip chunk-cleanup (post-processing LLM will fix it).
-            let drift_detected_on_assembly =
-                crate::managers::transcription::inference::has_language_drift(
-                    &assembled,
-                    &settings.selected_language,
-                );
-
-            // Skip chunk-cleanup LLM when the post-processing LLM is going to run
-            // on this same text anyway — it will fix stitching artifacts too.
-            // Also force post-processing when drift is detected and auto-mode is on.
-            let post_process_will_run = post_process
-                || drift_detected_on_assembly
-                || (llm_auto_mode && auto_llm_should_trigger(&ah, &assembled));
-            let transcription =
-                if chunk_count >= 2 && !assembled.is_empty() && !post_process_will_run {
-                    let settings_for_cleanup = get_settings(&ah);
-                    cleanup_assembled_transcription_with_strategy(
-                        &settings_for_cleanup,
-                        &assembled,
-                        &cleanup_strategy.llm_cleanup,
-                    )
-                    .await
-                    .unwrap_or(assembled)
-                } else {
-                    assembled
-                };
-            if let Ok(mut p) = profiler.lock() {
-                p.push_step_since(
-                    "chunk_cleanup",
-                    chunk_cleanup_started,
-                    Some(format!(
-                        "applied={} failed_chunks={} strategy={}",
-                        chunk_count >= 2 && !transcription.is_empty(),
-                        failed_chunk_count,
-                        cleanup_strategy.reason
-                    )),
-                );
-            }
+            let transcription = assembled;
             emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
 
             Some(TranscriptionResult {

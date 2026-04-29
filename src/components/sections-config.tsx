@@ -83,6 +83,7 @@ export type SidebarSection =
   | "about";
 
 const LAUNCH_HIDDEN_SECTIONS = new Set<SidebarSection>([
+  "models",
   "meetings",
   "notes",
   "snippets",
@@ -112,7 +113,7 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.models",
     icon: Clock3,
     component: ModelsSettings,
-    enabled: () => true,
+    enabled: () => isLaunchVisible("models"),
   },
   postprocessing: {
     labelKey: "sidebar.postProcessing",

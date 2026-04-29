@@ -8,10 +8,10 @@
     "cancel": "Annuler"
   },
   "sidebar": {
-    "general": "Dicter",
+    "general": "Dictée",
     "models": "Modèles",
-    "advanced": "Plus",
-    "postProcessing": "Style de sortie",
+    "advanced": "Paramètres",
+    "postProcessing": "Actions",
     "notes": "Notes",
     "meetings": "Réunions",
     "history": "Historique",
@@ -31,11 +31,11 @@
     "workspaceSubtitle": "Espace de dictée IA",
     "sectionDescriptions": {
       "default": "Ajustez votre espace Vocalype avec des contrôles plus clairs et une meilleure cohérence.",
-      "general": "Choisissez le micro, le raccourci principal et le comportement de dictée.",
+      "general": "Parle dans n'importe quelle app. Vocalype transforme ta voix en texte propre.",
       "models": "Choisissez le modèle vocal, le comportement linguistique et l'équilibre entre qualité et vitesse.",
-      "postprocessing": "Choisissez comment Vocalype corrige ou reformate le texte avant insertion.",
+      "postprocessing": "Transforme ta dictée en notes ATS, emails candidats, messages LinkedIn et résumés client.",
       "snippets": "Créez des commandes réutilisables et des extraits de texte pour aller plus vite.",
-      "history": "Relisez les transcriptions récentes, réutilisez du contenu et gérez l'activité enregistrée.",
+      "history": "Retrouve, copie et réutilise tes dernières dictées.",
       "meetings": "Configurez la capture des réunions, le comportement d'enregistrement et les flux collaboratifs.",
       "notes": "Réglez les intégrations de notes et la façon dont Vocalype structure les idées capturées.",
       "stats": "Suivez l'utilisation, l'état du runtime et les performances de l'app dans le temps.",
@@ -284,7 +284,10 @@
       "availableModels": "Disponibles au téléchargement"
     },
     "general": {
-      "title": "Général",
+      "title": "Dictée",
+      "advanced": {
+        "title": "Options avancées"
+      },
       "tabs": {
         "shortcuts": "Raccourcis",
         "audio": "Audio",
@@ -302,8 +305,8 @@
         "clickToSet": "Cliquer pour definir",
         "bindings": {
           "transcribe": {
-            "name": "Transcription",
-            "description": "Le raccourci clavier pour enregistrer et transcrire votre voix."
+            "name": "Raccourci de dictée",
+            "description": "Appuie pour parler et insérer le texte."
           },
           "cancel": {
             "name": "Annulation",
@@ -366,7 +369,7 @@
       "title": "Son",
       "microphone": {
         "title": "Microphone",
-        "description": "Sélectionnez votre périphérique d'entrée audio",
+        "description": "Choisis le micro utilisé par Vocalype.",
         "placeholder": "Sélectionner un microphone...",
         "loading": "Chargement..."
       },
@@ -575,9 +578,11 @@
         "selectToEdit": "Sélectionnez un prompt ci-dessus pour voir et modifier ses détails.",
         "createFirst": "Cliquez sur 'Créer un nouveau prompt' ci-dessus pour créer votre premier prompt de post-traitement."
       },
+      "quickTemplates": "Actions rapides",
       "actions": {
         "title": "Actions",
-        "description": "Associez des touches Ctrl+chiffre (1-9) à des prompts personnalisés. Appuyez sur un raccourci pendant l'enregistrement pour appliquer l'action après la transcription.",
+        "configuredLabel": "Actions configurées",
+        "description": "Appuie sur Ctrl + chiffre pendant la dictée pour transformer ton texte.",
         "noActions": "Aucune action configurée.",
         "createFirst": "Créez votre première action pour traiter les transcriptions avec votre fournisseur configuré.",
         "addAction": "Ajouter une action",
@@ -625,6 +630,22 @@
             "name": "Traduire en anglais",
             "description": "Traduit proprement en anglais naturel.",
             "prompt": "Traduis le texte suivant en anglais naturel et professionnel. Ne rajoute aucun commentaire. Texte : ${output}"
+          },
+          "candidateNote": {
+            "name": "Note candidat",
+            "description": "Après un appel, crée une note ATS propre."
+          },
+          "emailCandidate": {
+            "name": "Email candidat",
+            "description": "Transforme la dictée en suivi professionnel."
+          },
+          "linkedinMessage": {
+            "name": "Message LinkedIn",
+            "description": "Crée un message court de sourcing ou relance."
+          },
+          "clientSummary": {
+            "name": "Résumé client",
+            "description": "Prépare un résumé candidat prêt à envoyer."
           }
         },
         "llmExecutionHint": "Cette action ne modifie pas la capture vocale. Elle transforme seulement le texte final avec le modèle IA configuré.",
@@ -652,7 +673,7 @@
       "copyFailed": "Échec de la copie de la transcription.",
       "save": "Enregistrer la transcription",
       "unsave": "Retirer des favoris",
-      "delete": "Supprimer l'entrée",
+      "delete": "Supprimer",
       "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer.",
       "deletedUndo": "Entrée supprimée",
       "undo": "Annuler",
@@ -692,12 +713,30 @@
       "restoreOriginal": "Original",
       "originalRestored": "Original restauré.",
       "restoreOriginalFailed": "Impossible de restaurer l'original.",
-      "aiActions": "Actions IA",
+      "aiActions": "Transformer en",
+      "transformerEn": "Transformer en",
       "showLessActions": "Moins",
-      "copiedAiResult": "Résultat IA copié.",
-      "copyAiResult": "Copier résultat IA",
+      "copy": "Copier",
+      "copied": "Copié",
+      "reutiliser": "Épingler",
+      "sauvegarde": "★ Épinglé",
+      "transformer": "Transformer",
+      "showAudio": "Afficher l'audio",
+      "copiedAiResult": "Résultat copié.",
+      "copyAiResult": "Copier résultat",
       "copiedOriginal": "Original copié.",
-      "copyOriginal": "Copier original"
+      "copyOriginal": "Copier original",
+      "edit": "Modifier",
+      "editTranscription": "Modifier",
+      "saveEdit": "Sauvegarder",
+      "cancelEdit": "Annuler",
+      "editHint": "Ctrl+Entrée pour sauvegarder",
+      "editSaveFailed": "Impossible de sauvegarder la correction.",
+      "openRecordingsFolder": "Ouvrir le dossier",
+      "correctionSuggestion": "Toujours remplacer \"{{from}}\" par \"{{to}}\" ?",
+      "correctionYes": "Oui",
+      "correctionNo": "Ignorer",
+      "correctionAdded": "\"{{from}}\" → \"{{to}}\" ajouté au dictionnaire."
     },
     "debug": {
       "title": "Débogage",
@@ -1049,12 +1088,15 @@
     }
   },
   "dictionary": {
-    "tab": "Dictionnaire",
-    "empty": "Aucun terme custom. Ajoute des mots, noms propres ou acronymes.",
+    "tab": "Noms & termes",
+    "sectionDescription": "Ajoute les noms de candidats, clients, postes ou acronymes que Vocalype doit mieux reconnaître.",
+    "manage": "Gérer →",
+    "empty": "Aucun nom ou terme ajouté. Ajoute des candidats, clients, postes, entreprises ou acronymes.",
     "fromPlaceholder": "Vocalype entend...",
     "toPlaceholder": "Remplacer par…",
-    "autoLearn": "Apprentissage automatique",
-    "autoLearnDesc": "Apprend automatiquement les corrections de mots après une dictée.",
+    "autoLearn": "Corrections automatiques",
+    "autoLearnDesc": "Vocalype peut retenir les corrections que tu valides.",
+    "storedLocally": "Stocké localement sur ton appareil.",
     "edit": "Modifier",
     "add": "Ajouter",
     "remove": "Supprimer",
@@ -1249,5 +1291,58 @@
     "generatingTitle": "Génération du titre...",
     "generateTitleSuccess": "Titre généré.",
     "generateTitleError": "Impossible de générer le titre"
+  },
+  "billing": {
+    "title": "Compte",
+    "plan": {
+      "title": "Formule actuelle",
+      "noSubscription": "Aucun abonnement actif",
+      "trialEnds": "Se termine le {{date}}",
+      "renewsOn": "Renouvellement le {{date}}"
+    },
+    "usage": {
+      "title": "Utilisation hebdomadaire",
+      "description": "Réinitialisé chaque lundi. L'utilisation est approximative — basée sur le nombre de transcriptions.",
+      "transcriptions": "Transcriptions cette semaine",
+      "resetsOn": "Réinitialisation le {{date}}"
+    },
+    "stats": {
+      "title": "Utilisation",
+      "words": "Mots dictés",
+      "sessions": "Dictées totales"
+    },
+    "tier": {
+      "trial": "Premium (essai)",
+      "premium": "Premium",
+      "basic": "Basic"
+    },
+    "status": {
+      "trialing": "Essai en cours",
+      "active": "Actif",
+      "pastDue": "Paiement en retard",
+      "canceled": "Annulé",
+      "incomplete": "Incomplet",
+      "inactive": "Inactif"
+    },
+    "actions": {
+      "title": "Abonnement",
+      "manage": {
+        "title": "Gérer l'abonnement",
+        "description": "Modifier, annuler ou mettre à jour votre abonnement.",
+        "button": "Gérer →"
+      },
+      "upgrade": {
+        "title": "Passer à Premium",
+        "titleTrial": "Démarrer l'abonnement Premium",
+        "description": "Débloque la dictée illimitée et les actions IA.",
+        "descriptionTrial": "Démarrez votre abonnement avant la fin de l'essai.",
+        "button": "Mettre à niveau →"
+      }
+    },
+    "upgrade": {
+      "title": "Passer à Premium",
+      "description": "Débloque la dictée illimitée, les raccourcis personnalisés et l'historique complet.",
+      "cta": "Mettre à niveau →"
+    }
   }
 }

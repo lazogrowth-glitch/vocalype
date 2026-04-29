@@ -35,7 +35,14 @@ struct CancelAction;
 
 impl ShortcutAction for CancelAction {
     fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
-        crate::utils::cancel_current_operation(app);
+        // Must NOT call cancel_current_operation synchronously here — this may be invoked
+        // from the native shortcut manager thread, which is the same thread that processes
+        // Unregister commands. cancel_current_operation calls unregister_*_shortcut which
+        // sends an Unregister command and blocks on rx.recv(), causing a self-deadlock.
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            crate::utils::cancel_current_operation(&app_clone);
+        });
     }
 
     fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}

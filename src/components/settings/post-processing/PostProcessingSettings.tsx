@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import {
-  Wand2,
-  ListChecks,
+  ClipboardList,
   Mail,
-  Languages,
+  Linkedin,
+  FileText,
   Plus,
   ChevronRight,
 } from "lucide-react";
@@ -32,64 +32,54 @@ export const PostProcessingSettings: React.FC = () => {
 
   const templates = [
     {
-      id: "cleanup",
-      icon: <Wand2 size={18} aria-hidden="true" />,
-      label: t("settings.postProcessing.actions.templates.cleanup.name", {
-        defaultValue: "Corriger",
-      }),
+      id: "candidate_note",
+      icon: <ClipboardList size={18} aria-hidden="true" />,
+      label: t("settings.postProcessing.actions.templates.candidateNote.name"),
       description: t(
-        "settings.postProcessing.actions.templates.cleanup.description",
-        { defaultValue: "Nettoie la dictee sans changer le sens." },
-      ),
-      color: "text-violet-400",
-      bg: "bg-violet-500/10",
-      prompt:
-        "Corrige la grammaire, la ponctuation et la clarte du texte suivant sans changer son sens. Garde la langue d'origine. Texte : ${output}",
-    },
-    {
-      id: "summary",
-      icon: <ListChecks size={18} aria-hidden="true" />,
-      label: t("settings.postProcessing.actions.templates.summary.name", {
-        defaultValue: "Resume + actions",
-      }),
-      description: t(
-        "settings.postProcessing.actions.templates.summary.description",
-        { defaultValue: "Transforme une dictee longue en points utiles." },
+        "settings.postProcessing.actions.templates.candidateNote.description",
       ),
       color: "text-sky-400",
       bg: "bg-sky-500/10",
       prompt:
-        "Resume le texte suivant en quelques points clairs, puis ajoute une section Actions si des taches sont mentionnees. Texte : ${output}",
+        "Transform the dictated text into a clean recruiter ATS note.\n\nKeep the same language as the source.\n\nStructure the output with:\n- Candidate summary\n- Experience / background\n- Key skills\n- Motivation\n- Salary / availability if mentioned\n- Concerns / risks if mentioned\n- Next step\n\nDo not invent information. If something is not mentioned, omit it. Return only the final ATS note.\n\nText:\n${output}",
     },
     {
-      id: "email",
+      id: "email_candidate",
       icon: <Mail size={18} aria-hidden="true" />,
-      label: t("settings.postProcessing.actions.templates.email.name", {
-        defaultValue: "Email pro",
-      }),
+      label: t("settings.postProcessing.actions.templates.emailCandidate.name"),
       description: t(
-        "settings.postProcessing.actions.templates.email.description",
-        { defaultValue: "Reformate la dictee en email pret a envoyer." },
+        "settings.postProcessing.actions.templates.emailCandidate.description",
       ),
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
       prompt:
-        "Transforme le texte suivant en email professionnel, clair et naturel. Ajoute une salutation si necessaire, structure les paragraphes et garde le message concis. Texte : ${output}",
+        "Transform the dictated text into a clear, professional email to a candidate.\n\nKeep the same language as the source.\nMake it concise, polite, and natural.\nDo not add fake details.\nReturn only the email body, no subject line.\n\nText:\n${output}",
     },
     {
-      id: "translate",
-      icon: <Languages size={18} aria-hidden="true" />,
-      label: t("settings.postProcessing.actions.templates.translate.name", {
-        defaultValue: "Traduire en anglais",
-      }),
+      id: "linkedin_message",
+      icon: <Linkedin size={18} aria-hidden="true" />,
+      label: t(
+        "settings.postProcessing.actions.templates.linkedinMessage.name",
+      ),
       description: t(
-        "settings.postProcessing.actions.templates.translate.description",
-        { defaultValue: "Traduit proprement en anglais naturel." },
+        "settings.postProcessing.actions.templates.linkedinMessage.description",
+      ),
+      color: "text-blue-400",
+      bg: "bg-blue-500/10",
+      prompt:
+        "Transform the dictated text into a short, natural LinkedIn message for recruiting.\n\nKeep it concise.\nMake it human, direct, and not too salesy.\nKeep the same language as the source.\nDo not exaggerate or invent details.\nReturn only the message.\n\nText:\n${output}",
+    },
+    {
+      id: "client_summary",
+      icon: <FileText size={18} aria-hidden="true" />,
+      label: t("settings.postProcessing.actions.templates.clientSummary.name"),
+      description: t(
+        "settings.postProcessing.actions.templates.clientSummary.description",
       ),
       color: "text-amber-400",
       bg: "bg-amber-500/10",
       prompt:
-        "Traduis le texte suivant en anglais naturel et professionnel. Ne rajoute aucun commentaire. Texte : ${output}",
+        "Transform the dictated text into a professional candidate summary for a client.\n\nKeep the same language as the source.\nMake it clear, concise, and business-oriented.\nStructure it with:\n- Candidate profile\n- Relevant experience\n- Why they may fit the role\n- Key strengths\n- Possible concerns if mentioned\n- Recommended next step\n\nDo not invent information. Return only the client-ready summary.\n\nText:\n${output}",
     },
   ];
 
@@ -245,22 +235,9 @@ export const PostProcessingSettings: React.FC = () => {
     <div className="space-y-8 py-6 px-2">
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="voca-page-title">
-            {t("settings.postProcessing.actions.title")}
-          </h2>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="voca-badge voca-badge-neutral">LLM</span>
-            <span
-              className={`voca-badge ${hasProcessingModel ? "voca-badge-success" : "voca-badge-accent"}`}
-            >
-              {hasProcessingModel ? "Modele pret" : "A configurer"}
-            </span>
-          </div>
-          <p className="voca-section-desc">
-            {t("settings.postProcessing.actions.description")}
-          </p>
-        </div>
+        <p className="voca-section-desc">
+          {t("settings.postProcessing.actions.description")}
+        </p>
         {!editingAction && actions.length < 9 && (
           <Button
             onClick={handleStartCreate}
@@ -279,7 +256,7 @@ export const PostProcessingSettings: React.FC = () => {
         <div>
           <p className="voca-label-caps mb-3">
             {t("settings.postProcessing.quickTemplates", {
-              defaultValue: "Quick templates",
+              defaultValue: "Actions rapides",
             })}
           </p>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5">
@@ -312,7 +289,9 @@ export const PostProcessingSettings: React.FC = () => {
       {actions.length > 0 && !editingAction && (
         <div>
           <p className="voca-label-caps mb-3">
-            {t("settings.postProcessing.actions.title")}{" "}
+            {t("settings.postProcessing.actions.configuredLabel", {
+              defaultValue: "Actions configurées",
+            })}{" "}
             <span className="opacity-40 font-medium">({actions.length}/9)</span>
           </p>
           <div className="flex flex-col gap-3">
@@ -348,7 +327,7 @@ export const PostProcessingSettings: React.FC = () => {
                       )}
                     </div>
                     <p className="voca-item-preview">
-                      {formatPromptPreview(action.prompt)}
+                      {action.description ?? formatPromptPreview(action.prompt)}
                     </p>
                   </div>
                   <button
@@ -492,16 +471,6 @@ export const PostProcessingSettings: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ── Add action (bottom) ── */}
-      {!editingAction && actions.length > 0 && actions.length < 9 && (
-        <div>
-          <Button onClick={handleStartCreate} variant="secondary" size="sm">
-            <Plus size={14} aria-hidden="true" />
-            {t("settings.postProcessing.actions.addAction")}
-          </Button>
         </div>
       )}
 

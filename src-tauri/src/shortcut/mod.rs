@@ -1186,6 +1186,7 @@ pub fn add_post_process_action(
     let action = settings::PostProcessAction {
         key,
         name,
+        description: None,
         prompt,
         model: model.filter(|m| !m.trim().is_empty()),
         provider_id: provider_id.filter(|p| !p.trim().is_empty()),

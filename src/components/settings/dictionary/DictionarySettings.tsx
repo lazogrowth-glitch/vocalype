@@ -131,13 +131,18 @@ export const DictionarySettings: React.FC = () => {
         <div>
           <p className="text-[15.5px] font-bold text-white/92">
             {t("dictionary.autoLearn", {
-              defaultValue: "Auto-learn corrections",
+              defaultValue: "Corrections automatiques",
             })}
           </p>
           <p className="mt-2 text-[14px] leading-6 text-white/58">
             {t("dictionary.autoLearnDesc", {
               defaultValue:
-                "Automatically learns word corrections when you copy edited text after dictation.",
+                "Vocalype peut retenir les corrections que tu valides.",
+            })}
+          </p>
+          <p className="mt-1 text-[11px] text-white/30">
+            {t("dictionary.storedLocally", {
+              defaultValue: "Stocké localement sur ton appareil.",
             })}
           </p>
         </div>
@@ -153,8 +158,8 @@ export const DictionarySettings: React.FC = () => {
           }`}
         >
           <span
-            className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.32)] transition-transform ${
-              autoLearn ? "translate-x-[20px]" : "translate-x-[3px]"
+            className={`absolute left-0 top-[4px] h-[18px] w-[18px] rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.32)] transition-transform ${
+              autoLearn ? "translate-x-[24px]" : "translate-x-[4px]"
             }`}
           />
         </button>

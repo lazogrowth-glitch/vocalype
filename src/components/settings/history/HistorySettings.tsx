@@ -97,7 +97,7 @@ interface OpenRecordingsButtonProps {
   label: string;
 }
 
-const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
+export const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   onClick,
   label,
 }) => (
@@ -114,7 +114,7 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
 
 // ── Export button ─────────────────────────────────────────────────────────────
 
-const ExportHistoryButton: React.FC = () => {
+export const ExportHistoryButton: React.FC = () => {
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
 
@@ -184,7 +184,7 @@ const ExportHistoryButton: React.FC = () => {
 
 // ── Clear all history button ───────────────────────────────────────────────────
 
-const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
+export const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
   onCleared,
 }) => {
   const { t } = useTranslation();
@@ -272,7 +272,7 @@ const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
 
 // ── Transcribe from file button ───────────────────────────────────────────────
 
-const TranscribeFileButton: React.FC = () => {
+export const TranscribeFileButton: React.FC = () => {
   const { t } = useTranslation();
   const [transcribing, setTranscribing] = useState(false);
 
@@ -544,25 +544,6 @@ export const HistorySettings: React.FC = () => {
         style={{ display: "flex", flexDirection: "column", gap: 10 }}
       >
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
-            {t("settings.history.title")}
-          </h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <TranscribeFileButton />
-            <ExportHistoryButton />
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
-          </div>
-        </div>
-        <div
           style={{ padding: "10px 16px" }}
           className="text-center text-text/60"
         >
@@ -579,24 +560,6 @@ export const HistorySettings: React.FC = () => {
         style={{ display: "flex", flexDirection: "column", gap: 10 }}
       >
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <h2 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/25">
-            {t("settings.history.title")}
-          </h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <TranscribeFileButton />
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
-          </div>
-        </div>
-        <div
           style={{ padding: "10px 16px" }}
           className="text-center text-text/60"
         >
@@ -608,107 +571,65 @@ export const HistorySettings: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <div>
-          <h2 className="text-[18px] font-bold tracking-[0] text-white/90">
-            {t("settings.history.title")}
-          </h2>
-          <p className="mt-2 text-[14px] leading-6 text-white/58">
-            {t("shell.sectionDescriptions.history")}
-          </p>
-        </div>
-
-        <div className="settings-group-card">
-          <div
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Search bar */}
+        <div style={{ position: "relative" }}>
+          <svg
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 18,
-              padding: "20px 24px",
+              position: "absolute",
+              left: 14,
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
             }}
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-white/30"
           >
-            <div className="flex flex-wrap items-center gap-2.5">
-              <TranscribeFileButton />
-              <ExportHistoryButton />
-              <OpenRecordingsButton
-                onClick={openRecordingsFolder}
-                label={t("settings.history.openFolder")}
-              />
-            </div>
-
-            <div
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("settings.history.search", {
+              defaultValue: "Rechercher une transcription…",
+            })}
+            style={{ padding: "10px 16px 10px 38px", width: "100%" }}
+            className="rounded-[8px] border border-border bg-surface text-[13px] text-white/82 placeholder-white/25 outline-none transition-all focus:border-logo-primary/35 focus:bg-surface-elevated"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                flexWrap: "wrap",
+                position: "absolute",
+                right: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
               }}
+              className="text-white/30 transition-colors hover:text-white/60"
             >
-              <div
-                style={{ position: "relative", flex: "1 1 560px", minWidth: 0 }}
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
               >
-                <svg
-                  style={{
-                    position: "absolute",
-                    left: 14,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    pointerEvents: "none",
-                  }}
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-white/30"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t("settings.history.search", {
-                    defaultValue: "Rechercher une transcription…",
-                  })}
-                  style={{ padding: "12px 16px 12px 38px", width: "100%" }}
-                  className="rounded-[8px] border border-border bg-surface text-[13px] text-white/82 placeholder-white/25 outline-none transition-all focus:border-logo-primary/35 focus:bg-surface-elevated"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                    }}
-                    className="text-white/30 transition-colors hover:text-white/60"
-                  >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    >
-                      <path d="M18 6 6 18M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <ClearAllHistoryButton onCleared={loadHistoryEntries} />
-              </div>
-            </div>
-          </div>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="overflow-visible">
           {isBasicTier && historyEntries.length > BASIC_HISTORY_LIMIT && (
@@ -773,7 +694,7 @@ export const HistorySettings: React.FC = () => {
               </div>
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {(isBasicTier
               ? historyEntries.slice(0, BASIC_HISTORY_LIMIT)
               : historyEntries
@@ -886,7 +807,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   );
   const [clearingPostProcess, setClearingPostProcess] = useState(false);
   const [showAllActions, setShowAllActions] = useState(false);
+  const [showAudio, setShowAudio] = useState(false);
+  const [showTransform, setShowTransform] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // ── Inline edit state ────────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false);
@@ -1196,6 +1121,20 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showModelPicker]);
 
+  useEffect(() => {
+    if (!showMoreMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        moreMenuRef.current &&
+        !moreMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMoreMenu]);
+
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
   return (
@@ -1204,235 +1143,59 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 16,
-        padding: "24px",
+        gap: 10,
+        padding: "14px 18px",
       }}
     >
-      <div className="flex justify-between items-center">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <p className="text-[11.5px] text-white/32">{formattedDate}</p>
-          {entry.model_name && (
-            <span
-              style={{ padding: "2px 8px" }}
-              className="rounded-md bg-logo-primary/8 text-[10px] font-medium text-logo-primary/70"
-            >
-              {entry.model_name}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleStartEdit}
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70"
-            title={t("settings.history.editTranscription", {
-              defaultValue: "Modifier la transcription",
-            })}
-          >
-            <Pencil width={14} height={14} />
-          </button>
-          <div className="relative" ref={pickerRef}>
-            <button
-              onClick={() =>
-                !reprocessing && setShowModelPicker(!showModelPicker)
-              }
-              disabled={reprocessing}
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:text-white/70 disabled:cursor-not-allowed disabled:opacity-50"
-              title={
-                reprocessing
-                  ? t("settings.history.reprocessing")
-                  : t("settings.history.reprocess")
-              }
-            >
-              {reprocessing ? (
-                <Loader2 width={16} height={16} className="animate-spin" />
-              ) : (
-                <RefreshCw width={16} height={16} />
-              )}
-            </button>
-            {showModelPicker && downloadedModels.length > 0 && (
-              <div
-                style={{ padding: "4px 0" }}
-                className="absolute right-0 top-full mt-1 z-50 bg-background border border-mid-gray/20 rounded-lg shadow-lg min-w-[200px]"
-              >
-                <p
-                  style={{ padding: "4px 12px" }}
-                  className="text-xs text-text/50 font-medium"
-                >
-                  {t("settings.history.selectModel")}
-                </p>
-                {downloadedModels.map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => handleReprocess(model.id)}
-                    style={{ padding: "10px 16px" }}
-                    className="w-full text-left text-sm hover:bg-mid-gray/10 transition-colors cursor-pointer"
-                  >
-                    {model.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={handleCopyText}
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70"
-            title={t("settings.history.copyToClipboard")}
-          >
-            {showCopied ? (
-              <Check width={16} height={16} />
-            ) : (
-              <Copy width={16} height={16} />
-            )}
-          </button>
-          <button
-            onClick={() => void handleShare()}
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70"
-            title={t("settings.history.shareWithAttribution", {
-              defaultValue: "Share with Vocalype attribution",
-            })}
-          >
-            {showShared ? (
-              <Check width={16} height={16} className="text-emerald-400" />
-            ) : (
-              <Share2 width={16} height={16} />
-            )}
-          </button>
-          <button
-            onClick={onToggleSaved}
-            className={`flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] transition-colors cursor-pointer ${
-              entry.saved
-                ? "text-logo-primary hover:text-logo-primary/80"
-                : "text-white/40 hover:bg-white/[0.08] hover:text-white/70"
-            }`}
-            title={
-              entry.saved
-                ? t("settings.history.unsave")
-                : t("settings.history.save")
-            }
-          >
-            <Star
-              width={16}
-              height={16}
-              fill={entry.saved ? "currentColor" : "none"}
-            />
-          </button>
-          <button
-            onClick={handleDeleteEntry}
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-red-300"
-            title={t("settings.history.delete")}
-          >
-            <Trash2 width={16} height={16} />
-          </button>
-        </div>
-      </div>
+      {/* Meta row — date only */}
+      <p className="text-[11px] text-white/28">{formattedDate}</p>
+
+      {/* Transcript content */}
       {entry.post_processed_text ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            paddingBottom: 8,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 2,
-              }}
-            >
-              <span className="text-xs font-medium text-white/40">
-                {t("settings.history.postProcessed")}
+        <div className="flex flex-col gap-2">
+          <p className="text-[13px] leading-relaxed text-white/82 select-text cursor-text">
+            {entry.post_processed_text}
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {entry.post_process_action_key != null && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-logo-primary/10 text-logo-primary font-medium">
+                {t("settings.history.action", {
+                  key: entry.post_process_action_key,
+                })}
               </span>
-              {entry.post_process_action_key != null && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-logo-primary/10 text-logo-primary font-medium">
-                  {t("settings.history.action", {
-                    key: entry.post_process_action_key,
-                  })}
-                </span>
+            )}
+            <Button
+              type="button"
+              onClick={() => void handleClearPostProcess()}
+              disabled={clearingPostProcess}
+              variant="secondary"
+              size="sm"
+            >
+              {clearingPostProcess ? (
+                <Loader2 size={11} className="animate-spin" />
+              ) : (
+                t("settings.history.restoreOriginal", {
+                  defaultValue: "Original",
+                })
               )}
-              <Button
-                type="button"
-                onClick={() => void handleClearPostProcess()}
-                disabled={clearingPostProcess}
-                variant="secondary"
-                size="sm"
-              >
-                {clearingPostProcess ? (
-                  <Loader2 size={11} className="animate-spin" />
-                ) : (
-                  t("settings.history.restoreOriginal", {
-                    defaultValue: "Original",
-                  })
-                )}
-              </Button>
-            </div>
-            <p className="text-[13.5px] italic text-white/82 select-text cursor-text">
-              {entry.post_processed_text}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                onClick={() =>
-                  void handleCopyExplicitText(
-                    entry.post_processed_text ?? "",
-                    t("settings.history.copiedAiResult", {
-                      defaultValue: "Résultat IA copié.",
-                    }),
-                  )
-                }
-                variant="primary-soft"
-                size="sm"
-              >
-                {t("settings.history.copyAiResult", {
-                  defaultValue: "Copier résultat IA",
-                })}
-              </Button>
-              <Button
-                type="button"
-                onClick={() =>
-                  void handleCopyExplicitText(
-                    entry.transcription_text,
-                    t("settings.history.copiedOriginal", {
-                      defaultValue: "Original copié.",
-                    }),
-                  )
-                }
-                variant="secondary"
-                size="sm"
-              >
-                {t("settings.history.copyOriginal", {
-                  defaultValue: "Copier original",
-                })}
-              </Button>
-            </div>
+            </Button>
           </div>
-          <div>
-            <span className="mb-0.5 block text-xs font-medium text-white/40">
-              {t("settings.history.originalTranscript")}
-            </span>
-            <ConfidenceText
-              text={entry.transcription_text}
-              confidencePayload={entry.confidence_payload}
-              className="text-[13px] italic text-white/48 select-text cursor-text"
-            />
-          </div>
+          <p className="text-[12px] italic text-white/35 select-text cursor-text leading-relaxed">
+            {entry.transcription_text}
+          </p>
         </div>
       ) : editMode ? (
-        <div className="flex flex-col gap-2 pb-2">
+        <div className="flex flex-col gap-2">
           <textarea
             ref={textareaRef}
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             rows={3}
-            className="w-full resize-none rounded-[10px] border border-logo-primary/30 bg-white/[0.06] px-3 py-2 text-[13.5px] italic text-white/82 outline-none focus:border-logo-primary/50"
+            className="w-full resize-none rounded-[10px] border border-logo-primary/30 bg-white/[0.06] px-3 py-2 text-[13px] italic text-white/82 outline-none focus:border-logo-primary/50"
             onKeyDown={(e) => {
               if (e.key === "Escape") handleCancelEdit();
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey))
                 void handleSaveEdit();
-              }
             }}
           />
           <div className="flex items-center gap-2">
@@ -1469,7 +1232,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           <ConfidenceText
             text={entry.transcription_text}
             confidencePayload={entry.confidence_payload}
-            className="pb-2 text-[13.5px] italic text-white/82 select-text cursor-text"
+            className="text-[13px] leading-relaxed text-white/82 select-text cursor-text"
           />
           <CorrectionBanner
             suggestions={correctionSuggestions}
@@ -1478,22 +1241,164 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           />
         </>
       )}
-      {postProcessActions.length > 0 && (
-        <div
-          className="mt-3 rounded-[10px] border border-border bg-surface-elevated"
-          style={{ padding: "20px 24px" }}
-        >
-          <div className="mb-3 flex items-center gap-2">
-            <div className="h-[3px] w-12 rounded-full bg-logo-primary" />
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-widest text-white/30">
-              <Sparkles size={11} aria-hidden="true" />
-              {t("settings.history.aiActions", {
-                defaultValue: "Actions IA",
-              })}
-            </span>
+
+      {/* Primary actions — plain text links */}
+      {!editMode && (
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Copier */}
+          <button
+            onClick={handleCopyText}
+            className={`text-[13.5px] transition-colors ${showCopied ? "text-logo-primary" : "text-white/45 hover:text-white/75"}`}
+          >
+            {showCopied
+              ? t("settings.history.copied", { defaultValue: "✓ Copié" })
+              : t("settings.history.copy", { defaultValue: "Copier" })}
+          </button>
+
+          {/* Transformer */}
+          {postProcessActions.length > 0 && (
+            <>
+              <span className="text-[12px] text-white/15" aria-hidden="true">
+                ·
+              </span>
+              <button
+                onClick={() => setShowTransform((v) => !v)}
+                className={`text-[13.5px] transition-colors ${
+                  showTransform
+                    ? "text-logo-primary"
+                    : "text-white/45 hover:text-white/75"
+                }`}
+              >
+                {t("settings.history.transformer", {
+                  defaultValue: "Transformer",
+                })}
+                {showTransform ? " ▴" : " ▾"}
+              </button>
+            </>
+          )}
+
+          {/* Copier résultat IA */}
+          {entry.post_processed_text && (
+            <>
+              <span className="text-[12px] text-white/15" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  void handleCopyExplicitText(
+                    entry.post_processed_text ?? "",
+                    t("settings.history.copiedAiResult", {
+                      defaultValue: "Résultat copié.",
+                    }),
+                  )
+                }
+                className="text-[13.5px] text-logo-primary/70 transition-colors hover:text-logo-primary"
+              >
+                {t("settings.history.copyAiResult", {
+                  defaultValue: "Copier résultat",
+                })}
+              </button>
+            </>
+          )}
+
+          {/* Supprimer */}
+          <span className="text-[12px] text-white/15" aria-hidden="true">
+            ·
+          </span>
+          <button
+            onClick={handleDeleteEntry}
+            className="text-[13.5px] text-white/35 transition-colors hover:text-red-400"
+          >
+            {t("settings.history.delete", { defaultValue: "Supprimer" })}
+          </button>
+
+          {/* ··· menu (Épingler + Modifier) */}
+          <span className="text-[12px] text-white/15" aria-hidden="true">
+            ·
+          </span>
+          <div ref={moreMenuRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => setShowMoreMenu((v) => !v)}
+              className="text-[13.5px] text-white/30 transition-colors hover:text-white/60 leading-none"
+            >
+              ···
+            </button>
+            {showMoreMenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "calc(100% + 6px)",
+                  left: 0,
+                  minWidth: 130,
+                  zIndex: 50,
+                }}
+                className="rounded-[8px] border border-border bg-surface-elevated py-1 shadow-lg"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    handleStartEdit();
+                  }}
+                  className="w-full px-3 py-2 text-center text-[13px] text-white/60 transition-colors hover:bg-white/[0.05] hover:text-white/90"
+                >
+                  {t("settings.history.edit", { defaultValue: "Modifier" })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    onToggleSaved();
+                  }}
+                  className={`w-full px-3 py-2 text-center text-[13px] transition-colors hover:bg-white/[0.05] ${
+                    entry.saved
+                      ? "text-logo-primary"
+                      : "text-white/60 hover:text-white/90"
+                  }`}
+                >
+                  {entry.saved
+                    ? t("settings.history.sauvegarde", {
+                        defaultValue: "★ Épinglé",
+                      })
+                    : t("settings.history.reutiliser", {
+                        defaultValue: "Épingler",
+                      })}
+                </button>
+                {entry.file_name && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      setShowAudio((v) => !v);
+                    }}
+                    className={`w-full px-3 py-2 text-center text-[13px] transition-colors hover:bg-white/[0.05] ${
+                      showAudio
+                        ? "text-logo-primary"
+                        : "text-white/60 hover:text-white/90"
+                    }`}
+                  >
+                    {t("settings.history.showAudio", {
+                      defaultValue: "Afficher l'audio",
+                    })}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {visiblePostProcessActions.map((action) => (
+        </div>
+      )}
+
+      {/* Transform section — revealed by "Transformer" button */}
+      {showTransform && postProcessActions.length > 0 && !editMode && (
+        <div className="rounded-[8px] border border-border bg-surface-elevated px-4 py-3">
+          <p className="mb-2.5 text-[10px] font-medium uppercase tracking-widest text-white/30">
+            {t("settings.history.transformerEn", {
+              defaultValue: "Transformer en",
+            })}
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {sortedPostProcessActions.map((action) => (
               <Button
                 key={action.key}
                 type="button"
@@ -1502,47 +1407,24 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 variant="secondary"
                 size="sm"
                 title={action.name}
-                className="max-w-[190px]"
               >
                 {processingActionKey === action.key ? (
                   <Loader2 size={11} className="animate-spin" />
-                ) : (
-                  <span className="font-mono text-[10.5px] text-white/34">
-                    {action.key}
-                  </span>
-                )}
+                ) : null}
                 <span className="truncate">{action.name}</span>
               </Button>
             ))}
-            {hiddenActionCount > 0 && (
-              <Button
-                type="button"
-                onClick={() => setShowAllActions(true)}
-                variant="secondary"
-                size="sm"
-              >
-                +{hiddenActionCount}
-              </Button>
-            )}
-            {showAllActions && sortedPostProcessActions.length > 4 && (
-              <Button
-                type="button"
-                onClick={() => setShowAllActions(false)}
-                variant="ghost"
-                size="sm"
-              >
-                {t("settings.history.showLessActions", {
-                  defaultValue: "Moins",
-                })}
-              </Button>
-            )}
           </div>
         </div>
       )}
-      <AudioPlayer
-        onLoadRequest={handleLoadAudio}
-        className="w-full max-w-[320px]"
-      />
+
+      {/* Audio player — revealed from ··· menu */}
+      {entry.file_name && showAudio && !editMode && (
+        <AudioPlayer
+          onLoadRequest={handleLoadAudio}
+          className="w-full max-w-[320px]"
+        />
+      )}
     </div>
   );
 };

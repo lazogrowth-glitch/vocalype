@@ -1941,7 +1941,7 @@ export type ParakeetSessionDiagnostics = { session_id: number; operation_id: num
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PipelineProfileEvent = { binding_id: string; created_at_ms: number; path: string; model_id: string | null; model_name: string | null; audio_duration_ms: number | null; transcription_chars: number; total_duration_ms: number; completed: boolean; error_code: string | null; steps: PipelineStepTiming[] }
 export type PipelineStepTiming = { step: string; duration_ms: number; detail: string | null }
-export type PostProcessAction = { key: number; name: string; prompt: string; model?: string | null; provider_id?: string | null }
+export type PostProcessAction = { key: number; name: string; description?: string | null; prompt: string; model?: string | null; provider_id?: string | null }
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
 export type PowerMode = "normal" | "saver" | "unknown"
 /**

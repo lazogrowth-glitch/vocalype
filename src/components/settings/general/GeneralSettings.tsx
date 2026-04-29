@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LoaderCircle, TriangleAlert } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  LoaderCircle,
+  TriangleAlert,
+} from "lucide-react";
 import { MicrophoneSelector } from "../MicrophoneSelector";
 import { ShortcutInput } from "../ShortcutInput";
 import { SettingsGroup } from "../../ui/SettingsGroup";
@@ -11,7 +16,6 @@ import { usePlan } from "@/lib/subscription/context";
 import { DictionarySettings } from "../dictionary/DictionarySettings";
 import { FeatureGateHint } from "../../ui";
 
-
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
   const { isBasicTier, onStartCheckout } = usePlan();
@@ -19,6 +23,7 @@ export const GeneralSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"dictation" | "dictionary">(
     "dictation",
   );
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const shouldShowWarmupNotice =
     warmupStatus &&
@@ -28,9 +33,7 @@ export const GeneralSettings: React.FC = () => {
   const tabs = [
     {
       id: "dictation" as const,
-      label: t("settings.general.tabs.dictation", {
-        defaultValue: "Dicter",
-      }),
+      label: t("settings.general.tabs.dictation", { defaultValue: "Dictée" }),
     },
     { id: "dictionary" as const, label: t("dictionary.tab") },
   ];
@@ -56,11 +59,7 @@ export const GeneralSettings: React.FC = () => {
       {activeTab === "dictation" && (
         <div
           role="tabpanel"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 0,
-          }}
+          style={{ display: "flex", flexDirection: "column", gap: 0 }}
         >
           {shouldShowWarmupNotice && (
             <div
@@ -127,21 +126,6 @@ export const GeneralSettings: React.FC = () => {
           )}
 
           <SettingsGroup
-            title={t("settings.general.tabs.audio", {
-              defaultValue: "Audio",
-            })}
-          >
-            <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
-          </SettingsGroup>
-
-          <SettingsGroup
-            title={t("settings.general.recordingMode.label")}
-            description={t("settings.general.recordingMode.description")}
-          >
-            <RecordingModeSelector grouped={true} />
-          </SettingsGroup>
-
-          <SettingsGroup
             title={t("settings.general.tabs.primaryShortcut", {
               defaultValue: "Raccourci principal",
             })}
@@ -153,7 +137,65 @@ export const GeneralSettings: React.FC = () => {
             />
           </SettingsGroup>
 
+          <SettingsGroup
+            title={t("settings.sound.microphone.title", {
+              defaultValue: "Microphone",
+            })}
+          >
+            <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
+          </SettingsGroup>
 
+          <SettingsGroup title={t("dictionary.tab")}>
+            <div
+              className="voca-surface"
+              style={{
+                padding: "14px 20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+              }}
+            >
+              <p className="text-[12px] text-white/45 leading-5">
+                {t("dictionary.sectionDescription", {
+                  defaultValue:
+                    "Ajoute les noms de candidats, clients, postes ou acronymes que Vocalype doit mieux reconnaître.",
+                })}
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab("dictionary")}
+                className="shrink-0 text-[12px] text-logo-primary hover:underline transition-opacity"
+              >
+                {t("dictionary.manage", { defaultValue: "Gérer →" })}
+              </button>
+            </div>
+          </SettingsGroup>
+
+          <div style={{ marginTop: 4 }}>
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((o) => !o)}
+              className="flex items-center gap-1.5 py-2 text-[12px] text-white/35 hover:text-white/55 transition-colors"
+            >
+              {advancedOpen ? (
+                <ChevronDown size={13} aria-hidden="true" />
+              ) : (
+                <ChevronRight size={13} aria-hidden="true" />
+              )}
+              {t("settings.general.advanced.title", {
+                defaultValue: "Options avancées",
+              })}
+            </button>
+            {advancedOpen && (
+              <SettingsGroup
+                title={t("settings.general.recordingMode.label")}
+                description={t("settings.general.recordingMode.description")}
+              >
+                <RecordingModeSelector grouped={true} />
+              </SettingsGroup>
+            )}
+          </div>
         </div>
       )}
 

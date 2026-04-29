@@ -8,10 +8,10 @@
     "cancel": "Cancel"
   },
   "sidebar": {
-    "general": "Dictate",
+    "general": "Dictation",
     "models": "Models",
-    "advanced": "More",
-    "postProcessing": "Output Style",
+    "advanced": "Settings",
+    "postProcessing": "Actions",
     "notes": "Notes",
     "meetings": "Meetings",
     "history": "History",
@@ -31,11 +31,11 @@
     "workspaceSubtitle": "AI dictation workspace",
     "sectionDescriptions": {
       "default": "Adjust your Vocalype workspace with cleaner controls and clearer defaults.",
-      "general": "Choose your microphone, main shortcut, and dictation behavior.",
+      "general": "Talk in any app. Vocalype turns your voice into clean text.",
       "models": "Choose the speech model, language behavior, and quality-performance balance.",
-      "postprocessing": "Choose how Vocalype corrects or reshapes text before insertion.",
+      "postprocessing": "Turn your dictation into ATS notes, candidate emails, LinkedIn messages, and client summaries.",
       "snippets": "Create reusable commands and text snippets for faster output.",
-      "history": "Review recent transcriptions, reuse content, and manage saved activity.",
+      "history": "Find, copy and reuse your recent dictations.",
       "meetings": "Configure meeting capture, recording behavior, and collaboration workflows.",
       "notes": "Set up note-taking integrations and how Vocalype structures captured thoughts.",
       "stats": "Track usage, runtime health, and how the app performs over time.",
@@ -231,7 +231,10 @@
       "seconds": "{{value}}s"
     },
     "general": {
-      "title": "General",
+      "title": "Dictation",
+      "advanced": {
+        "title": "Advanced options"
+      },
       "tabs": {
         "shortcuts": "Shortcuts",
         "audio": "Audio",
@@ -249,8 +252,8 @@
         "clickToSet": "Click to set",
         "bindings": {
           "transcribe": {
-            "name": "Transcription",
-            "description": "The keyboard shortcut to record and transcribe your voice."
+            "name": "Dictation shortcut",
+            "description": "Press to speak and insert text."
           },
           "cancel": {
             "name": "Cancel",
@@ -365,7 +368,7 @@
       "title": "Sound",
       "microphone": {
         "title": "Microphone",
-        "description": "Select your preferred microphone device",
+        "description": "Choose the microphone Vocalype uses.",
         "placeholder": "Select microphone...",
         "loading": "Loading..."
       },
@@ -574,9 +577,11 @@
         "selectToEdit": "Select a prompt above to view and edit its details.",
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
       },
+      "quickTemplates": "Quick actions",
       "actions": {
         "title": "Actions",
-        "description": "Bind Ctrl+number keys (1-9) to custom prompts. Press a shortcut during recording to apply the action after transcription.",
+        "configuredLabel": "Configured actions",
+        "description": "Press Ctrl + number during dictation to transform your text.",
         "noActions": "No actions configured yet.",
         "createFirst": "Create your first action to process transcriptions with your configured provider.",
         "addAction": "Add Action",
@@ -624,6 +629,22 @@
             "name": "Translate to French",
             "description": "Cleanly translates to natural French.",
             "prompt": "Translate the following text into natural and professional French. Do not add any comments. Text: ${output}"
+          },
+          "candidateNote": {
+            "name": "Candidate note",
+            "description": "After a call, creates a clean ATS note."
+          },
+          "emailCandidate": {
+            "name": "Candidate email",
+            "description": "Turns dictation into a professional follow-up."
+          },
+          "linkedinMessage": {
+            "name": "LinkedIn message",
+            "description": "Creates a short sourcing or follow-up message."
+          },
+          "clientSummary": {
+            "name": "Client summary",
+            "description": "Prepares a candidate summary ready to send."
           }
         },
         "llmExecutionHint": "This action does not modify the voice capture. It only transforms the final text with the configured AI model.",
@@ -639,7 +660,7 @@
       "copyFailed": "Failed to copy transcription.",
       "save": "Save transcription",
       "unsave": "Remove from saved",
-      "delete": "Delete entry",
+      "delete": "Delete",
       "deleteError": "Failed to delete entry. Please try again.",
       "deletedUndo": "Entry deleted",
       "undo": "Undo",
@@ -679,12 +700,30 @@
       "restoreOriginal": "Original",
       "originalRestored": "Original restored.",
       "restoreOriginalFailed": "Failed to restore original.",
-      "aiActions": "AI Actions",
+      "aiActions": "Transform into",
+      "transformerEn": "Transform into",
       "showLessActions": "Less",
-      "copiedAiResult": "AI result copied.",
-      "copyAiResult": "Copy AI result",
+      "copy": "Copy",
+      "copied": "Copied",
+      "reutiliser": "Pin",
+      "sauvegarde": "★ Pinned",
+      "transformer": "Transform",
+      "showAudio": "Show audio",
+      "copiedAiResult": "Result copied.",
+      "copyAiResult": "Copy result",
       "copiedOriginal": "Original copied.",
-      "copyOriginal": "Copy original"
+      "copyOriginal": "Copy original",
+      "edit": "Edit",
+      "editTranscription": "Edit",
+      "saveEdit": "Save",
+      "cancelEdit": "Cancel",
+      "editHint": "Ctrl+Enter to save",
+      "editSaveFailed": "Failed to save edit.",
+      "openRecordingsFolder": "Open folder",
+      "correctionSuggestion": "Always replace \"{{from}}\" with \"{{to}}\"?",
+      "correctionYes": "Yes",
+      "correctionNo": "Ignore",
+      "correctionAdded": "\"{{from}}\" → \"{{to}}\" added to dictionary."
     },
     "gemini": {
       "title": "Gemini API",
@@ -1048,8 +1087,10 @@
     }
   },
   "dictionary": {
-    "tab": "Dictionary",
-    "empty": "No custom terms yet. Add words, proper nouns, or acronyms.",
+    "tab": "Names & terms",
+    "sectionDescription": "Add candidate names, clients, roles, or acronyms for Vocalype to recognize.",
+    "manage": "Manage →",
+    "empty": "No names or terms added yet. Add candidates, clients, roles, companies or acronyms.",
     "fromPlaceholder": "Vocalype hears...",
     "toPlaceholder": "Replace with…",
     "add": "Add",
@@ -1063,8 +1104,9 @@
     "exportSuccess": "Dictionary exported.",
     "importReplaceSuccess": "Dictionary imported (replaced).",
     "importMergeSuccess": "Dictionary imported (merged).",
-    "autoLearn": "Auto-learn",
-    "autoLearnDesc": "Automatically learns word corrections after dictation.",
+    "autoLearn": "Auto-corrections",
+    "autoLearnDesc": "Vocalype can remember corrections you validate.",
+    "storedLocally": "Stored locally on your device.",
     "edit": "Edit"
   },
   "snippets": {
@@ -1248,5 +1290,58 @@
     "generatingTitle": "Generating title...",
     "generateTitleSuccess": "Title generated.",
     "generateTitleError": "Failed to generate title"
+  },
+  "billing": {
+    "title": "Account",
+    "plan": {
+      "title": "Current plan",
+      "noSubscription": "No active subscription",
+      "trialEnds": "Ends {{date}}",
+      "renewsOn": "Renews {{date}}"
+    },
+    "usage": {
+      "title": "Weekly usage",
+      "description": "Resets every Monday. Usage is approximate — based on transcription count.",
+      "transcriptions": "Transcriptions this week",
+      "resetsOn": "Resets {{date}}"
+    },
+    "stats": {
+      "title": "Usage",
+      "words": "Words dictated",
+      "sessions": "Total dictations"
+    },
+    "tier": {
+      "trial": "Premium (trial)",
+      "premium": "Premium",
+      "basic": "Basic"
+    },
+    "status": {
+      "trialing": "Trialing",
+      "active": "Active",
+      "pastDue": "Past due",
+      "canceled": "Canceled",
+      "incomplete": "Incomplete",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "title": "Subscription",
+      "manage": {
+        "title": "Manage subscription",
+        "description": "Update, cancel, or change your subscription.",
+        "button": "Manage →"
+      },
+      "upgrade": {
+        "title": "Upgrade to Premium",
+        "titleTrial": "Start Premium subscription",
+        "description": "Unlock unlimited dictation and AI actions.",
+        "descriptionTrial": "Start your paid subscription before the trial ends.",
+        "button": "Upgrade →"
+      }
+    },
+    "upgrade": {
+      "title": "Upgrade to Premium",
+      "description": "Unlock unlimited dictation, custom shortcuts, and full history across all your apps.",
+      "cta": "Upgrade now →"
+    }
   }
 }

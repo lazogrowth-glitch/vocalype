@@ -20,6 +20,7 @@ const PARAKEET_SHORT_PHRASE_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
 const PARAKEET_TAIL_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
 const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = 24;
 const PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES: usize = 3 * 16_000; // 3 s at 16 kHz
+const PARAKEET_LANGUAGE_DRIFT_LOG_FILE: &str = "parakeet-language-drift.jsonl";
 
 fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
     if samples.is_empty() {
@@ -415,6 +416,51 @@ fn check_parakeet_language_drift(text: &str, selected_language: &str) {
             function_word_count,
             preview
         );
+    }
+}
+
+fn record_parakeet_language_drift(app_handle: &AppHandle, text: &str, selected_language: &str) {
+    if !has_language_drift(text, selected_language) {
+        return;
+    }
+
+    let detected = whichlang_to_bcp47(whichlang::detect_language(text)).unwrap_or("unknown");
+    let token_count = tokenize_words(text).len();
+    let function_word_count = tokenize_words(text)
+        .iter()
+        .filter(|word| is_function_word(word, selected_language))
+        .count();
+    let preview: String = text.chars().take(160).collect();
+    let ts_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+
+    let Ok(log_dir) = app_handle.path().app_log_dir() else {
+        return;
+    };
+    if std::fs::create_dir_all(&log_dir).is_err() {
+        return;
+    }
+    let log_path = log_dir.join(PARAKEET_LANGUAGE_DRIFT_LOG_FILE);
+    let entry = serde_json::json!({
+        "event": "parakeet_language_drift",
+        "ts_ms": ts_ms,
+        "selected_language": selected_language,
+        "detected_language": detected,
+        "token_count": token_count,
+        "function_word_count": function_word_count,
+        "preview": preview,
+        "text": text,
+    });
+
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+    {
+        let _ = std::io::Write::write_all(&mut file, entry.to_string().as_bytes());
+        let _ = std::io::Write::write_all(&mut file, b"\n");
     }
 }
 
@@ -940,6 +986,11 @@ impl TranscriptionManager {
                                         &selected_result.text,
                                         &settings.selected_language,
                                     );
+                                    record_parakeet_language_drift(
+                                        &self.app_handle,
+                                        &selected_result.text,
+                                        &settings.selected_language,
+                                    );
                                     let mut display_text = selected_result.text.clone();
                                     if is_short_phrase {
                                         let mut short_phrase_candidates = vec![display_text.clone()];
@@ -1061,6 +1112,11 @@ impl TranscriptionManager {
                                         )
                                         .map(|result| {
                                             check_parakeet_language_drift(
+                                                &result.text,
+                                                &settings.selected_language,
+                                            );
+                                            record_parakeet_language_drift(
+                                                &self.app_handle,
                                                 &result.text,
                                                 &settings.selected_language,
                                             );

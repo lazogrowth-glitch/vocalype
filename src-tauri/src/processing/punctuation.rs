@@ -191,7 +191,7 @@ pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
 
     // ── Rule 3: ensure terminal punctuation ───────────────────────────────────
     if !has_terminal_punct(&s) && !looks_like_open_ended_tail(&s) {
-        s.push('.');
+        s.push(if looks_like_question(&s) { '?' } else { '.' });
     }
 
     // ── Rule 4: capitalize first character ────────────────────────────────────
@@ -251,6 +251,67 @@ fn looks_like_open_ended_tail(text: &str) -> bool {
     ];
 
     OPEN_ENDED_TAILS.contains(&last.as_str())
+}
+
+fn starts_with_any(text: &str, prefixes: &[&str]) -> bool {
+    let lower = text.trim().to_lowercase();
+    prefixes.iter().any(|prefix| lower.starts_with(prefix))
+}
+
+fn looks_like_question(text: &str) -> bool {
+    const QUESTION_PREFIXES: &[&str] = &[
+        // French
+        "pourquoi ",
+        "comment ",
+        "quand ",
+        "ou ",
+        "où ",
+        "combien ",
+        "quel ",
+        "quelle ",
+        "quels ",
+        "quelles ",
+        "est ce que ",
+        "est-ce que ",
+        "c'est quoi ",
+        "tu peux ",
+        "peux tu ",
+        "peux-tu ",
+        // English
+        "why ",
+        "how ",
+        "when ",
+        "where ",
+        "what ",
+        "who ",
+        "which ",
+        "can you ",
+        "could you ",
+        "would you ",
+        "do you ",
+        "did you ",
+        "are you ",
+        "is it ",
+        "will you ",
+        // Spanish
+        "por que ",
+        "por qué ",
+        "como ",
+        "cómo ",
+        "cuando ",
+        "cuándo ",
+        "donde ",
+        "dónde ",
+        "cuanto ",
+        "cuánto ",
+        "que ",
+        "qué ",
+        "quien ",
+        "quién ",
+        "puedes ",
+    ];
+
+    starts_with_any(text, QUESTION_PREFIXES)
 }
 
 /// Add structural line-breaks to email text.
@@ -580,6 +641,22 @@ mod tests {
         assert_eq!(
             fix_punctuation("i want to continue with", DEFAULT),
             "I want to continue with"
+        );
+    }
+
+    #[test]
+    fn clear_french_question_gets_question_mark() {
+        assert_eq!(
+            fix_punctuation("pourquoi tu fais ça", DEFAULT),
+            "Pourquoi tu fais ça?"
+        );
+    }
+
+    #[test]
+    fn clear_english_question_gets_question_mark() {
+        assert_eq!(
+            fix_punctuation("why does this happen", DEFAULT),
+            "Why does this happen?"
         );
     }
 

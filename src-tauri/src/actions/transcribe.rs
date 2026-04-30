@@ -221,6 +221,19 @@ fn should_auto_paste(status: TranscriptionStatus) -> bool {
     matches!(status, TranscriptionStatus::Success)
 }
 
+fn should_fallback_from_timestamp_trim(
+    raw_text: &str,
+    words_in: usize,
+    words_out: usize,
+) -> bool {
+    let raw_word_count = raw_text.split_whitespace().count();
+    if raw_word_count < 3 {
+        return false;
+    }
+
+    words_out == 0 || (words_in <= 1 && words_out + 2 < raw_word_count)
+}
+
 /// Returns `true` when BOTH conditions are met:
 ///
 ///  1. **Code context** — the session glossary holds ≥ 3 extracted identifiers,
@@ -843,28 +856,49 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 // Words mode succeeded: filter out every word that lies
                                 // entirely within the overlap prefix.
                                 let words_in = segs.len();
-                                let mut out = String::new();
-                                let mut words_out = 0usize;
+                                let mut trimmed_out = String::new();
+                                let mut trimmed_words_out = 0usize;
                                 for seg in segs.iter().filter(|s| s.start >= overlap_cutoff_secs) {
                                     let is_punct = seg.text.len() == 1
                                         && seg.text.chars().all(|c| {
                                             matches!(c, '.' | ',' | '!' | '?' | ';' | ':' | ')')
                                         });
-                                    if !out.is_empty() && !is_punct {
-                                        out.push(' ');
+                                    if !trimmed_out.is_empty() && !is_punct {
+                                        trimmed_out.push(' ');
                                     }
-                                    out.push_str(&seg.text);
-                                    words_out += 1;
+                                    trimmed_out.push_str(&seg.text);
+                                    trimmed_words_out += 1;
                                 }
                                 // If only stray punctuation survived the trim (e.g. ".")
                                 // discard it — it's a dangling mark from a word that
                                 // was in the overlap zone and got cut.
-                                let out =
-                                    if !out.is_empty() && out.chars().all(|c| !c.is_alphabetic()) {
+                                let trimmed_out = if !trimmed_out.is_empty()
+                                    && trimmed_out.chars().all(|c| !c.is_alphabetic())
+                                {
                                         String::new()
                                     } else {
-                                        out
+                                        trimmed_out
                                     };
+                                let mut out = trimmed_out.clone();
+                                let mut words_out = trimmed_words_out;
+
+                                if should_fallback_from_timestamp_trim(
+                                    &output.text,
+                                    words_in,
+                                    trimmed_words_out,
+                                ) {
+                                    tel_worker.log_chunk_retry(
+                                        session_id,
+                                        idx,
+                                        "timestamp_trim_fallback_full",
+                                        "coarse_or_empty_word_timestamps",
+                                        output.text.len(),
+                                        output.text.len(),
+                                        true,
+                                    );
+                                    out = output.text.clone();
+                                    words_out = out.split_whitespace().count();
+                                }
                                 tel_worker.log_chunk_result(
                                     session_id,
                                     idx,
@@ -2340,6 +2374,21 @@ mod tests {
         assert!(should_auto_paste(TranscriptionStatus::Success));
         assert!(!should_auto_paste(TranscriptionStatus::NoSpeech));
         assert!(!should_auto_paste(TranscriptionStatus::Partial));
+    }
+
+    #[test]
+    fn timestamp_trim_falls_back_when_it_would_drop_a_real_chunk() {
+        assert!(should_fallback_from_timestamp_trim(
+            "La vegetale je mets ca gratuit c'est ma cite",
+            1,
+            0
+        ));
+        assert!(should_fallback_from_timestamp_trim(
+            "commande j'ai a peu pres 2300 h",
+            1,
+            1
+        ));
+        assert!(!should_fallback_from_timestamp_trim("okay", 1, 0));
     }
 
     #[test]

@@ -2293,13 +2293,39 @@ fn has_internal_sentence_punctuation(text: &str) -> bool {
     false
 }
 
+fn has_forbidden_sentence_punctuation(text: &str) -> bool {
+    text.chars().any(|c| matches!(c, ':' | ';'))
+}
+
+fn split_sentence_like_parts(text: &str) -> Vec<&str> {
+    text.split(['.', '!', '?'])
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .collect()
+}
+
+fn is_plausible_multi_sentence_upgrade(words_text: &str, sentence_text: &str) -> bool {
+    if has_forbidden_sentence_punctuation(sentence_text) {
+        return false;
+    }
+
+    let words_word_count = words_text.split_whitespace().count();
+    if words_word_count < 14 {
+        return false;
+    }
+
+    let parts = split_sentence_like_parts(sentence_text);
+    if parts.len() < 2 || parts.len() > 4 {
+        return false;
+    }
+
+    parts.iter().all(|part| part.split_whitespace().count() >= 3)
+}
+
 fn is_conservative_sentence_punctuation_upgrade(words_text: &str, sentence_text: &str) -> bool {
     let words_terminal = terminal_sentence_mark(words_text);
     let sentence_terminal = terminal_sentence_mark(sentence_text);
     if sentence_terminal.is_none() {
-        return false;
-    }
-    if has_internal_sentence_punctuation(sentence_text) {
         return false;
     }
     if words_terminal == sentence_terminal {
@@ -2307,6 +2333,9 @@ fn is_conservative_sentence_punctuation_upgrade(words_text: &str, sentence_text:
     }
     let words_score = sentence_punctuation_score(words_text);
     let sentence_score = sentence_punctuation_score(sentence_text);
+    if has_internal_sentence_punctuation(sentence_text) {
+        return sentence_score > words_score && is_plausible_multi_sentence_upgrade(words_text, sentence_text);
+    }
     sentence_score == words_score + 1
 }
 
@@ -2316,11 +2345,28 @@ fn lexical_signature(text: &str) -> Vec<String> {
             token
                 .chars()
                 .filter(|c| c.is_alphanumeric())
+                .map(fold_latin_signature_char)
                 .collect::<String>()
                 .to_ascii_lowercase()
         })
         .filter(|token| !token.is_empty())
         .collect()
+}
+
+fn fold_latin_signature_char(ch: char) -> char {
+    match ch {
+        'à' | 'á' | 'â' | 'ã' | 'ä' | 'å' | 'À' | 'Á' | 'Â' | 'Ã' | 'Ä' | 'Å' => 'a',
+        'ç' | 'Ç' => 'c',
+        'è' | 'é' | 'ê' | 'ë' | 'È' | 'É' | 'Ê' | 'Ë' => 'e',
+        'ì' | 'í' | 'î' | 'ï' | 'Ì' | 'Í' | 'Î' | 'Ï' => 'i',
+        'ñ' | 'Ñ' => 'n',
+        'ò' | 'ó' | 'ô' | 'õ' | 'ö' | 'Ò' | 'Ó' | 'Ô' | 'Õ' | 'Ö' => 'o',
+        'ù' | 'ú' | 'û' | 'ü' | 'Ù' | 'Ú' | 'Û' | 'Ü' => 'u',
+        'ý' | 'ÿ' | 'Ý' => 'y',
+        'œ' | 'Œ' => 'o',
+        'æ' | 'Æ' => 'a',
+        _ => ch,
+    }
 }
 
 fn clause_tail_token(text: &str) -> Option<String> {
@@ -2828,6 +2874,16 @@ mod tests {
             "fr",
         );
         assert!(candidate.is_none());
+    }
+
+    #[test]
+    fn accepts_plausible_multi_sentence_upgrade_for_long_dictation() {
+        let candidate = maybe_prefer_sentence_punctuation(
+            "je veux expliquer le projet de lavage automobile a montreal puis je vais parler du type de service du prix et de la relation avec les clients et les laveurs",
+            "Je veux expliquer le projet de lavage automobile à Montréal. Puis je vais parler du type de service, du prix et de la relation avec les clients et les laveurs.",
+            "fr",
+        );
+        assert!(candidate.is_some());
     }
 
     #[test]

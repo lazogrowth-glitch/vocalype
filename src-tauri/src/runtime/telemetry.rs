@@ -9,6 +9,7 @@
 //! thread-safety without a background queue.
 
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
@@ -82,6 +83,46 @@ impl TranscriptionTelemetry {
 // ── Event helpers ─────────────────────────────────────────────────────────────
 
 impl TranscriptionTelemetry {
+    fn tokenize_for_diff(text: &str) -> Vec<String> {
+        text.split_whitespace()
+            .map(|word| {
+                word.trim_matches(|c: char| !c.is_alphanumeric() && c != '\'' && c != '’')
+                    .to_lowercase()
+            })
+            .filter(|word| !word.is_empty())
+            .collect()
+    }
+
+    fn diff_word_counts(before: &str, after: &str) -> (usize, usize) {
+        let mut before_counts: HashMap<String, usize> = HashMap::new();
+        for token in Self::tokenize_for_diff(before) {
+            *before_counts.entry(token).or_insert(0) += 1;
+        }
+
+        let mut after_counts: HashMap<String, usize> = HashMap::new();
+        for token in Self::tokenize_for_diff(after) {
+            *after_counts.entry(token).or_insert(0) += 1;
+        }
+
+        let removed = before_counts
+            .iter()
+            .map(|(token, before_count)| {
+                let after_count = after_counts.get(token).copied().unwrap_or(0);
+                before_count.saturating_sub(after_count)
+            })
+            .sum();
+
+        let added = after_counts
+            .iter()
+            .map(|(token, after_count)| {
+                let before_count = before_counts.get(token).copied().unwrap_or(0);
+                after_count.saturating_sub(before_count)
+            })
+            .sum();
+
+        (removed, added)
+    }
+
     pub fn log_session_start(
         &self,
         session_id: u64,
@@ -266,6 +307,96 @@ impl TranscriptionTelemetry {
             words_out,
             words_trimmed,
             text_preview: REDACTED_TEXT_PREVIEW,
+        });
+    }
+
+    pub fn log_chunk_text_stage(
+        &self,
+        session_id: u64,
+        chunk_idx: usize,
+        stage: &str,
+        text: &str,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            chunk_idx: usize,
+            stage: &'a str,
+            word_count: usize,
+            char_count: usize,
+            text: &'a str,
+        }
+        self.write_line(&E {
+            event: "chunk_text_stage",
+            ts_ms: Self::now_ms(),
+            session_id,
+            chunk_idx,
+            stage,
+            word_count: text.split_whitespace().count(),
+            char_count: text.chars().count(),
+            text,
+        });
+    }
+
+    pub fn log_text_transform(
+        &self,
+        session_id: u64,
+        stage: &str,
+        before: &str,
+        after: &str,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            stage: &'a str,
+            before_word_count: usize,
+            after_word_count: usize,
+            removed_word_count: usize,
+            added_word_count: usize,
+            changed: bool,
+            before_text: &'a str,
+            after_text: &'a str,
+        }
+
+        let (removed_word_count, added_word_count) = Self::diff_word_counts(before, after);
+        self.write_line(&E {
+            event: "text_transform",
+            ts_ms: Self::now_ms(),
+            session_id,
+            stage,
+            before_word_count: before.split_whitespace().count(),
+            after_word_count: after.split_whitespace().count(),
+            removed_word_count,
+            added_word_count,
+            changed: before != after,
+            before_text: before,
+            after_text: after,
+        });
+    }
+
+    pub fn log_session_text_stage(&self, session_id: u64, stage: &str, text: &str) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            stage: &'a str,
+            word_count: usize,
+            char_count: usize,
+            text: &'a str,
+        }
+        self.write_line(&E {
+            event: "session_text_stage",
+            ts_ms: Self::now_ms(),
+            session_id,
+            stage,
+            word_count: text.split_whitespace().count(),
+            char_count: text.chars().count(),
+            text,
         });
     }
 

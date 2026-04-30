@@ -72,6 +72,7 @@ fn should_use_audio_aware_punctuation(
 
 pub(super) async fn process_transcription_text(
     app: &AppHandle,
+    session_id: u64,
     operation_id: u64,
     transcription: &str,
     active_app_context: Option<&AppTranscriptionContext>,
@@ -83,14 +84,27 @@ pub(super) async fn process_transcription_text(
     profiler: &Arc<Mutex<PipelineProfiler>>,
 ) -> PostProcessOutcome {
     let settings = crate::settings::get_settings(app);
+    let telemetry = app
+        .try_state::<Arc<crate::telemetry::TranscriptionTelemetry>>()
+        .map(|s| Arc::clone(&*s))
+        .unwrap_or_else(|| Arc::new(crate::telemetry::TranscriptionTelemetry::disabled()));
     let mut final_text = transcription.to_string();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
+    telemetry.log_session_text_stage(session_id, "transcription_input", transcription);
+
     let chinese_convert_started = Instant::now();
+    let before_chinese = final_text.clone();
     if let Some(converted) = maybe_convert_chinese_variant(&settings, transcription).await {
         final_text = converted;
     }
+    telemetry.log_text_transform(
+        session_id,
+        "post_convert_chinese_variant",
+        &before_chinese,
+        &final_text,
+    );
     if let Ok(mut p) = profiler.lock() {
         p.push_step_since(
             "post_convert_chinese_variant",
@@ -102,6 +116,7 @@ pub(super) async fn process_transcription_text(
     let filler_started = Instant::now();
     let before_filler = final_text.clone();
     final_text = crate::filler::clean_transcript(&final_text);
+    telemetry.log_text_transform(session_id, "filler_removal", &before_filler, &final_text);
     if let Ok(mut p) = profiler.lock() {
         p.push_step_since(
             "filler_removal",
@@ -121,6 +136,7 @@ pub(super) async fn process_transcription_text(
     } else {
         crate::punctuation::fix_punctuation(&final_text, punct_category)
     };
+    telemetry.log_text_transform(session_id, "punctuation_fix", &before_punct, &final_text);
     if let Ok(mut p) = profiler.lock() {
         p.push_step_since(
             "punctuation_fix",
@@ -135,6 +151,7 @@ pub(super) async fn process_transcription_text(
         let patterns = dict.compiled_entries();
         final_text = crate::dictionary::apply_dictionary(&final_text, &patterns);
     }
+    telemetry.log_text_transform(session_id, "dictionary_replacement", &before_dict, &final_text);
     if let Ok(mut p) = profiler.lock() {
         p.push_step_since(
             "dictionary_replacement",
@@ -155,6 +172,7 @@ pub(super) async fn process_transcription_text(
             .as_ref()
             .and_then(|ctx| ctx.code_language);
         final_text = crate::code_dictation::apply_code_dictation(&final_text, code_language);
+        telemetry.log_text_transform(session_id, "code_dictation", &before_code, &final_text);
         if let Ok(mut p) = profiler.lock() {
             p.push_step_since(
                 "code_dictation",
@@ -171,7 +189,9 @@ pub(super) async fn process_transcription_text(
             "Voice snippet matched — expanding to {} chars",
             expanded.len()
         );
+        let before_snippet = final_text.clone();
         final_text = expanded;
+        telemetry.log_text_transform(session_id, "voice_snippet", &before_snippet, &final_text);
         post_processed_text = Some(final_text.clone());
         true
     } else {
@@ -275,8 +295,10 @@ pub(super) async fn process_transcription_text(
     }
 
     if let Some(processed_text) = processed {
+        let before_processed = final_text.clone();
         post_processed_text = Some(processed_text.clone());
         final_text = processed_text;
+        telemetry.log_text_transform(session_id, "llm_post_process", &before_processed, &final_text);
 
         if let Some(action) = selected_action {
             post_process_prompt = Some(action.prompt);
@@ -292,6 +314,8 @@ pub(super) async fn process_transcription_text(
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());
     }
+
+    telemetry.log_session_text_stage(session_id, "final_output", &final_text);
 
     if settings.adaptive_voice_profile_enabled {
         let voice_profile_started = Instant::now();

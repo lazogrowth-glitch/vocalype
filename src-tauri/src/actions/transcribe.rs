@@ -72,6 +72,7 @@ enum TranscriptionStatus {
 }
 
 struct TranscriptionResult {
+    session_id: u64,
     samples: Vec<f32>,
     transcription: String,
     confidence_payload: Option<crate::transcription_confidence::TranscriptionConfidencePayload>,
@@ -823,6 +824,12 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 }) {
                     Ok(output) => {
                         let latency_ms = chunk_start_time.elapsed().as_millis() as u64;
+                        tel_worker.log_chunk_text_stage(
+                            session_id,
+                            idx,
+                            "raw_engine_output",
+                            &output.text,
+                        );
                         // Timestamp-based overlap trimming — Parakeet V3 only.
                         // Parakeet V3 TDT outputs per-word timestamps that are reliable
                         // enough to use as the sole deduplication mechanism.
@@ -868,6 +875,18 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                     words_out,
                                     words_in.saturating_sub(words_out),
                                     &out.chars().take(120).collect::<String>(),
+                                );
+                                tel_worker.log_text_transform(
+                                    session_id,
+                                    &format!("chunk_{idx}_overlap_trim"),
+                                    &output.text,
+                                    &out,
+                                );
+                                tel_worker.log_chunk_text_stage(
+                                    session_id,
+                                    idx,
+                                    "after_overlap_trim",
+                                    &out,
                                 );
                                 // Empty → the chunk contained only overlap audio.
                                 out
@@ -924,6 +943,12 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                         &retry_text.chars().take(100).collect::<String>()
                                     ),
                                 );
+                                tel_worker.log_chunk_text_stage(
+                                    session_id,
+                                    idx,
+                                    "fallback_full_chunk_text",
+                                    &retry_text,
+                                );
                                 retry_text
                             }
                         } else {
@@ -940,6 +965,12 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 words,
                                 0,
                                 &output.text.chars().take(120).collect::<String>(),
+                            );
+                            tel_worker.log_chunk_text_stage(
+                                session_id,
+                                idx,
+                                "unchanged_chunk_text",
+                                &output.text,
                             );
                             output.text
                         };
@@ -1448,6 +1479,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         }
                     }
 
+                    tel_assembly.log_session_text_stage(session_id, "assembled_chunks", &assembled);
+
                     tel_assembly.log_session_end(
                         session_id,
                         chunk_count,
@@ -1497,6 +1530,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                     all_samples.len(),
                                 ) =>
                             {
+                                let before_recovery = assembled.clone();
                                 info!(
                                     "Promoting Parakeet full-audio recovery after empty chunk: {} -> {} words",
                                     assembled.split_whitespace().count(),
@@ -1506,6 +1540,17 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                 summary.output_words =
                                     recovery_output.text.split_whitespace().count();
                                 assembled = recovery_output.text;
+                                tel_quality.log_text_transform(
+                                    session_id,
+                                    "full_audio_recovery",
+                                    &before_recovery,
+                                    &assembled,
+                                );
+                                tel_quality.log_session_text_stage(
+                                    session_id,
+                                    "after_full_audio_recovery",
+                                    &assembled,
+                                );
                                 if let Ok(mut p) = profiler.lock() {
                                     p.push_step_since(
                                         "parakeet_full_audio_recovery",
@@ -1572,6 +1617,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
 
             Some(TranscriptionResult {
+                session_id,
                 samples: all_samples,
                 transcription,
                 confidence_payload: None,
@@ -1853,6 +1899,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 true,
             );
             Some(TranscriptionResult {
+                session_id: operation_id,
                 samples,
                 transcription: transcription_output.text,
                 confidence_payload: transcription_output.confidence_payload,
@@ -1863,6 +1910,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
         };
 
         if let Some(TranscriptionResult {
+            session_id,
             samples,
             transcription,
             confidence_payload,
@@ -2087,6 +2135,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     || (llm_auto_mode && auto_llm_should_trigger(&ah, &transcription));
                 let outcome = process_transcription_text(
                     &ah,
+                    session_id,
                     operation_id,
                     &transcription,
                     active_app_context.as_ref(),
@@ -2172,6 +2221,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     || (llm_auto_mode && auto_llm_should_trigger(&ah, &transcription));
                 let outcome = process_transcription_text(
                     &ah,
+                    session_id,
                     operation_id,
                     &transcription,
                     active_app_context.as_ref(),

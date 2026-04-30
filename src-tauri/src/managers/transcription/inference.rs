@@ -1075,6 +1075,7 @@ impl TranscriptionManager {
                                                 maybe_prefer_sentence_punctuation(
                                                     &display_text,
                                                     &sentence_result.text,
+                                                    &settings.selected_language,
                                                 )
                                             {
                                                 display_text = punctuated;

@@ -663,7 +663,11 @@ pub fn should_attempt_sentence_punctuation(text: &str) -> bool {
     sentence_punctuation_score(text) == 0
 }
 
-pub fn maybe_prefer_sentence_punctuation(words_text: &str, sentence_text: &str) -> Option<String> {
+pub fn maybe_prefer_sentence_punctuation(
+    words_text: &str,
+    sentence_text: &str,
+    selected_language: &str,
+) -> Option<String> {
     let words_trimmed = words_text.trim();
     let sentence_trimmed = sentence_text.trim();
     if words_trimmed.is_empty() || sentence_trimmed.is_empty() {
@@ -679,6 +683,9 @@ pub fn maybe_prefer_sentence_punctuation(words_text: &str, sentence_text: &str) 
         return None;
     }
     if sentence_punctuation_score(sentence_trimmed) <= sentence_punctuation_score(words_trimmed) {
+        return None;
+    }
+    if looks_like_open_ended_clause(words_trimmed, selected_language) {
         return None;
     }
     if !is_conservative_sentence_punctuation_upgrade(words_trimmed, sentence_trimmed) {
@@ -2313,6 +2320,95 @@ fn lexical_signature(text: &str) -> Vec<String> {
         .collect()
 }
 
+fn clause_tail_token(text: &str) -> Option<String> {
+    text.split_whitespace().last().map(|token| {
+        token.chars()
+            .filter(|c| c.is_alphanumeric() || matches!(c, '\'' | '’'))
+            .collect::<String>()
+            .to_ascii_lowercase()
+    })
+    .filter(|token| !token.is_empty())
+}
+
+fn looks_like_open_ended_clause(text: &str, selected_language: &str) -> bool {
+    let Some(last_token) = clause_tail_token(text) else {
+        return false;
+    };
+
+    match selected_language {
+        lang if lang.starts_with("fr") => matches!(
+            last_token.as_str(),
+            "et"
+                | "ou"
+                | "mais"
+                | "donc"
+                | "car"
+                | "parce"
+                | "que"
+                | "si"
+                | "quand"
+                | "comme"
+                | "avec"
+                | "pour"
+                | "sur"
+                | "dans"
+                | "de"
+                | "du"
+                | "des"
+                | "un"
+                | "une"
+                | "le"
+                | "la"
+                | "les"
+        ),
+        lang if lang.starts_with("es") => matches!(
+            last_token.as_str(),
+            "y"
+                | "o"
+                | "pero"
+                | "porque"
+                | "que"
+                | "si"
+                | "cuando"
+                | "como"
+                | "con"
+                | "para"
+                | "en"
+                | "de"
+                | "del"
+                | "el"
+                | "la"
+                | "los"
+                | "las"
+                | "un"
+                | "una"
+        ),
+        _ => matches!(
+            last_token.as_str(),
+            "and"
+                | "or"
+                | "but"
+                | "because"
+                | "that"
+                | "which"
+                | "who"
+                | "if"
+                | "when"
+                | "while"
+                | "with"
+                | "for"
+                | "to"
+                | "of"
+                | "in"
+                | "on"
+                | "at"
+                | "the"
+                | "a"
+                | "an"
+        ),
+    }
+}
+
 fn next_sentence_starts_upper(text: &str) -> bool {
     for ch in text.chars() {
         if ch.is_whitespace() || matches!(ch, '"' | '\'' | '(' | '[') {
@@ -2652,6 +2748,7 @@ mod tests {
         let candidate = maybe_prefer_sentence_punctuation(
             "i want to test a longer sentence without taking a real pause",
             "I want to test a longer sentence without taking a real pause.",
+            "en",
         );
         assert_eq!(
             candidate.as_deref(),
@@ -2664,6 +2761,7 @@ mod tests {
         let candidate = maybe_prefer_sentence_punctuation(
             "pourquoi tu ecris pas ce que je te dis",
             "Parakeet, ecris pas ce que je te dis.",
+            "fr",
         );
         assert!(candidate.is_none());
     }
@@ -2673,6 +2771,7 @@ mod tests {
         let candidate = maybe_prefer_sentence_punctuation(
             "je veux expliquer l idee sans vraiment terminer puis continuer juste apres",
             "Je veux expliquer l'idee sans vraiment terminer. Puis continuer juste apres.",
+            "fr",
         );
         assert!(candidate.is_none());
     }
@@ -2682,6 +2781,17 @@ mod tests {
         let candidate = maybe_prefer_sentence_punctuation(
             "i want to explain the idea before continuing",
             "I want to explain the idea: before continuing",
+            "en",
+        );
+        assert!(candidate.is_none());
+    }
+
+    #[test]
+    fn rejects_sentence_punctuation_for_open_ended_clause_tail() {
+        let candidate = maybe_prefer_sentence_punctuation(
+            "je veux lancer le projet avec",
+            "Je veux lancer le projet avec.",
+            "fr",
         );
         assert!(candidate.is_none());
     }

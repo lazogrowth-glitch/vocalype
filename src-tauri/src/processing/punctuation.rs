@@ -190,7 +190,10 @@ pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
     }
 
     // ── Rule 3: ensure terminal punctuation ───────────────────────────────────
-    if !has_terminal_punct(&s) && !looks_like_open_ended_tail(&s) {
+    if !has_terminal_punct(&s)
+        && !looks_like_open_ended_tail(&s)
+        && !ends_with_continuation_marker(&s)
+    {
         s.push(if looks_like_question(&s) { '?' } else { '.' });
     }
 
@@ -233,6 +236,24 @@ fn last_word_lower(text: &str) -> Option<String> {
         .filter(|token| !token.is_empty())
 }
 
+fn trailing_words_lower(text: &str, max_words: usize) -> Vec<String> {
+    let mut words: Vec<String> = text
+        .split_whitespace()
+        .map(|token| {
+            token
+                .chars()
+                .filter(|c| c.is_alphanumeric() || matches!(c, '\'' | '’'))
+                .collect::<String>()
+                .to_lowercase()
+        })
+        .filter(|token| !token.is_empty())
+        .collect();
+    if words.len() > max_words {
+        words.drain(0..words.len() - max_words);
+    }
+    words
+}
+
 fn looks_like_open_ended_tail(text: &str) -> bool {
     let Some(last) = last_word_lower(text) else {
         return false;
@@ -251,6 +272,42 @@ fn looks_like_open_ended_tail(text: &str) -> bool {
     ];
 
     OPEN_ENDED_TAILS.contains(&last.as_str())
+}
+
+fn ends_with_continuation_marker(text: &str) -> bool {
+    const SINGLE_WORD_MARKERS: &[&str] = &[
+        "etc", "etcetera", "genre", "style", "quoi", "bon", "well", "so", "okay", "ok",
+        "anyway",
+    ];
+    const TWO_WORD_MARKERS: &[(&str, &str)] = &[
+        // French
+        ("et", "tout"),
+        ("tu", "vois"),
+        ("du", "coup"),
+        ("comme", "ca"),
+        ("comme", "ça"),
+        // English
+        ("you", "know"),
+        ("i", "mean"),
+        ("and", "stuff"),
+        ("or", "something"),
+        ("like", "that"),
+        ("sort", "of"),
+        ("kind", "of"),
+        // Spanish
+        ("y", "todo"),
+        ("o", "algo"),
+    ];
+
+    let trailing = trailing_words_lower(text, 2);
+    match trailing.as_slice() {
+        [last] => SINGLE_WORD_MARKERS.contains(&last.as_str()),
+        [second_last, last] => {
+            TWO_WORD_MARKERS.contains(&(second_last.as_str(), last.as_str()))
+                || SINGLE_WORD_MARKERS.contains(&last.as_str())
+        }
+        _ => false,
+    }
 }
 
 fn starts_with_any(text: &str, prefixes: &[&str]) -> bool {
@@ -657,6 +714,22 @@ mod tests {
         assert_eq!(
             fix_punctuation("why does this happen", DEFAULT),
             "Why does this happen?"
+        );
+    }
+
+    #[test]
+    fn continuation_marker_does_not_get_period_in_english() {
+        assert_eq!(
+            fix_punctuation("i want to keep going you know", DEFAULT),
+            "I want to keep going you know"
+        );
+    }
+
+    #[test]
+    fn continuation_marker_does_not_get_period_in_french() {
+        assert_eq!(
+            fix_punctuation("je veux continuer et tout", DEFAULT),
+            "Je veux continuer et tout"
         );
     }
 

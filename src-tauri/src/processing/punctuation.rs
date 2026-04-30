@@ -19,6 +19,10 @@ use crate::context_detector::AppContextCategory;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+const AUDIO_SILENCE_ENERGY_THRESHOLD: f32 = 1e-5;
+const AUDIO_TRAILING_END_PUNCT_MS: usize = 420;
+const AUDIO_TRAILING_STRONG_END_PUNCT_MS: usize = 700;
+
 // ── Pre-compiled regexes ──────────────────────────────────────────────────────
 
 /// One or more spaces immediately before a punctuation character.
@@ -164,7 +168,11 @@ static EMAIL_CLOSING_RE: Lazy<Regex> = Lazy::new(|| {
 ///
 /// The function is intentionally conservative: it only fixes the most common
 /// speech-to-text artefacts without modifying the user's wording.
-pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
+pub fn fix_punctuation_with_audio(
+    text: &str,
+    category: AppContextCategory,
+    audio_samples: Option<&[f32]>,
+) -> String {
     // Code: bypass everything — raw identifiers must not be touched.
     if matches!(category, AppContextCategory::Code) {
         return text.to_string();
@@ -190,10 +198,14 @@ pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
     }
 
     // ── Rule 3: ensure terminal punctuation ───────────────────────────────────
+    let trailing_silence_ms = audio_samples.map(trailing_silence_ms).unwrap_or(usize::MAX);
+    let enough_terminal_pause =
+        trailing_silence_ms >= AUDIO_TRAILING_END_PUNCT_MS || audio_samples.is_none();
     if !has_terminal_punct(&s)
         && !has_terminal_soft_separator(&s)
         && !looks_like_open_ended_tail(&s)
         && !ends_with_continuation_marker(&s)
+        && enough_terminal_pause
     {
         s.push(if looks_like_question(&s) { '?' } else { '.' });
     }
@@ -212,6 +224,10 @@ pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
     s
 }
 
+pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
+    fix_punctuation_with_audio(text, category, None)
+}
+
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /// Returns `true` if the last character of `text` is recognised terminal
@@ -226,6 +242,21 @@ fn has_terminal_punct(text: &str) -> bool {
 
 fn has_terminal_soft_separator(text: &str) -> bool {
     matches!(text.chars().last(), Some(',' | ':' | ';'))
+}
+
+fn trailing_silence_ms(samples: &[f32]) -> usize {
+    if samples.is_empty() {
+        return 0;
+    }
+    let mut silent_samples = 0usize;
+    for sample in samples.iter().rev() {
+        if sample * sample <= AUDIO_SILENCE_ENERGY_THRESHOLD {
+            silent_samples += 1;
+        } else {
+            break;
+        }
+    }
+    (silent_samples * 1000) / 16_000
 }
 
 fn last_word_lower(text: &str) -> Option<String> {
@@ -753,5 +784,34 @@ mod tests {
         // "version 3.0" already ends with '0', no terminal punct → period added.
         // Note: the '.' in "3.0" is mid-word, not terminal.
         assert_eq!(fix_punctuation("version 3.0", DEFAULT), "Version 3.0.");
+    }
+
+    #[test]
+    fn audio_aware_punctuation_skips_period_without_terminal_pause() {
+        let audio = vec![0.2_f32; 16_000];
+        assert_eq!(
+            fix_punctuation_with_audio("bonjour comment ça va", DEFAULT, Some(&audio)),
+            "Bonjour comment ça va"
+        );
+    }
+
+    #[test]
+    fn audio_aware_punctuation_adds_period_with_terminal_pause() {
+        let mut audio = vec![0.2_f32; 16_000];
+        audio.extend(std::iter::repeat(0.0_f32).take(8_000));
+        assert_eq!(
+            fix_punctuation_with_audio("bonjour comment ça va", DEFAULT, Some(&audio)),
+            "Bonjour comment ça va."
+        );
+    }
+
+    #[test]
+    fn audio_aware_punctuation_keeps_question_mark_with_pause() {
+        let mut audio = vec![0.2_f32; 16_000];
+        audio.extend(std::iter::repeat(0.0_f32).take(8_000));
+        assert_eq!(
+            fix_punctuation_with_audio("pourquoi tu fais ça", DEFAULT, Some(&audio)),
+            "Pourquoi tu fais ça?"
+        );
     }
 }

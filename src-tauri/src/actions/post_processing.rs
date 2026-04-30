@@ -97,7 +97,11 @@ pub(super) async fn process_transcription_text(
         .as_ref()
         .map(|ctx| ctx.category)
         .unwrap_or(AppContextCategory::Unknown);
-    final_text = crate::punctuation::fix_punctuation(&final_text, punct_category);
+    final_text = crate::punctuation::fix_punctuation_with_audio(
+        &final_text,
+        punct_category,
+        Some(samples),
+    );
     if let Ok(mut p) = profiler.lock() {
         p.push_step_since(
             "punctuation_fix",

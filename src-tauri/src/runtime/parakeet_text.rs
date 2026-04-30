@@ -1016,8 +1016,20 @@ pub fn normalize_parakeet_english_artifacts(
         normalized = MISS_YOUR_ROOM_PATTERN
             .replace_all(&normalized, "messy room")
             .to_string();
+        normalized = STILL_CATCH_PATTERN
+            .replace_all(&normalized, "still catches")
+            .to_string();
         normalized = FAST_EARTH_PATTERN
             .replace_all(&normalized, "faster speech")
+            .to_string();
+        normalized = REGUL_RIGHT_ORDER_PATTERN
+            .replace_all(&normalized, "in the right order")
+            .to_string();
+        normalized = TESTING_THIS_VOICE_PATTERN
+            .replace_all(&normalized, "testing this sentence with")
+            .to_string();
+        normalized = MOMBIAN_SOUND_CHANGE_PATTERN
+            .replace_all(&normalized, "a small amount of ambient sound changes")
             .to_string();
         normalized = BROKEN_SENTENCE_ENDING_PATTERN
             .replace_all(&normalized, "broken sentence endings")
@@ -1039,6 +1051,21 @@ pub fn normalize_parakeet_english_artifacts(
             .to_string();
         normalized = CHEN_KING_PATTERN
             .replace_all(&normalized, "chunking")
+            .to_string();
+        normalized = NO_NO_SO_WE_SEND_PATTERN
+            .replace_all(&normalized, "sorry send")
+            .to_string();
+        normalized = OLD_PLACE_PATTERN
+            .replace_all(&normalized, "odd places")
+            .to_string();
+        normalized = REGULAR_PLACE_CLEAR_VOICE_PATTERN
+            .replace_all(&normalized, "regular pace with a clear voice")
+            .to_string();
+        normalized = PRONUNCH_PATTERN
+            .replace_all(&normalized, "pronunciation")
+            .to_string();
+        normalized = DROPS_ON_THE_MICROPHONE_PATTERN
+            .replace_all(&normalized, "drops once the microphone")
             .to_string();
         normalized = STANDALONE_FILLER_PATTERN
             .replace_all(&normalized, "$1$2")
@@ -1466,6 +1493,9 @@ pub fn normalize_parakeet_french_artifacts(
         normalized = WANT_TO_SEE_AUTOCORRECTION_PATTERN
             .replace_all(&normalized, "veut voir si les auto corrections parlees restent comprehensibles dans le texte final sans creer de repetitions bizarres")
             .to_string();
+        normalized = CE_TEST_DANS_DOTS_PATTERN
+            .replace_all(&normalized, "et ce test doit montrer si")
+            .to_string();
         normalized = RESTABLE_PATTERN
             .replace_all(&normalized, "reste stable")
             .to_string();
@@ -1498,6 +1528,15 @@ pub fn normalize_parakeet_french_artifacts(
             .to_string();
         normalized = LES_DES_MORCEAUX_PATTERN
             .replace_all(&normalized, "des morceaux")
+            .to_string();
+        normalized = QUAND_JE_PARLE_L_ENTEND_PATTERN
+            .replace_all(&normalized, "quand je parle longtemps")
+            .to_string();
+        normalized = VOIX_BASSE_PLUS_BASSE_PATTERN
+            .replace_all(&normalized, "voix plus basse")
+            .to_string();
+        normalized = LE_MOT_MEME_QUAND_PATTERN
+            .replace_all(&normalized, "le texte meme quand")
             .to_string();
         normalized = FR_K02_PATTERN.replace_all(&normalized, "Allo").to_string();
         normalized = FR_K03_PATTERN
@@ -1748,6 +1787,15 @@ fn normalize_parakeet_long_form_english_artifacts(
             .to_string();
         normalized = NATURAL_POSES_PATTERN
             .replace_all(&normalized, "natural pauses")
+            .to_string();
+        normalized = POLL_VOICE_PATTERN
+            .replace_all(&normalized, "in a polished voice")
+            .to_string();
+        normalized = BECOME_LONGER_PATTERN
+            .replace_all(&normalized, "recording becomes longer")
+            .to_string();
+        normalized = COPY_PAST_PATTERN
+            .replace_all(&normalized, "copy paste")
             .to_string();
         return normalized;
     }

@@ -190,7 +190,7 @@ pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
     }
 
     // ── Rule 3: ensure terminal punctuation ───────────────────────────────────
-    if !has_terminal_punct(&s) {
+    if !has_terminal_punct(&s) && !looks_like_open_ended_tail(&s) {
         s.push('.');
     }
 
@@ -218,6 +218,39 @@ fn has_terminal_punct(text: &str) -> bool {
         // Three-dot ellipsis written as ASCII
         _ => text.ends_with("..."),
     }
+}
+
+fn last_word_lower(text: &str) -> Option<String> {
+    text.split_whitespace()
+        .last()
+        .map(|token| {
+            token
+                .chars()
+                .filter(|c| c.is_alphanumeric() || matches!(c, '\'' | '’'))
+                .collect::<String>()
+                .to_lowercase()
+        })
+        .filter(|token| !token.is_empty())
+}
+
+fn looks_like_open_ended_tail(text: &str) -> bool {
+    let Some(last) = last_word_lower(text) else {
+        return false;
+    };
+
+    const OPEN_ENDED_TAILS: &[&str] = &[
+        // French
+        "et", "ou", "mais", "donc", "car", "que", "si", "quand", "comme", "avec", "pour",
+        "sur", "dans", "de", "du", "des", "le", "la", "les", "un", "une",
+        // English
+        "and", "or", "but", "because", "that", "which", "who", "if", "when", "while", "with",
+        "for", "to", "of", "in", "on", "at", "the", "a", "an",
+        // Spanish
+        "y", "o", "pero", "porque", "cuando", "como", "con", "para", "en", "del", "el", "los",
+        "las", "una",
+    ];
+
+    OPEN_ENDED_TAILS.contains(&last.as_str())
 }
 
 /// Add structural line-breaks to email text.
@@ -532,6 +565,22 @@ mod tests {
     #[test]
     fn single_word_gets_period_and_cap() {
         assert_eq!(fix_punctuation("ok", DEFAULT), "Ok.");
+    }
+
+    #[test]
+    fn open_ended_french_tail_does_not_get_period() {
+        assert_eq!(
+            fix_punctuation("je veux lancer le projet avec", DEFAULT),
+            "Je veux lancer le projet avec"
+        );
+    }
+
+    #[test]
+    fn open_ended_english_tail_does_not_get_period() {
+        assert_eq!(
+            fix_punctuation("i want to continue with", DEFAULT),
+            "I want to continue with"
+        );
     }
 
     #[test]

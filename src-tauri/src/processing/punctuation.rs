@@ -297,12 +297,10 @@ fn looks_like_open_ended_tail(text: &str) -> bool {
 
     const OPEN_ENDED_TAILS: &[&str] = &[
         // French
-        "et", "ou", "mais", "donc", "car", "que", "si", "quand", "comme", "avec", "pour",
-        "sur", "dans", "de", "du", "des", "le", "la", "les", "un", "une",
-        // English
+        "et", "ou", "mais", "donc", "car", "que", "si", "quand", "comme", "avec", "pour", "sur",
+        "dans", "de", "du", "des", "le", "la", "les", "un", "une", // English
         "and", "or", "but", "because", "that", "which", "who", "if", "when", "while", "with",
-        "for", "to", "of", "in", "on", "at", "the", "a", "an",
-        // Spanish
+        "for", "to", "of", "in", "on", "at", "the", "a", "an", // Spanish
         "y", "o", "pero", "porque", "cuando", "como", "con", "para", "en", "del", "el", "los",
         "las", "una",
     ];
@@ -312,8 +310,7 @@ fn looks_like_open_ended_tail(text: &str) -> bool {
 
 fn ends_with_continuation_marker(text: &str) -> bool {
     const SINGLE_WORD_MARKERS: &[&str] = &[
-        "etc", "etcetera", "genre", "style", "quoi", "bon", "well", "so", "okay", "ok",
-        "anyway",
+        "etc", "etcetera", "genre", "style", "quoi", "bon", "well", "so", "okay", "ok", "anyway",
     ];
     const TWO_WORD_MARKERS: &[(&str, &str)] = &[
         // French

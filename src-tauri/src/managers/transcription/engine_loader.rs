@@ -13,8 +13,9 @@ impl TranscriptionManager {
         let settings = get_settings(&self.app_handle);
         let language = settings.selected_language.trim().to_ascii_lowercase();
         let root = std::path::PathBuf::from(r"C:\developer\sas");
-        let default_backbone =
-            root.join("quant-sweeps").join("encoder-quint8-attn-proj-outonly-late12");
+        let default_backbone = root
+            .join("quant-sweeps")
+            .join("encoder-quint8-attn-proj-outonly-late12");
         let english_backbone = root
             .join("quant-sweeps")
             .join("encoder-quint8-attn-proj-perchannel");

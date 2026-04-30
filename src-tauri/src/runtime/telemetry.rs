@@ -310,13 +310,7 @@ impl TranscriptionTelemetry {
         });
     }
 
-    pub fn log_chunk_text_stage(
-        &self,
-        session_id: u64,
-        chunk_idx: usize,
-        stage: &str,
-        text: &str,
-    ) {
+    pub fn log_chunk_text_stage(&self, session_id: u64, chunk_idx: usize, stage: &str, text: &str) {
         #[derive(Serialize)]
         struct E<'a> {
             event: &'static str,
@@ -340,13 +334,7 @@ impl TranscriptionTelemetry {
         });
     }
 
-    pub fn log_text_transform(
-        &self,
-        session_id: u64,
-        stage: &str,
-        before: &str,
-        after: &str,
-    ) {
+    pub fn log_text_transform(&self, session_id: u64, stage: &str, before: &str, after: &str) {
         #[derive(Serialize)]
         struct E<'a> {
             event: &'static str,

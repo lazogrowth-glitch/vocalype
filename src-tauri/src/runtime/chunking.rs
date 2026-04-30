@@ -40,6 +40,11 @@ pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms
 /// Mean-squared energy threshold — windows below this are considered silent.
 /// 1e-5 ≈ RMS 0.003, well below conversational speech (~0.02–0.1 RMS).
 pub(crate) const VAD_FLUSH_ENERGY_THRESHOLD: f32 = 1e-5;
+/// Mean-squared energy below which a VAD-triggered chunk's new content is
+/// considered dead silence and skipped entirely (no model call).
+/// 1e-9 is ~10 000× below VAD_FLUSH_ENERGY_THRESHOLD — microphone noise floor.
+/// Avoids repeated model inference when the user holds push-to-talk after speaking.
+pub(crate) const VAD_SILENT_CHUNK_ENERGY_THRESHOLD: f32 = 1e-9;
 /// Minimum samples for a Parakeet chunk result to be kept when it produces
 /// only 1 word. Below this, the result is almost certainly a hallucination
 /// (Parakeet inventing English filler words in near-silence audio).
@@ -133,7 +138,11 @@ fn refine_parakeet_adjustment(
 ) -> (u8, u16) {
     let mut chunk = i16::from(adjusted_chunk_seconds);
     let mut overlap = i32::from(adjusted_overlap_ms);
-    let min_chunk = if selected_language.starts_with("fr") { 5 } else { 8 };
+    let min_chunk = if selected_language.starts_with("fr") {
+        5
+    } else {
+        8
+    };
 
     if selected_language.starts_with("fr") {
         chunk -= 1;
@@ -153,7 +162,10 @@ fn refine_parakeet_adjustment(
         overlap += 160;
     }
 
-    (chunk.clamp(min_chunk, 14) as u8, overlap.clamp(700, 1600) as u16)
+    (
+        chunk.clamp(min_chunk, 14) as u8,
+        overlap.clamp(700, 1600) as u16,
+    )
 }
 
 // ── Chunking functions ───────────────────────────────────────────────────────
@@ -311,8 +323,7 @@ fn boundary_word_key(word: &str) -> String {
 fn is_boundary_function_word(word: &str) -> bool {
     matches!(
         word,
-        "a"
-            | "an"
+        "a" | "an"
             | "the"
             | "le"
             | "la"
@@ -389,8 +400,14 @@ mod tests {
 
     #[test]
     fn test_deduplicate_boundary_keeps_single_function_word_overlap() {
-        assert_eq!(deduplicate_boundary_n("we saw the", "the candidate arrived", 3), "the candidate arrived");
-        assert_eq!(deduplicate_boundary_n("on a", "a call with hr", 3), "a call with hr");
+        assert_eq!(
+            deduplicate_boundary_n("we saw the", "the candidate arrived", 3),
+            "the candidate arrived"
+        );
+        assert_eq!(
+            deduplicate_boundary_n("on a", "a call with hr", 3),
+            "a call with hr"
+        );
     }
 
     #[test]

@@ -7,7 +7,7 @@ use crate::chunking::{
     chunking_profile_for_model, deduplicate_boundary, deduplicate_boundary_n, ActiveChunkingHandle,
     ChunkingHandle, ChunkingSharedState, CHUNK_SAMPLER_POLL_MS, MAX_PENDING_BACKGROUND_CHUNKS,
     MIN_FINAL_CHUNK_SAMPLES, PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD, VAD_FLUSH_ENERGY_THRESHOLD,
-    VAD_FLUSH_MIN_CONTENT_SAMPLES, VAD_FLUSH_SILENCE_SAMPLES,
+    VAD_FLUSH_MIN_CONTENT_SAMPLES, VAD_FLUSH_SILENCE_SAMPLES, VAD_SILENT_CHUNK_ENERGY_THRESHOLD,
 };
 use crate::context_detector::{detect_current_app_context, ActiveAppContextState};
 use crate::managers::audio::AudioRecordingManager;
@@ -189,10 +189,7 @@ fn should_attempt_full_audio_recovery(
     let empty_final_chunk =
         summary.final_chunk_words == 0 && final_chunk_secs >= 2.0 && assembled_words_per_sec <= 2.3;
 
-    empty_boundary
-        || short_final_chunk
-        || sparse_final_chunk
-        || empty_final_chunk
+    empty_boundary || short_final_chunk || sparse_final_chunk || empty_final_chunk
 }
 
 fn should_promote_full_audio_recovery(
@@ -221,11 +218,7 @@ fn should_auto_paste(status: TranscriptionStatus) -> bool {
     matches!(status, TranscriptionStatus::Success)
 }
 
-fn should_fallback_from_timestamp_trim(
-    raw_text: &str,
-    words_in: usize,
-    words_out: usize,
-) -> bool {
+fn should_fallback_from_timestamp_trim(raw_text: &str, words_in: usize, words_out: usize) -> bool {
     let raw_word_count = raw_text.split_whitespace().count();
     if raw_word_count < 3 {
         return false;
@@ -763,6 +756,26 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         cutoff_secs,
                     );
 
+                    // Dead-silence gate: skip model inference when the new portion of a
+                    // VAD-triggered chunk is pure noise (user held push-to-talk in silence).
+                    // Compute mean energy only over new_samples (excluding overlap prefix).
+                    let is_dead_silent_vad_chunk =
+                        is_parakeet_v3 && vad_flush && actual_overlap <= chunk.len() && {
+                            let new_slice = &chunk[actual_overlap..];
+                            if new_slice.is_empty() {
+                                false
+                            } else {
+                                let mean_energy = new_slice.iter().map(|s| s * s).sum::<f32>()
+                                    / (new_slice.len() as f32);
+                                mean_energy < VAD_SILENT_CHUNK_ENERGY_THRESHOLD
+                            }
+                        };
+                    if is_dead_silent_vad_chunk {
+                        let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
+                        s.last_committed_idx = chunk_end;
+                        continue;
+                    }
+
                     pending_s.fetch_add(1, Ordering::Relaxed);
                     match tx_s.send(Some((chunk, next_idx, cutoff_secs, false))) {
                         Ok(()) => {
@@ -875,10 +888,10 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 let trimmed_out = if !trimmed_out.is_empty()
                                     && trimmed_out.chars().all(|c| !c.is_alphabetic())
                                 {
-                                        String::new()
-                                    } else {
-                                        trimmed_out
-                                    };
+                                    String::new()
+                                } else {
+                                    trimmed_out
+                                };
                                 let mut out = trimmed_out.clone();
                                 let mut words_out = trimmed_words_out;
 
@@ -898,6 +911,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                     );
                                     out = output.text.clone();
                                     words_out = out.split_whitespace().count();
+                                    if let Ok(mut counters) = counters_worker.lock() {
+                                        counters.retry_chunks += 1;
+                                    }
                                 }
                                 tel_worker.log_chunk_result(
                                     session_id,

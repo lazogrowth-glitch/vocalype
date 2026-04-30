@@ -151,7 +151,12 @@ pub(super) async fn process_transcription_text(
         let patterns = dict.compiled_entries();
         final_text = crate::dictionary::apply_dictionary(&final_text, &patterns);
     }
-    telemetry.log_text_transform(session_id, "dictionary_replacement", &before_dict, &final_text);
+    telemetry.log_text_transform(
+        session_id,
+        "dictionary_replacement",
+        &before_dict,
+        &final_text,
+    );
     if let Ok(mut p) = profiler.lock() {
         p.push_step_since(
             "dictionary_replacement",
@@ -298,7 +303,12 @@ pub(super) async fn process_transcription_text(
         let before_processed = final_text.clone();
         post_processed_text = Some(processed_text.clone());
         final_text = processed_text;
-        telemetry.log_text_transform(session_id, "llm_post_process", &before_processed, &final_text);
+        telemetry.log_text_transform(
+            session_id,
+            "llm_post_process",
+            &before_processed,
+            &final_text,
+        );
 
         if let Some(action) = selected_action {
             post_process_prompt = Some(action.prompt);

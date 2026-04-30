@@ -218,10 +218,7 @@ fn run_chunked_pipeline(
     }
     let corrected = apply_custom_words(
         &assembled,
-        &parakeet_builtin_correction_terms_with_profile(
-            selected_language,
-            eval_domain_profile(),
-        ),
+        &parakeet_builtin_correction_terms_with_profile(selected_language, eval_domain_profile()),
         0.24,
     );
     Ok((
@@ -265,13 +262,11 @@ fn transcribe_parakeet_chunk(
             1,
             Some(TimestampMode::Sentences),
         ) {
-            if let Some(punctuated) =
-                maybe_prefer_sentence_punctuation(
-                    &preferred_text,
-                    &sentence_result.text,
-                    selected_language,
-                )
-            {
+            if let Some(punctuated) = maybe_prefer_sentence_punctuation(
+                &preferred_text,
+                &sentence_result.text,
+                selected_language,
+            ) {
                 preferred_text = punctuated;
             }
         }
@@ -413,10 +408,7 @@ fn should_attempt_full_audio_recovery(
     let empty_final_chunk =
         final_chunk_words == 0 && final_chunk_secs >= 2.0 && assembled_words_per_sec <= 2.3;
 
-    empty_boundary
-        || short_final_chunk
-        || sparse_final_chunk
-        || empty_final_chunk
+    empty_boundary || short_final_chunk || sparse_final_chunk || empty_final_chunk
 }
 
 fn estimate_final_chunk_secs(

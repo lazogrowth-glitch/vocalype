@@ -963,10 +963,7 @@ fn restore_french_apostrophes(text: &str) -> String {
         .to_string()
 }
 
-pub fn normalize_parakeet_english_artifacts(
-    text: &str,
-    profile: ParakeetDomainProfile,
-) -> String {
+pub fn normalize_parakeet_english_artifacts(text: &str, profile: ParakeetDomainProfile) -> String {
     if profile == ParakeetDomainProfile::Recruiting {
         let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
         normalized = F02_PATTERN.replace_all(&normalized, "$1:$2").to_string();
@@ -1438,10 +1435,7 @@ pub fn normalize_parakeet_english_artifacts(
     normalize_english_numbers(&normalized)
 }
 
-pub fn normalize_parakeet_french_artifacts(
-    text: &str,
-    profile: ParakeetDomainProfile,
-) -> String {
+pub fn normalize_parakeet_french_artifacts(text: &str, profile: ParakeetDomainProfile) -> String {
     if profile == ParakeetDomainProfile::Recruiting {
         let mut normalized = text.to_string();
         normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
@@ -2082,11 +2076,8 @@ pub fn finalize_parakeet_text_with_profile(
     selected_language: &str,
     profile: ParakeetDomainProfile,
 ) -> String {
-    let mut normalized = normalize_parakeet_phrase_variants_with_profile(
-        text,
-        selected_language,
-        profile,
-    );
+    let mut normalized =
+        normalize_parakeet_phrase_variants_with_profile(text, selected_language, profile);
     if selected_language == "en" {
         normalized = normalize_parakeet_english_artifacts(&normalized, profile);
         normalized = normalize_parakeet_long_form_english_artifacts(&normalized, profile);
@@ -2151,11 +2142,7 @@ pub fn finalize_parakeet_text_with_profile(
 }
 
 pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
-    finalize_parakeet_text_with_profile(
-        text,
-        selected_language,
-        ParakeetDomainProfile::Recruiting,
-    )
+    finalize_parakeet_text_with_profile(text, selected_language, ParakeetDomainProfile::Recruiting)
 }
 
 fn normalize_english_numbers(text: &str) -> String {
@@ -2533,8 +2520,8 @@ fn terminal_sentence_mark(text: &str) -> Option<char> {
 }
 
 fn has_internal_sentence_punctuation(text: &str) -> bool {
-    let trimmed = text
-        .trim_end_matches(|c: char| c.is_whitespace() || matches!(c, '"' | '\'' | ')' | ']'));
+    let trimmed =
+        text.trim_end_matches(|c: char| c.is_whitespace() || matches!(c, '"' | '\'' | ')' | ']'));
     let mut chars: Vec<(usize, char)> = trimmed.char_indices().collect();
     let Some((last_idx, last_char)) = chars.pop() else {
         return false;
@@ -2575,7 +2562,9 @@ fn is_plausible_multi_sentence_upgrade(words_text: &str, sentence_text: &str) ->
         return false;
     }
 
-    parts.iter().all(|part| part.split_whitespace().count() >= 3)
+    parts
+        .iter()
+        .all(|part| part.split_whitespace().count() >= 3)
 }
 
 fn is_conservative_sentence_punctuation_upgrade(words_text: &str, sentence_text: &str) -> bool {
@@ -2590,7 +2579,8 @@ fn is_conservative_sentence_punctuation_upgrade(words_text: &str, sentence_text:
     let words_score = sentence_punctuation_score(words_text);
     let sentence_score = sentence_punctuation_score(sentence_text);
     if has_internal_sentence_punctuation(sentence_text) {
-        return sentence_score > words_score && is_plausible_multi_sentence_upgrade(words_text, sentence_text);
+        return sentence_score > words_score
+            && is_plausible_multi_sentence_upgrade(words_text, sentence_text);
     }
     sentence_score == words_score + 1
 }
@@ -2626,13 +2616,16 @@ fn fold_latin_signature_char(ch: char) -> char {
 }
 
 fn clause_tail_token(text: &str) -> Option<String> {
-    text.split_whitespace().last().map(|token| {
-        token.chars()
-            .filter(|c| c.is_alphanumeric() || matches!(c, '\'' | '’'))
-            .collect::<String>()
-            .to_ascii_lowercase()
-    })
-    .filter(|token| !token.is_empty())
+    text.split_whitespace()
+        .last()
+        .map(|token| {
+            token
+                .chars()
+                .filter(|c| c.is_alphanumeric() || matches!(c, '\'' | '’'))
+                .collect::<String>()
+                .to_ascii_lowercase()
+        })
+        .filter(|token| !token.is_empty())
 }
 
 fn trailing_clause_words(text: &str, max_words: usize) -> Vec<String> {
@@ -2655,8 +2648,7 @@ fn trailing_clause_words(text: &str, max_words: usize) -> Vec<String> {
 
 fn ends_with_continuation_marker(text: &str) -> bool {
     const SINGLE_WORD_MARKERS: &[&str] = &[
-        "etc", "etcetera", "genre", "style", "quoi", "bon", "well", "so", "okay", "ok",
-        "anyway",
+        "etc", "etcetera", "genre", "style", "quoi", "bon", "well", "so", "okay", "ok", "anyway",
     ];
     const TWO_WORD_MARKERS: &[(&str, &str)] = &[
         ("et", "tout"),
@@ -2694,8 +2686,7 @@ fn looks_like_open_ended_clause(text: &str, selected_language: &str) -> bool {
     match selected_language {
         lang if lang.starts_with("fr") => matches!(
             last_token.as_str(),
-            "et"
-                | "ou"
+            "et" | "ou"
                 | "mais"
                 | "donc"
                 | "car"
@@ -2719,8 +2710,7 @@ fn looks_like_open_ended_clause(text: &str, selected_language: &str) -> bool {
         ),
         lang if lang.starts_with("es") => matches!(
             last_token.as_str(),
-            "y"
-                | "o"
+            "y" | "o"
                 | "pero"
                 | "porque"
                 | "que"
@@ -3047,11 +3037,8 @@ mod tests {
     fn recruiting_profile_skips_dev_product_cleanup() {
         let input =
             "Please send support Vocalype dot app and docs dot Vocalype slash release notes to GitHub dot com so the technical word like flow stays visible.";
-        let normalized = finalize_parakeet_text_with_profile(
-            input,
-            "en",
-            ParakeetDomainProfile::Recruiting,
-        );
+        let normalized =
+            finalize_parakeet_text_with_profile(input, "en", ParakeetDomainProfile::Recruiting);
         assert!(
             normalized.contains("support Vocalype dot app"),
             "got: {normalized}"
@@ -3060,10 +3047,7 @@ mod tests {
             normalized.contains("docs dot Vocalype slash release notes"),
             "got: {normalized}"
         );
-        assert!(
-            normalized.contains("GitHub dot com"),
-            "got: {normalized}"
-        );
+        assert!(normalized.contains("GitHub dot com"), "got: {normalized}");
         assert!(
             normalized.contains("technical word like"),
             "got: {normalized}"
@@ -3084,11 +3068,8 @@ mod tests {
     #[test]
     fn recruiting_profile_skips_benchmarky_english_rewrites() {
         let input = "The product issue should tell us whether the benchmark sentence still feels rough on April 3 2026.";
-        let normalized = finalize_parakeet_text_with_profile(
-            input,
-            "en",
-            ParakeetDomainProfile::Recruiting,
-        );
+        let normalized =
+            finalize_parakeet_text_with_profile(input, "en", ParakeetDomainProfile::Recruiting);
         assert_eq!(normalized, input);
     }
 
@@ -3108,11 +3089,8 @@ mod tests {
     #[test]
     fn recruiting_profile_skips_benchmarky_french_rewrites() {
         let input = "Et ce test doit montrer si la transcription continue de suivre correctement sans passer soudainement en anglais.";
-        let normalized = finalize_parakeet_text_with_profile(
-            input,
-            "fr",
-            ParakeetDomainProfile::Recruiting,
-        );
+        let normalized =
+            finalize_parakeet_text_with_profile(input, "fr", ParakeetDomainProfile::Recruiting);
         assert_eq!(normalized, input);
     }
 

@@ -62,8 +62,7 @@ fn is_function_word(word: &str, selected_language: &str) -> bool {
     match selected_language {
         lang if lang.starts_with("fr") => matches!(
             word,
-            "de"
-                | "du"
+            "de" | "du"
                 | "des"
                 | "le"
                 | "la"
@@ -92,8 +91,7 @@ fn is_function_word(word: &str, selected_language: &str) -> bool {
         ),
         lang if lang.starts_with("es") => matches!(
             word,
-            "de"
-                | "del"
+            "de" | "del"
                 | "la"
                 | "las"
                 | "el"
@@ -112,8 +110,7 @@ fn is_function_word(word: &str, selected_language: &str) -> bool {
         ),
         _ => matches!(
             word,
-            "a"
-                | "an"
+            "a" | "an"
                 | "the"
                 | "to"
                 | "of"
@@ -140,7 +137,10 @@ fn maybe_prefer_richer_short_phrase_hypothesis(
 ) -> Option<String> {
     let primary_tokens = tokenize_words(primary_text);
     let alternate_tokens = tokenize_words(alternate_text);
-    if primary_tokens.is_empty() || alternate_tokens.is_empty() || primary_tokens == alternate_tokens {
+    if primary_tokens.is_empty()
+        || alternate_tokens.is_empty()
+        || primary_tokens == alternate_tokens
+    {
         return None;
     }
 
@@ -277,11 +277,12 @@ fn build_correction_terms(
     profile: ParakeetDomainProfile,
 ) -> Vec<String> {
     let mut terms = settings.custom_words.clone();
-    let parakeet_builtins = parakeet_builtin_correction_terms_with_profile(
-        &settings.selected_language,
-        profile,
-    );
-    if let Some(vocalype_term) = parakeet_builtins.into_iter().find(|term| term == "Vocalype") {
+    let parakeet_builtins =
+        parakeet_builtin_correction_terms_with_profile(&settings.selected_language, profile);
+    if let Some(vocalype_term) = parakeet_builtins
+        .into_iter()
+        .find(|term| term == "Vocalype")
+    {
         terms.push(vocalype_term);
     }
 
@@ -1007,15 +1008,15 @@ impl TranscriptionManager {
                                     );
                                     let mut display_text = selected_result.text.clone();
                                     if is_short_phrase {
-                                        let mut short_phrase_candidates = vec![display_text.clone()];
+                                        let mut short_phrase_candidates =
+                                            vec![display_text.clone()];
                                         if let Ok(word_result) = parakeet_engine.transcribe_samples(
                                             decode_audio.clone(),
                                             16_000,
                                             1,
                                             Some(ParakeetTimestampMode::Words),
                                         ) {
-                                            short_phrase_candidates
-                                                .push(word_result.text.clone());
+                                            short_phrase_candidates.push(word_result.text.clone());
                                             if let Some(preferred) =
                                                 maybe_prefer_richer_short_phrase_hypothesis(
                                                     &display_text,
@@ -1027,8 +1028,8 @@ impl TranscriptionManager {
                                             }
                                         }
                                         if audio.len() <= PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES {
-                                            if let Ok(raw_sentence_result) =
-                                                parakeet_engine.transcribe_samples(
+                                            if let Ok(raw_sentence_result) = parakeet_engine
+                                                .transcribe_samples(
                                                     audio.clone(),
                                                     16_000,
                                                     1,
@@ -1046,8 +1047,7 @@ impl TranscriptionManager {
                                                     Some(ParakeetTimestampMode::Words),
                                                 )
                                             {
-                                                short_phrase_candidates
-                                                    .push(raw_word_result.text);
+                                                short_phrase_candidates.push(raw_word_result.text);
                                             }
                                         }
                                         if let Some(best_short_candidate) =
@@ -1088,17 +1088,18 @@ impl TranscriptionManager {
                                     // Words mode (long phrase): convert per-word timed tokens to
                                     // TranscriptionSegment so the chunking worker can trim the
                                     // overlap prefix by timestamp (immune to non-determinism).
-                                    let segments: Vec<transcribe_rs::TranscriptionSegment> = selected_result
-                                        .tokens
-                                        .iter()
-                                        .map(|t| transcribe_rs::TranscriptionSegment {
-                                            start: t.start,
-                                            end: t.end,
-                                            text: t.text.clone(),
-                                            confidence: None,
-                                            words: None,
-                                        })
-                                        .collect();
+                                    let segments: Vec<transcribe_rs::TranscriptionSegment> =
+                                        selected_result
+                                            .tokens
+                                            .iter()
+                                            .map(|t| transcribe_rs::TranscriptionSegment {
+                                                start: t.start,
+                                                end: t.end,
+                                                text: t.text.clone(),
+                                                confidence: None,
+                                                words: None,
+                                            })
+                                            .collect();
                                     Ok(EngineTranscriptionResult {
                                         text: display_text,
                                         segments: if segments.is_empty() {
@@ -1515,11 +1516,8 @@ mod tests {
 
     #[test]
     fn prefers_short_phrase_hypothesis_with_same_content_and_more_function_words() {
-        let preferred = maybe_prefer_richer_short_phrase_hypothesis(
-            "arrete parler",
-            "arrete de parler",
-            "fr",
-        );
+        let preferred =
+            maybe_prefer_richer_short_phrase_hypothesis("arrete parler", "arrete de parler", "fr");
         assert_eq!(preferred.as_deref(), Some("arrete de parler"));
     }
 
@@ -1544,5 +1542,4 @@ mod tests {
         let chosen = choose_best_short_phrase_hypothesis(&candidates, "fr");
         assert_eq!(chosen.as_deref(), Some("arrete de parler"));
     }
-
 }

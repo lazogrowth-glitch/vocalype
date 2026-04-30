@@ -681,6 +681,9 @@ pub fn maybe_prefer_sentence_punctuation(words_text: &str, sentence_text: &str) 
     if sentence_punctuation_score(sentence_trimmed) <= sentence_punctuation_score(words_trimmed) {
         return None;
     }
+    if !is_conservative_sentence_punctuation_upgrade(words_trimmed, sentence_trimmed) {
+        return None;
+    }
 
     if words_signature == sentence_signature {
         Some(sentence_trimmed.to_string())
@@ -2256,6 +2259,47 @@ fn sentence_punctuation_score(text: &str) -> usize {
         .count()
 }
 
+fn terminal_sentence_mark(text: &str) -> Option<char> {
+    text.trim_end_matches(|c: char| c.is_whitespace() || matches!(c, '"' | '\'' | ')' | ']'))
+        .chars()
+        .last()
+        .filter(|c| matches!(c, '.' | '!' | '?'))
+}
+
+fn has_internal_sentence_punctuation(text: &str) -> bool {
+    let trimmed = text
+        .trim_end_matches(|c: char| c.is_whitespace() || matches!(c, '"' | '\'' | ')' | ']'));
+    let mut chars: Vec<(usize, char)> = trimmed.char_indices().collect();
+    let Some((last_idx, last_char)) = chars.pop() else {
+        return false;
+    };
+    for (_, ch) in chars {
+        if matches!(ch, '.' | '!' | '?' | ':' | ';') {
+            return true;
+        }
+    }
+    let _ = last_idx;
+    let _ = last_char;
+    false
+}
+
+fn is_conservative_sentence_punctuation_upgrade(words_text: &str, sentence_text: &str) -> bool {
+    let words_terminal = terminal_sentence_mark(words_text);
+    let sentence_terminal = terminal_sentence_mark(sentence_text);
+    if sentence_terminal.is_none() {
+        return false;
+    }
+    if has_internal_sentence_punctuation(sentence_text) {
+        return false;
+    }
+    if words_terminal == sentence_terminal {
+        return false;
+    }
+    let words_score = sentence_punctuation_score(words_text);
+    let sentence_score = sentence_punctuation_score(sentence_text);
+    sentence_score == words_score + 1
+}
+
 fn lexical_signature(text: &str) -> Vec<String> {
     text.split_whitespace()
         .map(|token| {
@@ -2620,6 +2664,24 @@ mod tests {
         let candidate = maybe_prefer_sentence_punctuation(
             "pourquoi tu ecris pas ce que je te dis",
             "Parakeet, ecris pas ce que je te dis.",
+        );
+        assert!(candidate.is_none());
+    }
+
+    #[test]
+    fn rejects_sentence_punctuation_with_internal_pause_split() {
+        let candidate = maybe_prefer_sentence_punctuation(
+            "je veux expliquer l idee sans vraiment terminer puis continuer juste apres",
+            "Je veux expliquer l'idee sans vraiment terminer. Puis continuer juste apres.",
+        );
+        assert!(candidate.is_none());
+    }
+
+    #[test]
+    fn rejects_sentence_punctuation_with_non_terminal_upgrade() {
+        let candidate = maybe_prefer_sentence_punctuation(
+            "i want to explain the idea before continuing",
+            "I want to explain the idea: before continuing",
         );
         assert!(candidate.is_none());
     }

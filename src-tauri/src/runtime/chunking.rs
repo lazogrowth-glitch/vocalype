@@ -54,12 +54,11 @@ pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; /
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
 pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s; // 2.5 s; // 2.0 s
-/// French errors are handled by text/vocabulary learning rather than a more
-/// aggressive chunk profile, which regressed long-form eval samples.
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize =
-    PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES;
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize =
-    PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES;
+/// Explicit French dictation drifts more easily on long local chunks, so keep
+/// the base chunk shorter and the overlap wider than the generic multilingual
+/// route. This favors language stability over raw throughput.
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize = 6 * 16_000; // 6 s
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize = 19_200; // 1.2 s
 /// Auto mode must be English-safe because it is the majority traffic path.
 pub(crate) const PARAKEET_V3_AUTO_CHUNK_INTERVAL_SAMPLES: usize =
     PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES;
@@ -134,6 +133,7 @@ fn refine_parakeet_adjustment(
 ) -> (u8, u16) {
     let mut chunk = i16::from(adjusted_chunk_seconds);
     let mut overlap = i32::from(adjusted_overlap_ms);
+    let min_chunk = if selected_language.starts_with("fr") { 6 } else { 8 };
 
     if selected_language.starts_with("fr") {
         chunk -= 1;
@@ -153,7 +153,7 @@ fn refine_parakeet_adjustment(
         overlap += 160;
     }
 
-    (chunk.clamp(8, 14) as u8, overlap.clamp(700, 1600) as u16)
+    (chunk.clamp(min_chunk, 14) as u8, overlap.clamp(700, 1600) as u16)
 }
 
 // ── Chunking functions ───────────────────────────────────────────────────────
@@ -396,8 +396,8 @@ mod tests {
     #[test]
     fn french_parakeet_base_profile_is_shorter_and_wider() {
         let (chunk_seconds, overlap_ms) = parakeet_language_base_profile("fr");
-        assert_eq!(chunk_seconds, 8);
-        assert_eq!(overlap_ms, 750);
+        assert_eq!(chunk_seconds, 6);
+        assert_eq!(overlap_ms, 1200);
     }
 
     #[test]
@@ -429,5 +429,12 @@ mod tests {
         let (chunk_seconds, overlap_ms) = refine_parakeet_adjustment(12, 1000, "en", 172.0, 140.0);
         assert!(chunk_seconds < 12);
         assert!(overlap_ms > 1000);
+    }
+
+    #[test]
+    fn french_adaptive_profile_can_stay_below_eight_seconds() {
+        let (chunk_seconds, overlap_ms) = refine_parakeet_adjustment(6, 1200, "fr", 170.0, 120.0);
+        assert_eq!(chunk_seconds, 6);
+        assert!(overlap_ms >= 1200);
     }
 }

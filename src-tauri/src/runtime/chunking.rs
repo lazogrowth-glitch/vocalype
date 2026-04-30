@@ -57,8 +57,8 @@ pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.7
 /// Explicit French dictation drifts more easily on long local chunks, so keep
 /// the base chunk shorter and the overlap wider than the generic multilingual
 /// route. This favors language stability over raw throughput.
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize = 6 * 16_000; // 6 s
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize = 19_200; // 1.2 s
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize = 5 * 16_000; // 5 s
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1.0 s
 /// Auto mode must be English-safe because it is the majority traffic path.
 pub(crate) const PARAKEET_V3_AUTO_CHUNK_INTERVAL_SAMPLES: usize =
     PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES;
@@ -133,7 +133,7 @@ fn refine_parakeet_adjustment(
 ) -> (u8, u16) {
     let mut chunk = i16::from(adjusted_chunk_seconds);
     let mut overlap = i32::from(adjusted_overlap_ms);
-    let min_chunk = if selected_language.starts_with("fr") { 6 } else { 8 };
+    let min_chunk = if selected_language.starts_with("fr") { 5 } else { 8 };
 
     if selected_language.starts_with("fr") {
         chunk -= 1;
@@ -396,8 +396,8 @@ mod tests {
     #[test]
     fn french_parakeet_base_profile_is_shorter_and_wider() {
         let (chunk_seconds, overlap_ms) = parakeet_language_base_profile("fr");
-        assert_eq!(chunk_seconds, 6);
-        assert_eq!(overlap_ms, 1200);
+        assert_eq!(chunk_seconds, 5);
+        assert_eq!(overlap_ms, 1000);
     }
 
     #[test]
@@ -433,8 +433,8 @@ mod tests {
 
     #[test]
     fn french_adaptive_profile_can_stay_below_eight_seconds() {
-        let (chunk_seconds, overlap_ms) = refine_parakeet_adjustment(6, 1200, "fr", 170.0, 120.0);
-        assert_eq!(chunk_seconds, 6);
-        assert!(overlap_ms >= 1200);
+        let (chunk_seconds, overlap_ms) = refine_parakeet_adjustment(5, 1000, "fr", 170.0, 120.0);
+        assert_eq!(chunk_seconds, 5);
+        assert!(overlap_ms >= 1000);
     }
 }

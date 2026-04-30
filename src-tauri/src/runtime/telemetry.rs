@@ -225,6 +225,7 @@ impl TranscriptionTelemetry {
         session_id: u64,
         chunk_idx: usize,
         latency_ms: u64,
+        chunk_samples: usize,
         cutoff_secs: f32,
         words_in: usize,
         words_out: usize,
@@ -238,6 +239,9 @@ impl TranscriptionTelemetry {
             session_id: u64,
             chunk_idx: usize,
             latency_ms: u64,
+            chunk_samples: usize,
+            chunk_secs: f32,
+            realtime_factor: f32,
             cutoff_secs: f32,
             words_in: usize,
             words_out: usize,
@@ -250,6 +254,13 @@ impl TranscriptionTelemetry {
             session_id,
             chunk_idx,
             latency_ms,
+            chunk_samples,
+            chunk_secs: chunk_samples as f32 / 16_000.0,
+            realtime_factor: if chunk_samples == 0 {
+                0.0
+            } else {
+                latency_ms as f32 / ((chunk_samples as f32 / 16_000.0) * 1000.0)
+            },
             cutoff_secs,
             words_in,
             words_out,
@@ -401,17 +412,28 @@ impl TranscriptionTelemetry {
             failed_chunks: usize,
             duration_samples: usize,
             duration_secs: f32,
+            wall_clock_ms: u64,
+            realtime_factor: f32,
             assembled_word_count: usize,
             assembled_preview: &'a str,
         }
+        let ts_ms = Self::now_ms();
+        let wall_clock_ms = ts_ms.saturating_sub(session_id);
+        let duration_secs = duration_samples as f32 / 16_000.0;
         self.write_line(&E {
             event: "session_end",
-            ts_ms: Self::now_ms(),
+            ts_ms,
             session_id,
             total_chunks,
             failed_chunks,
             duration_samples,
-            duration_secs: duration_samples as f32 / 16_000.0,
+            duration_secs,
+            wall_clock_ms,
+            realtime_factor: if duration_secs <= 0.0 {
+                0.0
+            } else {
+                wall_clock_ms as f32 / (duration_secs * 1000.0)
+            },
             assembled_word_count,
             assembled_preview: REDACTED_TEXT_PREVIEW,
         });

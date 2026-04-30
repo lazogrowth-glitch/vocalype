@@ -419,7 +419,14 @@ fn check_parakeet_language_drift(text: &str, selected_language: &str) {
     }
 }
 
-fn record_parakeet_language_drift(app_handle: &AppHandle, text: &str, selected_language: &str) {
+fn record_parakeet_language_drift(
+    app_handle: &AppHandle,
+    text: &str,
+    selected_language: &str,
+    audio_samples: usize,
+    is_short_phrase: bool,
+    model_id: Option<&str>,
+) {
     if !has_language_drift(text, selected_language) {
         return;
     }
@@ -450,6 +457,10 @@ fn record_parakeet_language_drift(app_handle: &AppHandle, text: &str, selected_l
         "detected_language": detected,
         "token_count": token_count,
         "function_word_count": function_word_count,
+        "audio_samples": audio_samples,
+        "audio_seconds": (audio_samples as f32) / 16_000.0,
+        "is_short_phrase": is_short_phrase,
+        "model_id": model_id,
         "preview": preview,
         "text": text,
     });
@@ -990,6 +1001,9 @@ impl TranscriptionManager {
                                         &self.app_handle,
                                         &selected_result.text,
                                         &settings.selected_language,
+                                        audio.len(),
+                                        is_short_phrase,
+                                        active_model_id.as_deref(),
                                     );
                                     let mut display_text = selected_result.text.clone();
                                     if is_short_phrase {
@@ -1119,6 +1133,9 @@ impl TranscriptionManager {
                                                 &self.app_handle,
                                                 &result.text,
                                                 &settings.selected_language,
+                                                audio.len(),
+                                                is_short_phrase,
+                                                active_model_id.as_deref(),
                                             );
                                             EngineTranscriptionResult {
                                                 text: result.text,

@@ -162,7 +162,7 @@ fn run_chunked_pipeline(
         let chunk_end = last_committed + profile.interval_samples;
         let chunk = audio[chunk_start..chunk_end].to_vec();
         let cutoff_secs = actual_overlap as f32 / SAMPLE_RATE as f32;
-        let text = transcribe_parakeet_chunk(engine, chunk, cutoff_secs)?;
+        let text = transcribe_parakeet_chunk(engine, chunk, cutoff_secs, selected_language)?;
         if debug_sample.is_some() {
             eprintln!(
                 "[debug:{sample_id}] chunk={next_idx} start={chunk_start} end={chunk_end} cutoff={cutoff_secs:.3}s text={:?}",
@@ -182,6 +182,7 @@ fn run_chunked_pipeline(
             engine,
             remaining,
             actual_overlap as f32 / SAMPLE_RATE as f32,
+            selected_language,
         )?;
         if debug_sample.is_some() {
             eprintln!(
@@ -200,7 +201,7 @@ fn run_chunked_pipeline(
         // Add 0.25s of silence so the model can cleanly decode the last word
         let mut recovery_audio = audio.to_vec();
         recovery_audio.extend(std::iter::repeat(0.0f32).take(4_000));
-        let recovered = transcribe_parakeet_chunk(engine, recovery_audio, 0.0)?;
+        let recovered = transcribe_parakeet_chunk(engine, recovery_audio, 0.0, selected_language)?;
         if should_promote_full_audio_recovery(&assembled, &recovered, audio.len()) {
             if debug_sample.is_some() {
                 eprintln!(
@@ -245,6 +246,7 @@ fn transcribe_parakeet_chunk(
     engine: &mut ParakeetTDT,
     audio: Vec<f32>,
     overlap_cutoff_secs: f32,
+    selected_language: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let decode_audio = maybe_boost_low_energy_parakeet_audio(&audio)
         .map(|(samples, _)| samples)
@@ -264,7 +266,11 @@ fn transcribe_parakeet_chunk(
             Some(TimestampMode::Sentences),
         ) {
             if let Some(punctuated) =
-                maybe_prefer_sentence_punctuation(&preferred_text, &sentence_result.text)
+                maybe_prefer_sentence_punctuation(
+                    &preferred_text,
+                    &sentence_result.text,
+                    selected_language,
+                )
             {
                 preferred_text = punctuated;
             }
@@ -311,7 +317,9 @@ fn transcribe_parakeet_chunk(
     let trimmed = trimmed.trim().to_string();
     if trimmed.is_empty() {
         Ok(trimmed)
-    } else if let Some(punctuated) = maybe_prefer_sentence_punctuation(&trimmed, &preferred_text) {
+    } else if let Some(punctuated) =
+        maybe_prefer_sentence_punctuation(&trimmed, &preferred_text, selected_language)
+    {
         Ok(punctuated)
     } else {
         Ok(trimmed)

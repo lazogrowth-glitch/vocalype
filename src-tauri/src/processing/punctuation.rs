@@ -191,6 +191,7 @@ pub fn fix_punctuation(text: &str, category: AppContextCategory) -> String {
 
     // ── Rule 3: ensure terminal punctuation ───────────────────────────────────
     if !has_terminal_punct(&s)
+        && !has_terminal_soft_separator(&s)
         && !looks_like_open_ended_tail(&s)
         && !ends_with_continuation_marker(&s)
     {
@@ -221,6 +222,10 @@ fn has_terminal_punct(text: &str) -> bool {
         // Three-dot ellipsis written as ASCII
         _ => text.ends_with("..."),
     }
+}
+
+fn has_terminal_soft_separator(text: &str) -> bool {
+    matches!(text.chars().last(), Some(',' | ':' | ';'))
 }
 
 fn last_word_lower(text: &str) -> Option<String> {
@@ -731,6 +736,16 @@ mod tests {
             fix_punctuation("je veux continuer et tout", DEFAULT),
             "Je veux continuer et tout"
         );
+    }
+
+    #[test]
+    fn trailing_comma_does_not_get_forced_period() {
+        assert_eq!(fix_punctuation("bonjour,", DEFAULT), "Bonjour,");
+    }
+
+    #[test]
+    fn trailing_colon_does_not_get_forced_period() {
+        assert_eq!(fix_punctuation("voici le plan:", DEFAULT), "Voici le plan:");
     }
 
     #[test]

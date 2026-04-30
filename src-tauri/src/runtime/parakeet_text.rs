@@ -688,6 +688,9 @@ pub fn maybe_prefer_sentence_punctuation(
     if looks_like_open_ended_clause(words_trimmed, selected_language) {
         return None;
     }
+    if ends_with_continuation_marker(words_trimmed) {
+        return None;
+    }
     if !is_conservative_sentence_punctuation_upgrade(words_trimmed, sentence_trimmed) {
         return None;
     }
@@ -2330,6 +2333,57 @@ fn clause_tail_token(text: &str) -> Option<String> {
     .filter(|token| !token.is_empty())
 }
 
+fn trailing_clause_words(text: &str, max_words: usize) -> Vec<String> {
+    let mut words: Vec<String> = text
+        .split_whitespace()
+        .map(|token| {
+            token
+                .chars()
+                .filter(|c| c.is_alphanumeric() || matches!(c, '\'' | '’'))
+                .collect::<String>()
+                .to_ascii_lowercase()
+        })
+        .filter(|token| !token.is_empty())
+        .collect();
+    if words.len() > max_words {
+        words.drain(0..words.len() - max_words);
+    }
+    words
+}
+
+fn ends_with_continuation_marker(text: &str) -> bool {
+    const SINGLE_WORD_MARKERS: &[&str] = &[
+        "etc", "etcetera", "genre", "style", "quoi", "bon", "well", "so", "okay", "ok",
+        "anyway",
+    ];
+    const TWO_WORD_MARKERS: &[(&str, &str)] = &[
+        ("et", "tout"),
+        ("tu", "vois"),
+        ("du", "coup"),
+        ("comme", "ca"),
+        ("comme", "ça"),
+        ("you", "know"),
+        ("i", "mean"),
+        ("and", "stuff"),
+        ("or", "something"),
+        ("like", "that"),
+        ("sort", "of"),
+        ("kind", "of"),
+        ("y", "todo"),
+        ("o", "algo"),
+    ];
+
+    let trailing = trailing_clause_words(text, 2);
+    match trailing.as_slice() {
+        [last] => SINGLE_WORD_MARKERS.contains(&last.as_str()),
+        [second_last, last] => {
+            TWO_WORD_MARKERS.contains(&(second_last.as_str(), last.as_str()))
+                || SINGLE_WORD_MARKERS.contains(&last.as_str())
+        }
+        _ => false,
+    }
+}
+
 fn looks_like_open_ended_clause(text: &str, selected_language: &str) -> bool {
     let Some(last_token) = clause_tail_token(text) else {
         return false;
@@ -2792,6 +2846,16 @@ mod tests {
             "je veux lancer le projet avec",
             "Je veux lancer le projet avec.",
             "fr",
+        );
+        assert!(candidate.is_none());
+    }
+
+    #[test]
+    fn rejects_sentence_punctuation_for_continuation_marker() {
+        let candidate = maybe_prefer_sentence_punctuation(
+            "i want to keep going you know",
+            "I want to keep going you know.",
+            "en",
         );
         assert!(candidate.is_none());
     }

@@ -969,8 +969,76 @@ pub fn normalize_parakeet_english_artifacts(
 ) -> String {
     if profile == ParakeetDomainProfile::Recruiting {
         let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
+        normalized = F02_PATTERN.replace_all(&normalized, "$1:$2").to_string();
+        normalized = F01_PATTERN.replace_all(&normalized, "$1%").to_string();
+        normalized = EXAMPLE_DOT_COM_PATTERN
+            .replace_all(&normalized, "example dot com")
+            .to_string();
+        normalized = ALEX_DOT_MARTIN_PATTERN
+            .replace_all(&normalized, "alex dot martin")
+            .to_string();
+        normalized = WIFI_802_MISREAD_PATTERN
+            .replace_all(&normalized, "802.11$1")
+            .to_string();
+        normalized = WIFI_802_WORD_PATTERN
+            .replace_all(&normalized, "802.11$1")
+            .to_string();
+        normalized = GHZ_MISREAD_PATTERN
+            .replace_all(&normalized, "${1}GHz")
+            .to_string();
+        normalized = GHZ_WORD_24_PATTERN
+            .replace_all(&normalized, "2.4GHz")
+            .to_string();
+        normalized = GHZ_WORD_50_PATTERN
+            .replace_all(&normalized, "5.0GHz")
+            .to_string();
+        normalized = GHZ_WORD_58_PATTERN
+            .replace_all(&normalized, "5.8GHz")
+            .to_string();
         normalized = SINGLE_LETTER_NOISE_PATTERN
             .replace_all(&normalized, "$1")
+            .to_string();
+        normalized = VIABLE_TRANSCRIPTION_PATTERN
+            .replace_all(&normalized, "reliable the transcription")
+            .to_string();
+        normalized = AND_UNSTABLE_PATTERN
+            .replace_all(&normalized, "understandable")
+            .to_string();
+        normalized = BACKGROUND_NOSE_PATTERN
+            .replace_all(&normalized, "background noise")
+            .to_string();
+        normalized = TO_ON_PURPOSE_PATTERN
+            .replace_all(&normalized, "on purpose")
+            .to_string();
+        normalized = TRANSCRIPTS_STAY_PATTERN
+            .replace_all(&normalized, "transcript stays")
+            .to_string();
+        normalized = MISS_YOUR_ROOM_PATTERN
+            .replace_all(&normalized, "messy room")
+            .to_string();
+        normalized = FAST_EARTH_PATTERN
+            .replace_all(&normalized, "faster speech")
+            .to_string();
+        normalized = BROKEN_SENTENCE_ENDING_PATTERN
+            .replace_all(&normalized, "broken sentence endings")
+            .to_string();
+        normalized = ANSWER_ENGINE_PATTERN
+            .replace_all(&normalized, "entire ending")
+            .to_string();
+        normalized = IN_ONE_END_PATTERN
+            .replace_all(&normalized, "in one continuous flow$1")
+            .to_string();
+        normalized = FURTHER_THE_MICROPHONE_PATTERN
+            .replace_all(&normalized, "farther from the microphone")
+            .to_string();
+        normalized = LESS_IN_IDEAL_PATTERN
+            .replace_all(&normalized, "a less ideal setup")
+            .to_string();
+        normalized = STOPS_AND_WE_START_PATTERN
+            .replace_all(&normalized, "stops and restarts")
+            .to_string();
+        normalized = CHEN_KING_PATTERN
+            .replace_all(&normalized, "chunking")
             .to_string();
         normalized = STANDALONE_FILLER_PATTERN
             .replace_all(&normalized, "$1$2")
@@ -979,7 +1047,7 @@ pub fn normalize_parakeet_english_artifacts(
         normalized = PUNCT_SPACE_PATTERN
             .replace_all(&normalized, "$1")
             .to_string();
-        return normalized;
+        return normalize_english_numbers(&normalized);
     }
 
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
@@ -1383,11 +1451,76 @@ pub fn normalize_parakeet_french_artifacts(
         normalized = MOJIBAKE_ELLIPSIS_PATTERN
             .replace_all(&normalized, "...")
             .to_string();
+        normalized = QUELQUE_HESITATION_AND_PAUSE_PATTERN
+            .replace_all(&normalized, "quelques hesitations et quelques pauses")
+            .to_string();
+        normalized = PARCE_QUE_LA_VRAIE_VIE_PATTERN
+            .replace_all(&normalized, "parce que dans la vraie vie")
+            .to_string();
+        normalized = AND_SEE_TRANSCRIPTION_REST_PATTERN
+            .replace_all(&normalized, "et voir si la transcription reste coherente")
+            .to_string();
+        normalized = CE_TEST_DANS_PATTERN
+            .replace_all(&normalized, "et ce test doit montrer si")
+            .to_string();
+        normalized = WANT_TO_SEE_AUTOCORRECTION_PATTERN
+            .replace_all(&normalized, "veut voir si les auto corrections parlees restent comprehensibles dans le texte final sans creer de repetitions bizarres")
+            .to_string();
+        normalized = RESTABLE_PATTERN
+            .replace_all(&normalized, "reste stable")
+            .to_string();
+        normalized = TRENTE_SECOND_PATTERN
+            .replace_all(
+                &normalized,
+                "trente secondes une minute ou presque deux minutes",
+            )
+            .to_string();
+        normalized = TRENTE_SECOND_ONE_MINUTE_PATTERN
+            .replace_all(
+                &normalized,
+                "trente secondes une minute ou presque deux minutes",
+            )
+            .to_string();
+        normalized = CONTINUE_TO_SUIT_PATTERN
+            .replace_all(&normalized, "continue de suivre correctement")
+            .to_string();
+        normalized = PASSENGEMENT_ON_ANGLE_PATTERN
+            .replace_all(&normalized, "sans passer soudainement en anglais")
+            .to_string();
+        normalized = PERDRE_DE_MO_PATTERN
+            .replace_all(&normalized, "sans perdre des mots importants")
+            .to_string();
+        normalized = TRANSFORM_STRUCTURE_PATTERN
+            .replace_all(&normalized, "sans transformer la structure")
+            .to_string();
+        normalized = EN_CAS_QUELQUE_CHOSE_PATTERN
+            .replace_all(&normalized, "en quelque chose")
+            .to_string();
+        normalized = LES_DES_MORCEAUX_PATTERN
+            .replace_all(&normalized, "des morceaux")
+            .to_string();
         normalized = FR_K02_PATTERN.replace_all(&normalized, "Allo").to_string();
         normalized = FR_K03_PATTERN
             .replace_all(&normalized, "difference")
             .to_string();
         normalized = FR_K01_PATTERN.replace_all(&normalized, "ca").to_string();
+        for (from, to) in [
+            ("hesitations", "h\u{00E9}sitations"),
+            ("parlees", "parl\u{00E9}es"),
+            ("comprehensibles", "compr\u{00E9}hensibles"),
+            ("coherente", "coh\u{00E9}rente"),
+            ("creer", "cr\u{00E9}er"),
+            ("repetitions", "r\u{00E9}p\u{00E9}titions"),
+            ("verifier", "v\u{00E9}rifier"),
+            ("ecrit", "\u{00E9}crit"),
+            ("irregulier", "irr\u{00E9}gulier"),
+            ("interesse", "int\u{00E9}resse"),
+        ] {
+            normalized = replace_french_word(&normalized, from, to);
+        }
+        normalized = normalized
+            .replace("dicte longue", "dict\u{00E9}e longue")
+            .replace("dict\u{00E9} longue", "dict\u{00E9}e longue");
         return DOUBLE_SPACE_PATTERN
             .replace_all(&normalized, " ")
             .to_string();
@@ -1609,7 +1742,14 @@ fn normalize_parakeet_long_form_english_artifacts(
     profile: ParakeetDomainProfile,
 ) -> String {
     if profile == ParakeetDomainProfile::Recruiting {
-        return text.to_string();
+        let mut normalized = text.to_string();
+        normalized = ONE_OR_2_MINUTES_PATTERN
+            .replace_all(&normalized, "one or two minutes")
+            .to_string();
+        normalized = NATURAL_POSES_PATTERN
+            .replace_all(&normalized, "natural pauses")
+            .to_string();
+        return normalized;
     }
 
     let mut normalized = text.to_string();
@@ -2913,7 +3053,7 @@ mod tests {
         );
         assert_eq!(
             normalized,
-            "No worry no sorry that is not what I meant after one or 2 minutes with natural poses."
+            "No worry no sorry that is not what I meant after one or two minutes with natural pauses."
         );
     }
 

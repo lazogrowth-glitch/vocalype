@@ -967,6 +967,21 @@ pub fn normalize_parakeet_english_artifacts(
     text: &str,
     profile: ParakeetDomainProfile,
 ) -> String {
+    if profile == ParakeetDomainProfile::Recruiting {
+        let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
+        normalized = SINGLE_LETTER_NOISE_PATTERN
+            .replace_all(&normalized, "$1")
+            .to_string();
+        normalized = STANDALONE_FILLER_PATTERN
+            .replace_all(&normalized, "$1$2")
+            .to_string();
+        normalized = collapse_repeated_words(&normalized);
+        normalized = PUNCT_SPACE_PATTERN
+            .replace_all(&normalized, "$1")
+            .to_string();
+        return normalized;
+    }
+
     let mut normalized = OPEN_I_PATTERN.replace_all(text, "OpenAI").to_string();
     normalized = F05_PATTERN.replace_all(&normalized, "802.11").to_string();
     normalized = B01_PATTERN_1.replace_all(&normalized, "1920").to_string();
@@ -1328,7 +1343,56 @@ pub fn normalize_parakeet_english_artifacts(
     normalize_english_numbers(&normalized)
 }
 
-pub fn normalize_parakeet_french_artifacts(text: &str) -> String {
+pub fn normalize_parakeet_french_artifacts(
+    text: &str,
+    profile: ParakeetDomainProfile,
+) -> String {
+    if profile == ParakeetDomainProfile::Recruiting {
+        let mut normalized = text.to_string();
+        normalized = MOJIBAKE_C_PATTERN.replace_all(&normalized, "c").to_string();
+        normalized = MOJIBAKE_E_ACUTE_PATTERN
+            .replace_all(&normalized, "e")
+            .to_string();
+        normalized = MOJIBAKE_E_GRAVE_PATTERN
+            .replace_all(&normalized, "e")
+            .to_string();
+        normalized = MOJIBAKE_E_CIRC_PATTERN
+            .replace_all(&normalized, "e")
+            .to_string();
+        normalized = MOJIBAKE_A_GRAVE_PATTERN
+            .replace_all(&normalized, "a")
+            .to_string();
+        normalized = MOJIBAKE_A_CIRC_PATTERN
+            .replace_all(&normalized, "a")
+            .to_string();
+        normalized = MOJIBAKE_I_CIRC_PATTERN
+            .replace_all(&normalized, "i")
+            .to_string();
+        normalized = MOJIBAKE_O_CIRC_PATTERN
+            .replace_all(&normalized, "o")
+            .to_string();
+        normalized = MOJIBAKE_U_GRAVE_PATTERN
+            .replace_all(&normalized, "u")
+            .to_string();
+        normalized = MOJIBAKE_U_CIRC_PATTERN
+            .replace_all(&normalized, "u")
+            .to_string();
+        normalized = MOJIBAKE_APOS_PATTERN
+            .replace_all(&normalized, "'")
+            .to_string();
+        normalized = MOJIBAKE_ELLIPSIS_PATTERN
+            .replace_all(&normalized, "...")
+            .to_string();
+        normalized = FR_K02_PATTERN.replace_all(&normalized, "Allo").to_string();
+        normalized = FR_K03_PATTERN
+            .replace_all(&normalized, "difference")
+            .to_string();
+        normalized = FR_K01_PATTERN.replace_all(&normalized, "ca").to_string();
+        return DOUBLE_SPACE_PATTERN
+            .replace_all(&normalized, " ")
+            .to_string();
+    }
+
     let mut normalized = text.to_string();
     normalized = J05_PATTERN.replace_all(&normalized, "330 000").to_string();
     normalized = J02_PATTERN
@@ -1544,6 +1608,10 @@ fn normalize_parakeet_long_form_english_artifacts(
     text: &str,
     profile: ParakeetDomainProfile,
 ) -> String {
+    if profile == ParakeetDomainProfile::Recruiting {
+        return text.to_string();
+    }
+
     let mut normalized = text.to_string();
     normalized = ONE_OR_2_MINUTES_PATTERN
         .replace_all(&normalized, "one or two minutes")
@@ -1835,7 +1903,7 @@ pub fn finalize_parakeet_text_with_profile(
         normalized = normalize_parakeet_english_artifacts(&normalized, profile);
         normalized = normalize_parakeet_long_form_english_artifacts(&normalized, profile);
     } else if selected_language == "fr" {
-        normalized = normalize_parakeet_french_artifacts(&normalized);
+        normalized = normalize_parakeet_french_artifacts(&normalized, profile);
         normalized = restore_french_apostrophes(&normalized);
         normalized = restore_french_accents(&normalized);
         // Remove spaces that the model inserts before punctuation (e.g. "802 .11n" → "802.11n")
@@ -2583,9 +2651,10 @@ mod tests {
 
     #[test]
     fn normalizes_english_number_phrases() {
-        let normalized = finalize_parakeet_text(
+        let normalized = finalize_parakeet_text_with_profile(
             "The meeting is scheduled for April three twenty twenty six at two forty five PM and the budget is twelve point five percent.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(normalized.contains("April 3 2026"));
         assert!(normalized.contains("2:45 PM"));
@@ -2594,9 +2663,10 @@ mod tests {
 
     #[test]
     fn normalizes_email_url_artifacts() {
-        let normalized = finalize_parakeet_text(
+        let normalized = finalize_parakeet_text_with_profile(
             "My email is alex .martin at example .com and the document lives on docks dot call vocal.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(normalized.contains("alex dot martin"));
         assert!(normalized.contains("example dot com"));
@@ -2605,9 +2675,10 @@ mod tests {
 
     #[test]
     fn normalizes_natural_speech_artifacts() {
-        let normalized = finalize_parakeet_text(
+        let normalized = finalize_parakeet_text_with_profile(
             "This uh recording um has little stops and we start in the middle of the thought. so we can see if Chen King still behaves well.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert_eq!(
             normalized,
@@ -2617,9 +2688,10 @@ mod tests {
 
     #[test]
     fn fixes_low_volume_and_overlap_artifacts() {
-        let normalized = finalize_parakeet_text(
+        let normalized = finalize_parakeet_text_with_profile(
             "I am speaking with a bit of urgency and not much separation between ideas so so the chunk binder eyes get a harder work out. The motor starts failing when the trunk uh when the microphone input is too weak.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(normalized.contains("the chunk boundaries get a harder workout"));
         assert!(
@@ -2629,9 +2701,10 @@ mod tests {
 
     #[test]
     fn normalizes_observed_english_eval_artifacts() {
-        let normalized = finalize_parakeet_text(
+        let normalized = finalize_parakeet_text_with_profile(
             "This recording should tell us whether a small amount of Mombian sound change the transcription quality in a meaningful way. I am going to keep the words in the in the right order. And that more realistic than reading. I want to confirm that Parakeet V3 correctly transcribes names like Vocali, GitHub, OpenAI, Microsoft and Yassine. I am speaking at a regular place with a clear voice. I am speaking very softly. Now I want to see if the transcript still keeps the right words. Right now I am doing a longer speaking test with pauses in unusual places because something user sometimes user hesitate in the middle of a thought and then continue after a short silence. And what I want to check is whether the app still keeps the whole sentence coherent.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(normalized.contains("a small amount of ambient sound changes"));
         assert!(normalized.contains("in the right order"));
@@ -2643,9 +2716,10 @@ mod tests {
 
     #[test]
     fn normalizes_french_long_form_artifacts() {
-        let normalized = finalize_parakeet_text(
+        let normalized = finalize_parakeet_text_with_profile(
             "Je veux maintenant parler de maniÃ¨re plus naturelle avec quelque hÃ©sitation and pause parce que la vraie vie on ne parle pas comme un texte. and see the transcription rest coherent, lisible et fidÃ¨le, mÃªme quand le rythme devient plus irregulier.",
             "fr",
+            ParakeetDomainProfile::General,
         );
         assert!(normalized.contains("maniere plus naturelle"));
         assert!(normalized.contains("quelques h\u{00E9}sitations et quelques pauses"));
@@ -2655,9 +2729,10 @@ mod tests {
 
     #[test]
     fn normalizes_long_form_english_artifacts() {
-        let normalized = finalize_parakeet_text(
+        let normalized = finalize_parakeet_text_with_profile(
             "This test is meant to sound more natural than a simple scripted sentence because I want to speak the way a normal user will speak with and the idea develops over several claws. For this test and the see whether app begins to lose word duplicated sections.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(normalized.contains(
             "the way a normal user would speak while working and thinking at the same time"
@@ -2670,16 +2745,18 @@ mod tests {
     #[test]
     fn normalizes_wifi_and_ghz_artifacts() {
         // Digit-form patterns (original)
-        let t1 = finalize_parakeet_text(
+        let t1 = finalize_parakeet_text_with_profile(
             "The eight oh 2.11 in standard operates on both the 2.4 G H C and 5.0 GHC frequencies.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(t1.contains("2.4GHz"), "expected 2.4GHz in: {t1}");
         assert!(t1.contains("5.0GHz"), "expected 5.0GHz in: {t1}");
 
-        let t2 = finalize_parakeet_text(
+        let t2 = finalize_parakeet_text_with_profile(
             "This will allow it to be backwards compatible with 10.2 A, 10.2 B and 10.2 G, provided that the base station has dual radios.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(
             t2.contains("802.11A") || t2.contains("802.11a"),
@@ -2687,9 +2764,10 @@ mod tests {
         );
 
         // Word-form patterns (actual model output)
-        let t3 = finalize_parakeet_text(
+        let t3 = finalize_parakeet_text_with_profile(
             "This will allow it to be backwards compatible with eight zero two point one one A, eight zero two point one one B and eight zero two point one one G, provided that the base station has dual radios.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(
             t3.contains("802.11A") || t3.contains("802.11a"),
@@ -2704,9 +2782,10 @@ mod tests {
             "expected 802.11g in: {t3}"
         );
 
-        let t4 = finalize_parakeet_text(
+        let t4 = finalize_parakeet_text_with_profile(
             "The standard operates on both the two point four G H C and five point zero GHC frequencies.",
             "en",
+            ParakeetDomainProfile::General,
         );
         assert!(t4.contains("2.4GHz"), "expected 2.4GHz in: {t4}");
         assert!(t4.contains("5.0GHz"), "expected 5.0GHz in: {t4}");
@@ -2718,7 +2797,7 @@ mod tests {
             "j ai ouvert l application et c est d accord parce que quelqu un a dit qu il fallait le faire aujourd hui",
             "fr",
         );
-        assert!(normalized.contains("j'ai"));
+        assert!(normalized.contains("J'ai"));
         assert!(normalized.contains("l'application"));
         assert!(normalized.contains("c'est"));
         assert!(normalized.contains("d'accord"));
@@ -2805,16 +2884,13 @@ mod tests {
     }
 
     #[test]
-    fn recruiting_profile_keeps_general_english_cleanup() {
+    fn recruiting_profile_keeps_only_safe_english_cleanup() {
         let normalized = finalize_parakeet_text_with_profile(
-            "This uh recording um has little stops and we start in the middle of the thought.",
+            "This uh recording um has little little noise.",
             "en",
             ParakeetDomainProfile::Recruiting,
         );
-        assert!(
-            normalized.contains("stops and restarts"),
-            "got: {normalized}"
-        );
+        assert_eq!(normalized, "This recording has little noise.");
     }
 
     #[test]
@@ -2835,12 +2911,21 @@ mod tests {
             "en",
             ParakeetDomainProfile::Recruiting,
         );
-        assert!(
-            normalized.contains("no sorry that is not what I meant"),
-            "got: {normalized}"
+        assert_eq!(
+            normalized,
+            "No worry no sorry that is not what I meant after one or 2 minutes with natural poses."
         );
-        assert!(normalized.contains("one or two minutes"), "got: {normalized}");
-        assert!(normalized.contains("natural pauses"), "got: {normalized}");
+    }
+
+    #[test]
+    fn recruiting_profile_skips_benchmarky_french_rewrites() {
+        let input = "Et ce test doit montrer si la transcription continue de suivre correctement sans passer soudainement en anglais.";
+        let normalized = finalize_parakeet_text_with_profile(
+            input,
+            "fr",
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert_eq!(normalized, input);
     }
 
     #[test]

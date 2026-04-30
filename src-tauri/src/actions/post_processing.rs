@@ -29,6 +29,9 @@ pub(super) enum PostProcessMode {
     None,
 }
 
+const AUDIO_AWARE_PUNCT_MIN_WORDS: usize = 7;
+const AUDIO_AWARE_PUNCT_MIN_SAMPLES: usize = 3 * 16_000;
+
 pub(super) fn decide_post_process_mode(
     snippet_matched: bool,
     is_code_context: bool,
@@ -49,6 +52,22 @@ pub(super) fn decide_post_process_mode(
     } else {
         PostProcessMode::None
     }
+}
+
+fn should_use_audio_aware_punctuation(
+    text: &str,
+    category: AppContextCategory,
+    samples: &[f32],
+) -> bool {
+    if matches!(
+        category,
+        AppContextCategory::Code | AppContextCategory::Chat | AppContextCategory::Email
+    ) {
+        return false;
+    }
+
+    let word_count = text.split_whitespace().count();
+    word_count >= AUDIO_AWARE_PUNCT_MIN_WORDS && samples.len() >= AUDIO_AWARE_PUNCT_MIN_SAMPLES
 }
 
 pub(super) async fn process_transcription_text(
@@ -97,11 +116,11 @@ pub(super) async fn process_transcription_text(
         .as_ref()
         .map(|ctx| ctx.category)
         .unwrap_or(AppContextCategory::Unknown);
-    final_text = crate::punctuation::fix_punctuation_with_audio(
-        &final_text,
-        punct_category,
-        Some(samples),
-    );
+    final_text = if should_use_audio_aware_punctuation(&final_text, punct_category, samples) {
+        crate::punctuation::fix_punctuation_with_audio(&final_text, punct_category, Some(samples))
+    } else {
+        crate::punctuation::fix_punctuation(&final_text, punct_category)
+    };
     if let Ok(mut p) = profiler.lock() {
         p.push_step_since(
             "punctuation_fix",
@@ -361,5 +380,40 @@ mod tests {
             decide_post_process_mode(false, true, false, true, true),
             PostProcessMode::SelectedAction
         );
+    }
+
+    #[test]
+    fn audio_aware_punctuation_skips_short_dictation() {
+        let samples = vec![0.0_f32; 2 * 16_000];
+        assert!(!should_use_audio_aware_punctuation(
+            "bonjour comment ça va",
+            AppContextCategory::Unknown,
+            &samples,
+        ));
+    }
+
+    #[test]
+    fn audio_aware_punctuation_skips_chat_and_email() {
+        let samples = vec![0.0_f32; 5 * 16_000];
+        assert!(!should_use_audio_aware_punctuation(
+            "why does this happen in chat mode exactly",
+            AppContextCategory::Chat,
+            &samples,
+        ));
+        assert!(!should_use_audio_aware_punctuation(
+            "bonjour je voulais vous contacter au sujet de notre entretien",
+            AppContextCategory::Email,
+            &samples,
+        ));
+    }
+
+    #[test]
+    fn audio_aware_punctuation_enables_for_long_general_dictation() {
+        let samples = vec![0.0_f32; 5 * 16_000];
+        assert!(should_use_audio_aware_punctuation(
+            "bonjour je voulais vous expliquer comment le produit fonctionne aujourd'hui",
+            AppContextCategory::Unknown,
+            &samples,
+        ));
     }
 }

@@ -21,6 +21,7 @@ const PARAKEET_TAIL_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
 const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = 24;
 const PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES: usize = 3 * 16_000; // 3 s at 16 kHz
 const PARAKEET_LANGUAGE_DRIFT_LOG_FILE: &str = "parakeet-language-drift.jsonl";
+const PARAKEET_BRAIN_TRACE_LOG_FILE: &str = "parakeet-brain-trace.jsonl";
 
 fn audio_rms_and_peak(samples: &[f32]) -> (f32, f32) {
     if samples.is_empty() {
@@ -463,6 +464,47 @@ fn record_parakeet_language_drift(
         "is_short_phrase": is_short_phrase,
         "model_id": model_id,
         "preview": preview,
+        "text": text,
+    });
+
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+    {
+        let _ = std::io::Write::write_all(&mut file, entry.to_string().as_bytes());
+        let _ = std::io::Write::write_all(&mut file, b"\n");
+    }
+}
+
+fn record_parakeet_brain_stage(
+    app_handle: &AppHandle,
+    stage: &str,
+    text: &str,
+    selected_language: &str,
+    model_id: Option<&str>,
+) {
+    let Ok(log_dir) = app_handle.path().app_log_dir() else {
+        return;
+    };
+    if std::fs::create_dir_all(&log_dir).is_err() {
+        return;
+    }
+
+    let ts_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    let log_path = log_dir.join(PARAKEET_BRAIN_TRACE_LOG_FILE);
+    let entry = serde_json::json!({
+        "event": "parakeet_brain_stage",
+        "ts_ms": ts_ms,
+        "stage": stage,
+        "selected_language": selected_language,
+        "model_id": model_id,
+        "word_count": text.split_whitespace().count(),
+        "char_count": text.chars().count(),
+        "has_language_drift": has_language_drift(text, selected_language),
         "text": text,
     });
 
@@ -1256,6 +1298,13 @@ impl TranscriptionManager {
 
         // Apply word correction if custom words are configured
         let raw_result = result.text;
+        record_parakeet_brain_stage(
+            &self.app_handle,
+            "raw_result",
+            &raw_result,
+            &settings.selected_language,
+            active_model_id.as_deref(),
+        );
         let learned_result = if settings.adaptive_vocabulary_enabled {
             if let (Some(state), Some(model_id)) = (
                 self.app_handle.try_state::<VocabularyStoreState>(),
@@ -1278,6 +1327,13 @@ impl TranscriptionManager {
             raw_result
         };
         let learned_result = learned_result;
+        record_parakeet_brain_stage(
+            &self.app_handle,
+            "after_adaptive_vocabulary",
+            &learned_result,
+            &settings.selected_language,
+            active_model_id.as_deref(),
+        );
         let profile = ParakeetDomainProfile::Recruiting;
 
         let active_correction_terms =
@@ -1291,6 +1347,13 @@ impl TranscriptionManager {
         } else {
             learned_result
         };
+        record_parakeet_brain_stage(
+            &self.app_handle,
+            "after_correction_terms",
+            &corrected_result,
+            &settings.selected_language,
+            active_model_id.as_deref(),
+        );
         let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
             finalize_parakeet_text_with_profile(
@@ -1301,11 +1364,25 @@ impl TranscriptionManager {
         } else {
             corrected_result
         };
+        record_parakeet_brain_stage(
+            &self.app_handle,
+            "after_finalize_parakeet_text",
+            &corrected_result,
+            &settings.selected_language,
+            active_model_id.as_deref(),
+        );
 
         let filtered_result = Self::filter_transcription_output_for_context(
             corrected_result,
             active_model_id.as_deref(),
             app_context.as_ref(),
+        );
+        record_parakeet_brain_stage(
+            &self.app_handle,
+            "after_context_filter",
+            &filtered_result,
+            &settings.selected_language,
+            active_model_id.as_deref(),
         );
 
         let et = std::time::Instant::now();

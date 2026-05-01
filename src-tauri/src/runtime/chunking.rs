@@ -27,17 +27,16 @@ pub(crate) const WHISPER_TURBO_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
 pub(crate) const WHISPER_LARGE_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; // 8 s
 pub(crate) const WHISPER_LARGE_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s
 /// Shorter polling reduces how long a ready chunk waits before getting sent.
-pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = 100;
+pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = 200;
 /// Prevent Whisper from queueing many background chunks when the model is slower than real time.
 pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;
-/// Minimum new samples required before a VAD-triggered flush can fire.
-/// 1.5 s gives Parakeet enough context to transcribe accurately — below
-/// this, chunks are too short and the model hallucinates.
+/// Minimum new samples required before a VAD-triggered flush can fire (1 s at 16 kHz).
+/// Prevents spurious flushes at the very start of an utterance.
 pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 24_000; // 1.5 s
-/// Width of the silence window scanned for VAD-triggered flush.
-/// 500 ms filters out inter-word hesitation pauses (typically 100-400 ms)
-/// while still catching genuine sentence-ending pauses (≥ 500 ms).
-pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 8_000; // 500 ms
+/// Width of the silence window scanned for VAD-triggered flush (500 ms at 16 kHz).
+/// 500 ms filters out inter-word hesitation pauses (typically 100-400 ms) while
+/// still catching genuine sentence-ending pauses (≥ 500 ms).
+pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms
 /// Mean-squared energy threshold — windows below this are considered silent.
 /// 1e-5 ≈ RMS 0.003, well below conversational speech (~0.02–0.1 RMS).
 pub(crate) const VAD_FLUSH_ENERGY_THRESHOLD: f32 = 1e-5;
@@ -60,11 +59,11 @@ pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; /
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
 pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s; // 2.5 s; // 2.0 s
-/// French dictation uses shorter chunks to reduce first-result latency.
-/// Parakeet word timestamps handle the overlap trim precisely so smaller
-/// chunks don't sacrifice quality.
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize = 3 * 16_000; // 3 s
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s
+/// Explicit French dictation drifts more easily on long local chunks, so keep
+/// the base chunk shorter and the overlap wider than the generic multilingual
+/// route. This favors language stability over raw throughput.
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize = 5 * 16_000; // 5 s
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1.0 s
 /// Auto mode must be English-safe because it is the majority traffic path.
 pub(crate) const PARAKEET_V3_AUTO_CHUNK_INTERVAL_SAMPLES: usize =
     PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES;
@@ -140,12 +139,13 @@ fn refine_parakeet_adjustment(
     let mut chunk = i16::from(adjusted_chunk_seconds);
     let mut overlap = i32::from(adjusted_overlap_ms);
     let min_chunk = if selected_language.starts_with("fr") {
-        3
+        5
     } else {
         8
     };
 
     if selected_language.starts_with("fr") {
+        chunk -= 1;
         overlap += 120;
     }
 

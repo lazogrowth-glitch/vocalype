@@ -7,7 +7,7 @@ use crate::chunking::{
     chunking_profile_for_model, deduplicate_boundary, deduplicate_boundary_n, ActiveChunkingHandle,
     ChunkingHandle, ChunkingSharedState, CHUNK_SAMPLER_POLL_MS, MAX_PENDING_BACKGROUND_CHUNKS,
     MIN_FINAL_CHUNK_SAMPLES, PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD, VAD_FLUSH_ENERGY_THRESHOLD,
-    VAD_FLUSH_MIN_CONTENT_SAMPLES, VAD_FLUSH_SILENCE_SAMPLES, VAD_SILENT_CHUNK_ENERGY_THRESHOLD,
+    VAD_FLUSH_MIN_CONTENT_SAMPLES, VAD_FLUSH_SILENCE_SAMPLES,
 };
 use crate::context_detector::{detect_current_app_context, ActiveAppContextState};
 use crate::managers::audio::AudioRecordingManager;
@@ -225,6 +225,18 @@ fn should_fallback_from_timestamp_trim(raw_text: &str, words_in: usize, words_ou
     }
 
     words_out == 0 || (words_in <= 1 && words_out + 2 < raw_word_count)
+}
+
+fn should_skip_low_signal_vad_chunk(new_slice: &[f32]) -> bool {
+    if new_slice.is_empty() {
+        return false;
+    }
+
+    let mean_energy = new_slice.iter().map(|s| s * s).sum::<f32>() / (new_slice.len() as f32);
+    let duration_samples = new_slice.len();
+
+    mean_energy < crate::chunking::VAD_SILENT_CHUNK_ENERGY_THRESHOLD
+        || (duration_samples <= 4 * 16_000 && mean_energy < 5e-8)
 }
 
 /// Returns `true` when BOTH conditions are met:
@@ -762,13 +774,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     let is_dead_silent_vad_chunk =
                         is_parakeet_v3 && vad_flush && actual_overlap <= chunk.len() && {
                             let new_slice = &chunk[actual_overlap..];
-                            if new_slice.is_empty() {
-                                false
-                            } else {
-                                let mean_energy = new_slice.iter().map(|s| s * s).sum::<f32>()
-                                    / (new_slice.len() as f32);
-                                mean_energy < VAD_SILENT_CHUNK_ENERGY_THRESHOLD
-                            }
+                            should_skip_low_signal_vad_chunk(new_slice)
                         };
                     if is_dead_silent_vad_chunk {
                         let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
@@ -2405,6 +2411,15 @@ mod tests {
             1
         ));
         assert!(!should_fallback_from_timestamp_trim("okay", 1, 0));
+    }
+
+    #[test]
+    fn low_signal_vad_gate_skips_short_near_silent_chunks() {
+        let near_silent = vec![0.0002_f32; 3 * 16_000];
+        let voiced = vec![0.01_f32; 3 * 16_000];
+
+        assert!(should_skip_low_signal_vad_chunk(&near_silent));
+        assert!(!should_skip_low_signal_vad_chunk(&voiced));
     }
 
     #[test]

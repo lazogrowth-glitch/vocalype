@@ -31,9 +31,9 @@ pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = 100;
 /// Prevent Whisper from queueing many background chunks when the model is slower than real time.
 pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;
 /// Minimum new samples required before a VAD-triggered flush can fire.
-/// 0.75 s is enough content to produce a meaningful result while still
-/// letting VAD fire early on short utterances.
-pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 12_000; // 0.75 s
+/// 1.5 s gives Parakeet enough context to transcribe accurately — below
+/// this, chunks are too short and the model hallucinates.
+pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 24_000; // 1.5 s
 /// Width of the silence window scanned for VAD-triggered flush.
 /// 500 ms filters out inter-word hesitation pauses (typically 100-400 ms)
 /// while still catching genuine sentence-ending pauses (≥ 500 ms).

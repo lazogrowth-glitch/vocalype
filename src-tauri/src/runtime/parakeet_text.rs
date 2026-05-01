@@ -924,6 +924,9 @@ pub fn cleanup_parakeet_tail_artifacts(text: &str) -> String {
     cleaned = TRAILING_PARAKEET_FILLER_PATTERN
         .replace(cleaned.trim(), "$1")
         .to_string();
+    if cleaned.ends_with("...") || cleaned.ends_with('…') {
+        return cleaned.trim().to_string();
+    }
     cleaned = TRAILING_PUNCTUATION_RUN_PATTERN
         .replace(&cleaned, "$1")
         .to_string();
@@ -2133,6 +2136,12 @@ pub fn finalize_parakeet_text_with_profile(
             .to_string();
     }
     normalized = remove_multilingual_standalone_fillers(&normalized);
+    if normalized
+        .chars()
+        .all(|c| c.is_whitespace() || (!c.is_alphanumeric() && c != '\'' && c != '\u{2019}'))
+    {
+        return String::new();
+    }
     normalized = cleanup_parakeet_tail_artifacts(&normalized);
     normalized = deduplicate_word_repetitions(&normalized);
     normalized = DOUBLE_SPACE_PATTERN
@@ -3177,5 +3186,25 @@ mod tests {
             "this is one sentence.",
             "and this is just the continuation"
         ));
+    }
+
+    #[test]
+    fn preserves_open_ended_ellipsis_in_recruiting_profile() {
+        let normalized = finalize_parakeet_text_with_profile(
+            "j'ai remarque que...",
+            "fr",
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert_eq!(normalized, "J'ai remarque que...");
+    }
+
+    #[test]
+    fn drops_filler_only_fragment_without_leaving_punctuation() {
+        let normalized = finalize_parakeet_text_with_profile(
+            "Uh.",
+            "fr",
+            ParakeetDomainProfile::Recruiting,
+        );
+        assert!(normalized.is_empty());
     }
 }

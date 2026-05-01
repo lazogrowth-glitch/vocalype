@@ -233,10 +233,15 @@ fn should_skip_low_signal_vad_chunk(new_slice: &[f32]) -> bool {
     }
 
     let mean_energy = new_slice.iter().map(|s| s * s).sum::<f32>() / (new_slice.len() as f32);
+    let signal = summarize_audio_signal(new_slice);
     let duration_samples = new_slice.len();
+    let is_short_low_signal_chunk = signal.duration_seconds <= 2.2
+        && signal.rms < 0.0015
+        && signal.peak < 0.01;
 
     mean_energy < crate::chunking::VAD_SILENT_CHUNK_ENERGY_THRESHOLD
         || (duration_samples <= 4 * 16_000 && mean_energy < 5e-8)
+        || is_short_low_signal_chunk
 }
 
 /// Returns `true` when BOTH conditions are met:
@@ -2420,6 +2425,15 @@ mod tests {
 
         assert!(should_skip_low_signal_vad_chunk(&near_silent));
         assert!(!should_skip_low_signal_vad_chunk(&voiced));
+    }
+
+    #[test]
+    fn low_signal_vad_gate_skips_short_low_peak_chunks() {
+        let low_peak = vec![0.0008_f32; (1.8 * 16_000.0) as usize];
+        let stronger_peak = vec![0.02_f32; (1.8 * 16_000.0) as usize];
+
+        assert!(should_skip_low_signal_vad_chunk(&low_peak));
+        assert!(!should_skip_low_signal_vad_chunk(&stronger_peak));
     }
 
     #[test]

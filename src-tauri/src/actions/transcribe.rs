@@ -244,6 +244,15 @@ fn should_skip_low_signal_vad_chunk(new_slice: &[f32]) -> bool {
         || is_short_low_signal_chunk
 }
 
+fn should_defer_short_vad_chunk(new_slice: &[f32]) -> bool {
+    if new_slice.is_empty() {
+        return false;
+    }
+
+    let signal = summarize_audio_signal(new_slice);
+    signal.duration_seconds <= 2.2 && signal.rms < 0.0025 && signal.peak < 0.03
+}
+
 /// Returns `true` when BOTH conditions are met:
 ///
 ///  1. **Code context** — the session glossary holds ≥ 3 extracted identifiers,
@@ -736,11 +745,38 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     };
                     let chunk = snapshot[chunk_start..chunk_end].to_vec();
                     let cutoff_secs = actual_overlap as f32 / 16_000.0;
+                    let new_slice = if actual_overlap <= chunk.len() {
+                        &chunk[actual_overlap..]
+                    } else {
+                        &chunk[..]
+                    };
 
                     // Next chunk skips overlap only when this one ended on a VAD pause.
                     skip_overlap_next_chunk = vad_flush;
 
                     let flush_type = if interval_ready { "interval" } else { "vad" };
+                    let should_defer_low_signal_vad_chunk = is_parakeet_v3
+                        && vad_flush
+                        && should_defer_short_vad_chunk(new_slice);
+                    if should_defer_low_signal_vad_chunk {
+                        tel_sampler.log_chunk_candidate(
+                            session_id,
+                            next_idx,
+                            flush_type,
+                            new_samples,
+                            total,
+                            actual_overlap,
+                            cutoff_secs,
+                            pending_now,
+                            false,
+                            "vad_short_deferred_low_signal",
+                        );
+                        if let Ok(mut counters) = counters_sampler.lock() {
+                            counters.chunk_candidates_rejected += 1;
+                        }
+                        skip_overlap_next_chunk = false;
+                        continue;
+                    }
                     if is_parakeet_v3 {
                         tel_sampler.log_chunk_candidate(
                             session_id,
@@ -777,10 +813,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     // VAD-triggered chunk is pure noise (user held push-to-talk in silence).
                     // Compute mean energy only over new_samples (excluding overlap prefix).
                     let is_dead_silent_vad_chunk =
-                        is_parakeet_v3 && vad_flush && actual_overlap <= chunk.len() && {
-                            let new_slice = &chunk[actual_overlap..];
-                            should_skip_low_signal_vad_chunk(new_slice)
-                        };
+                        is_parakeet_v3
+                            && vad_flush
+                            && should_skip_low_signal_vad_chunk(new_slice);
                     if is_dead_silent_vad_chunk {
                         let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
                         s.last_committed_idx = chunk_end;
@@ -2434,6 +2469,15 @@ mod tests {
 
         assert!(should_skip_low_signal_vad_chunk(&low_peak));
         assert!(!should_skip_low_signal_vad_chunk(&stronger_peak));
+    }
+
+    #[test]
+    fn short_vad_chunk_is_deferred_when_signal_is_weak() {
+        let weak_short = vec![0.0015_f32; (1.8 * 16_000.0) as usize];
+        let stronger_short = vec![0.004_f32; (1.8 * 16_000.0) as usize];
+
+        assert!(should_defer_short_vad_chunk(&weak_short));
+        assert!(!should_defer_short_vad_chunk(&stronger_short));
     }
 
     #[test]

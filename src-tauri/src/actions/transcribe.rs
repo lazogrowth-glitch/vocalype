@@ -250,7 +250,47 @@ fn should_defer_short_vad_chunk(new_slice: &[f32]) -> bool {
     }
 
     let signal = summarize_audio_signal(new_slice);
-    signal.duration_seconds <= 2.2 && signal.rms < 0.0025 && signal.peak < 0.03
+    signal.duration_seconds <= 2.8 && signal.rms < 0.0035 && signal.peak < 0.04
+}
+
+fn is_suspicious_short_language_fragment(
+    text: &str,
+    selected_language: &str,
+    chunk_samples: usize,
+    is_final_chunk: bool,
+) -> bool {
+    if is_final_chunk || !selected_language.starts_with("fr") {
+        return false;
+    }
+
+    if chunk_samples > 3 * 16_000 {
+        return false;
+    }
+
+    let bare = text
+        .trim()
+        .trim_end_matches('.')
+        .trim_end_matches(',')
+        .trim_end_matches('!')
+        .trim_end_matches('?')
+        .to_lowercase();
+    if bare.is_empty() {
+        return false;
+    }
+
+    let words: Vec<&str> = bare.split_whitespace().collect();
+    if words.len() > 3 {
+        return false;
+    }
+
+    const ENGLISH_SHORT_FRAGMENT_MARKERS: &[&str] = &[
+        "the", "yeah", "yes", "i", "you", "we", "they", "he", "she", "it", "um", "uh",
+        "okay", "ok", "thanks", "thank", "sorry",
+    ];
+
+    words
+        .iter()
+        .all(|word| ENGLISH_SHORT_FRAGMENT_MARKERS.contains(word))
 }
 
 /// Returns `true` when BOTH conditions are met:
@@ -853,6 +893,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let final_recovery_worker = Arc::clone(&final_recovery_candidate);
         let ah_w = app.clone();
         let operation_id_w = operation_id;
+        let selected_language_w = settings.selected_language.clone();
         let worker_handle = std::thread::spawn(move || {
             let chunk_app_context = if get_settings(&ah_w).app_context_enabled {
                 ah_w.try_state::<ActiveAppContextState>().and_then(|state| {
@@ -1125,6 +1166,29 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             debug!(
                                 "Chunk {}: discarding likely hallucination (words={}, samples={}, final={})",
                                 idx, word_count, chunk_samples, is_final_chunk
+                            );
+                            String::new()
+                        } else if is_parakeet_v3_w
+                            && is_suspicious_short_language_fragment(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                                is_final_chunk,
+                            )
+                        {
+                            tel_worker.log_chunk_filtered(
+                                session_id,
+                                idx,
+                                "short_language_fragment",
+                                &preview_text(&text, 120),
+                                word_count,
+                                chunk_samples,
+                                is_final_chunk,
+                                "short_out_of_language_fragment_for_selected_language",
+                            );
+                            debug!(
+                                "Chunk {}: discarding suspicious short fragment for selected language {}",
+                                idx, selected_language_w
                             );
                             String::new()
                         } else {
@@ -2478,6 +2542,34 @@ mod tests {
 
         assert!(should_defer_short_vad_chunk(&weak_short));
         assert!(!should_defer_short_vad_chunk(&stronger_short));
+    }
+
+    #[test]
+    fn suspicious_short_language_fragment_is_blocked_for_french() {
+        assert!(is_suspicious_short_language_fragment(
+            "Yeah.",
+            "fr",
+            2 * 16_000,
+            false
+        ));
+        assert!(is_suspicious_short_language_fragment(
+            "The",
+            "fr",
+            2 * 16_000,
+            false
+        ));
+        assert!(!is_suspicious_short_language_fragment(
+            "Est-ce que",
+            "fr",
+            2 * 16_000,
+            false
+        ));
+        assert!(!is_suspicious_short_language_fragment(
+            "Yeah.",
+            "fr",
+            4 * 16_000,
+            false
+        ));
     }
 
     #[test]

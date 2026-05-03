@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import {
+  CheckCircle,
   ClipboardList,
-  Mail,
-  Linkedin,
   FileText,
-  Plus,
+  HardDrive,
   ChevronRight,
+  Linkedin,
+  Mail,
+  Plus,
+  Zap,
 } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
@@ -13,6 +16,7 @@ import { Dropdown, Textarea } from "@/components/ui";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { useSettings } from "../../../hooks/useSettings";
+import { useSettingsStore } from "@/stores/settingsStore";
 import { CloudPostProcessToggle } from "./CloudPostProcessToggle";
 
 type EditingAction = {
@@ -27,6 +31,8 @@ type EditingAction = {
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting, refreshSettings, settings } = useSettings();
+  const { setPostProcessProvider, updatePostProcessSetting } =
+    useSettingsStore();
   const [editingAction, setEditingAction] = useState<EditingAction | null>(
     null,
   );
@@ -91,8 +97,11 @@ export const PostProcessingSettings: React.FC = () => {
   const activeApiKey =
     settings?.post_process_api_keys?.[activeProviderId] ?? "";
 
+  const isCloudActive = activeProviderId === "vocalype-cloud";
+
   const hasProcessingModel =
     savedModels.length > 0 ||
+    isCloudActive ||
     activeProviderId === "apple_intelligence" ||
     (!!activeProviderId && !!activeModel.trim() && !!activeApiKey.trim());
 
@@ -414,27 +423,110 @@ export const PostProcessingSettings: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
-                {t("settings.postProcessing.actions.model")}
-              </label>
-              <Dropdown
-                selectedValue={editingAction.savedModelId || null}
-                options={modelDropdownOptions}
-                onSelect={(value) =>
-                  setEditingAction({
-                    ...editingAction,
-                    savedModelId: value === "__default__" ? "" : value,
-                  })
-                }
-                placeholder={t(
-                  "settings.postProcessing.actions.modelPlaceholder",
-                )}
-              />
-              <p className="text-[11px] text-zinc-600">
-                {t("settings.postProcessing.actions.modelTip")}
-              </p>
-            </div>
+            {!hasProcessingModel ? (
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+                  {t("settings.postProcessing.actions.model")}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await setPostProcessProvider("vocalype-cloud");
+                      await updatePostProcessSetting(
+                        "model",
+                        "vocalype-cloud",
+                        "llama-3.1-8b-instant",
+                      );
+                    }}
+                    className="flex flex-col gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-left transition-colors hover:border-amber-500/40 hover:bg-amber-500/10"
+                  >
+                    <Zap size={14} className="text-amber-400" />
+                    <p className="text-[12px] font-semibold text-white/80">
+                      {t("settings.postProcessing.modelPicker.cloud", {
+                        defaultValue: "Vocalype Cloud",
+                      })}
+                    </p>
+                    <p className="text-[10px] text-white/40">
+                      {t("settings.postProcessing.modelPicker.cloudDesc", {
+                        defaultValue: "Instantané · aucune install",
+                      })}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent("vocalype:navigate-settings", {
+                          detail: "models",
+                        }),
+                      )
+                    }
+                    className="flex flex-col gap-1.5 rounded-xl border border-white/7 bg-white/3 p-3 text-left transition-colors hover:border-white/15 hover:bg-white/5"
+                  >
+                    <HardDrive size={14} className="text-white/30" />
+                    <p className="text-[12px] font-semibold text-white/80">
+                      {t("settings.postProcessing.modelPicker.local", {
+                        defaultValue: "Modèle local",
+                      })}
+                    </p>
+                    <p className="text-[10px] text-white/40">
+                      {t("settings.postProcessing.modelPicker.localDesc", {
+                        defaultValue: "~600 MB · 100% privé",
+                      })}
+                    </p>
+                  </button>
+                </div>
+                <p className="text-[10px] text-zinc-600">
+                  {t("settings.postProcessing.modelPicker.required", {
+                    defaultValue:
+                      "Un modèle est requis pour exécuter cette action.",
+                  })}
+                </p>
+              </div>
+            ) : isCloudActive && savedModels.length === 0 ? (
+              <div className="flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={13} className="text-amber-400" />
+                  <span className="text-[12px] font-medium text-white/70">
+                    {t("settings.postProcessing.modelPicker.cloudActive", {
+                      defaultValue: "Vocalype Cloud actif",
+                    })}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPostProcessProvider("")}
+                  className="text-[10px] text-white/30 transition-colors hover:text-white/50"
+                >
+                  {t("settings.postProcessing.modelPicker.disable", {
+                    defaultValue: "Désactiver",
+                  })}
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+                  {t("settings.postProcessing.actions.model")}
+                </label>
+                <Dropdown
+                  selectedValue={editingAction.savedModelId || null}
+                  options={modelDropdownOptions}
+                  onSelect={(value) =>
+                    setEditingAction({
+                      ...editingAction,
+                      savedModelId: value === "__default__" ? "" : value,
+                    })
+                  }
+                  placeholder={t(
+                    "settings.postProcessing.actions.modelPlaceholder",
+                  )}
+                />
+                <p className="text-[11px] text-zinc-600">
+                  {t("settings.postProcessing.actions.modelTip")}
+                </p>
+              </div>
+            )}
 
             <div className="voca-hint-box">
               {t("settings.postProcessing.actions.llmExecutionHint", {

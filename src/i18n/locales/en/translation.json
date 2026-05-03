@@ -578,6 +578,15 @@
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
       },
       "quickTemplates": "Quick actions",
+      "modelPicker": {
+        "cloud": "Vocalype Cloud",
+        "cloudDesc": "Instant · no install",
+        "local": "Local model",
+        "localDesc": "~600 MB · 100% private",
+        "required": "A model is required to run this action.",
+        "cloudActive": "Vocalype Cloud active",
+        "disable": "Disable"
+      },
       "actions": {
         "title": "Actions",
         "configuredLabel": "Configured actions",

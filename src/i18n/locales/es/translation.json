@@ -579,6 +579,15 @@
         "createFirst": "Haz clic en \"Crear nueva instrucci?n\" arriba para crear tu primera instrucci?n de posprocesado."
       },
       "quickTemplates": "Quick actions",
+      "modelPicker": {
+        "cloud": "Vocalype Cloud",
+        "cloudDesc": "Instantáneo · sin instalar",
+        "local": "Modelo local",
+        "localDesc": "~600 MB · 100% privado",
+        "required": "Se requiere un modelo para ejecutar esta acción.",
+        "cloudActive": "Vocalype Cloud activo",
+        "disable": "Desactivar"
+      },
       "actions": {
         "title": "Acciones",
         "configuredLabel": "Configured actions",

@@ -333,6 +333,10 @@ fn ends_with_continuation_marker(text: &str) -> bool {
     ];
 
     let trailing = trailing_words_lower(text, 2);
+    if trailing.len() <= 1 {
+        return false;
+    }
+
     match trailing.as_slice() {
         [last] => SINGLE_WORD_MARKERS.contains(&last.as_str()),
         [second_last, last] => {

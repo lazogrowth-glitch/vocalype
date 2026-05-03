@@ -313,6 +313,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
         return;
     }
 
+    #[cfg(target_os = "macos")]
     if let Err(err) = tray.set_icon_as_template(true) {
         error!("Failed to set tray icon template mode: {}", err);
     }

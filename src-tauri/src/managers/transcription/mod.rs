@@ -3,9 +3,11 @@ pub(crate) mod inference;
 
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
+use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::model_ids::is_parakeet_v3_model_id;
 use crate::prompt_builder::build_whisper_initial_prompt;
+use crate::runtime_observability::PipelineStepTiming;
 use crate::settings::{
     get_settings, record_whisper_backend_failure, set_active_runtime_model,
     set_active_whisper_backend, ModelUnloadTimeout, NpuKind, WhisperBackendPreference,
@@ -46,6 +48,9 @@ use transcribe_rs::{
     },
     TranscriptionEngine,
 };
+
+const BACKGROUND_REUSE_GRACE_MS: u64 = 15_000;
+const ACTIVE_SESSION_STALE_MS: u64 = 30_000;
 
 #[cfg(target_os = "windows")]
 fn parakeet_provider_label(provider: ParakeetExecutionProvider) -> &'static str {
@@ -135,6 +140,7 @@ pub struct TranscriptionRequest {
 pub struct TranscriptionOutput {
     pub text: String,
     pub confidence_payload: Option<TranscriptionConfidencePayload>,
+    pub timings: Vec<PipelineStepTiming>,
     /// Word-level timed segments from the model (Parakeet V3 only).
     /// Each segment carries a `start` / `end` in seconds relative to the
     /// audio buffer that was passed to the engine.  Used by the chunking
@@ -176,6 +182,50 @@ pub struct TranscriptionManager {
 }
 
 impl TranscriptionManager {
+    fn now_ms() -> u64 {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("System clock is before Unix epoch")
+            .as_millis() as u64
+    }
+
+    fn touch_activity(&self) {
+        self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
+    }
+
+    fn is_transcription_session_active(&self) -> bool {
+        let recording_active = self
+            .app_handle
+            .try_state::<Arc<AudioRecordingManager>>()
+            .map(|audio_manager| audio_manager.is_recording())
+            .unwrap_or(false);
+
+        if recording_active {
+            return true;
+        }
+
+        let operation_active = self
+            .app_handle
+            .try_state::<crate::TranscriptionCoordinator>()
+            .and_then(|coordinator| coordinator.active_operation_id())
+            .is_some();
+
+        if !operation_active {
+            return false;
+        }
+
+        let age_ms = Self::now_ms().saturating_sub(self.last_activity.load(Ordering::Relaxed));
+        if age_ms > ACTIVE_SESSION_STALE_MS {
+            warn!(
+                "Ignoring stale transcription session marker during unload check (idle={}ms)",
+                age_ms
+            );
+            return false;
+        }
+
+        true
+    }
+
     fn recommended_whisper_threads(&self, model_id: Option<&str>, whisper_gpu_active: bool) -> i32 {
         let settings = get_settings(&self.app_handle);
         if let Some(model_id) = model_id {
@@ -285,12 +335,23 @@ impl TranscriptionManager {
                         }
 
                         let last = manager_cloned.last_activity.load(Ordering::Relaxed);
-                        let now_ms = SystemTime::now()
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .expect("System clock is before Unix epoch")
-                            .as_millis() as u64;
+                        let now_ms = Self::now_ms();
+                        let idle_limit_ms = if manager_cloned.should_force_background_lean_unload()
+                        {
+                            BACKGROUND_REUSE_GRACE_MS
+                        } else {
+                            limit_seconds * 1000
+                        };
 
-                        if now_ms.saturating_sub(last) > limit_seconds * 1000 {
+                        if now_ms.saturating_sub(last) > idle_limit_ms {
+                            if manager_cloned.is_transcription_session_active() {
+                                manager_cloned.touch_activity();
+                                debug!(
+                                    "Skipping idle model unload because a transcription session is still active"
+                                );
+                                continue;
+                            }
+
                             // idle -> unload
                             if manager_cloned.is_model_loaded() {
                                 let unload_start = std::time::Instant::now();
@@ -339,6 +400,7 @@ impl TranscriptionManager {
     }
 
     pub fn ensure_model_loaded(&self, model_id: &str) -> Result<()> {
+        self.touch_activity();
         {
             let mut is_loading = self.is_loading.lock();
             while *is_loading {
@@ -412,12 +474,51 @@ impl TranscriptionManager {
         Ok(())
     }
 
+    fn should_force_background_lean_unload(&self) -> bool {
+        let Some(main_window) = self.app_handle.get_webview_window("main") else {
+            return true;
+        };
+
+        match main_window.is_visible() {
+            Ok(is_visible) => !is_visible,
+            Err(err) => {
+                debug!(
+                    "Falling back to aggressive unload because main window visibility could not be read: {}",
+                    err
+                );
+                true
+            }
+        }
+    }
+
     /// Unloads the model immediately if the setting is enabled and the model is loaded
     pub fn maybe_unload_immediately(&self, context: &str) {
         let settings = get_settings(&self.app_handle);
-        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
-            && self.is_model_loaded()
-        {
+        let should_force_hidden_unload = self.should_force_background_lean_unload();
+        let should_unload_now = self.is_model_loaded()
+            && (settings.model_unload_timeout == ModelUnloadTimeout::Immediately
+                || should_force_hidden_unload);
+
+        if should_unload_now {
+            if self.is_transcription_session_active() {
+                self.touch_activity();
+                info!(
+                    "Deferring model unload after {} because a transcription session is still active",
+                    context
+                );
+                return;
+            }
+
+            if should_force_hidden_unload
+                && settings.model_unload_timeout != ModelUnloadTimeout::Immediately
+            {
+                self.touch_activity();
+                info!(
+                    "Keeping model warm for {}ms after {} before hidden idle unload",
+                    BACKGROUND_REUSE_GRACE_MS, context
+                );
+                return;
+            }
             info!("Immediately unloading model after {}", context);
             if let Err(e) = self.unload_model() {
                 warn!("Failed to immediately unload model: {}", e);
@@ -441,6 +542,25 @@ impl TranscriptionManager {
         thread::spawn(move || {
             if let Err(e) = self_clone.load_model(&model_id) {
                 error!("Failed to load model: {}", e);
+            } else if self_clone.should_force_background_lean_unload() {
+                self_clone.touch_activity();
+                let recording_active = self_clone
+                    .app_handle
+                    .try_state::<Arc<AudioRecordingManager>>()
+                    .map(|audio_manager| audio_manager.is_recording())
+                    .unwrap_or(false);
+                let operation_active = self_clone
+                    .app_handle
+                    .try_state::<crate::TranscriptionCoordinator>()
+                    .and_then(|coordinator| coordinator.active_operation_id())
+                    .is_some();
+                let should_keep_loaded = recording_active || operation_active;
+
+                if !should_keep_loaded {
+                    self_clone.maybe_unload_immediately(
+                        "background load completed without active recording",
+                    );
+                }
             }
             let mut is_loading = self_clone.is_loading.lock();
             *is_loading = false;

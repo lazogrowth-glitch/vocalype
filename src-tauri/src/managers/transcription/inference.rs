@@ -546,6 +546,25 @@ impl TranscriptionManager {
         &self,
         request: TranscriptionRequest,
     ) -> Result<TranscriptionOutput> {
+        fn push_timing(
+            timings: &mut Vec<crate::runtime_observability::PipelineStepTiming>,
+            request_started_at: std::time::Instant,
+            step_started_at: std::time::Instant,
+            step: impl Into<String>,
+            detail: Option<String>,
+        ) {
+            let finished_at_ms = request_started_at.elapsed().as_millis() as u64;
+            let duration_ms = step_started_at.elapsed().as_millis() as u64;
+            let started_at_ms = finished_at_ms.saturating_sub(duration_ms);
+            timings.push(crate::runtime_observability::PipelineStepTiming {
+                step: step.into(),
+                duration_ms,
+                started_at_ms,
+                finished_at_ms,
+                detail,
+            });
+        }
+
         // Update last activity timestamp
         self.last_activity.store(
             SystemTime::now()
@@ -556,6 +575,7 @@ impl TranscriptionManager {
         );
 
         let st = std::time::Instant::now();
+        let mut timings = Vec::new();
         let TranscriptionRequest { audio, app_context } = request;
 
         debug!("Audio vector length: {}", audio.len());
@@ -566,12 +586,14 @@ impl TranscriptionManager {
             return Ok(TranscriptionOutput {
                 text: String::new(),
                 confidence_payload: None,
+                timings,
                 segments: None,
             });
         }
 
         // Check if model is loaded, if not try to load it
         {
+            let wait_started = std::time::Instant::now();
             // If the model is loading, wait for it to complete.
             let mut is_loading = self.is_loading.lock();
             while *is_loading {
@@ -582,9 +604,17 @@ impl TranscriptionManager {
             if engine_guard.is_none() {
                 return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
+            push_timing(
+                &mut timings,
+                st,
+                wait_started,
+                "stt.wait_for_loaded_engine",
+                None,
+            );
         }
 
         // Get current settings for configuration
+        let settings_started = std::time::Instant::now();
         let settings = get_settings(&self.app_handle);
         let active_model_id = self.get_current_model();
         let voice_profile = if settings.adaptive_voice_profile_enabled {
@@ -679,9 +709,24 @@ impl TranscriptionManager {
         } else {
             None
         };
+        push_timing(
+            &mut timings,
+            st,
+            settings_started,
+            "stt.prepare_context",
+            Some(format!(
+                "samples={} app_context={} custom_words={} keyterms={} glossary_terms={}",
+                audio.len(),
+                app_context.is_some(),
+                settings.custom_words.len(),
+                session_keyterms.len(),
+                session_glossary_terms.len()
+            )),
+        );
 
         // Handle Gemini API separately (requires async HTTP call)
         {
+            let remote_started = std::time::Instant::now();
             let engine_guard = self.lock_engine();
             if let Some(LoadedEngine::GeminiApi) = engine_guard.as_ref() {
                 drop(engine_guard);
@@ -721,11 +766,19 @@ impl TranscriptionManager {
                     "Gemini transcription completed in {}ms",
                     (et - st).as_millis()
                 );
+                push_timing(
+                    &mut timings,
+                    st,
+                    remote_started,
+                    "stt.engine_remote_gemini",
+                    Some(format!("chars={}", final_result.chars().count())),
+                );
 
                 self.maybe_unload_immediately("gemini transcription");
                 return Ok(TranscriptionOutput {
                     text: final_result,
                     confidence_payload: None,
+                    timings,
                     segments: None,
                 });
             }
@@ -733,6 +786,7 @@ impl TranscriptionManager {
 
         // Handle Groq Whisper API
         {
+            let remote_started = std::time::Instant::now();
             let engine_guard = self.lock_engine();
             if let Some(LoadedEngine::GroqWhisper) = engine_guard.as_ref() {
                 drop(engine_guard);
@@ -766,10 +820,18 @@ impl TranscriptionManager {
                     "Groq STT transcription completed in {}ms",
                     st.elapsed().as_millis()
                 );
+                push_timing(
+                    &mut timings,
+                    st,
+                    remote_started,
+                    "stt.engine_remote_groq",
+                    Some(format!("chars={}", final_result.chars().count())),
+                );
                 self.maybe_unload_immediately("groq transcription");
                 return Ok(TranscriptionOutput {
                     text: final_result,
                     confidence_payload: None,
+                    timings,
                     segments: None,
                 });
             }
@@ -777,6 +839,7 @@ impl TranscriptionManager {
 
         // Handle Mistral Voxtral API
         {
+            let remote_started = std::time::Instant::now();
             let engine_guard = self.lock_engine();
             if let Some(LoadedEngine::MistralVoxtral) = engine_guard.as_ref() {
                 drop(engine_guard);
@@ -811,10 +874,18 @@ impl TranscriptionManager {
                     "Mistral STT transcription completed in {}ms",
                     st.elapsed().as_millis()
                 );
+                push_timing(
+                    &mut timings,
+                    st,
+                    remote_started,
+                    "stt.engine_remote_mistral",
+                    Some(format!("chars={}", final_result.chars().count())),
+                );
                 self.maybe_unload_immediately("mistral transcription");
                 return Ok(TranscriptionOutput {
                     text: final_result,
                     confidence_payload: None,
+                    timings,
                     segments: None,
                 });
             }
@@ -822,6 +893,7 @@ impl TranscriptionManager {
 
         // Handle Deepgram Nova API
         {
+            let remote_started = std::time::Instant::now();
             let engine_guard = self.lock_engine();
             if let Some(LoadedEngine::Deepgram) = engine_guard.as_ref() {
                 drop(engine_guard);
@@ -856,10 +928,18 @@ impl TranscriptionManager {
                     "Deepgram STT transcription completed in {}ms",
                     st.elapsed().as_millis()
                 );
+                push_timing(
+                    &mut timings,
+                    st,
+                    remote_started,
+                    "stt.engine_remote_deepgram",
+                    Some(format!("chars={}", final_result.chars().count())),
+                );
                 self.maybe_unload_immediately("deepgram transcription");
                 return Ok(TranscriptionOutput {
                     text: final_result,
                     confidence_payload: None,
+                    timings,
                     segments: None,
                 });
             }
@@ -868,6 +948,7 @@ impl TranscriptionManager {
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
         // which would make the app hang indefinitely on subsequent operations.
+        let engine_started = std::time::Instant::now();
         let result = {
             let mut engine_guard = self.lock_engine();
 
@@ -1295,8 +1376,20 @@ impl TranscriptionManager {
                 }
             }
         };
+        push_timing(
+            &mut timings,
+            st,
+            engine_started,
+            "stt.engine_decode",
+            Some(
+                active_model_id
+                    .clone()
+                    .unwrap_or_else(|| "unknown".to_string()),
+            ),
+        );
 
         // Apply word correction if custom words are configured
+        let adaptive_vocab_started = std::time::Instant::now();
         let raw_result = result.text;
         record_parakeet_brain_stage(
             &self.app_handle,
@@ -1305,6 +1398,7 @@ impl TranscriptionManager {
             &settings.selected_language,
             active_model_id.as_deref(),
         );
+        let raw_result_before_learning = raw_result.clone();
         let learned_result = if settings.adaptive_vocabulary_enabled {
             if let (Some(state), Some(model_id)) = (
                 self.app_handle.try_state::<VocabularyStoreState>(),
@@ -1334,10 +1428,22 @@ impl TranscriptionManager {
             &settings.selected_language,
             active_model_id.as_deref(),
         );
+        push_timing(
+            &mut timings,
+            st,
+            adaptive_vocab_started,
+            "stt.apply_adaptive_vocabulary",
+            Some(format!(
+                "changed={}",
+                learned_result != raw_result_before_learning
+            )),
+        );
         let profile = ParakeetDomainProfile::Recruiting;
 
+        let correction_started = std::time::Instant::now();
         let active_correction_terms =
             correction_terms_for_text(&learned_result, &correction_terms, profile);
+        let learned_result_before_correction = learned_result.clone();
         let corrected_result = if !active_correction_terms.is_empty() {
             apply_custom_words(
                 &learned_result,
@@ -1354,6 +1460,18 @@ impl TranscriptionManager {
             &settings.selected_language,
             active_model_id.as_deref(),
         );
+        push_timing(
+            &mut timings,
+            st,
+            correction_started,
+            "stt.apply_correction_terms",
+            Some(format!(
+                "terms={} changed={}",
+                active_correction_terms.len(),
+                corrected_result != learned_result_before_correction
+            )),
+        );
+        let finalize_started = std::time::Instant::now();
         let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
             finalize_parakeet_text_with_profile(
@@ -1371,7 +1489,15 @@ impl TranscriptionManager {
             &settings.selected_language,
             active_model_id.as_deref(),
         );
+        push_timing(
+            &mut timings,
+            st,
+            finalize_started,
+            "stt.finalize_engine_text",
+            Some(format!("chars={}", corrected_result.chars().count())),
+        );
 
+        let filter_started = std::time::Instant::now();
         let filtered_result = Self::filter_transcription_output_for_context(
             corrected_result,
             active_model_id.as_deref(),
@@ -1383,6 +1509,13 @@ impl TranscriptionManager {
             &filtered_result,
             &settings.selected_language,
             active_model_id.as_deref(),
+        );
+        push_timing(
+            &mut timings,
+            st,
+            filter_started,
+            "stt.filter_for_context",
+            Some(format!("chars={}", filtered_result.chars().count())),
         );
 
         let et = std::time::Instant::now();
@@ -1414,10 +1547,18 @@ impl TranscriptionManager {
 
         self.maybe_unload_immediately("transcription");
 
+        let confidence_started = std::time::Instant::now();
         let confidence_payload = result
             .segments
             .as_ref()
             .and_then(|segments| build_whisper_confidence_payload(segments, &final_result));
+        push_timing(
+            &mut timings,
+            st,
+            confidence_started,
+            "stt.build_confidence_payload",
+            Some(format!("available={}", confidence_payload.is_some())),
+        );
 
         // Keep word-level segments for Parakeet V3 so the chunking worker can
         // trim the overlap prefix by timestamp (avoids text-dedup fragility).
@@ -1428,6 +1569,7 @@ impl TranscriptionManager {
         Ok(TranscriptionOutput {
             text: final_result,
             confidence_payload,
+            timings,
             segments: timed_segments,
         })
     }
@@ -1475,9 +1617,10 @@ mod tests {
             "Today I finished the meeting."
         );
         assert_eq!(
-            finalize_parakeet_text(
+            finalize_parakeet_text_with_profile(
                 "My email is alex .martin at example .com and the document lives on docks dot call vocal.",
                 "en",
+                ParakeetDomainProfile::General,
             ),
             "My email is alex dot martin at example dot com and the document lives on docs dot vocalype dot app slash release notes."
         );

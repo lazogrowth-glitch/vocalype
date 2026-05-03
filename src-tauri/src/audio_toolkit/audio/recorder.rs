@@ -597,6 +597,15 @@ fn run_consumer(
                     if let Some(v) = &vad {
                         v.lock().unwrap_or_else(|e| e.into_inner()).reset();
                     }
+                    let prebuffer_frame_count = pre_recording_frames.len();
+                    let prebuffer_sample_count: usize =
+                        pre_recording_frames.iter().map(|frame| frame.len()).sum();
+                    log::info!(
+                        "[recording] Cmd::Start replaying prebuffer: frames={} samples={} approx_ms={}",
+                        prebuffer_frame_count,
+                        prebuffer_sample_count,
+                        (prebuffer_sample_count as f32 / 16_000.0 * 1000.0).round() as u64
+                    );
                     for frame in &pre_recording_frames {
                         handle_frame(
                             frame,

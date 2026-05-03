@@ -81,6 +81,8 @@ pub struct RuntimeErrorEvent {
 pub struct PipelineStepTiming {
     pub step: String,
     pub duration_ms: u64,
+    pub started_at_ms: u64,
+    pub finished_at_ms: u64,
     pub detail: Option<String>,
 }
 

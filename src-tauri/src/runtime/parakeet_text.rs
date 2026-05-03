@@ -302,6 +302,13 @@ static ALEX_DOT_MARTIN_PATTERN: Lazy<Regex> =
 static SINGLE_LETTER_NOISE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)(^|\s)[fmwp]\s+").unwrap());
 static DOUBLE_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s{2,}").unwrap());
+// Alphanumeric: single letter + English number word → letter+digit ("V four" → "V4")
+static LETTER_NUM_WORD_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)\b([a-z])\s+(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b",
+    )
+    .unwrap()
+});
 static ANSWER_ENGINE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\banswer engine\b").unwrap());
 static IN_ONE_END_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bin one([.!?])$").unwrap());
@@ -868,6 +875,30 @@ fn normalize_dev_tech_terms(text: &str) -> String {
     s
 }
 
+fn normalize_letter_number_words(text: &str) -> String {
+    LETTER_NUM_WORD_PATTERN
+        .replace_all(text, |caps: &regex::Captures| {
+            let letter = caps[1].to_uppercase();
+            let digit = match caps[2].to_lowercase().as_str() {
+                "one" => "1",
+                "two" => "2",
+                "three" => "3",
+                "four" => "4",
+                "five" => "5",
+                "six" => "6",
+                "seven" => "7",
+                "eight" => "8",
+                "nine" => "9",
+                "ten" => "10",
+                "eleven" => "11",
+                "twelve" => "12",
+                _ => return caps[0].to_string(),
+            };
+            format!("{}{}", letter, digit)
+        })
+        .to_string()
+}
+
 pub fn normalize_parakeet_phrase_variants_with_profile(
     text: &str,
     selected_language: &str,
@@ -888,6 +919,7 @@ pub fn normalize_parakeet_phrase_variants_with_profile(
     normalized = VOCALYPE_VARIANT_PATTERN
         .replace_all(&normalized, "Vocalype")
         .to_string();
+    normalized = normalize_letter_number_words(&normalized);
 
     if profile == ParakeetDomainProfile::General && looks_like_developer_dictation(&normalized) {
         normalized = normalize_dev_tech_terms(&normalized);
@@ -3200,11 +3232,36 @@ mod tests {
 
     #[test]
     fn drops_filler_only_fragment_without_leaving_punctuation() {
-        let normalized = finalize_parakeet_text_with_profile(
-            "Uh.",
-            "fr",
-            ParakeetDomainProfile::Recruiting,
-        );
+        let normalized =
+            finalize_parakeet_text_with_profile("Uh.", "fr", ParakeetDomainProfile::Recruiting);
         assert!(normalized.is_empty());
+    }
+
+    #[test]
+    fn converts_letter_number_words_to_alphanumeric() {
+        // Core case: model outputs number words instead of digits on alphanumeric codes.
+        // "v5" already has a digit so only the word-form entries are converted.
+        assert_eq!(
+            finalize_parakeet_text("V four, v5, V six.", "fr"),
+            "V4, v5, V6."
+        );
+        // Individual conversions
+        assert_eq!(normalize_letter_number_words("V one"), "V1");
+        assert_eq!(normalize_letter_number_words("V two"), "V2");
+        assert_eq!(normalize_letter_number_words("V three"), "V3");
+        assert_eq!(normalize_letter_number_words("V four"), "V4");
+        assert_eq!(normalize_letter_number_words("V five"), "V5");
+        assert_eq!(normalize_letter_number_words("V six"), "V6");
+        assert_eq!(normalize_letter_number_words("V seven"), "V7");
+        assert_eq!(normalize_letter_number_words("V eight"), "V8");
+        assert_eq!(normalize_letter_number_words("V nine"), "V9");
+        assert_eq!(normalize_letter_number_words("V ten"), "V10");
+        assert_eq!(normalize_letter_number_words("A twelve"), "A12");
+        // Case insensitive: lowercase letter → uppercased
+        assert_eq!(normalize_letter_number_words("v four"), "V4");
+        assert_eq!(normalize_letter_number_words("v FOUR"), "V4");
+        // Does not touch legitimate words
+        assert_eq!(normalize_letter_number_words("in one"), "in one");
+        assert_eq!(normalize_letter_number_words("on two"), "on two");
     }
 }

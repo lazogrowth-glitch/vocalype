@@ -44,7 +44,7 @@ impl ParakeetTDTDecoder {
         &self,
         tokens: &[usize],
         frame_indices: &[usize],
-        _durations: &[usize],
+        durations: &[usize],
         hop_length: usize,
         sample_rate: usize,
     ) -> Result<TranscriptionResult> {
@@ -57,10 +57,21 @@ impl ParakeetTDTDecoder {
             if let Some(token_text) = self.vocab.id_to_text(token_id) {
                 let frame = frame_indices[i];
                 let start = (frame * encoder_stride * hop_length) as f32 / sample_rate as f32;
-                let end = if i + 1 < frame_indices.len() {
+                // Use TDT predicted duration for end time when available.
+                // The TDT joint head predicts how many encoder frames each token spans —
+                // this gives us accurate per-token end timestamps instead of relying on
+                // the next token's start (which collapses to the same frame for
+                // tokens emitted in the same decoding step).
+                let duration_frames = durations.get(i).copied().unwrap_or(0);
+                let end = if duration_frames > 0 {
+                    ((frame + duration_frames) * encoder_stride * hop_length) as f32
+                        / sample_rate as f32
+                } else if i + 1 < frame_indices.len() {
                     (frame_indices[i + 1] * encoder_stride * hop_length) as f32 / sample_rate as f32
                 } else {
-                    start + 0.01
+                    // Final token with no predicted duration: use one encoder frame (80 ms)
+                    // as a conservative minimum rather than 1 ms which is always wrong.
+                    start + (encoder_stride * hop_length) as f32 / sample_rate as f32
                 };
 
                 // Handle SentencePiece format (▁ prefix for word start)

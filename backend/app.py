@@ -123,6 +123,9 @@ APP_RETURN_URL = os.environ.get(
     os.environ.get("FRONTEND_URL", "https://vocalype.com"),
 )
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+CLOUD_LLM_MODEL = os.environ.get("CLOUD_LLM_MODEL", "llama-3.1-8b-instant")
+CLOUD_LLM_RATE_LIMIT_PER_HOUR = env_int("CLOUD_LLM_RATE_LIMIT_PER_HOUR", 300, 10)
 
 # Ed25519 private key for signing license bundles.
 # Set LICENSE_SIGNING_KEY in Railway env vars (base64-encoded 32-byte seed).
@@ -2765,6 +2768,61 @@ def get_referral_stats(user):
         "converted_count": converted_count,
         "earned_months": converted_count,  # 1 free month per conversion
     })
+
+
+@app.route("/llm/v1/chat/completions", methods=["POST"])
+@auth_required
+def cloud_llm_proxy(user):
+    """Proxy post-processing LLM requests to Cerebras on behalf of authenticated users."""
+    limit_resp = rate_limit_response(
+        f"cloud_llm:{user['id']}",
+        limit=CLOUD_LLM_RATE_LIMIT_PER_HOUR,
+        window_seconds=3600,
+        message="Too many LLM requests. Please wait before trying again.",
+    )
+    if limit_resp:
+        return limit_resp
+
+    if not GROQ_API_KEY:
+        return jsonify({"error": "Cloud LLM not configured on this server"}), 503
+
+    try:
+        req_body = request.get_json(force=True) or {}
+    except Exception:
+        return jsonify({"error": "Invalid JSON body"}), 400
+
+    messages = req_body.get("messages")
+    if not messages or not isinstance(messages, list):
+        return jsonify({"error": "messages field is required"}), 400
+
+    payload = {
+        "model": CLOUD_LLM_MODEL,
+        "messages": messages,
+        "max_tokens": min(int(req_body.get("max_tokens") or 300), 1000),
+        "temperature": float(req_body.get("temperature") or 0.0),
+        "stream": False,
+    }
+
+    groq_req = urlrequest.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+        },
+    )
+
+    try:
+        with urlrequest.urlopen(groq_req, timeout=30) as resp:
+            response_data = json.loads(resp.read())
+        return jsonify(response_data), 200
+    except urlerror.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        return jsonify({"error": f"LLM provider error: {error_body}"}), 502
+    except urlerror.URLError as e:
+        return jsonify({"error": f"LLM provider unreachable: {str(e.reason)}"}), 502
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":

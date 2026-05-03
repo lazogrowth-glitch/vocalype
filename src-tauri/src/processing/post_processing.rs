@@ -207,6 +207,24 @@ pub(crate) async fn post_process_transcription(
         return None;
     }
 
+    // For vocalype-cloud, use the user's JWT from keyring as the Bearer token.
+    // The backend validates it and proxies to Cerebras.
+    let api_key = if provider.id == "vocalype-cloud" {
+        match crate::security::secret_store::get_auth_token() {
+            Ok(Some(token)) => token,
+            _ => {
+                debug!("Vocalype Cloud post-processing skipped: no auth token in keyring");
+                return None;
+            }
+        }
+    } else {
+        settings
+            .post_process_api_keys
+            .get(&provider.id)
+            .cloned()
+            .unwrap_or_default()
+    };
+
     let selected_prompt_id = match &settings.post_process_selected_prompt_id {
         Some(id) => id.clone(),
         None => {
@@ -239,12 +257,6 @@ pub(crate) async fn post_process_transcription(
         "Starting LLM post-processing with provider '{}' (model: {})",
         provider.id, model
     );
-
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
 
     // One-line context hint prepended to the system prompt when available.
     // Code context is already blocked upstream; Browser/Unknown produce no hint.

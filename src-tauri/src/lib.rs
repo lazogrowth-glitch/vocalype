@@ -82,7 +82,6 @@ use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
 use crate::settings::{get_settings_fast, refresh_adaptive_profile_if_needed};
-use adaptive_runtime::maybe_schedule_whisper_calibration;
 
 #[cfg(target_os = "windows")]
 use std::ptr::NonNull;
@@ -119,9 +118,11 @@ static PENDING_AUTH_FLOW: std::sync::Mutex<Option<PendingAuthFlow>> = std::sync:
 
 // Cached tray visibility flag to avoid store access in on_window_event (which can deadlock)
 pub static TRAY_ICON_ENABLED: AtomicBool = AtomicBool::new(true);
+pub static USER_REQUESTED_APP_EXIT: AtomicBool = AtomicBool::new(false);
 pub static TRAY_ICON_READY: AtomicBool = AtomicBool::new(false);
 pub static SHOULD_SHOW_MAIN_WINDOW_ON_READY: AtomicBool = AtomicBool::new(false);
 static FRONTEND_UI_READY: AtomicBool = AtomicBool::new(false);
+static BACKGROUND_LEAN_LAUNCH: AtomicBool = AtomicBool::new(false);
 
 const MAIN_WINDOW_WIDTH: f64 = 1348.0;
 const MAIN_WINDOW_HEIGHT: f64 = 875.0;
@@ -305,6 +306,107 @@ fn prepare_main_window_before_show(app: &AppHandle) {
     }
 }
 
+fn is_main_window_visible(app: &AppHandle) -> bool {
+    let Some(main_window) = app.get_webview_window("main") else {
+        return false;
+    };
+
+    main_window.is_visible().unwrap_or(false)
+}
+
+fn should_destroy_main_window_for_ram_recovery() -> bool {
+    !cfg!(debug_assertions)
+}
+
+#[cfg(debug_assertions)]
+fn should_open_main_window_devtools() -> bool {
+    matches!(
+        std::env::var("VOCALYPE_OPEN_DEVTOOLS").ok().as_deref(),
+        Some("1" | "true" | "TRUE" | "yes" | "YES")
+    )
+}
+
+fn schedule_microphone_standby(app: &AppHandle, reason: &'static str) {
+    let app_handle = app.clone();
+    thread::spawn(move || {
+        let Some(audio_manager) = app_handle.try_state::<Arc<AudioRecordingManager>>() else {
+            log::warn!(
+                "[startup] microphone standby skipped ({}): audio manager unavailable",
+                reason
+            );
+            return;
+        };
+
+        if audio_manager.is_microphone_stream_open() {
+            log::info!(
+                "[startup] microphone standby already active (reason={})",
+                reason
+            );
+            return;
+        }
+
+        match audio_manager.start_microphone_stream() {
+            Ok(()) => log::info!(
+                "[startup] microphone standby ready for instant dictation (reason={})",
+                reason
+            ),
+            Err(err) => log::warn!(
+                "[startup] microphone standby failed (reason={}): {}",
+                reason,
+                err
+            ),
+        }
+    });
+}
+
+fn schedule_hidden_main_window_cleanup(app: &AppHandle, delay: Duration) {
+    let app_handle = app.clone();
+    thread::spawn(move || {
+        thread::sleep(delay);
+
+        if !BACKGROUND_LEAN_LAUNCH.load(Ordering::Relaxed) {
+            return;
+        }
+
+        let Some(main_window) = app_handle.get_webview_window("main") else {
+            return;
+        };
+
+        let is_visible = main_window.is_visible().unwrap_or(true);
+        if is_visible {
+            return;
+        }
+
+        if !should_destroy_main_window_for_ram_recovery() {
+            log::info!(
+                "[startup] skipping hidden main window destroy during debug launch to avoid WebView devUrl reload issues"
+            );
+            return;
+        }
+
+        log::info!(
+            "[startup] closing hidden main window after background bootstrap to free WebView RAM"
+        );
+        if let Err(err) = main_window.close() {
+            log::warn!(
+                "Failed to close hidden main window during background cleanup: {}",
+                err
+            );
+        }
+    });
+}
+
+fn schedule_background_model_unload_check(app: &AppHandle, delay: Duration, reason: &'static str) {
+    let app_handle = app.clone();
+    thread::spawn(move || {
+        thread::sleep(delay);
+        if let Some(transcription_manager) = app_handle.try_state::<Arc<TranscriptionManager>>() {
+            log::info!("[startup] probing background model unload after {}", reason);
+            transcription_manager.maybe_unload_immediately(reason);
+        }
+    });
+}
+
 fn create_main_window(app: &AppHandle) -> Result<tauri::WebviewWindow, tauri::Error> {
     tauri::WebviewWindowBuilder::new(
         app,
@@ -320,6 +422,14 @@ fn create_main_window(app: &AppHandle) -> Result<tauri::WebviewWindow, tauri::Er
     .center()
     .visible(false)
     .build()
+}
+
+fn ensure_main_window(app: &AppHandle) -> Result<tauri::WebviewWindow, tauri::Error> {
+    if let Some(window) = app.get_webview_window("main") {
+        return Ok(window);
+    }
+
+    create_main_window(app)
 }
 
 #[cfg(target_os = "windows")]
@@ -515,24 +625,9 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
         log::info!("[startup] launch-hidden workspace managers skipped");
     }
 
-    {
-        let app_handle = app_handle.clone();
-        let model_manager = model_manager.clone();
-        thread::spawn(move || {
-            thread::sleep(Duration::from_secs(3));
-            maybe_schedule_whisper_calibration(&app_handle, model_manager, "small");
-        });
-    }
-
-    {
-        let app_handle = app_handle.clone();
-        let model_manager = model_manager.clone();
-        thread::spawn(move || {
-            thread::sleep(Duration::from_secs(5));
-            maybe_schedule_whisper_calibration(&app_handle, model_manager.clone(), "turbo");
-            maybe_schedule_whisper_calibration(&app_handle, model_manager, "large");
-        });
-    }
+    log::info!(
+        "[startup] skipping eager adaptive Whisper calibration; calibration remains on-demand"
+    );
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -616,6 +711,7 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
                         cancel_current_operation(app);
                     }
                     "quit" => {
+                        USER_REQUESTED_APP_EXIT.store(true, Ordering::Relaxed);
                         app.exit(0);
                     }
                     _ => {}
@@ -688,7 +784,14 @@ fn sync_autostart_state(app_handle: &AppHandle) {
         };
 
         if let Err(err) = result {
-            log::warn!("Failed to sync autostart setting: {}", err);
+            let err_text = err.to_string();
+            if !settings.autostart_enabled && err_text.contains("os error 2") {
+                log::info!(
+                    "Autostart entry already absent while syncing disabled state; skipping noisy warning."
+                );
+            } else {
+                log::warn!("Failed to sync autostart setting: {}", err);
+            }
         }
     }
 }
@@ -1043,8 +1146,10 @@ pub fn run(cli_args: CliArgs) {
 
                 #[cfg(debug_assertions)]
                 {
-                    webview.open_devtools();
-                    log::info!("Opened devtools for the main webview");
+                    if should_open_main_window_devtools() {
+                        webview.open_devtools();
+                        log::info!("Opened devtools for the main webview");
+                    }
                 }
             }
         })
@@ -1134,15 +1239,22 @@ pub fn run(cli_args: CliArgs) {
                     show_main_window(&app_handle_for_ready);
                 }
 
-                startup_warmup::ensure_startup_warmup(&app_handle_for_ready, "desktop-ui-ready");
+                log::info!(
+                    "[startup] skipping desktop-ui-ready warmup; speech engine remains on-demand"
+                );
 
                 // CrÃ©er les overlays aprÃ¨s que l'UI est visible â€” Ã©vite de bloquer le dÃ©marrage
                 // (~150ms chacun). Idempotent : les fonctions vÃ©rifient si la fenÃªtre existe dÃ©jÃ .
-                let app_h = app_handle_for_ready.clone();
-                let _ = app_handle_for_ready.run_on_main_thread(move || {
-                    utils::create_recording_overlay(&app_h);
-                    log::info!("[startup] overlays created (deferred)");
-                });
+                log::info!(
+                    "[startup] recording overlay creation deferred until first overlay use"
+                );
+
+                if BACKGROUND_LEAN_LAUNCH.load(Ordering::Relaxed) {
+                    schedule_hidden_main_window_cleanup(
+                        &app_handle_for_ready,
+                        Duration::from_secs(8),
+                    );
+                }
             });
 
             let app_handle_for_auth_ready = app_handle.clone();
@@ -1153,16 +1265,19 @@ pub fn run(cli_args: CliArgs) {
 
             let t = std::time::Instant::now();
             initialize_core_logic(&app_handle)?;
+            startup_warmup::refresh_startup_warmup_status(
+                &app_handle,
+                "core-logic-initialized",
+            );
             log::info!("[startup] initialize_core_logic (outer) â€” {}ms", t.elapsed().as_millis());
 
             // DÃ©marrer le chargement modÃ¨le + micro dÃ¨s maintenant â€” en parallÃ¨le du chargement
             // de la webview (~3s en dev, ~500ms en prod). Quand desktop-ui-ready arrive, le modÃ¨le
             // est dÃ©jÃ  chargÃ© ou en cours de chargement â†’ l'app s'affiche prÃªte immÃ©diatement.
-            startup_warmup::ensure_startup_warmup(&app_handle, "early-startup");
-            log::info!("[startup] model pre-warm launched");
-
             // Pre-download LLM binary + model in background so it's ready when the user activates the feature.
-            llama_server::spawn_prefetch(&app_handle);
+            log::info!(
+                "[startup] skipping eager llama prefetch; LLM assets remain on-demand"
+            );
 
             // Register vocalype:// URL scheme (needed on Windows/Linux in dev)
             #[cfg(not(target_os = "macos"))]
@@ -1255,7 +1370,38 @@ pub fn run(cli_args: CliArgs) {
                     "Tray unavailable while launch requested hidden; forcing main window visible"
                 );
             }
+            let background_lean_launch = should_hide && tray_available;
+            BACKGROUND_LEAN_LAUNCH.store(background_lean_launch, Ordering::Relaxed);
+            if background_lean_launch {
+                log::info!(
+                    "[startup] hidden tray launch detected: keeping background mode lean"
+                );
+                schedule_microphone_standby(&app_handle, "background-lean-launch");
+                #[cfg(not(target_os = "macos"))]
+                {
+                    if let Err(err) = commands::initialize_enigo(app_handle.clone()) {
+                        log::warn!(
+                            "Background lean launch could not initialize Enigo yet: {}",
+                            err
+                        );
+                    }
+                }
+                if let Err(err) = commands::initialize_shortcuts(app_handle.clone()) {
+                    log::warn!(
+                        "Background lean launch could not initialize shortcuts yet: {}",
+                        err
+                    );
+                }
+                log::info!("[startup] background lean launch skipped early model pre-warm");
+            } else {
+                log::info!(
+                    "[startup] skipping early startup warmup; speech engine remains on-demand"
+                );
+            }
             if !should_hide || !tray_available {
+                if let Err(err) = ensure_main_window(&app_handle) {
+                    log::error!("Failed to create main window during startup: {}", err);
+                }
                 SHOULD_SHOW_MAIN_WINDOW_ON_READY.store(true, Ordering::Relaxed);
                 prepare_main_window_before_show(&app_handle);
 
@@ -1272,6 +1418,17 @@ pub fn run(cli_args: CliArgs) {
                         show_main_window(&fallback_app_handle);
                     }
                 });
+
+                let watchdog_app_handle = app_handle.clone();
+                thread::spawn(move || {
+                    thread::sleep(Duration::from_secs(10));
+                    if !is_main_window_visible(&watchdog_app_handle) {
+                        log::warn!(
+                            "[startup] visible launch watchdog did not see a main window; forcing recovery show"
+                        );
+                        show_main_window(&watchdog_app_handle);
+                    }
+                });
             }
 
             Ok(())
@@ -1282,8 +1439,23 @@ pub fn run(cli_args: CliArgs) {
                     let tray_visible = TRAY_ICON_ENABLED.load(Ordering::Relaxed)
                         && !window.app_handle().state::<CliArgs>().no_tray;
                     if tray_visible {
+                        if !should_destroy_main_window_for_ram_recovery() {
+                            api.prevent_close();
+                            let _ = window.hide();
+                            schedule_background_model_unload_check(
+                                &window.app_handle(),
+                                Duration::from_millis(500),
+                                "main window hidden to tray",
+                            );
+                            return;
+                        }
                         // Tray is available: destroy the window to free Chromium RAM.
                         // It will be recreated on next open via show_main_window.
+                        schedule_background_model_unload_check(
+                            &window.app_handle(),
+                            Duration::from_millis(500),
+                            "main window closed to tray",
+                        );
                         #[cfg(target_os = "macos")]
                         {
                             let res = window
@@ -1299,6 +1471,11 @@ pub fn run(cli_args: CliArgs) {
                     // No tray: must keep the window so the user can reopen the app.
                     api.prevent_close();
                     let _ = window.hide();
+                    schedule_background_model_unload_check(
+                        &window.app_handle(),
+                        Duration::from_millis(500),
+                        "main window hidden without tray",
+                    );
                 } else {
                     api.prevent_close();
                     let _ = window.hide();
@@ -1330,7 +1507,9 @@ pub fn run(cli_args: CliArgs) {
 
         // Keep the process alive when the main window is destroyed but the tray is active.
         if let tauri::RunEvent::ExitRequested { api, .. } = &event {
-            if TRAY_ICON_ENABLED.load(Ordering::Relaxed) {
+            if TRAY_ICON_ENABLED.load(Ordering::Relaxed)
+                && !USER_REQUESTED_APP_EXIT.load(Ordering::Relaxed)
+            {
                 api.prevent_exit();
             }
         }

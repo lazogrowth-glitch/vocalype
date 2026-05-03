@@ -64,9 +64,14 @@ impl PipelineProfiler {
         duration: Duration,
         detail: Option<String>,
     ) {
+        let finished_at_ms = self.started_at.elapsed().as_millis() as u64;
+        let duration_ms = duration.as_millis() as u64;
+        let started_at_ms = finished_at_ms.saturating_sub(duration_ms);
         self.steps.push(PipelineStepTiming {
             step: step.into(),
-            duration_ms: duration.as_millis() as u64,
+            duration_ms,
+            started_at_ms,
+            finished_at_ms,
             detail,
         });
     }
@@ -78,6 +83,10 @@ impl PipelineProfiler {
         detail: Option<String>,
     ) {
         self.push_step(step, started_at.elapsed(), detail);
+    }
+
+    pub(super) fn push_recorded_step(&mut self, step: PipelineStepTiming) {
+        self.steps.push(step);
     }
 
     pub(super) fn set_audio_duration_samples(&mut self, samples_len: usize) {

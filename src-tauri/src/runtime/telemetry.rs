@@ -167,6 +167,105 @@ impl TranscriptionTelemetry {
         });
     }
 
+    pub fn log_recording_path(
+        &self,
+        session_id: u64,
+        operation_id: Option<u64>,
+        model_id: &str,
+        microphone_stream_was_open: bool,
+        model_was_loaded: bool,
+        recording_start_latency_ms: u64,
+        startup_path_latency_ms: u64,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            operation_id: Option<u64>,
+            model_id: &'a str,
+            microphone_stream_was_open: bool,
+            model_was_loaded: bool,
+            recording_start_latency_ms: u64,
+            startup_path_latency_ms: u64,
+        }
+        self.write_line(&E {
+            event: "recording_path",
+            ts_ms: Self::now_ms(),
+            session_id,
+            operation_id,
+            model_id,
+            microphone_stream_was_open,
+            model_was_loaded,
+            recording_start_latency_ms,
+            startup_path_latency_ms,
+        });
+    }
+
+    pub fn log_engine_activation(
+        &self,
+        session_id: u64,
+        operation_id: Option<u64>,
+        model_id: &str,
+        activation_ms: u64,
+        already_loaded: bool,
+        outcome: &str,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            operation_id: Option<u64>,
+            model_id: &'a str,
+            activation_ms: u64,
+            already_loaded: bool,
+            outcome: &'a str,
+        }
+        self.write_line(&E {
+            event: "engine_activation",
+            ts_ms: Self::now_ms(),
+            session_id,
+            operation_id,
+            model_id,
+            activation_ms,
+            already_loaded,
+            outcome,
+        });
+    }
+
+    pub fn log_first_chunk_dispatch(
+        &self,
+        session_id: u64,
+        chunk_idx: usize,
+        dispatch_after_record_start_ms: u64,
+        new_samples: usize,
+        total_samples: usize,
+        flush_type: &str,
+    ) {
+        #[derive(Serialize)]
+        struct E<'a> {
+            event: &'static str,
+            ts_ms: u64,
+            session_id: u64,
+            chunk_idx: usize,
+            dispatch_after_record_start_ms: u64,
+            new_samples: usize,
+            total_samples: usize,
+            flush_type: &'a str,
+        }
+        self.write_line(&E {
+            event: "first_chunk_dispatch",
+            ts_ms: Self::now_ms(),
+            session_id,
+            chunk_idx,
+            dispatch_after_record_start_ms,
+            new_samples,
+            total_samples,
+            flush_type,
+        });
+    }
+
     pub fn log_chunk_candidate(
         &self,
         session_id: u64,
@@ -223,6 +322,8 @@ impl TranscriptionTelemetry {
         new_samples: usize,
         total_samples: usize,
         energy: f32,
+        rms: f32,
+        peak: f32,
         overlap_samples: usize,
         cutoff_secs: f32,
     ) {
@@ -235,10 +336,13 @@ impl TranscriptionTelemetry {
             flush_type: &'a str,
             new_samples: usize,
             total_samples: usize,
-            /// Duration of new audio in this chunk (seconds).
             new_secs: f32,
             /// Mean-squared energy of last 300 ms. -1 = not computed.
             energy: f32,
+            /// RMS amplitude of the new portion of this chunk. -1 = not computed.
+            rms: f32,
+            /// Peak amplitude of the new portion of this chunk. -1 = not computed.
+            peak: f32,
             overlap_samples: usize,
             cutoff_secs: f32,
         }
@@ -252,6 +356,8 @@ impl TranscriptionTelemetry {
             total_samples,
             new_secs: new_samples as f32 / 16_000.0,
             energy,
+            rms,
+            peak,
             overlap_samples,
             cutoff_secs,
         });
@@ -428,7 +534,7 @@ impl TranscriptionTelemetry {
         session_id: u64,
         chunk_idx: usize,
         filter_name: &str,
-        _raw_text_preview: &str,
+        raw_text_preview: &str,
         word_count: usize,
         chunk_samples: usize,
         is_final_chunk: bool,
@@ -453,7 +559,7 @@ impl TranscriptionTelemetry {
             session_id,
             chunk_idx,
             filter_name,
-            raw_text_preview: REDACTED_TEXT_PREVIEW,
+            raw_text_preview,
             word_count,
             chunk_samples,
             is_final_chunk,

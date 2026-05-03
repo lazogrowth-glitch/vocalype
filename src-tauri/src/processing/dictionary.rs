@@ -83,6 +83,8 @@ struct CompiledEntry {
     re: Regex,
 }
 
+type SharedCompiledPatterns = Arc<[(Regex, String)]>;
+
 // ---------------------------------------------------------------------------
 // Manager
 // ---------------------------------------------------------------------------
@@ -90,6 +92,7 @@ struct CompiledEntry {
 pub struct DictionaryManager {
     /// Compiled entries — single source of truth.  Regex is cheap to clone.
     compiled: Mutex<Vec<CompiledEntry>>,
+    compiled_patterns: Mutex<SharedCompiledPatterns>,
     file_path: PathBuf,
 }
 
@@ -104,8 +107,10 @@ impl DictionaryManager {
         let file_path = app_data_dir.join(DICTIONARY_FILE);
         let raw = load_from_file(&file_path).unwrap_or_default();
         let compiled = compile_all(&raw);
+        let compiled_patterns = compiled_patterns_from_entries(&compiled);
         Arc::new(Self {
             compiled: Mutex::new(compiled),
+            compiled_patterns: Mutex::new(compiled_patterns),
             file_path,
         })
     }
@@ -125,13 +130,11 @@ impl DictionaryManager {
 
     /// Pre-compiled patterns — pass directly to `apply_dictionary`.
     /// Cloning `Regex` is O(1) (Arc-backed internally).
-    pub fn compiled_entries(&self) -> Vec<(Regex, String)> {
-        self.compiled
+    pub fn compiled_entries(&self) -> SharedCompiledPatterns {
+        self.compiled_patterns
             .lock()
-            .unwrap()
-            .iter()
-            .map(|e| (e.re.clone(), e.to.clone()))
-            .collect()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
     }
 
     /// Adds an entry. Returns an error if `from` already exists (case-insensitive).
@@ -150,7 +153,13 @@ impl DictionaryManager {
             return Err(format!("'{}' est déjà dans le dictionnaire", from));
         }
         compiled.push(CompiledEntry { from, to, re });
-        save_to_file(&self.file_path, &to_raw(&compiled))
+        let raw = to_raw(&compiled);
+        let patterns = compiled_patterns_from_entries(&compiled);
+        *self
+            .compiled_patterns
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = patterns;
+        save_to_file(&self.file_path, &raw)
     }
 
     /// Removes the entry matching `from` (case-insensitive).
@@ -161,7 +170,13 @@ impl DictionaryManager {
         if compiled.len() == before {
             return Err(format!("'{}' not found in dictionary", from));
         }
-        save_to_file(&self.file_path, &to_raw(&compiled))
+        let raw = to_raw(&compiled);
+        let patterns = compiled_patterns_from_entries(&compiled);
+        *self
+            .compiled_patterns
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = patterns;
+        save_to_file(&self.file_path, &raw)
     }
 
     /// Updates the replacement for the entry matching `from` (case-insensitive).
@@ -173,13 +188,23 @@ impl DictionaryManager {
             .find(|e| e.from.to_lowercase() == from.to_lowercase())
             .ok_or_else(|| format!("'{}' not found in dictionary", from))?;
         entry.to = to;
-        save_to_file(&self.file_path, &to_raw(&compiled))
+        let raw = to_raw(&compiled);
+        let patterns = compiled_patterns_from_entries(&compiled);
+        *self
+            .compiled_patterns
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = patterns;
+        save_to_file(&self.file_path, &raw)
     }
 
     /// Removes all entries.
     pub fn clear(&self) -> Result<(), String> {
         let mut compiled = self.compiled.lock().unwrap_or_else(|e| e.into_inner());
         compiled.clear();
+        *self
+            .compiled_patterns
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Arc::from([]);
         save_to_file(&self.file_path, &[])
     }
 }
@@ -233,6 +258,14 @@ fn to_raw(compiled: &[CompiledEntry]) -> Vec<DictionaryEntry> {
         .collect()
 }
 
+fn compiled_patterns_from_entries(compiled: &[CompiledEntry]) -> SharedCompiledPatterns {
+    compiled
+        .iter()
+        .map(|e| (e.re.clone(), e.to.clone()))
+        .collect::<Vec<_>>()
+        .into()
+}
+
 // ---------------------------------------------------------------------------
 // File I/O
 // ---------------------------------------------------------------------------
@@ -262,28 +295,32 @@ pub fn apply_dictionary(text: &str, patterns: &[(Regex, String)]) -> String {
     }
     let mut result = text.to_string();
     for (re, to) in DEVELOPER_VOCABULARY.iter() {
-        result = re
-            .replace_all(&result, |caps: &regex::Captures<'_>| {
-                format!(
-                    "{}{}{}",
-                    caps.get(1).map_or("", |m| m.as_str()),
-                    to,
-                    caps.get(3).map_or("", |m| m.as_str())
-                )
-            })
-            .into_owned();
+        if re.is_match(&result) {
+            result = re
+                .replace_all(&result, |caps: &regex::Captures<'_>| {
+                    format!(
+                        "{}{}{}",
+                        caps.get(1).map_or("", |m| m.as_str()),
+                        to,
+                        caps.get(3).map_or("", |m| m.as_str())
+                    )
+                })
+                .into_owned();
+        }
     }
     for (re, to) in patterns {
-        result = re
-            .replace_all(&result, |caps: &regex::Captures<'_>| {
-                format!(
-                    "{}{}{}",
-                    caps.get(1).map_or("", |m| m.as_str()),
-                    to,
-                    caps.get(3).map_or("", |m| m.as_str())
-                )
-            })
-            .into_owned();
+        if re.is_match(&result) {
+            result = re
+                .replace_all(&result, |caps: &regex::Captures<'_>| {
+                    format!(
+                        "{}{}{}",
+                        caps.get(1).map_or("", |m| m.as_str()),
+                        to,
+                        caps.get(3).map_or("", |m| m.as_str())
+                    )
+                })
+                .into_owned();
+        }
     }
     result
 }

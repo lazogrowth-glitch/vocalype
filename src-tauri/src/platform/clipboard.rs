@@ -115,35 +115,44 @@ fn paste_via_clipboard(
     info!("[PASTE] key combo sent successfully");
 
     // Give the target app enough time to consume clipboard content before restore.
-    // Too-short delays can cause apparent "paste did nothing" on some apps.
+    // The restore itself does not need to block the user's dictation completion,
+    // so we schedule it asynchronously after the safe delay.
     #[cfg(target_os = "windows")]
     let restore_delay_ms = paste_delay_ms.max(150);
 
     #[cfg(not(target_os = "windows"))]
     let restore_delay_ms = paste_delay_ms.max(250);
     info!(
-        "[PASTE] waiting {}ms before restoring clipboard",
+        "[PASTE] scheduling clipboard restore in {}ms",
         restore_delay_ms
     );
-    std::thread::sleep(std::time::Duration::from_millis(restore_delay_ms));
-
-    // Restore original clipboard content
-    info!(
-        "[PASTE] restoring original clipboard content (len={})",
-        clipboard_content.len()
-    );
-    // On Wayland, prefer wl-copy for better compatibility
-    #[cfg(target_os = "linux")]
-    if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
-    } else {
-        let _ = clipboard.write_text(&clipboard_content);
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    let _ = clipboard.write_text(&clipboard_content);
+    schedule_clipboard_restore(app_handle.clone(), clipboard_content, restore_delay_ms);
 
     Ok(())
+}
+
+fn schedule_clipboard_restore(
+    app_handle: AppHandle,
+    clipboard_content: String,
+    restore_delay_ms: u64,
+) {
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(restore_delay_ms));
+        let clipboard = app_handle.clipboard();
+        info!(
+            "[PASTE] restoring original clipboard content asynchronously (len={})",
+            clipboard_content.len()
+        );
+        #[cfg(target_os = "linux")]
+        if is_wayland() && is_wl_copy_available() {
+            let _ = write_clipboard_via_wl_copy(&clipboard_content);
+        } else {
+            let _ = clipboard.write_text(&clipboard_content);
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        let _ = clipboard.write_text(&clipboard_content);
+    });
 }
 
 /// Attempts to send a key combination using Linux-native tools.

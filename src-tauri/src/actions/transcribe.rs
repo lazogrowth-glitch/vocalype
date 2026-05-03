@@ -227,70 +227,229 @@ fn should_fallback_from_timestamp_trim(raw_text: &str, words_in: usize, words_ou
     words_out == 0 || (words_in <= 1 && words_out + 2 < raw_word_count)
 }
 
+/// Returns `true` when the TDT word timestamps are too tightly clustered to be
+/// trustworthy for overlap trimming.
+///
+/// The TDT joint head predicts both a token and a duration (frame advance).  When
+/// `duration_step = 0` for several consecutive tokens, the decoder stays on the
+/// same encoder frame and all those tokens share an identical timestamp.  This can
+/// cause an entire chunk's worth of words to land at a single frame value —
+/// e.g. all 10 words at `t = 5.0 s` even though the overlap cutoff is `2.0 s`.
+/// In that case none of them are trimmed, and the overlap content leaks into the
+/// final text as duplicates.
+///
+/// Detection: if the span between the earliest and latest word timestamp is less
+/// than `words_in × 0.04 s`, the timestamps cannot reflect real audio positions
+/// (minimum realistic spread is `words_in × 0.08 s`, one encoder frame per word).
+///
+/// Guard: only activates on chunks longer than 3 s (to avoid false positives on
+/// legitimately short/dense clips) with at least 5 word segments.
+fn is_timestamp_cluster_compressed(
+    segs: &[transcribe_rs::TranscriptionSegment],
+    words_in: usize,
+    chunk_samples: usize,
+) -> bool {
+    if words_in < 5 || chunk_samples <= 3 * 16_000 {
+        return false;
+    }
+    let min_ts = segs.iter().map(|s| s.start).fold(f32::INFINITY, f32::min);
+    let max_ts = segs
+        .iter()
+        .map(|s| s.start)
+        .fold(f32::NEG_INFINITY, f32::max);
+    let ts_span = max_ts - min_ts;
+    // Threshold: half the minimum spread assuming each word occupies one encoder
+    // frame (0.08 s).  Below this the timestamps are physically impossible to be
+    // correct.
+    ts_span < words_in as f32 * 0.04
+}
+
+/// Returns `true` when a word (already lowercased, punctuation-stripped) is a common
+/// French word that contains no accent characters.  Used to avoid false-positive
+/// language-switch detections on valid short French phrases like "Musique de qui?"
+/// or "Pas de mentir." that happen to have no accent chars.
+fn is_known_french_word_no_accent(w: &str) -> bool {
+    matches!(
+        w,
+        // ── Pronouns ──────────────────────────────────────────────────────────
+        "je" | "tu" | "il" | "elle" | "nous" | "vous" | "ils" | "elles" | "on"
+        | "moi" | "toi" | "lui" | "eux" | "soi" | "y"
+        // ── Articles & determiners ────────────────────────────────────────────
+        | "le" | "la" | "les" | "un" | "une" | "des" | "du" | "de" | "l" | "d"
+        // ── Possessives ───────────────────────────────────────────────────────
+        | "mon" | "ma" | "mes" | "ton" | "ta" | "tes" | "son" | "sa" | "ses"
+        | "notre" | "nos" | "votre" | "vos" | "leur" | "leurs"
+        // ── Demonstratives ────────────────────────────────────────────────────
+        | "ce" | "cet" | "cette" | "ces" | "celui" | "celle" | "ceux" | "celles"
+        // ── Conjunctions & connectors ─────────────────────────────────────────
+        | "et" | "ou" | "mais" | "donc" | "or" | "ni" | "car" | "si"
+        | "que" | "qui" | "quand" | "comment" | "combien" | "pourquoi"
+        | "quoi" | "dont" | "lequel" | "laquelle" | "lesquels" | "lesquelles"
+        // ── Prepositions ──────────────────────────────────────────────────────
+        | "en" | "dans" | "sur" | "sous" | "avec" | "sans" | "pour" | "par"
+        | "vers" | "chez" | "entre" | "parmi" | "apres" | "avant" | "depuis"
+        | "lors" | "jusque" | "selon" | "contre" | "malgre"
+        // ── Negation ──────────────────────────────────────────────────────────
+        | "pas" | "ne" | "non" | "jamais" | "rien" | "guere" | "point"
+        // ── Common verbs (accent-free forms only) ────────────────────────────
+        | "est" | "sont" | "ont" | "a" | "ai" | "as" | "fait" | "dit" | "va"
+        | "vais" | "vas" | "suis" | "faut" | "sait" | "croit" | "crois"
+        | "vois" | "voit" | "peut" | "veut" | "veux" | "joue" | "joues"
+        | "parle" | "parles" | "connais" | "connait" | "viens" | "vient"
+        | "tiens" | "tient" | "prends" | "prend" | "suit" | "met" | "mets"
+        | "sort" | "sors" | "vaut" | "comprend" | "comprends" | "appartient"
+        | "font" | "vont" | "savent" | "lisent" | "croient" | "disent"
+        | "voient" | "mettent" | "sortent" | "viennent" | "tiennent"
+        | "voir" | "savoir" | "pouvoir" | "vouloir" | "devoir" | "avoir"
+        | "faire" | "dire" | "aller" | "venir" | "partir" | "finir"
+        | "mentir" | "sortir" | "prendre" | "mettre" | "connaitre"
+        | "comprendre" | "apprendre" | "commencer" | "continuer"
+        | "regarder" | "ecouter" | "parler" | "penser" | "croire"
+        // ── Adverbs ───────────────────────────────────────────────────────────
+        | "bien" | "mal" | "vite" | "souvent" | "parfois" | "toujours"
+        | "aussi" | "encore" | "puis" | "alors" | "ensuite" | "sinon"
+        | "vraiment" | "beaucoup" | "trop" | "peu" | "plus" | "moins"
+        | "deja" | "maintenant" | "bientot" | "tout" | "tous" | "toute"
+        | "toutes" | "fort" | "tres"
+        // ── Common adjectives (no accent) ────────────────────────────────────
+        | "bon" | "bonne" | "bons" | "bonnes" | "grand" | "grande" | "grands"
+        | "grandes" | "petit" | "petite" | "petits" | "petites"
+        | "seul" | "seule" | "seuls" | "seules" | "vrai" | "vraie" | "vrais"
+        | "vraies" | "faux" | "fausse" | "long" | "court" | "rapide" | "lent"
+        | "libre" | "dur" | "dure" | "durs" | "dures"
+        // ── Common nouns without accents ─────────────────────────────────────
+        | "musique" | "film" | "films" | "livre" | "livres" | "sport" | "jeu"
+        | "jeux" | "fois" | "mois" | "ans" | "jours" | "jour" | "an" | "soir"
+        | "matin" | "moment" | "temps" | "coup" | "bout" | "lieu" | "tour"
+        | "part" | "type" | "truc" | "trucs" | "chose" | "choses" | "gens"
+        | "monde" | "vie" | "pays" | "rue" | "cas" | "nom" | "mot" | "mots"
+        | "sens" | "faits" | "personne" | "personnes" | "homme" | "femme"
+        | "enfant" | "ami" | "amis" | "travail" | "boulot" | "argent"
+        | "voiture" | "maison" | "appartement" | "recruteur" | "recruteurs"
+        | "application" | "applications" | "message" | "messages"
+        | "client" | "clients" | "service" | "services" | "projet" | "projets"
+        | "probleme" | "problemes" | "solution" | "solutions" | "question"
+        | "questions" | "reponse" | "reponses" | "idee" | "idees"
+        | "plan" | "plans" | "objectif" | "objectifs"
+        // ── Numbers ───────────────────────────────────────────────────────────
+        | "deux" | "trois" | "quatre" | "cinq" | "six" | "sept" | "huit"
+        | "neuf" | "dix" | "onze" | "douze" | "vingt" | "trente" | "quarante"
+        | "cinquante" | "soixante" | "cent" | "mille"
+        // ── Expressions & fillers ─────────────────────────────────────────────
+        | "oui" | "bah" | "boh" | "ben" | "voila" | "super" | "ok" | "okay"
+        | "genre" | "hein" | "nan" | "ouais" | "wesh" | "bonjour" | "bonsoir"
+        | "merci" | "pardon" | "salut" | "hop" | "allez"
+    )
+}
+
+/// Returns `true` when a short chunk in a non-English session produced output
+/// that is likely a language switch to English rather than valid target-language speech.
+///
+/// Three-stage check (early exits prevent false positives):
+/// 1. Apostrophes in the text → definitely target-language (French "quelqu'un",
+///    "c'est"; these contractions are rare in 1-3 word English ASR output).
+/// 2. At least one target-language accent char → still in the right language.
+/// 3. All words present in the French no-accent lexicon → valid French without
+///    accents (e.g. "Musique de qui?", "Pas de mentir.") — skip retry.
+///
+/// Only triggers for non-auto, non-English sessions on short chunks (≤ 3 s, ≤ 3 words).
+fn is_likely_language_switched_short_chunk(
+    text: &str,
+    selected_language: &str,
+    chunk_samples: usize,
+) -> bool {
+    if selected_language == "auto" || selected_language.starts_with("en") {
+        return false;
+    }
+    if chunk_samples > 3 * 16_000 {
+        return false;
+    }
+    let word_count = text.split_whitespace().count();
+    if word_count == 0 || word_count > 3 {
+        return false;
+    }
+    // Apostrophes signal target-language contractions.
+    if text.contains('\'') || text.contains('\u{2019}') {
+        return false;
+    }
+    // At least one accent char → still in target language.
+    let has_accent = text.chars().any(|c| {
+        matches!(
+            c,
+            'é' | 'è'
+                | 'ê'
+                | 'ë'
+                | 'à'
+                | 'â'
+                | 'ä'
+                | 'ô'
+                | 'ö'
+                | 'û'
+                | 'ü'
+                | 'ù'
+                | 'ï'
+                | 'î'
+                | 'ç'
+                | 'œ'
+                | 'æ'
+                | 'É'
+                | 'È'
+                | 'Ê'
+                | 'Ë'
+                | 'À'
+                | 'Â'
+                | 'Ä'
+                | 'Ô'
+                | 'Ö'
+                | 'Û'
+                | 'Ü'
+                | 'Ù'
+                | 'Ï'
+                | 'Î'
+                | 'Ç'
+                | 'Œ'
+                | 'Æ'
+                | 'ñ'
+                | 'Ñ'
+                | 'ú'
+                | 'Ú'
+                | 'ó'
+                | 'Ó'
+                | 'ã'
+                | 'Ã'
+                | 'õ'
+                | 'Õ'
+                | 'ß'
+        )
+    });
+    if has_accent {
+        return false;
+    }
+    // No accent chars and no apostrophes.  For French sessions, check if every word
+    // is a known French word that simply has no accent — e.g. "Musique de qui?"
+    // These are valid output; retrying them wastes an inference call.
+    if selected_language == "fr" || selected_language.starts_with("fr-") {
+        let all_french = text.split_whitespace().all(|token| {
+            let bare: String = token
+                .chars()
+                .filter(|c| c.is_alphabetic())
+                .collect::<String>()
+                .to_lowercase();
+            bare.is_empty() || is_known_french_word_no_accent(&bare)
+        });
+        if all_french {
+            return false;
+        }
+    }
+    true
+}
+
 fn should_skip_low_signal_vad_chunk(new_slice: &[f32]) -> bool {
     if new_slice.is_empty() {
         return false;
     }
-
     let mean_energy = new_slice.iter().map(|s| s * s).sum::<f32>() / (new_slice.len() as f32);
-    let signal = summarize_audio_signal(new_slice);
-    let duration_samples = new_slice.len();
-    let is_short_low_signal_chunk = signal.duration_seconds <= 2.2
-        && signal.rms < 0.0015
-        && signal.peak < 0.01;
-
     mean_energy < crate::chunking::VAD_SILENT_CHUNK_ENERGY_THRESHOLD
-        || (duration_samples <= 4 * 16_000 && mean_energy < 5e-8)
-        || is_short_low_signal_chunk
-}
-
-fn should_defer_short_vad_chunk(new_slice: &[f32]) -> bool {
-    if new_slice.is_empty() {
-        return false;
-    }
-
-    let signal = summarize_audio_signal(new_slice);
-    signal.duration_seconds <= 2.8 && signal.rms < 0.0035 && signal.peak < 0.04
-}
-
-fn is_suspicious_short_language_fragment(
-    text: &str,
-    selected_language: &str,
-    chunk_samples: usize,
-    is_final_chunk: bool,
-) -> bool {
-    if is_final_chunk || !selected_language.starts_with("fr") {
-        return false;
-    }
-
-    if chunk_samples > 3 * 16_000 {
-        return false;
-    }
-
-    let bare = text
-        .trim()
-        .trim_end_matches('.')
-        .trim_end_matches(',')
-        .trim_end_matches('!')
-        .trim_end_matches('?')
-        .to_lowercase();
-    if bare.is_empty() {
-        return false;
-    }
-
-    let words: Vec<&str> = bare.split_whitespace().collect();
-    if words.len() > 3 {
-        return false;
-    }
-
-    const ENGLISH_SHORT_FRAGMENT_MARKERS: &[&str] = &[
-        "the", "yeah", "yes", "i", "you", "we", "they", "he", "she", "it", "um", "uh",
-        "okay", "ok", "thanks", "thank", "sorry",
-    ];
-
-    words
-        .iter()
-        .all(|word| ENGLISH_SHORT_FRAGMENT_MARKERS.contains(word))
 }
 
 /// Returns `true` when BOTH conditions are met:
@@ -455,14 +614,22 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     );
 
     if !crate::startup_warmup::can_start_recording(app) {
-        let warmup_status = crate::startup_warmup::current_status(app);
         crate::startup_warmup::ensure_startup_warmup(app, "transcription-blocked");
+        let warmup_status = crate::startup_warmup::current_status(app);
 
         // Let recording start while the selected model finishes loading in the
         // background. This removes the perceived 2-5s dead time before the
         // overlay appears, while still keeping hard blocks for missing models
         // or microphone failures.
-        if warmup_status.reason != crate::startup_warmup::StartupWarmupReason::PreparingModel {
+        let should_block_capture = matches!(
+            warmup_status.reason,
+            crate::startup_warmup::StartupWarmupReason::NoModelSelected
+                | crate::startup_warmup::StartupWarmupReason::ModelNotDownloaded
+                | crate::startup_warmup::StartupWarmupReason::MicrophoneError
+                | crate::startup_warmup::StartupWarmupReason::ModelError
+        );
+
+        if should_block_capture {
             let message = crate::startup_warmup::block_message(app);
             warn!(
                 "Blocking transcription start until warmup completes: {}",
@@ -510,6 +677,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     debug!("[TIMING] app context detected: {:?}", start_time.elapsed());
 
     let tm = app.state::<Arc<TranscriptionManager>>();
+    let model_was_loaded_before_click = tm.is_model_loaded();
     tm.initiate_model_load();
 
     let binding_id = binding_id.to_string();
@@ -517,6 +685,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     let rm = app.state::<Arc<AudioRecordingManager>>();
     let settings = get_settings(app);
     let is_always_on = settings.always_on_microphone;
+    let microphone_stream_was_open_before_click = rm.is_microphone_stream_open();
 
     play_feedback_sound(app, SoundType::Start);
     if is_always_on {
@@ -622,9 +791,13 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             .unwrap_or_else(|| Arc::new(TranscriptionTelemetry::disabled()));
         let tel_sampler = Arc::clone(&tel);
         let tel_worker = Arc::clone(&tel);
+        let tel_engine = Arc::clone(&tel);
         let quality_counters = Arc::new(Mutex::new(ParakeetSessionCompletion::default()));
         let final_recovery_candidate: Arc<Mutex<Option<(usize, String)>>> =
             Arc::new(Mutex::new(None));
+        let recording_start_elapsed_ms = recording_start_time.elapsed().as_millis() as u64;
+        let startup_path_latency_ms = start_time.elapsed().as_millis() as u64;
+        let record_start_marker = Instant::now();
 
         if is_parakeet_v3 {
             tel.log_session_start(
@@ -642,6 +815,70 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 chunking_profile.interval_samples,
                 chunking_profile.overlap_samples,
             );
+            tel.log_recording_path(
+                session_id,
+                Some(operation_id),
+                current_model_info
+                    .as_ref()
+                    .map(|info| info.id.as_str())
+                    .unwrap_or("parakeet-v3"),
+                microphone_stream_was_open_before_click,
+                model_was_loaded_before_click,
+                recording_start_elapsed_ms,
+                startup_path_latency_ms,
+            );
+            if model_was_loaded_before_click {
+                tel.log_engine_activation(
+                    session_id,
+                    Some(operation_id),
+                    current_model_info
+                        .as_ref()
+                        .map(|info| info.id.as_str())
+                        .unwrap_or("parakeet-v3"),
+                    0,
+                    true,
+                    "already_loaded_before_click",
+                );
+            } else {
+                let tm_engine = Arc::clone(&*tm);
+                let model_id = current_model_info
+                    .as_ref()
+                    .map(|info| info.id.clone())
+                    .unwrap_or_else(|| "parakeet-v3".to_string());
+                let engine_wait_start = Instant::now();
+                std::thread::spawn(move || {
+                    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+                    loop {
+                        if tm_engine.get_current_model().as_deref() == Some(model_id.as_str())
+                            && tm_engine.is_model_loaded()
+                        {
+                            tel_engine.log_engine_activation(
+                                session_id,
+                                Some(operation_id),
+                                &model_id,
+                                engine_wait_start.elapsed().as_millis() as u64,
+                                false,
+                                "loaded_after_click",
+                            );
+                            break;
+                        }
+
+                        if std::time::Instant::now() >= deadline {
+                            tel_engine.log_engine_activation(
+                                session_id,
+                                Some(operation_id),
+                                &model_id,
+                                engine_wait_start.elapsed().as_millis() as u64,
+                                false,
+                                "timed_out_waiting_for_load",
+                            );
+                            break;
+                        }
+
+                        std::thread::sleep(std::time::Duration::from_millis(20));
+                    }
+                });
+            }
             if let Some(state) = app.try_state::<ParakeetDiagnosticsState>() {
                 state.start_session(ParakeetSessionStart {
                     session_id,
@@ -795,29 +1032,17 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     skip_overlap_next_chunk = vad_flush;
 
                     let flush_type = if interval_ready { "interval" } else { "vad" };
-                    let should_defer_low_signal_vad_chunk = is_parakeet_v3
-                        && vad_flush
-                        && should_defer_short_vad_chunk(new_slice);
-                    if should_defer_low_signal_vad_chunk {
-                        tel_sampler.log_chunk_candidate(
-                            session_id,
-                            next_idx,
-                            flush_type,
-                            new_samples,
-                            total,
-                            actual_overlap,
-                            cutoff_secs,
-                            pending_now,
-                            false,
-                            "vad_short_deferred_low_signal",
-                        );
-                        if let Ok(mut counters) = counters_sampler.lock() {
-                            counters.chunk_candidates_rejected += 1;
-                        }
-                        skip_overlap_next_chunk = false;
-                        continue;
-                    }
                     if is_parakeet_v3 {
+                        if chunks_dispatched == 0 {
+                            tel_sampler.log_first_chunk_dispatch(
+                                session_id,
+                                next_idx,
+                                record_start_marker.elapsed().as_millis() as u64,
+                                new_samples,
+                                total,
+                                flush_type,
+                            );
+                        }
                         tel_sampler.log_chunk_candidate(
                             session_id,
                             next_idx,
@@ -838,6 +1063,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             counters.chunk_candidates_sent += 1;
                         }
                     }
+                    let new_signal = summarize_audio_signal(new_slice);
                     tel_sampler.log_chunk_sent(
                         session_id,
                         next_idx,
@@ -845,6 +1071,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         new_samples,
                         total,
                         recent_energy.unwrap_or(-1.0),
+                        new_signal.rms,
+                        new_signal.peak,
                         actual_overlap,
                         cutoff_secs,
                     );
@@ -853,9 +1081,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     // VAD-triggered chunk is pure noise (user held push-to-talk in silence).
                     // Compute mean energy only over new_samples (excluding overlap prefix).
                     let is_dead_silent_vad_chunk =
-                        is_parakeet_v3
-                            && vad_flush
-                            && should_skip_low_signal_vad_chunk(new_slice);
+                        is_parakeet_v3 && vad_flush && should_skip_low_signal_vad_chunk(new_slice);
                     if is_dead_silent_vad_chunk {
                         let mut s = shared_s.lock().unwrap_or_else(|e| e.into_inner());
                         s.last_committed_idx = chunk_end;
@@ -907,6 +1133,10 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 None
             };
             info!("[worker] started");
+            // Tail of the last successfully transcribed chunk's audio.
+            // Used to prepend context when re-running inference on a short
+            // chunk that looks like a language switch.
+            let mut prev_chunk_tail: Vec<f32> = Vec::new();
             while let Ok(message) = chunk_rx.recv() {
                 // ESC was pressed — discard remaining queued chunks immediately.
                 if cancel_flag_worker.load(std::sync::atomic::Ordering::Relaxed) {
@@ -924,8 +1154,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 );
 
                 let chunk_samples = audio.len();
-                // Keep a copy for potential overlap-retry (only when overlap trimming is active).
-                let audio_for_retry = if is_parakeet_v3_w && overlap_cutoff_secs > 0.0 {
+                // Keep a copy for overlap-retry and language-context retry.
+                let audio_for_retry = if is_parakeet_v3_w {
                     Some(audio.clone())
                 } else {
                     None
@@ -982,16 +1212,44 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 let mut out = trimmed_out.clone();
                                 let mut words_out = trimmed_words_out;
 
-                                if should_fallback_from_timestamp_trim(
-                                    &output.text,
-                                    words_in,
-                                    trimmed_words_out,
-                                ) {
+                                // Two fallback triggers:
+                                // 1. Coarse/empty timestamps: words_in is 0 or 1 while raw
+                                //    has much more content → timestamps not reliable at all.
+                                // 2. Punct-guard wipe: all surviving segments were punctuation
+                                //    so the guard set `out = ""` even though `trimmed_words_out`
+                                //    was > 0 (e.g. 2 commas survived the cutoff).  The standard
+                                //    `words_out == 0` check misses this because it looks at
+                                //    `trimmed_words_out`, not the actual output string.
+                                // In both cases: fall back to the full raw text and let
+                                // `deduplicate_boundary` in assembly handle boundary dedup —
+                                // that is the text-based overlap matching, zero extra inference.
+                                let fallback_reason: Option<&'static str> =
+                                    if should_fallback_from_timestamp_trim(
+                                        &output.text,
+                                        words_in,
+                                        trimmed_words_out,
+                                    ) {
+                                        Some("coarse_or_empty_word_timestamps")
+                                    } else if out.is_empty()
+                                        && !output.text.trim().is_empty()
+                                        && output.text.split_whitespace().count() >= 3
+                                    {
+                                        Some("punct_guard_wiped_all_survivors")
+                                    } else if is_timestamp_cluster_compressed(
+                                        segs,
+                                        words_in,
+                                        chunk_samples,
+                                    ) {
+                                        Some("compressed_timestamps_cluster")
+                                    } else {
+                                        None
+                                    };
+                                if let Some(reason) = fallback_reason {
                                     tel_worker.log_chunk_retry(
                                         session_id,
                                         idx,
                                         "timestamp_trim_fallback_full",
-                                        "coarse_or_empty_word_timestamps",
+                                        reason,
                                         output.text.len(),
                                         output.text.len(),
                                         true,
@@ -1111,6 +1369,139 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             );
                             output.text
                         };
+                        // Language-context retry: two triggers —
+                        // 1. Short chunk (≤3 s) with no target-language accent chars →
+                        //    `is_likely_language_switched_short_chunk` (fast, no whichlang).
+                        // 2. Any chunk where whichlang detects the output as a different
+                        //    language than the session → `has_language_drift`.  Covers
+                        //    long chunks where the overlap from English content (e.g. book
+                        //    titles) pushed the model into English mode mid-session.
+                        // In both cases: prepend 2 s of the previous chunk's French/Spanish/…
+                        // audio so the model has enough context to stay in the right language.
+                        let lang_ctx_retry_reason: Option<&'static str> =
+                            if is_parakeet_v3_w && !is_final_chunk && !prev_chunk_tail.is_empty() {
+                                if is_likely_language_switched_short_chunk(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                            ) {
+                                Some("language_context")
+                            } else if crate::managers::transcription::inference::has_language_drift(
+                                &text,
+                                &selected_language_w,
+                            ) {
+                                Some("language_context_drift")
+                            } else {
+                                None
+                            }
+                            } else {
+                                None
+                            };
+                        let text = if let Some(retry_reason) = lang_ctx_retry_reason {
+                            if let Some(ref orig_audio) = audio_for_retry {
+                                let context_samples = prev_chunk_tail.len().min(2 * 16_000);
+                                let tail_start = prev_chunk_tail.len() - context_samples;
+                                let mut extended: Vec<f32> =
+                                    Vec::with_capacity(context_samples + orig_audio.len());
+                                extended.extend_from_slice(&prev_chunk_tail[tail_start..]);
+                                extended.extend_from_slice(orig_audio);
+                                let extended_len = extended.len();
+                                let context_cutoff_secs = context_samples as f32 / 16_000.0;
+                                match tm_s.transcribe_detailed_request(TranscriptionRequest {
+                                    audio: extended,
+                                    app_context: chunk_app_context.clone(),
+                                }) {
+                                    Ok(retry_out) => {
+                                        let retry_text = if let Some(segs) = &retry_out.segments {
+                                            let mut out = String::new();
+                                            for seg in segs
+                                                .iter()
+                                                .filter(|s| s.start >= context_cutoff_secs)
+                                            {
+                                                let is_punct = seg.text.len() == 1
+                                                    && seg.text.chars().all(|c| {
+                                                        matches!(
+                                                            c,
+                                                            '.' | ',' | '!' | '?' | ';' | ':' | ')'
+                                                        )
+                                                    });
+                                                if !out.is_empty() && !is_punct {
+                                                    out.push(' ');
+                                                }
+                                                out.push_str(&seg.text);
+                                            }
+                                            out
+                                        } else {
+                                            retry_out.text
+                                        };
+                                        // For drift-triggered retries: only accept the
+                                        // result if the new output doesn't still drift.
+                                        // For short-chunk retries: accept any non-empty change.
+                                        let still_drifts = retry_reason
+                                            == "language_context_drift"
+                                            && crate::managers::transcription::inference::has_language_drift(
+                                                &retry_text,
+                                                &selected_language_w,
+                                            );
+                                        let improved = !retry_text.is_empty()
+                                            && retry_text != text
+                                            && !still_drifts;
+                                        tel_worker.log_chunk_retry(
+                                            session_id,
+                                            idx,
+                                            retry_reason,
+                                            if improved {
+                                                "language_context_improved"
+                                            } else if still_drifts {
+                                                "language_context_still_drifts"
+                                            } else {
+                                                "language_context_no_change"
+                                            },
+                                            orig_audio.len(),
+                                            extended_len,
+                                            improved,
+                                        );
+                                        if let Ok(mut counters) = counters_worker.lock() {
+                                            counters.retry_chunks += 1;
+                                        }
+                                        if improved {
+                                            tel_worker.log_chunk_text_stage(
+                                                session_id,
+                                                idx,
+                                                "after_language_context_retry",
+                                                &retry_text,
+                                            );
+                                            retry_text
+                                        } else if still_drifts {
+                                            // Retry also drifted → emit empty rather
+                                            // than outputting garbage English.
+                                            tel_worker.log_chunk_text_stage(
+                                                session_id,
+                                                idx,
+                                                "drift_retry_failed_dropped",
+                                                &retry_text,
+                                            );
+                                            String::new()
+                                        } else {
+                                            text
+                                        }
+                                    }
+                                    Err(_) => text,
+                                }
+                            } else {
+                                text
+                            }
+                        } else {
+                            text
+                        };
+
+                        // Update the tail for the next chunk's potential retry.
+                        if let Some(ref orig_audio) = audio_for_retry {
+                            let tail_samples = (2 * 16_000).min(orig_audio.len());
+                            prev_chunk_tail =
+                                orig_audio[orig_audio.len() - tail_samples..].to_vec();
+                        }
+
                         // Hallucination filter: Parakeet invents English filler words
                         // (e.g. "So", "Yeah.", "Leave.") when a short chunk contains
                         // mostly silence. Discard single-word results from chunks that
@@ -1166,29 +1557,6 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             debug!(
                                 "Chunk {}: discarding likely hallucination (words={}, samples={}, final={})",
                                 idx, word_count, chunk_samples, is_final_chunk
-                            );
-                            String::new()
-                        } else if is_parakeet_v3_w
-                            && is_suspicious_short_language_fragment(
-                                &text,
-                                &selected_language_w,
-                                chunk_samples,
-                                is_final_chunk,
-                            )
-                        {
-                            tel_worker.log_chunk_filtered(
-                                session_id,
-                                idx,
-                                "short_language_fragment",
-                                &preview_text(&text, 120),
-                                word_count,
-                                chunk_samples,
-                                is_final_chunk,
-                                "short_out_of_language_fragment_for_selected_language",
-                            );
-                            debug!(
-                                "Chunk {}: discarding suspicious short fragment for selected language {}",
-                                idx, selected_language_w
                             );
                             String::new()
                         } else {
@@ -1488,6 +1856,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     // sending it causes Parakeet to hallucinate English filler words.
                     let sent_final = remaining.len() >= MIN_FINAL_CHUNK_SAMPLES;
                     if sent_final {
+                        let final_signal = summarize_audio_signal(&remaining);
                         tel_assembly.log_chunk_sent(
                             session_id,
                             next_idx,
@@ -1495,6 +1864,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                             remaining.len(),
                             all_samples.len(),
                             -1.0,
+                            final_signal.rms,
+                            final_signal.peak,
                             (final_cutoff_secs * 16_000.0) as usize,
                             final_cutoff_secs,
                         );
@@ -1948,6 +2319,9 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             }) {
                 Ok(mut output) => {
                     if let Ok(mut p) = profiler.lock() {
+                        for step in output.timings.drain(..) {
+                            p.push_recorded_step(step);
+                        }
                         p.push_step_since(
                             "transcribe_primary",
                             transcription_time,
@@ -2518,57 +2892,125 @@ mod tests {
     }
 
     #[test]
-    fn low_signal_vad_gate_skips_short_near_silent_chunks() {
-        let near_silent = vec![0.0002_f32; 3 * 16_000];
+    fn low_signal_vad_gate_skips_only_dead_silent_chunks() {
+        // Truly dead (below 1e-9 energy) — should skip
+        let dead_silent = vec![0.0_f32; 3 * 16_000];
+        // Quiet but real speech (rms ~0.0002) — should NOT skip
+        let quiet_speech = vec![0.0002_f32; 3 * 16_000];
         let voiced = vec![0.01_f32; 3 * 16_000];
 
-        assert!(should_skip_low_signal_vad_chunk(&near_silent));
+        assert!(should_skip_low_signal_vad_chunk(&dead_silent));
+        assert!(!should_skip_low_signal_vad_chunk(&quiet_speech));
         assert!(!should_skip_low_signal_vad_chunk(&voiced));
     }
 
     #[test]
-    fn low_signal_vad_gate_skips_short_low_peak_chunks() {
-        let low_peak = vec![0.0008_f32; (1.8 * 16_000.0) as usize];
-        let stronger_peak = vec![0.02_f32; (1.8 * 16_000.0) as usize];
+    fn language_switch_detector_triggers_on_accent_free_short_chunks() {
+        let short = 2 * 16_000; // 2s
 
-        assert!(should_skip_low_signal_vad_chunk(&low_peak));
-        assert!(!should_skip_low_signal_vad_chunk(&stronger_peak));
+        // English word in French session — no accents → should trigger retry
+        assert!(is_likely_language_switched_short_chunk(
+            "Extremely",
+            "fr",
+            short
+        ));
+        assert!(is_likely_language_switched_short_chunk(
+            "The James Clear.",
+            "fr",
+            short
+        ));
+        assert!(is_likely_language_switched_short_chunk(
+            "Um co", "fr", short
+        ));
+
+        // Correctly transcribed French — accent chars → no retry
+        assert!(!is_likely_language_switched_short_chunk(
+            "Extrêmement",
+            "fr",
+            short
+        ));
+        assert!(!is_likely_language_switched_short_chunk(
+            "De décider",
+            "fr",
+            short
+        ));
+        assert!(!is_likely_language_switched_short_chunk(
+            "C'est ça",
+            "fr",
+            short
+        ));
+
+        // Too many words → no retry (model probably got it right)
+        assert!(!is_likely_language_switched_short_chunk(
+            "Alors que c'est le meilleur",
+            "fr",
+            short
+        ));
+
+        // English selected → never triggers
+        assert!(!is_likely_language_switched_short_chunk(
+            "Extremely",
+            "en",
+            short
+        ));
+        assert!(!is_likely_language_switched_short_chunk(
+            "Extremely",
+            "en-US",
+            short
+        ));
+
+        // Auto → never triggers
+        assert!(!is_likely_language_switched_short_chunk(
+            "Extremely",
+            "auto",
+            short
+        ));
+
+        // Chunk too long (> 3s) → no retry
+        assert!(!is_likely_language_switched_short_chunk(
+            "Extremely",
+            "fr",
+            4 * 16_000
+        ));
     }
 
     #[test]
-    fn short_vad_chunk_is_deferred_when_signal_is_weak() {
-        let weak_short = vec![0.0015_f32; (1.8 * 16_000.0) as usize];
-        let stronger_short = vec![0.004_f32; (1.8 * 16_000.0) as usize];
+    fn compressed_timestamp_cluster_detected() {
+        fn make_seg(start: f32) -> transcribe_rs::TranscriptionSegment {
+            transcribe_rs::TranscriptionSegment {
+                start,
+                end: start + 0.08,
+                text: "word".to_string(),
+                confidence: None,
+                words: None,
+            }
+        }
 
-        assert!(should_defer_short_vad_chunk(&weak_short));
-        assert!(!should_defer_short_vad_chunk(&stronger_short));
-    }
+        let long_chunk = 7 * 16_000; // 7 s
+        let short_chunk = 2 * 16_000; // 2 s (below 3 s guard)
 
-    #[test]
-    fn suspicious_short_language_fragment_is_blocked_for_french() {
-        assert!(is_suspicious_short_language_fragment(
-            "Yeah.",
-            "fr",
-            2 * 16_000,
-            false
-        ));
-        assert!(is_suspicious_short_language_fragment(
-            "The",
-            "fr",
-            2 * 16_000,
-            false
-        ));
-        assert!(!is_suspicious_short_language_fragment(
-            "Est-ce que",
-            "fr",
-            2 * 16_000,
-            false
-        ));
-        assert!(!is_suspicious_short_language_fragment(
-            "Yeah.",
-            "fr",
-            4 * 16_000,
-            false
+        // 5 words all at the same timestamp → compressed
+        let all_same: Vec<_> = (0..5).map(|_| make_seg(5.0)).collect();
+        assert!(is_timestamp_cluster_compressed(&all_same, 5, long_chunk));
+
+        // 8 words clustered in 0.1 s window — impossible spread for 8 frames
+        let tight: Vec<_> = (0..8).map(|i| make_seg(5.0 + i as f32 * 0.01)).collect();
+        assert!(is_timestamp_cluster_compressed(&tight, 8, long_chunk));
+
+        // 5 words spread across 0.8 s — legitimate
+        let spread: Vec<_> = (0..5).map(|i| make_seg(i as f32 * 0.20)).collect();
+        assert!(!is_timestamp_cluster_compressed(&spread, 5, long_chunk));
+
+        // < 5 words → never fires regardless of clustering
+        let tiny: Vec<_> = (0..4).map(|_| make_seg(5.0)).collect();
+        assert!(!is_timestamp_cluster_compressed(&tiny, 4, long_chunk));
+
+        // Short chunk (≤ 3 s) → guard prevents false positive
+        let all_same_short: Vec<_> = (0..5).map(|_| make_seg(0.5)).collect();
+        assert!(!is_timestamp_cluster_compressed(
+            &all_same_short,
+            5,
+            short_chunk
         ));
     }
 

@@ -13,6 +13,7 @@ import { Dropdown, Textarea } from "@/components/ui";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { useSettings } from "../../../hooks/useSettings";
+import { CloudPostProcessToggle } from "./CloudPostProcessToggle";
 
 type EditingAction = {
   key: number;
@@ -233,6 +234,9 @@ export const PostProcessingSettings: React.FC = () => {
 
   return (
     <div className="space-y-8 py-6 px-2">
+      {/* ── Cloud toggle ── */}
+      <CloudPostProcessToggle />
+
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <p className="voca-section-desc">

@@ -183,6 +183,21 @@ fn ready_status(model_name: &str, microphone_ready: bool) -> StartupWarmupStatus
     }
 }
 
+fn on_demand_ready_status(model_name: &str, microphone_ready: bool) -> StartupWarmupStatus {
+    StartupWarmupStatus {
+        phase: StartupWarmupPhase::Ready,
+        reason: StartupWarmupReason::Ready,
+        can_record: true,
+        microphone_checked: true,
+        microphone_ready,
+        model_ready: false,
+        blocking_reason: None,
+        message: "Dictation ready.".to_string(),
+        detail: Some(format!("{} will load on first use.", model_name)),
+        updated_at_ms: 0,
+    }
+}
+
 fn microphone_error_status(detail: String) -> StartupWarmupStatus {
     StartupWarmupStatus {
         phase: StartupWarmupPhase::Failed,
@@ -301,6 +316,11 @@ fn immediate_status(app: &AppHandle, snapshot: &WarmupSnapshot) -> StartupWarmup
 
     if model_ready && microphone_ready {
         ready_status(&model_info.name, microphone_ready)
+    } else if !snapshot.always_on_microphone && microphone_ready {
+        // In on-demand mode, keeping the model cold is intentional. Showing a
+        // perpetual "Loading speech engine..." banner here is misleading and
+        // makes the app feel broken even though dictation can start normally.
+        on_demand_ready_status(&model_info.name, microphone_ready)
     } else if snapshot.always_on_microphone && !microphone_ready {
         preparing_microphone_status(&model_info.name, model_ready)
     } else if !microphone_ready && microphone_checked {
@@ -323,6 +343,25 @@ pub fn current_status(app: &AppHandle) -> StartupWarmupStatus {
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .clone()
+}
+
+pub fn refresh_startup_warmup_status(app: &AppHandle, trigger: &'static str) {
+    let state = app.state::<StartupWarmupState>();
+    let generation = state.requested_generation.fetch_add(1, Ordering::SeqCst) + 1;
+    let snapshot = WarmupSnapshot::capture(app);
+
+    debug!(
+        "Warmup status refresh by {} (generation {}, model='{}', always_on={}, selected_microphone={:?}, clamshell_microphone={:?})",
+        trigger,
+        generation,
+        snapshot.selected_model,
+        snapshot.always_on_microphone,
+        snapshot.selected_microphone,
+        snapshot.clamshell_microphone
+    );
+
+    let status = immediate_status(app, &snapshot);
+    let _ = set_status_if_current(app, generation, status);
 }
 
 pub fn can_start_recording(app: &AppHandle) -> bool {

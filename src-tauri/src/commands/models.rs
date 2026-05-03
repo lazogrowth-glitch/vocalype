@@ -2,6 +2,7 @@ use crate::adaptive_runtime::maybe_schedule_whisper_calibration;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelInfo, ModelManager};
 use crate::managers::transcription::TranscriptionManager;
+use crate::model_ids::canonical_model_id;
 use crate::settings::{get_settings, write_settings};
 use log::warn;
 use std::sync::Arc;
@@ -38,6 +39,7 @@ pub async fn download_model(
     model_id: String,
 ) -> Result<(), String> {
     crate::license::enforce_premium_access(&app_handle, "model download")?;
+    let model_id = canonical_model_id(&model_id).to_string();
 
     model_manager
         .download_model(&model_id)
@@ -55,11 +57,7 @@ pub async fn download_model(
         }
     }
 
-    // Always warm up: if this is the selected model, load it into memory now
-    // so the first shortcut press is instant instead of waiting 5s for ONNX compilation.
-    if get_settings(&app_handle).selected_model == model_id {
-        crate::startup_warmup::ensure_startup_warmup(&app_handle, "model-downloaded");
-    }
+    crate::startup_warmup::refresh_startup_warmup_status(&app_handle, "model-downloaded");
 
     Ok(())
 }
@@ -72,6 +70,7 @@ pub async fn delete_model(
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    let model_id = canonical_model_id(&model_id).to_string();
     let target_model = model_manager
         .get_model_info(&model_id)
         .ok_or_else(|| format!("Model not found: {}", model_id))?;
@@ -119,6 +118,7 @@ pub async fn set_active_model(
     model_id: String,
 ) -> Result<(), String> {
     crate::license::enforce_premium_access(&app_handle, "model activation")?;
+    let model_id = canonical_model_id(&model_id).to_string();
 
     // Check if model exists and is available
     let model_info = model_manager
@@ -133,19 +133,27 @@ pub async fn set_active_model(
         let mut settings = get_settings(&app_handle);
         settings.selected_model = model_id.clone();
         write_settings(&app_handle, settings);
-        crate::startup_warmup::ensure_startup_warmup(&app_handle, "active-model-deferred");
+        crate::startup_warmup::refresh_startup_warmup_status(&app_handle, "active-model-deferred");
         return Ok(());
     }
 
-    // Load the model in the transcription manager
-    transcription_manager
-        .load_model(&model_id)
-        .map_err(|e| e.to_string())?;
+    let previous_model_id = transcription_manager.get_current_model();
 
     // Update settings
     let mut settings = get_settings(&app_handle);
     settings.selected_model = model_id.clone();
     write_settings(&app_handle, settings);
+
+    // In on-demand mode, selecting a model should not eagerly load ~700MB of
+    // runtime state. If another model is currently loaded, unload it so RAM
+    // reflects the newly selected "cold" state immediately.
+    if previous_model_id.as_deref() != Some(model_id.as_str())
+        && transcription_manager.is_model_loaded()
+    {
+        transcription_manager
+            .unload_model()
+            .map_err(|e| format!("Failed to unload previous model: {}", e))?;
+    }
 
     // If microphone stream is currently open (always-on mode), restart it so
     // recorder/VAD profile follows the newly selected model immediately.
@@ -156,7 +164,7 @@ pub async fn set_active_model(
         );
     }
 
-    crate::startup_warmup::ensure_startup_warmup(&app_handle, "active-model-changed");
+    crate::startup_warmup::refresh_startup_warmup_status(&app_handle, "active-model-changed");
 
     Ok(())
 }
@@ -219,6 +227,7 @@ pub async fn cancel_download(
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    let model_id = canonical_model_id(&model_id).to_string();
     model_manager
         .cancel_download(&model_id)
         .map_err(|e| e.to_string())

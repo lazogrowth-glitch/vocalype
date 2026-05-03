@@ -95,6 +95,18 @@ impl ModelManager {
         canonical_model_id(model_id)
     }
 
+    fn find_model<'a>(
+        models: &'a HashMap<String, ModelInfo>,
+        model_id: &str,
+    ) -> Option<&'a ModelInfo> {
+        let requested_id = model_id.trim();
+        let canonical_id = Self::canonicalize_profile_alias(requested_id);
+        models
+            .get(canonical_id)
+            .or_else(|| models.get(requested_id))
+            .or_else(|| models.values().find(|model| model.filename == requested_id))
+    }
+
     fn sealed_path_for_model(&self, model_info: &ModelInfo) -> PathBuf {
         let suffix = if model_info.is_directory {
             SEALED_ARCHIVE_EXTENSION
@@ -317,12 +329,11 @@ impl ModelManager {
     }
 
     pub fn get_model_info(&self, model_id: &str) -> Option<ModelInfo> {
-        let canonical_id = Self::canonicalize_profile_alias(model_id);
         let models = self
             .available_models
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        models.get(canonical_id).cloned()
+        Self::find_model(&models, model_id).cloned()
     }
 
     fn migrate_bundled_models(&self) -> Result<()> {
@@ -627,7 +638,7 @@ impl ModelManager {
                 .available_models
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
-            let exists = models.contains_key(&settings.selected_model);
+            let exists = Self::find_model(&models, &settings.selected_model).is_some();
             drop(models);
 
             if !exists {
@@ -811,7 +822,7 @@ impl ModelManager {
                 .available_models
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
-            models.get(model_id).cloned()
+            Self::find_model(&models, model_id).cloned()
         };
 
         let model_info =
@@ -1225,7 +1236,7 @@ impl ModelManager {
                 .available_models
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
-            models.get(model_id).cloned()
+            Self::find_model(&models, model_id).cloned()
         };
 
         let model_info =
@@ -1356,7 +1367,7 @@ impl ModelManager {
                 .available_models
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
-            models.get(model_id).map(|m| m.filename.clone())
+            Self::find_model(&models, model_id).map(|m| m.filename.clone())
         };
 
         // Set the cancellation flag to stop the download loop
@@ -1378,8 +1389,10 @@ impl ModelManager {
                 .available_models
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
-            if let Some(model) = models.get_mut(model_id) {
-                model.is_downloading = false;
+            if let Some(canonical_id) = Self::find_model(&models, model_id).map(|m| m.id.clone()) {
+                if let Some(model) = models.get_mut(&canonical_id) {
+                    model.is_downloading = false;
+                }
             }
         }
 

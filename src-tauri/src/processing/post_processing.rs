@@ -111,11 +111,21 @@ pub(crate) async fn cleanup_assembled_transcription_with_strategy(
     if model.trim().is_empty() {
         return None;
     }
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
+    let api_key = if provider.id == "vocalype-cloud" {
+        match crate::security::secret_store::get_auth_token() {
+            Ok(Some(token)) => token,
+            _ => {
+                debug!("Vocalype Cloud cleanup skipped: no auth token in keyring");
+                return None;
+            }
+        }
+    } else {
+        settings
+            .post_process_api_keys
+            .get(&provider.id)
+            .cloned()
+            .unwrap_or_default()
+    };
 
     let lang_name = if settings.selected_language == "auto" || settings.selected_language.is_empty()
     {
@@ -577,11 +587,22 @@ pub(crate) async fn process_action(
         return None;
     }
 
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
+    // For vocalype-cloud, use the user's JWT from keyring as the Bearer token.
+    let api_key = if provider.id == "vocalype-cloud" {
+        match crate::security::secret_store::get_auth_token() {
+            Ok(Some(token)) => token,
+            _ => {
+                debug!("Vocalype Cloud action skipped: no auth token in keyring");
+                return None;
+            }
+        }
+    } else {
+        settings
+            .post_process_api_keys
+            .get(&provider.id)
+            .cloned()
+            .unwrap_or_default()
+    };
 
     // Base system prompt enforces output format; user's action instruction is appended.
     let base_system = "You are a text processing assistant. Output ONLY the final processed text. Do not add any explanation, commentary, preamble, or formatting such as markdown code blocks. Just output the raw result text, nothing else.";

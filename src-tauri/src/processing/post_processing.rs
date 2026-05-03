@@ -488,6 +488,7 @@ pub(crate) async fn process_action(
     prompt: &str,
     action_model: Option<&str>,
     action_provider_id: Option<&str>,
+    app: &tauri::AppHandle,
 ) -> Option<String> {
     let provider = if let Some(pid) = action_provider_id.filter(|p| !p.is_empty()) {
         match settings.post_process_provider(pid).cloned() {
@@ -639,6 +640,11 @@ pub(crate) async fn process_action(
                 "Action processing failed for provider '{}': {}",
                 provider.id, e
             );
+            // If vocalype-cloud returns 401, the JWT is expired.
+            // Emit an event so the frontend can silently refresh the session.
+            if provider.id == "vocalype-cloud" && e.contains("401") {
+                let _ = tauri::Emitter::emit(app, "vocalype:cloud-session-expired", ());
+            }
             None
         }
     }

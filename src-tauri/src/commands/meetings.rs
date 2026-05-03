@@ -349,7 +349,7 @@ pub async fn generate_meeting_chapter_titles(
         "For each chapter below, generate a very short and clear 2-5 word title. Return exactly one line per chapter, in the same order, without numbering, bullets, or ending punctuation. ${output}"
     };
 
-    let raw = process_action(&settings, &source, prompt, None, None)
+    let raw = process_action(&settings, &source, prompt, None, None, &app)
         .await
         .ok_or_else(|| "Failed to generate chapter titles".to_string())?;
 
@@ -408,7 +408,7 @@ pub async fn summarize_meeting(
         "Summarize this meeting into essential bullets with decisions, action items, and key information. No introduction. ${output}"
     };
 
-    let summary = process_action(&settings, transcript, prompt, None, None)
+    let summary = process_action(&settings, transcript, prompt, None, None, &app)
         .await
         .filter(|summary| !summary.trim().is_empty())
         .ok_or_else(|| "Failed to generate summary".to_string())?;
@@ -449,7 +449,7 @@ pub async fn extract_meeting_actions(
         "Extract the concrete decisions, action items, and follow-ups from this meeting. Return only a concise markdown checklist with one line per action. If no action is clear, return '- No clear actions'. ${output}"
     };
 
-    let actions = process_action(&settings, transcript, prompt, None, None)
+    let actions = process_action(&settings, transcript, prompt, None, None, &app)
         .await
         .filter(|actions| !actions.trim().is_empty())
         .ok_or_else(|| "Failed to extract actions".to_string())?;
@@ -490,7 +490,7 @@ pub async fn generate_meeting_title(
         "Generate a very short and clear title for this meeting. Maximum 6 words. No quotes, no ending punctuation, return only the title. ${output}"
     };
 
-    let title = process_action(&settings, transcript, prompt, None, None)
+    let title = process_action(&settings, transcript, prompt, None, None, &app)
         .await
         .map(|value| {
             value

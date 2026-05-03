@@ -197,7 +197,7 @@ pub async fn summarize_note(
         "Summarize the following text into clear, actionable bullet points. Keep only the essential information. Do not add any introduction. ${output}"
     };
 
-    let summary = process_action(&settings, content, prompt, None, None)
+    let summary = process_action(&settings, content, prompt, None, None, &app)
         .await
         .filter(|summary| !summary.trim().is_empty())
         .ok_or_else(|| "Failed to generate summary".to_string())?;
@@ -238,7 +238,7 @@ pub async fn extract_note_actions(
         "Extract only the actions, tasks, or follow-ups implied by the following text. Return a concise markdown checklist with one line per action. If there are no clear actions, return '- No clear actions'. ${output}"
     };
 
-    let actions = process_action(&settings, content, prompt, None, None)
+    let actions = process_action(&settings, content, prompt, None, None, &app)
         .await
         .filter(|actions| !actions.trim().is_empty())
         .ok_or_else(|| "Failed to extract actions".to_string())?;
@@ -279,7 +279,7 @@ pub async fn generate_note_title(
         "Generate a very short and clear title for this note. Maximum 6 words. No quotes, no ending punctuation, return only the title. ${output}"
     };
 
-    let title = process_action(&settings, content, prompt, None, None)
+    let title = process_action(&settings, content, prompt, None, None, &app)
         .await
         .map(|value| {
             value

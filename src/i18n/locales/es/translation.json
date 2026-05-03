@@ -1200,6 +1200,10 @@
     "disabled": "Modo Whisper desactivado",
     "errorTitle": "Modo Whisper ? error"
   },
+  "languageToggle": {
+    "switched": "Idioma: {{lang}}",
+    "auto": "Auto"
+  },
   "hints": {
     "firstLaunch": "Pulsa {{shortcut}} en cualquier lugar para empezar a dictar ? tu texto aparecer? autom?ticamente."
   },

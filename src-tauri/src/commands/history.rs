@@ -194,6 +194,7 @@ pub async fn apply_history_post_process_action(
         &action.prompt,
         action.model.as_deref(),
         action.provider_id.as_deref(),
+        &app,
     )
     .await
     .filter(|text| !text.trim().is_empty())

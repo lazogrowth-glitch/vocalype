@@ -263,6 +263,7 @@ pub(super) async fn process_transcription_text(
                     &action.prompt,
                     action.model.as_deref(),
                     action.provider_id.as_deref(),
+                    app,
                 )
                 .await
             } else {

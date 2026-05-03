@@ -364,6 +364,17 @@ export function useAuthFlow(
   // Keep the session alive: refreshes every 17 min and on visibility change.
   useSessionRefresh({ applySession, syncLicenseForSession });
 
+  // When the Rust side detects a 401 from vocalype-cloud (expired JWT),
+  // silently refresh the session so the next cloud call succeeds.
+  useEffect(() => {
+    const unlisten = listen("vocalype:cloud-session-expired", () => {
+      refreshSession();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [refreshSession]);
+
   // J12 trial reminder
   useEffect(() => {
     if (session?.show_trial_reminder && !trialReminderShownRef.current) {

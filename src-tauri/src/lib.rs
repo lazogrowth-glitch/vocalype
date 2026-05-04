@@ -161,11 +161,31 @@ fn extract_auth_callback_payload(raw_url: &str) -> Option<(String, String)> {
 fn consume_pending_auth_flow(returned_state: &str) -> bool {
     PENDING_AUTH_FLOW.lock().ok().map_or(false, |mut guard| {
         let Some(flow) = guard.take() else {
+            log::warn!("[auth] deep-link callback received but no pending auth flow found");
             return false;
         };
 
-        flow.started_at.elapsed() < std::time::Duration::from_secs(300)
-            && flow.state == returned_state
+        let elapsed = flow.started_at.elapsed();
+        let window = std::time::Duration::from_secs(300);
+
+        if elapsed >= window {
+            log::warn!(
+                "[auth] deep-link auth flow expired after {:.1}s (limit=300s) — possible replay or delayed callback",
+                elapsed.as_secs_f32()
+            );
+            return false;
+        }
+
+        if flow.state != returned_state {
+            log::warn!(
+                "[auth] deep-link state mismatch — possible CSRF attempt (expected={}, got={})",
+                flow.state,
+                returned_state
+            );
+            return false;
+        }
+
+        true
     })
 }
 
@@ -259,6 +279,7 @@ fn build_console_filter() -> env_filter::Filter {
 }
 
 pub(crate) fn show_main_window(app: &AppHandle) {
+    schedule_microphone_standby(app, "show-main-window");
     let main_window = app.get_webview_window("main").or_else(|| {
         log::info!("Main window not found — recreating");
         SHOULD_SHOW_MAIN_WINDOW_ON_READY.store(true, Ordering::Relaxed);
@@ -407,6 +428,32 @@ fn schedule_background_model_unload_check(app: &AppHandle, delay: Duration, reas
     });
 }
 
+fn schedule_input_runtime_init(app: &AppHandle, reason: &'static str) {
+    let app_handle = app.clone();
+    thread::spawn(move || {
+        #[cfg(not(target_os = "macos"))]
+        {
+            if let Err(err) = commands::initialize_enigo(app_handle.clone()) {
+                log::warn!(
+                    "[startup] input runtime could not initialize Enigo yet (reason={}): {}",
+                    reason,
+                    err
+                );
+            }
+        }
+
+        if let Err(err) = commands::initialize_shortcuts(app_handle.clone()) {
+            log::warn!(
+                "[startup] input runtime could not initialize shortcuts yet (reason={}): {}",
+                reason,
+                err
+            );
+        } else {
+            log::info!("[startup] input runtime ready (reason={})", reason);
+        }
+    });
+}
+
 fn create_main_window(app: &AppHandle) -> Result<tauri::WebviewWindow, tauri::Error> {
     tauri::WebviewWindowBuilder::new(
         app,
@@ -534,10 +581,9 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
     let t_total = std::time::Instant::now();
     log::info!("[startup] initialize_core_logic â€” start");
 
-    // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
-    // The frontend is responsible for calling the `initialize_enigo` command
-    // after onboarding completes. This avoids triggering permission dialogs
-    // on macOS before the user is ready.
+    // Input runtime bootstrapping is centralized at startup.
+    // On macOS we still avoid eager Enigo init before permissions are granted,
+    // but other platforms no longer wait for a frontend-side first-use path.
 
     // Initialize the managers
     let t = std::time::Instant::now();
@@ -630,9 +676,8 @@ fn initialize_core_logic(app_handle: &AppHandle) -> Result<(), String> {
     );
 
     // Note: Shortcuts are NOT initialized here.
-    // The frontend is responsible for calling the `initialize_shortcuts` command
-    // after permissions are confirmed (on macOS) or after onboarding completes.
-    // This matches the pattern used for Enigo initialization.
+    // Shortcut bootstrapping is now centralized too. The frontend can still call
+    // the idempotent commands later, but startup no longer depends on that path.
 
     #[cfg(unix)]
     match Signals::new(&[SIGUSR1, SIGUSR2]) {
@@ -1248,6 +1293,14 @@ pub fn run(cli_args: CliArgs) {
                 log::info!(
                     "[startup] recording overlay creation deferred until first overlay use"
                 );
+                let overlay_app_handle = app_handle_for_ready.clone();
+                thread::spawn(move || {
+                    thread::sleep(Duration::from_millis(250));
+                    crate::overlay::create_recording_overlay(&overlay_app_handle);
+                    log::info!(
+                        "[startup] recording overlay pre-created after desktop-ui-ready"
+                    );
+                });
 
                 if BACKGROUND_LEAN_LAUNCH.load(Ordering::Relaxed) {
                     schedule_hidden_main_window_cleanup(
@@ -1377,23 +1430,11 @@ pub fn run(cli_args: CliArgs) {
                     "[startup] hidden tray launch detected: keeping background mode lean"
                 );
                 schedule_microphone_standby(&app_handle, "background-lean-launch");
-                #[cfg(not(target_os = "macos"))]
-                {
-                    if let Err(err) = commands::initialize_enigo(app_handle.clone()) {
-                        log::warn!(
-                            "Background lean launch could not initialize Enigo yet: {}",
-                            err
-                        );
-                    }
-                }
-                if let Err(err) = commands::initialize_shortcuts(app_handle.clone()) {
-                    log::warn!(
-                        "Background lean launch could not initialize shortcuts yet: {}",
-                        err
-                    );
-                }
+                schedule_input_runtime_init(&app_handle, "background-lean-launch");
                 log::info!("[startup] background lean launch skipped early model pre-warm");
             } else {
+                schedule_microphone_standby(&app_handle, "interactive-launch");
+                schedule_input_runtime_init(&app_handle, "interactive-launch");
                 log::info!(
                     "[startup] skipping early startup warmup; speech engine remains on-demand"
                 );
@@ -1438,34 +1479,20 @@ pub fn run(cli_args: CliArgs) {
                 if window.label() == "main" {
                     let tray_visible = TRAY_ICON_ENABLED.load(Ordering::Relaxed)
                         && !window.app_handle().state::<CliArgs>().no_tray;
+                    log::info!(
+                        "[window-close] main CloseRequested tray_visible={} destroy_for_ram_recovery={} background_lean_launch={}",
+                        tray_visible,
+                        should_destroy_main_window_for_ram_recovery(),
+                        BACKGROUND_LEAN_LAUNCH.load(Ordering::Relaxed)
+                    );
                     if tray_visible {
-                        if !should_destroy_main_window_for_ram_recovery() {
-                            api.prevent_close();
-                            let _ = window.hide();
-                            schedule_background_model_unload_check(
-                                &window.app_handle(),
-                                Duration::from_millis(500),
-                                "main window hidden to tray",
-                            );
-                            return;
-                        }
-                        // Tray is available: destroy the window to free Chromium RAM.
-                        // It will be recreated on next open via show_main_window.
+                        api.prevent_close();
+                        let _ = window.hide();
                         schedule_background_model_unload_check(
                             &window.app_handle(),
                             Duration::from_millis(500),
-                            "main window closed to tray",
+                            "main window hidden to tray",
                         );
-                        #[cfg(target_os = "macos")]
-                        {
-                            let res = window
-                                .app_handle()
-                                .set_activation_policy(tauri::ActivationPolicy::Accessory);
-                            if let Err(e) = res {
-                                log::error!("Failed to set activation policy: {}", e);
-                            }
-                        }
-                        // Do NOT prevent close — window is destroyed and freed.
                         return;
                     }
                     // No tray: must keep the window so the user can reopen the app.

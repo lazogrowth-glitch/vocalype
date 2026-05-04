@@ -1505,6 +1505,17 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "".to_string(),
         },
     );
+    bindings.insert(
+        "toggle_language".to_string(),
+        ShortcutBinding {
+            id: "toggle_language".to_string(),
+            name: "Toggle Language".to_string(),
+            description: "Cycles through transcription languages (Auto → French → English)."
+                .to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
 
     AppSettings {
         settings_version: CURRENT_SETTINGS_VERSION,

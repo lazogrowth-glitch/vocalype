@@ -51,7 +51,7 @@ impl FrameResampler {
                 if let Ok(out) = self
                     .resampler
                     .as_mut()
-                    .unwrap()
+                    .expect("resampler is Some: early return guards None case")
                     .process(&[&self.in_buf[..]], None)
                 {
                     // let duration = start.elapsed();

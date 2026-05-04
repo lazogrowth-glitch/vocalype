@@ -14,7 +14,12 @@ import {
   Settings2,
   Zap,
 } from "lucide-react";
-import { GeneralSettings } from "./settings/general/GeneralSettings";
+
+const GeneralSettings = React.lazy(() =>
+  import("./settings/general/GeneralSettings").then((m) => ({
+    default: m.GeneralSettings,
+  })),
+);
 
 const AdvancedSettings = React.lazy(() =>
   import("./settings/advanced/AdvancedSettings").then((m) => ({

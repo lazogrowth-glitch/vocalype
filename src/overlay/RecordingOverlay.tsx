@@ -37,16 +37,17 @@ interface ActionInfo {
   name: string;
 }
 
-const MicIcon: React.FC = () => (
+const MicIcon: React.FC<{ active: boolean }> = ({ active }) => (
   <svg
-    width="13"
-    height="13"
+    width="11"
+    height="11"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#c9a84c"
+    stroke={active ? "#c9a84c" : "rgba(255,255,255,0.35)"}
     strokeWidth="2.2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    style={{ transition: "stroke 300ms ease" }}
   >
     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -56,8 +57,8 @@ const MicIcon: React.FC = () => (
 
 const DotsIcon: React.FC = () => (
   <svg
-    width="13"
-    height="13"
+    width="11"
+    height="11"
     viewBox="0 0 24 24"
     fill="none"
     stroke="rgba(255,255,255,0.5)"
@@ -71,8 +72,8 @@ const DotsIcon: React.FC = () => (
 
 const XIcon: React.FC = () => (
   <svg
-    width="10"
-    height="10"
+    width="8"
+    height="8"
     viewBox="0 0 24 24"
     fill="none"
     stroke="rgba(255,255,255,0.55)"
@@ -85,49 +86,17 @@ const XIcon: React.FC = () => (
   </svg>
 );
 
-const PauseIcon: React.FC = () => (
-  <svg
-    width="11"
-    height="11"
-    viewBox="0 0 24 24"
-    fill="rgba(255,255,255,0.55)"
-    stroke="none"
-  >
-    <rect x="6" y="4" width="4" height="16" rx="1" />
-    <rect x="14" y="4" width="4" height="16" rx="1" />
-  </svg>
-);
-
-const PlayIcon: React.FC = () => (
-  <svg
-    width="11"
-    height="11"
-    viewBox="0 0 24 24"
-    fill="rgba(255,255,255,0.55)"
-    stroke="none"
-  >
-    <polygon points="6,4 20,12 6,20" />
-  </svg>
-);
-
 const formatTime = (s: number) => {
   const min = Math.floor(s / 60);
   const sec = s % 60;
   return `${min}:${sec.toString().padStart(2, "0")}`;
 };
 
-const TimerDisplay: React.FC<{ startTime: number; isPaused: boolean }> = ({
-  startTime,
-  isPaused,
-}) => {
+const TimerDisplay: React.FC<{ startTime: number }> = ({ startTime }) => {
   const [display, setDisplay] = useState("0:00");
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    if (isPaused) {
-      cancelAnimationFrame(rafRef.current);
-      return;
-    }
     const tick = () => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       setDisplay(formatTime(elapsed));
@@ -135,50 +104,9 @@ const TimerDisplay: React.FC<{ startTime: number; isPaused: boolean }> = ({
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [startTime, isPaused]);
+  }, [startTime]);
 
   return <div className="timer-text">{display}</div>;
-};
-
-const AudioBars: React.FC = () => {
-  const barsRef = useRef<HTMLDivElement>(null);
-  const smoothedRef = useRef<number[]>(Array(16).fill(0));
-
-  useEffect(() => {
-    let unlisten: (() => void) | null = null;
-    const setup = async () => {
-      unlisten = await listen<number[]>("mic-level", (event) => {
-        const newLevels = event.payload;
-        const smoothed = smoothedRef.current.map((prev, i) => {
-          const target = newLevels[i] || 0;
-          return prev * 0.65 + target * 0.35;
-        });
-        smoothedRef.current = smoothed;
-
-        if (barsRef.current) {
-          const bars = barsRef.current.children;
-          for (let i = 0; i < bars.length; i++) {
-            const v = smoothed[i] || 0;
-            const el = bars[i] as HTMLElement;
-            el.style.height = `${Math.min(20, 3 + Math.pow(v, 0.6) * 17)}px`;
-            el.style.opacity = `${Math.max(0.25, v * 1.4)}`;
-          }
-        }
-      });
-    };
-    setup();
-    return () => {
-      unlisten?.();
-    };
-  }, []);
-
-  return (
-    <div className="bars-container" ref={barsRef} aria-hidden="true">
-      {Array.from({ length: 9 }, (_, i) => (
-        <div key={i} className="bar" />
-      ))}
-    </div>
-  );
 };
 
 const RecordingOverlay: React.FC = () => {
@@ -191,10 +119,11 @@ const RecordingOverlay: React.FC = () => {
   const [timerStart, setTimerStart] = useState(0);
   const [selectedAction, setSelectedAction] = useState<ActionInfo | null>(null);
   const [cancelPending, setCancelPending] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [micActive, setMicActive] = useState(false);
   const cancelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pauseStartRef = useRef<number>(0);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const direction = getLanguageDirection(i18n.language);
+
   const preparingTitle =
     warmupStatus?.message ||
     warmupMessage ||
@@ -205,15 +134,12 @@ const RecordingOverlay: React.FC = () => {
     warmupStatus?.detail ||
     warmupDetail ||
     t("transcription.warmup_ready", {
-      defaultValue: "Dictation will be available automatically once the engine is ready.",
+      defaultValue:
+        "Dictation will be available automatically once the engine is ready.",
     });
 
   const handleCancel = useCallback(() => {
     commands.cancelOperation();
-  }, []);
-
-  const handleTogglePause = useCallback(() => {
-    commands.togglePause();
   }, []);
 
   useEffect(() => {
@@ -222,11 +148,8 @@ const RecordingOverlay: React.FC = () => {
 
     const register = (eventName: string, handler: any) => {
       listen(eventName, handler).then((fn) => {
-        if (!active) {
-          fn();
-        } else {
-          cleanups.push(fn);
-        }
+        if (!active) fn();
+        else cleanups.push(fn);
       });
     };
 
@@ -235,7 +158,6 @@ const RecordingOverlay: React.FC = () => {
       const overlayState = event.payload as OverlayState;
       setState(overlayState);
       setIsVisible(true);
-      setIsPaused(false);
       if (overlayState === "recording" || overlayState === "preparing") {
         setTimerStart(Date.now());
         setSelectedAction(null);
@@ -246,7 +168,7 @@ const RecordingOverlay: React.FC = () => {
       setIsVisible(false);
       setSelectedAction(null);
       setCancelPending(false);
-      setIsPaused(false);
+      setMicActive(false);
       if (cancelTimerRef.current) {
         clearTimeout(cancelTimerRef.current);
         cancelTimerRef.current = null;
@@ -266,7 +188,7 @@ const RecordingOverlay: React.FC = () => {
         setIsVisible(false);
         setSelectedAction(null);
         setCancelPending(false);
-        setIsPaused(false);
+        setMicActive(false);
         return;
       }
 
@@ -275,7 +197,6 @@ const RecordingOverlay: React.FC = () => {
         setState("preparing");
         setTimerStart(Date.now());
         setSelectedAction(null);
-        setIsPaused(false);
         return;
       }
 
@@ -288,25 +209,20 @@ const RecordingOverlay: React.FC = () => {
         if (lifecycleState === "recording") {
           setTimerStart((prev) => (prev === 0 ? Date.now() : prev));
         }
-        setIsPaused(lifecycleState === "paused");
         return;
       }
 
       if (lifecycleState === "transcribing") {
         setState("transcribing");
-        setIsPaused(false);
         return;
       }
 
       setState("processing");
-      setIsPaused(false);
     });
 
     register("cancel-pending", () => {
       setCancelPending(true);
-      if (cancelTimerRef.current) {
-        clearTimeout(cancelTimerRef.current);
-      }
+      if (cancelTimerRef.current) clearTimeout(cancelTimerRef.current);
       cancelTimerRef.current = setTimeout(() => {
         setCancelPending(false);
         cancelTimerRef.current = null;
@@ -321,23 +237,21 @@ const RecordingOverlay: React.FC = () => {
       setSelectedAction(null);
     });
 
-    register("recording-paused", (event: any) => {
-      const paused = event.payload as boolean;
-      setIsPaused(paused);
-      if (paused) {
-        pauseStartRef.current = Date.now();
-      } else {
-        const pauseDuration = Date.now() - pauseStartRef.current;
-        setTimerStart((prev) => prev + pauseDuration);
+    register("mic-level", (event: any) => {
+      const levels = event.payload as number[];
+      const avg = levels.reduce((a, b) => a + b, 0) / levels.length;
+      if (avg > 0.02) {
+        setMicActive(true);
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = setTimeout(() => setMicActive(false), 1500);
       }
     });
 
     return () => {
       active = false;
       cleanups.forEach((fn) => fn());
-      if (cancelTimerRef.current) {
-        clearTimeout(cancelTimerRef.current);
-      }
+      if (cancelTimerRef.current) clearTimeout(cancelTimerRef.current);
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     };
   }, []);
 
@@ -350,15 +264,14 @@ const RecordingOverlay: React.FC = () => {
       <span className="sr-only" aria-live="assertive" aria-atomic="true">
         {state === "recording"
           ? t("overlay.a11y.recording")
-          : state === "transcribing"
+          : state === "transcribing" || state === "processing"
             ? t("overlay.a11y.transcribing")
-            : state === "processing"
-              ? t("overlay.a11y.transcribing")
-              : ""}
+            : ""}
       </span>
+
       <div className="overlay-left">
         {state === "recording" || state === "preparing" ? (
-          <MicIcon />
+          <MicIcon active={micActive} />
         ) : (
           <DotsIcon />
         )}
@@ -376,12 +289,7 @@ const RecordingOverlay: React.FC = () => {
           </div>
         )}
         {state === "recording" && !cancelPending && (
-          <div className="status-stack">
-            <div className="recording-row">
-              <TimerDisplay startTime={timerStart} isPaused={isPaused} />
-              <AudioBars />
-            </div>
-          </div>
+          <TimerDisplay startTime={timerStart} />
         )}
         {state === "recording" && cancelPending && (
           <div className="cancel-confirm-text">
@@ -389,47 +297,25 @@ const RecordingOverlay: React.FC = () => {
           </div>
         )}
         {state === "transcribing" && (
-          <div className="status-stack">
-            <div className="transcribing-text">{t("overlay.transcribing")}</div>
-          </div>
+          <div className="transcribing-text">{t("overlay.transcribing")}</div>
         )}
         {state === "processing" && (
-          <div className="status-stack">
-            <div className="transcribing-text">{t("overlay.processing")}</div>
-          </div>
+          <div className="transcribing-text">{t("overlay.processing")}</div>
         )}
       </div>
 
       <div className="overlay-right">
         {state === "recording" && (
-          <>
-            <button
-              type="button"
-              className="pause-button"
-              onClick={handleTogglePause}
-              aria-label={
-                isPaused
-                  ? t("overlay.resumeRecording", {
-                      defaultValue: "Resume recording",
-                    })
-                  : t("overlay.pauseRecording", {
-                      defaultValue: "Pause recording",
-                    })
-              }
-            >
-              {isPaused ? <PlayIcon /> : <PauseIcon />}
-            </button>
-            <button
-              type="button"
-              className="cancel-button"
-              onClick={handleCancel}
-              aria-label={t("overlay.cancelRecording", {
-                defaultValue: "Cancel recording",
-              })}
-            >
-              <XIcon />
-            </button>
-          </>
+          <button
+            type="button"
+            className="cancel-button"
+            onClick={handleCancel}
+            aria-label={t("overlay.cancelRecording", {
+              defaultValue: "Cancel recording",
+            })}
+          >
+            <XIcon />
+          </button>
         )}
       </div>
     </div>

@@ -591,19 +591,41 @@ impl TranscriptionManager {
             });
         }
 
-        // Check if model is loaded, if not try to load it
+        // Check if model is loaded, if not try to load it.
+        // Also wait for any concurrent inference to complete — while one chunk
+        // holds the engine via take() the mutex temporarily contains None,
+        // which would cause a concurrent chunk to fail with "Model is not loaded".
         {
             let wait_started = std::time::Instant::now();
-            // If the model is loading, wait for it to complete.
-            let mut is_loading = self.is_loading.lock();
-            while *is_loading {
-                self.loading_condvar.wait(&mut is_loading);
+
+            // 1. Wait for model loading to finish.
+            {
+                let mut is_loading = self.is_loading.lock();
+                while *is_loading {
+                    self.loading_condvar.wait(&mut is_loading);
+                }
             }
 
-            let engine_guard = self.lock_engine();
-            if engine_guard.is_none() {
-                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
+            // 2. Wait for any ongoing inference to finish, then atomically
+            //    claim the inference slot before releasing the lock.
+            {
+                let mut is_inferring = self.is_inferring.lock();
+                while *is_inferring {
+                    self.inferring_condvar.wait(&mut is_inferring);
+                }
+
+                // Engine presence check inside the is_inferring lock so no
+                // concurrent thread can steal the slot between our check and take.
+                let engine_guard = self.lock_engine();
+                if engine_guard.is_none() {
+                    return Err(anyhow::anyhow!("Model is not loaded for transcription."));
+                }
+                drop(engine_guard);
+
+                // Mark inference as in-progress before releasing the lock.
+                *is_inferring = true;
             }
+
             push_timing(
                 &mut timings,
                 st,
@@ -774,6 +796,7 @@ impl TranscriptionManager {
                     Some(format!("chars={}", final_result.chars().count())),
                 );
 
+                self.release_inferring_slot();
                 self.maybe_unload_immediately("gemini transcription");
                 return Ok(TranscriptionOutput {
                     text: final_result,
@@ -827,6 +850,7 @@ impl TranscriptionManager {
                     "stt.engine_remote_groq",
                     Some(format!("chars={}", final_result.chars().count())),
                 );
+                self.release_inferring_slot();
                 self.maybe_unload_immediately("groq transcription");
                 return Ok(TranscriptionOutput {
                     text: final_result,
@@ -881,6 +905,7 @@ impl TranscriptionManager {
                     "stt.engine_remote_mistral",
                     Some(format!("chars={}", final_result.chars().count())),
                 );
+                self.release_inferring_slot();
                 self.maybe_unload_immediately("mistral transcription");
                 return Ok(TranscriptionOutput {
                     text: final_result,
@@ -935,6 +960,7 @@ impl TranscriptionManager {
                     "stt.engine_remote_deepgram",
                     Some(format!("chars={}", final_result.chars().count())),
                 );
+                self.release_inferring_slot();
                 self.maybe_unload_immediately("deepgram transcription");
                 return Ok(TranscriptionOutput {
                     text: final_result,
@@ -942,6 +968,25 @@ impl TranscriptionManager {
                     timings,
                     segments: None,
                 });
+            }
+        }
+
+        // Enforce backoff if there were recent consecutive engine panics.
+        let backoff_until = self.panic_backoff_until_ms.load(Ordering::Relaxed);
+        if backoff_until > 0 {
+            let now = Self::now_ms();
+            if now < backoff_until {
+                let wait_ms = backoff_until - now;
+                warn!(
+                    "Engine panic backoff active — blocking inference for {}ms (consecutive_panics={})",
+                    wait_ms,
+                    self.consecutive_panics.load(Ordering::Relaxed)
+                );
+                self.release_inferring_slot();
+                return Err(anyhow::anyhow!(
+                    "Transcription temporarily unavailable after repeated engine errors. Please wait {}s before retrying.",
+                    wait_ms / 1000 + 1
+                ));
             }
         }
 
@@ -958,6 +1003,7 @@ impl TranscriptionManager {
             let mut engine = match engine_guard.take() {
                 Some(e) => e,
                 None => {
+                    self.release_inferring_slot();
                     return Err(anyhow::anyhow!(
                         "Model failed to load after auto-load attempt. Please check your model settings."
                     ));
@@ -1333,14 +1379,20 @@ impl TranscriptionManager {
 
             match transcribe_result {
                 Ok(inner_result) => {
-                    // Success or normal error — put the engine back
+                    // Success — put the engine back, reset panic throttle, release slot.
                     let mut engine_guard = self.lock_engine();
                     *engine_guard = Some(engine);
+                    drop(engine_guard);
+                    self.consecutive_panics.store(0, Ordering::Relaxed);
+                    self.release_inferring_slot();
                     inner_result?
                 }
                 Err(panic_payload) => {
                     // Engine panicked — do NOT put it back (it's in an unknown state).
                     // The engine is dropped here, effectively unloading it.
+                    // Release the inferring slot so other chunks aren't stuck waiting.
+                    self.release_inferring_slot();
+
                     let panic_msg = if let Some(s) = panic_payload.downcast_ref::<&str>() {
                         s.to_string()
                     } else if let Some(s) = panic_payload.downcast_ref::<String>() {
@@ -1348,9 +1400,19 @@ impl TranscriptionManager {
                     } else {
                         "unknown panic".to_string()
                     };
+
+                    // Exponential backoff: 2^n seconds after each consecutive panic,
+                    // capped at 60 s. Prevents rapid reload/panic loops from hammering
+                    // the CPU or driver when the engine is consistently broken.
+                    let count = self.consecutive_panics.fetch_add(1, Ordering::Relaxed) + 1;
+                    let backoff_secs = (1u64 << count.min(6)).min(60); // 2, 4, 8, 16, 32, 60
+                    let backoff_until = Self::now_ms() + backoff_secs * 1_000;
+                    self.panic_backoff_until_ms
+                        .store(backoff_until, Ordering::Relaxed);
+
                     error!(
-                        "Transcription engine panicked: {}. Model has been unloaded.",
-                        panic_msg
+                        "Transcription engine panicked (consecutive={}): {}. Model has been unloaded. Next attempt blocked for {}s.",
+                        count, panic_msg, backoff_secs
                     );
 
                     // Clear the model ID so it will be reloaded on next attempt
@@ -1581,6 +1643,29 @@ mod tests {
     use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
     use crate::parakeet_text::{finalize_parakeet_text, normalize_parakeet_phrase_variants};
     use crate::session_keyterms::build_session_keyterms;
+    use std::sync::mpsc;
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    fn claim_test_inferring_slot(
+        is_inferring: &Arc<Mutex<bool>>,
+        inferring_condvar: &Arc<Condvar>,
+    ) {
+        let mut guard = is_inferring.lock();
+        while *guard {
+            inferring_condvar.wait(&mut guard);
+        }
+        *guard = true;
+    }
+
+    fn release_test_inferring_slot(
+        is_inferring: &Arc<Mutex<bool>>,
+        inferring_condvar: &Arc<Condvar>,
+    ) {
+        let mut guard = is_inferring.lock();
+        *guard = false;
+        inferring_condvar.notify_all();
+    }
 
     #[test]
     fn boosts_low_energy_parakeet_audio_when_needed() {
@@ -1761,5 +1846,48 @@ mod tests {
         ];
         let chosen = choose_best_short_phrase_hypothesis(&candidates, "fr");
         assert_eq!(chosen.as_deref(), Some("arrete de parler"));
+    }
+
+    #[test]
+    fn inferring_slot_blocks_waiter_until_release() {
+        let is_inferring = Arc::new(Mutex::new(false));
+        let inferring_condvar = Arc::new(Condvar::new());
+        let (holder_acquired_tx, holder_acquired_rx) = mpsc::channel();
+        let (waiter_acquired_tx, waiter_acquired_rx) = mpsc::channel();
+        let (release_holder_tx, release_holder_rx) = mpsc::channel();
+
+        let holder_slot = Arc::clone(&is_inferring);
+        let holder_cv = Arc::clone(&inferring_condvar);
+        std::thread::spawn(move || {
+            claim_test_inferring_slot(&holder_slot, &holder_cv);
+            holder_acquired_tx.send(()).unwrap();
+            release_holder_rx.recv().unwrap();
+            release_test_inferring_slot(&holder_slot, &holder_cv);
+        });
+
+        holder_acquired_rx
+            .recv_timeout(Duration::from_millis(200))
+            .expect("holder should claim the slot first");
+
+        let waiter_slot = Arc::clone(&is_inferring);
+        let waiter_cv = Arc::clone(&inferring_condvar);
+        std::thread::spawn(move || {
+            claim_test_inferring_slot(&waiter_slot, &waiter_cv);
+            waiter_acquired_tx.send(()).unwrap();
+            release_test_inferring_slot(&waiter_slot, &waiter_cv);
+        });
+
+        assert!(
+            waiter_acquired_rx
+                .recv_timeout(Duration::from_millis(50))
+                .is_err(),
+            "waiter should still be blocked while the holder owns the slot"
+        );
+
+        release_holder_tx.send(()).unwrap();
+
+        waiter_acquired_rx
+            .recv_timeout(Duration::from_millis(200))
+            .expect("waiter should acquire the slot after release");
     }
 }

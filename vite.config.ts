@@ -28,6 +28,48 @@ export default defineConfig(async () => ({
         overlay: "src/overlay/index.html",
         agent: "src/agent/index.html",
       },
+      output: {
+        manualChunks(id) {
+          const localeMatch = id.match(/[\\/]src[\\/]i18n[\\/]locales[\\/](.+?)[\\/]translation\.json$/);
+          if (localeMatch) {
+            return `locale-${localeMatch[1]}`;
+          }
+
+          if (id.includes("src/bindings.ts")) {
+            return "bindings";
+          }
+
+          if (id.includes("@tauri-apps/api") || id.includes("@tauri-apps/plugin-")) {
+            return "vendor-tauri";
+          }
+
+          if (
+            id.includes("react-dom") ||
+            id.includes("react/jsx-runtime") ||
+            id.includes("scheduler") ||
+            /[\\/]node_modules[\\/]react[\\/]/.test(id)
+          ) {
+            return "vendor-react";
+          }
+
+          if (
+            id.includes("i18next") ||
+            id.includes("react-i18next") ||
+            /[\\/]src[\\/]i18n[\\/]/.test(id)
+          ) {
+            return "vendor-i18n";
+          }
+
+          if (
+            id.includes("zustand") ||
+            id.includes("immer") ||
+            id.includes("sonner") ||
+            id.includes("lucide-react")
+          ) {
+            return "vendor-ui";
+          }
+        },
+      },
     },
   },
 

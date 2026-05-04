@@ -87,10 +87,9 @@ const bootstrap = async () => {
     }
 
     setSplashMessage("Loading app modules...");
-    const [{ default: App }, i18nModule, modelStoreModule] = await Promise.all([
+    const [{ default: App }, i18nModule] = await Promise.all([
       import("./App"),
       import("./i18n"),
-      import("./stores/modelStore"),
     ]);
 
     setSplashMessage("Rendering interface...");
@@ -129,23 +128,37 @@ const bootstrap = async () => {
     });
 
     setSplashMessage("Finishing startup...");
-    void Promise.allSettled([
-      i18nModule.syncLanguageFromSettings(),
-      modelStoreModule.useModelStore.getState().initialize(),
-    ]).then((results) => {
-      results.forEach((result, index) => {
-        if (result.status === "rejected") {
-          const label = index === 0 ? "language sync" : "model store init";
-          console.warn(`Deferred startup task failed: ${label}`, result.reason);
-        }
-      });
-
-      // Pre-download Parakeet while the user creates or activates the account.
-      const store = modelStoreModule.useModelStore.getState();
-      if (store.isFirstRun) {
-        void store.downloadModel("parakeet-tdt-0.6b-v3-multilingual");
-      }
+    void i18nModule.syncLanguageFromSettings().catch((error) => {
+      console.warn("Deferred startup task failed: language sync", error);
     });
+
+    const startDeferredModelInit = () => {
+      void import("./stores/modelStore")
+        .then((modelStoreModule) =>
+          modelStoreModule.useModelStore
+            .getState()
+            .initialize()
+            .then(() => {
+              const store = modelStoreModule.useModelStore.getState();
+              if (store.isFirstRun) {
+                void store.downloadModel("parakeet-tdt-0.6b-v3-multilingual");
+              }
+            }),
+        )
+        .catch((error) => {
+          console.warn("Deferred startup task failed: model store init", error);
+        });
+    };
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(() => {
+        startDeferredModelInit();
+      });
+    } else {
+      globalThis.setTimeout(() => {
+        startDeferredModelInit();
+      }, 150);
+    }
   } catch (error) {
     console.error("Fatal bootstrap error:", error);
     renderBootstrapMessage(

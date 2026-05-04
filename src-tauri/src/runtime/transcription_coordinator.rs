@@ -4,12 +4,13 @@ use crate::runtime_observability::{
     emit_lifecycle_state_with_context, TranscriptionLifecycleState,
 };
 use crate::settings::get_settings;
-use log::{debug, error, warn};
+use crate::TranscriptionManager;
+use log::{debug, error, info, warn};
 use std::sync::mpsc::{self, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 const DEBOUNCE: Duration = Duration::from_millis(30);
 
@@ -75,6 +76,12 @@ impl CoordinatorRuntimeState {
 pub struct TranscriptionCoordinator {
     tx: Sender<Command>,
     state: Arc<Mutex<CoordinatorRuntimeState>>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ActiveSessionSnapshot {
+    pub operation_id: Option<u64>,
+    pub lifecycle_state: TranscriptionLifecycleState,
 }
 
 pub fn is_transcribe_binding(id: &str) -> bool {
@@ -181,6 +188,27 @@ impl TranscriptionCoordinator {
             }));
             if let Err(e) = result {
                 error!("Transcription coordinator panicked: {e:?}");
+                // Surface the failure to the UI — without this the user sees
+                // the pipeline freeze silently and can't recover.
+                let (op_id, binding_id) = {
+                    let mut guard = state_for_thread.lock().unwrap_or_else(|e| e.into_inner());
+                    let op_id = guard.active_operation_id.take();
+                    let binding_id = guard.active_binding_id.take();
+                    guard.lifecycle_state = TranscriptionLifecycleState::Error;
+                    guard.selected_action = None;
+                    guard.latest_preview_text = None;
+                    (op_id, binding_id)
+                };
+                if op_id.is_some() {
+                    emit_lifecycle_state_with_context(
+                        &app,
+                        TranscriptionLifecycleState::Error,
+                        op_id,
+                        binding_id.as_deref(),
+                        Some("coordinator-panic"),
+                        false,
+                    );
+                }
             }
         });
 
@@ -233,6 +261,13 @@ impl TranscriptionCoordinator {
         guard.latest_preview_text = None;
         guard.lifecycle_state = TranscriptionLifecycleState::PreparingMicrophone;
         drop(guard);
+
+        info!(
+            "[coordinator] begin_preparing op={} binding={} state={:?}",
+            operation_id,
+            binding_id,
+            TranscriptionLifecycleState::PreparingMicrophone
+        );
 
         emit_lifecycle_state_with_context(
             app,
@@ -344,6 +379,13 @@ impl TranscriptionCoordinator {
         let (binding_id, transitioned) = {
             let mut guard = self.state.lock().unwrap_or_else(|e| e.into_inner());
             if guard.active_operation_id != Some(operation_id) {
+                warn!(
+                    "[coordinator] complete_operation ignored op={} detail={} active_op={:?} state={:?}",
+                    operation_id,
+                    detail,
+                    guard.active_operation_id,
+                    guard.lifecycle_state
+                );
                 return false;
             }
             let binding_id = guard.active_binding_id.clone();
@@ -356,6 +398,13 @@ impl TranscriptionCoordinator {
         };
 
         if transitioned {
+            info!(
+                "[coordinator] complete_operation op={} binding={:?} detail={}",
+                operation_id, binding_id, detail
+            );
+            if let Some(manager) = app.try_state::<Arc<TranscriptionManager>>() {
+                manager.maybe_unload_immediately("coordinator-complete");
+            }
             emit_action_deselected(app);
             emit_lifecycle_state_with_context(
                 app,
@@ -374,6 +423,13 @@ impl TranscriptionCoordinator {
         let binding_id = {
             let mut guard = self.state.lock().unwrap_or_else(|e| e.into_inner());
             if guard.active_operation_id != Some(operation_id) {
+                warn!(
+                    "[coordinator] fail_operation ignored op={} detail={} active_op={:?} state={:?}",
+                    operation_id,
+                    detail,
+                    guard.active_operation_id,
+                    guard.lifecycle_state
+                );
                 return false;
             }
             let binding_id = guard.active_binding_id.clone();
@@ -384,6 +440,14 @@ impl TranscriptionCoordinator {
             guard.latest_preview_text = None;
             binding_id
         };
+
+        info!(
+            "[coordinator] fail_operation op={} binding={:?} detail={}",
+            operation_id, binding_id, detail
+        );
+        if let Some(manager) = app.try_state::<Arc<TranscriptionManager>>() {
+            manager.maybe_unload_immediately("coordinator-fail");
+        }
 
         emit_action_deselected(app);
         emit_lifecycle_state_with_context(
@@ -410,6 +474,14 @@ impl TranscriptionCoordinator {
             guard.latest_preview_text = None;
             (operation_id, binding_id)
         };
+
+        info!(
+            "[coordinator] notify_cancel op={} binding={:?} detail={}",
+            operation_id, binding_id, detail
+        );
+        if let Some(manager) = app.try_state::<Arc<TranscriptionManager>>() {
+            manager.maybe_unload_immediately("coordinator-cancel");
+        }
 
         emit_action_deselected(app);
         emit_lifecycle_state_with_context(
@@ -460,6 +532,14 @@ impl TranscriptionCoordinator {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .lifecycle_state
+    }
+
+    pub fn active_session_snapshot(&self) -> ActiveSessionSnapshot {
+        let guard = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        ActiveSessionSnapshot {
+            operation_id: guard.active_operation_id,
+            lifecycle_state: guard.lifecycle_state,
+        }
     }
 
     pub fn diagnostics_snapshot(

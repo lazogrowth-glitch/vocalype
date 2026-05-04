@@ -260,6 +260,28 @@ export interface ParakeetDiagnosticsSnapshot {
   recent_sessions: ParakeetSessionDiagnosticsSnapshot[];
 }
 
+export interface PipelineStepTiming {
+  step: string;
+  duration_ms: number;
+  started_at_ms: number;
+  finished_at_ms: number;
+  detail?: string | null;
+}
+
+export interface PipelineProfileEvent {
+  binding_id: string;
+  created_at_ms: number;
+  path: string;
+  model_id?: string | null;
+  model_name?: string | null;
+  audio_duration_ms?: number | null;
+  transcription_chars: number;
+  total_duration_ms: number;
+  completed: boolean;
+  error_code?: string | null;
+  steps: PipelineStepTiming[];
+}
+
 export interface RuntimeDiagnosticsSnapshot {
   captured_at_ms: number;
   app_version: string;
@@ -298,6 +320,7 @@ export interface RuntimeDiagnosticsSnapshot {
   active_voice_profile_segment?: VoiceProfileSegmentSnapshot | null;
   active_voice_runtime_adjustment?: VoiceRuntimeAdjustmentSnapshot | null;
   machine_status?: MachineStatusSnapshot | null;
+  recent_pipeline_profiles: PipelineProfileEvent[];
   parakeet_diagnostics: ParakeetDiagnosticsSnapshot;
   adaptive_machine_profile?: AdaptiveMachineProfileSnapshot | null;
   adaptive_calibration_state?: CalibrationStatusSnapshot[];

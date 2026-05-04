@@ -60,18 +60,22 @@ const LLAMA_CPP_RELEASE: &str = "b8849";
 
 /// Official GitHub release archive for each platform.
 /// All archives contain llama-server + all required libraries.
-fn binary_download_url() -> &'static str {
+/// Bump `LLAMA_CPP_RELEASE` above to upgrade all platforms at once.
+fn binary_download_url() -> String {
+    let tag = LLAMA_CPP_RELEASE;
+    let base = format!("https://github.com/ggml-org/llama.cpp/releases/download/{tag}");
+
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
-    return "https://github.com/ggml-org/llama.cpp/releases/download/b8849/llama-b8849-bin-win-cpu-x64.zip";
+    return format!("{base}/llama-{tag}-bin-win-cpu-x64.zip");
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-    return "https://github.com/ggml-org/llama.cpp/releases/download/b8849/llama-b8849-bin-macos-arm64.tar.gz";
+    return format!("{base}/llama-{tag}-bin-macos-arm64.tar.gz");
 
     #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-    return "https://github.com/ggml-org/llama.cpp/releases/download/b8849/llama-b8849-bin-macos-x64.tar.gz";
+    return format!("{base}/llama-{tag}-bin-macos-x64.tar.gz");
 
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-    return "https://github.com/ggml-org/llama.cpp/releases/download/b8849/llama-b8849-bin-ubuntu-x64.tar.gz";
+    return format!("{base}/llama-{tag}-bin-ubuntu-x64.tar.gz");
 
     #[cfg(not(any(
         all(target_os = "windows", target_arch = "x86_64"),
@@ -79,7 +83,7 @@ fn binary_download_url() -> &'static str {
         all(target_os = "macos", target_arch = "x86_64"),
         all(target_os = "linux", target_arch = "x86_64"),
     )))]
-    return "";
+    return String::new();
 }
 
 /// Binary filename on disk (platform-aware).
@@ -401,7 +405,7 @@ async fn prefetch_llm_assets(app: &AppHandle) -> Result<(), String> {
         }
         let dest = binary_path(app).ok_or("Cannot resolve binary path")?;
         info!("[llama-server] prefetch: downloading binary");
-        download_binary(app, url, &dest).await?;
+        download_binary(app, &url, &dest).await?;
         info!("[llama-server] prefetch: binary ready");
     }
     if !is_model_ready(app) {
@@ -433,7 +437,7 @@ pub async fn ensure_llama_server(app: &AppHandle) -> Result<(), String> {
                 "llm-setup-progress",
                 serde_json::json!({ "step": "binary", "pct": 0, "label": "Téléchargement du moteur LLM…" }),
             );
-            download_binary(app, url, &dest).await?;
+            download_binary(app, &url, &dest).await?;
             info!("[llama-server] binary ready at {:?}", dest);
         }
         if !is_model_ready(app) {

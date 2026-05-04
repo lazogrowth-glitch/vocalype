@@ -10,7 +10,7 @@ use crate::prompt_builder::build_whisper_initial_prompt;
 use crate::runtime_observability::PipelineStepTiming;
 use crate::settings::{
     get_settings, record_whisper_backend_failure, set_active_runtime_model,
-    set_active_whisper_backend, ModelUnloadTimeout, NpuKind, WhisperBackendPreference,
+    set_active_whisper_backend, NpuKind, WhisperBackendPreference,
 };
 use crate::transcription_confidence::{
     build_whisper_confidence_payload, TranscriptionConfidencePayload,
@@ -49,7 +49,7 @@ use transcribe_rs::{
     TranscriptionEngine,
 };
 
-const BACKGROUND_REUSE_GRACE_MS: u64 = 15_000;
+const MODEL_UNLOAD_IDLE_MS: u64 = 10_000;
 const ACTIVE_SESSION_STALE_MS: u64 = 30_000;
 
 #[cfg(target_os = "windows")]
@@ -175,10 +175,24 @@ pub struct TranscriptionManager {
     current_model_id: Arc<Mutex<Option<String>>>,
     whisper_gpu_active: Arc<AtomicBool>,
     last_activity: Arc<AtomicU64>,
+    unload_generation: Arc<AtomicU64>,
     shutdown_signal: Arc<AtomicBool>,
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    /// True while a transcription call is actively running inference.
+    /// Concurrent chunks wait on `inferring_condvar` instead of failing with
+    /// "Model is not loaded" — which happens when one chunk holds the engine
+    /// via `take()` (temporarily setting the mutex to None) while another
+    /// chunk checks it simultaneously.
+    is_inferring: Arc<Mutex<bool>>,
+    inferring_condvar: Arc<Condvar>,
+    /// Number of consecutive engine panics since the last successful inference.
+    /// Reset to 0 on every successful transcription.
+    consecutive_panics: Arc<AtomicU64>,
+    /// Timestamp (ms since epoch) before which new inference calls must wait.
+    /// Set after each panic using exponential backoff (2^n seconds, max 60 s).
+    panic_backoff_until_ms: Arc<AtomicU64>,
 }
 
 impl TranscriptionManager {
@@ -191,38 +205,121 @@ impl TranscriptionManager {
 
     fn touch_activity(&self) {
         self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
+        self.unload_generation.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn schedule_idle_unload(&self, context: &str) {
+        let generation = self.unload_generation.load(Ordering::Relaxed);
+        let manager = self.clone();
+        let context = context.to_string();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(MODEL_UNLOAD_IDLE_MS));
+
+            if manager.unload_generation.load(Ordering::Relaxed) != generation {
+                debug!(
+                    "[model-unload] timed unload cancelled context={} generation={} current_generation={}",
+                    context,
+                    generation,
+                    manager.unload_generation.load(Ordering::Relaxed)
+                );
+                return;
+            }
+
+            if manager.is_transcription_session_active() {
+                info!(
+                    "[model-unload] timed unload skipped after {} because a transcription session is still active",
+                    context
+                );
+                return;
+            }
+
+            if !manager.is_model_loaded() {
+                debug!(
+                    "[model-unload] timed unload found model already unloaded after {}",
+                    context
+                );
+                return;
+            }
+
+            info!(
+                "[model-unload] timed unload firing after {} (generation={})",
+                context, generation
+            );
+            if let Err(err) = manager.unload_model() {
+                warn!(
+                    "[model-unload] timed unload failed after {}: {}",
+                    context, err
+                );
+            }
+        });
+    }
+
+    fn coordinator_session_snapshot(
+        &self,
+    ) -> Option<crate::runtime::transcription_coordinator::ActiveSessionSnapshot> {
+        self.app_handle
+            .try_state::<crate::TranscriptionCoordinator>()
+            .map(|coordinator| coordinator.active_session_snapshot())
     }
 
     fn is_transcription_session_active(&self) -> bool {
-        let recording_active = self
-            .app_handle
-            .try_state::<Arc<AudioRecordingManager>>()
-            .map(|audio_manager| audio_manager.is_recording())
-            .unwrap_or(false);
-
-        if recording_active {
-            return true;
-        }
-
-        let operation_active = self
-            .app_handle
-            .try_state::<crate::TranscriptionCoordinator>()
-            .and_then(|coordinator| coordinator.active_operation_id())
+        let coordinator_snapshot = self.coordinator_session_snapshot();
+        let operation_active = coordinator_snapshot
+            .as_ref()
+            .and_then(|snapshot| snapshot.operation_id)
             .is_some();
+        let lifecycle_state = coordinator_snapshot.map(|snapshot| snapshot.lifecycle_state);
 
         if !operation_active {
+            let recording_active = self
+                .app_handle
+                .try_state::<Arc<AudioRecordingManager>>()
+                .map(|audio_manager| audio_manager.is_recording())
+                .unwrap_or(false);
+            if recording_active {
+                warn!(
+                    "[model-unload] coordinator reported no active session but microphone is still recording; treating session as active as a safety fallback"
+                );
+                return true;
+            }
+            debug!(
+                "[model-unload] session-active=false recording_active={} operation_active={} lifecycle_state={:?}",
+                recording_active,
+                operation_active,
+                lifecycle_state
+            );
             return false;
         }
 
         let age_ms = Self::now_ms().saturating_sub(self.last_activity.load(Ordering::Relaxed));
         if age_ms > ACTIVE_SESSION_STALE_MS {
+            let recording_active = self
+                .app_handle
+                .try_state::<Arc<AudioRecordingManager>>()
+                .map(|audio_manager| audio_manager.is_recording())
+                .unwrap_or(false);
             warn!(
-                "Ignoring stale transcription session marker during unload check (idle={}ms)",
+                "[model-unload] ignoring stale transcription session marker recording_active={} operation_active={} lifecycle_state={:?} idle_ms={}",
+                recording_active,
+                operation_active,
+                lifecycle_state,
                 age_ms
             );
             return false;
         }
 
+        let recording_active = self
+            .app_handle
+            .try_state::<Arc<AudioRecordingManager>>()
+            .map(|audio_manager| audio_manager.is_recording())
+            .unwrap_or(false);
+        debug!(
+            "[model-unload] session-active=true recording_active={} operation_active={} lifecycle_state={:?} idle_ms={}",
+            recording_active,
+            operation_active,
+            lifecycle_state,
+            age_ms
+        );
         true
     }
 
@@ -305,10 +402,15 @@ impl TranscriptionManager {
                     .expect("System clock is before Unix epoch")
                     .as_millis() as u64,
             )),
+            unload_generation: Arc::new(AtomicU64::new(0)),
             shutdown_signal: Arc::new(AtomicBool::new(false)),
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            is_inferring: Arc::new(Mutex::new(false)),
+            inferring_condvar: Arc::new(Condvar::new()),
+            consecutive_panics: Arc::new(AtomicU64::new(0)),
+            panic_backoff_until_ms: Arc::new(AtomicU64::new(0)),
         };
 
         // Start the idle watcher
@@ -326,54 +428,71 @@ impl TranscriptionManager {
                     }
 
                     let settings = get_settings(&app_handle_cloned);
-                    let timeout_seconds = settings.model_unload_timeout.to_seconds();
+                    let last = manager_cloned.last_activity.load(Ordering::Relaxed);
+                    let now_ms = Self::now_ms();
+                    // Respect the user-configured unload timeout; fall back to the
+                    // compile-time constant only when the setting resolves to zero seconds.
+                    let idle_limit_ms = settings
+                        .model_unload_timeout
+                        .to_seconds()
+                        .map(|s| s * 1_000)
+                        .unwrap_or(MODEL_UNLOAD_IDLE_MS);
+                    let idle_ms = now_ms.saturating_sub(last);
 
-                    if let Some(limit_seconds) = timeout_seconds {
-                        // Skip polling-based unloading for immediate timeout since it's handled directly in transcribe()
-                        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
+                    // ModelUnloadTimeout::Never → to_seconds() returns None →
+                    // we used MODEL_UNLOAD_IDLE_MS above, which is not "never".
+                    // Handle Never explicitly: skip this tick entirely.
+                    if settings.model_unload_timeout == crate::settings::ModelUnloadTimeout::Never {
+                        debug!("[model-unload] watcher skipped: unload timeout=Never");
+                        continue;
+                    }
+
+                    debug!(
+                        "[model-unload] watcher tick loaded={} loading={} hidden_mode={} idle_ms={} idle_limit_ms={} setting={:?}",
+                        manager_cloned.is_model_loaded(),
+                        manager_cloned.is_loading_model(),
+                        manager_cloned.should_force_background_lean_unload(),
+                        idle_ms,
+                        idle_limit_ms,
+                        settings.model_unload_timeout
+                    );
+
+                    if idle_ms > idle_limit_ms {
+                        if manager_cloned.is_transcription_session_active() {
+                            debug!(
+                                "[model-unload] watcher skipped unload because a transcription session is still active"
+                            );
                             continue;
                         }
 
-                        let last = manager_cloned.last_activity.load(Ordering::Relaxed);
-                        let now_ms = Self::now_ms();
-                        let idle_limit_ms = if manager_cloned.should_force_background_lean_unload()
-                        {
-                            BACKGROUND_REUSE_GRACE_MS
-                        } else {
-                            limit_seconds * 1000
-                        };
+                        if manager_cloned.is_model_loaded() {
+                            let unload_start = std::time::Instant::now();
+                            info!(
+                                "[model-unload] watcher unloading model due to inactivity idle_ms={} idle_limit_ms={}",
+                                idle_ms,
+                                idle_limit_ms
+                            );
 
-                        if now_ms.saturating_sub(last) > idle_limit_ms {
-                            if manager_cloned.is_transcription_session_active() {
-                                manager_cloned.touch_activity();
-                                debug!(
-                                    "Skipping idle model unload because a transcription session is still active"
+                            if let Ok(()) = manager_cloned.unload_model() {
+                                let _ = app_handle_cloned.emit(
+                                    "model-state-changed",
+                                    ModelStateEvent {
+                                        event_type: "unloaded".to_string(),
+                                        model_id: None,
+                                        model_name: None,
+                                        error: None,
+                                    },
                                 );
-                                continue;
+                                let unload_duration = unload_start.elapsed();
+                                info!(
+                                    "[model-unload] watcher unloaded model due to inactivity (took {}ms)",
+                                    unload_duration.as_millis()
+                                );
                             }
-
-                            // idle -> unload
-                            if manager_cloned.is_model_loaded() {
-                                let unload_start = std::time::Instant::now();
-                                debug!("Starting to unload model due to inactivity");
-
-                                if let Ok(()) = manager_cloned.unload_model() {
-                                    let _ = app_handle_cloned.emit(
-                                        "model-state-changed",
-                                        ModelStateEvent {
-                                            event_type: "unloaded".to_string(),
-                                            model_id: None,
-                                            model_name: None,
-                                            error: None,
-                                        },
-                                    );
-                                    let unload_duration = unload_start.elapsed();
-                                    debug!(
-                                        "Model unloaded due to inactivity (took {}ms)",
-                                        unload_duration.as_millis()
-                                    );
-                                }
-                            }
+                        } else {
+                            debug!(
+                                "[model-unload] watcher wanted to unload but model was already not loaded"
+                            );
                         }
                     }
                 }
@@ -399,34 +518,15 @@ impl TranscriptionManager {
         *self.is_loading.lock()
     }
 
-    pub fn ensure_model_loaded(&self, model_id: &str) -> Result<()> {
-        self.touch_activity();
-        {
-            let mut is_loading = self.is_loading.lock();
-            while *is_loading {
-                self.loading_condvar.wait(&mut is_loading);
-            }
-
-            if self.get_current_model().as_deref() == Some(model_id) && self.is_model_loaded() {
-                return Ok(());
-            }
-
-            *is_loading = true;
-        }
-
-        let result = self.load_model(model_id);
-
-        let mut is_loading = self.is_loading.lock();
-        *is_loading = false;
-        self.loading_condvar.notify_all();
-
-        result
-    }
-
     pub fn unload_model(&self) -> Result<()> {
         let unload_start = std::time::Instant::now();
-        debug!("Starting to unload model");
-        let _previous_model_id = self.get_current_model();
+        let previous_model_id = self.get_current_model();
+        info!(
+            "[model-unload] unload_model start previous_model_id={:?} hidden_mode={} loading={}",
+            previous_model_id,
+            self.should_force_background_lean_unload(),
+            self.is_loading_model()
+        );
 
         {
             let mut engine = self.lock_engine();
@@ -467,8 +567,9 @@ impl TranscriptionManager {
         );
 
         let unload_duration = unload_start.elapsed();
-        debug!(
-            "Model unloaded manually (took {}ms)",
+        info!(
+            "[model-unload] unload_model complete previous_model_id={:?} took_ms={}",
+            previous_model_id,
             unload_duration.as_millis()
         );
         Ok(())
@@ -491,38 +592,67 @@ impl TranscriptionManager {
         }
     }
 
+    /// Release the "inference in progress" slot so waiting chunks can proceed.
+    /// Must be called on every exit path after `is_inferring` was set to true
+    /// in `transcribe_detailed_request`.
+    pub(super) fn release_inferring_slot(&self) {
+        let mut is_inferring = self.is_inferring.lock();
+        *is_inferring = false;
+        self.inferring_condvar.notify_all();
+    }
+
     /// Unloads the model immediately if the setting is enabled and the model is loaded
     pub fn maybe_unload_immediately(&self, context: &str) {
         let settings = get_settings(&self.app_handle);
         let should_force_hidden_unload = self.should_force_background_lean_unload();
-        let should_unload_now = self.is_model_loaded()
-            && (settings.model_unload_timeout == ModelUnloadTimeout::Immediately
-                || should_force_hidden_unload);
+        let should_unload_now = self.is_model_loaded();
+
+        let coordinator_snapshot = self.coordinator_session_snapshot();
+        let lifecycle_state = coordinator_snapshot.map(|snapshot| snapshot.lifecycle_state);
+        let active_operation_id = coordinator_snapshot.and_then(|snapshot| snapshot.operation_id);
+        let recording_active = self
+            .app_handle
+            .try_state::<Arc<AudioRecordingManager>>()
+            .map(|audio_manager| audio_manager.is_recording())
+            .unwrap_or(false);
+        let idle_ms = Self::now_ms().saturating_sub(self.last_activity.load(Ordering::Relaxed));
+
+        info!(
+            "[model-unload] maybe_unload_immediately context={} loaded={} should_unload_now={} hidden_mode={} setting={:?} recording_active={} active_operation_id={:?} lifecycle_state={:?} idle_ms={}",
+            context,
+            self.is_model_loaded(),
+            should_unload_now,
+            should_force_hidden_unload,
+            settings.model_unload_timeout,
+            recording_active,
+            active_operation_id,
+            lifecycle_state,
+            idle_ms
+        );
 
         if should_unload_now {
             if self.is_transcription_session_active() {
-                self.touch_activity();
                 info!(
-                    "Deferring model unload after {} because a transcription session is still active",
+                    "[model-unload] deferring unload after {} because a transcription session is still active",
                     context
                 );
                 return;
             }
 
-            if should_force_hidden_unload
-                && settings.model_unload_timeout != ModelUnloadTimeout::Immediately
-            {
-                self.touch_activity();
-                info!(
-                    "Keeping model warm for {}ms after {} before hidden idle unload",
-                    BACKGROUND_REUSE_GRACE_MS, context
-                );
-                return;
-            }
-            info!("Immediately unloading model after {}", context);
-            if let Err(e) = self.unload_model() {
-                warn!("Failed to immediately unload model: {}", e);
-            }
+            self.touch_activity();
+            info!(
+                "[model-unload] keeping model warm for {}ms after {} before timed unload",
+                MODEL_UNLOAD_IDLE_MS, context
+            );
+            self.schedule_idle_unload(context);
+        } else {
+            debug!(
+                "[model-unload] maybe_unload_immediately skipped context={} loaded={} hidden_mode={} setting={:?}",
+                context,
+                self.is_model_loaded(),
+                should_force_hidden_unload,
+                settings.model_unload_timeout
+            );
         }
     }
 
@@ -540,21 +670,30 @@ impl TranscriptionManager {
         *is_loading = true;
         let self_clone = self.clone();
         thread::spawn(move || {
+            info!(
+                "[model-load] background load thread start model_id={} hidden_mode={}",
+                model_id,
+                self_clone.should_force_background_lean_unload()
+            );
             if let Err(e) = self_clone.load_model(&model_id) {
                 error!("Failed to load model: {}", e);
-            } else if self_clone.should_force_background_lean_unload() {
+            } else {
                 self_clone.touch_activity();
-                let recording_active = self_clone
-                    .app_handle
-                    .try_state::<Arc<AudioRecordingManager>>()
-                    .map(|audio_manager| audio_manager.is_recording())
-                    .unwrap_or(false);
-                let operation_active = self_clone
-                    .app_handle
-                    .try_state::<crate::TranscriptionCoordinator>()
-                    .and_then(|coordinator| coordinator.active_operation_id())
+                let coordinator_snapshot = self_clone.coordinator_session_snapshot();
+                let operation_active = coordinator_snapshot
+                    .as_ref()
+                    .and_then(|snapshot| snapshot.operation_id)
                     .is_some();
-                let should_keep_loaded = recording_active || operation_active;
+                let lifecycle_state = coordinator_snapshot.map(|snapshot| snapshot.lifecycle_state);
+                let should_keep_loaded = operation_active;
+
+                info!(
+                    "[model-load] background load completed model_id={} operation_active={} lifecycle_state={:?} should_keep_loaded={}",
+                    model_id,
+                    operation_active,
+                    lifecycle_state,
+                    should_keep_loaded
+                );
 
                 if !should_keep_loaded {
                     self_clone.maybe_unload_immediately(
@@ -565,6 +704,10 @@ impl TranscriptionManager {
             let mut is_loading = self_clone.is_loading.lock();
             *is_loading = false;
             self_clone.loading_condvar.notify_all();
+            info!(
+                "[model-load] background load thread end model_id={}",
+                model_id
+            );
         });
     }
 

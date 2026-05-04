@@ -172,7 +172,17 @@
       "qualityDescription": "Best text quality on a more powerful machine"
     },
     "firstRunTitle": "Instalando modelo de voz",
-    "firstRunSubtitle": "Vocalype Native - descarga única (~478 MB)"
+    "firstRunSubtitle": "Vocalype Native - descarga única (~478 MB)",
+    "firstRun": {
+      "statusConnecting": "Conectando tu cuenta...",
+      "statusPreparing": "Preparando Vocalype...",
+      "statusStarting": "Iniciando Vocalype...",
+      "lastStep": "Último paso",
+      "errorActivateFailed": "No se pudo activar tu cuenta.",
+      "errorActivateAfterDownload": "No se pudo activar tu cuenta después de la descarga.",
+      "errorDownloadFailed": "No se pudo descargar el modelo.",
+      "retry": "Reintentar"
+    }
   },
   "modelSelector": {
     "badges": {

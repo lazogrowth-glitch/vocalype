@@ -8,12 +8,20 @@ interface UseOnboardingProps {
   hasAnyAccess: boolean;
 }
 
+const FIRST_RUN_COMPLETED_KEY = "vt.firstRunCompleted";
+
 export function useOnboarding({
   authLoading,
   hasAnyAccess,
 }: UseOnboardingProps) {
   const isFirstRun = useModelStore((s) => s.isFirstRun);
   const modelsInitialized = useModelStore((s) => s.initialized);
+
+  // Persist completion across auth re-evaluations so the download screen
+  // never re-appears after the user finishes onboarding mid-session.
+  const [completedFirstRun, setCompletedFirstRun] = useState(
+    () => localStorage.getItem(FIRST_RUN_COMPLETED_KEY) === "1",
+  );
 
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(null);
 
@@ -22,10 +30,22 @@ export function useOnboarding({
       setOnboardingStep(null);
       return;
     }
+    if (completedFirstRun) {
+      setOnboardingStep("done");
+      return;
+    }
     setOnboardingStep(isFirstRun ? "first-run" : "done");
-  }, [authLoading, hasAnyAccess, modelsInitialized, isFirstRun]);
+  }, [
+    authLoading,
+    hasAnyAccess,
+    modelsInitialized,
+    isFirstRun,
+    completedFirstRun,
+  ]);
 
   const handleFirstRunComplete = useCallback(() => {
+    localStorage.setItem(FIRST_RUN_COMPLETED_KEY, "1");
+    setCompletedFirstRun(true);
     setOnboardingStep("done");
   }, []);
 

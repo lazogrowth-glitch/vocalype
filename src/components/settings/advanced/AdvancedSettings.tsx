@@ -10,6 +10,8 @@ import { AdaptiveVocabularyToggle } from "../AdaptiveVocabularyToggle";
 import { StartupToggle } from "../StartupToggle";
 import { DevWorkflowToggle } from "../DevWorkflowToggle";
 import { AppLanguageSelector } from "../AppLanguageSelector";
+import { LanguageSelector } from "../LanguageSelector";
+import { ShortcutInput } from "../ShortcutInput";
 import {
   TranscribeFileButton,
   ExportHistoryButton,
@@ -43,6 +45,8 @@ export const AdvancedSettings: React.FC = () => {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.transcription")}>
+        <LanguageSelector descriptionMode="tooltip" grouped={true} />
+        <ShortcutInput shortcutId="toggle_language" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
         <AdaptiveVocabularyToggle descriptionMode="inline" grouped />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />

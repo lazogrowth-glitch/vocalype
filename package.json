@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev:vocalypedev": "tauri dev --config src-tauri/tauri.dev.conf.json --no-watch",
+    "tauri:build": "powershell -ExecutionPolicy Bypass -File scripts/build-release.ps1",
     "tauri:build:vocalypedev": "tauri build --config src-tauri/tauri.dev.conf.json",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",

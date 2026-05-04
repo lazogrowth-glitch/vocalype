@@ -2,6 +2,33 @@ use crate::settings::{get_settings, write_settings, VoiceSnippet};
 use rand::Rng;
 use tauri::AppHandle;
 
+const MAX_TRIGGER_LEN: usize = 200;
+const MAX_EXPANSION_LEN: usize = 10_000;
+
+fn validate_snippet_fields(trigger: &str, expansion: &str) -> Result<(), String> {
+    if trigger.is_empty() {
+        return Err("Trigger cannot be empty".to_string());
+    }
+    if trigger.len() > MAX_TRIGGER_LEN {
+        return Err(format!(
+            "Trigger too long ({} chars, max {})",
+            trigger.len(),
+            MAX_TRIGGER_LEN
+        ));
+    }
+    if expansion.is_empty() {
+        return Err("Expansion cannot be empty".to_string());
+    }
+    if expansion.len() > MAX_EXPANSION_LEN {
+        return Err(format!(
+            "Expansion too long ({} chars, max {})",
+            expansion.len(),
+            MAX_EXPANSION_LEN
+        ));
+    }
+    Ok(())
+}
+
 fn new_snippet_id() -> String {
     let mut rng = rand::thread_rng();
     format!("snip_{:016x}", rng.gen::<u64>())
@@ -23,12 +50,7 @@ pub fn add_voice_snippet(
     let trigger = trigger.trim().to_string();
     let expansion = expansion.trim().to_string();
 
-    if trigger.is_empty() {
-        return Err("Trigger cannot be empty".to_string());
-    }
-    if expansion.is_empty() {
-        return Err("Expansion cannot be empty".to_string());
-    }
+    validate_snippet_fields(&trigger, &expansion)?;
 
     let mut settings = get_settings(&app);
 
@@ -80,12 +102,7 @@ pub fn update_voice_snippet(
     let trigger = trigger.trim().to_string();
     let expansion = expansion.trim().to_string();
 
-    if trigger.is_empty() {
-        return Err("Trigger cannot be empty".to_string());
-    }
-    if expansion.is_empty() {
-        return Err("Expansion cannot be empty".to_string());
-    }
+    validate_snippet_fields(&trigger, &expansion)?;
 
     let mut settings = get_settings(&app);
 

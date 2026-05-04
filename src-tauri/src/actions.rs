@@ -95,6 +95,32 @@ impl ShortcutAction for WhisperModeAction {
     fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
 }
 
+struct ToggleLanguageAction;
+
+impl ShortcutAction for ToggleLanguageAction {
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        // Cycle: auto → fr → en → auto
+        const CYCLE: &[&str] = &["auto", "fr", "en"];
+
+        let mut settings = crate::settings::get_settings(app);
+        let current = settings.selected_language.as_str();
+
+        let next = CYCLE
+            .iter()
+            .position(|&l| l == current)
+            .map(|i| CYCLE[(i + 1) % CYCLE.len()])
+            .unwrap_or("auto");
+
+        settings.selected_language = next.to_string();
+        crate::settings::write_settings(app, settings);
+
+        let _ = app.emit("language-toggled", next);
+        log::info!("Language toggled to '{}'", next);
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
+}
+
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
     map.insert(
@@ -122,6 +148,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "whisper_mode".to_string(),
         Arc::new(WhisperModeAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "toggle_language".to_string(),
+        Arc::new(ToggleLanguageAction) as Arc<dyn ShortcutAction>,
     );
     map
 });

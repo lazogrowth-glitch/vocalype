@@ -172,7 +172,17 @@
       "qualityDescription": "Best text quality on a more powerful machine"
     },
     "firstRunTitle": "Installing voice model",
-    "firstRunSubtitle": "Vocalype Native - one-time download (~478 MB)"
+    "firstRunSubtitle": "Vocalype Native - one-time download (~478 MB)",
+    "firstRun": {
+      "statusConnecting": "Connecting...",
+      "statusPreparing": "Preparing model...",
+      "statusStarting": "Starting download...",
+      "lastStep": "Last step before your first dictation in Vocalype.",
+      "errorActivateFailed": "Model installed but could not be activated. Restart the app.",
+      "errorActivateAfterDownload": "Model downloaded but could not be activated. Restart the app.",
+      "errorDownloadFailed": "Download failed. Check your connection and try again.",
+      "retry": "Retry"
+    }
   },
   "modelSelector": {
     "badges": {
@@ -1198,6 +1208,10 @@
     "enabled": "Whisper Mode on",
     "disabled": "Whisper Mode off",
     "errorTitle": "Whisper Mode — error"
+  },
+  "languageToggle": {
+    "switched": "Language: {{lang}}",
+    "auto": "Auto"
   },
   "hints": {
     "firstLaunch": "Press {{shortcut}} anywhere to start dictating — your text will appear automatically."

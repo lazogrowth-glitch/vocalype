@@ -34,6 +34,10 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
       (snapshot?.parakeet_diagnostics?.recent_sessions ?? []).slice().reverse(),
     [snapshot],
   );
+  const recentPipelineProfiles = useMemo(
+    () => (snapshot?.recent_pipeline_profiles ?? []).slice().reverse(),
+    [snapshot],
+  );
   const adaptiveProfile = snapshot?.adaptive_machine_profile ?? null;
   const voiceProfileSessions = snapshot?.adaptive_voice_profile
     ? t("settings.debug.runtimeDiagnostics.voiceProfileSessions", {
@@ -612,6 +616,48 @@ export const RuntimeDiagnostics: React.FC<{ grouped?: boolean }> = ({
                     ? ` · ${session.assembled_preview}`
                     : ""}
                 </p>
+              ))}
+            </div>
+          )}
+          {recentPipelineProfiles.length > 0 && (
+            <div className="pt-1">
+              <p className="font-semibold mb-1">
+                {t("settings.debug.runtimeDiagnostics.pipelineProfiles", {
+                  defaultValue: "Recent pipeline timings",
+                })}
+              </p>
+              {recentPipelineProfiles.slice(0, 3).map((profile) => (
+                <div
+                  key={`${profile.created_at_ms}-${profile.binding_id}`}
+                  className="mb-2 rounded-md border border-mid-gray/15 p-2"
+                >
+                  <p className="break-words">
+                    <span className="font-semibold">{profile.binding_id}</span>
+                    {" · "}
+                    {profile.path}
+                    {" · "}
+                    {profile.total_duration_ms}ms
+                    {profile.model_name
+                      ? ` · ${profile.model_name}`
+                      : profile.model_id
+                        ? ` · ${profile.model_id}`
+                        : ""}
+                    {profile.error_code ? ` · ${profile.error_code}` : ""}
+                  </p>
+                  {profile.steps
+                    .slice()
+                    .sort((a, b) => a.started_at_ms - b.started_at_ms)
+                    .map((step) => (
+                      <p
+                        key={`${profile.created_at_ms}-${step.step}-${step.started_at_ms}`}
+                        className="break-words text-text/70"
+                      >
+                        {step.started_at_ms}-{step.finished_at_ms}ms ·{" "}
+                        {step.step} · {step.duration_ms}ms
+                        {step.detail ? ` · ${step.detail}` : ""}
+                      </p>
+                    ))}
+                </div>
               ))}
             </div>
           )}

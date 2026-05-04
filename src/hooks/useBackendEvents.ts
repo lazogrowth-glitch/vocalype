@@ -8,6 +8,8 @@ import {
 } from "@tauri-apps/api/event";
 import { safeUnlisten } from "@/lib/tauri/events";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { LANGUAGES } from "@/lib/constants/languages";
 
 function useTauriEvent<T>(
   event: EventName,
@@ -511,6 +513,29 @@ export function useBackendEvents({
           duration: 2500,
         });
       }
+    },
+    [t],
+  );
+
+  // language-toggled
+  useTauriEvent<string>(
+    "language-toggled",
+    (event) => {
+      const code = event.payload;
+      const langName =
+        LANGUAGES.find((l) => l.value === code)?.label ??
+        t("languageToggle.auto", { defaultValue: "Auto" });
+      toast(
+        t("languageToggle.switched", {
+          lang: langName,
+          defaultValue: `Language: ${langName}`,
+        }),
+        {
+          duration: 2000,
+        },
+      );
+      // Sync the settings store so LanguageSelector reflects the change immediately
+      void useSettingsStore.getState().refreshSettings();
     },
     [t],
   );

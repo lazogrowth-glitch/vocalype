@@ -1,0 +1,52 @@
+{
+  "proxy_url": "http://127.0.0.1:8000/v1/chat/completions",
+  "temperature": 0.15,
+  "max_tokens": 6000,
+  "max_patch_files": 3,
+  "max_patch_lines": 150,
+  "branch_prefix": "robot/night-run",
+  "allow_production_transcription_edits": true,
+  "allowed_focus_keywords": [
+    "transcription",
+    "stt",
+    "speech",
+    "audio",
+    "chunk",
+    "buffer",
+    "vad",
+    "silence",
+    "whisper",
+    "parakeet",
+    "moonshine",
+    "sensevoice",
+    "postprocess",
+    "latency",
+    "benchmark"
+  ],
+  "forbidden_paths": [
+    ".git/",
+    "node_modules/",
+    "target/",
+    "dist/",
+    ".env",
+    ".env.local",
+    ".env.production",
+    "src-tauri/src/security/",
+    "src-tauri/src/secret",
+    "backend/payments",
+    "backend/license",
+    "backend/auth"
+  ],
+  "commands": {
+    "typescript_check": "npx tsc --noEmit",
+    "test": "",
+    "benchmark": "",
+    "transcription_benchmark": "python vocalype-night-robot/scripts/run_transcription_benchmark.py"
+  },
+  "acceptance_rules": {
+    "require_tests_pass": true,
+    "allow_measurement_only_changes": true,
+    "require_benchmark_improvement_for_behavior_change": true,
+    "max_regression_percent": 0
+  }
+}

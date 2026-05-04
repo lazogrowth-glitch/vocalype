@@ -119,7 +119,7 @@ impl DictionaryManager {
     pub fn entries(&self) -> Vec<DictionaryEntry> {
         self.compiled
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| e.into_inner())
             .iter()
             .map(|e| DictionaryEntry {
                 from: e.from.clone(),

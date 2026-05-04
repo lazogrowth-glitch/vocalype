@@ -12,7 +12,7 @@ use crate::chunking::{
 use crate::context_detector::{detect_current_app_context, ActiveAppContextState};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
-use crate::managers::model::ModelManager;
+use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{TranscriptionManager, TranscriptionRequest};
 use crate::model_ids::is_parakeet_v3_model_id;
 use crate::parakeet_quality::{
@@ -509,6 +509,46 @@ fn classify_microphone_start_error(message: &str) -> &'static str {
     }
 }
 
+fn direct_start_blocker_from_model_selection(
+    selected_model: &str,
+    model_info: Option<&ModelInfo>,
+) -> Option<String> {
+    let selected_model = selected_model.trim();
+    if selected_model.is_empty() {
+        return Some("Select a model to enable dictation.".to_string());
+    }
+
+    let Some(model_info) = model_info else {
+        return Some(format!(
+            "Failed to prepare dictation. Model not found: {}",
+            selected_model
+        ));
+    };
+
+    if !model_info.is_downloaded {
+        return Some(format!(
+            "Download your model to enable dictation. Model '{}' is not downloaded.",
+            model_info.name
+        ));
+    }
+
+    None
+}
+
+fn direct_start_blocker(app: &AppHandle) -> Option<String> {
+    let settings = get_settings(app);
+    let selected_model = settings.selected_model.trim();
+
+    let Some(model_manager) = app.try_state::<Arc<ModelManager>>() else {
+        return Some("Failed to prepare dictation. Model manager unavailable.".to_string());
+    };
+
+    direct_start_blocker_from_model_selection(
+        selected_model,
+        model_manager.get_model_info(selected_model).as_ref(),
+    )
+}
+
 #[derive(Clone, Copy, Debug)]
 struct AudioSignalSummary {
     duration_seconds: f32,
@@ -613,40 +653,16 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         start_time.elapsed()
     );
 
-    if !crate::startup_warmup::can_start_recording(app) {
-        crate::startup_warmup::ensure_startup_warmup(app, "transcription-blocked");
-        let warmup_status = crate::startup_warmup::current_status(app);
-
-        // Let recording start while the selected model finishes loading in the
-        // background. This removes the perceived 2-5s dead time before the
-        // overlay appears, while still keeping hard blocks for missing models
-        // or microphone failures.
-        let should_block_capture = matches!(
-            warmup_status.reason,
-            crate::startup_warmup::StartupWarmupReason::NoModelSelected
-                | crate::startup_warmup::StartupWarmupReason::ModelNotDownloaded
-                | crate::startup_warmup::StartupWarmupReason::MicrophoneError
-                | crate::startup_warmup::StartupWarmupReason::ModelError
-        );
-
-        if should_block_capture {
-            let message = crate::startup_warmup::block_message(app);
-            warn!(
-                "Blocking transcription start until warmup completes: {}",
-                message
-            );
-            let _ = app.emit("transcription-warmup-blocked", message);
-            let _ = coordinator.complete_operation(app, operation_id, "warmup-blocked");
-            utils::hide_recording_overlay(app);
-            change_tray_icon(app, TrayIconState::Idle);
-            return;
-        }
-        debug!(
-            "[TIMING] warmup bypassed (PreparingModel): {:?}",
-            start_time.elapsed()
-        );
+    if let Some(message) = direct_start_blocker(app) {
+        crate::startup_warmup::refresh_startup_warmup_status(app, "transcription-blocked");
+        warn!("Blocking transcription start: {}", message);
+        let _ = app.emit("transcription-warmup-blocked", message);
+        let _ = coordinator.complete_operation(app, operation_id, "direct-start-blocked");
+        utils::hide_recording_overlay(app);
+        change_tray_icon(app, TrayIconState::Idle);
+        return;
     }
-    debug!("[TIMING] warmup check: {:?}", start_time.elapsed());
+    debug!("[TIMING] direct start checks: {:?}", start_time.elapsed());
 
     if crate::license::current_plan(app).as_deref() == Some("basic") {
         let since = (chrono::Utc::now() - chrono::Duration::days(7)).timestamp();
@@ -2846,6 +2862,31 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::managers::model::EngineType;
+
+    fn test_model_info(downloaded: bool) -> ModelInfo {
+        ModelInfo {
+            id: "parakeet-tdt-0.6b-v3-multilingual".to_string(),
+            name: "Parakeet V3".to_string(),
+            description: String::new(),
+            filename: "parakeet".to_string(),
+            url: None,
+            expected_etag: None,
+            size_mb: 0,
+            is_downloaded: downloaded,
+            is_downloading: false,
+            partial_size: 0,
+            is_directory: true,
+            engine_type: EngineType::Parakeet,
+            accuracy_score: 1.0,
+            speed_score: 1.0,
+            supports_translation: false,
+            is_recommended: true,
+            supported_languages: vec!["fr".to_string(), "en".to_string()],
+            is_custom: false,
+            requires_license_key: false,
+        }
+    }
 
     #[test]
     fn long_audio_switch_requires_threshold_and_different_model() {
@@ -3075,6 +3116,52 @@ mod tests {
         assert_eq!(
             recovered,
             "I want to explain the issue with the microphone keeps dropping the ending"
+        );
+    }
+
+    #[test]
+    fn direct_start_blocker_requires_selected_model() {
+        assert_eq!(
+            direct_start_blocker_from_model_selection("", None),
+            Some("Select a model to enable dictation.".to_string())
+        );
+    }
+
+    #[test]
+    fn direct_start_blocker_requires_known_model() {
+        assert_eq!(
+            direct_start_blocker_from_model_selection("parakeet-tdt-0.6b-v3-multilingual", None),
+            Some(
+                "Failed to prepare dictation. Model not found: parakeet-tdt-0.6b-v3-multilingual"
+                    .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn direct_start_blocker_requires_downloaded_model() {
+        let model_info = test_model_info(false);
+        assert_eq!(
+            direct_start_blocker_from_model_selection(
+                "parakeet-tdt-0.6b-v3-multilingual",
+                Some(&model_info)
+            ),
+            Some(
+                "Download your model to enable dictation. Model 'Parakeet V3' is not downloaded."
+                    .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn direct_start_blocker_allows_ready_model() {
+        let model_info = test_model_info(true);
+        assert_eq!(
+            direct_start_blocker_from_model_selection(
+                "parakeet-tdt-0.6b-v3-multilingual",
+                Some(&model_info)
+            ),
+            None
         );
     }
 }

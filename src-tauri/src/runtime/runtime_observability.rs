@@ -226,7 +226,7 @@ impl RuntimeObservabilityState {
                 .collect(),
             self.recent_pipeline_profiles
                 .lock()
-                .unwrap()
+                .unwrap_or_else(|e| e.into_inner())
                 .iter()
                 .cloned()
                 .collect(),

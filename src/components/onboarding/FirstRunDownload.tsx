@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useModelStore } from "@/stores/modelStore";
@@ -23,7 +22,15 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
   } = useModelStore();
 
   const started = useRef(false);
+  const completionRequested = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [canRetry, setCanRetry] = useState(false);
+
+  const completeOnboarding = () => {
+    if (completionRequested.current) return;
+    completionRequested.current = true;
+    onComplete();
+  };
 
   // Auto-start download on mount; skip the wait if a usable model is already installed.
   useEffect(() => {
@@ -36,11 +43,10 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
     if (readyModel) {
       selectModel(readyModel.id).then((ok) => {
         if (ok) {
-          onComplete();
+          completeOnboarding();
         } else {
-          setError(
-            "Modele installe mais impossible de l'activer. Redemarre l'app.",
-          );
+          setError(t("onboarding.firstRun.errorActivateFailed"));
+          setCanRetry(false);
         }
       });
       return;
@@ -53,10 +59,10 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
           getUserFacingErrorMessage(modelError, {
             t,
             context: "model",
-            fallback:
-              "Le telechargement a echoue. Verifie ta connexion et reessaie.",
+            fallback: t("onboarding.firstRun.errorDownloadFailed"),
           }),
         );
+        setCanRetry(true);
       }
     });
   }, []);
@@ -72,11 +78,10 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
     ) {
       selectModel(readyModel.id).then((ok) => {
         if (ok) {
-          onComplete();
+          completeOnboarding();
         } else {
-          setError(
-            "Modele installe mais impossible de l'activer. Redemarre l'app.",
-          );
+          setError(t("onboarding.firstRun.errorActivateFailed"));
+          setCanRetry(false);
         }
       });
       return;
@@ -91,11 +96,10 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
 
     selectModel(MODEL_ID).then((ok) => {
       if (ok) {
-        onComplete();
+        completeOnboarding();
       } else {
-        setError(
-          "Modele telecharge mais impossible de l'activer. Redemarre l'app.",
-        );
+        setError(t("onboarding.firstRun.errorActivateAfterDownload"));
+        setCanRetry(false);
       }
     });
   }, [downloadingModels, extractingModels, models, selectModel, onComplete]);
@@ -108,11 +112,11 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
   const downloadedMB = ((progress?.downloaded ?? 0) / 1024 / 1024).toFixed(0);
   const totalMB = ((progress?.total ?? 0) / 1024 / 1024).toFixed(0);
 
-  let statusText = "Connexion...";
-  if (isExtracting) statusText = "Preparation du modele...";
+  let statusText = t("onboarding.firstRun.statusConnecting");
+  if (isExtracting) statusText = t("onboarding.firstRun.statusPreparing");
   else if (isDownloading && pct > 0)
     statusText = `${downloadedMB} MB / ${totalMB} MB`;
-  else if (isDownloading) statusText = "Demarrage du telechargement...";
+  else if (isDownloading) statusText = t("onboarding.firstRun.statusStarting");
 
   return (
     <div
@@ -150,7 +154,7 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
         >
           {t("onboarding.firstRunSubtitle")}
           <span style={{ display: "block", marginTop: 8 }}>
-            Derniere etape avant votre premiere dictee dans Vocalype.
+            {t("onboarding.firstRun.lastStep")}
           </span>
         </p>
       </div>
@@ -195,16 +199,49 @@ const FirstRunDownload: React.FC<Props> = ({ onComplete }) => {
       </div>
 
       {error && (
-        <p
-          style={{
-            fontSize: 12,
-            color: "rgba(255,100,100,0.85)",
-            textAlign: "center",
-            maxWidth: 360,
-          }}
-        >
-          {error}
-        </p>
+        <div style={{ textAlign: "center", maxWidth: 360 }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: "rgba(255,100,100,0.85)",
+              margin: "0 0 12px",
+            }}
+          >
+            {error}
+          </p>
+          {canRetry && (
+            <button
+              onClick={() => {
+                setError(null);
+                setCanRetry(false);
+                started.current = false;
+                downloadModel(MODEL_ID).then((ok) => {
+                  if (!ok) {
+                    setError(
+                      getUserFacingErrorMessage(modelError, {
+                        t,
+                        context: "model",
+                        fallback: t("onboarding.firstRun.errorDownloadFailed"),
+                      }),
+                    );
+                    setCanRetry(true);
+                  }
+                });
+              }}
+              style={{
+                padding: "8px 20px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,0.2)",
+                background: "rgba(255,255,255,0.07)",
+                color: "rgba(255,255,255,0.75)",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              {t("onboarding.firstRun.retry")}
+            </button>
+          )}
+        </div>
       )}
 
       <style>{`

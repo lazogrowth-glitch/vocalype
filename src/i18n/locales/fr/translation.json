@@ -172,7 +172,17 @@
       "qualityDescription": "La meilleure qualité de texte sur une machine plus puissante"
     },
     "firstRunTitle": "Installation du modèle vocal",
-    "firstRunSubtitle": "Vocalype Native - téléchargement unique (~478 MB)"
+    "firstRunSubtitle": "Vocalype Native - téléchargement unique (~478 MB)",
+    "firstRun": {
+      "statusConnecting": "Connexion...",
+      "statusPreparing": "Préparation du modèle...",
+      "statusStarting": "Démarrage du téléchargement...",
+      "lastStep": "Dernière étape avant votre première dictée dans Vocalype.",
+      "errorActivateFailed": "Modèle installé mais impossible de l'activer. Redémarre l'app.",
+      "errorActivateAfterDownload": "Modèle téléchargé mais impossible de l'activer. Redémarre l'app.",
+      "errorDownloadFailed": "Le téléchargement a échoué. Vérifie ta connexion et réessaie.",
+      "retry": "Réessayer"
+    }
   },
   "modelSelector": {
     "badges": {
@@ -1199,6 +1209,10 @@
     "enabled": "Mode Chuchotement activé",
     "disabled": "Mode Chuchotement désactivé",
     "errorTitle": "Mode Chuchotement — erreur"
+  },
+  "languageToggle": {
+    "switched": "Langue : {{lang}}",
+    "auto": "Auto"
   },
   "hints": {
     "firstLaunch": "Appuyez sur {{shortcut}} depuis n'importe quelle app pour dicter — le texte apparaîtra automatiquement."

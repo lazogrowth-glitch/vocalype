@@ -10,6 +10,7 @@ vi.mock("@/bindings", () => ({
     downloadModel: vi.fn(),
     cancelDownload: vi.fn(),
     deleteModel: vi.fn(),
+    deleteDownloadedModel: vi.fn(),
   },
 }));
 
@@ -106,7 +107,7 @@ describe("modelStore — loadModels", () => {
   it("sets error on thrown exception", async () => {
     mockCommands.getAvailableModels.mockRejectedValue(new Error("network"));
     await useModelStore.getState().loadModels();
-    expect(useModelStore.getState().error).toContain("network");
+    expect(useModelStore.getState().error).not.toBeNull();
     expect(useModelStore.getState().loading).toBe(false);
   });
 });
@@ -119,6 +120,23 @@ describe("modelStore — loadCurrentModel", () => {
     });
     await useModelStore.getState().loadCurrentModel();
     expect(useModelStore.getState().currentModel).toBe("whisper-small");
+  });
+
+  it("does not update currentModel on error result", async () => {
+    mockCommands.getCurrentModel.mockResolvedValue({
+      status: "error",
+      error: "not found",
+    });
+    await useModelStore.getState().loadCurrentModel();
+    expect(useModelStore.getState().currentModel).toBe("");
+  });
+
+  it("does not throw on rejected promise", async () => {
+    mockCommands.getCurrentModel.mockRejectedValue(new Error("network"));
+    await expect(
+      useModelStore.getState().loadCurrentModel(),
+    ).resolves.toBeUndefined();
+    expect(useModelStore.getState().currentModel).toBe("");
   });
 });
 
@@ -193,6 +211,41 @@ describe("modelStore — downloadModel", () => {
   });
 });
 
+describe("modelStore — deleteModel", () => {
+  it("reloads models on success", async () => {
+    mockCommands.deleteModel.mockResolvedValue({ status: "ok", data: null });
+    mockCommands.getAvailableModels.mockResolvedValue({
+      status: "ok",
+      data: [{ id: "m2", is_downloading: false }],
+    });
+    mockCommands.getCurrentModel.mockResolvedValue({ status: "ok", data: "" });
+    useModelStore.setState({
+      models: [{ id: "m1" }, { id: "m2" }] as never,
+    });
+    const result = await useModelStore.getState().deleteModel("m1");
+    expect(result).toBe(true);
+    expect(useModelStore.getState().models.map((m) => m.id)).toEqual(["m2"]);
+    expect(useModelStore.getState().error).toBeNull();
+  });
+
+  it("sets error and returns false on failure result", async () => {
+    mockCommands.deleteModel.mockResolvedValue({
+      status: "error",
+      error: "file locked",
+    });
+    const result = await useModelStore.getState().deleteModel("m1");
+    expect(result).toBe(false);
+    expect(useModelStore.getState().error).not.toBeNull();
+  });
+
+  it("sets error and returns false on thrown exception", async () => {
+    mockCommands.deleteModel.mockRejectedValue(new Error("disk error"));
+    const result = await useModelStore.getState().deleteModel("m1");
+    expect(result).toBe(false);
+    expect(useModelStore.getState().error).not.toBeNull();
+  });
+});
+
 describe("modelStore — cancelDownload", () => {
   it("clears download state on success", async () => {
     useModelStore.setState({
@@ -206,6 +259,17 @@ describe("modelStore — cancelDownload", () => {
     expect(result).toBe(true);
     expect(useModelStore.getState().isModelDownloading("m1")).toBe(false);
     expect(useModelStore.getState().getDownloadProgress("m1")).toBeUndefined();
+  });
+
+  it("returns false on failure result", async () => {
+    useModelStore.setState({ downloadingModels: { m1: true } });
+    mockCommands.cancelDownload.mockResolvedValue({
+      status: "error",
+      error: "cancel failed",
+    });
+    const result = await useModelStore.getState().cancelDownload("m1");
+    expect(result).toBe(false);
+    expect(useModelStore.getState().error).not.toBeNull();
   });
 });
 

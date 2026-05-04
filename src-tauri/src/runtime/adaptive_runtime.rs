@@ -105,7 +105,7 @@ fn set_calibration_state(
     };
     CALIBRATION_STATES
         .lock()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .insert(model_id.to_string(), snapshot.clone());
     let _ = app.emit("adaptive-calibration-state", snapshot);
 }
@@ -113,7 +113,7 @@ fn set_calibration_state(
 pub fn get_calibration_states() -> Vec<CalibrationStatusSnapshot> {
     CALIBRATION_STATES
         .lock()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .values()
         .cloned()
         .collect()

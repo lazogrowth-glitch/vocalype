@@ -9,26 +9,27 @@ import {
   updateDocumentDirection,
   updateDocumentLanguage,
 } from "@/lib/utils/rtl";
+import enTranslation from "./locales/en/translation.json";
 
-// Auto-discover translation files using Vite's glob import
+// Keep non-English translations out of the initial bundle and load them on demand.
 const localeModules = import.meta.glob<{ default: Record<string, unknown> }>(
   "./locales/*/translation.json",
-  { eager: true },
 );
 
-// Build resources from discovered locale files
-const resources: Record<string, { translation: Record<string, unknown> }> = {};
-for (const [path, module] of Object.entries(localeModules)) {
-  const langCode = path.match(/\.\/locales\/(.+)\/translation\.json/)?.[1];
-  if (langCode) {
-    resources[langCode] = { translation: module.default };
-  }
-}
+const AVAILABLE_LANGUAGE_CODES = Object.keys(localeModules)
+  .map((path) => path.match(/\.\/locales\/(.+)\/translation\.json/)?.[1])
+  .filter((code): code is string => Boolean(code));
+
+// Initialize with English only; other locales are lazy-loaded as needed.
+const resources: Record<string, { translation: Record<string, unknown> }> = {
+  en: { translation: enTranslation },
+};
 
 // Build supported languages list from discovered locales + metadata
 // Only include languages that have explicit metadata entries
-export const SUPPORTED_LANGUAGES = Object.keys(resources)
-  .filter((code) => LANGUAGE_METADATA[code] !== undefined)
+export const SUPPORTED_LANGUAGES = AVAILABLE_LANGUAGE_CODES.filter(
+  (code) => LANGUAGE_METADATA[code] !== undefined,
+)
   .map((code) => {
     const meta = LANGUAGE_METADATA[code];
     return {
@@ -49,6 +50,8 @@ export const SUPPORTED_LANGUAGES = Object.keys(resources)
   });
 
 export type SupportedLanguageCode = string;
+
+const loadedLanguages = new Set<string>(["en"]);
 
 // Check if a language code is supported
 const getSupportedLanguage = (
@@ -84,6 +87,38 @@ i18n.use(initReactI18next).init({
   },
 });
 
+export const ensureLanguageResources = async (
+  langCode: string,
+): Promise<SupportedLanguageCode> => {
+  const supported = getSupportedLanguage(langCode) ?? "en";
+
+  if (
+    loadedLanguages.has(supported) ||
+    i18n.hasResourceBundle(supported, "translation")
+  ) {
+    loadedLanguages.add(supported);
+    return supported;
+  }
+
+  const loader = localeModules[`./locales/${supported}/translation.json`];
+  if (!loader) {
+    return "en";
+  }
+
+  const module = await loader();
+  i18n.addResourceBundle(supported, "translation", module.default, true, true);
+  loadedLanguages.add(supported);
+  return supported;
+};
+
+export const changeAppLanguage = async (langCode: string) => {
+  const supported = await ensureLanguageResources(langCode);
+  if (supported !== i18n.language) {
+    await i18n.changeLanguage(supported);
+  }
+  return supported;
+};
+
 // Sync language from app settings
 export const syncLanguageFromSettings = async () => {
   if (!hasTauriRuntime()) {
@@ -94,15 +129,15 @@ export const syncLanguageFromSettings = async () => {
     const result = await commands.getAppSettings();
     if (result.status === "ok" && result.data.app_language) {
       const supported = getSupportedLanguage(result.data.app_language);
-      if (supported && supported !== i18n.language) {
-        await i18n.changeLanguage(supported);
+      if (supported) {
+        await changeAppLanguage(supported);
       }
     } else {
       // Fall back to system locale detection if no saved preference
       const systemLocale = await locale();
       const supported = getSupportedLanguage(systemLocale);
-      if (supported && supported !== i18n.language) {
-        await i18n.changeLanguage(supported);
+      if (supported) {
+        await changeAppLanguage(supported);
       }
     }
   } catch (e) {

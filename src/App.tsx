@@ -1,32 +1,27 @@
-/* eslint-disable i18next/no-literal-string */
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Toaster } from "sonner";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { TitleBar } from "./components/TitleBar";
 import { useTranslation } from "react-i18next";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 import { AuthPortal } from "./components/auth/AuthPortal";
-import FirstRunDownload from "./components/onboarding/FirstRunDownload";
-import { Sidebar } from "./components/Sidebar";
-import {
-  isSectionVisibleInLaunch,
-  SidebarSection,
-  SECTIONS_CONFIG,
-} from "./components/sections-config";
+import { SidebarSection, SECTIONS_CONFIG } from "./components/sections-config";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
-import { PlanContext } from "@/lib/subscription/context";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
-import { useBackendEvents } from "@/hooks/useBackendEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { emit, listen } from "@tauri-apps/api/event";
+import { platform } from "@tauri-apps/plugin-os";
 import { ensureVoiceStateStore } from "@/stores/voiceState";
 import { cleanupTauriListen, safeUnlisten } from "@/lib/tauri/events";
-
-const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
 
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
 
@@ -45,6 +40,12 @@ type StoredWindowSize = WindowSize & {
 type LayoutTier = "compact" | "cozy" | "spacious";
 
 const WINDOW_SIZE_STORAGE_KEY = "vt.windowSize";
+
+const FirstRunDownload = lazy(
+  () => import("./components/onboarding/FirstRunDownload"),
+);
+
+const DesktopAppShell = lazy(() => import("./components/DesktopAppShell"));
 
 const SECTION_DESCRIPTION_KEYS: Partial<Record<SidebarSection, string>> = {
   general: "shell.sectionDescriptions.general",
@@ -90,25 +91,30 @@ async function resolveMonitorBounds(): Promise<WindowSize | null> {
   };
 }
 
-const renderSettingsContent = (section: SidebarSection, settings: unknown) => {
-  if (!isSectionVisibleInLaunch(section, settings)) {
-    return null;
-  }
-
-  const ActiveComponent =
-    SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
+function LoadingShell({
+  direction,
+  message,
+}: {
+  direction: string;
+  message: string;
+}) {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-full items-center justify-center opacity-40">
-          <span className="text-sm">…</span>
-        </div>
-      }
+    <div
+      dir={direction}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        background: "#0f0f0f",
+      }}
     >
-      <ActiveComponent />
-    </Suspense>
+      <TitleBar />
+      <div className="flex-1 flex items-center justify-center text-sm text-mid-gray">
+        {message}
+      </div>
+    </div>
   );
-};
+}
 
 function App() {
   const { i18n, t } = useTranslation();
@@ -247,7 +253,6 @@ function App() {
     };
   }, []);
 
-  // Auto-dismiss the hint the first time a real transcription fires
   useEffect(() => {
     if (!showFirstLaunchHint) return;
     const unlisten = listen("transcription-lifecycle", dismissHint);
@@ -256,33 +261,18 @@ function App() {
     };
   }, [showFirstLaunchHint, dismissHint]);
 
-  useBackendEvents({
-    t,
-    currentSection,
-    setCurrentSection,
-    settings,
-    updateSetting,
-  });
-
-  // Initialize RTL direction when language changes
   useEffect(() => {
     initializeRTL(i18n.language);
   }, [i18n.language]);
 
-  // Auto-detect system language on first load.
-  // If the user never touched the language setting (still "auto"), silently
-  // switch to their OS language so the logit-bias fix activates automatically.
-  // The user can always revert to "auto" in settings.
   useEffect(() => {
     if (!settings) return;
     if (settings.selected_language !== "auto") return;
 
-    // navigator.language → e.g. "fr-FR", "en-US", "zh-TW", "de-DE"
     const systemLang = navigator.language || "";
     const primary = systemLang.split("-")[0].toLowerCase();
     const region = systemLang.split("-")[1]?.toUpperCase() ?? "";
 
-    // Special cases for Chinese variants
     let langCode: string;
     if (primary === "zh") {
       langCode = region === "TW" || region === "HK" ? "zh-Hant" : "zh-Hans";
@@ -290,7 +280,6 @@ function App() {
       langCode = primary;
     }
 
-    // Only set if it's a supported language (not "auto", not unknown)
     const SUPPORTED = [
       "en",
       "fr",
@@ -341,11 +330,8 @@ function App() {
     if (langCode && SUPPORTED.includes(langCode) && langCode !== "en") {
       updateSetting("selected_language", langCode);
     }
-    // English → leave as "auto" (English is already the model's dominant language,
-    // no bias needed — auto-detect works fine for English speakers)
   }, [!!settings]);
 
-  // Handle deep link auth: vocalype://auth-callback?token=xxx
   useEffect(() => {
     const unlisten = listen<string>("deep-link-auth", async (event) => {
       const token = event.payload;
@@ -364,16 +350,17 @@ function App() {
     };
   }, [handleDeepLinkAuth]);
 
-  // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {
     if (onboardingStep === "done" && !hasCompletedPostOnboardingInit.current) {
       hasCompletedPostOnboardingInit.current = true;
-      Promise.all([
-        commands.initializeEnigo(),
-        commands.initializeShortcuts(),
-      ]).catch((e) => {
-        console.warn("Failed to initialize:", e);
-      });
+      if (platform() === "macos") {
+        Promise.all([
+          commands.initializeEnigo(),
+          commands.initializeShortcuts(),
+        ]).catch((e) => {
+          console.warn("Failed to initialize macOS input runtime:", e);
+        });
+      }
       refreshAudioDevices();
       refreshOutputDevices();
     }
@@ -417,45 +404,8 @@ function App() {
     ensureVoiceStateStore();
   }, []);
 
-  useEffect(() => {
-    if (!isSectionVisibleInLaunch(currentSection, settings)) {
-      setCurrentSection("general");
-    }
-  }, [currentSection, settings]);
-
-  useEffect(() => {
-    const handleNavigateSettings = (event: Event) => {
-      const section = (event as CustomEvent<SidebarSection>).detail;
-      if (section && isSectionVisibleInLaunch(section, settings)) {
-        setCurrentSection(section);
-      }
-    };
-
-    window.addEventListener(NAVIGATE_SETTINGS_EVENT, handleNavigateSettings);
-    return () =>
-      window.removeEventListener(
-        NAVIGATE_SETTINGS_EVENT,
-        handleNavigateSettings,
-      );
-  }, [settings, setCurrentSection]);
-
   if (authLoading) {
-    return (
-      <div
-        dir={direction}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          background: "#0f0f0f",
-        }}
-      >
-        <TitleBar />
-        <div className="flex-1 flex items-center justify-center text-sm text-mid-gray">
-          {t("common.loading")}
-        </div>
-      </div>
-    );
+    return <LoadingShell direction={direction} message={t("common.loading")} />;
   }
 
   if (!session || !canEnterApp) {
@@ -489,22 +439,7 @@ function App() {
   }
 
   if (onboardingStep === null) {
-    return (
-      <div
-        dir={direction}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          background: "#0f0f0f",
-        }}
-      >
-        <TitleBar />
-        <div className="flex-1 flex items-center justify-center text-sm text-mid-gray">
-          {t("common.loading")}
-        </div>
-      </div>
-    );
+    return <LoadingShell direction={direction} message={t("common.loading")} />;
   }
 
   if (onboardingStep === "first-run") {
@@ -513,131 +448,50 @@ function App() {
         style={{ display: "flex", flexDirection: "column", height: "100vh" }}
       >
         <TitleBar />
-        <FirstRunDownload onComplete={handleFirstRunComplete} />
+        <Suspense
+          fallback={
+            <div className="flex flex-1 items-center justify-center text-sm text-mid-gray">
+              {t("common.loading")}
+            </div>
+          }
+        >
+          <FirstRunDownload onComplete={handleFirstRunComplete} />
+        </Suspense>
       </div>
     );
   }
 
   return (
-    <PlanContext.Provider
-      value={{
-        isBasicTier,
-        isTrialing,
-        trialEndsAt,
-        quota: session?.subscription?.quota ?? null,
-        onStartCheckout: handleStartCheckout,
-      }}
+    <Suspense
+      fallback={
+        <LoadingShell direction={direction} message={t("common.loading")} />
+      }
     >
-      <div dir={direction} className="app-shell">
-        <TitleBar
-          sidebarCollapsed={effectiveSidebarCollapsed}
-          layoutTier={layoutTier}
-          onToggleSidebar={toggleSidebar}
-          session={session}
-          isTrialing={isTrialing}
-          trialEndsAt={trialEndsAt}
-          onLogout={handleLogout}
-          onOpenBillingPortal={handleOpenBillingPortal}
-        />
-        {isActivationPending ? (
-          <div className="activation-banner" role="status">
-            <span className="activation-banner-dot" />
-            <span>
-              {t("auth.activationPending", {
-                defaultValue:
-                  "Activation du compte en arrière-plan. Vous pouvez déjà entrer dans Vocalype.",
-              })}
-            </span>
-          </div>
-        ) : null}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-text focus:rounded-lg focus:ring-2 focus:ring-logo-primary focus:outline-none text-sm font-medium"
-        >
-          {t("a11y.skipToMain")}
-        </a>
-        <div
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-          id="toast-announcer"
-        />
-        <Toaster
-          theme="system"
-          containerAriaLabel={t("a11y.notifications")}
-          toastOptions={{
-            unstyled: true,
-            classNames: {
-              toast:
-                "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-              title: "font-medium",
-              description: "text-mid-gray",
-            },
-          }}
-        />
-        <div className="app-frame">
-          <Sidebar
-            activeSection={currentSection}
-            onSectionChange={setCurrentSection}
-            collapsed={effectiveSidebarCollapsed}
-            layoutTier={layoutTier}
-          />
-
-          <main
-            id="main-content"
-            className="app-main"
-            style={{
-              padding: mainContentPadding,
-              ["--main-pad-top" as string]:
-                layoutTier === "compact"
-                  ? "24px"
-                  : layoutTier === "cozy"
-                    ? "32px"
-                    : "40px",
-              ["--main-pad-x" as string]:
-                layoutTier === "compact"
-                  ? "26px"
-                  : layoutTier === "cozy"
-                    ? "40px"
-                    : "48px",
-            }}
-          >
-            <div className="app-main-inner">
-              <div className="app-header-block">
-                <h1
-                  className="app-page-title"
-                  style={{ fontSize: mainHeadingSize }}
-                >
-                  {pageTitle}
-                </h1>
-                <p className="app-page-subtitle">{pageDescription}</p>
-              </div>
-
-              {showFirstLaunchHint && (
-                <div className="app-first-launch-hint">
-                  <span>
-                    Votre premiere dictee : utilisez{" "}
-                    {settings?.bindings?.transcribe?.current_binding ??
-                      "Ctrl+Space"}{" "}
-                    et dites une phrase courte pour verifier que tout
-                    fonctionne.{" "}
-                    {t("hints.firstLaunch", {
-                      shortcut:
-                        settings?.bindings?.transcribe?.current_binding ??
-                        "Ctrl+Space",
-                    })}
-                  </span>
-                </div>
-              )}
-
-              <ErrorBoundary>
-                {renderSettingsContent(currentSection, settings)}
-              </ErrorBoundary>
-            </div>
-          </main>
-        </div>
-      </div>
-    </PlanContext.Provider>
+      <DesktopAppShell
+        t={t}
+        direction={direction}
+        currentSection={currentSection}
+        setCurrentSection={setCurrentSection}
+        settings={settings}
+        updateSetting={updateSetting}
+        layoutTier={layoutTier}
+        effectiveSidebarCollapsed={effectiveSidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        session={session}
+        isTrialing={isTrialing}
+        trialEndsAt={trialEndsAt}
+        handleLogout={handleLogout}
+        handleOpenBillingPortal={handleOpenBillingPortal}
+        isActivationPending={isActivationPending}
+        mainContentPadding={mainContentPadding}
+        mainHeadingSize={mainHeadingSize}
+        pageTitle={pageTitle}
+        pageDescription={pageDescription}
+        showFirstLaunchHint={showFirstLaunchHint}
+        isBasicTier={isBasicTier}
+        handleStartCheckout={handleStartCheckout}
+      />
+    </Suspense>
   );
 }
 

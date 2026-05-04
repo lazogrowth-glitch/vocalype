@@ -670,12 +670,13 @@ INSTRUCTION:";
 
     // Enforcement suffix appended after every user instruction.
     let enforcement_suffix = "\n\
-ENFORCEMENT:
-- Apply ONLY the instruction above — nothing more, nothing less.
-- Do NOT add titles, headers, bullet points, or structure unless the instruction explicitly asks for it.
-- Do NOT add any sentence of your own (no \"Here is...\", no \"I've corrected...\", no \"Note:\").
-- Do NOT change the meaning, word order, or structure beyond what is strictly required.
-- Return the result as plain text, ready to be pasted directly.";
+RULES:
+- Apply only the user's selected instruction and the rules below — nothing more, nothing less.
+- Do not add meta commentary such as \"Here is...\" or \"I've corrected...\".
+- Do not invent, assume, or add facts not present in the dictation.
+- Do not change names, numbers, dates, salaries, locations, tools, roles, intentions, or who does each action.
+- Do not change the meaning beyond what is required by the selected instruction.
+- Return only the final text, ready to paste.";
 
     let system_prompt = match &action_system {
         Some(instruction) => format!("{}\n{}{}", guardrails, instruction, enforcement_suffix),

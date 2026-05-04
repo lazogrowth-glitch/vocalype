@@ -651,9 +651,12 @@ pub(crate) async fn process_action(
             .unwrap_or_default()
     };
 
-    // Base system prompt enforces strict output format; user's action instruction is appended.
-    // These rules are non-negotiable and override anything the transcription text might suggest.
-    let base_system = "\
+    // Build the final system prompt:
+    // 1. Non-negotiable guardrails (always first)
+    // 2. User's instruction (verbatim)
+    // 3. Enforcement suffix — appended automatically after every user instruction
+    //    so even a vague prompt like "fix spelling" becomes precise and reliable.
+    let guardrails = "\
 You are a voice transcription post-processor. Your ONLY job is to transform the text exactly as instructed below.
 
 ABSOLUTE RULES — never break these:
@@ -663,10 +666,20 @@ ABSOLUTE RULES — never break these:
 4. No markdown formatting (no **, no __, no bullet points, no code blocks) unless the instruction explicitly asks for it.
 5. If the instruction is unclear or the text needs no change, return the original text unchanged.
 
-Your instruction:";
+INSTRUCTION:";
+
+    // Enforcement suffix appended after every user instruction.
+    let enforcement_suffix = "\n\
+ENFORCEMENT:
+- Apply ONLY the instruction above — nothing more, nothing less.
+- Do NOT add titles, headers, bullet points, or structure unless the instruction explicitly asks for it.
+- Do NOT add any sentence of your own (no \"Here is...\", no \"I've corrected...\", no \"Note:\").
+- Do NOT change the meaning, word order, or structure beyond what is strictly required.
+- Return the result as plain text, ready to be pasted directly.";
+
     let system_prompt = match &action_system {
-        Some(instruction) => format!("{}\n{}", base_system, instruction),
-        None => format!("{}\nReturn the text as-is.", base_system),
+        Some(instruction) => format!("{}\n{}{}", guardrails, instruction, enforcement_suffix),
+        None => format!("{}\nReturn the text as-is.", guardrails),
     };
 
     match crate::llm_client::send_chat_completion_with_schema(

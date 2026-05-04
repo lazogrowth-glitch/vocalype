@@ -387,6 +387,28 @@ pub fn refine_browser_category(window_title: &str) -> Option<AppContextCategory>
         return Some(AppContextCategory::Notes);
     }
 
+    // ── Recruiting / ATS / CRM
+    if t.contains("linkedin recruiter")
+        || t.contains("linkedin.com/talent")
+        || t.contains("bullhorn")
+        || t.contains("vincere")
+        || t.contains("recruitcrm")
+        || t.contains("recruit crm")
+        || t.contains("greenhouse")
+        || t.contains("lever.co")
+        || t.contains("workable")
+        || t.contains("smartrecruiters")
+        || t.contains("jobadder")
+        || t.contains("pcrecruiter")
+        || t.contains("crelate")
+        || t.contains("zoho recruit")
+        || t.contains("loxo")
+        || t.contains("recruitee")
+        || t.contains("teamtailor")
+    {
+        return Some(AppContextCategory::Notes);
+    }
+
     // ── Developer tooling in browser
     if t.contains("github")
         || t.contains("gitlab")

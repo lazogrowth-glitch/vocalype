@@ -1081,7 +1081,10 @@ pub fn change_post_process_model_setting(
 #[specta::specta]
 pub fn set_post_process_provider(app: AppHandle, provider_id: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    validate_provider_exists(&settings, &provider_id)?;
+    // Empty string means "clear provider" — skip the existence check.
+    if !provider_id.is_empty() {
+        validate_provider_exists(&settings, &provider_id)?;
+    }
     settings.post_process_provider_id = provider_id;
     settings::write_settings(&app, settings);
     Ok(())

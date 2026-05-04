@@ -3,7 +3,7 @@ use crate::apple_intelligence;
 use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
 use crate::settings::{AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 
 // ── Field name for structured output JSON schema ─────────────────────────────
 
@@ -195,10 +195,20 @@ pub(crate) async fn post_process_transcription(
     // Injected as a hard instruction at the top of the system prompt.
     language_correction: Option<&str>,
 ) -> Option<String> {
+    info!(
+        "[post-process] post_process_transcription called: provider_id={:?} models={:?} selected_prompt={:?}",
+        settings.post_process_provider_id,
+        settings.post_process_models,
+        settings.post_process_selected_prompt_id,
+    );
+
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
         None => {
-            debug!("Post-processing enabled but no provider is selected");
+            info!(
+                "[post-process] SKIP — no active provider (post_process_provider_id={:?})",
+                settings.post_process_provider_id
+            );
             return None;
         }
     };
@@ -210,8 +220,8 @@ pub(crate) async fn post_process_transcription(
         .unwrap_or_default();
 
     if model.trim().is_empty() {
-        debug!(
-            "Post-processing skipped because provider '{}' has no model configured",
+        info!(
+            "[post-process] SKIP — provider '{}' has no model configured",
             provider.id
         );
         return None;
@@ -221,9 +231,19 @@ pub(crate) async fn post_process_transcription(
     // The backend validates it and proxies to Cerebras.
     let api_key = if provider.id == "vocalype-cloud" {
         match crate::security::secret_store::get_auth_token() {
-            Ok(Some(token)) => token,
-            _ => {
-                debug!("Vocalype Cloud post-processing skipped: no auth token in keyring");
+            Ok(Some(token)) => {
+                info!(
+                    "[post-process] Vocalype Cloud auth token found in keyring (len={})",
+                    token.len()
+                );
+                token
+            }
+            Ok(None) => {
+                info!("[post-process] SKIP — Vocalype Cloud: no auth token in keyring");
+                return None;
+            }
+            Err(e) => {
+                info!("[post-process] SKIP — Vocalype Cloud: keyring error: {}", e);
                 return None;
             }
         }
@@ -238,7 +258,7 @@ pub(crate) async fn post_process_transcription(
     let selected_prompt_id = match &settings.post_process_selected_prompt_id {
         Some(id) => id.clone(),
         None => {
-            debug!("Post-processing skipped because no prompt is selected");
+            info!("[post-process] SKIP — no prompt selected (post_process_selected_prompt_id is null)");
             return None;
         }
     };
@@ -250,8 +270,8 @@ pub(crate) async fn post_process_transcription(
     {
         Some(prompt) => prompt.prompt.clone(),
         None => {
-            debug!(
-                "Post-processing skipped because prompt '{}' was not found",
+            info!(
+                "[post-process] SKIP — prompt '{}' not found in post_process_prompts",
                 selected_prompt_id
             );
             return None;
@@ -259,13 +279,13 @@ pub(crate) async fn post_process_transcription(
     };
 
     if prompt.trim().is_empty() {
-        debug!("Post-processing skipped because the selected prompt is empty");
+        info!("[post-process] SKIP — selected prompt is empty");
         return None;
     }
 
-    debug!(
-        "Starting LLM post-processing with provider '{}' (model: {})",
-        provider.id, model
+    info!(
+        "[post-process] Calling LLM: provider='{}' model='{}' prompt_id='{}'",
+        provider.id, model, selected_prompt_id
     );
 
     // One-line context hint prepended to the system prompt when available.
@@ -490,22 +510,35 @@ pub(crate) async fn process_action(
     action_provider_id: Option<&str>,
     app: &tauri::AppHandle,
 ) -> Option<String> {
+    info!(
+        "[post-process] process_action called: action_provider={:?} action_model={:?} active_provider={:?}",
+        action_provider_id, action_model, settings.post_process_provider_id
+    );
     let provider = if let Some(pid) = action_provider_id.filter(|p| !p.is_empty()) {
         match settings.post_process_provider(pid).cloned() {
             Some(p) => p,
             None => {
-                debug!(
-                    "Action provider '{}' not found, falling back to active provider",
-                    pid
+                info!(
+                    "[post-process] Action provider '{}' not found, falling back to active provider '{}'",
+                    pid, settings.post_process_provider_id
                 );
-                settings.active_post_process_provider().cloned()?
+                match settings.active_post_process_provider().cloned() {
+                    Some(p) => p,
+                    None => {
+                        info!("[post-process] SKIP — no active provider as fallback either");
+                        return None;
+                    }
+                }
             }
         }
     } else {
         match settings.active_post_process_provider().cloned() {
             Some(p) => p,
             None => {
-                debug!("Action processing skipped: no provider configured");
+                info!(
+                    "[post-process] SKIP — no provider configured (post_process_provider_id={:?})",
+                    settings.post_process_provider_id
+                );
                 return None;
             }
         }
@@ -581,8 +614,8 @@ pub(crate) async fn process_action(
     }
 
     if model.trim().is_empty() {
-        debug!(
-            "Action processing skipped: no model configured for provider '{}'",
+        info!(
+            "[post-process] SKIP — no model configured for provider '{}'",
             provider.id
         );
         return None;
@@ -591,9 +624,22 @@ pub(crate) async fn process_action(
     // For vocalype-cloud, use the user's JWT from keyring as the Bearer token.
     let api_key = if provider.id == "vocalype-cloud" {
         match crate::security::secret_store::get_auth_token() {
-            Ok(Some(token)) => token,
-            _ => {
-                debug!("Vocalype Cloud action skipped: no auth token in keyring");
+            Ok(Some(token)) => {
+                info!(
+                    "[post-process] Vocalype Cloud action: auth token found (len={})",
+                    token.len()
+                );
+                token
+            }
+            Ok(None) => {
+                info!("[post-process] SKIP — Vocalype Cloud action: no auth token in keyring");
+                return None;
+            }
+            Err(e) => {
+                info!(
+                    "[post-process] SKIP — Vocalype Cloud action: keyring error: {}",
+                    e
+                );
                 return None;
             }
         }
@@ -624,20 +670,23 @@ pub(crate) async fn process_action(
     {
         Ok(Some(content)) if !content.is_empty() => {
             let result = strip_invisible_chars(&content);
-            debug!(
-                "Action processing succeeded for provider '{}'. Output length: {} chars",
+            info!(
+                "[post-process] SUCCESS — provider='{}' output={} chars",
                 provider.id,
                 result.len()
             );
             Some(result)
         }
         Ok(_) => {
-            debug!("Action processing returned empty result");
+            info!(
+                "[post-process] LLM returned empty result for provider '{}'",
+                provider.id
+            );
             None
         }
         Err(e) => {
-            error!(
-                "Action processing failed for provider '{}': {}",
+            info!(
+                "[post-process] ERROR — provider='{}' error={}",
                 provider.id, e
             );
             // If vocalype-cloud returns 401, the JWT is expired.

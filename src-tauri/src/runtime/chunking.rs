@@ -102,6 +102,10 @@ pub struct ChunkingHandle {
     pub(crate) session_id: u64,
     /// Telemetry writer — shared with sampler + worker threads.
     pub(crate) tel: Arc<TranscriptionTelemetry>,
+    /// Set by stop_transcription_action to wake the sampler immediately instead
+    /// of waiting for the next CHUNK_SAMPLER_POLL_MS sleep tick.
+    /// Eliminates up to 200 ms of dead waiting on short dictations (< chunk interval).
+    pub(crate) sampler_stop_flag: Arc<AtomicBool>,
 }
 
 pub struct ActiveChunkingHandle(pub Mutex<Option<ChunkingHandle>>);

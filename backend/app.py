@@ -2803,26 +2803,26 @@ def cloud_llm_proxy(user):
         "stream": False,
     }
 
-    groq_req = urlrequest.Request(
-        "https://api.groq.com/openai/v1/chat/completions",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-        },
-    )
-
     try:
-        with urlrequest.urlopen(groq_req, timeout=30) as resp:
-            response_data = json.loads(resp.read())
-        return jsonify(response_data), 200
-    except urlerror.HTTPError as e:
-        error_body = e.read().decode("utf-8", errors="replace")
-        return jsonify({"error": f"LLM provider error: {error_body}"}), 502
-    except urlerror.URLError as e:
-        return jsonify({"error": f"LLM provider unreachable: {str(e.reason)}"}), 502
+        import requests as req_lib
+        groq_resp = req_lib.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": "VocalypeCloud/1.0 (server-side; +https://vocalype.com)",
+            },
+            timeout=30,
+        )
+        if groq_resp.status_code == 200:
+            return jsonify(groq_resp.json()), 200
+        else:
+            error_body = groq_resp.text[:500]
+            return jsonify({"error": f"LLM provider error: {groq_resp.status_code} {error_body}"}), 502
     except Exception as e:
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+        return jsonify({"error": f"LLM provider unreachable: {str(e)}"}), 502
 
 
 if __name__ == "__main__":

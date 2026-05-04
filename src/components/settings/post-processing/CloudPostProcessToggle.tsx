@@ -10,7 +10,7 @@ const MODEL_ID = "llama-3.1-8b-instant";
 
 export const CloudPostProcessToggle: React.FC = () => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
+  const { settings, updateSetting } = useSettings();
   const { setPostProcessProvider, updatePostProcessSetting } =
     useSettingsStore();
   const [loading, setLoading] = useState(false);
@@ -24,24 +24,27 @@ export const CloudPostProcessToggle: React.FC = () => {
     try {
       await setPostProcessProvider(PROVIDER_ID);
       await updatePostProcessSetting("model", PROVIDER_ID, MODEL_ID);
+      // Enable post-processing so the shortcut is registered
+      await updateSetting("post_process_enabled", true);
     } catch (e) {
       setError(getUserFacingErrorMessage(e, { t }));
     } finally {
       setLoading(false);
     }
-  }, [setPostProcessProvider, updatePostProcessSetting, t]);
+  }, [setPostProcessProvider, updatePostProcessSetting, updateSetting, t]);
 
   const deactivate = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       await setPostProcessProvider("");
+      await updateSetting("post_process_enabled", false);
     } catch (e) {
       setError(getUserFacingErrorMessage(e, { t }));
     } finally {
       setLoading(false);
     }
-  }, [setPostProcessProvider, t]);
+  }, [setPostProcessProvider, updateSetting, t]);
 
   return (
     <div

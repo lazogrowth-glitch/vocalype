@@ -39,7 +39,7 @@ pub(super) fn decide_post_process_mode(
     has_selected_action: bool,
     post_process: bool,
 ) -> PostProcessMode {
-    if snippet_matched {
+    let mode = if snippet_matched {
         PostProcessMode::SnippetOnly
     } else if is_code_context && voice_to_code_enabled {
         PostProcessMode::VoiceToCode
@@ -51,7 +51,12 @@ pub(super) fn decide_post_process_mode(
         PostProcessMode::SkipForCodeContext
     } else {
         PostProcessMode::None
-    }
+    };
+    debug!(
+        "[post-process] decide_mode: snippet={} code_ctx={} vtc={} has_action={} post_process={} => {:?}",
+        snippet_matched, is_code_context, voice_to_code_enabled, has_selected_action, post_process, mode
+    );
+    mode
 }
 
 fn should_use_audio_aware_punctuation(
@@ -83,7 +88,18 @@ pub(super) async fn process_transcription_text(
     samples: &[f32],
     profiler: &Arc<Mutex<PipelineProfiler>>,
 ) -> PostProcessOutcome {
+    debug!(
+        "[post-process] process_transcription_text called: post_process={} selected_action_key={:?} transcription_len={}",
+        post_process, selected_action_key, transcription.len()
+    );
     let settings = crate::settings::get_settings(app);
+    debug!(
+        "[post-process] settings: post_process_enabled={} provider_id={:?} selected_prompt_id={:?} actions_count={}",
+        settings.post_process_enabled,
+        settings.post_process_provider_id,
+        settings.post_process_selected_prompt_id,
+        settings.post_process_actions.len()
+    );
     let telemetry = app
         .try_state::<Arc<crate::telemetry::TranscriptionTelemetry>>()
         .map(|s| Arc::clone(&*s))

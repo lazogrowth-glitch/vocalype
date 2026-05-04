@@ -717,124 +717,18 @@ fn default_show_tray_icon() -> bool {
 }
 
 fn default_post_process_provider_id() -> String {
-    "openai".to_string()
+    "vocalype-cloud".to_string()
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
-    let mut providers = vec![
-        PostProcessProvider {
-            id: "openai".to_string(),
-            label: "OpenAI".to_string(),
-            base_url: "https://api.openai.com/v1".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: Some("/models".to_string()),
-            supports_structured_output: true,
-        },
-        PostProcessProvider {
-            id: "zai".to_string(),
-            label: "Z.AI".to_string(),
-            base_url: "https://api.z.ai/api/paas/v4".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: Some("/models".to_string()),
-            supports_structured_output: true,
-        },
-        PostProcessProvider {
-            id: "openrouter".to_string(),
-            label: "OpenRouter".to_string(),
-            base_url: "https://openrouter.ai/api/v1".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: Some("/models".to_string()),
-            supports_structured_output: true,
-        },
-        PostProcessProvider {
-            id: "anthropic".to_string(),
-            label: "Anthropic".to_string(),
-            base_url: "https://api.anthropic.com/v1".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: Some("/models".to_string()),
-            supports_structured_output: false,
-        },
-        PostProcessProvider {
-            id: "groq".to_string(),
-            label: "Groq".to_string(),
-            base_url: "https://api.groq.com/openai/v1".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: Some("/models".to_string()),
-            supports_structured_output: false,
-        },
-        PostProcessProvider {
-            id: "cerebras".to_string(),
-            label: "Cerebras".to_string(),
-            base_url: "https://api.cerebras.ai/v1".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: Some("/models".to_string()),
-            supports_structured_output: true,
-        },
-    ];
-
-    // Note: We always include Apple Intelligence on macOS ARM64 without checking availability
-    // at startup. The availability check is deferred to when the user actually tries to use it
-    // (in actions.rs). This prevents crashes on macOS 26.x beta where accessing
-    // SystemLanguageModel.default during early app initialization causes SIGABRT.
-    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-    {
-        providers.push(PostProcessProvider {
-            id: APPLE_INTELLIGENCE_PROVIDER_ID.to_string(),
-            label: "Apple Intelligence".to_string(),
-            base_url: "apple-intelligence://local".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: None,
-            supports_structured_output: true,
-        });
-    }
-
-    providers.push(PostProcessProvider {
-        id: "gemini".to_string(),
-        label: "Gemini".to_string(),
-        base_url: "https://generativelanguage.googleapis.com/v1beta".to_string(),
-        allow_base_url_edit: false,
-        models_endpoint: None,
-        supports_structured_output: false,
-    });
-
-    providers.push(PostProcessProvider {
-        id: "vocalype-llm".to_string(),
-        label: "Vocalype LLM (local)".to_string(),
-        base_url: crate::llm::llama_server::provider_base_url(),
-        allow_base_url_edit: false,
-        models_endpoint: None,
-        supports_structured_output: false,
-    });
-
-    providers.push(PostProcessProvider {
+    vec![PostProcessProvider {
         id: "vocalype-cloud".to_string(),
         label: "Vocalype Cloud ⚡".to_string(),
         base_url: "https://api.vocalype.com/llm/v1".to_string(),
         allow_base_url_edit: false,
         models_endpoint: None,
         supports_structured_output: false,
-    });
-
-    providers.push(PostProcessProvider {
-        id: "ollama".to_string(),
-        label: "Ollama (Local)".to_string(),
-        base_url: "http://localhost:11434/v1".to_string(),
-        allow_base_url_edit: false,
-        models_endpoint: Some("/models".to_string()),
-        supports_structured_output: false,
-    });
-
-    // Custom provider always comes last
-    providers.push(PostProcessProvider {
-        id: "custom".to_string(),
-        label: "Custom".to_string(),
-        base_url: "http://localhost:11434/v1".to_string(),
-        allow_base_url_edit: true,
-        models_endpoint: Some("/models".to_string()),
-        supports_structured_output: false,
-    });
-
-    providers
+    }]
 }
 
 fn default_post_process_api_keys() -> HashMap<String, String> {
@@ -957,37 +851,9 @@ pub fn sanitize_custom_provider_base_url(value: &str) -> Result<String, String> 
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     let default_providers = default_post_process_providers();
-    let existing_custom_provider = settings
-        .post_process_providers
-        .iter()
-        .find(|provider| provider.id == "custom")
-        .cloned();
 
-    let rebuilt_providers: Vec<PostProcessProvider> = default_providers
-        .iter()
-        .cloned()
-        .map(|provider| {
-            if provider.id == "custom" {
-                if let Some(existing) = existing_custom_provider.clone() {
-                    if let Ok(base_url) = sanitize_custom_provider_base_url(&existing.base_url) {
-                        PostProcessProvider {
-                            base_url,
-                            ..provider
-                        }
-                    } else {
-                        provider
-                    }
-                } else {
-                    provider
-                }
-            } else {
-                provider
-            }
-        })
-        .collect();
-
-    if settings.post_process_providers != rebuilt_providers {
-        settings.post_process_providers = rebuilt_providers;
+    if settings.post_process_providers != default_providers {
+        settings.post_process_providers = default_providers.clone();
         changed = true;
     }
 

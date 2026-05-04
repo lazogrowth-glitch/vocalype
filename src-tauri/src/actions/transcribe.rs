@@ -924,6 +924,9 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let failed_chunks = Arc::new(AtomicUsize::new(0));
         let pending_chunks = Arc::new(AtomicUsize::new(0));
         let cancel_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        // Signals the sampler to exit immediately when recording stops, instead of
+        // waiting for the next CHUNK_SAMPLER_POLL_MS sleep tick (up to 200 ms saved).
+        let sampler_stop_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
 
         // Channel payload: (audio, chunk_idx, overlap_cutoff_secs)
         // overlap_cutoff_secs = 0.0 for the first chunk (no real overlap yet),
@@ -935,6 +938,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let tx_s = chunk_tx.clone();
         let pending_s = Arc::clone(&pending_chunks);
         let cancel_flag_worker = Arc::clone(&cancel_flag);
+        let sampler_stop_flag_s = Arc::clone(&sampler_stop_flag);
         let counters_sampler = Arc::clone(&quality_counters);
         let sampler_handle = std::thread::spawn(move || {
             // After a VAD flush, the boundary falls on a natural pause, so the
@@ -949,7 +953,16 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             let mut last_warn_secs: u64 = 0;
 
             loop {
-                std::thread::sleep(std::time::Duration::from_millis(CHUNK_SAMPLER_POLL_MS));
+                // Sleep in short ticks so we can exit immediately when recording
+                // stops (sampler_stop_flag) rather than sleeping the full poll interval.
+                // Each tick = 10 ms; total wait ≈ CHUNK_SAMPLER_POLL_MS before next sample check.
+                let ticks = (CHUNK_SAMPLER_POLL_MS / 10).max(1);
+                for _ in 0..ticks {
+                    if sampler_stop_flag_s.load(Ordering::Relaxed) {
+                        return;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                }
 
                 // Diagnostic: warn if a session has been running unusually long.
                 // Threshold: ≥300 s elapsed, then every 60 s. No behaviour change.
@@ -1669,6 +1682,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 is_parakeet_v3,
                 session_id,
                 tel,
+                sampler_stop_flag,
             });
         }
     } else if let Some(info) = current_model_info {
@@ -1752,6 +1766,12 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 poisoned.into_inner().take()
             }
         });
+
+    // Wake the sampler immediately so it exits without waiting for its next
+    // sleep tick (saves up to CHUNK_SAMPLER_POLL_MS = 200 ms on short dictations).
+    if let Some(ch) = &chunking_handle {
+        ch.sampler_stop_flag.store(true, Ordering::Relaxed);
+    }
 
     tauri::async_runtime::spawn(async move {
         let _guard = FinishGuard {

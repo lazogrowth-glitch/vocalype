@@ -448,8 +448,65 @@ fn should_skip_low_signal_vad_chunk(new_slice: &[f32]) -> bool {
     if new_slice.is_empty() {
         return false;
     }
+
     let mean_energy = new_slice.iter().map(|s| s * s).sum::<f32>() / (new_slice.len() as f32);
+    let signal = summarize_audio_signal(new_slice);
+    let duration_samples = new_slice.len();
+    let is_short_low_signal_chunk =
+        signal.duration_seconds <= 2.2 && signal.rms < 0.0015 && signal.peak < 0.01;
+
     mean_energy < crate::chunking::VAD_SILENT_CHUNK_ENERGY_THRESHOLD
+        || (duration_samples <= 4 * 16_000 && mean_energy < 5e-8)
+        || is_short_low_signal_chunk
+}
+
+fn should_defer_short_vad_chunk(new_slice: &[f32]) -> bool {
+    if new_slice.is_empty() {
+        return false;
+    }
+
+    let signal = summarize_audio_signal(new_slice);
+    signal.duration_seconds <= 2.8 && signal.rms < 0.0035 && signal.peak < 0.04
+}
+
+fn is_suspicious_short_language_fragment(
+    text: &str,
+    selected_language: &str,
+    chunk_samples: usize,
+    is_final_chunk: bool,
+) -> bool {
+    if is_final_chunk || !selected_language.starts_with("fr") {
+        return false;
+    }
+
+    if chunk_samples > 3 * 16_000 {
+        return false;
+    }
+
+    let bare = text
+        .trim()
+        .trim_end_matches('.')
+        .trim_end_matches(',')
+        .trim_end_matches('!')
+        .trim_end_matches('?')
+        .to_lowercase();
+    if bare.is_empty() {
+        return false;
+    }
+
+    let words: Vec<&str> = bare.split_whitespace().collect();
+    if words.len() > 3 {
+        return false;
+    }
+
+    const ENGLISH_SHORT_FRAGMENT_MARKERS: &[&str] = &[
+        "the", "yeah", "yes", "i", "you", "we", "they", "he", "she", "it", "um", "uh", "okay",
+        "ok", "thanks", "thank", "sorry",
+    ];
+
+    words
+        .iter()
+        .all(|word| ENGLISH_SHORT_FRAGMENT_MARKERS.contains(word))
 }
 
 /// Returns `true` when BOTH conditions are met:
@@ -1048,6 +1105,27 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     skip_overlap_next_chunk = vad_flush;
 
                     let flush_type = if interval_ready { "interval" } else { "vad" };
+                    let should_defer_low_signal_vad_chunk =
+                        is_parakeet_v3 && vad_flush && should_defer_short_vad_chunk(new_slice);
+                    if should_defer_low_signal_vad_chunk {
+                        tel_sampler.log_chunk_candidate(
+                            session_id,
+                            next_idx,
+                            flush_type,
+                            new_samples,
+                            total,
+                            actual_overlap,
+                            cutoff_secs,
+                            pending_now,
+                            false,
+                            "vad_short_deferred_low_signal",
+                        );
+                        if let Ok(mut counters) = counters_sampler.lock() {
+                            counters.chunk_candidates_rejected += 1;
+                        }
+                        skip_overlap_next_chunk = false;
+                        continue;
+                    }
                     if is_parakeet_v3 {
                         if chunks_dispatched == 0 {
                             tel_sampler.log_first_chunk_dispatch(
@@ -1573,6 +1651,29 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             debug!(
                                 "Chunk {}: discarding likely hallucination (words={}, samples={}, final={})",
                                 idx, word_count, chunk_samples, is_final_chunk
+                            );
+                            String::new()
+                        } else if is_parakeet_v3_w
+                            && is_suspicious_short_language_fragment(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                                is_final_chunk,
+                            )
+                        {
+                            tel_worker.log_chunk_filtered(
+                                session_id,
+                                idx,
+                                "short_language_fragment",
+                                &preview_text(&text, 120),
+                                word_count,
+                                chunk_samples,
+                                is_final_chunk,
+                                "short_out_of_language_fragment_for_selected_language",
+                            );
+                            debug!(
+                                "Chunk {}: discarding suspicious short fragment for selected language {}",
+                                idx, selected_language_w
                             );
                             String::new()
                         } else {

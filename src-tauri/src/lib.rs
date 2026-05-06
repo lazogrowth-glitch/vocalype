@@ -913,8 +913,6 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
         shortcut::change_show_tray_icon_setting,
-        shortcut::change_long_audio_model_setting,
-        shortcut::change_long_audio_threshold_setting,
         shortcut::change_wake_word_enabled_setting,
         shortcut::native_shortcut_capture::start_native_shortcut_capture_recording,
         shortcut::native_shortcut_capture::stop_native_shortcut_capture_recording,

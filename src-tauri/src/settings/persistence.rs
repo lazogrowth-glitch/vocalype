@@ -263,82 +263,11 @@ pub fn write_settings(app: &AppHandle, settings: AppSettings) {
     }
 }
 
-fn whisper_config_mut<'a>(
-    profile: &'a mut AdaptiveMachineProfile,
-    model_id: &str,
-) -> Option<&'a mut WhisperModelAdaptiveConfig> {
-    match model_id {
-        "small" => Some(&mut profile.whisper.small),
-        "medium" => Some(&mut profile.whisper.medium),
-        "turbo" => Some(&mut profile.whisper.turbo),
-        "large" => Some(&mut profile.whisper.large),
-        _ => None,
-    }
-}
-
 pub fn set_active_runtime_model(app: &AppHandle, model_id: Option<String>) {
     let mut settings = get_settings(app);
     if let Some(profile) = settings.adaptive_machine_profile.as_mut() {
         profile.active_runtime_model_id = model_id;
         write_settings(app, settings);
-    }
-}
-
-pub fn set_active_whisper_backend(
-    app: &AppHandle,
-    model_id: &str,
-    active_backend: WhisperBackendPreference,
-    reason: Option<String>,
-) {
-    let mut settings = get_settings(app);
-    if let Some(profile) = settings.adaptive_machine_profile.as_mut() {
-        let recommended_backend = if let Some(config) = whisper_config_mut(profile, model_id) {
-            let recommended_backend = config.backend;
-            config.active_backend = active_backend;
-            config.backend_decision_reason = reason.clone();
-            Some(recommended_backend)
-        } else {
-            None
-        };
-        if let Some(recommended_backend) = recommended_backend {
-            profile.active_backend = Some(active_backend);
-            profile.recommended_backend = Some(recommended_backend);
-            profile.calibration_reason = reason;
-            write_settings(app, settings);
-        }
-    }
-}
-
-pub fn record_whisper_backend_failure(
-    app: &AppHandle,
-    model_id: &str,
-    backend: WhisperBackendPreference,
-    reason: impl Into<String>,
-    cooldown_ms: u64,
-) {
-    let mut settings = get_settings(app);
-    if let Some(profile) = settings.adaptive_machine_profile.as_mut() {
-        if let Some(config) = whisper_config_mut(profile, model_id) {
-            let failed_at_ms = now_ms();
-            let unsafe_until_ms = failed_at_ms.saturating_add(cooldown_ms);
-            let reason = reason.into();
-            config.failure_count = config.failure_count.saturating_add(1);
-            config.last_failure_reason = Some(reason.clone());
-            config.last_failure_at = Some(failed_at_ms);
-            config.unsafe_until = Some(unsafe_until_ms);
-            config
-                .unsafe_backends
-                .retain(|entry| entry.backend != backend);
-            config.unsafe_backends.push(UnsafeBackendRecord {
-                backend,
-                unsafe_until_ms,
-                reason: reason.clone(),
-                failed_at_ms,
-            });
-            profile.calibration_state = AdaptiveCalibrationState::FallbackApplied;
-            profile.calibration_reason = Some(reason);
-            write_settings(app, settings);
-        }
     }
 }
 

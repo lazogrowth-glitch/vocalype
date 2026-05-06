@@ -8,8 +8,8 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::parakeet_quality::{ParakeetDiagnosticsSnapshot, ParakeetDiagnosticsState};
 use crate::settings::{get_settings, AdaptiveMachineProfile};
 use crate::voice_profile::{
-    current_runtime_adjustment, current_voice_profile, current_voice_profile_for_context,
-    VoiceProfile, VoiceProfileSegment, VoiceRuntimeAdjustment,
+    current_voice_profile, current_voice_profile_for_context, VoiceProfile, VoiceProfileSegment,
+    VoiceRuntimeAdjustment,
 };
 use crate::TranscriptionCoordinator;
 use serde::{Deserialize, Serialize};
@@ -352,24 +352,7 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
     let selected_output_device = settings.selected_output_device.clone();
     let adaptive_voice_profile_enabled = settings.adaptive_voice_profile_enabled;
     let current_model_id = tm.get_current_model();
-    let active_voice_runtime_adjustment = if adaptive_voice_profile_enabled {
-        let model_id = current_model_id
-            .clone()
-            .unwrap_or_else(|| selected_model.clone());
-        settings
-            .adaptive_whisper_config(&model_id)
-            .and_then(|config| {
-                current_runtime_adjustment(
-                    app,
-                    &model_id,
-                    &selected_language,
-                    config.chunk_seconds,
-                    config.overlap_ms,
-                )
-            })
-    } else {
-        None
-    };
+    let active_voice_runtime_adjustment: Option<VoiceRuntimeAdjustment> = None;
     let adaptive_voice_profile = if adaptive_voice_profile_enabled {
         current_voice_profile(app)
     } else {

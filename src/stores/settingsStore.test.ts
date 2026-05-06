@@ -36,8 +36,6 @@ const mockSettings = {
   app_language: "en",
   experimental_enabled: false,
   show_tray_icon: true,
-  long_audio_model: null,
-  long_audio_threshold_seconds: 30,
   sound_theme: "marimba" as const,
   start_hidden: false,
   autostart_enabled: false,

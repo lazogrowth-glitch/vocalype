@@ -2,9 +2,7 @@ use super::*;
 
 const ADAPTIVE_PROFILE_SCHEMA_VERSION: u16 = 4;
 const THERMAL_DEGRADED_CELSIUS: f32 = 75.0;
-const TURBO_POLICY_COOLDOWN_MS: u64 = 24 * 60 * 60 * 1000;
-const ADAPTIVE_PROFILE_BENCH_STALE_MS: u64 = 30 * 24 * 60 * 60 * 1000;
-const BACKEND_VERSION: &str = "whisper-adaptive-v2";
+const BACKEND_VERSION: &str = "parakeet-v3";
 
 pub fn now_ms() -> u64 {
     SystemTime::now()
@@ -560,39 +558,6 @@ fn cpu_family_score(cpu_brand_upper: &str, low_power_cpu: bool) -> u8 {
     }
 }
 
-fn whisper_config(
-    backend: WhisperBackendPreference,
-    threads: u8,
-    chunk_seconds: u8,
-    overlap_ms: u16,
-) -> WhisperModelAdaptiveConfig {
-    WhisperModelAdaptiveConfig {
-        backend,
-        threads,
-        chunk_seconds,
-        overlap_ms,
-        active_backend: backend,
-        active_threads: threads,
-        active_chunk_seconds: chunk_seconds,
-        active_overlap_ms: overlap_ms,
-        short_latency_ms: 0,
-        medium_latency_ms: 0,
-        long_latency_ms: 0,
-        stability_score: 1.0,
-        overall_score: 0.0,
-        failure_count: 0,
-        calibrated_phase: CalibrationPhase::None,
-        unsafe_backends: Vec::new(),
-        unsafe_until: None,
-        last_failure_reason: None,
-        last_failure_at: None,
-        last_quick_bench_at: None,
-        last_full_bench_at: None,
-        backend_decision_reason: None,
-        config_decision_reason: None,
-    }
-}
-
 fn current_app_version(app: &AppHandle) -> String {
     app.package_info().version.to_string()
 }
@@ -701,36 +666,6 @@ fn detect_adaptive_machine_profile(app: &AppHandle, app_language: &str) -> Adapt
     };
     let machine_tier = tier_from_score(machine_score_details.final_score);
 
-    let whisper = match machine_tier {
-        MachineTier::Low => WhisperAdaptiveProfile {
-            small: whisper_config(
-                if low_power_cpu && total_memory_gb <= 8 {
-                    WhisperBackendPreference::Cpu
-                } else {
-                    WhisperBackendPreference::Auto
-                },
-                6,
-                12,
-                500,
-            ),
-            medium: whisper_config(WhisperBackendPreference::Auto, 6, 10, 500),
-            turbo: whisper_config(WhisperBackendPreference::Auto, 6, 12, 500),
-            large: whisper_config(WhisperBackendPreference::Gpu, 4, 12, 750),
-        },
-        MachineTier::Medium => WhisperAdaptiveProfile {
-            small: whisper_config(WhisperBackendPreference::Auto, 8, 10, 500),
-            medium: whisper_config(WhisperBackendPreference::Auto, 6, 8, 500),
-            turbo: whisper_config(WhisperBackendPreference::Auto, 8, 10, 500),
-            large: whisper_config(WhisperBackendPreference::Gpu, 4, 10, 750),
-        },
-        MachineTier::High => WhisperAdaptiveProfile {
-            small: whisper_config(WhisperBackendPreference::Auto, 8, 8, 500),
-            medium: whisper_config(WhisperBackendPreference::Auto, 8, 8, 500),
-            turbo: whisper_config(WhisperBackendPreference::Gpu, 8, 8, 500),
-            large: whisper_config(WhisperBackendPreference::Gpu, 6, 10, 750),
-        },
-    };
-
     AdaptiveMachineProfile {
         profile_schema_version: ADAPTIVE_PROFILE_SCHEMA_VERSION,
         app_version: current_app_version(app),
@@ -755,17 +690,6 @@ fn detect_adaptive_machine_profile(app: &AppHandle, app_language: &str) -> Adapt
         recommended_model_id: preferred_model_for_locale(app_language),
         secondary_model_id: secondary_model_for_locale(app_language, machine_tier),
         active_runtime_model_id: None,
-        recommended_backend: None,
-        active_backend: None,
-        calibrated_models: Vec::new(),
-        bench_phase: BenchPhase::None,
-        bench_completed_at: None,
-        last_quick_bench_at: None,
-        last_full_bench_at: None,
-        calibration_state: AdaptiveCalibrationState::Idle,
-        calibration_reason: None,
-        large_skip_reason: None,
-        whisper,
     }
 }
 
@@ -779,50 +703,7 @@ fn profile_is_stale(profile: &AdaptiveMachineProfile, app: &AppHandle) -> bool {
         return true;
     }
 
-    profile
-        .bench_completed_at
-        .map(|timestamp| now_ms().saturating_sub(timestamp) > ADAPTIVE_PROFILE_BENCH_STALE_MS)
-        .unwrap_or(false)
-}
-
-fn merge_whisper_profile(
-    mut base: AdaptiveMachineProfile,
-    existing: AdaptiveMachineProfile,
-) -> AdaptiveMachineProfile {
-    base.whisper = existing.whisper;
-    base.calibrated_models = existing.calibrated_models;
-    base.bench_phase = existing.bench_phase;
-    base.bench_completed_at = existing.bench_completed_at;
-    base.last_quick_bench_at = existing.last_quick_bench_at;
-    base.last_full_bench_at = existing.last_full_bench_at;
-    base.calibration_state = existing.calibration_state;
-    base.calibration_reason = existing.calibration_reason;
-    base.large_skip_reason = existing.large_skip_reason;
-    base.active_runtime_model_id = existing.active_runtime_model_id;
-    base.recommended_backend = existing.recommended_backend;
-    base.active_backend = existing.active_backend;
-    base
-}
-
-fn normalize_adaptive_profile(profile: &mut AdaptiveMachineProfile) {
-    let turbo = &mut profile.whisper.turbo;
-    for entry in &mut turbo.unsafe_backends {
-        let capped_until = entry.failed_at_ms.saturating_add(TURBO_POLICY_COOLDOWN_MS);
-        if entry.unsafe_until_ms > capped_until {
-            entry.unsafe_until_ms = capped_until;
-        }
-    }
-    turbo.unsafe_until = turbo
-        .unsafe_backends
-        .iter()
-        .map(|entry| entry.unsafe_until_ms)
-        .max();
-}
-
-fn profile_needs_turbo_cooldown_normalization(profile: &AdaptiveMachineProfile) -> bool {
-    profile.whisper.turbo.unsafe_backends.iter().any(|entry| {
-        entry.unsafe_until_ms > entry.failed_at_ms.saturating_add(TURBO_POLICY_COOLDOWN_MS)
-    })
+    false
 }
 
 pub(crate) fn ensure_adaptive_profile(app: &AppHandle, settings: &mut AppSettings) -> bool {
@@ -836,17 +717,11 @@ pub(crate) fn ensure_adaptive_profile(app: &AppHandle, settings: &mut AppSetting
             .unwrap_or(true);
 
     if needs_new_profile {
-        // Full hardware detection (WMI GPU/NPU/thermal) — only when profile is missing or stale.
-        let mut detected = detect_adaptive_machine_profile(app, &settings.app_language);
-        if let Some(existing) = settings.adaptive_machine_profile.clone() {
-            detected = merge_whisper_profile(detected, existing);
-        }
-        normalize_adaptive_profile(&mut detected);
+        let detected = detect_adaptive_machine_profile(app, &settings.app_language);
         settings.adaptive_machine_profile = Some(detected);
         settings.adaptive_profile_applied = true;
         changed = true;
     } else if let Some(existing) = settings.adaptive_machine_profile.as_mut() {
-        // Profile is fresh — apply only cheap metadata updates, no WMI re-detection.
         let current_selected_model = settings.selected_model.clone();
         let new_recommended = preferred_model_for_locale(&settings.app_language);
         let new_secondary =
@@ -856,7 +731,6 @@ pub(crate) fn ensure_adaptive_profile(app: &AppHandle, settings: &mut AppSetting
             || existing.backend_version != BACKEND_VERSION
             || existing.recommended_model_id != new_recommended
             || existing.secondary_model_id != new_secondary
-            || profile_needs_turbo_cooldown_normalization(existing)
             || (!current_selected_model.is_empty()
                 && existing.active_runtime_model_id.as_deref()
                     != Some(current_selected_model.as_str()));
@@ -870,7 +744,6 @@ pub(crate) fn ensure_adaptive_profile(app: &AppHandle, settings: &mut AppSetting
             if !current_selected_model.is_empty() {
                 existing.active_runtime_model_id = Some(current_selected_model);
             }
-            normalize_adaptive_profile(existing);
             changed = true;
         }
     }

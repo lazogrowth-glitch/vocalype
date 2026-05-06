@@ -665,19 +665,6 @@ fn empty_transcription_error(samples: &[f32]) -> (&'static str, String, &'static
     }
 }
 
-pub(super) fn should_switch_to_long_audio_model(
-    duration_seconds: f32,
-    threshold_seconds: f32,
-    current_model_id: Option<&str>,
-    long_model_id: Option<&str>,
-) -> bool {
-    let Some(long_model_id) = long_model_id else {
-        return false;
-    };
-
-    duration_seconds > threshold_seconds && current_model_id != Some(long_model_id)
-}
-
 pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
     let start_time = Instant::now();
     debug!("[TIMING] ⏱ shortcut received for binding: {}", binding_id);
@@ -853,11 +840,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as u64)
             .unwrap_or(0);
-        let provider = settings
-            .adaptive_machine_profile
-            .as_ref()
-            .and_then(|profile| profile.active_backend.as_ref().map(|b| format!("{:?}", b)))
-            .unwrap_or_else(|| "runtime-default".to_string());
+        let provider = "parakeet-v3".to_string();
         let tel: Arc<TranscriptionTelemetry> = app
             .try_state::<Arc<TranscriptionTelemetry>>()
             .map(|s| Arc::clone(&*s))
@@ -2394,42 +2377,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 }
             }
 
-            if should_switch_to_long_audio_model(
-                duration_seconds,
-                settings_for_model.long_audio_threshold_seconds,
-                original_model.as_deref(),
-                settings_for_model.long_audio_model.as_deref(),
-            ) {
-                if let Some(ref long_model_id) = settings_for_model.long_audio_model {
-                    let long_model_switch_started = Instant::now();
-                    debug!(
-                        "Audio {:.1}s > threshold {:.1}s, switching to long model: {}",
-                        duration_seconds,
-                        settings_for_model.long_audio_threshold_seconds,
-                        long_model_id
-                    );
-                    if let Err(e) = tm.load_model(long_model_id) {
-                        warn!("Failed to load long audio model: {}", e);
-                    } else {
-                        switched_model = true;
-                        if let Ok(mut p) = profiler.lock() {
-                            p.set_model(Some(long_model_id.clone()), tm.get_current_model_name());
-                            p.push_step_since(
-                                "model_switch_long_audio",
-                                long_model_switch_started,
-                                Some(format!(
-                                    "{:.1}s>{:.1}s",
-                                    duration_seconds,
-                                    settings_for_model.long_audio_threshold_seconds
-                                )),
-                            );
-                        }
-                    }
-                }
-            }
-
             let transcription_time = Instant::now();
-            let samples_clone_fb = samples.clone();
             let transcription_output = match tm.transcribe_detailed_request(TranscriptionRequest {
                 audio: samples.clone(),
                 app_context: active_app_context.clone(),
@@ -2454,40 +2402,6 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                         transcription_time.elapsed(),
                         output.text
                     );
-                    if output.text.is_empty() && duration_seconds > 1.0 && !switched_model {
-                        if let Some(ref long_model_id) = settings_for_model.long_audio_model {
-                            if original_model.as_deref() != Some(long_model_id.as_str()) {
-                                let retry_started = Instant::now();
-                                info!(
-                                    "Empty result for {:.1}s audio, retrying with long model",
-                                    duration_seconds
-                                );
-                                if tm.load_model(long_model_id).is_ok() {
-                                    if let Ok(retry) =
-                                        tm.transcribe_detailed_request(TranscriptionRequest {
-                                            audio: samples_clone_fb,
-                                            app_context: active_app_context.clone(),
-                                        })
-                                    {
-                                        if !retry.text.is_empty() {
-                                            output = retry;
-                                        }
-                                    }
-                                    if let Ok(mut p) = profiler.lock() {
-                                        p.set_model(
-                                            Some(long_model_id.clone()),
-                                            tm.get_current_model_name(),
-                                        );
-                                        p.push_step_since(
-                                            "transcribe_retry_long_model",
-                                            retry_started,
-                                            Some(format!("chars={}", output.text.chars().count())),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    }
                     output
                 }
                 Err(err) => {
@@ -2987,28 +2901,6 @@ mod tests {
             is_custom: false,
             requires_license_key: false,
         }
-    }
-
-    #[test]
-    fn long_audio_switch_requires_threshold_and_different_model() {
-        assert!(should_switch_to_long_audio_model(
-            31.0,
-            30.0,
-            Some("small"),
-            Some("large")
-        ));
-        assert!(!should_switch_to_long_audio_model(
-            29.0,
-            30.0,
-            Some("small"),
-            Some("large")
-        ));
-        assert!(!should_switch_to_long_audio_model(
-            31.0,
-            30.0,
-            Some("large"),
-            Some("large")
-        ));
     }
 
     #[test]

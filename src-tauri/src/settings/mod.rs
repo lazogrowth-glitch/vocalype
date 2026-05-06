@@ -86,20 +86,6 @@ pub enum ModelUnloadTimeout {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
-pub enum WhisperBackendPreference {
-    Auto,
-    Cpu,
-    Gpu,
-}
-
-impl Default for WhisperBackendPreference {
-    fn default() -> Self {
-        WhisperBackendPreference::Auto
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
 pub enum MachineTier {
     Low,
     Medium,
@@ -117,51 +103,6 @@ pub enum PowerMode {
 impl Default for PowerMode {
     fn default() -> Self {
         Self::Unknown
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum CalibrationPhase {
-    None,
-    Quick,
-    Full,
-}
-
-impl Default for CalibrationPhase {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum BenchPhase {
-    None,
-    QuickDone,
-    FullDone,
-}
-
-impl Default for BenchPhase {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum AdaptiveCalibrationState {
-    Idle,
-    Queued,
-    Running,
-    Completed,
-    Failed,
-    FallbackApplied,
-}
-
-impl Default for AdaptiveCalibrationState {
-    fn default() -> Self {
-        Self::Idle
     }
 }
 
@@ -221,68 +162,6 @@ impl Default for NpuKind {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct UnsafeBackendRecord {
-    pub backend: WhisperBackendPreference,
-    pub unsafe_until_ms: u64,
-    pub reason: String,
-    pub failed_at_ms: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct WhisperModelAdaptiveConfig {
-    pub backend: WhisperBackendPreference,
-    pub threads: u8,
-    pub chunk_seconds: u8,
-    pub overlap_ms: u16,
-    #[serde(default)]
-    pub active_backend: WhisperBackendPreference,
-    #[serde(default)]
-    pub active_threads: u8,
-    #[serde(default)]
-    pub active_chunk_seconds: u8,
-    #[serde(default)]
-    pub active_overlap_ms: u16,
-    #[serde(default)]
-    pub short_latency_ms: u64,
-    #[serde(default)]
-    pub medium_latency_ms: u64,
-    #[serde(default)]
-    pub long_latency_ms: u64,
-    #[serde(default)]
-    pub stability_score: f32,
-    #[serde(default)]
-    pub overall_score: f32,
-    #[serde(default)]
-    pub failure_count: u32,
-    #[serde(default)]
-    pub calibrated_phase: CalibrationPhase,
-    #[serde(default)]
-    pub unsafe_backends: Vec<UnsafeBackendRecord>,
-    #[serde(default)]
-    pub unsafe_until: Option<u64>,
-    #[serde(default)]
-    pub last_failure_reason: Option<String>,
-    #[serde(default)]
-    pub last_failure_at: Option<u64>,
-    #[serde(default)]
-    pub last_quick_bench_at: Option<u64>,
-    #[serde(default)]
-    pub last_full_bench_at: Option<u64>,
-    #[serde(default)]
-    pub backend_decision_reason: Option<String>,
-    #[serde(default)]
-    pub config_decision_reason: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct WhisperAdaptiveProfile {
-    pub small: WhisperModelAdaptiveConfig,
-    pub medium: WhisperModelAdaptiveConfig,
-    pub turbo: WhisperModelAdaptiveConfig,
-    pub large: WhisperModelAdaptiveConfig,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AdaptiveMachineProfile {
     #[serde(default)]
     pub profile_schema_version: u16,
@@ -323,27 +202,6 @@ pub struct AdaptiveMachineProfile {
     pub secondary_model_id: Option<String>,
     #[serde(default)]
     pub active_runtime_model_id: Option<String>,
-    #[serde(default)]
-    pub recommended_backend: Option<WhisperBackendPreference>,
-    #[serde(default)]
-    pub active_backend: Option<WhisperBackendPreference>,
-    #[serde(default)]
-    pub calibrated_models: Vec<String>,
-    #[serde(default)]
-    pub bench_phase: BenchPhase,
-    #[serde(default)]
-    pub bench_completed_at: Option<u64>,
-    #[serde(default)]
-    pub last_quick_bench_at: Option<u64>,
-    #[serde(default)]
-    pub last_full_bench_at: Option<u64>,
-    #[serde(default)]
-    pub calibration_state: AdaptiveCalibrationState,
-    #[serde(default)]
-    pub calibration_reason: Option<String>,
-    #[serde(default)]
-    pub large_skip_reason: Option<String>,
-    pub whisper: WhisperAdaptiveProfile,
 }
 
 impl Default for KeyboardImplementation {
@@ -532,10 +390,6 @@ pub struct AppSettings {
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
-    #[serde(default)]
-    pub long_audio_model: Option<String>,
-    #[serde(default = "default_long_audio_threshold_seconds")]
-    pub long_audio_threshold_seconds: f32,
     #[serde(default = "default_post_process_actions")]
     pub post_process_actions: Vec<PostProcessAction>,
     #[serde(default)]
@@ -811,10 +665,6 @@ fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
 
-fn default_long_audio_threshold_seconds() -> f32 {
-    10.0
-}
-
 pub fn sanitize_custom_provider_base_url(value: &str) -> Result<String, String> {
     let trimmed = value.trim().trim_end_matches('/');
     if trimmed.is_empty() {
@@ -1051,15 +901,6 @@ fn ensure_launch_output_defaults(settings: &mut AppSettings) -> bool {
             changed = true;
         }
         if settings.external_script_path.take().is_some() {
-            changed = true;
-        }
-        if settings.long_audio_model.take().is_some() {
-            changed = true;
-        }
-        if (settings.long_audio_threshold_seconds - default_long_audio_threshold_seconds()).abs()
-            > f32::EPSILON
-        {
-            settings.long_audio_threshold_seconds = default_long_audio_threshold_seconds();
             changed = true;
         }
         changed
@@ -1381,8 +1222,6 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
-        long_audio_model: None,
-        long_audio_threshold_seconds: default_long_audio_threshold_seconds(),
         post_process_actions: default_post_process_actions(),
         saved_processing_models: Vec::new(),
         adaptive_profile_applied: default_adaptive_profile_applied(),
@@ -1419,53 +1258,6 @@ impl AppSettings {
         self.post_process_providers
             .iter_mut()
             .find(|provider| provider.id == provider_id)
-    }
-
-    pub fn adaptive_whisper_config(&self, model_id: &str) -> Option<WhisperModelAdaptiveConfig> {
-        let profile = self.adaptive_machine_profile.as_ref()?;
-        let mut config = match model_id {
-            "small" => profile.whisper.small.clone(),
-            "medium" => profile.whisper.medium.clone(),
-            "turbo" => profile.whisper.turbo.clone(),
-            "large" => profile.whisper.large.clone(),
-            _ => return None,
-        };
-
-        config.backend = if !matches!(config.active_backend, WhisperBackendPreference::Auto)
-            || matches!(config.backend, WhisperBackendPreference::Auto)
-        {
-            config.active_backend
-        } else {
-            config.backend
-        };
-        if config.active_threads > 0 {
-            config.threads = config.active_threads;
-        }
-        if config.active_chunk_seconds > 0 {
-            config.chunk_seconds = config.active_chunk_seconds;
-        }
-        if config.active_overlap_ms > 0 {
-            config.overlap_ms = config.active_overlap_ms;
-        }
-
-        let constrained = profile.on_battery == Some(true)
-            || matches!(profile.power_mode, PowerMode::Saver)
-            || profile.thermal_degraded;
-        if constrained {
-            match model_id {
-                "turbo" => {
-                    config.threads = config.threads.min(6);
-                    config.chunk_seconds = config.chunk_seconds.max(12);
-                }
-                "large" => {
-                    config.threads = config.threads.min(4);
-                    config.chunk_seconds = config.chunk_seconds.max(12);
-                }
-                _ => {}
-            }
-        }
-
-        Some(config)
     }
 }
 
@@ -1505,13 +1297,6 @@ pub fn migrate_settings(settings: &mut AppSettings) {
     let canonical_selected = canonical_model_id(&settings.selected_model).to_string();
     if settings.selected_model != canonical_selected {
         settings.selected_model = canonical_selected;
-    }
-
-    if let Some(long_audio_model) = settings.long_audio_model.clone() {
-        let canonical_long_audio = canonical_model_id(&long_audio_model).to_string();
-        if long_audio_model != canonical_long_audio {
-            settings.long_audio_model = Some(canonical_long_audio);
-        }
     }
 
     if let Some(profile) = settings.adaptive_machine_profile.as_mut() {

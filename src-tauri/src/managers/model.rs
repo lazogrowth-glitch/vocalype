@@ -583,14 +583,6 @@ impl ModelManager {
             settings_changed = true;
         }
 
-        if let Some(long_audio_model) = settings.long_audio_model.clone() {
-            let canonical_long_audio = Self::canonicalize_profile_alias(&long_audio_model);
-            if long_audio_model != canonical_long_audio {
-                settings.long_audio_model = Some(canonical_long_audio.to_string());
-                settings_changed = true;
-            }
-        }
-
         if let Some(profile) = settings.adaptive_machine_profile.as_mut() {
             let canonical_recommended =
                 Self::canonicalize_profile_alias(&profile.recommended_model_id);
@@ -680,7 +672,7 @@ impl ModelManager {
     /// Skips files that match predefined model filenames.
     fn discover_custom_whisper_models(
         models_dir: &Path,
-        available_models: &mut HashMap<String, ModelInfo>,
+        _available_models: &mut HashMap<String, ModelInfo>,
     ) -> Result<()> {
         if !models_dir.exists() {
             return Ok(());

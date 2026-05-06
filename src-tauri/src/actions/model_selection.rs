@@ -33,12 +33,6 @@ pub(super) fn find_best_model_fallback(
 ) -> Option<ModelInfo> {
     let mut preferred_ids: Vec<String> = Vec::new();
 
-    if let Some(long_model_id) = settings.long_audio_model.as_ref() {
-        if !long_model_id.is_empty() {
-            preferred_ids.push(long_model_id.clone());
-        }
-    }
-
     if require_translation {
         preferred_ids.extend(["large", "medium", "small"].into_iter().map(String::from));
     } else {

@@ -1,0 +1,12 @@
+{
+  "history_id": 171,
+  "title": "May  5, 2026 -  9:05PM",
+  "post_process_action_key": null,
+  "prompt": "Correct spelling, punctuation, capitalization, and spacing. Keep the same language and meaning. Remove obvious filler words only if they do not change the meaning. Return only the corrected text.\n\nText:",
+  "provider_id": "vocalype-cloud",
+  "model": "llama-3.1-8b-instant",
+  "transcription_text": "Il n'y a pas un moyen d'automatiser tout l'envoi des mails. Et d'automatiser le renvoi d'un deuxième. mail et tout parce que je vais tout perdre alors c'est sûr là je vais oublier etc genre c'est quoi l'application qu'on avait parlé genre un truc gratuit non tu m'avais dit je sais pas, dis-moi.",
+  "existing_post_processed_text": null,
+  "baseline_output": "Il n'y a pas un moyen d'automatiser tout l'envoi des mails. Et d'automatiser le renvoi d'un deuxième mail. Tout cela parce que je vais tout perdre alors c'est sûr, là, je vais oublier, etc. C'est quoi l'application qu'on avait parlé ? Un truc gratuit, non ? Tu m'avais dit que je savais pas, dis-moi.",
+  "hardened_output": "Il n'y a pas un moyen d'automatiser tout l'envoi des mails. Et d'automatiser le renvoi d'un deuxième mail, car je vais tout perdre alors c'est sûr, je vais oublier. C'est quoi l'application qu'on avait parlé ? Un truc gratuit, tu m'avais dit, je sais pas, dis-moi."
+}

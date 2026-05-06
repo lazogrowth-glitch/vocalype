@@ -33,7 +33,6 @@ pub mod transcription_coordinator;
 pub mod vocabulary_store;
 pub mod voice_feedback;
 pub mod voice_profile;
-pub mod wake_word;
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub mod apple_intelligence;

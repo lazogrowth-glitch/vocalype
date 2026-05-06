@@ -913,6 +913,7 @@ impl AudioRecordingManager {
     /// its ring buffer without starting a real recording.
     /// The callback is shared via `Arc<Mutex<…>>` so it takes effect immediately
     /// on the running recorder thread without restarting the stream.
+    #[allow(dead_code)]
     pub fn set_preview_callback<F>(&self, cb: F)
     where
         F: Fn(&[f32]) + Send + Sync + 'static,
@@ -925,6 +926,7 @@ impl AudioRecordingManager {
     }
 
     /// Remove the preview callback (disables wake-word audio feed).
+    #[allow(dead_code)]
     pub fn clear_preview_callback(&self) {
         if let Ok(mut guard) = self.preview_cb.lock() {
             *guard = None;

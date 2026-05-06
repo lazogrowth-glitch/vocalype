@@ -444,6 +444,262 @@ fn is_likely_language_switched_short_chunk(
     true
 }
 
+fn tokenize_language_fragments(text: &str) -> Vec<String> {
+    text.split_whitespace()
+        .map(|token| {
+            token
+                .trim_matches(|c: char| !c.is_alphanumeric() && c != '\'' && c != '\u{2019}')
+                .to_lowercase()
+        })
+        .filter(|token| !token.is_empty())
+        .collect()
+}
+
+fn is_likely_french_fragment_token(token: &str) -> bool {
+    if token.is_empty() {
+        return false;
+    }
+
+    // Detect accented French characters directly (proper UTF-8 Rust strings).
+    if token.chars().any(|c| {
+        matches!(
+            c,
+            'é' | 'è' | 'à' | 'ù' | 'ç' | 'ê' | 'î' | 'ô' | 'û' | 'ï' | 'ë'
+        )
+    }) {
+        return true;
+    }
+
+    token
+        .replace(['\'', '\u{2019}'], " ")
+        .split_whitespace()
+        .all(is_known_french_word_no_accent)
+}
+
+fn is_suspicious_hybrid_language_chunk(
+    text: &str,
+    selected_language: &str,
+    chunk_samples: usize,
+) -> bool {
+    if !selected_language.starts_with("fr") {
+        return false;
+    }
+    if chunk_samples > 6 * 16_000 {
+        return false;
+    }
+
+    let tokens = tokenize_language_fragments(text);
+    if tokens.is_empty() || tokens.len() > 10 {
+        return false;
+    }
+
+    const ENGLISH_OR_HYBRID_MARKERS: &[&str] = &[
+        "who", "what", "when", "where", "why", "how", "the", "and", "with", "for", "from", "you",
+        "your", "we", "they", "them", "he", "she", "it", "okay", "ok", "yeah", "did", "do", "does",
+        "too", "just", "cm", "cm'", "c'm", "im", "i'm",
+    ];
+    const FRENCH_CORE_MARKERS: &[&str] = &[
+        "je",
+        "tu",
+        "il",
+        "elle",
+        "on",
+        "nous",
+        "vous",
+        "ils",
+        "elles",
+        "de",
+        "du",
+        "des",
+        "le",
+        "la",
+        "les",
+        "un",
+        "une",
+        "et",
+        "que",
+        "qui",
+        "quoi",
+        "ou",
+        "où",
+        "est",
+        "cest",
+        "c'est",
+        "genre",
+        "probleme",
+        "problème",
+        "intersection",
+        "perdu",
+        "diagnostic",
+        "derive",
+        "dérivé",
+    ];
+
+    let english_like = tokens
+        .iter()
+        .filter(|token| {
+            ENGLISH_OR_HYBRID_MARKERS.contains(&token.as_str())
+                || token.chars().all(|c| c.is_ascii_alphabetic()) && token.len() <= 3
+        })
+        .count();
+    let french_like = tokens
+        .iter()
+        .filter(|token| {
+            FRENCH_CORE_MARKERS.contains(&token.as_str())
+                || token.contains('é')
+                || token.contains('è')
+                || token.contains('à')
+                || token.contains('ù')
+                || token.contains('ç')
+                || token.contains('ê')
+        })
+        .count();
+    let weird_like = tokens
+        .iter()
+        .filter(|token| {
+            token.contains('\'')
+                || token.contains('\u{2019}')
+                || token.chars().any(|c| !c.is_alphanumeric())
+        })
+        .count();
+
+    english_like >= 2 && french_like <= 2 && weird_like >= 1
+}
+
+fn should_force_short_chunk_context_retry(
+    text: &str,
+    selected_language: &str,
+    chunk_samples: usize,
+    is_final_chunk: bool,
+) -> bool {
+    if is_final_chunk || !selected_language.starts_with("fr") || chunk_samples > 3 * 16_000 {
+        return false;
+    }
+
+    let tokens = tokenize_language_fragments(text);
+    if tokens.is_empty() || tokens.len() > 4 {
+        return false;
+    }
+
+    const ENGLISH_SHORT_OR_MIXED_MARKERS: &[&str] = &[
+        "i", "i'm", "im", "you", "we", "they", "he", "she", "it", "the", "and", "did", "do",
+        "does", "too", "just", "yeah", "ok", "okay", "what", "who", "how",
+    ];
+
+    let english_like = tokens
+        .iter()
+        .filter(|token| {
+            ENGLISH_SHORT_OR_MIXED_MARKERS.contains(&token.as_str())
+                || token.chars().all(|c| c.is_ascii_alphabetic()) && token.len() <= 2
+        })
+        .count();
+    let french_like = tokens
+        .iter()
+        .filter(|token| is_likely_french_fragment_token(token))
+        .count();
+    let unknown_ascii = tokens
+        .iter()
+        .filter(|token| {
+            token.chars().all(|c| c.is_ascii_alphabetic())
+                && !is_likely_french_fragment_token(token)
+                && !ENGLISH_SHORT_OR_MIXED_MARKERS.contains(&token.as_str())
+        })
+        .count();
+
+    if french_like == tokens.len() {
+        return false;
+    }
+
+    english_like >= 1 || unknown_ascii >= 2 || (tokens.len() <= 2 && unknown_ascii == tokens.len())
+}
+
+fn should_force_mixed_chunk_context_retry(
+    text: &str,
+    selected_language: &str,
+    chunk_samples: usize,
+    is_final_chunk: bool,
+) -> bool {
+    if is_final_chunk || !selected_language.starts_with("fr") {
+        return false;
+    }
+    if !(3 * 16_000..=8 * 16_000).contains(&chunk_samples) {
+        return false;
+    }
+
+    let tokens = tokenize_language_fragments(text);
+    if tokens.len() < 5 || tokens.len() > 20 {
+        return false;
+    }
+
+    const ENGLISH_MIXED_MARKERS: &[&str] = &[
+        "take", "note", "and", "or", "just", "the", "did", "too", "cloud", "design", "with",
+        "from", "for", "what", "who", "how", "you", "we", "they",
+    ];
+
+    let english_like = tokens
+        .iter()
+        .filter(|token| {
+            ENGLISH_MIXED_MARKERS.contains(&token.as_str())
+                || (token.chars().all(|c| c.is_ascii_alphabetic())
+                    && token.len() >= 3
+                    && !is_likely_french_fragment_token(token))
+        })
+        .count();
+    let french_like = tokens
+        .iter()
+        .filter(|token| is_likely_french_fragment_token(token))
+        .count();
+
+    if english_like < 2 || french_like < 2 {
+        return false;
+    }
+
+    let mut english_cluster = 0usize;
+    let mut max_english_cluster = 0usize;
+    for token in &tokens {
+        let is_englishish = ENGLISH_MIXED_MARKERS.contains(&token.as_str())
+            || (token.chars().all(|c| c.is_ascii_alphabetic())
+                && token.len() >= 3
+                && !is_likely_french_fragment_token(token));
+        if is_englishish {
+            english_cluster += 1;
+            max_english_cluster = max_english_cluster.max(english_cluster);
+        } else {
+            english_cluster = 0;
+        }
+    }
+
+    max_english_cluster >= 2 || english_like >= 3
+}
+
+fn extract_middle_text_from_retry_segments(
+    segments: Option<&Vec<transcribe_rs::TranscriptionSegment>>,
+    fallback_text: &str,
+    left_context_secs: f32,
+    middle_end_secs: f32,
+) -> String {
+    if let Some(segs) = segments {
+        let mut out = String::new();
+        for seg in segs
+            .iter()
+            .filter(|s| s.start >= left_context_secs && s.start < middle_end_secs)
+        {
+            let is_punct = seg.text.len() == 1
+                && seg
+                    .text
+                    .chars()
+                    .all(|c| matches!(c, '.' | ',' | '!' | '?' | ';' | ':' | ')'));
+            if !out.is_empty() && !is_punct {
+                out.push(' ');
+            }
+            out.push_str(&seg.text);
+        }
+        out
+    } else {
+        fallback_text.to_string()
+    }
+}
+
 fn should_skip_low_signal_vad_chunk(new_slice: &[f32]) -> bool {
     if new_slice.is_empty() {
         return false;
@@ -526,14 +782,8 @@ fn is_suspicious_short_language_fragment(
 /// Filler-word detection was deliberately removed: Parakeet V3 partially removes
 /// fillers itself, making the check inconsistent and prone to missed triggers.
 fn auto_llm_should_trigger(app: &AppHandle, text: &str) -> bool {
-    // Primary signal: spoken code patterns in the transcription itself.
-    // Works regardless of which app is active or what's in the clipboard.
-    if crate::code_dictation::contains_spoken_code_patterns(text) {
-        return true;
-    }
-
-    // Secondary signal: glossary has code identifiers AND text references one.
-    // Catches cases like "add error handling to fetchUser" (no spoken symbols).
+    // Signal: glossary has code identifiers AND text references one of them.
+    // Catches cases like "add error handling to fetchUser".
     let Some(state) = app.try_state::<crate::runtime::session_glossary::SessionGlossaryState>()
     else {
         return false;
@@ -1215,6 +1465,33 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let operation_id_w = operation_id;
         let selected_language_w = settings.selected_language.clone();
         let worker_handle = std::thread::spawn(move || {
+            struct PendingHybridRetry {
+                idx: usize,
+                text: String,
+                orig_audio: Vec<f32>,
+                left_context_tail: Vec<f32>,
+            }
+
+            let push_chunk_result = |results_w: &Arc<Mutex<Vec<(usize, String)>>>,
+                                     ah_w: &AppHandle,
+                                     operation_id_w: u64,
+                                     idx: usize,
+                                     text: String| {
+                let live_preview = {
+                    let mut guard = results_w.lock().unwrap_or_else(|e| e.into_inner());
+                    guard.push((idx, text));
+                    build_live_preview(&guard, 240)
+                };
+                if !live_preview.is_empty() {
+                    emit_transcription_preview(
+                        ah_w,
+                        operation_id_w,
+                        "recording",
+                        &live_preview,
+                        true,
+                    );
+                }
+            };
             let chunk_app_context = if get_settings(&ah_w).app_context_enabled {
                 ah_w.try_state::<ActiveAppContextState>().and_then(|state| {
                     state
@@ -1231,16 +1508,112 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             // Used to prepend context when re-running inference on a short
             // chunk that looks like a language switch.
             let mut prev_chunk_tail: Vec<f32> = Vec::new();
+            let mut pending_hybrid_retry: Option<PendingHybridRetry> = None;
             while let Ok(message) = chunk_rx.recv() {
                 // ESC was pressed — discard remaining queued chunks immediately.
                 if cancel_flag_worker.load(std::sync::atomic::Ordering::Relaxed) {
+                    if let Some(pending) = pending_hybrid_retry.take() {
+                        push_chunk_result(
+                            &results_w,
+                            &ah_w,
+                            operation_id_w,
+                            pending.idx,
+                            pending.text,
+                        );
+                    }
                     info!("[worker] cancel_flag set — exiting");
                     break;
                 }
                 let Some((audio, idx, overlap_cutoff_secs, is_final_chunk)) = message else {
+                    if let Some(pending) = pending_hybrid_retry.take() {
+                        push_chunk_result(
+                            &results_w,
+                            &ah_w,
+                            operation_id_w,
+                            pending.idx,
+                            pending.text,
+                        );
+                    }
                     info!("[worker] received None sentinel — exiting");
                     break;
                 };
+                if let Some(pending) = pending_hybrid_retry.take() {
+                    let right_context_samples = audio.len().min(16_000);
+                    let left_context_samples = pending.left_context_tail.len().min(2 * 16_000);
+                    let left_tail_start = pending
+                        .left_context_tail
+                        .len()
+                        .saturating_sub(left_context_samples);
+                    let mut extended = Vec::with_capacity(
+                        left_context_samples + pending.orig_audio.len() + right_context_samples,
+                    );
+                    extended.extend_from_slice(&pending.left_context_tail[left_tail_start..]);
+                    extended.extend_from_slice(&pending.orig_audio);
+                    extended.extend_from_slice(&audio[..right_context_samples]);
+                    let left_context_secs = left_context_samples as f32 / 16_000.0;
+                    let middle_end_secs =
+                        left_context_secs + pending.orig_audio.len() as f32 / 16_000.0;
+                    let pending_text =
+                        match tm_s.transcribe_detailed_request(TranscriptionRequest {
+                            audio: extended.clone(),
+                            app_context: chunk_app_context.clone(),
+                        }) {
+                            Ok(retry_out) => {
+                                let retry_text = extract_middle_text_from_retry_segments(
+                                    retry_out.segments.as_ref(),
+                                    &retry_out.text,
+                                    left_context_secs,
+                                    middle_end_secs,
+                                );
+                                let still_suspicious = is_suspicious_hybrid_language_chunk(
+                                    &retry_text,
+                                    &selected_language_w,
+                                    pending.orig_audio.len(),
+                                ) || should_force_short_chunk_context_retry(
+                                    &retry_text,
+                                    &selected_language_w,
+                                    pending.orig_audio.len(),
+                                    false,
+                                ) || should_force_mixed_chunk_context_retry(
+                                    &retry_text,
+                                    &selected_language_w,
+                                    pending.orig_audio.len(),
+                                    false,
+                                );
+                                let improved = !retry_text.is_empty()
+                                    && retry_text != pending.text
+                                    && !still_suspicious;
+                                tel_worker.log_chunk_retry(
+                                    session_id,
+                                    pending.idx,
+                                    "language_context_bilateral",
+                                    if improved {
+                                        "bilateral_context_improved"
+                                    } else if still_suspicious {
+                                        "bilateral_context_still_suspicious"
+                                    } else {
+                                        "bilateral_context_no_change"
+                                    },
+                                    pending.orig_audio.len(),
+                                    extended.len(),
+                                    improved,
+                                );
+                                if improved {
+                                    tel_worker.log_chunk_text_stage(
+                                        session_id,
+                                        pending.idx,
+                                        "after_bilateral_context_retry",
+                                        &retry_text,
+                                    );
+                                    retry_text
+                                } else {
+                                    pending.text
+                                }
+                            }
+                            Err(_) => pending.text,
+                        };
+                    push_chunk_result(&results_w, &ah_w, operation_id_w, pending.idx, pending_text);
+                }
                 info!(
                     "[worker] processing chunk idx={} samples={}",
                     idx,
@@ -1485,6 +1858,26 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 &selected_language_w,
                             ) {
                                 Some("language_context_drift")
+                            } else if is_suspicious_hybrid_language_chunk(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                            ) {
+                                Some("language_context_hybrid")
+                            } else if should_force_short_chunk_context_retry(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                                is_final_chunk,
+                            ) {
+                                Some("language_context_short_uncertain")
+                            } else if should_force_mixed_chunk_context_retry(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                                is_final_chunk,
+                            ) {
+                                Some("language_context_mixed_phrase")
                             } else {
                                 None
                             }
@@ -1537,9 +1930,29 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                                 &retry_text,
                                                 &selected_language_w,
                                             );
+                                        let still_hybrid_suspicious = (retry_reason
+                                            == "language_context_hybrid"
+                                            || retry_reason == "language_context_short_uncertain"
+                                            || retry_reason == "language_context_mixed_phrase")
+                                            && (is_suspicious_hybrid_language_chunk(
+                                                &retry_text,
+                                                &selected_language_w,
+                                                chunk_samples,
+                                            ) || should_force_short_chunk_context_retry(
+                                                &retry_text,
+                                                &selected_language_w,
+                                                chunk_samples,
+                                                is_final_chunk,
+                                            ) || should_force_mixed_chunk_context_retry(
+                                                &retry_text,
+                                                &selected_language_w,
+                                                chunk_samples,
+                                                is_final_chunk,
+                                            ));
                                         let improved = !retry_text.is_empty()
                                             && retry_text != text
-                                            && !still_drifts;
+                                            && !still_drifts
+                                            && !still_hybrid_suspicious;
                                         tel_worker.log_chunk_retry(
                                             session_id,
                                             idx,
@@ -1548,6 +1961,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                                 "language_context_improved"
                                             } else if still_drifts {
                                                 "language_context_still_drifts"
+                                            } else if still_hybrid_suspicious {
+                                                "language_context_still_hybrid_suspicious"
                                             } else {
                                                 "language_context_no_change"
                                             },
@@ -1590,6 +2005,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         };
 
                         // Update the tail for the next chunk's potential retry.
+                        let prev_chunk_tail_snapshot = prev_chunk_tail.clone();
                         if let Some(ref orig_audio) = audio_for_retry {
                             let tail_samples = (2 * 16_000).min(orig_audio.len());
                             prev_chunk_tail =
@@ -1680,6 +2096,47 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             text
                         };
 
+                        let should_defer_for_bilateral_retry = is_parakeet_v3_w
+                            && !is_final_chunk
+                            && audio_for_retry.is_some()
+                            && (is_suspicious_hybrid_language_chunk(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                            ) || should_force_short_chunk_context_retry(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                                is_final_chunk,
+                            ) || should_force_mixed_chunk_context_retry(
+                                &text,
+                                &selected_language_w,
+                                chunk_samples,
+                                is_final_chunk,
+                            ));
+
+                        if should_defer_for_bilateral_retry {
+                            tel_worker.log_chunk_retry(
+                                session_id,
+                                idx,
+                                "language_context_bilateral",
+                                "deferred_waiting_for_right_context",
+                                chunk_samples,
+                                chunk_samples,
+                                true,
+                            );
+                            if let Some(orig_audio) = audio_for_retry {
+                                pending_hybrid_retry = Some(PendingHybridRetry {
+                                    idx,
+                                    text,
+                                    orig_audio,
+                                    left_context_tail: prev_chunk_tail_snapshot,
+                                });
+                                pending_w.fetch_sub(1, Ordering::Relaxed);
+                                continue;
+                            }
+                        }
+
                         if is_parakeet_v3_w
                             && is_final_chunk
                             && text.trim().is_empty()
@@ -1720,20 +2177,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             }
                         }
 
-                        let live_preview = {
-                            let mut guard = results_w.lock().unwrap_or_else(|e| e.into_inner());
-                            guard.push((idx, text));
-                            build_live_preview(&guard, 240)
-                        };
-                        if !live_preview.is_empty() {
-                            emit_transcription_preview(
-                                &ah_w,
-                                operation_id_w,
-                                "recording",
-                                &live_preview,
-                                true,
-                            );
-                        }
+                        push_chunk_result(&results_w, &ah_w, operation_id_w, idx, text);
                     }
                     Err(err) => {
                         failed_chunks_w.fetch_add(1, Ordering::Relaxed);
@@ -3113,6 +3557,76 @@ mod tests {
             "Extremely",
             "fr",
             4 * 16_000
+        ));
+    }
+
+    #[test]
+    fn hybrid_language_detector_flags_pseudo_english_french_chunk() {
+        assert!(is_suspicious_hybrid_language_chunk(
+            "who sace who c'm derive",
+            "fr",
+            4 * 16_000,
+        ));
+    }
+
+    #[test]
+    fn hybrid_language_detector_keeps_normal_french_chunk() {
+        assert!(!is_suspicious_hybrid_language_chunk(
+            "ou est-ce que le probleme a derive",
+            "fr",
+            4 * 16_000,
+        ));
+    }
+
+    #[test]
+    fn short_chunk_retry_detector_flags_english_drift() {
+        assert!(should_force_short_chunk_context_retry(
+            "Did I too?",
+            "fr",
+            (1.7 * 16_000.0) as usize,
+            false,
+        ));
+        assert!(should_force_short_chunk_context_retry(
+            "Just the meilleur.",
+            "fr",
+            2 * 16_000,
+            false,
+        ));
+    }
+
+    #[test]
+    fn short_chunk_retry_detector_keeps_clear_french_short_chunk() {
+        assert!(!should_force_short_chunk_context_retry(
+            "Pas compris.",
+            "fr",
+            2 * 16_000,
+            false,
+        ));
+    }
+
+    #[test]
+    fn mixed_chunk_retry_detector_flags_embedded_english_phrase() {
+        assert!(should_force_mixed_chunk_context_retry(
+            "ou tu take the note and apres tu me dis si c'est le chunk",
+            "fr",
+            6 * 16_000,
+            false,
+        ));
+        assert!(should_force_mixed_chunk_context_retry(
+            "est-ce que tu gardes le francais or est-ce que tu pars en anglais",
+            "fr",
+            5 * 16_000,
+            false,
+        ));
+    }
+
+    #[test]
+    fn mixed_chunk_retry_detector_keeps_clear_french_phrase() {
+        assert!(!should_force_mixed_chunk_context_retry(
+            "est-ce que tu gardes le francais ou est-ce que tu repars normalement",
+            "fr",
+            6 * 16_000,
+            false,
         ));
     }
 

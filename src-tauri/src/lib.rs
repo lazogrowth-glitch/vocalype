@@ -28,9 +28,7 @@ mod security;
 // continue to resolve without changes.
 
 // processing
-pub use processing::{
-    code_dictation, correction_tracker, dictionary, filler, post_processing, punctuation,
-};
+pub use processing::{correction_tracker, dictionary, filler, post_processing, punctuation};
 // security
 pub use security::{bundle_signing, integrity, license, model_crypto, secret_store};
 // llm
@@ -45,7 +43,7 @@ pub use runtime::{
     adaptive_runtime, chunking, command_mode, context_detector, model_ids, parakeet_quality,
     parakeet_text, runtime_observability, session_glossary, session_keyterms, startup_warmup,
     telemetry, transcription_confidence, transcription_coordinator, vocabulary_store,
-    voice_feedback, voice_profile, wake_word,
+    voice_feedback, voice_profile,
 };
 // platform
 pub use platform::signal_handle;
@@ -863,6 +861,39 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run(cli_args: CliArgs) {
+    if cli_args.postprocess_benchmark {
+        let runtime = tokio::runtime::Runtime::new()
+            .expect("failed to create tokio runtime for post-process benchmark");
+        match runtime.block_on(eval::postprocess_benchmark::run_cli(&cli_args)) {
+            Ok(path) => {
+                println!(
+                    "Post-process benchmark report written to {}",
+                    path.display()
+                );
+            }
+            Err(err) => {
+                eprintln!("Post-process benchmark failed: {}", err);
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
+    if cli_args.postprocess_probe_history_id.is_some() {
+        let runtime = tokio::runtime::Runtime::new()
+            .expect("failed to create tokio runtime for post-process probe");
+        match runtime.block_on(eval::postprocess_benchmark::run_probe_cli(&cli_args)) {
+            Ok(path) => {
+                println!("Post-process probe report written to {}", path.display());
+            }
+            Err(err) => {
+                eprintln!("Post-process probe failed: {}", err);
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
     // Parse console logging directives from RUST_LOG, falling back to info-level logging
     // when the variable is unset
     let console_filter = build_console_filter();
@@ -918,7 +949,6 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_show_tray_icon_setting,
         shortcut::change_long_audio_model_setting,
         shortcut::change_long_audio_threshold_setting,
-        shortcut::change_wake_word_enabled_setting,
         shortcut::native_shortcut_capture::start_native_shortcut_capture_recording,
         shortcut::native_shortcut_capture::stop_native_shortcut_capture_recording,
         trigger_update_check,

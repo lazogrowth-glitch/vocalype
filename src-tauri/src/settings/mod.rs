@@ -439,11 +439,6 @@ pub struct AppSettings {
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
-    /// When true, Vocalype listens for the wake word "dictate" in the
-    /// background and starts a hands-free recording session automatically.
-    /// Requires the microphone stream to be open (AlwaysOn mode recommended).
-    #[serde(default)]
-    pub wake_word_enabled: bool,
     /// Sliding window of the last observed inter-word pause durations (ms).
     /// Accumulated across all recording modes to calibrate the adaptive
     /// silence threshold for wake-word auto-stop.
@@ -781,7 +776,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 1,
             name: "Corriger".to_string(),
             description: Some("Corrige les fautes sans changer le sens.".to_string()),
-            prompt: "Correct spelling, punctuation, capitalization, and spacing. Keep the same language and meaning. Remove obvious filler words only if they do not change the meaning. Return only the corrected text.\n\nText:\n${output}".to_string(),
+            prompt: "Corrige le texte sans changer les faits.\n\nTexte:\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -789,7 +784,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 2,
             name: "Note candidat".to_string(),
             description: Some("Crée une note ATS propre après un appel.".to_string()),
-            prompt: "Transform the dictated text into a clean recruiter ATS note.\n\nKeep the same language as the source.\n\nStructure the output with:\n- Candidate summary\n- Experience / background\n- Key skills\n- Motivation\n- Salary / availability if mentioned\n- Concerns / risks if mentioned\n- Next step\n\nDo not invent information. If something is not mentioned, omit it. Return only the final ATS note.\n\nText:\n${output}".to_string(),
+            prompt: "Cree une note ATS claire. Garde tous les faits exacts. N'ajoute rien.\n\nTexte:\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -797,7 +792,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 3,
             name: "Email candidat".to_string(),
             description: Some("Rédige un email de suivi professionnel.".to_string()),
-            prompt: "Transform the dictated text into a clear, professional email to a candidate.\n\nKeep the same language as the source.\nMake it concise, polite, and natural.\nDo not add fake details.\nReturn only the email body, no subject line.\n\nText:\n${output}".to_string(),
+            prompt: "Ecris un email professionnel au candidat. Garde tous les faits exacts. N'ajoute rien.\n\nTexte:\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -805,7 +800,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 4,
             name: "Message LinkedIn".to_string(),
             description: Some("Crée un message court de sourcing ou relance.".to_string()),
-            prompt: "Transform the dictated text into a short, natural LinkedIn message for recruiting.\n\nKeep it concise.\nMake it human, direct, and not too salesy.\nKeep the same language as the source.\nDo not exaggerate or invent details.\nReturn only the message.\n\nText:\n${output}".to_string(),
+            prompt: "Ecris un message LinkedIn court et clair. Garde tous les faits exacts. N'ajoute rien.\n\nTexte:\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -813,11 +808,69 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 5,
             name: "Résumé client".to_string(),
             description: Some("Prépare un résumé candidat prêt à envoyer.".to_string()),
-            prompt: "Transform the dictated text into a professional candidate summary for a client.\n\nKeep the same language as the source.\nMake it clear, concise, and business-oriented.\nStructure it with:\n- Candidate profile\n- Relevant experience\n- Why they may fit the role\n- Key strengths\n- Possible concerns if mentioned\n- Recommended next step\n\nDo not invent information. Return only the client-ready summary.\n\nText:\n${output}".to_string(),
+            prompt: "Cree un resume recruteur clair pour le client. Garde tous les faits exacts. N'ajoute rien.\n\nTexte:\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
     ]
+}
+
+fn legacy_default_post_process_action_prompt(key: u8) -> Option<&'static str> {
+    match key {
+        1 => Some(
+            "Correct spelling, punctuation, capitalization, and spacing. Keep the same language and meaning. Remove obvious filler words only if they do not change the meaning. Return only the corrected text.\n\nText:\n${output}",
+        ),
+        2 => Some(
+            "Transform the dictated text into a clean recruiter ATS note.\n\nKeep the same language as the source.\n\nStructure the output with:\n- Candidate summary\n- Experience / background\n- Key skills\n- Motivation\n- Salary / availability if mentioned\n- Concerns / risks if mentioned\n- Next step\n\nDo not invent information. If something is not mentioned, omit it. Return only the final ATS note.\n\nText:\n${output}",
+        ),
+        3 => Some(
+            "Transform the dictated text into a clear, professional email to a candidate.\n\nKeep the same language as the source.\nMake it concise, polite, and natural.\nDo not add fake details.\nReturn only the email body, no subject line.\n\nText:\n${output}",
+        ),
+        4 => Some(
+            "Transform the dictated text into a short, natural LinkedIn message for recruiting.\n\nKeep it concise.\nMake it human, direct, and not too salesy.\nKeep the same language as the source.\nDo not exaggerate or invent details.\nReturn only the message.\n\nText:\n${output}",
+        ),
+        5 => Some(
+            "Transform the dictated text into a professional candidate summary for a client.\n\nKeep the same language as the source.\nMake it clear, concise, and business-oriented.\nStructure it with:\n- Candidate profile\n- Relevant experience\n- Why they may fit the role\n- Key strengths\n- Possible concerns if mentioned\n- Recommended next step\n\nDo not invent information. Return only the client-ready summary.\n\nText:\n${output}",
+        ),
+        _ => None,
+    }
+}
+
+fn transitional_default_post_process_action_prompt(key: u8) -> Option<&'static str> {
+    match key {
+        1 => Some("Corrige le texte sans changer les faits.\n\nTexte:\n${output}"),
+        2 => Some("Cree une note ATS claire. Garde tous les faits exacts. N'ajoute rien.\n\nTexte:\n${output}"),
+        3 => Some("Ecris un email professionnel bref au candidat a partir de ces notes. Garde tous les faits exacts. N'ajoute rien.\n\nTexte:\n${output}"),
+        4 => Some("Ecris un message LinkedIn court et clair. Garde tous les faits exacts. N'ajoute rien.\n\nTexte:\n${output}"),
+        5 => Some("Cree un resume recruteur clair pour le client. Garde tous les faits exacts. N'ajoute rien.\n\nTexte:\n${output}"),
+        _ => None,
+    }
+}
+
+fn upgrade_default_post_process_actions(settings: &mut AppSettings) -> bool {
+    let defaults = default_post_process_actions();
+    let mut changed = false;
+
+    for action in &mut settings.post_process_actions {
+        let Some(legacy_prompt) = legacy_default_post_process_action_prompt(action.key) else {
+            continue;
+        };
+        let Some(default_action) = defaults
+            .iter()
+            .find(|candidate| candidate.key == action.key)
+        else {
+            continue;
+        };
+
+        let transitional_prompt = transitional_default_post_process_action_prompt(action.key);
+
+        if action.prompt == legacy_prompt || transitional_prompt == Some(action.prompt.as_str()) {
+            action.prompt = default_action.prompt.clone();
+            changed = true;
+        }
+    }
+
+    changed
 }
 
 fn default_typing_tool() -> TypingTool {
@@ -910,6 +963,8 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
 
     if settings.post_process_actions.is_empty() {
         settings.post_process_actions = default_post_process_actions();
+        changed = true;
+    } else if upgrade_default_post_process_actions(settings) {
         changed = true;
     }
 
@@ -1395,7 +1450,6 @@ pub fn get_default_settings() -> AppSettings {
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
         always_on_microphone: false,
-        wake_word_enabled: false,
         recording_mode: RecordingMode::default(),
         selected_microphone: None,
         selected_microphone_index: None,

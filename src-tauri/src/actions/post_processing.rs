@@ -163,6 +163,9 @@ pub(super) async fn process_transcription_text(
 
     let dict_started = Instant::now();
     let before_dict = final_text.clone();
+    // Apply user dictionary (learned corrections + DEVELOPER_VOCABULARY).
+    // Safe now: DictionaryManager::add() enforces a 5-char minimum on `from`,
+    // so short noise words can never be stored.
     if let Some(dict) = app.try_state::<std::sync::Arc<crate::dictionary::DictionaryManager>>() {
         let patterns = dict.compiled_entries();
         final_text = crate::dictionary::apply_dictionary(&final_text, &patterns);
@@ -179,28 +182,6 @@ pub(super) async fn process_transcription_text(
             dict_started,
             Some(format!("changed={}", final_text != before_dict)),
         );
-    }
-
-    // Code-dictation conversion: spoken symbols → code syntax (Code context only).
-    let is_code_ctx_early = active_app_context
-        .as_ref()
-        .map(|ctx| ctx.category.skip_post_processing())
-        .unwrap_or(false);
-    if is_code_ctx_early {
-        let code_dict_started = Instant::now();
-        let before_code = final_text.clone();
-        let code_language = active_app_context
-            .as_ref()
-            .and_then(|ctx| ctx.code_language);
-        final_text = crate::code_dictation::apply_code_dictation(&final_text, code_language);
-        telemetry.log_text_transform(session_id, "code_dictation", &before_code, &final_text);
-        if let Ok(mut p) = profiler.lock() {
-            p.push_step_since(
-                "code_dictation",
-                code_dict_started,
-                Some(format!("changed={}", final_text != before_code)),
-            );
-        }
     }
 
     let snippet_matched = if let Some(expanded) =

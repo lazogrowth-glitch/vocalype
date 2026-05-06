@@ -516,8 +516,12 @@ pub async fn update_history_entry_text(
         let settings = crate::settings::get_settings(&app);
         for candidate in diff_words(&entry.transcription_text, &new_text) {
             let count = correction_tracker.record(&candidate.from, &candidate.to);
+            // Learn the correction once it has been confirmed AUTO_ADD_THRESHOLD times.
+            // DictionaryManager::add() enforces a 5-char minimum on `from`, which is
+            // the key safety guard preventing short noise words (est, car, le, etc.)
+            // from being stored and causing substring corruption.
             if settings.auto_learn_dictionary && count >= AUTO_ADD_THRESHOLD {
-                let _ = dictionary.add(candidate.from, candidate.to);
+                let _ = dictionary.add(candidate.from.clone(), candidate.to.clone());
             }
         }
 

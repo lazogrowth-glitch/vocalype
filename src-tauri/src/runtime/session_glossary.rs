@@ -3,16 +3,17 @@
 //! While the user codes, this module silently watches the clipboard in the
 //! background (every 2 s, only when the active app is a code editor).
 //! Every time new code is copied, it extracts camelCase / PascalCase /
-//! snake_case / CONSTANT_CASE identifiers and adds them to a session-scoped
-//! in-memory `HashSet`.
+//! snake_case / CONSTANT_CASE identifiers and adds them to a persistent
+//! `HashSet` stored in the app data directory.
 //!
 //! At Parakeet inference time, these terms are merged into `custom_words` so
 //! the recognition engine already knows project-specific names the first time
 //! the developer dictates them — without the user ever opening a settings page.
 //!
 //! ## Lifecycle
-//! - Created at startup → cleared on app restart (never persisted to disk).
+//! - Loaded from `session_glossary.json` at startup (persists across restarts).
 //! - Background task spawned once in `lib.rs` `setup()`.
+//! - Saved to disk after every batch of new identifiers is ingested.
 //! - Merged into `custom_words` inside `build_correction_terms()` in `inference.rs`.
 //!
 //! ## Identifier rules
@@ -21,7 +22,7 @@
 //! - Be at least 4 characters long (skips noise like `UI`, `id`, etc.).
 //! - Not be a short all-caps word ≤ 4 chars (avoids `HTTP`, `JSON` spam).
 
-use log::debug;
+use log::{debug, warn};
 use regex::Regex;
 use std::collections::HashSet;
 use std::sync::Mutex;
@@ -142,11 +143,62 @@ pub fn extract_code_identifiers(text: &str) -> Vec<String> {
 
 // ── Background polling task ───────────────────────────────────────────────────
 
+// ── Disk persistence ──────────────────────────────────────────────────────────
+
+const GLOSSARY_FILE: &str = "session_glossary.json";
+
+/// Load persisted glossary terms from disk.  Returns an empty set on any error.
+fn load_from_disk(app: &tauri::AppHandle) -> HashSet<String> {
+    use tauri::Manager;
+    let path = match app.path().app_data_dir() {
+        Ok(d) => d.join(GLOSSARY_FILE),
+        Err(e) => {
+            warn!("[session_glossary] cannot resolve app data dir: {}", e);
+            return HashSet::new();
+        }
+    };
+    match std::fs::read_to_string(&path) {
+        Ok(content) => serde_json::from_str::<HashSet<String>>(&content).unwrap_or_default(),
+        Err(_) => HashSet::new(), // file doesn't exist yet — normal on first run
+    }
+}
+
+/// Persist the current glossary terms to disk (best-effort).
+fn save_to_disk(app: &tauri::AppHandle, terms: &HashSet<String>) {
+    use tauri::Manager;
+    let path = match app.path().app_data_dir() {
+        Ok(d) => d.join(GLOSSARY_FILE),
+        Err(e) => {
+            warn!(
+                "[session_glossary] cannot resolve app data dir for save: {}",
+                e
+            );
+            return;
+        }
+    };
+    match serde_json::to_string(terms) {
+        Ok(json) => {
+            if let Err(e) = std::fs::write(&path, json) {
+                warn!(
+                    "[session_glossary] failed to write {}: {}",
+                    path.display(),
+                    e
+                );
+            }
+        }
+        Err(e) => warn!("[session_glossary] serialization error: {}", e),
+    }
+}
+
+// ── Background polling task ───────────────────────────────────────────────────
+
 /// Spawn the clipboard polling background task.
 ///
-/// Polls every `interval_ms` milliseconds. On each tick:
+/// On startup, loads previously persisted terms from disk so identifiers
+/// survive app restarts.  Polls every `interval_ms` milliseconds; on each tick:
 /// 1. Reads the clipboard on the Tauri main thread.
 /// 2. Passes content to `SessionGlossary::ingest()`.
+/// 3. If new terms were added, flushes to disk.
 ///
 /// No context guard here — the regex only matches code-shaped identifiers
 /// (camelCase / snake_case / PascalCase), so false positives from non-code
@@ -162,6 +214,21 @@ pub fn spawn_clipboard_watcher(app: tauri::AppHandle, interval_ms: u64) {
     use tauri_plugin_clipboard_manager::ClipboardExt;
 
     thread::spawn(move || {
+        // ── Load persisted terms on startup ───────────────────────────────
+        let persisted = load_from_disk(&app);
+        if !persisted.is_empty() {
+            if let Some(state) = app.try_state::<SessionGlossaryState>() {
+                if let Ok(mut glossary) = state.0.lock() {
+                    let count = persisted.len();
+                    glossary.terms.extend(persisted);
+                    debug!(
+                        "[session_glossary] loaded {} persisted terms from disk",
+                        count
+                    );
+                }
+            }
+        }
+
         debug!(
             "[session_glossary] clipboard watcher started ({}ms interval)",
             interval_ms
@@ -192,28 +259,37 @@ pub fn spawn_clipboard_watcher(app: tauri::AppHandle, interval_ms: u64) {
             }
 
             // Ingest into state.
-            let should_prewarm = if let Some(state) = app.try_state::<SessionGlossaryState>() {
-                if let Ok(mut glossary) = state.0.lock() {
-                    let added = glossary.ingest(&clipboard_text);
-                    if added > 0 {
-                        debug!(
-                            "[session_glossary] +{} new terms (total {})",
-                            added,
-                            glossary.terms.len()
-                        );
+            let (should_prewarm, terms_snapshot) =
+                if let Some(state) = app.try_state::<SessionGlossaryState>() {
+                    if let Ok(mut glossary) = state.0.lock() {
+                        let added = glossary.ingest(&clipboard_text);
+                        let snapshot = if added > 0 {
+                            debug!(
+                                "[session_glossary] +{} new terms (total {})",
+                                added,
+                                glossary.terms.len()
+                            );
+                            Some(glossary.terms.clone())
+                        } else {
+                            None
+                        };
+                        // Fire pre-warm the first time we cross the code-context threshold.
+                        let crossed = !glossary.prewarmed && glossary.term_count() >= 3;
+                        if crossed {
+                            glossary.prewarmed = true;
+                        }
+                        (crossed, snapshot)
+                    } else {
+                        (false, None)
                     }
-                    // Fire pre-warm the first time we cross the code-context threshold.
-                    let crossed = !glossary.prewarmed && glossary.term_count() >= 3;
-                    if crossed {
-                        glossary.prewarmed = true;
-                    }
-                    crossed
                 } else {
-                    false
-                }
-            } else {
-                false
-            };
+                    (false, None)
+                };
+
+            // Persist new terms to disk.
+            if let Some(terms) = terms_snapshot {
+                save_to_disk(&app, &terms);
+            }
 
             // If llm_auto_mode is on and we just crossed the threshold,
             // boot llama-server silently so it is ready before the first dictation.

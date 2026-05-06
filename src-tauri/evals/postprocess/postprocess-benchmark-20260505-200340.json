@@ -1,0 +1,3413 @@
+{
+  "provider_id": "vocalype-cloud",
+  "model": "llama-3.1-8b-instant",
+  "output_count": 4,
+  "attempted_count": 56,
+  "target_output_count": 50,
+  "summaries": [
+    {
+      "profile": "baseline",
+      "runs": 4,
+      "average_score": 64.556244,
+      "aggregate": {
+        "samples": 4,
+        "global_wer": 5.563817,
+        "global_cer": 4.998124,
+        "global_omission_rate": 0.37644267,
+        "global_duplication_rate": 0.75130963,
+        "global_hallucination_rate": 0.75130963,
+        "average_end_truncation_score": 1.0,
+        "top_omitted_terms": [
+          {
+            "word": "elle",
+            "count": 2
+          },
+          {
+            "word": "mai",
+            "count": 2
+          },
+          {
+            "word": "point",
+            "count": 2
+          },
+          {
+            "word": "prochaine",
+            "count": 2
+          },
+          {
+            "word": "14",
+            "count": 1
+          },
+          {
+            "word": "6",
+            "count": 1
+          },
+          {
+            "word": "action",
+            "count": 1
+          },
+          {
+            "word": "actuelle",
+            "count": 1
+          },
+          {
+            "word": "ansprochaine",
+            "count": 1
+          },
+          {
+            "word": "atscandidat",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "de",
+            "count": 31
+          },
+          {
+            "word": "et",
+            "count": 15
+          },
+          {
+            "word": "un",
+            "count": 15
+          },
+          {
+            "word": "pour",
+            "count": 12
+          },
+          {
+            "word": "dans",
+            "count": 11
+          },
+          {
+            "word": "expérience",
+            "count": 10
+          },
+          {
+            "word": "la",
+            "count": 10
+          },
+          {
+            "word": "nous",
+            "count": 10
+          },
+          {
+            "word": "recrutement",
+            "count": 10
+          },
+          {
+            "word": "est",
+            "count": 9
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "de",
+            "count": 31
+          },
+          {
+            "word": "et",
+            "count": 15
+          },
+          {
+            "word": "un",
+            "count": 15
+          },
+          {
+            "word": "pour",
+            "count": 12
+          },
+          {
+            "word": "dans",
+            "count": 11
+          },
+          {
+            "word": "expérience",
+            "count": 10
+          },
+          {
+            "word": "la",
+            "count": 10
+          },
+          {
+            "word": "nous",
+            "count": 10
+          },
+          {
+            "word": "recrutement",
+            "count": 10
+          },
+          {
+            "word": "est",
+            "count": 9
+          }
+        ]
+      },
+      "issue_counts": [
+        [
+          "salary_date_availability_changed",
+          10
+        ],
+        [
+          "action_dropped",
+          3
+        ],
+        [
+          "important_detail_dropped",
+          3
+        ],
+        [
+          "too_creative",
+          4
+        ]
+      ]
+    },
+    {
+      "profile": "hardened",
+      "runs": 0,
+      "average_score": 0.0,
+      "aggregate": {
+        "samples": 0,
+        "global_wer": -0.0,
+        "global_cer": -0.0,
+        "global_omission_rate": -0.0,
+        "global_duplication_rate": -0.0,
+        "global_hallucination_rate": -0.0,
+        "average_end_truncation_score": -0.0,
+        "top_omitted_terms": [],
+        "top_duplicated_terms": [],
+        "top_hallucinated_terms": []
+      },
+      "issue_counts": []
+    }
+  ],
+  "runs": [
+    {
+      "case_id": "nadia_base",
+      "profile": "baseline",
+      "mode": "correction",
+      "score": 91.59664,
+      "issues": [
+        {
+          "kind": "too_creative",
+          "detail": "Hallucination rate 22.7% is above the conservative threshold"
+        }
+      ],
+      "metrics": {
+        "wer": 0.3125,
+        "cer": 0.23529412,
+        "omission_rate": 0.17857143,
+        "duplication_rate": 0.22689076,
+        "hallucination_rate": 0.22689076,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 112,
+        "hypothesis_word_count": 119,
+        "reference_char_count": 663,
+        "hypothesis_char_count": 736,
+        "omitted_words": 20,
+        "duplicated_words": 27,
+        "hallucinated_words": 27,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "elle",
+            "count": 2
+          },
+          {
+            "word": "point",
+            "count": 2
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "bonne",
+            "count": 1
+          },
+          {
+            "word": "exécutif",
+            "count": 1
+          },
+          {
+            "word": "fort",
+            "count": 1
+          },
+          {
+            "word": "h",
+            "count": 1
+          },
+          {
+            "word": "lui",
+            "count": 1
+          },
+          {
+            "word": "mai",
+            "count": 1
+          },
+          {
+            "word": "parce",
+            "count": 1
+          },
+          {
+            "word": "peu",
+            "count": 1
+          },
+          {
+            "word": "pour",
+            "count": 1
+          },
+          {
+            "word": "prochaine",
+            "count": 1
+          },
+          {
+            "word": "préavis",
+            "count": 1
+          },
+          {
+            "word": "qu",
+            "count": 1
+          },
+          {
+            "word": "sur",
+            "count": 1
+          },
+          {
+            "word": "surtout",
+            "count": 1
+          },
+          {
+            "word": "très",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "de",
+            "count": 2
+          },
+          {
+            "word": "capacité",
+            "count": 1
+          },
+          {
+            "word": "car",
+            "count": 1
+          },
+          {
+            "word": "cependant",
+            "count": 1
+          },
+          {
+            "word": "compris",
+            "count": 1
+          },
+          {
+            "word": "convient",
+            "count": 1
+          },
+          {
+            "word": "dans",
+            "count": 1
+          },
+          {
+            "word": "el",
+            "count": 1
+          },
+          {
+            "word": "exécutif.prochaine",
+            "count": 1
+          },
+          {
+            "word": "forts",
+            "count": 1
+          },
+          {
+            "word": "heures",
+            "count": 1
+          },
+          {
+            "word": "il",
+            "count": 1
+          },
+          {
+            "word": "les",
+            "count": 1
+          },
+          {
+            "word": "mai.nadia",
+            "count": 1
+          },
+          {
+            "word": "mansouri",
+            "count": 1
+          },
+          {
+            "word": "outils",
+            "count": 1
+          },
+          {
+            "word": "où",
+            "count": 1
+          },
+          {
+            "word": "perçoit",
+            "count": 1
+          },
+          {
+            "word": "points",
+            "count": 1
+          },
+          {
+            "word": "principalement",
+            "count": 1
+          },
+          {
+            "word": "préavis.l",
+            "count": 1
+          },
+          {
+            "word": "sa",
+            "count": 1
+          },
+          {
+            "word": "salaire",
+            "count": 1
+          },
+          {
+            "word": "ses",
+            "count": 1
+          },
+          {
+            "word": "son",
+            "count": 1
+          },
+          {
+            "word": "un",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "de",
+            "count": 2
+          },
+          {
+            "word": "capacité",
+            "count": 1
+          },
+          {
+            "word": "car",
+            "count": 1
+          },
+          {
+            "word": "cependant",
+            "count": 1
+          },
+          {
+            "word": "compris",
+            "count": 1
+          },
+          {
+            "word": "convient",
+            "count": 1
+          },
+          {
+            "word": "dans",
+            "count": 1
+          },
+          {
+            "word": "el",
+            "count": 1
+          },
+          {
+            "word": "exécutif.prochaine",
+            "count": 1
+          },
+          {
+            "word": "forts",
+            "count": 1
+          },
+          {
+            "word": "heures",
+            "count": 1
+          },
+          {
+            "word": "il",
+            "count": 1
+          },
+          {
+            "word": "les",
+            "count": 1
+          },
+          {
+            "word": "mai.nadia",
+            "count": 1
+          },
+          {
+            "word": "mansouri",
+            "count": 1
+          },
+          {
+            "word": "outils",
+            "count": 1
+          },
+          {
+            "word": "où",
+            "count": 1
+          },
+          {
+            "word": "perçoit",
+            "count": 1
+          },
+          {
+            "word": "points",
+            "count": 1
+          },
+          {
+            "word": "principalement",
+            "count": 1
+          },
+          {
+            "word": "préavis.l",
+            "count": 1
+          },
+          {
+            "word": "sa",
+            "count": 1
+          },
+          {
+            "word": "salaire",
+            "count": 1
+          },
+          {
+            "word": "ses",
+            "count": 1
+          },
+          {
+            "word": "son",
+            "count": 1
+          },
+          {
+            "word": "un",
+            "count": 1
+          }
+        ]
+      },
+      "output": "Note pour le candidat Nadia El Mansouri, entretien du 6 mai.\n\nNadia El Mansouri a 5 ans d'expérience en recrutement tech, principalement sur des postes backend, DevOps et data. Elle utilise les outils LinkedIn Recruiter, Greenhouse et Notion. Elle travaille actuellement chez TalentBridge à Montréal, où elle perçoit un salaire de 82 000 dollars. Elle vise un salaire compris entre 90 000 et 95 000 dollars. Elle est disponible dans 4 semaines, car elle doit terminer son préavis.\n\nL'un de ses points forts est sa capacité à sourcer des profils difficiles. Cependant, il convient de surveiller son manque d'expérience dans le recrutement exécutif.\n\nProchaine action : envoyer le test écrit demain matin et faire un suivi vendredi à 14 heures."
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "score": 72.67339,
+      "issues": [
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: '6 mai'"
+        },
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: '82 000 dollars'"
+        },
+        {
+          "kind": "important_detail_dropped",
+          "detail": "Only 88% of tracked facts were preserved in the output"
+        },
+        {
+          "kind": "too_creative",
+          "detail": "Hallucination rate 91.3% is above the conservative threshold"
+        }
+      ],
+      "metrics": {
+        "wer": 6.7727275,
+        "cer": 6.130435,
+        "omission_rate": 0.36363637,
+        "duplication_rate": 0.9130435,
+        "hallucination_rate": 0.9130435,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 22,
+        "hypothesis_word_count": 161,
+        "reference_char_count": 161,
+        "hypothesis_char_count": 1140,
+        "omitted_words": 8,
+        "duplicated_words": 147,
+        "hallucinated_words": 147,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "6",
+            "count": 1
+          },
+          {
+            "word": "ansprochaine",
+            "count": 1
+          },
+          {
+            "word": "atscandidat",
+            "count": 1
+          },
+          {
+            "word": "mai",
+            "count": 1
+          },
+          {
+            "word": "mansouriexpérience",
+            "count": 1
+          },
+          {
+            "word": "nadia",
+            "count": 1
+          },
+          {
+            "word": "note",
+            "count": 1
+          },
+          {
+            "word": "recruitersituation",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "dans",
+            "count": 5
+          },
+          {
+            "word": "de",
+            "count": 5
+          },
+          {
+            "word": "et",
+            "count": 5
+          },
+          {
+            "word": "pour",
+            "count": 5
+          },
+          {
+            "word": "un",
+            "count": 5
+          },
+          {
+            "word": "est",
+            "count": 4
+          },
+          {
+            "word": "expérience",
+            "count": 4
+          },
+          {
+            "word": "le",
+            "count": 4
+          },
+          {
+            "word": "a",
+            "count": 3
+          },
+          {
+            "word": "d",
+            "count": 3
+          },
+          {
+            "word": "elle",
+            "count": 3
+          },
+          {
+            "word": "la",
+            "count": 3
+          },
+          {
+            "word": "recrutement",
+            "count": 3
+          },
+          {
+            "word": "tech",
+            "count": 3
+          },
+          {
+            "word": "une",
+            "count": 3
+          },
+          {
+            "word": "à",
+            "count": 3
+          },
+          {
+            "word": "000",
+            "count": 2
+          },
+          {
+            "word": "4",
+            "count": 2
+          },
+          {
+            "word": "candidate",
+            "count": 2
+          },
+          {
+            "word": "disponible",
+            "count": 2
+          },
+          {
+            "word": "démarrer",
+            "count": 2
+          },
+          {
+            "word": "en",
+            "count": 2
+          },
+          {
+            "word": "profils",
+            "count": 2
+          },
+          {
+            "word": "sourcification",
+            "count": 2
+          },
+          {
+            "word": "90",
+            "count": 1
+          },
+          {
+            "word": "95",
+            "count": 1
+          },
+          {
+            "word": "acquis",
+            "count": 1
+          },
+          {
+            "word": "actuellement",
+            "count": 1
+          },
+          {
+            "word": "ans",
+            "count": 1
+          },
+          {
+            "word": "après",
+            "count": 1
+          },
+          {
+            "word": "availability**nadia",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "avoir",
+            "count": 1
+          },
+          {
+            "word": "backend",
+            "count": 1
+          },
+          {
+            "word": "background**nadia",
+            "count": 1
+          },
+          {
+            "word": "bonne",
+            "count": 1
+          },
+          {
+            "word": "ce",
+            "count": 1
+          },
+          {
+            "word": "chez",
+            "count": 1
+          },
+          {
+            "word": "compris",
+            "count": 1
+          },
+          {
+            "word": "compréhension",
+            "count": 1
+          },
+          {
+            "word": "connaissance",
+            "count": 1
+          },
+          {
+            "word": "data.**experience",
+            "count": 1
+          },
+          {
+            "word": "des",
+            "count": 1
+          },
+          {
+            "word": "difficiles",
+            "count": 1
+          },
+          {
+            "word": "difficiles**motivation**nadia",
+            "count": 1
+          },
+          {
+            "word": "discuter",
+            "count": 1
+          },
+          {
+            "word": "dollars",
+            "count": 1
+          },
+          {
+            "word": "domaine",
+            "count": 1
+          },
+          {
+            "word": "du",
+            "count": 1
+          },
+          {
+            "word": "défi",
+            "count": 1
+          },
+          {
+            "word": "entre",
+            "count": 1
+          },
+          {
+            "word": "envoyer",
+            "count": 1
+          },
+          {
+            "word": "expertise",
+            "count": 1
+          },
+          {
+            "word": "exécutif",
+            "count": 1
+          },
+          {
+            "word": "faire",
+            "count": 1
+          },
+          {
+            "word": "greenhouse",
+            "count": 1
+          },
+          {
+            "word": "local.**key",
+            "count": 1
+          },
+          {
+            "word": "manque",
+            "count": 1
+          },
+          {
+            "word": "mansouri",
+            "count": 1
+          },
+          {
+            "word": "marché",
+            "count": 1
+          },
+          {
+            "word": "montréal",
+            "count": 1
+          },
+          {
+            "word": "motivée",
+            "count": 1
+          },
+          {
+            "word": "notion",
+            "count": 1
+          },
+          {
+            "word": "nouveau",
+            "count": 1
+          },
+          {
+            "word": "où",
+            "count": 1
+          },
+          {
+            "word": "particulière",
+            "count": 1
+          },
+          {
+            "word": "peu",
+            "count": 1
+          },
+          {
+            "word": "point",
+            "count": 1
+          },
+          {
+            "word": "poste",
+            "count": 1
+          },
+          {
+            "word": "postes",
+            "count": 1
+          },
+          {
+            "word": "pourrait",
+            "count": 1
+          },
+          {
+            "word": "principalement",
+            "count": 1
+          },
+          {
+            "word": "préavis.**salary",
+            "count": 1
+          },
+          {
+            "word": "qui",
+            "count": 1
+          },
+          {
+            "word": "recherche",
+            "count": 1
+          },
+          {
+            "word": "recruiter",
+            "count": 1
+          },
+          {
+            "word": "recruteur",
+            "count": 1
+          },
+          {
+            "word": "risks**nadia",
+            "count": 1
+          },
+          {
+            "word": "salaire",
+            "count": 1
+          },
+          {
+            "word": "semaines",
+            "count": 1
+          },
+          {
+            "word": "semaines.**concerns",
+            "count": 1
+          },
+          {
+            "word": "significative",
+            "count": 1
+          },
+          {
+            "word": "skills",
+            "count": 1
+          },
+          {
+            "word": "son",
+            "count": 1
+          },
+          {
+            "word": "step**prochaine",
+            "count": 1
+          },
+          {
+            "word": "suite",
+            "count": 1
+          },
+          {
+            "word": "summary**nadia",
+            "count": 1
+          },
+          {
+            "word": "sur",
+            "count": 1
+          },
+          {
+            "word": "surveiller.**next",
+            "count": 1
+          },
+          {
+            "word": "talentbridge",
+            "count": 1
+          },
+          {
+            "word": "terminé",
+            "count": 1
+          },
+          {
+            "word": "travaille",
+            "count": 1
+          },
+          {
+            "word": "trouver",
+            "count": 1
+          },
+          {
+            "word": "être",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "dans",
+            "count": 5
+          },
+          {
+            "word": "de",
+            "count": 5
+          },
+          {
+            "word": "et",
+            "count": 5
+          },
+          {
+            "word": "pour",
+            "count": 5
+          },
+          {
+            "word": "un",
+            "count": 5
+          },
+          {
+            "word": "est",
+            "count": 4
+          },
+          {
+            "word": "expérience",
+            "count": 4
+          },
+          {
+            "word": "le",
+            "count": 4
+          },
+          {
+            "word": "a",
+            "count": 3
+          },
+          {
+            "word": "d",
+            "count": 3
+          },
+          {
+            "word": "elle",
+            "count": 3
+          },
+          {
+            "word": "la",
+            "count": 3
+          },
+          {
+            "word": "recrutement",
+            "count": 3
+          },
+          {
+            "word": "tech",
+            "count": 3
+          },
+          {
+            "word": "une",
+            "count": 3
+          },
+          {
+            "word": "à",
+            "count": 3
+          },
+          {
+            "word": "000",
+            "count": 2
+          },
+          {
+            "word": "4",
+            "count": 2
+          },
+          {
+            "word": "candidate",
+            "count": 2
+          },
+          {
+            "word": "disponible",
+            "count": 2
+          },
+          {
+            "word": "démarrer",
+            "count": 2
+          },
+          {
+            "word": "en",
+            "count": 2
+          },
+          {
+            "word": "profils",
+            "count": 2
+          },
+          {
+            "word": "sourcification",
+            "count": 2
+          },
+          {
+            "word": "90",
+            "count": 1
+          },
+          {
+            "word": "95",
+            "count": 1
+          },
+          {
+            "word": "acquis",
+            "count": 1
+          },
+          {
+            "word": "actuellement",
+            "count": 1
+          },
+          {
+            "word": "ans",
+            "count": 1
+          },
+          {
+            "word": "après",
+            "count": 1
+          },
+          {
+            "word": "availability**nadia",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "avoir",
+            "count": 1
+          },
+          {
+            "word": "backend",
+            "count": 1
+          },
+          {
+            "word": "background**nadia",
+            "count": 1
+          },
+          {
+            "word": "bonne",
+            "count": 1
+          },
+          {
+            "word": "ce",
+            "count": 1
+          },
+          {
+            "word": "chez",
+            "count": 1
+          },
+          {
+            "word": "compris",
+            "count": 1
+          },
+          {
+            "word": "compréhension",
+            "count": 1
+          },
+          {
+            "word": "connaissance",
+            "count": 1
+          },
+          {
+            "word": "data.**experience",
+            "count": 1
+          },
+          {
+            "word": "des",
+            "count": 1
+          },
+          {
+            "word": "difficiles",
+            "count": 1
+          },
+          {
+            "word": "difficiles**motivation**nadia",
+            "count": 1
+          },
+          {
+            "word": "discuter",
+            "count": 1
+          },
+          {
+            "word": "dollars",
+            "count": 1
+          },
+          {
+            "word": "domaine",
+            "count": 1
+          },
+          {
+            "word": "du",
+            "count": 1
+          },
+          {
+            "word": "défi",
+            "count": 1
+          },
+          {
+            "word": "entre",
+            "count": 1
+          },
+          {
+            "word": "envoyer",
+            "count": 1
+          },
+          {
+            "word": "expertise",
+            "count": 1
+          },
+          {
+            "word": "exécutif",
+            "count": 1
+          },
+          {
+            "word": "faire",
+            "count": 1
+          },
+          {
+            "word": "greenhouse",
+            "count": 1
+          },
+          {
+            "word": "local.**key",
+            "count": 1
+          },
+          {
+            "word": "manque",
+            "count": 1
+          },
+          {
+            "word": "mansouri",
+            "count": 1
+          },
+          {
+            "word": "marché",
+            "count": 1
+          },
+          {
+            "word": "montréal",
+            "count": 1
+          },
+          {
+            "word": "motivée",
+            "count": 1
+          },
+          {
+            "word": "notion",
+            "count": 1
+          },
+          {
+            "word": "nouveau",
+            "count": 1
+          },
+          {
+            "word": "où",
+            "count": 1
+          },
+          {
+            "word": "particulière",
+            "count": 1
+          },
+          {
+            "word": "peu",
+            "count": 1
+          },
+          {
+            "word": "point",
+            "count": 1
+          },
+          {
+            "word": "poste",
+            "count": 1
+          },
+          {
+            "word": "postes",
+            "count": 1
+          },
+          {
+            "word": "pourrait",
+            "count": 1
+          },
+          {
+            "word": "principalement",
+            "count": 1
+          },
+          {
+            "word": "préavis.**salary",
+            "count": 1
+          },
+          {
+            "word": "qui",
+            "count": 1
+          },
+          {
+            "word": "recherche",
+            "count": 1
+          },
+          {
+            "word": "recruiter",
+            "count": 1
+          },
+          {
+            "word": "recruteur",
+            "count": 1
+          },
+          {
+            "word": "risks**nadia",
+            "count": 1
+          },
+          {
+            "word": "salaire",
+            "count": 1
+          },
+          {
+            "word": "semaines",
+            "count": 1
+          },
+          {
+            "word": "semaines.**concerns",
+            "count": 1
+          },
+          {
+            "word": "significative",
+            "count": 1
+          },
+          {
+            "word": "skills",
+            "count": 1
+          },
+          {
+            "word": "son",
+            "count": 1
+          },
+          {
+            "word": "step**prochaine",
+            "count": 1
+          },
+          {
+            "word": "suite",
+            "count": 1
+          },
+          {
+            "word": "summary**nadia",
+            "count": 1
+          },
+          {
+            "word": "sur",
+            "count": 1
+          },
+          {
+            "word": "surveiller.**next",
+            "count": 1
+          },
+          {
+            "word": "talentbridge",
+            "count": 1
+          },
+          {
+            "word": "terminé",
+            "count": 1
+          },
+          {
+            "word": "travaille",
+            "count": 1
+          },
+          {
+            "word": "trouver",
+            "count": 1
+          },
+          {
+            "word": "être",
+            "count": 1
+          }
+        ]
+      },
+      "output": "**Candidate Summary**\n\nNadia El Mansouri, candidate pour le poste de recruteur tech, a 5 ans d'expérience dans le domaine, principalement sur des postes backend, DevOps et data.\n\n**Experience / Background**\n\nNadia a une expérience significative en recrutement tech, avec une expertise particulière dans la sourcification de profils difficiles. Elle travaille actuellement chez TalentBridge à Montréal, où elle a acquis une bonne compréhension du marché local.\n\n**Key Skills**\n\n- Expérience en recrutement tech\n- Connaissance de LinkedIn Recruiter, Greenhouse et Notion\n- Sourcification de profils difficiles\n\n**Motivation**\n\nNadia est motivée pour trouver un nouveau défi et est disponible pour démarrer dans 4 semaines, après avoir terminé son préavis.\n\n**Salary / Availability**\n\nNadia est à la recherche d'un salaire compris entre 90 000 et 95 000 dollars. Elle est disponible pour démarrer dans 4 semaines.\n\n**Concerns / Risks**\n\nNadia manque un peu d'expérience dans le recrutement exécutif, ce qui pourrait être un point à surveiller.\n\n**Next Step**\n\nProchaine action : envoyer le test écrit demain matin et faire un suivi vendredi à 14 h pour discuter de la suite."
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "score": 58.729393,
+      "issues": [
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: '4 semaines'"
+        },
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: 'vendredi à 14 h'"
+        },
+        {
+          "kind": "action_dropped",
+          "detail": "Missing action detail: 'suivi vendredi à 14 h'"
+        },
+        {
+          "kind": "important_detail_dropped",
+          "detail": "Only 81% of tracked facts were preserved in the output"
+        },
+        {
+          "kind": "too_creative",
+          "detail": "Hallucination rate 91.2% is above the conservative threshold"
+        }
+      ],
+      "metrics": {
+        "wer": 6.5384617,
+        "cer": 6.8639455,
+        "omission_rate": 0.3846154,
+        "duplication_rate": 0.9120879,
+        "hallucination_rate": 0.9120879,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 26,
+        "hypothesis_word_count": 182,
+        "reference_char_count": 147,
+        "hypothesis_char_count": 1144,
+        "omitted_words": 10,
+        "duplicated_words": 166,
+        "hallucinated_words": 166,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "14",
+            "count": 1
+          },
+          {
+            "word": "bonjour,suite",
+            "count": 1
+          },
+          {
+            "word": "concernant",
+            "count": 1
+          },
+          {
+            "word": "hbien",
+            "count": 1
+          },
+          {
+            "word": "je",
+            "count": 1
+          },
+          {
+            "word": "mansouri",
+            "count": 1
+          },
+          {
+            "word": "reviens",
+            "count": 1
+          },
+          {
+            "word": "suivi",
+            "count": 1
+          },
+          {
+            "word": "vendredi",
+            "count": 1
+          },
+          {
+            "word": "vers",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "de",
+            "count": 12
+          },
+          {
+            "word": "nous",
+            "count": 10
+          },
+          {
+            "word": "votre",
+            "count": 7
+          },
+          {
+            "word": "vous",
+            "count": 7
+          },
+          {
+            "word": "un",
+            "count": 6
+          },
+          {
+            "word": "et",
+            "count": 4
+          },
+          {
+            "word": "000",
+            "count": 3
+          },
+          {
+            "word": "le",
+            "count": 3
+          },
+          {
+            "word": "pour",
+            "count": 3
+          },
+          {
+            "word": "avons",
+            "count": 2
+          },
+          {
+            "word": "ce",
+            "count": 2
+          },
+          {
+            "word": "des",
+            "count": 2
+          },
+          {
+            "word": "dollars",
+            "count": 2
+          },
+          {
+            "word": "expérience",
+            "count": 2
+          },
+          {
+            "word": "la",
+            "count": 2
+          },
+          {
+            "word": "par",
+            "count": 2
+          },
+          {
+            "word": "point",
+            "count": 2
+          },
+          {
+            "word": "processus",
+            "count": 2
+          },
+          {
+            "word": "que",
+            "count": 2
+          },
+          {
+            "word": "qui",
+            "count": 2
+          },
+          {
+            "word": "recrutement",
+            "count": 2
+          },
+          {
+            "word": "salaire",
+            "count": 2
+          },
+          {
+            "word": "sommes",
+            "count": 2
+          },
+          {
+            "word": "suite",
+            "count": 2
+          },
+          {
+            "word": "sur",
+            "count": 2
+          },
+          {
+            "word": "5",
+            "count": 1
+          },
+          {
+            "word": "82",
+            "count": 1
+          },
+          {
+            "word": "90",
+            "count": 1
+          },
+          {
+            "word": "95",
+            "count": 1
+          },
+          {
+            "word": "ans",
+            "count": 1
+          },
+          {
+            "word": "apprécié",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "avez",
+            "count": 1
+          },
+          {
+            "word": "backend",
+            "count": 1
+          },
+          {
+            "word": "candidature",
+            "count": 1
+          },
+          {
+            "word": "capacité",
+            "count": 1
+          },
+          {
+            "word": "cependant",
+            "count": 1
+          },
+          {
+            "word": "chez",
+            "count": 1
+          },
+          {
+            "word": "compris",
+            "count": 1
+          },
+          {
+            "word": "constitue",
+            "count": 1
+          },
+          {
+            "word": "d",
+            "count": 1
+          },
+          {
+            "word": "dans",
+            "count": 1
+          },
+          {
+            "word": "data",
+            "count": 1
+          },
+          {
+            "word": "demandons",
+            "count": 1
+          },
+          {
+            "word": "devops",
+            "count": 1
+          },
+          {
+            "word": "difficiles",
+            "count": 1
+          },
+          {
+            "word": "du",
+            "count": 1
+          },
+          {
+            "word": "en",
+            "count": 1
+          },
+          {
+            "word": "entre",
+            "count": 1
+          },
+          {
+            "word": "envoyer",
+            "count": 1
+          },
+          {
+            "word": "est",
+            "count": 1
+          },
+          {
+            "word": "exécutif",
+            "count": 1
+          },
+          {
+            "word": "faire",
+            "count": 1
+          },
+          {
+            "word": "fort",
+            "count": 1
+          },
+          {
+            "word": "greenhouse",
+            "count": 1
+          },
+          {
+            "word": "gérer",
+            "count": 1
+          },
+          {
+            "word": "impressionnés",
+            "count": 1
+          },
+          {
+            "word": "indiqué",
+            "count": 1
+          },
+          {
+            "word": "informé",
+            "count": 1
+          },
+          {
+            "word": "intéressés",
+            "count": 1
+          },
+          {
+            "word": "linkedin",
+            "count": 1
+          },
+          {
+            "word": "manquez",
+            "count": 1
+          },
+          {
+            "word": "mansouri,je",
+            "count": 1
+          },
+          {
+            "word": "montréal",
+            "count": 1
+          },
+          {
+            "word": "nos",
+            "count": 1
+          },
+          {
+            "word": "notamment",
+            "count": 1
+          },
+          {
+            "word": "notion",
+            "count": 1
+          },
+          {
+            "word": "noté",
+            "count": 1
+          },
+          {
+            "word": "objet",
+            "count": 1
+          },
+          {
+            "word": "occupez",
+            "count": 1
+          },
+          {
+            "word": "où",
+            "count": 1
+          },
+          {
+            "word": "part",
+            "count": 1
+          },
+          {
+            "word": "participation",
+            "count": 1
+          },
+          {
+            "word": "peu",
+            "count": 1
+          },
+          {
+            "word": "poste",
+            "count": 1
+          },
+          {
+            "word": "poste.nous",
+            "count": 1
+          },
+          {
+            "word": "postes",
+            "count": 1
+          },
+          {
+            "word": "prochain",
+            "count": 1
+          },
+          {
+            "word": "prochaine",
+            "count": 1
+          },
+          {
+            "word": "prochaines",
+            "count": 1
+          },
+          {
+            "word": "profil",
+            "count": 1
+          },
+          {
+            "word": "profils",
+            "count": 1
+          },
+          {
+            "word": "recruiter",
+            "count": 1
+          },
+          {
+            "word": "recrutement.actuellement",
+            "count": 1
+          },
+          {
+            "word": "recrutementcher(e",
+            "count": 1
+          },
+          {
+            "word": "recruteur",
+            "count": 1
+          },
+          {
+            "word": "remercier",
+            "count": 1
+          },
+          {
+            "word": "rever",
+            "count": 1
+          },
+          {
+            "word": "réjouissons",
+            "count": 1
+          },
+          {
+            "word": "sourcer",
+            "count": 1
+          },
+          {
+            "word": "surveiller.pour",
+            "count": 1
+          },
+          {
+            "word": "talentbridge",
+            "count": 1
+          },
+          {
+            "word": "tech",
+            "count": 1
+          },
+          {
+            "word": "tiendrons",
+            "count": 1
+          },
+          {
+            "word": "travaillez",
+            "count": 1
+          },
+          {
+            "word": "tâches",
+            "count": 1
+          },
+          {
+            "word": "utilisation",
+            "count": 1
+          },
+          {
+            "word": "visiez",
+            "count": 1
+          },
+          {
+            "word": "vos",
+            "count": 1
+          },
+          {
+            "word": "voulais",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          },
+          {
+            "word": "également",
+            "count": 1
+          },
+          {
+            "word": "étape",
+            "count": 1
+          },
+          {
+            "word": "étapes",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "de",
+            "count": 12
+          },
+          {
+            "word": "nous",
+            "count": 10
+          },
+          {
+            "word": "votre",
+            "count": 7
+          },
+          {
+            "word": "vous",
+            "count": 7
+          },
+          {
+            "word": "un",
+            "count": 6
+          },
+          {
+            "word": "et",
+            "count": 4
+          },
+          {
+            "word": "000",
+            "count": 3
+          },
+          {
+            "word": "le",
+            "count": 3
+          },
+          {
+            "word": "pour",
+            "count": 3
+          },
+          {
+            "word": "avons",
+            "count": 2
+          },
+          {
+            "word": "ce",
+            "count": 2
+          },
+          {
+            "word": "des",
+            "count": 2
+          },
+          {
+            "word": "dollars",
+            "count": 2
+          },
+          {
+            "word": "expérience",
+            "count": 2
+          },
+          {
+            "word": "la",
+            "count": 2
+          },
+          {
+            "word": "par",
+            "count": 2
+          },
+          {
+            "word": "point",
+            "count": 2
+          },
+          {
+            "word": "processus",
+            "count": 2
+          },
+          {
+            "word": "que",
+            "count": 2
+          },
+          {
+            "word": "qui",
+            "count": 2
+          },
+          {
+            "word": "recrutement",
+            "count": 2
+          },
+          {
+            "word": "salaire",
+            "count": 2
+          },
+          {
+            "word": "sommes",
+            "count": 2
+          },
+          {
+            "word": "suite",
+            "count": 2
+          },
+          {
+            "word": "sur",
+            "count": 2
+          },
+          {
+            "word": "5",
+            "count": 1
+          },
+          {
+            "word": "82",
+            "count": 1
+          },
+          {
+            "word": "90",
+            "count": 1
+          },
+          {
+            "word": "95",
+            "count": 1
+          },
+          {
+            "word": "ans",
+            "count": 1
+          },
+          {
+            "word": "apprécié",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "avez",
+            "count": 1
+          },
+          {
+            "word": "backend",
+            "count": 1
+          },
+          {
+            "word": "candidature",
+            "count": 1
+          },
+          {
+            "word": "capacité",
+            "count": 1
+          },
+          {
+            "word": "cependant",
+            "count": 1
+          },
+          {
+            "word": "chez",
+            "count": 1
+          },
+          {
+            "word": "compris",
+            "count": 1
+          },
+          {
+            "word": "constitue",
+            "count": 1
+          },
+          {
+            "word": "d",
+            "count": 1
+          },
+          {
+            "word": "dans",
+            "count": 1
+          },
+          {
+            "word": "data",
+            "count": 1
+          },
+          {
+            "word": "demandons",
+            "count": 1
+          },
+          {
+            "word": "devops",
+            "count": 1
+          },
+          {
+            "word": "difficiles",
+            "count": 1
+          },
+          {
+            "word": "du",
+            "count": 1
+          },
+          {
+            "word": "en",
+            "count": 1
+          },
+          {
+            "word": "entre",
+            "count": 1
+          },
+          {
+            "word": "envoyer",
+            "count": 1
+          },
+          {
+            "word": "est",
+            "count": 1
+          },
+          {
+            "word": "exécutif",
+            "count": 1
+          },
+          {
+            "word": "faire",
+            "count": 1
+          },
+          {
+            "word": "fort",
+            "count": 1
+          },
+          {
+            "word": "greenhouse",
+            "count": 1
+          },
+          {
+            "word": "gérer",
+            "count": 1
+          },
+          {
+            "word": "impressionnés",
+            "count": 1
+          },
+          {
+            "word": "indiqué",
+            "count": 1
+          },
+          {
+            "word": "informé",
+            "count": 1
+          },
+          {
+            "word": "intéressés",
+            "count": 1
+          },
+          {
+            "word": "linkedin",
+            "count": 1
+          },
+          {
+            "word": "manquez",
+            "count": 1
+          },
+          {
+            "word": "mansouri,je",
+            "count": 1
+          },
+          {
+            "word": "montréal",
+            "count": 1
+          },
+          {
+            "word": "nos",
+            "count": 1
+          },
+          {
+            "word": "notamment",
+            "count": 1
+          },
+          {
+            "word": "notion",
+            "count": 1
+          },
+          {
+            "word": "noté",
+            "count": 1
+          },
+          {
+            "word": "objet",
+            "count": 1
+          },
+          {
+            "word": "occupez",
+            "count": 1
+          },
+          {
+            "word": "où",
+            "count": 1
+          },
+          {
+            "word": "part",
+            "count": 1
+          },
+          {
+            "word": "participation",
+            "count": 1
+          },
+          {
+            "word": "peu",
+            "count": 1
+          },
+          {
+            "word": "poste",
+            "count": 1
+          },
+          {
+            "word": "poste.nous",
+            "count": 1
+          },
+          {
+            "word": "postes",
+            "count": 1
+          },
+          {
+            "word": "prochain",
+            "count": 1
+          },
+          {
+            "word": "prochaine",
+            "count": 1
+          },
+          {
+            "word": "prochaines",
+            "count": 1
+          },
+          {
+            "word": "profil",
+            "count": 1
+          },
+          {
+            "word": "profils",
+            "count": 1
+          },
+          {
+            "word": "recruiter",
+            "count": 1
+          },
+          {
+            "word": "recrutement.actuellement",
+            "count": 1
+          },
+          {
+            "word": "recrutementcher(e",
+            "count": 1
+          },
+          {
+            "word": "recruteur",
+            "count": 1
+          },
+          {
+            "word": "remercier",
+            "count": 1
+          },
+          {
+            "word": "rever",
+            "count": 1
+          },
+          {
+            "word": "réjouissons",
+            "count": 1
+          },
+          {
+            "word": "sourcer",
+            "count": 1
+          },
+          {
+            "word": "surveiller.pour",
+            "count": 1
+          },
+          {
+            "word": "talentbridge",
+            "count": 1
+          },
+          {
+            "word": "tech",
+            "count": 1
+          },
+          {
+            "word": "tiendrons",
+            "count": 1
+          },
+          {
+            "word": "travaillez",
+            "count": 1
+          },
+          {
+            "word": "tâches",
+            "count": 1
+          },
+          {
+            "word": "utilisation",
+            "count": 1
+          },
+          {
+            "word": "visiez",
+            "count": 1
+          },
+          {
+            "word": "vos",
+            "count": 1
+          },
+          {
+            "word": "voulais",
+            "count": 1
+          },
+          {
+            "word": "à",
+            "count": 1
+          },
+          {
+            "word": "également",
+            "count": 1
+          },
+          {
+            "word": "étape",
+            "count": 1
+          },
+          {
+            "word": "étapes",
+            "count": 1
+          }
+        ]
+      },
+      "output": "Objet : Prochaine étape dans le processus de recrutement\n\nCher(e) Nadia El Mansouri,\n\nJe voulais vous remercier pour votre participation à l'entretien du 6 mai. Nous avons apprécié votre expérience de 5 ans en recrutement tech, notamment sur des postes backend, DevOps et data. Nous sommes également impressionnés par votre utilisation de LinkedIn Recruiter, Greenhouse et Notion pour gérer vos tâches de recrutement.\n\nActuellement, vous travaillez chez TalentBridge à Montréal, où vous occupez un poste de recruteur avec un salaire de 82 000 dollars. Vous avez indiqué que vous visiez un salaire compris entre 90 000 et 95 000 dollars pour votre prochain poste.\n\nNous sommes intéressés par votre capacité à sourcer des profils difficiles, ce qui constitue un point fort de votre profil. Cependant, nous avons noté que vous manquez un peu d'expérience sur le recrutement exécutif, ce qui est un point à surveiller.\n\nPour la suite du processus, nous vous demandons de nous envoyer le test écrit demain matin. Nous vous tiendrons informé de la suite de votre candidature et nous nous réjouissons de vous faire part de nos prochaines étapes. Nous nous rever"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "score": 35.225567,
+      "issues": [
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: '6 mai'"
+        },
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: '82 000 dollars'"
+        },
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: '90 000'"
+        },
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: '95 000 dollars'"
+        },
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: '4 semaines'"
+        },
+        {
+          "kind": "salary_date_availability_changed",
+          "detail": "Missing numeric/date/availability fact: 'vendredi à 14 h'"
+        },
+        {
+          "kind": "action_dropped",
+          "detail": "Missing action detail: 'test écrit demain matin'"
+        },
+        {
+          "kind": "action_dropped",
+          "detail": "Missing action detail: 'suivi vendredi à 14 h'"
+        },
+        {
+          "kind": "important_detail_dropped",
+          "detail": "Only 50% of tracked facts were preserved in the output"
+        },
+        {
+          "kind": "too_creative",
+          "detail": "Hallucination rate 95.3% is above the conservative threshold"
+        }
+      ],
+      "metrics": {
+        "wer": 8.631579,
+        "cer": 6.7628207,
+        "omission_rate": 0.57894737,
+        "duplication_rate": 0.9532164,
+        "hallucination_rate": 0.9532164,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 19,
+        "hypothesis_word_count": 171,
+        "reference_char_count": 156,
+        "hypothesis_char_count": 1198,
+        "omitted_words": 11,
+        "duplicated_words": 163,
+        "hallucinated_words": 163,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "action",
+            "count": 1
+          },
+          {
+            "word": "actuelle",
+            "count": 1
+          },
+          {
+            "word": "candidatnadia",
+            "count": 1
+          },
+          {
+            "word": "demain",
+            "count": 1
+          },
+          {
+            "word": "matin",
+            "count": 1
+          },
+          {
+            "word": "prochaine",
+            "count": 1
+          },
+          {
+            "word": "présente",
+            "count": 1
+          },
+          {
+            "word": "résumé",
+            "count": 1
+          },
+          {
+            "word": "situation",
+            "count": 1
+          },
+          {
+            "word": "test",
+            "count": 1
+          },
+          {
+            "word": "écrit",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "de",
+            "count": 12
+          },
+          {
+            "word": "et",
+            "count": 6
+          },
+          {
+            "word": "elle",
+            "count": 5
+          },
+          {
+            "word": "la",
+            "count": 5
+          },
+          {
+            "word": "recrutement",
+            "count": 5
+          },
+          {
+            "word": "une",
+            "count": 5
+          },
+          {
+            "word": "dans",
+            "count": 4
+          },
+          {
+            "word": "est",
+            "count": 4
+          },
+          {
+            "word": "expérience",
+            "count": 4
+          },
+          {
+            "word": "pour",
+            "count": 4
+          },
+          {
+            "word": "des",
+            "count": 3
+          },
+          {
+            "word": "en",
+            "count": 3
+          },
+          {
+            "word": "important",
+            "count": 3
+          },
+          {
+            "word": "que",
+            "count": 3
+          },
+          {
+            "word": "un",
+            "count": 3
+          },
+          {
+            "word": "a",
+            "count": 2
+          },
+          {
+            "word": "atout",
+            "count": 2
+          },
+          {
+            "word": "avec",
+            "count": 2
+          },
+          {
+            "word": "candidats",
+            "count": 2
+          },
+          {
+            "word": "ce",
+            "count": 2
+          },
+          {
+            "word": "constitue",
+            "count": 2
+          },
+          {
+            "word": "d",
+            "count": 2
+          },
+          {
+            "word": "difficiles",
+            "count": 2
+          },
+          {
+            "word": "greenhouse",
+            "count": 2
+          },
+          {
+            "word": "nadia",
+            "count": 2
+          },
+          {
+            "word": "notre",
+            "count": 2
+          },
+          {
+            "word": "profils",
+            "count": 2
+          },
+          {
+            "word": "qui",
+            "count": 2
+          },
+          {
+            "word": "recherche",
+            "count": 2
+          },
+          {
+            "word": "solide",
+            "count": 2
+          },
+          {
+            "word": "tech",
+            "count": 2
+          },
+          {
+            "word": "tels",
+            "count": 2
+          },
+          {
+            "word": "à",
+            "count": 2
+          },
+          {
+            "word": "actuellement",
+            "count": 1
+          },
+          {
+            "word": "ait",
+            "count": 1
+          },
+          {
+            "word": "atouts**nadia",
+            "count": 1
+          },
+          {
+            "word": "backend",
+            "count": 1
+          },
+          {
+            "word": "candidat",
+            "count": 1
+          },
+          {
+            "word": "capable",
+            "count": 1
+          },
+          {
+            "word": "cette",
+            "count": 1
+          },
+          {
+            "word": "chez",
+            "count": 1
+          },
+          {
+            "word": "compte",
+            "count": 1
+          },
+          {
+            "word": "data",
+            "count": 1
+          },
+          {
+            "word": "devops",
+            "count": 1
+          },
+          {
+            "word": "discussion",
+            "count": 1
+          },
+          {
+            "word": "développé",
+            "count": 1
+          },
+          {
+            "word": "el",
+            "count": 1
+          },
+          {
+            "word": "env",
+            "count": 1
+          },
+          {
+            "word": "excellente",
+            "count": 1
+          },
+          {
+            "word": "expertise",
+            "count": 1
+          },
+          {
+            "word": "expérience**nadia",
+            "count": 1
+          },
+          {
+            "word": "expérimentée",
+            "count": 1
+          },
+          {
+            "word": "exécutif",
+            "count": 1
+          },
+          {
+            "word": "gestion",
+            "count": 1
+          },
+          {
+            "word": "gérer",
+            "count": 1
+          },
+          {
+            "word": "il",
+            "count": 1
+          },
+          {
+            "word": "lacune",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "linkedin",
+            "count": 1
+          },
+          {
+            "word": "lors",
+            "count": 1
+          },
+          {
+            "word": "lui",
+            "count": 1
+          },
+          {
+            "word": "manque",
+            "count": 1
+          },
+          {
+            "word": "mansouri****profils",
+            "count": 1
+          },
+          {
+            "word": "montréal",
+            "count": 1
+          },
+          {
+            "word": "notion",
+            "count": 1
+          },
+          {
+            "word": "notion.**points",
+            "count": 1
+          },
+          {
+            "word": "outils",
+            "count": 1
+          },
+          {
+            "word": "où",
+            "count": 1
+          },
+          {
+            "word": "peu",
+            "count": 1
+          },
+          {
+            "word": "postes",
+            "count": 1
+          },
+          {
+            "word": "prendre",
+            "count": 1
+          },
+          {
+            "word": "processus",
+            "count": 1
+          },
+          {
+            "word": "professionnelle",
+            "count": 1
+          },
+          {
+            "word": "professionnelle**nadia",
+            "count": 1
+          },
+          {
+            "word": "profil.**prochaine",
+            "count": 1
+          },
+          {
+            "word": "qualifiés.**compétences",
+            "count": 1
+          },
+          {
+            "word": "recommandons",
+            "count": 1
+          },
+          {
+            "word": "recruiter",
+            "count": 1
+          },
+          {
+            "word": "ses",
+            "count": 1
+          },
+          {
+            "word": "son",
+            "count": 1
+          },
+          {
+            "word": "sourcage",
+            "count": 1
+          },
+          {
+            "word": "sourcèreuse",
+            "count": 1
+          },
+          {
+            "word": "surveiller**bien",
+            "count": 1
+          },
+          {
+            "word": "travaille",
+            "count": 1
+          },
+          {
+            "word": "travailler",
+            "count": 1
+          },
+          {
+            "word": "tâches",
+            "count": 1
+          },
+          {
+            "word": "utilise",
+            "count": 1
+          },
+          {
+            "word": "également",
+            "count": 1
+          },
+          {
+            "word": "équipe",
+            "count": 1
+          },
+          {
+            "word": "équipe.**expérience",
+            "count": 1
+          },
+          {
+            "word": "étape**nous",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "de",
+            "count": 12
+          },
+          {
+            "word": "et",
+            "count": 6
+          },
+          {
+            "word": "elle",
+            "count": 5
+          },
+          {
+            "word": "la",
+            "count": 5
+          },
+          {
+            "word": "recrutement",
+            "count": 5
+          },
+          {
+            "word": "une",
+            "count": 5
+          },
+          {
+            "word": "dans",
+            "count": 4
+          },
+          {
+            "word": "est",
+            "count": 4
+          },
+          {
+            "word": "expérience",
+            "count": 4
+          },
+          {
+            "word": "pour",
+            "count": 4
+          },
+          {
+            "word": "des",
+            "count": 3
+          },
+          {
+            "word": "en",
+            "count": 3
+          },
+          {
+            "word": "important",
+            "count": 3
+          },
+          {
+            "word": "que",
+            "count": 3
+          },
+          {
+            "word": "un",
+            "count": 3
+          },
+          {
+            "word": "a",
+            "count": 2
+          },
+          {
+            "word": "atout",
+            "count": 2
+          },
+          {
+            "word": "avec",
+            "count": 2
+          },
+          {
+            "word": "candidats",
+            "count": 2
+          },
+          {
+            "word": "ce",
+            "count": 2
+          },
+          {
+            "word": "constitue",
+            "count": 2
+          },
+          {
+            "word": "d",
+            "count": 2
+          },
+          {
+            "word": "difficiles",
+            "count": 2
+          },
+          {
+            "word": "greenhouse",
+            "count": 2
+          },
+          {
+            "word": "nadia",
+            "count": 2
+          },
+          {
+            "word": "notre",
+            "count": 2
+          },
+          {
+            "word": "profils",
+            "count": 2
+          },
+          {
+            "word": "qui",
+            "count": 2
+          },
+          {
+            "word": "recherche",
+            "count": 2
+          },
+          {
+            "word": "solide",
+            "count": 2
+          },
+          {
+            "word": "tech",
+            "count": 2
+          },
+          {
+            "word": "tels",
+            "count": 2
+          },
+          {
+            "word": "à",
+            "count": 2
+          },
+          {
+            "word": "actuellement",
+            "count": 1
+          },
+          {
+            "word": "ait",
+            "count": 1
+          },
+          {
+            "word": "atouts**nadia",
+            "count": 1
+          },
+          {
+            "word": "backend",
+            "count": 1
+          },
+          {
+            "word": "candidat",
+            "count": 1
+          },
+          {
+            "word": "capable",
+            "count": 1
+          },
+          {
+            "word": "cette",
+            "count": 1
+          },
+          {
+            "word": "chez",
+            "count": 1
+          },
+          {
+            "word": "compte",
+            "count": 1
+          },
+          {
+            "word": "data",
+            "count": 1
+          },
+          {
+            "word": "devops",
+            "count": 1
+          },
+          {
+            "word": "discussion",
+            "count": 1
+          },
+          {
+            "word": "développé",
+            "count": 1
+          },
+          {
+            "word": "el",
+            "count": 1
+          },
+          {
+            "word": "env",
+            "count": 1
+          },
+          {
+            "word": "excellente",
+            "count": 1
+          },
+          {
+            "word": "expertise",
+            "count": 1
+          },
+          {
+            "word": "expérience**nadia",
+            "count": 1
+          },
+          {
+            "word": "expérimentée",
+            "count": 1
+          },
+          {
+            "word": "exécutif",
+            "count": 1
+          },
+          {
+            "word": "gestion",
+            "count": 1
+          },
+          {
+            "word": "gérer",
+            "count": 1
+          },
+          {
+            "word": "il",
+            "count": 1
+          },
+          {
+            "word": "lacune",
+            "count": 1
+          },
+          {
+            "word": "le",
+            "count": 1
+          },
+          {
+            "word": "linkedin",
+            "count": 1
+          },
+          {
+            "word": "lors",
+            "count": 1
+          },
+          {
+            "word": "lui",
+            "count": 1
+          },
+          {
+            "word": "manque",
+            "count": 1
+          },
+          {
+            "word": "mansouri****profils",
+            "count": 1
+          },
+          {
+            "word": "montréal",
+            "count": 1
+          },
+          {
+            "word": "notion",
+            "count": 1
+          },
+          {
+            "word": "notion.**points",
+            "count": 1
+          },
+          {
+            "word": "outils",
+            "count": 1
+          },
+          {
+            "word": "où",
+            "count": 1
+          },
+          {
+            "word": "peu",
+            "count": 1
+          },
+          {
+            "word": "postes",
+            "count": 1
+          },
+          {
+            "word": "prendre",
+            "count": 1
+          },
+          {
+            "word": "processus",
+            "count": 1
+          },
+          {
+            "word": "professionnelle",
+            "count": 1
+          },
+          {
+            "word": "professionnelle**nadia",
+            "count": 1
+          },
+          {
+            "word": "profil.**prochaine",
+            "count": 1
+          },
+          {
+            "word": "qualifiés.**compétences",
+            "count": 1
+          },
+          {
+            "word": "recommandons",
+            "count": 1
+          },
+          {
+            "word": "recruiter",
+            "count": 1
+          },
+          {
+            "word": "ses",
+            "count": 1
+          },
+          {
+            "word": "son",
+            "count": 1
+          },
+          {
+            "word": "sourcage",
+            "count": 1
+          },
+          {
+            "word": "sourcèreuse",
+            "count": 1
+          },
+          {
+            "word": "surveiller**bien",
+            "count": 1
+          },
+          {
+            "word": "travaille",
+            "count": 1
+          },
+          {
+            "word": "travailler",
+            "count": 1
+          },
+          {
+            "word": "tâches",
+            "count": 1
+          },
+          {
+            "word": "utilise",
+            "count": 1
+          },
+          {
+            "word": "également",
+            "count": 1
+          },
+          {
+            "word": "équipe",
+            "count": 1
+          },
+          {
+            "word": "équipe.**expérience",
+            "count": 1
+          },
+          {
+            "word": "étape**nous",
+            "count": 1
+          }
+        ]
+      },
+      "output": "**Candidat : Nadia El Mansouri**\n\n**Profils et Expérience**\n\nNadia El Mansouri est une professionnelle expérimentée en recrutement tech, avec 5 ans d'expérience dans la recherche de candidats pour des postes backend, DevOps et data. Elle a développé une expertise dans la sourcage de profils difficiles, ce qui constitue un atout important pour notre équipe.\n\n**Expérience Professionnelle**\n\nNadia travaille actuellement chez TalentBridge à Montréal, où elle utilise des outils tels que LinkedIn Recruiter, Greenhouse et Notion pour gérer ses tâches de recrutement. Elle a une expérience solide dans la gestion de processus de recrutement et la recherche de candidats qualifiés.\n\n**Compétences et Atouts**\n\nNadia est une excellente sourcèreuse de profils difficiles, ce qui constitue un atout important pour notre équipe. Elle est également capable de travailler avec des outils tels que LinkedIn Recruiter, Greenhouse et Notion.\n\n**Points à Surveiller**\n\nBien que Nadia ait une expérience solide en recrutement tech, elle manque un peu d'expérience dans le recrutement exécutif. Il est important de prendre en compte cette lacune lors de la discussion de son profil.\n\n**Prochaine Étape**\n\nNous recommandons de lui env"
+    }
+  ],
+  "failures": [
+    {
+      "case_id": "nadia_fillers",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    }
+  ]
+}

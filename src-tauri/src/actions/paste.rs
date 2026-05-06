@@ -99,10 +99,13 @@ pub(super) fn dispatch_text_insertion(
                         if let Some(callback) = on_success.take() {
                             callback();
                         }
-                        crate::platform::clipboard_monitor::schedule_clipboard_diff_check(
-                            app_clone.clone(),
-                            final_text.clone(),
-                        );
+                        // Auto-learn dictionary disabled — it was silently creating
+                        // corrupted entries (e.g. est→cent) by misidentifying user
+                        // edits as intentional corrections.
+                        // crate::platform::clipboard_monitor::schedule_clipboard_diff_check(
+                        //     app_clone.clone(),
+                        //     final_text.clone(),
+                        // );
                         if let Some(coordinator) =
                             app_clone.try_state::<crate::TranscriptionCoordinator>()
                         {
@@ -134,10 +137,13 @@ pub(super) fn dispatch_text_insertion(
                         if let Some(callback) = on_success.take() {
                             callback();
                         }
-                        crate::platform::clipboard_monitor::schedule_clipboard_diff_check(
-                            app_clone.clone(),
-                            final_text.clone(),
-                        );
+                        // Auto-learn dictionary disabled — it was silently creating
+                        // corrupted entries (e.g. est→cent) by misidentifying user
+                        // edits as intentional corrections.
+                        // crate::platform::clipboard_monitor::schedule_clipboard_diff_check(
+                        //     app_clone.clone(),
+                        //     final_text.clone(),
+                        // );
                         if let Some(coordinator) =
                             app_clone.try_state::<crate::TranscriptionCoordinator>()
                         {

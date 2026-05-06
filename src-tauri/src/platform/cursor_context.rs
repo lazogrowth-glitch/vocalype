@@ -22,8 +22,11 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 /// Maximum characters to read before the cursor.
 pub const MAX_CONTEXT_CHARS: usize = 80;
 
-/// How long to wait for Ctrl+C to settle in the clipboard.
-const COPY_SETTLE_MS: u64 = 25;
+/// How long to wait for Ctrl+C to settle in the clipboard (per attempt).
+const COPY_SETTLE_MS: u64 = 80;
+
+/// Number of extra retry polls if the clipboard still holds the sentinel.
+const COPY_MAX_RETRIES: usize = 3;
 
 // ── Public types ─────────────────────────────────────────────────────────── //
 
@@ -113,6 +116,40 @@ pub fn capture(enigo: &mut Enigo, app_handle: &AppHandle) -> CursorContext {
     }
 }
 
+// ── Windows WM_COPY fallback ──────────────────────────────────────────────── //
+
+/// Send WM_COPY to the window that currently has keyboard focus.
+///
+/// Used as a secondary fallback when simulated Ctrl+C keystrokes are ignored
+/// (common in MFC / older Win32 editors that handle WM_COPY but not raw key events).
+/// Posts to the focused child window via `GetGUIThreadInfo`, falling back to the
+/// foreground window.
+#[cfg(target_os = "windows")]
+fn send_wm_copy_to_focused() {
+    use windows::Win32::Foundation::{LPARAM, WPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow, GetGUIThreadInfo, GetWindowThreadProcessId, PostMessageW,
+        GUITHREADINFO, WM_COPY,
+    };
+    unsafe {
+        let fg = GetForegroundWindow();
+        if fg.0.is_null() {
+            return;
+        }
+        let tid = GetWindowThreadProcessId(fg, None);
+        let mut info = GUITHREADINFO {
+            cbSize: std::mem::size_of::<GUITHREADINFO>() as u32,
+            ..Default::default()
+        };
+        let target = if GetGUIThreadInfo(tid, &mut info).is_ok() && !info.hwndFocus.0.is_null() {
+            info.hwndFocus
+        } else {
+            fg
+        };
+        let _ = PostMessageW(Some(target), WM_COPY, WPARAM(0), LPARAM(0));
+    }
+}
+
 // ── Windows UIAutomation ─────────────────────────────────────────────────── //
 
 /// Try to read preceding text via IUIAutomationTextPattern2.
@@ -183,11 +220,25 @@ fn clipboard_trick(enigo: &mut Enigo, app_handle: &AppHandle) -> Option<CursorCo
     let _ = enigo.key(copy_key, Direction::Click);
     let _ = enigo.key(copy_mod, Direction::Release);
 
-    // Wait for the clipboard write to complete.
-    std::thread::sleep(Duration::from_millis(COPY_SETTLE_MS));
-
-    // Read what was copied.
-    let selected = clipboard.read_text().unwrap_or_default();
+    // ── Poll: wait for clipboard to change from sentinel ────────────────── //
+    // Slow apps (Electron, heavy Win32) can take 80–240 ms to update the clipboard.
+    let selected = {
+        let mut result = String::new();
+        for attempt in 0..=COPY_MAX_RETRIES {
+            std::thread::sleep(Duration::from_millis(COPY_SETTLE_MS));
+            result = clipboard.read_text().unwrap_or_default();
+            if result != sentinel {
+                break;
+            }
+            // After the first failed attempt, try WM_COPY as a Windows fallback.
+            // Some older Win32 / MFC apps handle WM_COPY but ignore simulated keystrokes.
+            #[cfg(target_os = "windows")]
+            if attempt == 0 {
+                send_wm_copy_to_focused();
+            }
+        }
+        result
+    };
 
     // ── Right arrow — collapse selection, cursor returns to original pos ─ //
     // After Shift+Home the selection end = original cursor position.
@@ -205,9 +256,12 @@ fn clipboard_trick(enigo: &mut Enigo, app_handle: &AppHandle) -> Option<CursorCo
     let _ = clipboard.write_text(&saved);
 
     if selected == sentinel {
-        // Copy produced nothing → cursor was already at line start.
-        // That IS meaningful: preceding text on this line is empty → capitalize.
-        return Some(CursorContext::available(String::new()));
+        // Clipboard unchanged after Ctrl+C + WM_COPY + all retries.
+        // The app does not support clipboard reading — return unavailable so that
+        // smart paste does not apply false capitalization mid-sentence.
+        // (Apps that genuinely have the cursor at line-start pass through UIA or
+        // produce an empty string here, so this fallback case is truly unknown.)
+        return None;
     }
 
     // Keep only the last MAX_CONTEXT_CHARS characters.

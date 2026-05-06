@@ -27,4 +27,20 @@ pub struct CliArgs {
     /// Enable debug mode with verbose logging
     #[arg(long)]
     pub debug: bool,
+
+    /// Run the local post-processing fidelity benchmark and exit
+    #[arg(long, hide = true)]
+    pub postprocess_benchmark: bool,
+
+    /// Optional output path for the post-processing benchmark report
+    #[arg(long, hide = true)]
+    pub postprocess_benchmark_output: Option<String>,
+
+    /// Run a one-off post-processing probe for a history entry id and exit
+    #[arg(long, hide = true)]
+    pub postprocess_probe_history_id: Option<i64>,
+
+    /// Optional output path for the post-processing probe report
+    #[arg(long, hide = true)]
+    pub postprocess_probe_output: Option<String>,
 }

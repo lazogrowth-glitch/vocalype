@@ -16,6 +16,8 @@
 //! The heuristic aborts early when the clipboard content is clearly unrelated
 //! (very different length, no token overlap) to avoid false positives.
 
+#![allow(dead_code)]
+
 use crate::processing::dictionary::DictionaryManager;
 use crate::settings::get_settings;
 use log::debug;

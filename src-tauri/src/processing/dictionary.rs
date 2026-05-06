@@ -138,11 +138,21 @@ impl DictionaryManager {
     }
 
     /// Adds an entry. Returns an error if `from` already exists (case-insensitive).
+    ///
+    /// Safety guard: `from` must be at least 5 characters long.  Short words
+    /// (≤ 4 chars) like "est", "car", "le" cause false positives when learned
+    /// automatically from correction diffs and would corrupt unrelated output.
     pub fn add(&self, from: String, to: String) -> Result<(), String> {
         let from = from.trim().to_string();
         let to = to.trim().to_string();
         if from.is_empty() {
             return Err("Le champ 'de' ne peut pas être vide".to_string());
+        }
+        if from.chars().count() < 5 {
+            return Err(format!(
+                "'{}' est trop court pour être appris automatiquement (minimum 5 caractères)",
+                from
+            ));
         }
         let re = build_pattern(&from).ok_or_else(|| format!("Pattern invalide pour '{}'", from))?;
         let mut compiled = self.compiled.lock().unwrap_or_else(|e| e.into_inner());

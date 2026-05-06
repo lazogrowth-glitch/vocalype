@@ -6,9 +6,9 @@
 //!   3. Background thread waits 250 ms for modifier keys to release, then sends
 //!      Ctrl+C to copy the current selection to clipboard.
 //!   4. If clipboard is empty → toast error, abort.
-//!   5. Recording starts (max `COMMAND_MAX_DURATION_SECS` seconds).
-//!   6. `command-mode-started` event fires so the frontend can show a countdown UI.
-//!   7. Recording stops automatically; samples are transcribed locally.
+//!   5. Recording starts; stops automatically on silence (VAD) or after max duration.
+//!   6. `command-mode-started` event fires so the frontend can show an overlay.
+//!   7. Samples are transcribed locally.
 //!   8. Transcription + selected text sent to the configured LLM.
 //!   9. LLM result pasted back into the active app via `crate::clipboard::paste`.
 //!  10. `command-mode-finished` event fires so the frontend hides the overlay.
@@ -16,14 +16,16 @@
 //! `CommandModeAction::stop()` is intentionally a no-op: the shortcut is registered
 //! as press-only in the handler.
 
+use crate::audio_toolkit::VadDecision;
 use crate::input::EnigoState;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::get_settings;
 use enigo::{Direction, Key, Keyboard};
 use log::{debug, error, info, warn};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -37,8 +39,12 @@ const COMMAND_MAX_DURATION_SECS: u64 = 8;
 /// released by the OS and do not bleed into the simulated key combo.
 const PRE_COPY_DELAY_MS: u64 = 250;
 
-/// How long to wait after sending Ctrl+C for the clipboard to be updated.
-const CLIPBOARD_SETTLE_MS: u64 = 150;
+/// How long to wait per poll attempt after sending Ctrl+C.
+const CLIPBOARD_SETTLE_MS: u64 = 100;
+
+/// Max extra retries polling the clipboard after the initial settle.
+/// Total max wait = CLIPBOARD_SETTLE_MS × (1 + CLIPBOARD_MAX_RETRIES) = 400 ms.
+const CLIPBOARD_MAX_RETRIES: usize = 3;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -155,17 +161,34 @@ async fn run_command_mode(app: AppHandle) {
         emit_error(&app, "Erreur lors de la copie du texte sélectionné.");
         return;
     }
-    // The blocking fn itself returns Result; unwrap the outer join result.
     if let Ok(Err(e)) = ctrl_c_result {
-        warn!("Command mode: Ctrl+C failed: {}", e);
-        // Non-fatal: the selection might already be in the clipboard.
+        warn!("Command mode: Ctrl+C simulation failed: {}", e);
+        // Non-fatal: app may have handled the copy through its own hotkey mechanism.
     }
 
-    // Small extra settle to let the clipboard stabilise.
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    // ── Poll clipboard until it changes (retry up to CLIPBOARD_MAX_RETRIES) ──
+    // Some apps (Electron, heavy Win32) can take 100–400 ms to write to the clipboard.
+    // After the first failed poll, we also try WM_COPY as a Windows fallback for
+    // apps that handle WM_COPY but ignore simulated Ctrl+C keystrokes.
+    let selected_text = {
+        let mut result = clipboard.read_text().unwrap_or_default();
+        for attempt in 0..=CLIPBOARD_MAX_RETRIES {
+            tokio::time::sleep(Duration::from_millis(CLIPBOARD_SETTLE_MS)).await;
+            result = clipboard.read_text().unwrap_or_default();
+            if result != clipboard_before && !result.trim().is_empty() {
+                debug!("Command mode: clipboard updated on attempt {}", attempt + 1);
+                break;
+            }
+            // Windows fallback on first failed attempt.
+            #[cfg(target_os = "windows")]
+            if attempt == 0 {
+                send_wm_copy_to_focused();
+            }
+        }
+        result
+    };
 
-    let selected_text = clipboard.read_text().unwrap_or_default();
-
+    // Abort if nothing was captured — either no selection or the app ignored Ctrl+C.
     if selected_text.trim().is_empty() {
         emit_error(
             &app,
@@ -173,15 +196,12 @@ async fn run_command_mode(app: AppHandle) {
         );
         return;
     }
-
-    // If clipboard didn't change at all, there might be no selection.
-    // We still proceed — the user may have copied the text they want to edit
-    // manually.  Emitting a warning is enough.
     if selected_text == clipboard_before {
-        debug!(
-            "Command mode: clipboard unchanged after Ctrl+C (possibly no selection, \
-             proceeding with clipboard content)"
+        emit_error(
+            &app,
+            "Impossible de capturer le texte sélectionné — sélectionne du texte puis réessaie.",
         );
+        return;
     }
 
     debug!(
@@ -212,8 +232,8 @@ async fn run_command_mode(app: AppHandle) {
         serde_json::json!({ "max_duration_secs": COMMAND_MAX_DURATION_SECS }),
     );
 
-    // ── Step 4: Record for up to COMMAND_MAX_DURATION_SECS ────────────────────
-    tokio::time::sleep(Duration::from_secs(COMMAND_MAX_DURATION_SECS)).await;
+    // ── Step 4: Wait for user to finish speaking (VAD auto-stop) ─────────────
+    wait_for_silence_or_max(&rm, COMMAND_MAX_DURATION_SECS).await;
 
     // ── Step 5: Stop recording and collect samples ────────────────────────────
     let samples = match rm.stop_recording(binding_id) {
@@ -349,4 +369,101 @@ async fn run_command_mode(app: AppHandle) {
     }
 
     emit_finished(&app);
+}
+
+// ── Windows WM_COPY fallback ──────────────────────────────────────────────────
+
+/// Send WM_COPY to the focused window — fallback for apps that handle the
+/// WM_COPY message directly but ignore simulated Ctrl+C key events.
+#[cfg(target_os = "windows")]
+fn send_wm_copy_to_focused() {
+    use windows::Win32::Foundation::{LPARAM, WPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow, GetGUIThreadInfo, GetWindowThreadProcessId, PostMessageW,
+        GUITHREADINFO, WM_COPY,
+    };
+    unsafe {
+        let fg = GetForegroundWindow();
+        if fg.0.is_null() {
+            return;
+        }
+        let tid = GetWindowThreadProcessId(fg, None);
+        let mut info = GUITHREADINFO {
+            cbSize: std::mem::size_of::<GUITHREADINFO>() as u32,
+            ..Default::default()
+        };
+        let target = if GetGUIThreadInfo(tid, &mut info).is_ok() && !info.hwndFocus.0.is_null() {
+            info.hwndFocus
+        } else {
+            fg
+        };
+        let _ = PostMessageW(Some(target), WM_COPY, WPARAM(0), LPARAM(0));
+    }
+}
+
+// ── VAD auto-stop ─────────────────────────────────────────────────────────────
+
+/// Wait until the user stops speaking (adaptive silence threshold) or the safety
+/// valve `max_secs` is reached — whichever comes first.
+///
+/// Uses the same VAD callback mechanism as the normal recording pipeline.
+/// The adaptive threshold comes from `AudioRecordingManager::get_adaptive_threshold()`
+/// which is calibrated across all previous sessions.
+async fn wait_for_silence_or_max(rm: &Arc<AudioRecordingManager>, max_secs: u64) {
+    /// Poll interval for the silence check loop.
+    const POLL_MS: u64 = 80;
+    /// Minimum time we must have heard speech before we can auto-stop.
+    /// Prevents stopping immediately if the mic picks up room noise on start.
+    const MIN_SPEECH_MS: u64 = 500;
+    /// Fallback silence threshold before the adaptive calibration has enough data.
+    const FALLBACK_SILENCE_MS: u64 = 1_200;
+
+    let last_speech_ms: Arc<AtomicU64> = Arc::new(AtomicU64::new(0));
+    let started = Instant::now();
+
+    // Attach VAD callback — fires from the audio thread on every VAD frame.
+    {
+        let last_speech = Arc::clone(&last_speech_ms);
+        let base = started;
+        rm.set_vad_callback(move |decision, _rms| {
+            if decision == VadDecision::Speech {
+                last_speech.store(base.elapsed().as_millis() as u64, Ordering::Relaxed);
+            }
+        });
+    }
+
+    loop {
+        tokio::time::sleep(Duration::from_millis(POLL_MS)).await;
+
+        let elapsed_ms = started.elapsed().as_millis() as u64;
+
+        // Safety valve — never exceed configured max duration.
+        if elapsed_ms >= max_secs * 1_000 {
+            debug!(
+                "[CommandMode] max duration {}s reached — stopping",
+                max_secs
+            );
+            break;
+        }
+
+        let last_speech = last_speech_ms.load(Ordering::Relaxed);
+
+        // Don't stop before we've heard at least MIN_SPEECH_MS of speech.
+        if last_speech < MIN_SPEECH_MS {
+            continue;
+        }
+
+        let silence_ms = elapsed_ms.saturating_sub(last_speech);
+        let threshold_ms = rm.get_adaptive_threshold().unwrap_or(FALLBACK_SILENCE_MS);
+
+        if silence_ms >= threshold_ms {
+            debug!(
+                "[CommandMode] silence {}ms >= threshold {}ms — auto-stop",
+                silence_ms, threshold_ms
+            );
+            break;
+        }
+    }
+
+    rm.clear_vad_callback();
 }

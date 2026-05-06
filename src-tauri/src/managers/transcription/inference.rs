@@ -1,8 +1,7 @@
 use super::*;
 use crate::parakeet_text::{
     finalize_parakeet_text_with_profile, maybe_prefer_sentence_punctuation,
-    parakeet_builtin_correction_terms_with_profile, should_attempt_sentence_punctuation,
-    ParakeetDomainProfile,
+    parakeet_builtin_correction_terms, should_attempt_sentence_punctuation,
 };
 use crate::session_keyterms::build_session_keyterms;
 use whichlang::Lang;
@@ -272,36 +271,17 @@ fn maybe_boost_low_energy_parakeet_audio(samples: &[f32]) -> Option<(Vec<f32>, f
 
 fn build_correction_terms(
     settings: &crate::settings::AppSettings,
-    session_keyterms: &[String],
-    session_glossary_terms: &[String],
-    active_model_id: Option<&str>,
-    profile: ParakeetDomainProfile,
+    _session_keyterms: &[String],
+    _session_glossary_terms: &[String],
+    _active_model_id: Option<&str>,
 ) -> Vec<String> {
     let mut terms = settings.custom_words.clone();
-    let parakeet_builtins =
-        parakeet_builtin_correction_terms_with_profile(&settings.selected_language, profile);
+    let parakeet_builtins = parakeet_builtin_correction_terms(&settings.selected_language);
     if let Some(vocalype_term) = parakeet_builtins
         .into_iter()
         .find(|term| term == "Vocalype")
     {
         terms.push(vocalype_term);
-    }
-
-    // Passive Session Glossary terms: project-specific identifiers extracted
-    // from clipboard while the developer codes. Keep them scoped to the
-    // general/code profile so recruiting dictation never inherits dev jargon.
-    if profile == ParakeetDomainProfile::General {
-        terms.extend(session_glossary_terms.iter().cloned());
-    }
-
-    if matches!(active_model_id, Some(id) if is_parakeet_v3_model_id(id)) {
-        if profile == ParakeetDomainProfile::General {
-            terms.extend(parakeet_builtin_correction_terms_with_profile(
-                &settings.selected_language,
-                profile,
-            ));
-            terms.extend(session_keyterms.iter().cloned());
-        }
     }
 
     let mut deduped = Vec::new();
@@ -342,15 +322,7 @@ fn term_is_risky_proper_noun(term: &str) -> bool {
     has_upper || all_upper
 }
 
-fn correction_terms_for_text(
-    text: &str,
-    correction_terms: &[String],
-    profile: ParakeetDomainProfile,
-) -> Vec<String> {
-    if profile == ParakeetDomainProfile::General {
-        return correction_terms.to_vec();
-    }
-
+fn correction_terms_for_text(text: &str, correction_terms: &[String]) -> Vec<String> {
     let lower_text = text.to_lowercase();
     correction_terms
         .iter()
@@ -690,13 +662,11 @@ impl TranscriptionManager {
             .try_state::<crate::session_glossary::SessionGlossaryState>()
             .and_then(|state| state.0.lock().ok().map(|g| g.as_vec()))
             .unwrap_or_default();
-        let correction_profile = ParakeetDomainProfile::Recruiting;
         let correction_terms = build_correction_terms(
             &settings,
             &session_keyterms,
             &session_glossary_terms,
             active_model_id.as_deref(),
-            correction_profile,
         );
         let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
@@ -1500,11 +1470,8 @@ impl TranscriptionManager {
                 learned_result != raw_result_before_learning
             )),
         );
-        let profile = ParakeetDomainProfile::Recruiting;
-
         let correction_started = std::time::Instant::now();
-        let active_correction_terms =
-            correction_terms_for_text(&learned_result, &correction_terms, profile);
+        let active_correction_terms = correction_terms_for_text(&learned_result, &correction_terms);
         let learned_result_before_correction = learned_result.clone();
         let corrected_result = if !active_correction_terms.is_empty() {
             apply_custom_words(
@@ -1536,11 +1503,7 @@ impl TranscriptionManager {
         let finalize_started = std::time::Instant::now();
         let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
         {
-            finalize_parakeet_text_with_profile(
-                &corrected_result,
-                &settings.selected_language,
-                profile,
-            )
+            finalize_parakeet_text_with_profile(&corrected_result, &settings.selected_language)
         } else {
             corrected_result
         };
@@ -1640,9 +1603,7 @@ impl TranscriptionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
     use crate::parakeet_text::{finalize_parakeet_text, normalize_parakeet_phrase_variants};
-    use crate::session_keyterms::build_session_keyterms;
     use std::sync::mpsc;
     use std::sync::Arc;
     use std::time::Duration;
@@ -1702,44 +1663,23 @@ mod tests {
             "Today I finished the meeting."
         );
         assert_eq!(
-            finalize_parakeet_text_with_profile(
-                "My email is alex .martin at example .com and the document lives on docks dot call vocal.",
-                "en",
-                ParakeetDomainProfile::General,
-            ),
-            "My email is alex dot martin at example dot com and the document lives on docs dot vocalype dot app slash release notes."
+            finalize_parakeet_text_with_profile("My email is alex .martin at example .com.", "en",),
+            "My email is alex dot martin at example dot com."
         );
     }
 
     #[test]
-    fn session_keyterms_flow_into_parakeet_corrections() {
-        let context = AppTranscriptionContext {
-            process_name: Some("Code.exe".to_string()),
-            window_title: Some("VocalypeSpeech.tsx - GitHub".to_string()),
-            category: AppContextCategory::Code,
-            code_language: None,
-            detected_at_ms: 1,
-        };
-        let session_keyterms = build_session_keyterms(
-            Some(&context),
-            "en",
-            &["Parakeet V3".to_string()],
-            &["Yassine".to_string()],
-            &["Vocalype".to_string()],
-        );
+    fn correction_terms_always_include_vocalype() {
         let mut settings = crate::settings::get_default_settings();
         settings.selected_language = "en".to_string();
 
         let corrections = build_correction_terms(
             &settings,
-            &session_keyterms.terms,
+            &["Parakeet V3".to_string(), "Yassine".to_string()],
             &[],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
-            ParakeetDomainProfile::General,
         );
 
-        assert!(corrections.iter().any(|term| term == "Parakeet V3"));
-        assert!(corrections.iter().any(|term| term == "Yassine"));
         assert!(corrections.iter().any(|term| term == "Vocalype"));
     }
 
@@ -1760,7 +1700,7 @@ mod tests {
     }
 
     #[test]
-    fn recruiting_profile_excludes_session_glossary_terms() {
+    fn correction_terms_excludes_session_glossary_terms() {
         let mut settings = crate::settings::get_default_settings();
         settings.selected_language = "en".to_string();
 
@@ -1769,7 +1709,6 @@ mod tests {
             &[],
             &["useState".to_string(), "handleClick".to_string()],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
-            ParakeetDomainProfile::Recruiting,
         );
 
         assert!(!corrections.iter().any(|term| term == "useState"));
@@ -1778,32 +1717,26 @@ mod tests {
     }
 
     #[test]
-    fn recruiting_profile_filters_risky_proper_nouns_unless_already_present() {
+    fn correction_terms_for_text_filters_risky_proper_nouns_unless_already_present() {
         let terms = vec![
             "OpenAI".to_string(),
             "candidate".to_string(),
             "CRM".to_string(),
         ];
 
-        let filtered = correction_terms_for_text(
-            "the candidate said the workflow feels smooth",
-            &terms,
-            ParakeetDomainProfile::Recruiting,
-        );
+        let filtered =
+            correction_terms_for_text("the candidate said the workflow feels smooth", &terms);
         assert!(filtered.iter().any(|t| t == "candidate"));
         assert!(!filtered.iter().any(|t| t == "OpenAI"));
         assert!(!filtered.iter().any(|t| t == "CRM"));
 
-        let filtered_with_match = correction_terms_for_text(
-            "we reviewed openai notes from the call",
-            &terms,
-            ParakeetDomainProfile::Recruiting,
-        );
+        let filtered_with_match =
+            correction_terms_for_text("we reviewed openai notes from the call", &terms);
         assert!(filtered_with_match.iter().any(|t| t == "OpenAI"));
     }
 
     #[test]
-    fn recruiting_profile_excludes_session_keyterms_from_parakeet_terms() {
+    fn correction_terms_excludes_session_keyterms() {
         let mut settings = crate::settings::get_default_settings();
         settings.selected_language = "en".to_string();
 
@@ -1812,7 +1745,6 @@ mod tests {
             &["OpenAI".to_string(), "CandidateScore".to_string()],
             &[],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
-            ParakeetDomainProfile::Recruiting,
         );
 
         assert!(!corrections.iter().any(|term| term == "OpenAI"));

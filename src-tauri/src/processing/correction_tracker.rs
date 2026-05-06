@@ -20,8 +20,12 @@ use tauri::{AppHandle, Manager};
 
 const COUNTS_FILE: &str = "correction_counts.json";
 /// Number of times a correction must be seen before auto-adding to dictionary.
-pub const AUTO_ADD_THRESHOLD: u32 = 1;
+/// Set to 3 so a single accidental history edit cannot corrupt the dictionary.
+/// For recurring model errors (e.g. always mis-spelling a name), 3 corrections
+/// across separate recordings is reached naturally and quickly.
+pub const AUTO_ADD_THRESHOLD: u32 = 3;
 /// Minimum character length for a word to be a dictionary candidate.
+/// Note: DictionaryManager::add() enforces a stricter 5-char guard at write time.
 const MIN_WORD_LEN: usize = 3;
 
 // ── Types ─────────────────────────────────────────────────────────────────────

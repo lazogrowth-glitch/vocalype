@@ -1,0 +1,384 @@
+{
+  "provider_id": "vocalype-cloud",
+  "model": "llama-3.1-8b-instant",
+  "output_count": 0,
+  "attempted_count": 56,
+  "target_output_count": 50,
+  "summaries": [
+    {
+      "profile": "baseline",
+      "runs": 0,
+      "average_score": 0.0,
+      "aggregate": {
+        "samples": 0,
+        "global_wer": -0.0,
+        "global_cer": -0.0,
+        "global_omission_rate": -0.0,
+        "global_duplication_rate": -0.0,
+        "global_hallucination_rate": -0.0,
+        "average_end_truncation_score": -0.0,
+        "top_omitted_terms": [],
+        "top_duplicated_terms": [],
+        "top_hallucinated_terms": []
+      },
+      "issue_counts": []
+    },
+    {
+      "profile": "hardened",
+      "runs": 0,
+      "average_score": 0.0,
+      "aggregate": {
+        "samples": 0,
+        "global_wer": -0.0,
+        "global_cer": -0.0,
+        "global_omission_rate": -0.0,
+        "global_duplication_rate": -0.0,
+        "global_hallucination_rate": -0.0,
+        "average_end_truncation_score": -0.0,
+        "top_omitted_terms": [],
+        "top_duplicated_terms": [],
+        "top_hallucinated_terms": []
+      },
+      "issue_counts": []
+    }
+  ],
+  "runs": [],
+  "failures": [
+    {
+      "case_id": "nadia_base",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "baseline",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "baseline",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "baseline",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "baseline",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_base",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_fillers",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_actor",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_nodejs",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "karim_followup",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "sarah_tools",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "hardened",
+      "mode": "correction",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "hardened",
+      "mode": "ats_note",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "hardened",
+      "mode": "professional_email",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    },
+    {
+      "case_id": "nadia_short",
+      "profile": "hardened",
+      "mode": "recruiter_summary",
+      "error": "API request failed with status 401 Unauthorized: {\"error\":\"Non autoris\\u00e9\"}\n"
+    }
+  ]
+}

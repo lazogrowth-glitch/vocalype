@@ -6,10 +6,6 @@ const SERVICE_NAME: &str = "com.vocalype.desktop";
 
 const AUTH_TOKEN_ACCOUNT: &str = "auth.token";
 const AUTH_SESSION_ACCOUNT: &str = "auth.session";
-const GEMINI_API_KEY_ACCOUNT: &str = "settings.gemini_api_key";
-const GROQ_STT_API_KEY_ACCOUNT: &str = "settings.groq_stt_api_key";
-const MISTRAL_STT_API_KEY_ACCOUNT: &str = "settings.mistral_stt_api_key";
-const DEEPGRAM_API_KEY_ACCOUNT: &str = "settings.deepgram_api_key";
 const POST_PROCESS_PREFIX: &str = "settings.post_process_api_key.";
 
 fn entry(account: &str) -> Result<Entry, String> {
@@ -112,58 +108,6 @@ pub fn clear_license_bundle(app: &AppHandle) -> Result<(), String> {
             .map_err(|e| format!("Failed to delete license bundle: {}", e))?;
     }
     Ok(())
-}
-
-pub fn get_gemini_api_key() -> Result<Option<String>, String> {
-    get_secret_value(GEMINI_API_KEY_ACCOUNT)
-}
-
-pub fn set_gemini_api_key(value: &str) -> Result<(), String> {
-    if value.trim().is_empty() {
-        clear_gemini_api_key()
-    } else {
-        set_secret_value(GEMINI_API_KEY_ACCOUNT, value)
-    }
-}
-
-pub fn clear_gemini_api_key() -> Result<(), String> {
-    delete_secret_value(GEMINI_API_KEY_ACCOUNT)
-}
-
-pub fn get_groq_stt_api_key() -> Result<Option<String>, String> {
-    get_secret_value(GROQ_STT_API_KEY_ACCOUNT)
-}
-
-pub fn set_groq_stt_api_key(value: &str) -> Result<(), String> {
-    if value.trim().is_empty() {
-        delete_secret_value(GROQ_STT_API_KEY_ACCOUNT)
-    } else {
-        set_secret_value(GROQ_STT_API_KEY_ACCOUNT, value)
-    }
-}
-
-pub fn get_mistral_stt_api_key() -> Result<Option<String>, String> {
-    get_secret_value(MISTRAL_STT_API_KEY_ACCOUNT)
-}
-
-pub fn set_mistral_stt_api_key(value: &str) -> Result<(), String> {
-    if value.trim().is_empty() {
-        delete_secret_value(MISTRAL_STT_API_KEY_ACCOUNT)
-    } else {
-        set_secret_value(MISTRAL_STT_API_KEY_ACCOUNT, value)
-    }
-}
-
-pub fn get_deepgram_api_key() -> Result<Option<String>, String> {
-    get_secret_value(DEEPGRAM_API_KEY_ACCOUNT)
-}
-
-pub fn set_deepgram_api_key(value: &str) -> Result<(), String> {
-    if value.trim().is_empty() {
-        delete_secret_value(DEEPGRAM_API_KEY_ACCOUNT)
-    } else {
-        set_secret_value(DEEPGRAM_API_KEY_ACCOUNT, value)
-    }
 }
 
 pub fn post_process_api_key_account(provider_id: &str) -> String {

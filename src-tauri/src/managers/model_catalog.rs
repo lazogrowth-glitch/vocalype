@@ -78,24 +78,9 @@ fn parse_catalog(json: &str, asset_base_url: &str) -> Result<HashMap<String, Mod
     for entry in catalog.models {
         let supported_languages = resolve_supported_languages(&catalog.language_sets, &entry)?;
         let url = resolve_asset_url(asset_base_url, entry.asset_path.as_deref());
-        let is_downloaded = entry.always_available
-            || matches!(
-                entry.engine_type,
-                EngineType::GeminiApi
-                    | EngineType::GroqWhisper
-                    | EngineType::MistralVoxtral
-                    | EngineType::Deepgram
-            );
+        let is_downloaded = false;
 
-        if !matches!(
-            entry.engine_type,
-            EngineType::GeminiApi
-                | EngineType::GroqWhisper
-                | EngineType::MistralVoxtral
-                | EngineType::Deepgram
-        ) && url.is_none()
-            && !entry.is_custom
-        {
+        if url.is_none() && !entry.is_custom {
             bail!("Model '{}' is missing an asset_path", entry.id);
         }
 

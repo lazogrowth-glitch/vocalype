@@ -1,4 +1,4 @@
-use crate::managers::model::{EngineType, ModelInfo};
+use crate::managers::model::ModelInfo;
 use crate::model_ids::{PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID};
 use crate::parakeet_quality::ParakeetSessionCompletion;
 use crate::settings::AppSettings;
@@ -258,17 +258,6 @@ pub(crate) fn chunking_profile_for_model(
             Some(ChunkingProfile {
                 interval_samples: usize::from(chunk_seconds) * 16_000,
                 overlap_samples: (usize::from(overlap_ms) * 16_000) / 1000,
-            })
-        }
-        Some(info)
-            if matches!(
-                info.engine_type,
-                EngineType::Whisper | EngineType::MoonshineStreaming
-            ) =>
-        {
-            Some(ChunkingProfile {
-                interval_samples: DEFAULT_CHUNK_INTERVAL_SAMPLES,
-                overlap_samples: DEFAULT_CHUNK_OVERLAP_SAMPLES,
             })
         }
         None => Some(ChunkingProfile {

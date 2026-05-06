@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Check, Globe, Loader2, Trash2 } from "lucide-react";
+import { Check, Globe, Loader2, Trash2 } from "lucide-react";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
 import {
@@ -30,13 +30,6 @@ type ProductBadge = {
     | "experimental";
 };
 
-const CLOUD_MODEL_IDS = new Set([
-  "gemini-api",
-  "groq-whisper",
-  "mistral-voxtral",
-  "deepgram-nova",
-]);
-
 const getLanguageDisplayText = (
   supportedLanguages: string[],
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -59,51 +52,16 @@ const getProductBadges = (
     ? [{ label: "Optimized Copilot+", variant: "success" }]
     : [];
 
-  if (model.id === "parakeet-tdt-0.6b-v3-multilingual") {
-    return [
-      {
-        label: t("modelSelector.badges.bestDefault", {
-          defaultValue: "Best Default",
-        }),
-        variant: "primary",
-      },
-      {
-        label: t("modelSelector.badges.multilingualExperimental", {
-          defaultValue: "Multilingual",
-        }),
-        variant: "secondary",
-      },
-      ...hardwareBadges,
-    ];
-  }
-
-  if (model.id === "large") {
-    return [
-      {
-        label: t("modelSelector.badges.bestQuality", {
-          defaultValue: "Best Quality",
-        }),
-        variant: "quality",
-      },
-    ];
-  }
-
-  if (model.id === "parakeet-tdt-0.6b-v2") {
-    return [
-      {
-        label: t("modelSelector.badges.englishOnly", {
-          defaultValue: "English Only",
-        }),
-        variant: "speed",
-      },
-    ];
-  }
-
-  if (model.is_recommended) {
-    return [{ label: t("onboarding.recommended"), variant: "primary" }];
-  }
-
-  return [];
+  return [
+    { label: t("onboarding.recommended"), variant: "primary" },
+    {
+      label: t("modelSelector.badges.multilingualExperimental", {
+        defaultValue: "Multilingual",
+      }),
+      variant: "secondary",
+    },
+    ...hardwareBadges,
+  ];
 };
 
 export type ModelCardStatus =
@@ -149,8 +107,6 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const isFeatured = variant === "featured";
   const isClickable =
     status === "available" || status === "active" || status === "downloadable";
-  const isGemini = model.id === "gemini-api";
-  const isCloudModel = CLOUD_MODEL_IDS.has(model.id);
 
   const displayName = getTranslatedModelName(model, t);
   const displayDescription = getTranslatedModelDescription(model, t);
@@ -233,18 +189,6 @@ const ModelCard: React.FC<ModelCardProps> = ({
           <p className="mt-2 text-[14px] leading-6 text-white/72">
             {displayDescription}
           </p>
-
-          {isGemini ? (
-            <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-500/8 px-2.5 py-2 text-[11px] leading-5 text-amber-400/80">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>
-                {t("modelSelector.geminiCloudWarning", {
-                  defaultValue:
-                    "Gemini sends audio to Google for transcription. Other models process everything locally on your device.",
-                })}
-              </span>
-            </div>
-          ) : null}
 
           <div
             style={{

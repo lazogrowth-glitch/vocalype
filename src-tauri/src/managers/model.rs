@@ -39,15 +39,7 @@ fn is_parakeet_v3_family(model_id: &str) -> bool {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum EngineType {
-    Whisper,
     Parakeet,
-    Moonshine,
-    MoonshineStreaming,
-    SenseVoice,
-    GeminiApi,
-    GroqWhisper,
-    MistralVoxtral,
-    Deepgram,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -370,9 +362,6 @@ impl ModelManager {
             .unwrap_or_else(|e| e.into_inner());
 
         for model in models.values_mut() {
-            if matches!(model.engine_type, EngineType::GeminiApi) {
-                continue;
-            }
             let sealed_path = self.sealed_path_for_model(model);
             if model.is_directory {
                 // For directory-based models, check if the directory exists
@@ -664,17 +653,9 @@ impl ModelManager {
                 .find_map(|id| models.get(id))
                 .filter(|model| model.is_downloaded)
                 .or_else(|| {
-                    models.values().find(|model| {
-                        model.id != PARAKEET_V3_LEGACY_ID
-                            && model.is_downloaded
-                            && !matches!(
-                                model.engine_type,
-                                EngineType::GeminiApi
-                                    | EngineType::GroqWhisper
-                                    | EngineType::MistralVoxtral
-                                    | EngineType::Deepgram
-                            )
-                    })
+                    models
+                        .values()
+                        .find(|model| model.id != PARAKEET_V3_LEGACY_ID && model.is_downloaded)
                 });
 
             if let Some(available_model) = available_model {
@@ -705,114 +686,6 @@ impl ModelManager {
             return Ok(());
         }
 
-        // Collect filenames of predefined Whisper file-based models to skip
-        let predefined_filenames: HashSet<String> = available_models
-            .values()
-            .filter(|m| matches!(m.engine_type, EngineType::Whisper) && !m.is_directory)
-            .map(|m| m.filename.clone())
-            .collect();
-
-        // Scan models directory for .bin files
-        for entry in fs::read_dir(models_dir)? {
-            let entry = match entry {
-                Ok(e) => e,
-                Err(e) => {
-                    warn!("Failed to read directory entry: {}", e);
-                    continue;
-                }
-            };
-
-            let path = entry.path();
-
-            // Only process .bin files (not directories)
-            if !path.is_file() {
-                continue;
-            }
-
-            let filename = match path.file_name().and_then(|s| s.to_str()) {
-                Some(name) => name.to_string(),
-                None => continue,
-            };
-
-            // Skip hidden files
-            if filename.starts_with('.') {
-                continue;
-            }
-
-            // Only process .bin files (Whisper GGML format).
-            // This also excludes .partial downloads (e.g., "model.bin.partial").
-            // If we add discovery for other formats, add a .partial check before this filter.
-            if !filename.ends_with(".bin") {
-                continue;
-            }
-
-            // Skip predefined model files
-            if predefined_filenames.contains(&filename) {
-                continue;
-            }
-
-            // Generate model ID from filename (remove .bin extension)
-            let model_id = filename.trim_end_matches(".bin").to_string();
-
-            // Skip if model ID already exists (shouldn't happen, but be safe)
-            if available_models.contains_key(&model_id) {
-                continue;
-            }
-
-            // Generate display name: replace - and _ with space, capitalize words
-            let display_name = model_id
-                .replace(['-', '_'], " ")
-                .split_whitespace()
-                .map(|word| {
-                    let mut chars = word.chars();
-                    match chars.next() {
-                        None => String::new(),
-                        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join(" ");
-
-            // Get file size in MB
-            let size_mb = match path.metadata() {
-                Ok(meta) => meta.len() / (1024 * 1024),
-                Err(e) => {
-                    warn!("Failed to get metadata for {}: {}", filename, e);
-                    0
-                }
-            };
-
-            info!(
-                "Discovered custom Whisper model: {} ({}, {} MB)",
-                model_id, filename, size_mb
-            );
-
-            available_models.insert(
-                model_id.clone(),
-                ModelInfo {
-                    id: model_id,
-                    name: display_name,
-                    description: "Not officially supported".to_string(),
-                    filename,
-                    url: None, // Custom models have no download URL
-                    expected_etag: None,
-                    size_mb,
-                    is_downloaded: true, // Already present on disk
-                    is_downloading: false,
-                    partial_size: 0,
-                    is_directory: false,
-                    engine_type: EngineType::Whisper,
-                    accuracy_score: 0.0, // Sentinel: UI hides score bars when both are 0
-                    speed_score: 0.0,
-                    supports_translation: false,
-                    is_recommended: false,
-                    supported_languages: vec![],
-                    is_custom: true,
-                    requires_license_key: false,
-                },
-            );
-        }
-
         Ok(())
     }
 
@@ -827,10 +700,6 @@ impl ModelManager {
 
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
-
-        if matches!(model_info.engine_type, EngineType::GeminiApi) {
-            return Ok(());
-        }
 
         let url = model_info
             .url
@@ -1242,10 +1111,6 @@ impl ModelManager {
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        if matches!(model_info.engine_type, EngineType::GeminiApi) {
-            return Err(anyhow::anyhow!("Cannot delete cloud model"));
-        }
-
         debug!("ModelManager: Found model info: {:?}", model_info);
 
         let model_path = self.models_dir.join(&model_info.filename);
@@ -1303,13 +1168,6 @@ impl ModelManager {
         let model_info = self
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
-
-        if matches!(model_info.engine_type, EngineType::GeminiApi) {
-            return Err(anyhow::anyhow!(
-                "Cloud model has no local path: {}",
-                model_id
-            ));
-        }
 
         if !model_info.is_downloaded {
             return Err(anyhow::anyhow!("Model not available: {}", model_id));
@@ -1416,106 +1274,6 @@ mod tests {
     use std::io::Write;
     use tar::Builder;
     use tempfile::TempDir;
-
-    #[test]
-    fn test_discover_custom_whisper_models() {
-        let temp_dir = TempDir::new().unwrap();
-        let models_dir = temp_dir.path().to_path_buf();
-
-        // Create test .bin files
-        let mut custom_file = File::create(models_dir.join("my-custom-model.bin")).unwrap();
-        custom_file.write_all(b"fake model data").unwrap();
-
-        let mut another_file = File::create(models_dir.join("whisper_medical_v2.bin")).unwrap();
-        another_file.write_all(b"another fake model").unwrap();
-
-        // Create files that should be ignored
-        File::create(models_dir.join(".hidden-model.bin")).unwrap(); // Hidden file
-        File::create(models_dir.join("readme.txt")).unwrap(); // Non-.bin file
-        File::create(models_dir.join("ggml-small.bin")).unwrap(); // Predefined filename
-        fs::create_dir(models_dir.join("some-directory.bin")).unwrap(); // Directory
-
-        // Set up available_models with a predefined Whisper model
-        let mut models = HashMap::new();
-        models.insert(
-            "small".to_string(),
-            ModelInfo {
-                id: "small".to_string(),
-                name: "Whisper Small".to_string(),
-                description: "Test".to_string(),
-                filename: "ggml-small.bin".to_string(),
-                url: Some("https://example.com".to_string()),
-                expected_etag: None,
-                size_mb: 100,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::Whisper,
-                accuracy_score: 0.5,
-                speed_score: 0.5,
-                supports_translation: true,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-                requires_license_key: true,
-            },
-        );
-
-        // Discover custom models
-        ModelManager::discover_custom_whisper_models(&models_dir, &mut models).unwrap();
-
-        // Should have discovered 2 custom models (my-custom-model and whisper_medical_v2)
-        assert!(models.contains_key("my-custom-model"));
-        assert!(models.contains_key("whisper_medical_v2"));
-
-        // Verify custom model properties
-        let custom = models.get("my-custom-model").unwrap();
-        assert_eq!(custom.name, "My Custom Model");
-        assert_eq!(custom.filename, "my-custom-model.bin");
-        assert!(custom.url.is_none()); // Custom models have no URL
-        assert!(custom.is_downloaded);
-        assert!(custom.is_custom);
-        assert_eq!(custom.accuracy_score, 0.0);
-        assert_eq!(custom.speed_score, 0.0);
-        assert!(custom.supported_languages.is_empty());
-
-        // Verify underscore handling
-        let medical = models.get("whisper_medical_v2").unwrap();
-        assert_eq!(medical.name, "Whisper Medical V2");
-
-        // Should NOT have discovered hidden, non-.bin, predefined, or directories
-        assert!(!models.contains_key(".hidden-model"));
-        assert!(!models.contains_key("readme"));
-        assert!(!models.contains_key("some-directory"));
-    }
-
-    #[test]
-    fn test_discover_custom_models_empty_dir() {
-        let temp_dir = TempDir::new().unwrap();
-        let models_dir = temp_dir.path().to_path_buf();
-
-        let mut models = HashMap::new();
-        let count_before = models.len();
-
-        ModelManager::discover_custom_whisper_models(&models_dir, &mut models).unwrap();
-
-        // No new models should be added
-        assert_eq!(models.len(), count_before);
-    }
-
-    #[test]
-    fn test_discover_custom_models_nonexistent_dir() {
-        let models_dir = PathBuf::from("/nonexistent/path/that/does/not/exist");
-
-        let mut models = HashMap::new();
-        let count_before = models.len();
-
-        // Should not error, just return Ok
-        let result = ModelManager::discover_custom_whisper_models(&models_dir, &mut models);
-        assert!(result.is_ok());
-        assert_eq!(models.len(), count_before);
-    }
 
     #[test]
     fn extract_archive_safely_rejects_symlink_entries() {

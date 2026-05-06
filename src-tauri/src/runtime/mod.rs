@@ -1,9 +1,7 @@
 //! Application runtime core.
 //!
-//! Everything that manages the lifecycle of a recording session and the
-//! hardware/model adaptation layer:
+//! Everything that manages the lifecycle of a recording session:
 //!
-//! - `adaptive_runtime`:          Machine profiling, model recommendations, Whisper calibration.
 //! - `transcription_coordinator`: Serializes record/transcribe/paste to avoid race conditions.
 //! - `startup_warmup`:            Pre-loads models at launch for fast first transcription.
 //! - `runtime_observability`:     Diagnostics collection and lifecycle event emission.
@@ -16,7 +14,6 @@
 //! - `transcription_confidence`:  Confidence score payload from transcription engines.
 //! - `apple_intelligence`:        Apple Intelligence integration (macOS aarch64 only).
 
-pub mod adaptive_runtime;
 pub mod chunking;
 pub mod command_mode;
 pub mod context_detector;

@@ -38,8 +38,6 @@ const mockSettings = {
   show_tray_icon: true,
   long_audio_model: null,
   long_audio_threshold_seconds: 30,
-  gemini_api_key: null,
-  gemini_model: "gemini-2.0-flash",
   sound_theme: "marimba" as const,
   start_hidden: false,
   autostart_enabled: false,

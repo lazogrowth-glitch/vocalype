@@ -6,12 +6,8 @@ use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::model_ids::is_parakeet_v3_model_id;
-use crate::prompt_builder::build_whisper_initial_prompt;
 use crate::runtime_observability::PipelineStepTiming;
-use crate::settings::{
-    get_settings, record_whisper_backend_failure, set_active_runtime_model,
-    set_active_whisper_backend, NpuKind, WhisperBackendPreference,
-};
+use crate::settings::{get_settings, set_active_runtime_model, NpuKind};
 use crate::transcription_confidence::{
     build_whisper_confidence_payload, TranscriptionConfidencePayload,
 };
@@ -31,20 +27,9 @@ use std::thread;
 use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use transcribe_rs::{
-    engines::{
-        moonshine::{
-            ModelVariant, MoonshineEngine, MoonshineModelParams, MoonshineStreamingEngine,
-            StreamingModelParams,
-        },
-        parakeet::{
-            ParakeetEngine as TranscribeParakeetEngine, ParakeetInferenceParams,
-            ParakeetModelParams, TimestampGranularity,
-        },
-        sense_voice::{
-            Language as SenseVoiceLanguage, SenseVoiceEngine, SenseVoiceInferenceParams,
-            SenseVoiceModelParams,
-        },
-        whisper::{WhisperEngine, WhisperInferenceParams, WhisperModelParams},
+    engines::parakeet::{
+        ParakeetEngine as TranscribeParakeetEngine, ParakeetInferenceParams, ParakeetModelParams,
+        TimestampGranularity,
     },
     TranscriptionEngine,
 };
@@ -155,16 +140,8 @@ struct EngineTranscriptionResult {
 }
 
 enum LoadedEngine {
-    Whisper(WhisperEngine),
     Parakeet(TranscribeParakeetEngine),
     ParakeetV3(ParakeetTDT),
-    Moonshine(MoonshineEngine),
-    MoonshineStreaming(MoonshineStreamingEngine),
-    SenseVoice(SenseVoiceEngine),
-    GeminiApi,
-    GroqWhisper,
-    MistralVoxtral,
-    Deepgram,
 }
 
 #[derive(Clone)]
@@ -173,7 +150,6 @@ pub struct TranscriptionManager {
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
     current_model_id: Arc<Mutex<Option<String>>>,
-    whisper_gpu_active: Arc<AtomicBool>,
     last_activity: Arc<AtomicU64>,
     unload_generation: Arc<AtomicU64>,
     shutdown_signal: Arc<AtomicBool>,
@@ -323,54 +299,6 @@ impl TranscriptionManager {
         true
     }
 
-    fn recommended_whisper_threads(&self, model_id: Option<&str>, whisper_gpu_active: bool) -> i32 {
-        let settings = get_settings(&self.app_handle);
-        if let Some(model_id) = model_id {
-            if let Some(config) = settings.adaptive_whisper_config(model_id) {
-                return i32::from(config.threads.max(1));
-            }
-        }
-
-        let available = std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(4);
-        let max_threads = if whisper_gpu_active {
-            match model_id {
-                Some("small") => 8,
-                Some("medium") => 6,
-                Some("turbo") => 8,
-                Some("large") => 4,
-                _ => 6,
-            }
-        } else {
-            match model_id {
-                Some("small") => 8,
-                Some("medium") => 6,
-                Some("turbo") => 6,
-                Some("large") => 4,
-                _ => 6,
-            }
-        };
-
-        available.min(max_threads).max(1) as i32
-    }
-
-    fn whisper_model_params(&self, model_id: &str) -> WhisperModelParams {
-        let settings = get_settings(&self.app_handle);
-        let backend_preference = settings
-            .adaptive_whisper_config(model_id)
-            .map(|config| config.backend)
-            .unwrap_or(WhisperBackendPreference::Auto);
-
-        WhisperModelParams {
-            use_gpu: !matches!(backend_preference, WhisperBackendPreference::Cpu),
-            // Flash Attention: ~30-50% faster on GPU (Metal/Vulkan).
-            // Incompatible with DTW word-level timestamps (we don't use those).
-            flash_attn: matches!(backend_preference, WhisperBackendPreference::Gpu)
-                || matches!(backend_preference, WhisperBackendPreference::Auto),
-        }
-    }
-
     fn filter_transcription_output_for_context(
         text: String,
         model_id: Option<&str>,
@@ -395,7 +323,6 @@ impl TranscriptionManager {
             model_manager,
             app_handle: app_handle.clone(),
             current_model_id: Arc::new(Mutex::new(None)),
-            whisper_gpu_active: Arc::new(AtomicBool::new(false)),
             last_activity: Arc::new(AtomicU64::new(
                 SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
@@ -532,21 +459,12 @@ impl TranscriptionManager {
             let mut engine = self.lock_engine();
             if let Some(ref mut loaded_engine) = *engine {
                 match loaded_engine {
-                    LoadedEngine::Whisper(ref mut e) => e.unload_model(),
                     LoadedEngine::Parakeet(ref mut e) => e.unload_model(),
                     LoadedEngine::ParakeetV3(_) => {}
-                    LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
-                    LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
-                    LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
-                    LoadedEngine::GeminiApi => {}
-                    LoadedEngine::GroqWhisper => {}
-                    LoadedEngine::MistralVoxtral => {}
-                    LoadedEngine::Deepgram => {}
                 }
             }
             *engine = None; // Drop the engine to free memory
         }
-        self.whisper_gpu_active.store(false, Ordering::Relaxed);
         {
             let mut current_model = self.current_model_id.lock();
             *current_model = None;

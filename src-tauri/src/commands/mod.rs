@@ -1,10 +1,8 @@
 pub mod agent;
 pub mod app_context;
 pub mod audio;
-pub mod cloud_stt;
 pub mod corrections;
 pub mod dictionary;
-pub mod gemini;
 pub mod history;
 pub mod llama_server;
 pub mod meetings;
@@ -15,12 +13,9 @@ pub mod report;
 pub mod snippets;
 pub mod transcription;
 
-use crate::adaptive_runtime::{
-    get_calibration_states, recalibrate_whisper_model, CalibrationStatusSnapshot,
-};
 use crate::context_detector::{detect_current_app_context, AppTranscriptionContext};
 use crate::runtime_observability::{collect_runtime_diagnostics, RuntimeDiagnostics};
-use crate::settings::{get_settings, write_settings, AppSettings, CalibrationPhase, LogLevel};
+use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};
 use crate::startup_warmup::StartupWarmupStatus;
 use crate::utils::cancel_current_operation;
 use crate::vocabulary_store::VocabularyStoreState;
@@ -290,10 +285,6 @@ pub fn export_settings(app: AppHandle, path: String) -> Result<(), String> {
     let output_path =
         validate_user_json_path(&app, &path, JsonPathAccess::Write, "settings export")?;
     let mut settings = get_settings(&app);
-    settings.gemini_api_key = None;
-    settings.groq_stt_api_key = None;
-    settings.mistral_stt_api_key = None;
-    settings.deepgram_api_key = None;
     settings.external_script_path = None;
     settings
         .post_process_api_keys
@@ -314,10 +305,6 @@ pub fn import_settings(app: AppHandle, path: String) -> Result<(), String> {
         std::fs::read_to_string(&input_path).map_err(|e| format!("Failed to read file: {}", e))?;
     let mut settings: AppSettings =
         serde_json::from_str(&json).map_err(|e| format!("Invalid settings file: {}", e))?;
-    settings.gemini_api_key = None;
-    settings.groq_stt_api_key = None;
-    settings.mistral_stt_api_key = None;
-    settings.deepgram_api_key = None;
     settings.external_script_path = None;
     settings
         .post_process_api_keys
@@ -630,24 +617,6 @@ pub fn get_adaptive_runtime_profile(
     app: AppHandle,
 ) -> Result<Option<crate::settings::AdaptiveMachineProfile>, String> {
     Ok(get_settings(&app).adaptive_machine_profile)
-}
-
-#[specta::specta]
-#[tauri::command]
-pub fn get_adaptive_calibration_state() -> Result<Vec<CalibrationStatusSnapshot>, String> {
-    Ok(get_calibration_states())
-}
-
-#[specta::specta]
-#[tauri::command]
-pub fn recalibrate_whisper_model_command(
-    app: AppHandle,
-    model_id: String,
-    phase: Option<CalibrationPhase>,
-) -> Result<(), String> {
-    let model_manager = app.state::<std::sync::Arc<crate::managers::model::ModelManager>>();
-    recalibrate_whisper_model(&app, model_manager.inner().clone(), &model_id, phase);
-    Ok(())
 }
 
 /// Called by the frontend just before opening the browser for OAuth login.

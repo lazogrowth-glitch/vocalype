@@ -724,6 +724,19 @@ pub fn parakeet_builtin_correction_terms(selected_language: &str) -> Vec<String>
     vec!["Vocalype".to_string()]
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParakeetDomainProfile {
+    General,
+    Recruiting,
+}
+
+pub fn parakeet_builtin_correction_terms_with_profile(
+    selected_language: &str,
+    _profile: ParakeetDomainProfile,
+) -> Vec<String> {
+    parakeet_builtin_correction_terms(selected_language)
+}
+
 fn normalize_letter_number_words(text: &str) -> String {
     LETTER_NUM_WORD_PATTERN
         .replace_all(text, |caps: &regex::Captures| {
@@ -1308,7 +1321,11 @@ fn capitalize_first(text: &str) -> String {
     }
 }
 
-pub fn finalize_parakeet_text_with_profile(text: &str, selected_language: &str) -> String {
+pub fn finalize_parakeet_text_with_profile(
+    text: &str,
+    selected_language: &str,
+    _profile: ParakeetDomainProfile,
+) -> String {
     let mut normalized = normalize_parakeet_phrase_variants(text, selected_language);
     if selected_language == "en" {
         normalized = normalize_parakeet_english_artifacts(&normalized);
@@ -1380,7 +1397,7 @@ pub fn finalize_parakeet_text_with_profile(text: &str, selected_language: &str) 
 }
 
 pub fn finalize_parakeet_text(text: &str, selected_language: &str) -> String {
-    finalize_parakeet_text_with_profile(text, selected_language)
+    finalize_parakeet_text_with_profile(text, selected_language, ParakeetDomainProfile::General)
 }
 
 fn normalize_english_numbers(text: &str) -> String {

@@ -536,19 +536,6 @@ pub struct AppSettings {
     pub long_audio_model: Option<String>,
     #[serde(default = "default_long_audio_threshold_seconds")]
     pub long_audio_threshold_seconds: f32,
-    #[serde(default)]
-    pub gemini_api_key: Option<String>,
-    #[serde(default = "default_gemini_model")]
-    pub gemini_model: String,
-    /// Groq API key for cloud STT (stored in keyring, never persisted to disk).
-    #[serde(default)]
-    pub groq_stt_api_key: Option<String>,
-    /// Mistral API key for Voxtral cloud STT (stored in keyring, never persisted to disk).
-    #[serde(default)]
-    pub mistral_stt_api_key: Option<String>,
-    /// Deepgram API key for cloud STT (stored in keyring, never persisted to disk).
-    #[serde(default)]
-    pub deepgram_api_key: Option<String>,
     #[serde(default = "default_post_process_actions")]
     pub post_process_actions: Vec<PostProcessAction>,
     #[serde(default)]
@@ -828,10 +815,6 @@ fn default_long_audio_threshold_seconds() -> f32 {
     10.0
 }
 
-fn default_gemini_model() -> String {
-    "gemini-2.5-flash".to_string()
-}
-
 pub fn sanitize_custom_provider_base_url(value: &str) -> Result<String, String> {
     let trimmed = value.trim().trim_end_matches('/');
     if trimmed.is_empty() {
@@ -933,7 +916,6 @@ fn ensure_selected_language_default(settings: &mut AppSettings) -> bool {
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 fn sanitize_persisted_secrets(settings: &mut AppSettings) {
-    settings.gemini_api_key = None;
     for api_key in settings.post_process_api_keys.values_mut() {
         api_key.clear();
     }
@@ -945,23 +927,6 @@ fn is_redacted_secret_placeholder(value: &str) -> bool {
 
 fn migrate_plaintext_secrets_to_secure_store(settings: &mut AppSettings) -> bool {
     let mut changed = false;
-
-    if let Some(api_key) = settings
-        .gemini_api_key
-        .clone()
-        .filter(|value| !value.trim().is_empty() && !is_redacted_secret_placeholder(value))
-    {
-        match crate::secret_store::set_gemini_api_key(&api_key) {
-            Ok(()) => {
-                settings.gemini_api_key = None;
-                changed = true;
-            }
-            Err(err) => warn!(
-                "Failed to migrate Gemini API key to secure storage: {}",
-                err
-            ),
-        }
-    }
 
     for (provider_id, api_key) in settings.post_process_api_keys.clone() {
         if api_key.trim().is_empty() || is_redacted_secret_placeholder(&api_key) {
@@ -986,15 +951,6 @@ fn migrate_plaintext_secrets_to_secure_store(settings: &mut AppSettings) -> bool
 }
 
 fn hydrate_secure_secrets(settings: &mut AppSettings) {
-    let persisted_gemini_api_key = settings.gemini_api_key.take();
-    settings.gemini_api_key = crate::secret_store::get_gemini_api_key()
-        .ok()
-        .flatten()
-        .or_else(|| {
-            persisted_gemini_api_key
-                .filter(|value| !value.trim().is_empty() && !is_redacted_secret_placeholder(value))
-        });
-
     let provider_ids: Vec<String> = settings
         .post_process_providers
         .iter()
@@ -1029,17 +985,7 @@ fn exportable_settings(mut settings: AppSettings) -> AppSettings {
 
 pub fn get_public_settings(app: &AppHandle) -> AppSettings {
     let mut settings = get_settings(app);
-    let gemini_is_configured = settings
-        .gemini_api_key
-        .as_ref()
-        .map(|value| !value.trim().is_empty())
-        .unwrap_or(false);
-
     sanitize_persisted_secrets(&mut settings);
-    if gemini_is_configured {
-        settings.gemini_api_key = Some(CONFIGURED_SECRET_SENTINEL.to_string());
-    }
-
     settings
 }
 
@@ -1437,8 +1383,6 @@ pub fn get_default_settings() -> AppSettings {
         external_script_path: None,
         long_audio_model: None,
         long_audio_threshold_seconds: default_long_audio_threshold_seconds(),
-        gemini_api_key: None,
-        gemini_model: default_gemini_model(),
         post_process_actions: default_post_process_actions(),
         saved_processing_models: Vec::new(),
         adaptive_profile_applied: default_adaptive_profile_applied(),
@@ -1448,9 +1392,6 @@ pub fn get_default_settings() -> AppSettings {
         voice_snippets: Vec::new(),
         auto_learn_dictionary: true,
         auto_pause_media: false,
-        groq_stt_api_key: None,
-        mistral_stt_api_key: None,
-        deepgram_api_key: None,
         speaking_rate_pauses: Vec::new(),
         voice_to_code_enabled: false,
         voice_to_code_model: String::new(),

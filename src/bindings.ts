@@ -1709,8 +1709,7 @@ async stopLlamaServer() : Promise<Result<null, string>> {
 
 /** user-defined types **/
 
-export type AdaptiveCalibrationState = "idle" | "queued" | "running" | "completed" | "failed" | "fallback_applied"
-export type AdaptiveMachineProfile = { profile_schema_version?: number; app_version?: string; backend_version?: string; machine_score_details?: MachineScoreDetails; machine_tier: MachineTier; cpu_brand: string; logical_cores: number; total_memory_gb: number; low_power_cpu: boolean; gpu_detected?: boolean; gpu_kind?: GpuKind; gpu_name?: string | null; npu_detected?: boolean; npu_kind?: NpuKind; npu_name?: string | null; copilot_plus_detected?: boolean; on_battery?: boolean | null; power_mode?: PowerMode; thermal_degraded?: boolean; runtime_power_snapshot_at?: number | null; recommended_model_id: string; secondary_model_id: string | null; active_runtime_model_id?: string | null; recommended_backend?: WhisperBackendPreference | null; active_backend?: WhisperBackendPreference | null; calibrated_models?: string[]; bench_phase?: BenchPhase; bench_completed_at?: number | null; last_quick_bench_at?: number | null; last_full_bench_at?: number | null; calibration_state?: AdaptiveCalibrationState; calibration_reason?: string | null; large_skip_reason?: string | null; whisper: WhisperAdaptiveProfile }
+export type AdaptiveMachineProfile = { profile_schema_version?: number; app_version?: string; backend_version?: string; machine_score_details?: MachineScoreDetails; machine_tier: MachineTier; cpu_brand: string; logical_cores: number; total_memory_gb: number; low_power_cpu: boolean; gpu_detected?: boolean; gpu_kind?: GpuKind; gpu_name?: string | null; npu_detected?: boolean; npu_kind?: NpuKind; npu_name?: string | null; copilot_plus_detected?: boolean; on_battery?: boolean | null; power_mode?: PowerMode; thermal_degraded?: boolean; runtime_power_snapshot_at?: number | null; recommended_model_id: string; secondary_model_id: string | null; active_runtime_model_id?: string | null }
 export type AppContextCategory = 
 /**
  * Code editors, IDEs, terminals
@@ -1777,19 +1776,7 @@ recording_mode?: RecordingMode; selected_microphone?: string | null; selected_mi
  * When true, LLM post-processing fires automatically whenever the
  * session glossary signals a code context (≥ 3 extracted identifiers).
  */
-llm_auto_mode?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; long_audio_model?: string | null; long_audio_threshold_seconds?: number; gemini_api_key?: string | null; gemini_model?: string; 
-/**
- * Groq API key for cloud STT (stored in keyring, never persisted to disk).
- */
-groq_stt_api_key?: string | null; 
-/**
- * Mistral API key for Voxtral cloud STT (stored in keyring, never persisted to disk).
- */
-mistral_stt_api_key?: string | null; 
-/**
- * Deepgram API key for cloud STT (stored in keyring, never persisted to disk).
- */
-deepgram_api_key?: string | null; post_process_actions?: PostProcessAction[]; saved_processing_models?: SavedProcessingModel[]; adaptive_profile_applied?: boolean; adaptive_machine_profile?: AdaptiveMachineProfile | null; 
+llm_auto_mode?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; post_process_actions?: PostProcessAction[]; saved_processing_models?: SavedProcessingModel[]; adaptive_profile_applied?: boolean; adaptive_machine_profile?: AdaptiveMachineProfile | null;
 /**
  * Whether the automatic app-context feature is enabled globally.
  */
@@ -1843,10 +1830,7 @@ export type AudioInputLevelState = "unknown" | "silent" | "weak" | "healthy" | "
 export type AudioTranscriptSegment = { start_ms: number; end_ms: number; text: string }
 export type AudioTranscriptionDetail = { text: string; segments: AudioTranscriptSegment[] }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
-export type BenchPhase = "none" | "quick_done" | "full_done"
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
-export type CalibrationPhase = "none" | "quick" | "full"
-export type CalibrationStatusSnapshot = { model_id: string; phase: CalibrationPhase; state: AdaptiveCalibrationState; detail: string | null; updated_at_ms: number }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CodeLanguage = "rust" | "python" | "java_script" | "type_script" | "go" | "java" | "c_sharp" | "cpp" | "html" | "css" | "shell" | "json" | "toml" | "yaml" | "markdown"
 export type ConfidenceWord = { text: string; confidence: number }
@@ -1876,7 +1860,7 @@ already_in_dict: boolean;
 auto_add: boolean }
 export type CustomSounds = { start: boolean; stop: boolean }
 export type DictionaryEntry = { from: string; to: string }
-export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GeminiApi" | "GroqWhisper" | "MistralVoxtral" | "Deepgram"
+export type EngineType = "Parakeet"
 export type GpuKind = "none" | "integrated" | "dedicated" | "unknown"
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_action_key: number | null; model_name: string | null; confidence_payload: TranscriptionConfidencePayload | null }
 export type HistoryStats = { total_entries: number; total_words: number; entries_today: number; entries_this_week: number; most_used_model: string | null }
@@ -1921,8 +1905,6 @@ export type LifecycleStateEvent = { state: TranscriptionLifecycleState; operatio
 export type LlamaServerStatus = { binary_ready: boolean; model_ready: boolean; server_running: boolean; port: number }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 export type MachineScoreDetails = { ram_score?: number; cpu_threads_score?: number; cpu_family_score?: number; gpu_prebench_bonus?: number; npu_prebench_bonus?: number; low_power_penalty?: number; power_penalty?: number; thermal_penalty?: number; final_score?: number; tier_reason?: string }
-export type MachineStatusMode = "optimal" | "battery" | "saver" | "thermal" | "memory_limited" | "fallback" | "calibrating"
-export type MachineStatusSnapshot = { mode: MachineStatusMode; degraded: boolean; headline: string; detail: string; active_model_id: string | null; active_backend: WhisperBackendPreference | null }
 export type MachineTier = "low" | "medium" | "high"
 export type MeetingEntry = { id: number; title: string; app_name: string; transcript: string; category: string; is_pinned: boolean; is_archived: boolean; summary: string; action_items: string; segments: MeetingSegmentEntry[]; created_at: number; updated_at: number }
 export type MeetingSegmentEntry = { id: number; meeting_id: number; timestamp_ms: number; content: string }
@@ -1979,7 +1961,7 @@ export type RecordingRetentionPeriod =
  * a GDPR-compliant default.
  */
 "preserve_limit" | "days_3" | "weeks_2" | "months_3"
-export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; lifecycle_state: TranscriptionLifecycleState; last_lifecycle_event: LifecycleStateEvent; recent_errors: RuntimeErrorEvent[]; selected_model: string; loaded_model_id: string | null; loaded_model_name: string | null; model_loaded: boolean; paste_method: string; clipboard_handling: string; selected_language: string; selected_microphone: string | null; selected_output_device: string | null; is_recording: boolean; is_paused: boolean; microphone_stream_open: boolean; microphone_backend_ready: boolean; selected_microphone_available: boolean; microphone_permission_state: MicrophonePermissionState; input_level_state: AudioInputLevelState; input_energy_ema: number; input_peak_energy: number; adaptive_silence_threshold_ms: number | null; operation_id: number | null; active_stage: TranscriptionLifecycleState | null; last_audio_error: string | null; partial_result: boolean; device_resolution: string | null; cancelled_at_stage: TranscriptionLifecycleState | null; current_app_context: AppTranscriptionContext | null; last_transcription_app_context: AppTranscriptionContext | null; adaptive_voice_profile_enabled: boolean; adaptive_voice_profile: VoiceProfile | null; active_voice_profile_segment: VoiceProfileSegment | null; active_voice_runtime_adjustment: VoiceRuntimeAdjustment | null; machine_status: MachineStatusSnapshot | null; recent_pipeline_profiles: PipelineProfileEvent[]; parakeet_diagnostics: ParakeetDiagnosticsSnapshot; adaptive_machine_profile: AdaptiveMachineProfile | null; adaptive_calibration_state: CalibrationStatusSnapshot[] }
+export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; lifecycle_state: TranscriptionLifecycleState; last_lifecycle_event: LifecycleStateEvent; recent_errors: RuntimeErrorEvent[]; selected_model: string; loaded_model_id: string | null; loaded_model_name: string | null; model_loaded: boolean; paste_method: string; clipboard_handling: string; selected_language: string; selected_microphone: string | null; selected_output_device: string | null; is_recording: boolean; is_paused: boolean; microphone_stream_open: boolean; microphone_backend_ready: boolean; selected_microphone_available: boolean; microphone_permission_state: MicrophonePermissionState; input_level_state: AudioInputLevelState; input_energy_ema: number; input_peak_energy: number; adaptive_silence_threshold_ms: number | null; operation_id: number | null; active_stage: TranscriptionLifecycleState | null; last_audio_error: string | null; partial_result: boolean; device_resolution: string | null; cancelled_at_stage: TranscriptionLifecycleState | null; current_app_context: AppTranscriptionContext | null; last_transcription_app_context: AppTranscriptionContext | null; adaptive_voice_profile_enabled: boolean; adaptive_voice_profile: VoiceProfile | null; active_voice_profile_segment: VoiceProfileSegment | null; active_voice_runtime_adjustment: VoiceRuntimeAdjustment | null; recent_pipeline_profiles: PipelineProfileEvent[]; parakeet_diagnostics: ParakeetDiagnosticsSnapshot; adaptive_machine_profile: AdaptiveMachineProfile | null }
 export type RuntimeErrorEvent = { code: string; stage: RuntimeErrorStage; message: string; recoverable: boolean; operation_id: number | null; device_name: string | null; model_id: string | null; timestamp_ms: number }
 export type RuntimeErrorStage = "capture" | "vad" | "transcription" | "post_process" | "paste" | "shortcut" | "model" | "system" | "unknown"
 export type SavedProcessingModel = { id: string; provider_id: string; model_id: string; label: string }
@@ -1995,7 +1977,6 @@ export type TopCorrection = { from: string; to: string; count: number }
 export type TranscriptionConfidencePayload = { engine: string; overall_confidence: number; mapping_stable: boolean; words: ConfidenceWord[] }
 export type TranscriptionLifecycleState = "idle" | "preparing_microphone" | "recording" | "paused" | "stopping" | "transcribing" | "processing" | "pasting" | "completed" | "cancelled" | "error"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
-export type UnsafeBackendRecord = { backend: WhisperBackendPreference; unsafe_until_ms: number; reason: string; failed_at_ms: number }
 /**
  * The user's learned vocabulary profile.
  */
@@ -2041,9 +2022,6 @@ value: number | null }
  * Full weekly report returned to the frontend.
  */
 export type WeeklyReport = { period_start_ts: number; period_end_ts: number; sessions_this_week: number; sessions_last_week: number; words_this_week: number; words_last_week: number; avg_words_per_session: number; daily_sessions: number[]; peak_hour_label: string | null; corrections_total: number; profile_terms: number; dictionary_entries: number; insights: WeeklyInsight[] }
-export type WhisperAdaptiveProfile = { small: WhisperModelAdaptiveConfig; medium: WhisperModelAdaptiveConfig; turbo: WhisperModelAdaptiveConfig; large: WhisperModelAdaptiveConfig }
-export type WhisperBackendPreference = "auto" | "cpu" | "gpu"
-export type WhisperModelAdaptiveConfig = { backend: WhisperBackendPreference; threads: number; chunk_seconds: number; overlap_ms: number; active_backend?: WhisperBackendPreference; active_threads?: number; active_chunk_seconds?: number; active_overlap_ms?: number; short_latency_ms?: number; medium_latency_ms?: number; long_latency_ms?: number; stability_score?: number; overall_score?: number; failure_count?: number; calibrated_phase?: CalibrationPhase; unsafe_backends?: UnsafeBackendRecord[]; unsafe_until?: number | null; last_failure_reason?: string | null; last_failure_at?: number | null; last_quick_bench_at?: number | null; last_full_bench_at?: number | null; backend_decision_reason?: string | null; config_decision_reason?: string | null }
 
 /** tauri-specta globals **/
 

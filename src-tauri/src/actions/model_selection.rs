@@ -102,7 +102,7 @@ mod tests {
             is_downloading: false,
             partial_size: 0,
             is_directory: false,
-            engine_type: EngineType::Whisper,
+            engine_type: EngineType::Parakeet,
             accuracy_score: 0.0,
             speed_score: 0.0,
             supports_translation: false,

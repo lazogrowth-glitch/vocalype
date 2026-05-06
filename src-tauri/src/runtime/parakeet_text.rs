@@ -1,4 +1,4 @@
-use once_cell::sync::Lazy;
+﻿use once_cell::sync::Lazy;
 use regex::Regex;
 
 static PARAKEET_V3_PATTERN: Lazy<Regex> = Lazy::new(|| {
@@ -43,95 +43,6 @@ static TRAILING_PUNCTUATION_RUN_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\s*([.!?])(?:\s*[.!?])+$").unwrap());
 static TRAILING_MM_HMM_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)[,.]?\s*\b(?:mm-hmm|uh-huh|mhm|mmhmm)\b\s*[.!?,]*$").unwrap());
-// A01: Scotturb split
-static A01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bscott\s+turb\b").unwrap());
-// A02: SANParks split (EN)
-static A02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bsand\s+parks\b").unwrap());
-// A03: Vichy French
-static A03_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bv\.?\s*c\.?\s+french\b").unwrap());
-// A04: U.S. Corps of Engineers
-static A04_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bu\.?\s*s\.?\s+courts\s+of\s+(?:the\s+)?engineers\b").unwrap());
-// A05: Rachis mispronunciation
-static A05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bra(?:chie|kis)\b").unwrap());
-// A06: Kundalini mispronunciation
-static A06_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bkudali\b").unwrap());
-// A07: 802.11n extra letter
-static A07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b802\.11in\b").unwrap());
-// A08: Barbules mispronunciation
-static A08_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bbarpus\b").unwrap());
-// A09: Nineteen forty → 1940
-static A09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+forty\b").unwrap());
-// A10: Nineteen eighty-eight → 1988 (EN)
-static A10_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+eighty[\s-]eight\b").unwrap());
-// A11: Time word form: eleven thirty-five
-static A11_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\beleven\s+thirty[\s-]five\s+(a\.?m\.?|p\.?m\.?)\b").unwrap());
-// A12: Digit + space + percent
-static A12_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+%").unwrap());
-// A13: Levees vs leaves
-static A13_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdamaged\s+leaves\b").unwrap());
-// A14: Mau movement
-static A14_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMao\s+movement\b").unwrap());
-// A15: Superpredator (EN)
-static A15_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bsuper\s+predator\b").unwrap());
-// B02: Twenty-five to thirty years
-static B02_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\btwenty[\s-]five\s+to\s+thirty\s+years?\b").unwrap());
-// B04: Thirty percent word form
-static B04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bthirty\s+per\s*cent\b").unwrap());
-// B05: Time range: eleven thirty → 11:30
-static B05_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\beleven\s+thirty\s+(a\.?m\.?|p\.?m\.?)\b").unwrap());
-// D01: Sundarbans garbled (FR)
-static D01_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bseines?\s+d['']?\s*arbans?\b").unwrap());
-// D02: Sundarbans alternate garble (FR)
-static D02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bSundarmans?\b").unwrap());
-// D03: Mosasaure (FR)
-static D03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bmosasure\b").unwrap());
-// D04: Mosasaures plural (FR)
-static D04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bmosasores\b").unwrap());
-// D05: Superprédateur compound (FR)
-static D05_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bsuper\s+pr[eé]dateur\b").unwrap());
-// D06: l'UE from LEUP (FR)
-static D06_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bLEUP\b").unwrap());
-// D07: Kundalini FR garble
-static D07_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bkundalani\b").unwrap());
-// D08: Rachis FR variants
-static D08_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\brachi(?:de|e)\b").unwrap());
-// D09: Noor / Nours (FR)
-static D09_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bNours\b").unwrap());
-// D10: Muhammad vs Mohammad (FR)
-static D10_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMohammad\b").unwrap());
-// D11: Les années vingt → les années 20 (FR)
-static D11_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bles ann[eé]es\s+vingt\b").unwrap());
-// D12: Time format 23h35 → 23 h 35 (FR)
-static D12_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b(\d{1,2})h(\d{2})\b").unwrap());
-// D13: GMT time garble (FR)
-static D13_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bdouze\s+heures?\s+Gm\s*D\b").unwrap());
-// D14: Appelat → appelé (FR)
-static D14_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bappelat\b").unwrap());
-// D15: 1988 word form (FR)
-static D15_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]huit\b").unwrap());
-// D17: The soir → ce soir (FR)
-static D17_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bthe\s+soir\b").unwrap());
-// D18: And + French verb → et + verb (FR)
-static D18_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\band\s+(d[eé]terminer|d[eé]cider|pr[eé]senter|[eé]valuer|continuer|rester)\b")
-        .unwrap()
-});
-// D19: "the" before French article → suppress (FR)
-static D19_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe\s+(la|le|les|un|une|des|du)\b").unwrap());
-// D20: Rougissement → rugissement (FR)
-static D20_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\brougissement\b").unwrap());
 // F01: Digit + space + percent (global)
 static F01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+)\s+%").unwrap());
 // F02: Time colon spacing (global)
@@ -140,23 +51,6 @@ static F02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d{1,2})\s+:\s*(\d{
 static C01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bScottuur\b").unwrap());
 // C02: 802.11 digit transposition (ES)
 static C02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b800\.11([abgnABGN])\b").unwrap());
-// B01: Nineteen + decade year pattern (general)
-static B01_PATTERN_1: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+twenty\b").unwrap());
-// B01: Nineteen + decade year pattern (general)
-static B01_PATTERN_2: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+thirty\b").unwrap());
-// B01: Nineteen + decade year pattern (general)
-static B01_PATTERN_3: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+forty\b").unwrap());
-// B01: Nineteen + decade year pattern (general)
-static B01_PATTERN_4: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+fifty\b").unwrap());
-// B01: Nineteen + decade year pattern (general)
-static B01_PATTERN_5: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+sixty\b").unwrap());
-// B01: Nineteen + decade year pattern (general)
-static B01_PATTERN_6: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+seventy\b").unwrap());
-// B01: Nineteen + decade year pattern (general)
-static B01_PATTERN_7: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+eighty\b").unwrap());
-// B01: Nineteen + decade year pattern (general)
-static B01_PATTERN_8: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bnineteen\s+ninety\b").unwrap());
 // C03: GHz suffix missing: 5.0z (ES)
 static C03_PATTERN_1: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\b5\.0z\b").unwrap());
 // C03: GHz suffix missing: 5.0z (ES)
@@ -220,17 +114,6 @@ static E14_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bGurley\b").unw
 static E15_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMarteli\b").unwrap());
 // F03: Ordinal suffix: 11o / 16o → 11º / 16º (PT)
 static F03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b(\d{1,2})o\b").unwrap());
-// F04: FR year: mille neuf cent quatre-vingt (general)
-static F04_PATTERN_1: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt[\s-]dix\b").unwrap());
-// F04: FR year: mille neuf cent quatre-vingt (general)
-static F04_PATTERN_2: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+soixante\b").unwrap());
-// F04: FR year: mille neuf cent quatre-vingt (general)
-static F04_PATTERN_3: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bmille\s+neuf\s+cent\s+quatre[\s-]vingt\b").unwrap());
-// F05: 802.11 space variants (already partially covered)
-static F05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\b802\s+\.\s*11\b").unwrap());
 // G01: Anti-incendios → antincendios (ES)
 static G01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bantiincendios\b").unwrap());
 // G02: Micro. Cru → microexpressões (PT)
@@ -247,13 +130,6 @@ static I03_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bNorgan\b").unw
 static I04_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bTayib\b").unwrap());
 // I05: Carpanedo (ES)
 static I05_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bCarbaneo\b").unwrap());
-// J01: Duvall → Duval disambiguation (FR)
-static J01_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bDuval\b").unwrap());
-// J02: Mau → Mau in FR context
-static J02_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bMao\s+mouvement\b").unwrap());
-// J05: Vaccination/infection numbers (FR)
-static J05_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\btrois\s+cent\s+trente\s+mille\b").unwrap());
 // WiFi standard: model hears "802.11a" as "10.2 A" or "10.2A" (digit form)
 static WIFI_802_MISREAD_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b10\.2\s*([abgnABGN])\b").unwrap());
@@ -284,11 +160,6 @@ static GHZ_WORD_58_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\bfive\s+point\s+eight\s+(?:g\s*h\s*[czCZ]|g\.h\.z\.?)\b").unwrap()
 });
 static OPEN_I_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen\s+i\b").unwrap());
-static DOT_UP_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdot\s+up\b").unwrap());
-static DOCKS_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bdocks\b").unwrap());
-static CALL_VOCAL_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bcall\s+vocal\b").unwrap());
-static GITHUB_DOT_COM_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bgithub\s*\.\s*com\b").unwrap());
 static EXAMPLE_DOT_COM_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bexample\s*\.\s*com\b").unwrap());
 static ALEX_DOT_MARTIN_PATTERN: Lazy<Regex> =
@@ -306,8 +177,6 @@ static LETTER_NUM_WORD_PATTERN: Lazy<Regex> = Lazy::new(|| {
 static ANSWER_ENGINE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\banswer engine\b").unwrap());
 static IN_ONE_END_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bin one([.!?])$").unwrap());
-static DROP_WORDS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\btranscription drop words\b").unwrap());
 static FAST_EARTH_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bfast earth speech\b").unwrap());
 static REGUL_RIGHT_ORDER_PATTERN: Lazy<Regex> =
@@ -320,27 +189,8 @@ static BACKGROUND_NOSE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bbackground nose\b").unwrap());
 static TESTING_THIS_VOICE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\btesting this voice with\b").unwrap());
-static SHOW_TELL_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bshow tell us\b").unwrap());
-static SMALL_AMOUNT_SOUND_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bsmall amount of sound\b").unwrap());
 static MOMBIAN_SOUND_CHANGE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b(?:small amount of\s+)?mombian sound change(?:s)?\b").unwrap());
-static A_AMBIENT_SOUND_CHANGES_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\ba ambient sound changes\b").unwrap());
-static SUPPORT_VOCALYPE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bsupport Vocalype dot app\b").unwrap());
-static DOCS_VOCALYPE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bdocs dot Vocalype\b").unwrap());
-static REMAINING_RISK_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bremaining risk\b").unwrap());
-static THE_ACTION_WE_NEED_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe action we need\b").unwrap());
-static VALIDATE_REPORTING_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\band validate the reporting flow\b").unwrap());
-static TECHNICAL_WORD_LIKE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\btechnical word like\b").unwrap());
-static DESKTOP_AND_AND_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bdesktop and and Parakeet\b").unwrap());
 static BROKEN_SENTENCE_ENDING_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bbroken sentence ending\b").unwrap());
 static APRIL_BROKEN_2026_PATTERN: Lazy<Regex> =
@@ -351,14 +201,6 @@ static MULTILINGUAL_STANDALONE_FILLER_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)(^|[\s,.;!?])(?:uh|euh|heu|eh|ah|hmm|mhm)([\s,.;!?]|$)").unwrap()
 });
 static CHEN_KING_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bchen\s+king\b").unwrap());
-static BINDER_EYES_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bbinder\s+eyes\b").unwrap());
-static HAND_OFF_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bhand\s+off\b").unwrap());
-static WORK_OUT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bwork\s+out\b").unwrap());
-static MOTOR_STARTS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bmotor\s+starts\b").unwrap());
-static THE_TRUNK_WHEN_MICROPHONE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe\s+trunk\s+when\s+the\s+microphone\b").unwrap());
 static MISS_YOUR_ROOM_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bmiss\s+your\s+room\b").unwrap());
 static TO_ON_PURPOSE_PATTERN: Lazy<Regex> =
@@ -367,175 +209,21 @@ static TRANSCRIPTS_STAY_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\btranscripts\s+stay\b").unwrap());
 static STILL_CATCH_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bstill\s+catch\b").unwrap());
-static TURNING_STRAIGHT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bturning\s+straight\b").unwrap());
-static ACTUAL_SPET_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bactual\s+spet\b").unwrap());
-static FRENCH_OR_LIKE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bFrench\s+or\s+like\b").unwrap());
-static EVERYBODY_WORDS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\beverybody\s+words\b").unwrap());
-static PRONOUNCE_IS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe\s+pronounce\s+is\b").unwrap());
-static YASSINE_LAST_MESSAGE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bYassine\s+last\s+message\b").unwrap());
 static NO_NO_SO_WE_SEND_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bno\s+no\s+so\s+we\s+send\b").unwrap());
-static I_WANT_TO_I_WANT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bI\s+want\s+to\s+I\s+want\b").unwrap());
-static IN_THE_IN_THE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bin the in the\b").unwrap());
 static PUNCT_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s+([,.;!?])").unwrap());
-static SENTENCE_LOWERCASE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"([a-z])\.\s+([a-z])").unwrap());
 static FURTHER_THE_MICROPHONE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bfurther\s+the\s+microphone\b").unwrap());
 static LESS_IN_IDEAL_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bless\s+in\s+ideal\s+setup\b").unwrap());
-static LITTLE_HESITATION_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\blittle\s+hesitation\b").unwrap());
-static THE_WAY_I_NORMALLY_END_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe\s+way\s+I\s+normally[.!?]?$").unwrap());
 static OLD_PLACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bold\s+place\b").unwrap());
-static STRETCH_THE_HANDOFF_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bstretch\s+the\s+handoff\b").unwrap());
-static AROUND_ME_NOW_I_WANT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\baround\s+me\.\s+Now\s+I\s+want\s+to\s+know\b").unwrap());
 static STOPS_AND_WE_START_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bstops\s+and\s+we\s+start\b").unwrap());
-
-// ── Dev tech term corrections ──────────────────────────────────────────────
-// React hooks: "use state" / "use effect" / "use callback" / "use router" / "use ref"
-static DEV_USESTATE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\buse\s+state\b").unwrap());
-static DEV_USEEFFECT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\buse\s+effect\b").unwrap());
-static DEV_USECALLBACK_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\buse\s+callback\b").unwrap());
-static DEV_USEMEMO_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\buse\s+memo\b").unwrap());
-static DEV_USEREF_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\buse\s+ref\b").unwrap());
-static DEV_USEROUTER_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\buse\s+router\b").unwrap());
-static DEV_USECONTEXT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\buse\s+context\b").unwrap());
-static DEV_USEONBOARDING_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\buse\s+onboarding\b").unwrap());
-// TypeScript / JavaScript
-static DEV_TYPESCRIPT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\btype\s+script\b").unwrap());
-static DEV_JAVASCRIPT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bjava\s+script\b").unwrap());
-// HTML element names
-static DEV_HTMLINPUTELEMENT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+input\s+element\b").unwrap());
-static DEV_HTMLDIVELEMENT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+div(?:e)?\s+element\b").unwrap());
-static DEV_HTMLBUTTONELEMENT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bhtml?\s+button\s+element\b").unwrap());
-// Multi-word dev libs / tools
-static DEV_PGVECTOR_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bpg\s+vector\b").unwrap());
-static DEV_IVFFLAT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\b(?:eve|ivf)\s+flat\b").unwrap());
-static DEV_LANGCHAIN_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\blang\s+chain\b").unwrap());
-static DEV_NEXTJS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bnext\s*\.\s*js\b").unwrap());
-static DEV_NODEJS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bnode\s*\.\s*js\b").unwrap());
-// Groq API garble: "Groc appi", "groc api", "grok ap i"
-static DEV_GROQ_API_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bgro[ck]\s+ap+[iy]\b").unwrap());
-static DEV_GROQ_STANDALONE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bgroc\b").unwrap());
-// Zod garble: "Z schema" → "Zod schema"
-static DEV_ZOD_SCHEMA_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bz\s+schema\b").unwrap());
-// "bun run" garble: "burn run"
-static DEV_BUN_RUN_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bburn\s+run\b").unwrap());
-// "alter table" garble: only "after table" preceded by SQL context keywords
-static DEV_ALTER_TABLE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bafter\s+table\s+(\w+)\s+add\b").unwrap());
-// "status code" garble (FR accent): "statut code"
-static DEV_STATUS_CODE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bstatut\s+code\b").unwrap());
-// "cargo tauri" garble: "cargoTori", "cargo tori", "cargo touri"
-static DEV_CARGO_TAURI_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bcargo\s*(?:tori|touri|tary|taory)\b").unwrap());
-// "jest" garble: only "write the just test" / "write a just test" — needs verb context
-static DEV_JEST_TEST_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\b(write|run|add)\s+(?:a\s+|the\s+)?just\s+test\b").unwrap());
-// "prompt caching" garble: "prompt catching"
-static DEV_PROMPT_CACHING_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bprompt\s+catching\b").unwrap());
-// "semantic search" garble: "samoon seek search", "salmon seek"
-static DEV_SEMANTIC_SEARCH_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bsam+on\s+s(?:eek|eke)\s+search\b").unwrap());
-// "foreign key" garble: "forin k", "foreign k", "foreign key contraint"
-static DEV_FOREIGN_KEY_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bfor(?:in|ing?)\s+k\b").unwrap());
-// "ivfflat" alternate garble
-static DEV_EVEFLAT_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\beve\s+flat\b").unwrap());
-// "useOnboarding" / hook compounds with "use"
-static DEV_USE_HOOK_COMPOUND_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\buse\s+(auth|session|query|params|search|pathname|locale|theme|modal|toast|store|settings|plan|model)\b").unwrap()
-});
-static I_WANTED_TO_KNOW_WHETHER_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\bI\s+wanted\s+to\s+know\s+whether\s+the\s+transcript\b").unwrap()
-});
 static REGULAR_PLACE_CLEAR_VOICE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bregular\s+place\s+with\s+a\s+clear\s+voice\b").unwrap());
 static PRONUNCH_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bpronunch\b").unwrap());
 static DROPS_ON_THE_MICROPHONE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bdrops\s+on\s+the\s+microphone\b").unwrap());
-static WHAT_HAPPENED_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bwhat\s+happened\b").unwrap());
-static IN_MESSY_ROOM_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bin\s+messy\s+room\b").unwrap());
-static TEAM_SORRY_SEND_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bteam\.\s*sorry\s+send\b").unwrap());
-static BANDERISE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bbanderise\b").unwrap());
-static USER_WILL_SPEAK_WITH_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe way a normal user will speak with\b").unwrap());
-static STILL_STAY_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bstill stay readable\b").unwrap());
-static SEVERAL_CLAWS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bseveral claws\b").unwrap());
-static PAUSE_UNUSUAL_PLACE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bwith pause in an unusual place\b").unwrap());
-static SOMETHING_USERS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bbecause something user sometimes user hesitate\b").unwrap());
-static MIDDLE_OF_THE_A_THOUGHT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bin the middle of the a thought\b").unwrap());
-static SENTENCE_CORRECT_COHERENT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bsentence correct\.\s*coherent\b").unwrap());
-static WORD_THAT_COME_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe word that come\b").unwrap());
-static AND_THE_SEE_WHETHER_APP_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\band the see whether app begins\b").unwrap());
-static LOSE_WORD_DUPLICATED_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\blose word duplicated sections\b").unwrap());
-static THE_WAY_A_HUMAN_END_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe way a human[.!?]?$").unwrap());
-static OPEN_THE_UP_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bopen the up\b").unwrap());
-static WRITING_NOT_AFTER_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bwriting not after a meeting\b").unwrap());
-static THROUGH_THE_PROBLEM_LOUD_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthrough the problem\.\s*loud\b").unwrap());
-static MODUS_START_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe modus start well but slowly shift add\b").unwrap());
-static ENDING_OF_SENTENCES_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthe ending of sentences\b").unwrap());
-static REMAINS_CORRECTLY_CONSISTENT_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bremains correctly\.\s*consistent\b").unwrap());
-static MUCH_WAKER_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bmuch waker\b").unwrap());
-static MORE_PAUSE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bmore pause\b").unwrap());
-static NATURAL_SPOKEN_STRUCTURE_TO_THIS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bmore natural\.\s*spoken structure to this\b").unwrap());
-static KIND_OF_OR_RECORDING_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bkind of or recording\b").unwrap());
-static THAT_MORE_REALISTIC_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bthat more realistic\b").unwrap());
 static MOJIBAKE_C_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"Ã§").unwrap());
 static MOJIBAKE_E_ACUTE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"Ã©").unwrap());
 static MOJIBAKE_E_GRAVE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"Ã¨").unwrap());
@@ -554,32 +242,18 @@ static PARCE_QUE_LA_VRAIE_VIE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bparce que la vraie vie\b").unwrap());
 static AND_SEE_TRANSCRIPTION_REST_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\band see the transcription rest coherent\b").unwrap());
-static PARAKEET_VEUX_VOIR_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bParakeet veux voir si\b").unwrap());
-static PARAKEET_V3_COUPES_DES_MOTS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bParakeet V3 trois coupes des mots\b").unwrap());
 static QUAND_JE_PARLE_L_ENTEND_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bquand je parle l[' ]entend\b").unwrap());
-static REPREND_LA_PARAKEET_V3_VEUX_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\breprend la Parakeet V3 veux voir si\b").unwrap());
 static VOIX_BASSE_PLUS_BASSE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bvoix basse plus basse\b").unwrap());
 static LE_MOT_MEME_QUAND_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\ble mot m(?:e|\x{00EA})me quand\b").unwrap());
-static REPORTING_AVEC_MEETING_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\breporting avec le prochain meeting\b").unwrap());
 static CE_TEST_DANS_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bet ce test dans\.\.\.\b").unwrap());
 static WANT_TO_SEE_AUTOCORRECTION_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\bwant to see the autocorrection parler rest comprehensible on the text final side of repetition bizarre\b").unwrap()
 });
 static RESTABLE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\brestable\b").unwrap());
-static SORT_DES_PHRASES_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bsort des phrases courtes\b").unwrap());
-static NOUS_INTERSE_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\bet que si nous interse et ce qui nous interest maintenant c'est toi si\b")
-        .unwrap()
-});
 static TRENTE_SECOND_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\btrente second one minute or Parakeet minute\b").unwrap());
 static TRENTE_SECOND_ONE_MINUTE_PATTERN: Lazy<Regex> =
@@ -596,63 +270,17 @@ static EN_CAS_QUELQUE_CHOSE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\ben cas\.\s*quelque chose\b").unwrap());
 static LES_DES_MORCEAUX_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bles des morceaux\b").unwrap());
-static DICTEE_LONGUE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bdictee longue\b").unwrap());
-static QUELQUE_HESITATION_ANY_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bquelque\s+\S+\s+and pause\b").unwrap());
-static REPREND_LA_ET_JE_VEUX_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\breprend la et je veux voir si\b").unwrap());
 static CE_TEST_DANS_DOTS_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bet ce test dans\.\.\.\s*veut voir si\b").unwrap());
-static PROBLEME_NE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bprobleme\.\s*ne\b").unwrap());
-static DEUX_MINUTES_LA_TRANSCRIPTION_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bdeux minutes\.\s*la transcription\b").unwrap());
-static IMPORTANTS_SANS_TRANSFORMER_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bmots importants sans transformer\b").unwrap());
-static PRODUCT_ISSUE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bproject issue\b").unwrap());
-static IMPORTANT_THING_THERE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bimportant thing there\b").unwrap());
-static USER_MAY_A_LONG_MESSAGE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\buser may a long message\b").unwrap());
 static ONE_OR_2_MINUTES_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bone or 2 minutes\b").unwrap());
 static NATURAL_POSES_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bnatural poses\b").unwrap());
-static CONTINUOUS_CHANGE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bone continuous change\b").unwrap());
-static THOSE_POSES_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bthose poses\b").unwrap());
-static NO_WORRY_NO_SORRY_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\bno worry\.\s*no sorry\.\s*that is not that what i meant\b").unwrap()
-});
-static SEND_IT_THE_PROJECT_TEAM_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bsend it the project team\b").unwrap());
-static UNDERSTANDABLE_IN_FINAL_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bunderstandable\.\s*in the final transcript\b").unwrap());
 static POLL_VOICE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\bin a poll\.\s*voice\b").unwrap());
 static BECOME_LONGER_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\brecording become longer\b").unwrap());
 static COPY_PAST_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bcopy past\b").unwrap());
-static OR_NOT_END_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bor not\b").unwrap());
-static BENCHMARK_SENTENCE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bbenchmark sentence\b").unwrap());
-static USER_STILL_FEELS_RULES_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bwhile user still feels rules\b").unwrap());
-static SH_CHANGING_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bsh changing\b").unwrap());
-static SOMETHING_USER_HESITATE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bbecause something user sometimes user hesitate\b").unwrap());
-static PROBABLY_S_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bprobably s because\b").unwrap());
-static FILTER_WORDS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bfilter words\b").unwrap());
-static COVER_SESSIONAL_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bcover sessional sample\b").unwrap());
-static CHANGES_DIRECTION_A_LITTLE_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bchanges direction\.\s*a little\b").unwrap());
-static EXPERIENCE_IS_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bexperience\.\s*is\b").unwrap());
 
 pub fn should_attempt_sentence_punctuation(text: &str) -> bool {
     let word_count = text.split_whitespace().count();

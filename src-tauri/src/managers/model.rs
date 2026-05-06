@@ -274,12 +274,7 @@ impl ModelManager {
         // the cached .opt.ort, the cache file is deleted and rebuilt automatically.
         fs::create_dir_all(&runtime_cache_dir)?;
 
-        let mut available_models = model_catalog::load_catalog(app_handle)?;
-
-        // Auto-discover custom Whisper models (.bin files) in the models directory
-        if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
-            warn!("Failed to discover custom models: {}", e);
-        }
+        let available_models = model_catalog::load_catalog(app_handle)?;
 
         let manager = Self {
             app_handle: app_handle.clone(),
@@ -663,19 +658,6 @@ impl ModelManager {
 
                 info!("Successfully auto-selected model: {}", available_model.id);
             }
-        }
-
-        Ok(())
-    }
-
-    /// Discover custom Whisper models (.bin files) in the models directory.
-    /// Skips files that match predefined model filenames.
-    fn discover_custom_whisper_models(
-        models_dir: &Path,
-        _available_models: &mut HashMap<String, ModelInfo>,
-    ) -> Result<()> {
-        if !models_dir.exists() {
-            return Ok(());
         }
 
         Ok(())

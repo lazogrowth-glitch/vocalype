@@ -37,8 +37,6 @@ struct RawModelCatalogEntry {
     supported_languages_ref: Option<String>,
     #[serde(default)]
     is_custom: bool,
-    #[serde(default)]
-    always_available: bool,
     requires_license_key: bool,
 }
 

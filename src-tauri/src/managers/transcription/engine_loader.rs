@@ -43,7 +43,7 @@ impl TranscriptionManager {
     fn resolve_runtime_model_path(
         &self,
         model_id: &str,
-        model_info: &ModelInfo,
+        _model_info: &ModelInfo,
     ) -> Result<(std::path::PathBuf, Option<String>)> {
         if is_parakeet_v3_model_id(model_id) {
             for (label, candidate) in self.local_parakeet_backbone_candidates(model_id) {

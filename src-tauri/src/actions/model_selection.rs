@@ -31,42 +31,6 @@ pub(super) fn find_best_model_fallback(
     require_translation: bool,
     excluded_model_id: &str,
 ) -> Option<ModelInfo> {
-    let mut preferred_ids: Vec<String> = Vec::new();
-
-    if require_translation {
-        preferred_ids.extend(["large", "medium", "small"].into_iter().map(String::from));
-    } else {
-        preferred_ids.extend(
-            ["turbo", "large", "medium", "small", "breeze-asr"]
-                .into_iter()
-                .map(String::from),
-        );
-    }
-
-    for model_id in preferred_ids {
-        if model_id == excluded_model_id {
-            continue;
-        }
-
-        let Some(model_info) = model_manager.get_model_info(&model_id) else {
-            continue;
-        };
-
-        if !model_info.is_downloaded {
-            continue;
-        }
-
-        if require_translation && !model_info.supports_translation {
-            continue;
-        }
-
-        if !model_supports_selected_language(&model_info, settings) {
-            continue;
-        }
-
-        return Some(model_info);
-    }
-
     model_manager
         .get_available_models()
         .into_iter()

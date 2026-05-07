@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Zap, CheckCircle, TriangleAlert, Shield } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { commands } from "@/bindings";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 const PROVIDER_ID = "vocalype-cloud";
@@ -10,9 +11,8 @@ const MODEL_ID = "llama-3.3-70b-versatile";
 
 export const CloudPostProcessToggle: React.FC = () => {
   const { t } = useTranslation();
-  const { settings, updateSetting } = useSettings();
-  const { setPostProcessProvider, updatePostProcessSetting } =
-    useSettingsStore();
+  const { settings } = useSettings();
+  const refreshSettings = useSettingsStore((s) => s.refreshSettings);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,29 +22,43 @@ export const CloudPostProcessToggle: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await setPostProcessProvider(PROVIDER_ID);
-      await updatePostProcessSetting("model", PROVIDER_ID, MODEL_ID);
-      // Enable post-processing so the shortcut is registered
-      await updateSetting("post_process_enabled", true);
+      const r1 = await commands.setPostProcessProvider(PROVIDER_ID);
+      if (r1.status === "error") throw new Error(r1.error);
+
+      const r2 = await commands.changePostProcessModelSetting(
+        PROVIDER_ID,
+        MODEL_ID,
+      );
+      if (r2.status === "error") throw new Error(r2.error);
+
+      const r3 = await commands.changePostProcessEnabledSetting(true);
+      if (r3.status === "error") throw new Error(r3.error);
+
+      await refreshSettings();
     } catch (e) {
       setError(getUserFacingErrorMessage(e, { t }));
     } finally {
       setLoading(false);
     }
-  }, [setPostProcessProvider, updatePostProcessSetting, updateSetting, t]);
+  }, [refreshSettings, t]);
 
   const deactivate = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      await setPostProcessProvider("");
-      await updateSetting("post_process_enabled", false);
+      const r1 = await commands.changePostProcessEnabledSetting(false);
+      if (r1.status === "error") throw new Error(r1.error);
+
+      const r2 = await commands.setPostProcessProvider("");
+      if (r2.status === "error") throw new Error(r2.error);
+
+      await refreshSettings();
     } catch (e) {
       setError(getUserFacingErrorMessage(e, { t }));
     } finally {
       setLoading(false);
     }
-  }, [setPostProcessProvider, updateSetting, t]);
+  }, [refreshSettings, t]);
 
   return (
     <div

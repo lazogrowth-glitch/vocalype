@@ -36,6 +36,18 @@ pub struct CliArgs {
     #[arg(long, hide = true)]
     pub postprocess_benchmark_output: Option<String>,
 
+    /// Optional comma-separated model ids for benchmark comparison
+    #[arg(long, hide = true)]
+    pub postprocess_benchmark_models: Option<String>,
+
+    /// Optional comma-separated benchmark case ids
+    #[arg(long, hide = true)]
+    pub postprocess_benchmark_cases: Option<String>,
+
+    /// Run a direct cloud model sanity check and exit
+    #[arg(long, hide = true)]
+    pub postprocess_cloud_sanity: bool,
+
     /// Run a one-off post-processing probe for a history entry id and exit
     #[arg(long, hide = true)]
     pub postprocess_probe_history_id: Option<i64>,

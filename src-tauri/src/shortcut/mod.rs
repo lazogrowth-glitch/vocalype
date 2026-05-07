@@ -1322,6 +1322,33 @@ pub async fn fetch_post_process_models(
         }
     }
 
+    if provider.id == "vocalype-cloud" {
+        let auth_token = match crate::security::secret_store::get_auth_token() {
+            Ok(Some(token)) if !token.trim().is_empty() => token,
+            Ok(_) => {
+                return Err("Sign in to Vocalype Cloud to list available cloud models.".to_string())
+            }
+            Err(e) => return Err(format!("Failed to read Vocalype Cloud session: {}", e)),
+        };
+
+        return match crate::llm_client::fetch_models(provider, auth_token).await {
+            Ok(models) if !models.is_empty() => Ok(models),
+            Ok(_) => {
+                warn!(
+                    "Vocalype Cloud returned an empty model list, using built-in fallback models"
+                );
+                Ok(settings::known_vocalype_cloud_models())
+            }
+            Err(error) => {
+                warn!(
+                    "Vocalype Cloud model discovery failed ({}), using built-in fallback models",
+                    error
+                );
+                Ok(settings::known_vocalype_cloud_models())
+            }
+        };
+    }
+
     // Get API key
     let api_key = settings
         .post_process_api_keys

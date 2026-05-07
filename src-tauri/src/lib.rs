@@ -879,6 +879,21 @@ pub fn run(cli_args: CliArgs) {
         return;
     }
 
+    if cli_args.postprocess_cloud_sanity {
+        let runtime = tokio::runtime::Runtime::new()
+            .expect("failed to create tokio runtime for post-process cloud sanity");
+        match runtime.block_on(eval::postprocess_benchmark::run_cloud_sanity_cli()) {
+            Ok(report) => {
+                println!("{}", report);
+            }
+            Err(err) => {
+                eprintln!("Post-process cloud sanity failed: {}", err);
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
     if cli_args.postprocess_probe_history_id.is_some() {
         let runtime = tokio::runtime::Runtime::new()
             .expect("failed to create tokio runtime for post-process probe");

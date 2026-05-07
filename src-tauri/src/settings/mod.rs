@@ -715,6 +715,22 @@ fn default_post_process_provider_id() -> String {
     "vocalype-cloud".to_string()
 }
 
+pub const VOCALYPE_CLOUD_DEFAULT_MODEL_ID: &str = "llama-3.1-8b-instant";
+pub const VOCALYPE_CLOUD_KNOWN_MODEL_IDS: &[&str] = &[
+    VOCALYPE_CLOUD_DEFAULT_MODEL_ID,
+    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3-32b",
+];
+
+pub fn known_vocalype_cloud_models() -> Vec<String> {
+    VOCALYPE_CLOUD_KNOWN_MODEL_IDS
+        .iter()
+        .map(|model| (*model).to_string())
+        .collect()
+}
+
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
     vec![PostProcessProvider {
         id: "vocalype-cloud".to_string(),
@@ -739,7 +755,7 @@ fn default_model_for_provider(provider_id: &str) -> String {
         return APPLE_INTELLIGENCE_DEFAULT_MODEL_ID.to_string();
     }
     if provider_id == "vocalype-cloud" {
-        return "llama-3.1-8b-instant".to_string();
+        return VOCALYPE_CLOUD_DEFAULT_MODEL_ID.to_string();
     }
     String::new()
 }
@@ -1703,5 +1719,20 @@ mod tests {
         assert_eq!(original.push_to_talk, deserialized.push_to_talk);
         assert_eq!(original.selected_model, deserialized.selected_model);
         assert_eq!(original.auto_submit, deserialized.auto_submit);
+    }
+
+    #[test]
+    fn vocalype_cloud_default_model_is_in_known_list() {
+        let known = known_vocalype_cloud_models();
+        assert!(
+            known
+                .iter()
+                .any(|model| model == VOCALYPE_CLOUD_DEFAULT_MODEL_ID),
+            "default cloud model should stay selectable"
+        );
+        assert_eq!(
+            known.first().map(String::as_str),
+            Some(VOCALYPE_CLOUD_DEFAULT_MODEL_ID)
+        );
     }
 }

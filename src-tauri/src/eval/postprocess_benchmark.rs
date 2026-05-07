@@ -2,6 +2,7 @@ use crate::cli::CliArgs;
 use crate::eval::metrics::{compute_metrics, EvalMetrics};
 use crate::eval::report::{aggregate_reports, AggregateInput};
 use crate::llm::llm_client::send_chat_completion_with_schema;
+use crate::llm_client;
 use crate::processing::post_processing::{
     build_action_system_prompt, build_standard_post_process_system_prompt, build_system_prompt,
     strip_invisible_chars,
@@ -11,6 +12,7 @@ use crate::settings::{AppSettings, PostProcessAction, PostProcessProvider};
 use rusqlite::Connection;
 use serde::Deserialize;
 use serde::Serialize;
+use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -112,6 +114,13 @@ struct BenchmarkReport {
     summaries: Vec<ProfileSummary>,
     runs: Vec<ModeRun>,
     failures: Vec<RunFailure>,
+}
+
+#[derive(Debug, Serialize)]
+struct BenchmarkComparisonReport {
+    provider_id: String,
+    case_ids: Vec<String>,
+    models: Vec<BenchmarkReport>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -951,6 +960,14 @@ fn default_report_path() -> PathBuf {
     ))
 }
 
+fn default_comparison_report_path() -> PathBuf {
+    let stamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
+    PathBuf::from(format!(
+        "evals/postprocess/postprocess-benchmark-comparison-{}.json",
+        stamp
+    ))
+}
+
 fn default_probe_report_path(history_id: i64) -> PathBuf {
     let stamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
     PathBuf::from(format!(
@@ -981,46 +998,98 @@ fn write_report_snapshot(output_path: &PathBuf, report: &BenchmarkReport) -> Res
     })
 }
 
-pub async fn run_cli(cli_args: &CliArgs) -> Result<PathBuf, String> {
-    let settings = load_benchmark_settings()?;
-    let provider = settings
-        .active_post_process_provider()
-        .cloned()
-        .ok_or_else(|| "No active post-process provider configured".to_string())?;
-    let model = settings
-        .post_process_models
-        .get(&provider.id)
-        .cloned()
-        .filter(|m| !m.trim().is_empty())
-        .ok_or_else(|| format!("No model configured for provider '{}'", provider.id))?;
-    let api_key = resolve_api_key(&settings, &provider).await?;
+fn write_comparison_report(
+    output_path: &PathBuf,
+    report: &BenchmarkComparisonReport,
+) -> Result<(), String> {
+    if let Some(parent) = output_path.parent() {
+        fs::create_dir_all(parent).map_err(|e| {
+            format!(
+                "Failed to create benchmark output directory '{}': {}",
+                parent.display(),
+                e
+            )
+        })?;
+    }
 
+    let json = serde_json::to_string_pretty(report)
+        .map_err(|e| format!("Failed to serialize benchmark comparison report: {}", e))?;
+    fs::write(output_path, json).map_err(|e| {
+        format!(
+            "Failed to write benchmark comparison report '{}': {}",
+            output_path.display(),
+            e
+        )
+    })
+}
+
+fn parse_csv_list(value: Option<&str>) -> Vec<String> {
+    value
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|entry| !entry.is_empty())
+        .map(ToString::to_string)
+        .collect()
+}
+
+fn selected_cases(case_ids: &[String]) -> Result<Vec<BenchmarkCase>, String> {
     let cases = benchmark_cases();
+    if case_ids.is_empty() {
+        return Ok(cases);
+    }
+
+    let selected: Vec<BenchmarkCase> = case_ids
+        .iter()
+        .filter_map(|id| cases.iter().find(|case| case.id == id).cloned())
+        .collect();
+
+    if selected.len() != case_ids.len() {
+        let available = cases
+            .iter()
+            .map(|case| case.id)
+            .collect::<Vec<_>>()
+            .join(", ");
+        let missing = case_ids
+            .iter()
+            .filter(|id| !selected.iter().any(|case| case.id == id.as_str()))
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(format!(
+            "Unknown benchmark case id(s): {}. Available cases: {}",
+            missing, available
+        ));
+    }
+
+    Ok(selected)
+}
+
+async fn run_benchmark_for_model(
+    settings: &AppSettings,
+    provider: &PostProcessProvider,
+    api_key: &str,
+    model: &str,
+    cases: &[BenchmarkCase],
+) -> Result<BenchmarkReport, String> {
     let modes = benchmark_modes();
     let profiles = profile_list();
     let total_attempts = profiles.len() * cases.len() * modes.len();
-    let output_path = cli_args
-        .postprocess_benchmark_output
-        .as_ref()
-        .map(PathBuf::from)
-        .unwrap_or_else(default_report_path);
 
     let mut runs = Vec::new();
     let mut failures = Vec::new();
     let mut attempt_index = 0usize;
     for profile in profiles {
-        for case in &cases {
+        for case in cases {
             for mode in modes {
                 attempt_index += 1;
-                let action = find_action(&settings, mode)?;
+                let action = find_action(settings, mode)?;
                 println!(
-                    "[{}/{}] profile={:?} case={} mode={:?}",
-                    attempt_index, total_attempts, profile, case.id, mode
+                    "[{}/{}] model={} profile={:?} case={} mode={:?}",
+                    attempt_index, total_attempts, model, profile, case.id, mode
                 );
 
-                match run_single_mode(&provider, &api_key, &model, action, case, profile, mode)
-                    .await
-                {
+                match run_single_mode(provider, api_key, model, action, case, profile, mode).await {
                     Ok(run) => runs.push(run),
                     Err(error) => failures.push(RunFailure {
                         case_id: case.id.to_string(),
@@ -1029,69 +1098,6 @@ pub async fn run_cli(cli_args: &CliArgs) -> Result<PathBuf, String> {
                         error,
                     }),
                 }
-
-                let mut summaries = Vec::new();
-                for current_profile in profiles {
-                    let profile_runs: Vec<ModeRun> = runs
-                        .iter()
-                        .filter(|run| run.profile == current_profile)
-                        .map(|run| ModeRun {
-                            case_id: run.case_id.clone(),
-                            profile: run.profile,
-                            mode: run.mode,
-                            score: run.score,
-                            issues: run
-                                .issues
-                                .iter()
-                                .map(|issue| Issue {
-                                    kind: issue.kind,
-                                    detail: issue.detail.clone(),
-                                })
-                                .collect(),
-                            metrics: run.metrics.clone(),
-                            output: run.output.clone(),
-                        })
-                        .collect();
-                    summaries.push(summarize_profile(current_profile, &profile_runs));
-                }
-
-                let partial_report = BenchmarkReport {
-                    provider_id: provider.id.clone(),
-                    model: model.clone(),
-                    output_count: runs.len(),
-                    attempted_count: attempt_index,
-                    target_output_count: OUTPUT_COUNT_TARGET,
-                    summaries,
-                    runs: runs
-                        .iter()
-                        .map(|run| ModeRun {
-                            case_id: run.case_id.clone(),
-                            profile: run.profile,
-                            mode: run.mode,
-                            score: run.score,
-                            issues: run
-                                .issues
-                                .iter()
-                                .map(|issue| Issue {
-                                    kind: issue.kind,
-                                    detail: issue.detail.clone(),
-                                })
-                                .collect(),
-                            metrics: run.metrics.clone(),
-                            output: run.output.clone(),
-                        })
-                        .collect(),
-                    failures: failures
-                        .iter()
-                        .map(|failure| RunFailure {
-                            case_id: failure.case_id.clone(),
-                            profile: failure.profile,
-                            mode: failure.mode,
-                            error: failure.error.clone(),
-                        })
-                        .collect(),
-                };
-                write_report_snapshot(&output_path, &partial_report)?;
             }
         }
     }
@@ -1121,18 +1127,72 @@ pub async fn run_cli(cli_args: &CliArgs) -> Result<PathBuf, String> {
         summaries.push(summarize_profile(profile, &profile_runs));
     }
 
-    let report = BenchmarkReport {
+    Ok(BenchmarkReport {
         provider_id: provider.id.clone(),
-        model,
+        model: model.to_string(),
         output_count: runs.len(),
         attempted_count: attempt_index,
         target_output_count: OUTPUT_COUNT_TARGET,
         summaries,
         runs,
         failures,
-    };
-    write_report_snapshot(&output_path, &report)?;
+    })
+}
 
+pub async fn run_cli(cli_args: &CliArgs) -> Result<PathBuf, String> {
+    let settings = load_benchmark_settings()?;
+    let provider = settings
+        .active_post_process_provider()
+        .cloned()
+        .ok_or_else(|| "No active post-process provider configured".to_string())?;
+    let default_model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .filter(|m| !m.trim().is_empty())
+        .ok_or_else(|| format!("No model configured for provider '{}'", provider.id))?;
+    let api_key = resolve_api_key(&settings, &provider).await?;
+    let case_ids = parse_csv_list(cli_args.postprocess_benchmark_cases.as_deref());
+    let cases = selected_cases(&case_ids)?;
+    let models = {
+        let parsed = parse_csv_list(cli_args.postprocess_benchmark_models.as_deref());
+        if parsed.is_empty() {
+            vec![default_model]
+        } else {
+            parsed
+        }
+    };
+
+    if models.len() == 1 {
+        let report =
+            run_benchmark_for_model(&settings, &provider, &api_key, &models[0], &cases).await?;
+        let output_path = cli_args
+            .postprocess_benchmark_output
+            .as_ref()
+            .map(PathBuf::from)
+            .unwrap_or_else(default_report_path);
+        write_report_snapshot(&output_path, &report)?;
+        return Ok(output_path);
+    }
+
+    let mut reports = Vec::new();
+    for model in &models {
+        println!("=== Benchmark model: {} ===", model);
+        let report = run_benchmark_for_model(&settings, &provider, &api_key, model, &cases).await?;
+        reports.push(report);
+    }
+
+    let comparison = BenchmarkComparisonReport {
+        provider_id: provider.id.clone(),
+        case_ids: cases.iter().map(|case| case.id.to_string()).collect(),
+        models: reports,
+    };
+    let output_path = cli_args
+        .postprocess_benchmark_output
+        .as_ref()
+        .map(PathBuf::from)
+        .unwrap_or_else(default_comparison_report_path);
+    write_comparison_report(&output_path, &comparison)?;
     Ok(output_path)
 }
 
@@ -1289,4 +1349,67 @@ pub async fn run_probe_cli(cli_args: &CliArgs) -> Result<PathBuf, String> {
     })?;
 
     Ok(output_path)
+}
+
+pub async fn run_cloud_sanity_cli() -> Result<String, String> {
+    let settings = load_benchmark_settings()?;
+    let provider = settings
+        .active_post_process_provider()
+        .cloned()
+        .ok_or_else(|| "No active post-process provider configured".to_string())?;
+    let api_key = resolve_api_key(&settings, &provider).await?;
+
+    let models_result = llm_client::fetch_models(&provider, api_key.clone()).await;
+    let allowed_preview = match models_result {
+        Ok(models) => serde_json::to_string(&models)
+            .map_err(|err| format!("Failed to encode model list: {}", err))?,
+        Err(err) => format!("FETCH_MODELS_ERROR: {}", err),
+    };
+
+    let invalid_model = "totally-invalid-vocalype-probe-model";
+    let base_url = provider.base_url.trim_end_matches('/');
+    let url = format!("{}/chat/completions", base_url);
+    let client = reqwest::Client::builder()
+        .default_headers({
+            let mut headers = reqwest::header::HeaderMap::new();
+            headers.insert(
+                reqwest::header::CONTENT_TYPE,
+                reqwest::header::HeaderValue::from_static("application/json"),
+            );
+            headers.insert(
+                reqwest::header::AUTHORIZATION,
+                reqwest::header::HeaderValue::from_str(&format!("Bearer {}", api_key))
+                    .map_err(|err| format!("Invalid auth header: {}", err))?,
+            );
+            headers
+        })
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|err| format!("Failed to build sanity HTTP client: {}", err))?;
+
+    let response = client
+        .post(&url)
+        .json(&json!({
+            "model": invalid_model,
+            "messages": [
+                {"role": "system", "content": "Reply with exactly OK."},
+                {"role": "user", "content": "Say OK"}
+            ],
+            "temperature": 0.0,
+            "max_tokens": 10,
+            "stream": false
+        }))
+        .send()
+        .await
+        .map_err(|err| format!("Cloud sanity POST failed: {}", err))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .unwrap_or_else(|_| "<failed to read body>".to_string());
+
+    Ok(format!(
+        "provider={}\nmodels={}\ninvalid_model_status={}\ninvalid_model_body={}",
+        provider.id, allowed_preview, status, body
+    ))
 }

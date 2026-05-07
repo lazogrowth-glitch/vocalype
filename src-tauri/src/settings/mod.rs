@@ -715,10 +715,10 @@ fn default_post_process_provider_id() -> String {
     "vocalype-cloud".to_string()
 }
 
-pub const VOCALYPE_CLOUD_DEFAULT_MODEL_ID: &str = "llama-3.1-8b-instant";
+pub const VOCALYPE_CLOUD_DEFAULT_MODEL_ID: &str = "llama-3.3-70b-versatile";
 pub const VOCALYPE_CLOUD_KNOWN_MODEL_IDS: &[&str] = &[
     VOCALYPE_CLOUD_DEFAULT_MODEL_ID,
-    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
     "openai/gpt-oss-20b",
     "openai/gpt-oss-120b",
     "qwen/qwen3-32b",
@@ -920,6 +920,7 @@ pub fn sanitize_custom_provider_base_url(value: &str) -> Result<String, String> 
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     let default_providers = default_post_process_providers();
+    let legacy_vocalype_cloud_default_model = "llama-3.1-8b-instant";
 
     if settings.post_process_providers != default_providers {
         settings.post_process_providers = default_providers.clone();
@@ -959,6 +960,11 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
         match settings.post_process_models.get_mut(&provider.id) {
             Some(existing) => {
                 if existing.is_empty() && !default_model.is_empty() {
+                    *existing = default_model.clone();
+                    changed = true;
+                } else if provider.id == "vocalype-cloud"
+                    && existing == legacy_vocalype_cloud_default_model
+                {
                     *existing = default_model.clone();
                     changed = true;
                 }

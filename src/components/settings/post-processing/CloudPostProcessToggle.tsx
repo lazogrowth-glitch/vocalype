@@ -6,7 +6,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 const PROVIDER_ID = "vocalype-cloud";
-const MODEL_ID = "llama-3.1-8b-instant";
+const MODEL_ID = "llama-3.3-70b-versatile";
 
 export const CloudPostProcessToggle: React.FC = () => {
   const { t } = useTranslation();

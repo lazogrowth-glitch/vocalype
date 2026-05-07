@@ -831,8 +831,6 @@ fn prepare_settings_for_runtime(app: &AppHandle, settings: &mut AppSettings) -> 
     let language_changed = ensure_selected_language_default(settings);
     let adaptive_profile_changed = ensure_adaptive_profile(app, settings);
     let external_script_changed = sanitize_external_script_path(app, settings);
-    let launch_output_changed = ensure_launch_output_defaults(settings);
-
     hydrate_secure_secrets(settings);
 
     secrets_changed
@@ -840,7 +838,6 @@ fn prepare_settings_for_runtime(app: &AppHandle, settings: &mut AppSettings) -> 
         || language_changed
         || adaptive_profile_changed
         || external_script_changed
-        || launch_output_changed
 }
 
 fn prepare_settings_for_fast_runtime(app: &AppHandle, settings: &mut AppSettings) -> bool {
@@ -848,49 +845,9 @@ fn prepare_settings_for_fast_runtime(app: &AppHandle, settings: &mut AppSettings
     let post_process_changed = ensure_post_process_defaults(settings);
     let language_changed = ensure_selected_language_default(settings);
     let external_script_changed = sanitize_external_script_path(app, settings);
-    let launch_output_changed = ensure_launch_output_defaults(settings);
-
     hydrate_secure_secrets(settings);
 
-    secrets_changed
-        || post_process_changed
-        || language_changed
-        || external_script_changed
-        || launch_output_changed
-}
-
-fn ensure_launch_output_defaults(settings: &mut AppSettings) -> bool {
-    #[cfg(debug_assertions)]
-    {
-        let _ = settings;
-        false
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
-        let mut changed = false;
-        let default_paste_method = PasteMethod::default();
-        if settings.paste_method != default_paste_method {
-            settings.paste_method = default_paste_method;
-            changed = true;
-        }
-        if settings.typing_tool != TypingTool::Auto {
-            settings.typing_tool = TypingTool::Auto;
-            changed = true;
-        }
-        if settings.clipboard_handling != ClipboardHandling::DontModify {
-            settings.clipboard_handling = ClipboardHandling::DontModify;
-            changed = true;
-        }
-        if settings.paste_delay_ms != default_paste_delay_ms() {
-            settings.paste_delay_ms = default_paste_delay_ms();
-            changed = true;
-        }
-        if settings.external_script_path.take().is_some() {
-            changed = true;
-        }
-        changed
-    }
+    secrets_changed || post_process_changed || language_changed || external_script_changed
 }
 
 pub fn external_scripts_dir(app: &AppHandle) -> Result<PathBuf, String> {

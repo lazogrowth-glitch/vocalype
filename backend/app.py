@@ -125,6 +125,11 @@ APP_RETURN_URL = os.environ.get(
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 CLOUD_LLM_MODEL = os.environ.get("CLOUD_LLM_MODEL", "llama-3.1-8b-instant")
+CLOUD_LLM_ALLOWED_MODELS = [
+    model.strip()
+    for model in os.environ.get("CLOUD_LLM_ALLOWED_MODELS", CLOUD_LLM_MODEL).split(",")
+    if model.strip()
+]
 CLOUD_LLM_RATE_LIMIT_PER_HOUR = env_int("CLOUD_LLM_RATE_LIMIT_PER_HOUR", 300, 10)
 
 # Ed25519 private key for signing license bundles.
@@ -2795,8 +2800,21 @@ def cloud_llm_proxy(user):
     if not messages or not isinstance(messages, list):
         return jsonify({"error": "messages field is required"}), 400
 
+    requested_model = str(req_body.get("model") or "").strip()
+    resolved_model = CLOUD_LLM_MODEL
+    if requested_model:
+        if requested_model not in CLOUD_LLM_ALLOWED_MODELS:
+            return jsonify(
+                {
+                    "error": "Requested model is not allowed",
+                    "requested_model": requested_model,
+                    "allowed_models": CLOUD_LLM_ALLOWED_MODELS,
+                }
+            ), 400
+        resolved_model = requested_model
+
     payload = {
-        "model": CLOUD_LLM_MODEL,
+        "model": resolved_model,
         "messages": messages,
         "max_tokens": min(int(req_body.get("max_tokens") or 300), 1000),
         "temperature": float(req_body.get("temperature") or 0.0),
@@ -2823,6 +2841,22 @@ def cloud_llm_proxy(user):
             return jsonify({"error": f"LLM provider error: {groq_resp.status_code} {error_body}"}), 502
     except Exception as e:
         return jsonify({"error": f"LLM provider unreachable: {str(e)}"}), 502
+
+
+@app.route("/llm/v1/models", methods=["GET"])
+@auth_required
+def cloud_llm_models(user):
+    """Expose the allowlisted cloud LLM models to authenticated clients."""
+    return jsonify(
+        {
+            "object": "list",
+            "data": [
+                {"id": model, "object": "model", "owned_by": "vocalype-cloud"}
+                for model in CLOUD_LLM_ALLOWED_MODELS
+            ],
+            "default_model": CLOUD_LLM_MODEL,
+        }
+    )
 
 
 if __name__ == "__main__":

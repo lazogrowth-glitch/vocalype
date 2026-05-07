@@ -2,67 +2,11 @@ use super::*;
 use crate::managers::model::ModelInfo;
 
 impl TranscriptionManager {
-    fn local_parakeet_backbone_candidates(
-        &self,
-        model_id: &str,
-    ) -> Vec<(&'static str, std::path::PathBuf)> {
-        if !is_parakeet_v3_model_id(model_id) {
-            return Vec::new();
-        }
-
-        let settings = get_settings(&self.app_handle);
-        let language = settings.selected_language.trim().to_ascii_lowercase();
-        let root = std::path::PathBuf::from(r"C:\developer\sas");
-        let default_backbone = root
-            .join("quant-sweeps")
-            .join("encoder-quint8-attn-proj-outonly-late12");
-        let english_backbone = root
-            .join("quant-sweeps")
-            .join("encoder-quint8-attn-proj-perchannel");
-        match language.as_str() {
-            "en" => vec![
-                ("english-perchannel", english_backbone),
-                ("default-late12", default_backbone),
-            ],
-            "fr" | "es" | "auto" => vec![("default-late12", default_backbone)],
-            _ => vec![("default-late12", default_backbone)],
-        }
-    }
-
-    fn parakeet_backbone_is_usable(path: &std::path::Path) -> bool {
-        [
-            "decoder_joint-model.int8.onnx",
-            "encoder-model.onnx",
-            "nemo128.onnx",
-            "vocab.txt",
-        ]
-        .iter()
-        .all(|name| path.join(name).exists())
-    }
-
     fn resolve_runtime_model_path(
         &self,
         model_id: &str,
-        model_info: &ModelInfo,
+        _model_info: &ModelInfo,
     ) -> Result<(std::path::PathBuf, Option<String>)> {
-        if matches!(
-            model_info.engine_type,
-            EngineType::GeminiApi
-                | EngineType::GroqWhisper
-                | EngineType::MistralVoxtral
-                | EngineType::Deepgram
-        ) {
-            return Ok((std::path::PathBuf::new(), None));
-        }
-
-        if is_parakeet_v3_model_id(model_id) {
-            for (label, candidate) in self.local_parakeet_backbone_candidates(model_id) {
-                if Self::parakeet_backbone_is_usable(&candidate) {
-                    return Ok((candidate, Some(label.to_string())));
-                }
-            }
-        }
-
         Ok((self.model_manager.get_model_path(model_id)?, None))
     }
 
@@ -122,350 +66,69 @@ impl TranscriptionManager {
 
         // Create appropriate engine based on model type
         let loaded_engine = match model_info.engine_type {
-            EngineType::Whisper => {
-                let mut engine = WhisperEngine::new();
-                let model_params = self.whisper_model_params(model_id);
-                let use_gpu = model_params.use_gpu;
-                let preferred_backend = if use_gpu {
-                    #[cfg(target_os = "windows")]
-                    {
-                        "Vulkan"
-                    }
-                    #[cfg(target_os = "macos")]
-                    {
-                        "Metal"
-                    }
-                    #[cfg(target_os = "linux")]
-                    {
-                        "Vulkan"
-                    }
-                    #[cfg(not(any(
-                        target_os = "windows",
-                        target_os = "macos",
-                        target_os = "linux"
-                    )))]
-                    {
-                        "CPU"
-                    }
-                } else {
-                    "CPU"
-                };
-                info!(
-                    "Loading Whisper model '{}' — preferred backend: {} (use_gpu={})",
-                    model_id, preferred_backend, model_params.use_gpu
-                );
-                let load_result = engine.load_model_with_params(&model_path, model_params);
-                match load_result {
-                    Ok(()) => {
-                        self.whisper_gpu_active.store(use_gpu, Ordering::Relaxed);
-                        set_active_whisper_backend(
-                            &self.app_handle,
-                            model_id,
-                            if use_gpu {
-                                WhisperBackendPreference::Gpu
-                            } else {
-                                WhisperBackendPreference::Cpu
-                            },
-                            Some(format!("loaded on preferred {} backend", preferred_backend)),
-                        );
-                    }
-                    Err(ref e) if use_gpu => {
-                        warn!(
-                            "Preferred Whisper backend ({}) init failed for '{}': {}. Retrying with CPU fallback.",
-                            preferred_backend, model_id, e
-                        );
-                        let cpu_params = WhisperModelParams {
-                            use_gpu: false,
-                            flash_attn: false,
-                        };
-                        engine
-                            .load_model_with_params(&model_path, cpu_params)
-                            .map_err(|e2| {
-                                let error_msg =
-                                    format!("Failed to load whisper model {}: {}", model_id, e2);
-                                let _ = self.app_handle.emit(
-                                    "model-state-changed",
-                                    ModelStateEvent {
-                                        event_type: "loading_failed".to_string(),
-                                        model_id: Some(model_id.to_string()),
-                                        model_name: Some(model_info.name.clone()),
-                                        error: Some(error_msg.clone()),
-                                    },
-                                );
-                                anyhow::anyhow!(error_msg)
-                            })?;
-                        let _ = self
-                            .app_handle
-                            .emit("whisper-gpu-unavailable", model_id.to_string());
-                        self.whisper_gpu_active.store(false, Ordering::Relaxed);
-                        record_whisper_backend_failure(
-                            &self.app_handle,
-                            model_id,
-                            WhisperBackendPreference::Gpu,
-                            format!("gpu backend init failed: {}", e),
-                            7 * 24 * 60 * 60 * 1000,
-                        );
-                        set_active_whisper_backend(
-                            &self.app_handle,
-                            model_id,
-                            WhisperBackendPreference::Cpu,
-                            Some("gpu backend failed; cpu fallback applied".to_string()),
-                        );
-                        warn!(
-                            "Whisper '{}' loaded on CPU — transcription will be slow. Consider switching to Parakeet V3.",
-                            model_id
-                        );
-                    }
-                    Err(e) => {
-                        let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
-                        return Err(anyhow::anyhow!(error_msg));
-                    }
-                }
-                LoadedEngine::Whisper(engine)
-            }
             EngineType::Parakeet => {
-                if is_parakeet_v3_model_id(model_id) {
-                    let provider_candidates = parakeet_v3_provider_candidates(&self.app_handle);
-                    let mut last_error = None;
-                    let mut loaded_engine = None;
+                let provider_candidates = parakeet_v3_provider_candidates(&self.app_handle);
+                let mut last_error = None;
+                let mut loaded_engine = None;
 
-                    // Cache pre-optimized ONNX sessions in AppData to skip the
-                    // Level3 graph optimization on subsequent launches (~2-3s → ~300ms).
-                    let ort_cache_dir = self
-                        .app_handle
-                        .path()
-                        .app_data_dir()
-                        .ok()
-                        .map(|d| d.join("cache").join("parakeet").join(model_id));
+                // Cache pre-optimized ONNX sessions in AppData to skip the
+                // Level3 graph optimization on subsequent launches (~2-3s → ~300ms).
+                let ort_cache_dir = self
+                    .app_handle
+                    .path()
+                    .app_data_dir()
+                    .ok()
+                    .map(|d| d.join("cache").join("parakeet").join(model_id));
 
-                    for provider in provider_candidates {
-                        let provider_label = parakeet_provider_label(provider);
-                        info!(
-                            "Attempting to load Parakeet V3 '{}' with provider {}",
-                            model_id, provider_label
-                        );
+                for provider in provider_candidates {
+                    let provider_label = parakeet_provider_label(provider);
+                    info!(
+                        "Attempting to load Parakeet V3 '{}' with provider {}",
+                        model_id, provider_label
+                    );
 
-                        match ParakeetTDT::from_pretrained_with_cache(
-                            &model_path,
-                            Some(parakeet_v3_execution_config(provider)),
-                            ort_cache_dir.as_deref(),
-                        ) {
-                            Ok(engine) => {
-                                info!(
-                                    "Loaded Parakeet V3 '{}' with provider {}",
-                                    model_id, provider_label
-                                );
-                                loaded_engine = Some(engine);
-                                break;
-                            }
-                            Err(err) => {
-                                warn!(
-                                    "Parakeet V3 provider {} failed for '{}': {}",
-                                    provider_label, model_id, err
-                                );
-                                last_error =
-                                    Some(format!("provider {} failed: {}", provider_label, err));
-                            }
+                    match ParakeetTDT::from_pretrained_with_cache(
+                        &model_path,
+                        Some(parakeet_v3_execution_config(provider)),
+                        ort_cache_dir.as_deref(),
+                    ) {
+                        Ok(engine) => {
+                            info!(
+                                "Loaded Parakeet V3 '{}' with provider {}",
+                                model_id, provider_label
+                            );
+                            loaded_engine = Some(engine);
+                            break;
+                        }
+                        Err(err) => {
+                            warn!(
+                                "Parakeet V3 provider {} failed for '{}': {}",
+                                provider_label, model_id, err
+                            );
+                            last_error =
+                                Some(format!("provider {} failed: {}", provider_label, err));
                         }
                     }
+                }
 
-                    let engine = loaded_engine.ok_or_else(|| {
-                        let error_msg = format!(
-                            "Failed to load Parakeet V3 model {}: {}",
-                            model_id,
-                            last_error.unwrap_or_else(|| "no provider succeeded".to_string())
-                        );
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
-                        anyhow::anyhow!(error_msg)
-                    })?;
-                    LoadedEngine::ParakeetV3(engine)
-                } else {
-                    let mut engine = TranscribeParakeetEngine::new();
-                    engine
-                        .load_model_with_params(&model_path, ParakeetModelParams::int8())
-                        .map_err(|e| {
-                            let error_msg =
-                                format!("Failed to load parakeet model {}: {}", model_id, e);
-                            let _ = self.app_handle.emit(
-                                "model-state-changed",
-                                ModelStateEvent {
-                                    event_type: "loading_failed".to_string(),
-                                    model_id: Some(model_id.to_string()),
-                                    model_name: Some(model_info.name.clone()),
-                                    error: Some(error_msg.clone()),
-                                },
-                            );
-                            anyhow::anyhow!(error_msg)
-                        })?;
-                    LoadedEngine::Parakeet(engine)
-                }
-            }
-            EngineType::Moonshine => {
-                let mut engine = MoonshineEngine::new();
-                engine
-                    .load_model_with_params(
-                        &model_path,
-                        MoonshineModelParams::variant(ModelVariant::Base),
-                    )
-                    .map_err(|e| {
-                        let error_msg =
-                            format!("Failed to load moonshine model {}: {}", model_id, e);
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
-                        anyhow::anyhow!(error_msg)
-                    })?;
-                LoadedEngine::Moonshine(engine)
-            }
-            EngineType::MoonshineStreaming => {
-                let mut engine = MoonshineStreamingEngine::new();
-                engine
-                    .load_model_with_params(&model_path, StreamingModelParams::default())
-                    .map_err(|e| {
-                        let error_msg = format!(
-                            "Failed to load moonshine streaming model {}: {}",
-                            model_id, e
-                        );
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
-                        anyhow::anyhow!(error_msg)
-                    })?;
-                LoadedEngine::MoonshineStreaming(engine)
-            }
-            EngineType::SenseVoice => {
-                let mut engine = SenseVoiceEngine::new();
-                engine
-                    .load_model_with_params(&model_path, SenseVoiceModelParams::int8())
-                    .map_err(|e| {
-                        let error_msg =
-                            format!("Failed to load SenseVoice model {}: {}", model_id, e);
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
-                        anyhow::anyhow!(error_msg)
-                    })?;
-                LoadedEngine::SenseVoice(engine)
-            }
-            EngineType::GeminiApi => {
-                let settings = get_settings(&self.app_handle);
-                if settings.gemini_api_key.is_none()
-                    || settings
-                        .gemini_api_key
-                        .as_ref()
-                        .map_or(true, |k| k.is_empty())
-                {
-                    let error_msg = "Gemini API key not configured";
+                let engine = loaded_engine.ok_or_else(|| {
+                    let error_msg = format!(
+                        "Failed to load Parakeet V3 model {}: {}",
+                        model_id,
+                        last_error.unwrap_or_else(|| "no provider succeeded".to_string())
+                    );
                     let _ = self.app_handle.emit(
                         "model-state-changed",
                         ModelStateEvent {
                             event_type: "loading_failed".to_string(),
                             model_id: Some(model_id.to_string()),
                             model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.to_string()),
+                            error: Some(error_msg.clone()),
                         },
                     );
-                    return Err(anyhow::anyhow!(error_msg));
-                }
-                LoadedEngine::GeminiApi
-            }
-            EngineType::GroqWhisper => {
-                let settings = get_settings(&self.app_handle);
-                if settings
-                    .groq_stt_api_key
-                    .as_ref()
-                    .map_or(true, |k| k.is_empty())
-                {
-                    let error_msg = "Groq API key not configured";
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.to_string()),
-                        },
-                    );
-                    return Err(anyhow::anyhow!(error_msg));
-                }
-                LoadedEngine::GroqWhisper
-            }
-            EngineType::MistralVoxtral => {
-                let settings = get_settings(&self.app_handle);
-                if settings
-                    .mistral_stt_api_key
-                    .as_ref()
-                    .map_or(true, |k| k.is_empty())
-                {
-                    let error_msg = "Mistral API key not configured";
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.to_string()),
-                        },
-                    );
-                    return Err(anyhow::anyhow!(error_msg));
-                }
-                LoadedEngine::MistralVoxtral
-            }
-            EngineType::Deepgram => {
-                let settings = get_settings(&self.app_handle);
-                if settings
-                    .deepgram_api_key
-                    .as_ref()
-                    .map_or(true, |k| k.is_empty())
-                {
-                    let error_msg = "Deepgram API key not configured";
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.to_string()),
-                        },
-                    );
-                    return Err(anyhow::anyhow!(error_msg));
-                }
-                LoadedEngine::Deepgram
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::ParakeetV3(engine)
             }
         };
 

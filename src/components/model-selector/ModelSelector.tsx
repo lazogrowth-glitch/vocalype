@@ -148,13 +148,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   }, [currentModel, selectModel]);
 
   const handleModelSelect = async (modelId: string) => {
-    if (modelId === "gemini-api") {
-      const apiKey = getSetting("gemini_api_key") as string | undefined;
-      if (!apiKey || apiKey.length === 0) {
-        setShowModelDropdown(false);
-        return;
-      }
-    }
     setPendingModelId(modelId);
     setModelError(null);
     setShowModelDropdown(false);
@@ -258,9 +251,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
             models={models}
             currentModelId={displayModelId}
             onModelSelect={handleModelSelect}
-            hasGeminiKey={
-              !!(getSetting("gemini_api_key") as string | undefined)
-            }
           />
         )}
       </div>

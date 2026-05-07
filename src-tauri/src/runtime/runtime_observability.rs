@@ -1,6 +1,3 @@
-use crate::adaptive_runtime::{
-    derive_machine_status, get_calibration_states, CalibrationStatusSnapshot, MachineStatusSnapshot,
-};
 use crate::context_detector::{
     detect_current_app_context, ActiveAppContextState, AppTranscriptionContext,
 };
@@ -11,8 +8,8 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::parakeet_quality::{ParakeetDiagnosticsSnapshot, ParakeetDiagnosticsState};
 use crate::settings::{get_settings, AdaptiveMachineProfile};
 use crate::voice_profile::{
-    current_runtime_adjustment, current_voice_profile, current_voice_profile_for_context,
-    VoiceProfile, VoiceProfileSegment, VoiceRuntimeAdjustment,
+    current_voice_profile, current_voice_profile_for_context, VoiceProfile, VoiceProfileSegment,
+    VoiceRuntimeAdjustment,
 };
 use crate::TranscriptionCoordinator;
 use serde::{Deserialize, Serialize};
@@ -139,11 +136,9 @@ pub struct RuntimeDiagnostics {
     pub adaptive_voice_profile: Option<VoiceProfile>,
     pub active_voice_profile_segment: Option<VoiceProfileSegment>,
     pub active_voice_runtime_adjustment: Option<VoiceRuntimeAdjustment>,
-    pub machine_status: Option<MachineStatusSnapshot>,
     pub recent_pipeline_profiles: Vec<PipelineProfileEvent>,
     pub parakeet_diagnostics: ParakeetDiagnosticsSnapshot,
     pub adaptive_machine_profile: Option<AdaptiveMachineProfile>,
-    pub adaptive_calibration_state: Vec<CalibrationStatusSnapshot>,
 }
 
 pub struct RuntimeObservabilityState {
@@ -357,24 +352,7 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
     let selected_output_device = settings.selected_output_device.clone();
     let adaptive_voice_profile_enabled = settings.adaptive_voice_profile_enabled;
     let current_model_id = tm.get_current_model();
-    let active_voice_runtime_adjustment = if adaptive_voice_profile_enabled {
-        let model_id = current_model_id
-            .clone()
-            .unwrap_or_else(|| selected_model.clone());
-        settings
-            .adaptive_whisper_config(&model_id)
-            .and_then(|config| {
-                current_runtime_adjustment(
-                    app,
-                    &model_id,
-                    &selected_language,
-                    config.chunk_seconds,
-                    config.overlap_ms,
-                )
-            })
-    } else {
-        None
-    };
+    let active_voice_runtime_adjustment: Option<VoiceRuntimeAdjustment> = None;
     let adaptive_voice_profile = if adaptive_voice_profile_enabled {
         current_voice_profile(app)
     } else {
@@ -411,12 +389,6 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
             )
         };
 
-    let adaptive_calibration_state = get_calibration_states();
-    let machine_status = derive_machine_status(
-        settings.adaptive_machine_profile.as_ref(),
-        &adaptive_calibration_state,
-        tm.get_current_model().as_deref(),
-    );
     let (operation_id, active_stage, cancelled_at_stage, partial_result) = app
         .try_state::<TranscriptionCoordinator>()
         .map(|coordinator| coordinator.diagnostics_snapshot())
@@ -463,7 +435,6 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
         adaptive_voice_profile,
         active_voice_profile_segment,
         active_voice_runtime_adjustment,
-        machine_status,
         recent_pipeline_profiles,
         parakeet_diagnostics: app
             .try_state::<ParakeetDiagnosticsState>()
@@ -473,7 +444,6 @@ pub fn collect_runtime_diagnostics(app: &AppHandle) -> RuntimeDiagnostics {
                 recent_sessions: Vec::new(),
             }),
         adaptive_machine_profile: settings.adaptive_machine_profile,
-        adaptive_calibration_state,
     }
 }
 

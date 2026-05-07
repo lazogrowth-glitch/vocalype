@@ -1,4 +1,4 @@
-use crate::managers::model::{EngineType, ModelInfo};
+use crate::managers::model::ModelInfo;
 use crate::model_ids::{PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID};
 use crate::parakeet_quality::ParakeetSessionCompletion;
 use crate::settings::AppSettings;
@@ -14,21 +14,9 @@ use tauri::AppHandle;
 pub(crate) const DEFAULT_CHUNK_INTERVAL_SAMPLES: usize = 15 * 16_000; // 15 s at 16 kHz
 /// Overlap kept at the START of each new chunk to avoid cutting words at boundaries.
 pub(crate) const DEFAULT_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
-/// Whisper Small benchmarks best with slightly larger chunks on weak PCs.
-pub(crate) const WHISPER_SMALL_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s
-pub(crate) const WHISPER_SMALL_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
-/// Whisper Medium tuned for latency while staying conservative on slow machines.
-pub(crate) const WHISPER_MEDIUM_CHUNK_INTERVAL_SAMPLES: usize = 6 * 16_000; // 6 s
-pub(crate) const WHISPER_MEDIUM_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
-/// Whisper Turbo: larger chunks reduce tail assembly overhead on low-end hardware.
-pub(crate) const WHISPER_TURBO_CHUNK_INTERVAL_SAMPLES: usize = 12 * 16_000; // 12 s
-pub(crate) const WHISPER_TURBO_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
-/// Whisper Large: quality-oriented but avoids all-work-after-key-up behaviour.
-pub(crate) const WHISPER_LARGE_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; // 8 s
-pub(crate) const WHISPER_LARGE_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s
 /// Shorter polling reduces how long a ready chunk waits before getting sent.
 pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = 200;
-/// Prevent Whisper from queueing many background chunks when the model is slower than real time.
+/// Limit in-flight background chunks to prevent the model from falling behind real time.
 pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;
 /// Minimum new samples required before a VAD-triggered flush can fire (1 s at 16 kHz).
 /// Prevents spurious flushes at the very start of an utterance.
@@ -176,47 +164,6 @@ pub(crate) fn chunking_profile_for_model(
     settings: &AppSettings,
 ) -> Option<ChunkingProfile> {
     match model_info {
-        Some(info) if matches!(info.id.as_str(), "small" | "medium" | "turbo" | "large") => {
-            if let Some(config) = settings.adaptive_whisper_config(&info.id) {
-                let adjusted = current_runtime_adjustment(
-                    app,
-                    &info.id,
-                    &settings.selected_language,
-                    config.chunk_seconds,
-                    config.overlap_ms,
-                )
-                .unwrap_or_else(|| crate::voice_profile::VoiceRuntimeAdjustment {
-                    adjusted_chunk_seconds: config.chunk_seconds,
-                    adjusted_overlap_ms: config.overlap_ms,
-                    vad_hangover_frames_delta: 0,
-                    reason: None,
-                });
-                return Some(ChunkingProfile {
-                    interval_samples: usize::from(adjusted.adjusted_chunk_seconds) * 16_000,
-                    overlap_samples: (usize::from(adjusted.adjusted_overlap_ms) * 16_000) / 1000,
-                });
-            }
-
-            match info.id.as_str() {
-                "small" => Some(ChunkingProfile {
-                    interval_samples: WHISPER_SMALL_CHUNK_INTERVAL_SAMPLES,
-                    overlap_samples: WHISPER_SMALL_CHUNK_OVERLAP_SAMPLES,
-                }),
-                "medium" => Some(ChunkingProfile {
-                    interval_samples: WHISPER_MEDIUM_CHUNK_INTERVAL_SAMPLES,
-                    overlap_samples: WHISPER_MEDIUM_CHUNK_OVERLAP_SAMPLES,
-                }),
-                "turbo" => Some(ChunkingProfile {
-                    interval_samples: WHISPER_TURBO_CHUNK_INTERVAL_SAMPLES,
-                    overlap_samples: WHISPER_TURBO_CHUNK_OVERLAP_SAMPLES,
-                }),
-                "large" => Some(ChunkingProfile {
-                    interval_samples: WHISPER_LARGE_CHUNK_INTERVAL_SAMPLES,
-                    overlap_samples: WHISPER_LARGE_CHUNK_OVERLAP_SAMPLES,
-                }),
-                _ => None,
-            }
-        }
         Some(info)
             if matches!(
                 info.id.as_str(),
@@ -258,17 +205,6 @@ pub(crate) fn chunking_profile_for_model(
             Some(ChunkingProfile {
                 interval_samples: usize::from(chunk_seconds) * 16_000,
                 overlap_samples: (usize::from(overlap_ms) * 16_000) / 1000,
-            })
-        }
-        Some(info)
-            if matches!(
-                info.engine_type,
-                EngineType::Whisper | EngineType::MoonshineStreaming
-            ) =>
-        {
-            Some(ChunkingProfile {
-                interval_samples: DEFAULT_CHUNK_INTERVAL_SAMPLES,
-                overlap_samples: DEFAULT_CHUNK_OVERLAP_SAMPLES,
             })
         }
         None => Some(ChunkingProfile {

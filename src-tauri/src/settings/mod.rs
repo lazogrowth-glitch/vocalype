@@ -86,20 +86,6 @@ pub enum ModelUnloadTimeout {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
-pub enum WhisperBackendPreference {
-    Auto,
-    Cpu,
-    Gpu,
-}
-
-impl Default for WhisperBackendPreference {
-    fn default() -> Self {
-        WhisperBackendPreference::Auto
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
 pub enum MachineTier {
     Low,
     Medium,
@@ -117,51 +103,6 @@ pub enum PowerMode {
 impl Default for PowerMode {
     fn default() -> Self {
         Self::Unknown
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum CalibrationPhase {
-    None,
-    Quick,
-    Full,
-}
-
-impl Default for CalibrationPhase {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum BenchPhase {
-    None,
-    QuickDone,
-    FullDone,
-}
-
-impl Default for BenchPhase {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum AdaptiveCalibrationState {
-    Idle,
-    Queued,
-    Running,
-    Completed,
-    Failed,
-    FallbackApplied,
-}
-
-impl Default for AdaptiveCalibrationState {
-    fn default() -> Self {
-        Self::Idle
     }
 }
 
@@ -221,68 +162,6 @@ impl Default for NpuKind {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct UnsafeBackendRecord {
-    pub backend: WhisperBackendPreference,
-    pub unsafe_until_ms: u64,
-    pub reason: String,
-    pub failed_at_ms: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct WhisperModelAdaptiveConfig {
-    pub backend: WhisperBackendPreference,
-    pub threads: u8,
-    pub chunk_seconds: u8,
-    pub overlap_ms: u16,
-    #[serde(default)]
-    pub active_backend: WhisperBackendPreference,
-    #[serde(default)]
-    pub active_threads: u8,
-    #[serde(default)]
-    pub active_chunk_seconds: u8,
-    #[serde(default)]
-    pub active_overlap_ms: u16,
-    #[serde(default)]
-    pub short_latency_ms: u64,
-    #[serde(default)]
-    pub medium_latency_ms: u64,
-    #[serde(default)]
-    pub long_latency_ms: u64,
-    #[serde(default)]
-    pub stability_score: f32,
-    #[serde(default)]
-    pub overall_score: f32,
-    #[serde(default)]
-    pub failure_count: u32,
-    #[serde(default)]
-    pub calibrated_phase: CalibrationPhase,
-    #[serde(default)]
-    pub unsafe_backends: Vec<UnsafeBackendRecord>,
-    #[serde(default)]
-    pub unsafe_until: Option<u64>,
-    #[serde(default)]
-    pub last_failure_reason: Option<String>,
-    #[serde(default)]
-    pub last_failure_at: Option<u64>,
-    #[serde(default)]
-    pub last_quick_bench_at: Option<u64>,
-    #[serde(default)]
-    pub last_full_bench_at: Option<u64>,
-    #[serde(default)]
-    pub backend_decision_reason: Option<String>,
-    #[serde(default)]
-    pub config_decision_reason: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
-pub struct WhisperAdaptiveProfile {
-    pub small: WhisperModelAdaptiveConfig,
-    pub medium: WhisperModelAdaptiveConfig,
-    pub turbo: WhisperModelAdaptiveConfig,
-    pub large: WhisperModelAdaptiveConfig,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AdaptiveMachineProfile {
     #[serde(default)]
     pub profile_schema_version: u16,
@@ -323,27 +202,6 @@ pub struct AdaptiveMachineProfile {
     pub secondary_model_id: Option<String>,
     #[serde(default)]
     pub active_runtime_model_id: Option<String>,
-    #[serde(default)]
-    pub recommended_backend: Option<WhisperBackendPreference>,
-    #[serde(default)]
-    pub active_backend: Option<WhisperBackendPreference>,
-    #[serde(default)]
-    pub calibrated_models: Vec<String>,
-    #[serde(default)]
-    pub bench_phase: BenchPhase,
-    #[serde(default)]
-    pub bench_completed_at: Option<u64>,
-    #[serde(default)]
-    pub last_quick_bench_at: Option<u64>,
-    #[serde(default)]
-    pub last_full_bench_at: Option<u64>,
-    #[serde(default)]
-    pub calibration_state: AdaptiveCalibrationState,
-    #[serde(default)]
-    pub calibration_reason: Option<String>,
-    #[serde(default)]
-    pub large_skip_reason: Option<String>,
-    pub whisper: WhisperAdaptiveProfile,
 }
 
 impl Default for KeyboardImplementation {
@@ -439,6 +297,11 @@ pub struct AppSettings {
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
+    /// When true, Vocalype listens for the wake word "dictate" in the
+    /// background and starts a hands-free recording session automatically.
+    /// Requires the microphone stream to be open (AlwaysOn mode recommended).
+    #[serde(default)]
+    pub wake_word_enabled: bool,
     /// Sliding window of the last observed inter-word pause durations (ms).
     /// Accumulated across all recording modes to calibrate the adaptive
     /// silence threshold for wake-word auto-stop.
@@ -527,23 +390,6 @@ pub struct AppSettings {
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
-    #[serde(default)]
-    pub long_audio_model: Option<String>,
-    #[serde(default = "default_long_audio_threshold_seconds")]
-    pub long_audio_threshold_seconds: f32,
-    #[serde(default)]
-    pub gemini_api_key: Option<String>,
-    #[serde(default = "default_gemini_model")]
-    pub gemini_model: String,
-    /// Groq API key for cloud STT (stored in keyring, never persisted to disk).
-    #[serde(default)]
-    pub groq_stt_api_key: Option<String>,
-    /// Mistral API key for Voxtral cloud STT (stored in keyring, never persisted to disk).
-    #[serde(default)]
-    pub mistral_stt_api_key: Option<String>,
-    /// Deepgram API key for cloud STT (stored in keyring, never persisted to disk).
-    #[serde(default)]
-    pub deepgram_api_key: Option<String>,
     #[serde(default = "default_post_process_actions")]
     pub post_process_actions: Vec<PostProcessAction>,
     #[serde(default)]
@@ -689,22 +535,8 @@ fn preferred_transcription_language_from_locale(locale: &str) -> String {
     }
 }
 
-fn preferred_model_for_locale(locale: &str) -> String {
-    let _ = locale;
-    PARAKEET_V3_MULTILINGUAL_ID.to_string()
-}
-
-fn secondary_model_for_locale(locale: &str, tier: MachineTier) -> Option<String> {
-    let base_language = locale.split('-').next().unwrap_or("en");
-    if base_language == "en" {
-        return Some("turbo".to_string());
-    }
-
-    match tier {
-        MachineTier::High => Some("large".to_string()),
-        MachineTier::Medium => Some("turbo".to_string()),
-        MachineTier::Low => Some("small".to_string()),
-    }
+fn secondary_model_for_locale(_locale: &str, _tier: MachineTier) -> Option<String> {
+    None
 }
 
 fn default_show_tray_icon() -> bool {
@@ -893,14 +725,6 @@ fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
 
-fn default_long_audio_threshold_seconds() -> f32 {
-    10.0
-}
-
-fn default_gemini_model() -> String {
-    "gemini-2.5-flash".to_string()
-}
-
 pub fn sanitize_custom_provider_base_url(value: &str) -> Result<String, String> {
     let trimmed = value.trim().trim_end_matches('/');
     if trimmed.is_empty() {
@@ -1010,7 +834,6 @@ fn ensure_selected_language_default(settings: &mut AppSettings) -> bool {
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 fn sanitize_persisted_secrets(settings: &mut AppSettings) {
-    settings.gemini_api_key = None;
     for api_key in settings.post_process_api_keys.values_mut() {
         api_key.clear();
     }
@@ -1022,23 +845,6 @@ fn is_redacted_secret_placeholder(value: &str) -> bool {
 
 fn migrate_plaintext_secrets_to_secure_store(settings: &mut AppSettings) -> bool {
     let mut changed = false;
-
-    if let Some(api_key) = settings
-        .gemini_api_key
-        .clone()
-        .filter(|value| !value.trim().is_empty() && !is_redacted_secret_placeholder(value))
-    {
-        match crate::secret_store::set_gemini_api_key(&api_key) {
-            Ok(()) => {
-                settings.gemini_api_key = None;
-                changed = true;
-            }
-            Err(err) => warn!(
-                "Failed to migrate Gemini API key to secure storage: {}",
-                err
-            ),
-        }
-    }
 
     for (provider_id, api_key) in settings.post_process_api_keys.clone() {
         if api_key.trim().is_empty() || is_redacted_secret_placeholder(&api_key) {
@@ -1063,15 +869,6 @@ fn migrate_plaintext_secrets_to_secure_store(settings: &mut AppSettings) -> bool
 }
 
 fn hydrate_secure_secrets(settings: &mut AppSettings) {
-    let persisted_gemini_api_key = settings.gemini_api_key.take();
-    settings.gemini_api_key = crate::secret_store::get_gemini_api_key()
-        .ok()
-        .flatten()
-        .or_else(|| {
-            persisted_gemini_api_key
-                .filter(|value| !value.trim().is_empty() && !is_redacted_secret_placeholder(value))
-        });
-
     let provider_ids: Vec<String> = settings
         .post_process_providers
         .iter()
@@ -1106,17 +903,7 @@ fn exportable_settings(mut settings: AppSettings) -> AppSettings {
 
 pub fn get_public_settings(app: &AppHandle) -> AppSettings {
     let mut settings = get_settings(app);
-    let gemini_is_configured = settings
-        .gemini_api_key
-        .as_ref()
-        .map(|value| !value.trim().is_empty())
-        .unwrap_or(false);
-
     sanitize_persisted_secrets(&mut settings);
-    if gemini_is_configured {
-        settings.gemini_api_key = Some(CONFIGURED_SECRET_SENTINEL.to_string());
-    }
-
     settings
 }
 
@@ -1126,8 +913,6 @@ fn prepare_settings_for_runtime(app: &AppHandle, settings: &mut AppSettings) -> 
     let language_changed = ensure_selected_language_default(settings);
     let adaptive_profile_changed = ensure_adaptive_profile(app, settings);
     let external_script_changed = sanitize_external_script_path(app, settings);
-    let launch_output_changed = ensure_launch_output_defaults(settings);
-
     hydrate_secure_secrets(settings);
 
     secrets_changed
@@ -1135,7 +920,6 @@ fn prepare_settings_for_runtime(app: &AppHandle, settings: &mut AppSettings) -> 
         || language_changed
         || adaptive_profile_changed
         || external_script_changed
-        || launch_output_changed
 }
 
 fn prepare_settings_for_fast_runtime(app: &AppHandle, settings: &mut AppSettings) -> bool {
@@ -1143,58 +927,9 @@ fn prepare_settings_for_fast_runtime(app: &AppHandle, settings: &mut AppSettings
     let post_process_changed = ensure_post_process_defaults(settings);
     let language_changed = ensure_selected_language_default(settings);
     let external_script_changed = sanitize_external_script_path(app, settings);
-    let launch_output_changed = ensure_launch_output_defaults(settings);
-
     hydrate_secure_secrets(settings);
 
-    secrets_changed
-        || post_process_changed
-        || language_changed
-        || external_script_changed
-        || launch_output_changed
-}
-
-fn ensure_launch_output_defaults(settings: &mut AppSettings) -> bool {
-    #[cfg(debug_assertions)]
-    {
-        let _ = settings;
-        false
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
-        let mut changed = false;
-        let default_paste_method = PasteMethod::default();
-        if settings.paste_method != default_paste_method {
-            settings.paste_method = default_paste_method;
-            changed = true;
-        }
-        if settings.typing_tool != TypingTool::Auto {
-            settings.typing_tool = TypingTool::Auto;
-            changed = true;
-        }
-        if settings.clipboard_handling != ClipboardHandling::DontModify {
-            settings.clipboard_handling = ClipboardHandling::DontModify;
-            changed = true;
-        }
-        if settings.paste_delay_ms != default_paste_delay_ms() {
-            settings.paste_delay_ms = default_paste_delay_ms();
-            changed = true;
-        }
-        if settings.external_script_path.take().is_some() {
-            changed = true;
-        }
-        if settings.long_audio_model.take().is_some() {
-            changed = true;
-        }
-        if (settings.long_audio_threshold_seconds - default_long_audio_threshold_seconds()).abs()
-            > f32::EPSILON
-        {
-            settings.long_audio_threshold_seconds = default_long_audio_threshold_seconds();
-            changed = true;
-        }
-        changed
-    }
+    secrets_changed || post_process_changed || language_changed || external_script_changed
 }
 
 pub fn external_scripts_dir(app: &AppHandle) -> Result<PathBuf, String> {
@@ -1472,6 +1207,7 @@ pub fn get_default_settings() -> AppSettings {
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
         always_on_microphone: false,
+        wake_word_enabled: false,
         recording_mode: RecordingMode::default(),
         selected_microphone: None,
         selected_microphone_index: None,
@@ -1511,10 +1247,6 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
-        long_audio_model: None,
-        long_audio_threshold_seconds: default_long_audio_threshold_seconds(),
-        gemini_api_key: None,
-        gemini_model: default_gemini_model(),
         post_process_actions: default_post_process_actions(),
         saved_processing_models: Vec::new(),
         adaptive_profile_applied: default_adaptive_profile_applied(),
@@ -1524,9 +1256,6 @@ pub fn get_default_settings() -> AppSettings {
         voice_snippets: Vec::new(),
         auto_learn_dictionary: true,
         auto_pause_media: false,
-        groq_stt_api_key: None,
-        mistral_stt_api_key: None,
-        deepgram_api_key: None,
         speaking_rate_pauses: Vec::new(),
         voice_to_code_enabled: false,
         voice_to_code_model: String::new(),
@@ -1554,53 +1283,6 @@ impl AppSettings {
         self.post_process_providers
             .iter_mut()
             .find(|provider| provider.id == provider_id)
-    }
-
-    pub fn adaptive_whisper_config(&self, model_id: &str) -> Option<WhisperModelAdaptiveConfig> {
-        let profile = self.adaptive_machine_profile.as_ref()?;
-        let mut config = match model_id {
-            "small" => profile.whisper.small.clone(),
-            "medium" => profile.whisper.medium.clone(),
-            "turbo" => profile.whisper.turbo.clone(),
-            "large" => profile.whisper.large.clone(),
-            _ => return None,
-        };
-
-        config.backend = if !matches!(config.active_backend, WhisperBackendPreference::Auto)
-            || matches!(config.backend, WhisperBackendPreference::Auto)
-        {
-            config.active_backend
-        } else {
-            config.backend
-        };
-        if config.active_threads > 0 {
-            config.threads = config.active_threads;
-        }
-        if config.active_chunk_seconds > 0 {
-            config.chunk_seconds = config.active_chunk_seconds;
-        }
-        if config.active_overlap_ms > 0 {
-            config.overlap_ms = config.active_overlap_ms;
-        }
-
-        let constrained = profile.on_battery == Some(true)
-            || matches!(profile.power_mode, PowerMode::Saver)
-            || profile.thermal_degraded;
-        if constrained {
-            match model_id {
-                "turbo" => {
-                    config.threads = config.threads.min(6);
-                    config.chunk_seconds = config.chunk_seconds.max(12);
-                }
-                "large" => {
-                    config.threads = config.threads.min(4);
-                    config.chunk_seconds = config.chunk_seconds.max(12);
-                }
-                _ => {}
-            }
-        }
-
-        Some(config)
     }
 }
 
@@ -1640,13 +1322,6 @@ pub fn migrate_settings(settings: &mut AppSettings) {
     let canonical_selected = canonical_model_id(&settings.selected_model).to_string();
     if settings.selected_model != canonical_selected {
         settings.selected_model = canonical_selected;
-    }
-
-    if let Some(long_audio_model) = settings.long_audio_model.clone() {
-        let canonical_long_audio = canonical_model_id(&long_audio_model).to_string();
-        if long_audio_model != canonical_long_audio {
-            settings.long_audio_model = Some(canonical_long_audio);
-        }
     }
 
     if let Some(profile) = settings.adaptive_machine_profile.as_mut() {

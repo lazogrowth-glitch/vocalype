@@ -65,26 +65,6 @@
       "npuDescription": "This device exposes a neural processor. Vocalype now includes it in machine detection and diagnostics."
     },
     "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "Fastest Whisper option for weaker machines. Broad language support with a lighter footprint than the larger Whisper builds."
-      },
-      "medium": {
-        "name": "Whisper Medium",
-        "description": "Balanced multilingual Whisper choice. Usually a better quality-speed tradeoff than Turbo on weaker PCs."
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "Heavy Whisper v3 Turbo build. Strong quality, but real speed depends heavily on the machine and can feel slow on weaker PCs."
-      },
-      "large": {
-        "name": "Whisper Large",
-        "description": "Maximum offline accuracy. Heavy model best reserved for difficult audio, accents, or quality-first multilingual dictation."
-      },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Fast English-only option. Excellent when the speaker stays in English and speed matters."
-      },
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
         "description": "Experimental multilingual ONNX path. Very fast and can work well when you stay in one language, but still less robust than Whisper for mixed-language dictation."
@@ -92,34 +72,6 @@
       "parakeet-tdt-0.6b-v3-multilingual": {
         "name": "Parakeet V3",
         "description": "Fast Parakeet V3 profile with one shared model path. The spoken language is chosen from the app language setting instead of a separate English model."
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Very fast English-only model. Useful for lightweight local transcription, not top-tier accuracy."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Fastest streaming-style English option. Use when latency matters more than accuracy."
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Fast English streaming-style model with a better balance than Tiny, but still below Whisper on quality."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Best Moonshine streaming-style variant for English, but still a niche speed-first option."
-      },
-      "breeze-asr": {
-        "name": "Breeze ASR",
-        "description": "Specialized choice for Taiwanese Mandarin and Mandarin-heavy code-switching. Not a general-purpose default."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Fast multilingual model for Chinese, English, Japanese, Korean, and Cantonese. Good niche choice, not universal coverage."
-      },
-      "gemini-api": {
-        "name": "Gemini API",
-        "description": "Cloud transcription via Google Gemini. Highest flexibility, but requires internet, API key, and sends audio off-device."
       }
     },
     "errors": {

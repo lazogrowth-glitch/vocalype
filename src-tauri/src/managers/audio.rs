@@ -3,11 +3,9 @@ use crate::audio_toolkit::{
     AudioRecorderRuntimeError, AudioRecorderVadCb, SileroVad, VadDecision,
 };
 use crate::helpers::clamshell;
-use crate::model_ids::is_parakeet_v3_model_id;
 use crate::runtime_observability::{emit_runtime_error_with_context, RuntimeErrorStage};
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
-use crate::voice_profile::current_runtime_adjustment;
 use cpal::traits::HostTrait;
 use log::{debug, error, info};
 use parking_lot::{Mutex, RwLock};
@@ -18,8 +16,6 @@ use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::Manager;
-
-const WHISPER_MODEL_IDS: &[&str] = &["small", "medium", "turbo", "large"];
 
 fn set_mute(mute: bool) {
     // Expected behavior:
@@ -244,39 +240,19 @@ fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
     is_paused: Arc<AtomicBool>,
-    selected_model_id: &str,
+    _selected_model_id: &str,
     gain: f32,
     last_error: Arc<Mutex<Option<String>>>,
     preview_cb: AudioRecorderPreviewCb,
     vad_cb: AudioRecorderVadCb,
     speaking_rate_cb: AudioRecorderVadCb,
 ) -> Result<AudioRecorder, anyhow::Error> {
-    let is_parakeet_v3 = is_parakeet_v3_model_id(selected_model_id);
-    let (vad_threshold, prefill_frames, mut hangover_frames, onset_frames) = if is_parakeet_v3 {
-        // Parakeet V3 is sensitive to clipped speech on short dictation.
-        // Use a less aggressive profile to reduce dropped words.
-        (0.28, 20, 20, 1)
-    } else {
-        (0.30, 15, 15, 2)
-    };
-
-    if !is_parakeet_v3 && WHISPER_MODEL_IDS.contains(&selected_model_id) {
-        if let Some(adjustment) = current_runtime_adjustment(
-            app_handle,
-            selected_model_id,
-            &get_settings(app_handle).selected_language,
-            10,
-            500,
-        ) {
-            hangover_frames = ((hangover_frames as i16)
-                + i16::from(adjustment.vad_hangover_frames_delta))
-            .clamp(8, 28) as usize;
-            debug!(
-                "Voice profile adjusted VAD hangover for model {} to {} frames ({:?})",
-                selected_model_id, hangover_frames, adjustment.reason
-            );
-        }
-    }
+    // Parakeet V3 is sensitive to clipped speech on short dictation.
+    // Use a less aggressive profile to reduce dropped words.
+    let vad_threshold = 0.28_f32;
+    let prefill_frames = 20_usize;
+    let hangover_frames = 20_usize;
+    let onset_frames = 1_usize;
 
     let silero = SileroVad::new(vad_path, vad_threshold)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;

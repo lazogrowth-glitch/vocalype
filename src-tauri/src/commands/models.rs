@@ -1,6 +1,5 @@
-use crate::adaptive_runtime::maybe_schedule_whisper_calibration;
 use crate::managers::audio::AudioRecordingManager;
-use crate::managers::model::{EngineType, ModelInfo, ModelManager};
+use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::TranscriptionManager;
 use crate::model_ids::canonical_model_id;
 use crate::settings::{get_settings, write_settings};
@@ -45,8 +44,6 @@ pub async fn download_model(
         .download_model(&model_id)
         .await
         .map_err(|e| e.to_string())?;
-
-    maybe_schedule_whisper_calibration(&app_handle, model_manager.inner().clone(), &model_id);
 
     // Auto-select this model if nothing is selected yet (first install).
     {
@@ -198,16 +195,7 @@ pub async fn has_any_models_available(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
     let models = model_manager.get_available_models();
-    Ok(models.iter().any(|m| {
-        m.is_downloaded
-            && !matches!(
-                m.engine_type,
-                EngineType::GeminiApi
-                    | EngineType::GroqWhisper
-                    | EngineType::MistralVoxtral
-                    | EngineType::Deepgram
-            )
-    }))
+    Ok(models.iter().any(|m| m.is_downloaded))
 }
 
 #[tauri::command]
@@ -216,9 +204,7 @@ pub async fn has_any_models_or_downloads(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
     let models = model_manager.get_available_models();
-    Ok(models.iter().any(|m| {
-        !matches!(m.engine_type, EngineType::GeminiApi) && (m.is_downloaded || m.is_downloading)
-    }))
+    Ok(models.iter().any(|m| m.is_downloaded || m.is_downloading))
 }
 
 #[tauri::command]

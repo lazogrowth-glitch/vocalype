@@ -1,5 +1,4 @@
 use crate::managers::model::{ModelInfo, ModelManager};
-use crate::model_ids::is_parakeet_v3_model_id;
 use crate::settings::AppSettings;
 
 pub(super) fn normalize_language_for_model_support(language: &str) -> &str {
@@ -31,48 +30,6 @@ pub(super) fn find_best_model_fallback(
     require_translation: bool,
     excluded_model_id: &str,
 ) -> Option<ModelInfo> {
-    let mut preferred_ids: Vec<String> = Vec::new();
-
-    if let Some(long_model_id) = settings.long_audio_model.as_ref() {
-        if !long_model_id.is_empty() {
-            preferred_ids.push(long_model_id.clone());
-        }
-    }
-
-    if require_translation {
-        preferred_ids.extend(["large", "medium", "small"].into_iter().map(String::from));
-    } else {
-        preferred_ids.extend(
-            ["turbo", "large", "medium", "small", "breeze-asr"]
-                .into_iter()
-                .map(String::from),
-        );
-    }
-
-    for model_id in preferred_ids {
-        if model_id == excluded_model_id {
-            continue;
-        }
-
-        let Some(model_info) = model_manager.get_model_info(&model_id) else {
-            continue;
-        };
-
-        if !model_info.is_downloaded {
-            continue;
-        }
-
-        if require_translation && !model_info.supports_translation {
-            continue;
-        }
-
-        if !model_supports_selected_language(&model_info, settings) {
-            continue;
-        }
-
-        return Some(model_info);
-    }
-
     model_manager
         .get_available_models()
         .into_iter()
@@ -93,10 +50,6 @@ pub(super) fn resolve_runtime_model_override(
     settings: &AppSettings,
 ) -> Option<(ModelInfo, String)> {
     let model_info = current_model_info?;
-
-    if !is_parakeet_v3_model_id(&model_info.id) {
-        return None;
-    }
 
     if settings.translate_to_english && !model_info.supports_translation {
         let fallback = find_best_model_fallback(model_manager, settings, true, &model_info.id)?;
@@ -144,7 +97,7 @@ mod tests {
             is_downloading: false,
             partial_size: 0,
             is_directory: false,
-            engine_type: EngineType::Whisper,
+            engine_type: EngineType::Parakeet,
             accuracy_score: 0.0,
             speed_score: 0.0,
             supports_translation: false,

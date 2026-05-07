@@ -32,18 +32,15 @@ pub use processing::{correction_tracker, dictionary, filler, post_processing, pu
 // security
 pub use security::{bundle_signing, integrity, license, model_crypto, secret_store};
 // llm
-pub use llm::{
-    deepgram_stt_client, gemini_client, groq_stt_client, llama_server, llm_client,
-    mistral_stt_client, prompt_builder,
-};
+pub use llm::{gemini_client, llama_server, llm_client, prompt_builder};
 // runtime
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub use runtime::apple_intelligence;
 pub use runtime::{
-    adaptive_runtime, chunking, command_mode, context_detector, model_ids, parakeet_quality,
-    parakeet_text, runtime_observability, session_glossary, session_keyterms, startup_warmup,
-    telemetry, transcription_confidence, transcription_coordinator, vocabulary_store,
-    voice_feedback, voice_profile,
+    chunking, command_mode, context_detector, model_ids, parakeet_quality, parakeet_text,
+    runtime_observability, session_glossary, session_keyterms, startup_warmup, telemetry,
+    transcription_confidence, transcription_coordinator, vocabulary_store, voice_feedback,
+    voice_profile, wake_word,
 };
 // platform
 pub use platform::signal_handle;
@@ -962,8 +959,7 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
         shortcut::change_show_tray_icon_setting,
-        shortcut::change_long_audio_model_setting,
-        shortcut::change_long_audio_threshold_setting,
+        shortcut::change_wake_word_enabled_setting,
         shortcut::native_shortcut_capture::start_native_shortcut_capture_recording,
         shortcut::native_shortcut_capture::stop_native_shortcut_capture_recording,
         trigger_update_check,
@@ -995,8 +991,6 @@ pub fn run(cli_args: CliArgs) {
         commands::summarize_voice_feedback_command,
         commands::get_current_app_context,
         commands::get_adaptive_runtime_profile,
-        commands::get_adaptive_calibration_state,
-        commands::recalibrate_whisper_model_command,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,
@@ -1096,12 +1090,6 @@ pub fn run(cli_args: CliArgs) {
         commands::app_context::set_app_context_override,
         commands::app_context::remove_app_context_override,
         commands::app_context::set_app_context_enabled,
-        commands::gemini::change_gemini_api_key_setting,
-        commands::gemini::change_gemini_model_setting,
-        commands::cloud_stt::set_groq_stt_api_key,
-        commands::cloud_stt::set_mistral_stt_api_key,
-        commands::cloud_stt::set_deepgram_api_key,
-        commands::agent::dismiss_agent_overlay,
         secret_store::get_secure_auth_token,
         secret_store::set_secure_auth_token,
         secret_store::clear_secure_auth_token,

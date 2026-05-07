@@ -1,7 +1,8 @@
 use super::*;
 use crate::parakeet_text::{
     finalize_parakeet_text_with_profile, maybe_prefer_sentence_punctuation,
-    parakeet_builtin_correction_terms, should_attempt_sentence_punctuation,
+    parakeet_builtin_correction_terms, parakeet_builtin_correction_terms_with_profile,
+    should_attempt_sentence_punctuation, ParakeetDomainProfile,
 };
 use crate::session_keyterms::build_session_keyterms;
 use whichlang::Lang;
@@ -271,9 +272,10 @@ fn maybe_boost_low_energy_parakeet_audio(samples: &[f32]) -> Option<(Vec<f32>, f
 
 fn build_correction_terms(
     settings: &crate::settings::AppSettings,
-    _session_keyterms: &[String],
-    _session_glossary_terms: &[String],
+    session_keyterms: &[String],
+    session_glossary_terms: &[String],
     _active_model_id: Option<&str>,
+    profile: ParakeetDomainProfile,
 ) -> Vec<String> {
     let mut terms = settings.custom_words.clone();
     let parakeet_builtins = parakeet_builtin_correction_terms(&settings.selected_language);
@@ -282,6 +284,21 @@ fn build_correction_terms(
         .find(|term| term == "Vocalype")
     {
         terms.push(vocalype_term);
+    }
+
+    // Passive Session Glossary terms: project-specific identifiers extracted
+    // from clipboard while the developer codes. Keep them scoped to the
+    // general/code profile so recruiting dictation never inherits dev jargon.
+    if profile == ParakeetDomainProfile::General {
+        terms.extend(session_glossary_terms.iter().cloned());
+    }
+
+    if profile == ParakeetDomainProfile::General {
+        terms.extend(parakeet_builtin_correction_terms_with_profile(
+            &settings.selected_language,
+            profile,
+        ));
+        terms.extend(session_keyterms.iter().cloned());
     }
 
     let mut deduped = Vec::new();
@@ -322,7 +339,14 @@ fn term_is_risky_proper_noun(term: &str) -> bool {
     has_upper || all_upper
 }
 
-fn correction_terms_for_text(text: &str, correction_terms: &[String]) -> Vec<String> {
+fn correction_terms_for_text(
+    text: &str,
+    correction_terms: &[String],
+    profile: ParakeetDomainProfile,
+) -> Vec<String> {
+    if profile == ParakeetDomainProfile::General {
+        return correction_terms.to_vec();
+    }
     let lower_text = text.to_lowercase();
     correction_terms
         .iter()
@@ -662,45 +686,15 @@ impl TranscriptionManager {
             .try_state::<crate::session_glossary::SessionGlossaryState>()
             .and_then(|state| state.0.lock().ok().map(|g| g.as_vec()))
             .unwrap_or_default();
+        let correction_profile = ParakeetDomainProfile::Recruiting;
         let correction_terms = build_correction_terms(
             &settings,
             &session_keyterms,
             &session_glossary_terms,
             active_model_id.as_deref(),
+            correction_profile,
         );
-        let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
-        {
-            settings.word_correction_threshold.max(0.24)
-        } else {
-            settings.word_correction_threshold
-        };
-        let initial_prompt = if settings.adaptive_vocabulary_enabled
-            || (settings.adaptive_voice_profile_enabled && !voice_terms.is_empty())
-            || app_context.is_some()
-            || !session_keyterms.is_empty()
-        {
-            if let Some(state) = self.app_handle.try_state::<VocabularyStoreState>() {
-                if let Ok(store) = state.0.lock() {
-                    build_whisper_initial_prompt(
-                        &settings,
-                        app_context.as_ref(),
-                        &store,
-                        &session_keyterms,
-                    )
-                } else {
-                    None
-                }
-            } else {
-                build_whisper_initial_prompt(
-                    &settings,
-                    app_context.as_ref(),
-                    &crate::vocabulary_store::VocabularyStore::default(),
-                    &session_keyterms,
-                )
-            }
-        } else {
-            None
-        };
+        let correction_threshold = settings.word_correction_threshold.max(0.24);
         push_timing(
             &mut timings,
             st,
@@ -715,231 +709,6 @@ impl TranscriptionManager {
                 session_glossary_terms.len()
             )),
         );
-
-        // Handle Gemini API separately (requires async HTTP call)
-        {
-            let remote_started = std::time::Instant::now();
-            let engine_guard = self.lock_engine();
-            if let Some(LoadedEngine::GeminiApi) = engine_guard.as_ref() {
-                drop(engine_guard);
-                let api_key = settings
-                    .gemini_api_key
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Gemini API key not configured"))?
-                    .clone();
-                let gemini_model = settings.gemini_model.clone();
-
-                // Use block_in_place to safely run async code from a tokio worker thread.
-                // Handle::block_on() panics if called directly from an async context,
-                // so block_in_place tells tokio to move its work off this thread first.
-                let result = tokio::task::block_in_place(|| {
-                    tokio::runtime::Handle::current().block_on(
-                        crate::gemini_client::transcribe_audio(&api_key, &gemini_model, &audio),
-                    )
-                })?;
-
-                let corrected = if !settings.custom_words.is_empty() {
-                    apply_custom_words(
-                        &result,
-                        &settings.custom_words,
-                        settings.word_correction_threshold,
-                    )
-                } else {
-                    result
-                };
-                let final_result = Self::filter_transcription_output_for_context(
-                    corrected,
-                    active_model_id.as_deref(),
-                    app_context.as_ref(),
-                );
-
-                let et = std::time::Instant::now();
-                info!(
-                    "Gemini transcription completed in {}ms",
-                    (et - st).as_millis()
-                );
-                push_timing(
-                    &mut timings,
-                    st,
-                    remote_started,
-                    "stt.engine_remote_gemini",
-                    Some(format!("chars={}", final_result.chars().count())),
-                );
-
-                self.release_inferring_slot();
-                self.maybe_unload_immediately("gemini transcription");
-                return Ok(TranscriptionOutput {
-                    text: final_result,
-                    confidence_payload: None,
-                    timings,
-                    segments: None,
-                });
-            }
-        }
-
-        // Handle Groq Whisper API
-        {
-            let remote_started = std::time::Instant::now();
-            let engine_guard = self.lock_engine();
-            if let Some(LoadedEngine::GroqWhisper) = engine_guard.as_ref() {
-                drop(engine_guard);
-                let api_key = settings
-                    .groq_stt_api_key
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Groq API key not configured"))?
-                    .clone();
-
-                let result = tokio::task::block_in_place(|| {
-                    tokio::runtime::Handle::current()
-                        .block_on(crate::groq_stt_client::transcribe_audio(&api_key, &audio))
-                })?;
-
-                let corrected = if !settings.custom_words.is_empty() {
-                    apply_custom_words(
-                        &result,
-                        &settings.custom_words,
-                        settings.word_correction_threshold,
-                    )
-                } else {
-                    result
-                };
-                let final_result = Self::filter_transcription_output_for_context(
-                    corrected,
-                    active_model_id.as_deref(),
-                    app_context.as_ref(),
-                );
-
-                info!(
-                    "Groq STT transcription completed in {}ms",
-                    st.elapsed().as_millis()
-                );
-                push_timing(
-                    &mut timings,
-                    st,
-                    remote_started,
-                    "stt.engine_remote_groq",
-                    Some(format!("chars={}", final_result.chars().count())),
-                );
-                self.release_inferring_slot();
-                self.maybe_unload_immediately("groq transcription");
-                return Ok(TranscriptionOutput {
-                    text: final_result,
-                    confidence_payload: None,
-                    timings,
-                    segments: None,
-                });
-            }
-        }
-
-        // Handle Mistral Voxtral API
-        {
-            let remote_started = std::time::Instant::now();
-            let engine_guard = self.lock_engine();
-            if let Some(LoadedEngine::MistralVoxtral) = engine_guard.as_ref() {
-                drop(engine_guard);
-                let api_key = settings
-                    .mistral_stt_api_key
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Mistral API key not configured"))?
-                    .clone();
-
-                let result = tokio::task::block_in_place(|| {
-                    tokio::runtime::Handle::current().block_on(
-                        crate::mistral_stt_client::transcribe_audio(&api_key, &audio),
-                    )
-                })?;
-
-                let corrected = if !settings.custom_words.is_empty() {
-                    apply_custom_words(
-                        &result,
-                        &settings.custom_words,
-                        settings.word_correction_threshold,
-                    )
-                } else {
-                    result
-                };
-                let final_result = Self::filter_transcription_output_for_context(
-                    corrected,
-                    active_model_id.as_deref(),
-                    app_context.as_ref(),
-                );
-
-                info!(
-                    "Mistral STT transcription completed in {}ms",
-                    st.elapsed().as_millis()
-                );
-                push_timing(
-                    &mut timings,
-                    st,
-                    remote_started,
-                    "stt.engine_remote_mistral",
-                    Some(format!("chars={}", final_result.chars().count())),
-                );
-                self.release_inferring_slot();
-                self.maybe_unload_immediately("mistral transcription");
-                return Ok(TranscriptionOutput {
-                    text: final_result,
-                    confidence_payload: None,
-                    timings,
-                    segments: None,
-                });
-            }
-        }
-
-        // Handle Deepgram Nova API
-        {
-            let remote_started = std::time::Instant::now();
-            let engine_guard = self.lock_engine();
-            if let Some(LoadedEngine::Deepgram) = engine_guard.as_ref() {
-                drop(engine_guard);
-                let api_key = settings
-                    .deepgram_api_key
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Deepgram API key not configured"))?
-                    .clone();
-
-                let result = tokio::task::block_in_place(|| {
-                    tokio::runtime::Handle::current().block_on(
-                        crate::deepgram_stt_client::transcribe_audio(&api_key, &audio),
-                    )
-                })?;
-
-                let corrected = if !settings.custom_words.is_empty() {
-                    apply_custom_words(
-                        &result,
-                        &settings.custom_words,
-                        settings.word_correction_threshold,
-                    )
-                } else {
-                    result
-                };
-                let final_result = Self::filter_transcription_output_for_context(
-                    corrected,
-                    active_model_id.as_deref(),
-                    app_context.as_ref(),
-                );
-
-                info!(
-                    "Deepgram STT transcription completed in {}ms",
-                    st.elapsed().as_millis()
-                );
-                push_timing(
-                    &mut timings,
-                    st,
-                    remote_started,
-                    "stt.engine_remote_deepgram",
-                    Some(format!("chars={}", final_result.chars().count())),
-                );
-                self.release_inferring_slot();
-                self.maybe_unload_immediately("deepgram transcription");
-                return Ok(TranscriptionOutput {
-                    text: final_result,
-                    confidence_payload: None,
-                    timings,
-                    segments: None,
-                });
-            }
-        }
 
         // Enforce backoff if there were recent consecutive engine panics.
         let backoff_until = self.panic_backoff_until_ms.load(Ordering::Relaxed);
@@ -986,101 +755,6 @@ impl TranscriptionManager {
             let transcribe_result = catch_unwind(AssertUnwindSafe(
                 || -> Result<EngineTranscriptionResult> {
                     match &mut engine {
-                        LoadedEngine::Whisper(whisper_engine) => {
-                            let whisper_language = if settings.selected_language == "auto" {
-                                None
-                            } else {
-                                let normalized = if settings.selected_language == "zh-Hans"
-                                    || settings.selected_language == "zh-Hant"
-                                {
-                                    "zh".to_string()
-                                } else {
-                                    settings.selected_language.clone()
-                                };
-                                Some(normalized)
-                            };
-
-                            let current_model_id = self.get_current_model();
-                            let whisper_gpu_active =
-                                self.whisper_gpu_active.load(Ordering::Relaxed);
-                            let n_threads = self.recommended_whisper_threads(
-                                current_model_id.as_deref(),
-                                whisper_gpu_active,
-                            );
-
-                            let params = WhisperInferenceParams {
-                                language: whisper_language,
-                                translate: settings.translate_to_english,
-                                initial_prompt: initial_prompt.clone(),
-                                greedy_best_of: Some(1),
-                                n_threads: Some(n_threads),
-                                debug_mode: false,
-                                // Each dictation chunk is independent. Reusing decoder text
-                                // context across calls can both slow decoding and smear text
-                                // from earlier chunks into later ones.
-                                no_context: true,
-                                // Skip timestamp computation — we only need raw text.
-                                // This alone saves ~10-20% of inference time.
-                                no_timestamps: true,
-                                // Treat the full clip as one segment — avoids per-segment
-                                // overhead. Safe for push-to-talk dictation clips.
-                                single_segment: true,
-                                // Disable whisper.cpp's multi-temperature retry ladder for
-                                // latency-sensitive dictation. Without this, a bad short clip
-                                // can trigger several full re-decodes and explode latency.
-                                temperature: Some(0.0),
-                                temperature_inc: Some(0.0),
-                                entropy_thold: Some(9_999.0),
-                                logprob_thold: Some(-9_999.0),
-                                ..Default::default()
-                            };
-                            debug!(
-                                "Whisper inference params: model={:?}, gpu_active={}, threads={}",
-                                current_model_id, whisper_gpu_active, n_threads
-                            );
-
-                            whisper_engine
-                                .transcribe_samples(audio, Some(params))
-                                .map(|result| EngineTranscriptionResult {
-                                    text: result.text,
-                                    segments: result.segments,
-                                })
-                                .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
-                        }
-                        LoadedEngine::Parakeet(parakeet_engine) => {
-                            let boosted_audio = maybe_boost_low_energy_parakeet_audio(&audio);
-                            if let Some((_, gain)) = boosted_audio.as_ref() {
-                                info!(
-                                    "Applying low-energy boost to Parakeet input (gain={:.2})",
-                                    gain
-                                );
-                            }
-                            let params = ParakeetInferenceParams {
-                                timestamp_granularity: TimestampGranularity::Segment,
-                                ..Default::default()
-                            };
-                            parakeet_engine
-                                .transcribe_samples(
-                                    boosted_audio
-                                        .as_ref()
-                                        .map(|(samples, _)| samples.clone())
-                                        .unwrap_or(audio),
-                                    Some(params),
-                                )
-                                .map(|result| {
-                                    check_parakeet_language_drift(
-                                        &result.text,
-                                        &settings.selected_language,
-                                    );
-                                    EngineTranscriptionResult {
-                                        text: result.text,
-                                        segments: None,
-                                    }
-                                })
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Parakeet transcription failed: {}", e)
-                                })
-                        }
                         LoadedEngine::ParakeetV3(parakeet_engine) => {
                             let is_short_phrase = audio.len() < PARAKEET_SHORT_PHRASE_SAMPLES;
 
@@ -1292,57 +966,6 @@ impl TranscriptionManager {
                                 }
                             }
                         }
-                        LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
-                            .transcribe_samples(audio, None)
-                            .map(|result| EngineTranscriptionResult {
-                                text: result.text,
-                                segments: None,
-                            })
-                            .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
-                        LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
-                            .transcribe_samples(audio, None)
-                            .map(|result| EngineTranscriptionResult {
-                                text: result.text,
-                                segments: None,
-                            })
-                            .map_err(|e| {
-                                anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
-                            }),
-                        LoadedEngine::SenseVoice(sense_voice_engine) => {
-                            let language = match settings.selected_language.as_str() {
-                                "zh" | "zh-Hans" | "zh-Hant" => SenseVoiceLanguage::Chinese,
-                                "en" => SenseVoiceLanguage::English,
-                                "ja" => SenseVoiceLanguage::Japanese,
-                                "ko" => SenseVoiceLanguage::Korean,
-                                "yue" => SenseVoiceLanguage::Cantonese,
-                                _ => SenseVoiceLanguage::Auto,
-                            };
-                            let params = SenseVoiceInferenceParams {
-                                language,
-                                use_itn: true,
-                            };
-                            sense_voice_engine
-                                .transcribe_samples(audio, Some(params))
-                                .map(|result| EngineTranscriptionResult {
-                                    text: result.text,
-                                    segments: None,
-                                })
-                                .map_err(|e| {
-                                    anyhow::anyhow!("SenseVoice transcription failed: {}", e)
-                                })
-                        }
-                        LoadedEngine::GeminiApi => {
-                            unreachable!("GeminiApi handled before catch_unwind")
-                        }
-                        LoadedEngine::GroqWhisper => {
-                            unreachable!("GroqWhisper handled before catch_unwind")
-                        }
-                        LoadedEngine::MistralVoxtral => {
-                            unreachable!("MistralVoxtral handled before catch_unwind")
-                        }
-                        LoadedEngine::Deepgram => {
-                            unreachable!("Deepgram handled before catch_unwind")
-                        }
                     }
                 },
             ));
@@ -1471,7 +1094,9 @@ impl TranscriptionManager {
             )),
         );
         let correction_started = std::time::Instant::now();
-        let active_correction_terms = correction_terms_for_text(&learned_result, &correction_terms);
+        let profile = ParakeetDomainProfile::Recruiting;
+        let active_correction_terms =
+            correction_terms_for_text(&learned_result, &correction_terms, profile);
         let learned_result_before_correction = learned_result.clone();
         let corrected_result = if !active_correction_terms.is_empty() {
             apply_custom_words(
@@ -1501,12 +1126,11 @@ impl TranscriptionManager {
             )),
         );
         let finalize_started = std::time::Instant::now();
-        let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
-        {
-            finalize_parakeet_text_with_profile(&corrected_result, &settings.selected_language)
-        } else {
-            corrected_result
-        };
+        let corrected_result = finalize_parakeet_text_with_profile(
+            &corrected_result,
+            &settings.selected_language,
+            profile,
+        );
         record_parakeet_brain_stage(
             &self.app_handle,
             "after_finalize_parakeet_text",
@@ -1678,6 +1302,7 @@ mod tests {
             &["Parakeet V3".to_string(), "Yassine".to_string()],
             &[],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
+            ParakeetDomainProfile::General,
         );
 
         assert!(corrections.iter().any(|term| term == "Vocalype"));
@@ -1709,6 +1334,7 @@ mod tests {
             &[],
             &["useState".to_string(), "handleClick".to_string()],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
+            ParakeetDomainProfile::Recruiting,
         );
 
         assert!(!corrections.iter().any(|term| term == "useState"));
@@ -1724,14 +1350,20 @@ mod tests {
             "CRM".to_string(),
         ];
 
-        let filtered =
-            correction_terms_for_text("the candidate said the workflow feels smooth", &terms);
+        let filtered = correction_terms_for_text(
+            "the candidate said the workflow feels smooth",
+            &terms,
+            ParakeetDomainProfile::Recruiting,
+        );
         assert!(filtered.iter().any(|t| t == "candidate"));
         assert!(!filtered.iter().any(|t| t == "OpenAI"));
         assert!(!filtered.iter().any(|t| t == "CRM"));
 
-        let filtered_with_match =
-            correction_terms_for_text("we reviewed openai notes from the call", &terms);
+        let filtered_with_match = correction_terms_for_text(
+            "we reviewed openai notes from the call",
+            &terms,
+            ParakeetDomainProfile::Recruiting,
+        );
         assert!(filtered_with_match.iter().any(|t| t == "OpenAI"));
     }
 
@@ -1745,6 +1377,7 @@ mod tests {
             &["OpenAI".to_string(), "CandidateScore".to_string()],
             &[],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
+            ParakeetDomainProfile::Recruiting,
         );
 
         assert!(!corrections.iter().any(|term| term == "OpenAI"));

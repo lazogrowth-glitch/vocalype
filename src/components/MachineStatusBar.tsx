@@ -6,6 +6,7 @@ import type {
   MachineStatusMode,
   RuntimeDiagnosticsSnapshot,
 } from "@/types/runtimeObservability";
+import { safeUnlisten } from "@/lib/tauri/events";
 
 const MODEL_LABELS: Record<string, string> = {
   "parakeet-tdt-0.6b-v3-multilingual": "Parakeet V3",
@@ -60,30 +61,38 @@ export const MachineStatusBar: React.FC<{ variant?: "banner" | "sidebar" }> = ({
     let cleanupAdaptive: (() => void) | undefined;
     let cleanupLifecycle: (() => void) | undefined;
 
-    listen("adaptive-profile-updated", () => {
+    void listen("adaptive-profile-updated", () => {
       void refresh();
-    }).then((fn) => {
-      if (!active) {
-        fn();
-      } else {
-        cleanupAdaptive = fn;
-      }
-    });
-    listen("transcription-lifecycle", () => {
+    })
+      .then((fn) => {
+        if (!active) {
+          safeUnlisten(fn);
+        } else {
+          cleanupAdaptive = fn;
+        }
+      })
+      .catch(() => {
+        /* Listener registration may fail during startup/HMR teardown. */
+      });
+    void listen("transcription-lifecycle", () => {
       void refresh();
-    }).then((fn) => {
-      if (!active) {
-        fn();
-      } else {
-        cleanupLifecycle = fn;
-      }
-    });
+    })
+      .then((fn) => {
+        if (!active) {
+          safeUnlisten(fn);
+        } else {
+          cleanupLifecycle = fn;
+        }
+      })
+      .catch(() => {
+        /* Listener registration may fail during startup/HMR teardown. */
+      });
 
     return () => {
       active = false;
       window.clearInterval(interval);
-      cleanupAdaptive?.();
-      cleanupLifecycle?.();
+      safeUnlisten(cleanupAdaptive);
+      safeUnlisten(cleanupLifecycle);
     };
   }, []);
 

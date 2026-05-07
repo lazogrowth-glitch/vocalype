@@ -5,6 +5,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
 import { ProgressBar } from "../shared";
 import { useSettings } from "../../hooks/useSettings";
+import { cleanupTauriListen } from "@/lib/tauri/events";
 
 interface UpdateCheckerProps {
   className?: string;
@@ -53,7 +54,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
       if (upToDateTimeoutRef.current) {
         clearTimeout(upToDateTimeoutRef.current);
       }
-      updateUnlisten.then((fn) => fn());
+      cleanupTauriListen(updateUnlisten);
     };
   }, [settingsLoaded, updateChecksEnabled]);
 

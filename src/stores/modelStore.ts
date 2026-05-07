@@ -22,6 +22,15 @@ import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
+function registerModelListener<T>(
+  event: string,
+  handler: Parameters<typeof listen<T>>[1],
+) {
+  void listen<T>(event, handler).catch(() => {
+    /* Listener registration may fail during startup/HMR teardown. */
+  });
+}
+
 interface DownloadProgress {
   model_id: string;
   downloaded: number;
@@ -314,52 +323,55 @@ export const useModelStore = create<ModelsStore>()(
       await Promise.all([loadModels(), loadCurrentModel(), checkFirstRun()]);
 
       // Set up event listeners
-      listen<DownloadProgress>("model-download-progress", (event) => {
-        const progress = event.payload;
-        set(
-          produce((state) => {
-            state.downloadProgress[progress.model_id] = progress;
-          }),
-        );
+      registerModelListener<DownloadProgress>(
+        "model-download-progress",
+        (event) => {
+          const progress = event.payload;
+          set(
+            produce((state) => {
+              state.downloadProgress[progress.model_id] = progress;
+            }),
+          );
 
-        // Update download stats for speed calculation
-        const now = Date.now();
-        set(
-          produce((state) => {
-            const current = state.downloadStats[progress.model_id];
+          // Update download stats for speed calculation
+          const now = Date.now();
+          set(
+            produce((state) => {
+              const current = state.downloadStats[progress.model_id];
 
-            if (!current) {
-              state.downloadStats[progress.model_id] = {
-                startTime: now,
-                lastUpdate: now,
-                totalDownloaded: progress.downloaded,
-                speed: 0,
-              };
-            } else {
-              const timeDiff = (now - current.lastUpdate) / 1000;
-              const bytesDiff = progress.downloaded - current.totalDownloaded;
-
-              if (timeDiff > 0.5) {
-                const currentSpeed = bytesDiff / (1024 * 1024) / timeDiff;
-                const validCurrentSpeed = Math.max(0, currentSpeed);
-                const smoothedSpeed =
-                  current.speed > 0
-                    ? current.speed * 0.8 + validCurrentSpeed * 0.2
-                    : validCurrentSpeed;
-
+              if (!current) {
                 state.downloadStats[progress.model_id] = {
-                  startTime: current.startTime,
+                  startTime: now,
                   lastUpdate: now,
                   totalDownloaded: progress.downloaded,
-                  speed: Math.max(0, smoothedSpeed),
+                  speed: 0,
                 };
-              }
-            }
-          }),
-        );
-      });
+              } else {
+                const timeDiff = (now - current.lastUpdate) / 1000;
+                const bytesDiff = progress.downloaded - current.totalDownloaded;
 
-      listen<string>("model-download-complete", (event) => {
+                if (timeDiff > 0.5) {
+                  const currentSpeed = bytesDiff / (1024 * 1024) / timeDiff;
+                  const validCurrentSpeed = Math.max(0, currentSpeed);
+                  const smoothedSpeed =
+                    current.speed > 0
+                      ? current.speed * 0.8 + validCurrentSpeed * 0.2
+                      : validCurrentSpeed;
+
+                  state.downloadStats[progress.model_id] = {
+                    startTime: current.startTime,
+                    lastUpdate: now,
+                    totalDownloaded: progress.downloaded,
+                    speed: Math.max(0, smoothedSpeed),
+                  };
+                }
+              }
+            }),
+          );
+        },
+      );
+
+      registerModelListener<string>("model-download-complete", (event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -373,7 +385,7 @@ export const useModelStore = create<ModelsStore>()(
         get().loadCurrentModel();
       });
 
-      listen<string>("model-extraction-started", (event) => {
+      registerModelListener<string>("model-extraction-started", (event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -382,7 +394,7 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-extraction-completed", (event) => {
+      registerModelListener<string>("model-extraction-completed", (event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -392,7 +404,7 @@ export const useModelStore = create<ModelsStore>()(
         get().loadModels();
       });
 
-      listen<{ model_id: string; error: string }>(
+      registerModelListener<{ model_id: string; error: string }>(
         "model-extraction-failed",
         (event) => {
           const modelId = event.payload.model_id;
@@ -407,7 +419,7 @@ export const useModelStore = create<ModelsStore>()(
         },
       );
 
-      listen<string>("model-download-cancelled", (event) => {
+      registerModelListener<string>("model-download-cancelled", (event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -418,12 +430,12 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-deleted", () => {
+      registerModelListener<string>("model-deleted", () => {
         get().loadModels();
         get().loadCurrentModel();
       });
 
-      listen("model-state-changed", () => {
+      registerModelListener("model-state-changed", () => {
         get().loadModels();
         get().loadCurrentModel();
       });

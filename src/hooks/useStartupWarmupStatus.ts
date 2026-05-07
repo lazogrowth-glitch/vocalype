@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { commands } from "@/bindings";
 import type { StartupWarmupStatusSnapshot } from "@/types/startupWarmup";
+import { cleanupTauriListen } from "@/lib/tauri/events";
 
 export function useStartupWarmupStatus() {
   const [status, setStatus] = useState<StartupWarmupStatusSnapshot | null>(
@@ -36,7 +37,7 @@ export function useStartupWarmupStatus() {
 
     return () => {
       active = false;
-      void unlisten.then((fn) => fn());
+      cleanupTauriListen(unlisten);
     };
   }, []);
 

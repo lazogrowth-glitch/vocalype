@@ -395,17 +395,9 @@ async changeShowTrayIconSetting(enabled: boolean) : Promise<Result<null, string>
     else return { status: "error", error: e  as any };
 }
 },
-async changeLongAudioModelSetting(modelId: string | null) : Promise<Result<null, string>> {
+async changeWakeWordEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("change_long_audio_model_setting", { modelId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async changeLongAudioThresholdSetting(threshold: number) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_long_audio_threshold_setting", { threshold }) };
+    return { status: "ok", data: await TAURI_INVOKE("change_wake_word_enabled_setting", { enabled }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -653,22 +645,6 @@ async getCurrentAppContext() : Promise<Result<AppTranscriptionContext, string>> 
 async getAdaptiveRuntimeProfile() : Promise<Result<AdaptiveMachineProfile | null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_adaptive_runtime_profile") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async getAdaptiveCalibrationState() : Promise<Result<CalibrationStatusSnapshot[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_adaptive_calibration_state") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async recalibrateWhisperModelCommand(modelId: string, phase: CalibrationPhase | null) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("recalibrate_whisper_model_command", { modelId, phase }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -1465,49 +1441,6 @@ async setAppContextEnabled(enabled: boolean) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async changeGeminiApiKeySetting(apiKey: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_gemini_api_key_setting", { apiKey }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async changeGeminiModelSetting(model: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("change_gemini_model_setting", { model }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async setGroqSttApiKey(apiKey: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("set_groq_stt_api_key", { apiKey }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async setMistralSttApiKey(apiKey: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("set_mistral_stt_api_key", { apiKey }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async setDeepgramApiKey(apiKey: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("set_deepgram_api_key", { apiKey }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async dismissAgentOverlay() : Promise<void> {
-    await TAURI_INVOKE("dismiss_agent_overlay");
-},
 async getSecureAuthToken() : Promise<Result<string | null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_secure_auth_token") };
@@ -1746,6 +1679,12 @@ export type AppSettings = {
  */
 settings_version?: number; bindings: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk: boolean; audio_feedback: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; selected_model?: string; always_on_microphone?: boolean; 
 /**
+ * When true, Vocalype listens for the wake word "dictate" in the
+ * background and starts a hands-free recording session automatically.
+ * Requires the microphone stream to be open (AlwaysOn mode recommended).
+ */
+wake_word_enabled?: boolean; 
+/**
  * Sliding window of the last observed inter-word pause durations (ms).
  * Accumulated across all recording modes to calibrate the adaptive
  * silence threshold for wake-word auto-stop.
@@ -1762,7 +1701,7 @@ recording_mode?: RecordingMode; selected_microphone?: string | null; selected_mi
  * When true, LLM post-processing fires automatically whenever the
  * session glossary signals a code context (≥ 3 extracted identifiers).
  */
-llm_auto_mode?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; post_process_actions?: PostProcessAction[]; saved_processing_models?: SavedProcessingModel[]; adaptive_profile_applied?: boolean; adaptive_machine_profile?: AdaptiveMachineProfile | null;
+llm_auto_mode?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; post_process_actions?: PostProcessAction[]; saved_processing_models?: SavedProcessingModel[]; adaptive_profile_applied?: boolean; adaptive_machine_profile?: AdaptiveMachineProfile | null; 
 /**
  * Whether the automatic app-context feature is enabled globally.
  */

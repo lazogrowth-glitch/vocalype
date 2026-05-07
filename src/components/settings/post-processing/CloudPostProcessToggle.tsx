@@ -16,7 +16,9 @@ export const CloudPostProcessToggle: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isActive = settings?.post_process_provider_id === PROVIDER_ID;
+  const isActive =
+    settings?.post_process_enabled === true &&
+    settings?.post_process_provider_id === PROVIDER_ID;
 
   const activate = useCallback(async () => {
     setLoading(true);
@@ -48,9 +50,6 @@ export const CloudPostProcessToggle: React.FC = () => {
     try {
       const r1 = await commands.changePostProcessEnabledSetting(false);
       if (r1.status === "error") throw new Error(r1.error);
-
-      const r2 = await commands.setPostProcessProvider("");
-      if (r2.status === "error") throw new Error(r2.error);
 
       await refreshSettings();
     } catch (e) {

@@ -60,14 +60,3 @@ export interface ChangePasswordPayload {
   old_password: string;
   new_password: string;
 }
-
-export interface ReferralCode {
-  code: string;
-  referral_url: string;
-}
-
-export interface ReferralStats {
-  referral_count: number;
-  converted_count: number;
-  earned_months: number;
-}

@@ -58,7 +58,6 @@ const SECTION_DESCRIPTION_KEYS: Partial<Record<SidebarSection, string>> = {
   stats: "shell.sectionDescriptions.stats",
   advanced: "shell.sectionDescriptions.advanced",
   billing: "shell.sectionDescriptions.billing",
-  referral: "shell.sectionDescriptions.referral",
   about: "shell.sectionDescriptions.about",
   debug: "shell.sectionDescriptions.debug",
 };

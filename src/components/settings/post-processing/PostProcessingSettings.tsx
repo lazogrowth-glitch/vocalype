@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   CheckCircle,
   ClipboardList,
+  Cog,
   FileText,
   ChevronRight,
   Linkedin,
@@ -15,7 +16,6 @@ import { Textarea } from "@/components/ui";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { useSettings } from "../../../hooks/useSettings";
-import { CloudPostProcessToggle } from "./CloudPostProcessToggle";
 
 type EditingAction = {
   key: number;
@@ -86,7 +86,20 @@ export const PostProcessingSettings: React.FC = () => {
   ];
 
   const actions = getSetting("post_process_actions") || [];
-  const isCloudActive = settings?.post_process_provider_id === "vocalype-cloud";
+  const isCloudActive =
+    settings?.post_process_enabled === true &&
+    settings?.post_process_provider_id === "vocalype-cloud";
+
+  const openCloudSettings = () => {
+    window.dispatchEvent(
+      new CustomEvent("vocalype:navigate-settings", {
+        detail: {
+          section: "advanced",
+          scrollToId: "cloud-post-process-toggle",
+        },
+      }),
+    );
+  };
 
   const formatPromptPreview = (prompt: string) =>
     prompt
@@ -196,9 +209,62 @@ export const PostProcessingSettings: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 py-6 px-2">
-      {/* ── Cloud toggle ── */}
-      <CloudPostProcessToggle />
+    <div className="flex flex-col gap-8 py-6 px-2">
+      <div
+        className="settings-group-card"
+        style={{
+          borderColor: isCloudActive ? "rgba(250,180,60,0.22)" : undefined,
+          background: isCloudActive ? "rgba(250,180,60,0.045)" : undefined,
+        }}
+      >
+        <div
+          className="flex items-center justify-between gap-4"
+          style={{ padding: "18px 20px" }}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              {isCloudActive ? (
+                <CheckCircle
+                  size={14}
+                  style={{ color: "rgba(250,180,60,0.92)", flexShrink: 0 }}
+                />
+              ) : (
+                <Zap
+                  size={14}
+                  style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }}
+                />
+              )}
+              <p className="text-[12px] font-medium text-white/82">
+                {t("settings.cloudLlm.label", {
+                  defaultValue: "Vocalype Cloud (faster)",
+                })}
+              </p>
+            </div>
+            <p className="mt-1 text-[11px] leading-5 text-white/42">
+              {isCloudActive
+                ? t("settings.cloudLlm.activeDescription", {
+                    defaultValue:
+                      "Actif — les actions utilisent Vocalype Cloud.",
+                  })
+                : t("settings.postProcessing.modelPicker.enableCloud", {
+                    defaultValue:
+                      "Active Vocalype Cloud depuis Paramètres pour exécuter tes actions plus vite.",
+                  })}
+            </p>
+          </div>
+          <Button
+            onClick={openCloudSettings}
+            variant="secondary"
+            size="sm"
+            className="shrink-0"
+          >
+            <Cog size={14} aria-hidden="true" />
+            {t("settings.advanced.title", {
+              defaultValue: "Paramètres",
+            })}
+          </Button>
+        </div>
+      </div>
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">

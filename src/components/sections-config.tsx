@@ -5,7 +5,6 @@ import {
   Clock3,
   CreditCard,
   FlaskConical,
-  Gift,
   History,
   Info,
   LayoutGrid,
@@ -36,11 +35,6 @@ const NotesSettings = React.lazy(() =>
 const AdvancedSettings = React.lazy(() =>
   import("./settings/advanced/AdvancedSettings").then((m) => ({
     default: m.AdvancedSettings,
-  })),
-);
-const ReferralSettings = React.lazy(() =>
-  import("./settings/referral/ReferralSettings").then((m) => ({
-    default: m.ReferralSettings,
   })),
 );
 const HistorySettings = React.lazy(() =>
@@ -95,7 +89,6 @@ export type SidebarSection =
   | "stats"
   | "advanced"
   | "debug"
-  | "referral"
   | "billing"
   | "about";
 
@@ -104,7 +97,6 @@ const LAUNCH_HIDDEN_SECTIONS = new Set<SidebarSection>([
   "snippets",
   "stats",
   "debug",
-  "referral",
   "about",
 ]);
 
@@ -186,12 +178,6 @@ export const SECTIONS_CONFIG = {
       settings.debug_mode === true,
   },
   // ── Bas de sidebar ────────────────────────────────────
-  referral: {
-    labelKey: "sidebar.referral",
-    icon: Gift,
-    component: ReferralSettings,
-    enabled: () => isLaunchVisible("referral"),
-  },
   billing: {
     labelKey: "sidebar.billing",
     icon: CreditCard,

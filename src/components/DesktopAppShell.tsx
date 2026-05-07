@@ -44,6 +44,14 @@ type DesktopAppShellProps = {
 };
 
 const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
+const NAVIGATE_SETTINGS_SCROLL_RETRIES = 12;
+
+type NavigateSettingsDetail =
+  | SidebarSection
+  | {
+      section: SidebarSection;
+      scrollToId?: string;
+    };
 
 const renderSettingsContent = (section: SidebarSection, settings: unknown) => {
   if (!isSectionVisibleInLaunch(section, settings)) {
@@ -98,19 +106,52 @@ export function DesktopAppShell({
   }, [currentSection, settings, setCurrentSection]);
 
   useEffect(() => {
+    let pendingScrollTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleScrollToTarget = (targetId: string) => {
+      let attempts = 0;
+
+      const tryScroll = () => {
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+
+        attempts += 1;
+        if (attempts < NAVIGATE_SETTINGS_SCROLL_RETRIES) {
+          pendingScrollTimer = setTimeout(tryScroll, 80);
+        }
+      };
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(tryScroll);
+      });
+    };
+
     const handleNavigateSettings = (event: Event) => {
-      const section = (event as CustomEvent<SidebarSection>).detail;
+      const detail = (event as CustomEvent<NavigateSettingsDetail>).detail;
+      const section =
+        typeof detail === "string" ? detail : (detail?.section ?? null);
+
       if (section && isSectionVisibleInLaunch(section, settings)) {
         setCurrentSection(section);
+        if (typeof detail === "object" && detail?.scrollToId) {
+          scheduleScrollToTarget(detail.scrollToId);
+        }
       }
     };
 
     window.addEventListener(NAVIGATE_SETTINGS_EVENT, handleNavigateSettings);
-    return () =>
+    return () => {
+      if (pendingScrollTimer) {
+        clearTimeout(pendingScrollTimer);
+      }
       window.removeEventListener(
         NAVIGATE_SETTINGS_EVENT,
         handleNavigateSettings,
       );
+    };
   }, [settings, setCurrentSection]);
 
   return (

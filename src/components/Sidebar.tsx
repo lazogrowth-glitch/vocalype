@@ -6,7 +6,7 @@ import { useSettings } from "../hooks/useSettings";
 import { usePlan } from "@/lib/subscription/context";
 import { SECTIONS_CONFIG } from "./sections-config";
 
-const BOTTOM_SECTION_IDS = new Set(["billing", "referral", "about", "debug"]);
+const BOTTOM_SECTION_IDS = new Set(["billing", "about", "debug"]);
 
 interface SidebarProps {
   activeSection: import("./sections-config").SidebarSection;

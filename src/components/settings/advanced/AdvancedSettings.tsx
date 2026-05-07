@@ -8,10 +8,10 @@ import { AutoSubmit } from "../AutoSubmit";
 import { AppendTrailingSpace } from "../AppendTrailingSpace";
 import { AdaptiveVocabularyToggle } from "../AdaptiveVocabularyToggle";
 import { StartupToggle } from "../StartupToggle";
-import { DevWorkflowToggle } from "../DevWorkflowToggle";
 import { AppLanguageSelector } from "../AppLanguageSelector";
 import { LanguageSelector } from "../LanguageSelector";
 import { ShortcutInput } from "../ShortcutInput";
+import { CloudPostProcessToggle } from "../post-processing/CloudPostProcessToggle";
 import {
   TranscribeFileButton,
   ExportHistoryButton,
@@ -50,7 +50,16 @@ export const AdvancedSettings: React.FC = () => {
         <CustomWords descriptionMode="tooltip" grouped />
         <AdaptiveVocabularyToggle descriptionMode="inline" grouped />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
-        <DevWorkflowToggle />
+      </SettingsGroup>
+
+      <SettingsGroup
+        title={t("settings.advanced.groups.cloudModels", {
+          defaultValue: "Modèles Cloud",
+        })}
+      >
+        <div id="cloud-post-process-toggle">
+          <CloudPostProcessToggle />
+        </div>
       </SettingsGroup>
 
       <SettingsGroup

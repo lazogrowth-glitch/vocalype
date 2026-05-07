@@ -11,7 +11,6 @@ import type {
 import { useSettings } from "../../../hooks/useSettings";
 import { ToggleSwitch } from "../../ui/ToggleSwitch";
 import { Button } from "../../ui/Button";
-import { VoiceToCode } from "./VoiceToCode";
 const CATEGORY_OPTIONS: AppContextCategory[] = [
   "code",
   "email",
@@ -321,12 +320,6 @@ export const AppContextSettings: React.FC = () => {
           </div>
         </div>
       )}
-
-      <div className="h-3" aria-hidden="true" />
-
-      <VoiceToCode />
-
-      <div className="h-3" aria-hidden="true" />
 
       <div
         style={{ padding: "10px 16px" }}

@@ -369,6 +369,8 @@ export const useModelStore = create<ModelsStore>()(
           }),
         );
         get().loadModels();
+        // Reload current model in case the backend auto-selected this download.
+        get().loadCurrentModel();
       });
 
       listen<string>("model-extraction-started", (event) => {

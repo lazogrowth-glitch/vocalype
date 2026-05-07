@@ -1054,6 +1054,19 @@ impl ModelManager {
         // underlying files stay in sync.
         self.update_download_status()?;
 
+        // Auto-select this model if no model is currently selected.
+        // This covers the first-run flow: user downloads the only model →
+        // it becomes selected immediately without a manual click.
+        {
+            let current_settings = get_settings(&self.app_handle);
+            if current_settings.selected_model.is_empty() {
+                let mut updated = current_settings;
+                updated.selected_model = model_id.to_string();
+                write_settings(&self.app_handle, updated);
+                info!("Auto-selected newly downloaded model: {}", model_id);
+            }
+        }
+
         // Remove cancel flag on successful completion
         {
             let mut flags = self.cancel_flags.lock().unwrap_or_else(|e| e.into_inner());

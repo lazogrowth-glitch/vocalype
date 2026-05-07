@@ -51,6 +51,10 @@ struct ChatCompletionRequest {
     /// through the sampler.  Post-processing is a deterministic editing task —
     /// there is no benefit to stochastic sampling here.
     temperature: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reasoning_format: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    include_reasoning: Option<bool>,
     /// Stop generation at Qwen3 end-of-turn token — prevents the model from
     /// generating extra content after the answer, cutting latency on local providers.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -70,6 +74,32 @@ struct ChatChoice {
 #[derive(Debug, Deserialize)]
 struct ChatMessageResponse {
     content: Option<String>,
+}
+
+fn model_supports_hidden_reasoning(model: &str) -> bool {
+    model.starts_with("qwen/")
+}
+
+fn model_supports_include_reasoning(model: &str) -> bool {
+    model.starts_with("openai/gpt-oss-")
+}
+
+fn strip_reasoning_artifacts(content: &str) -> String {
+    let mut cleaned = content.trim().to_string();
+
+    loop {
+        let Some(start) = cleaned.find("<think>") else {
+            break;
+        };
+        let Some(end_relative) = cleaned[start..].find("</think>") else {
+            cleaned.truncate(start);
+            break;
+        };
+        let end = start + end_relative + "</think>".len();
+        cleaned.replace_range(start..end, "");
+    }
+
+    cleaned.trim().to_string()
 }
 
 /// Build headers for API requests based on provider type
@@ -199,6 +229,16 @@ pub async fn send_chat_completion_with_schema(
         max_tokens: Some(300),
         // Greedy decoding: fastest + deterministic for editing tasks.
         temperature: 0.0,
+        reasoning_format: if model_supports_hidden_reasoning(model) {
+            Some("hidden")
+        } else {
+            None
+        },
+        include_reasoning: if model_supports_include_reasoning(model) {
+            Some(false)
+        } else {
+            None
+        },
         // Qwen3 end-of-turn stop token — halts generation immediately after the
         // answer so llama-server doesn't pad with extra tokens.
         stop: if provider.id == "vocalype-llm" || provider.id == "ollama" {
@@ -232,10 +272,14 @@ pub async fn send_chat_completion_with_schema(
         .await
         .map_err(|e| format!("Failed to parse API response: {}", e))?;
 
-    Ok(completion
-        .choices
-        .first()
-        .and_then(|choice| choice.message.content.clone()))
+    Ok(completion.choices.first().and_then(|choice| {
+        choice
+            .message
+            .content
+            .as_deref()
+            .map(strip_reasoning_artifacts)
+            .filter(|content| !content.is_empty())
+    }))
 }
 
 /// Fetch available models from an OpenAI-compatible API

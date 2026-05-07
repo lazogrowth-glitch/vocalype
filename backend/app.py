@@ -2821,6 +2821,14 @@ def cloud_llm_proxy(user):
         "stream": False,
     }
 
+    reasoning_format = req_body.get("reasoning_format")
+    if isinstance(reasoning_format, str) and reasoning_format.strip():
+        payload["reasoning_format"] = reasoning_format.strip()
+
+    include_reasoning = req_body.get("include_reasoning")
+    if isinstance(include_reasoning, bool):
+        payload["include_reasoning"] = include_reasoning
+
     try:
         import requests as req_lib
         groq_resp = req_lib.post(

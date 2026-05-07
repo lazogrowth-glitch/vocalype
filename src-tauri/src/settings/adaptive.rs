@@ -687,7 +687,7 @@ fn detect_adaptive_machine_profile(app: &AppHandle, app_language: &str) -> Adapt
         power_mode: power_snapshot.power_mode,
         thermal_degraded: power_snapshot.thermal_degraded,
         runtime_power_snapshot_at: Some(power_snapshot.captured_at_ms),
-        recommended_model_id: preferred_model_for_locale(app_language),
+        recommended_model_id: PARAKEET_V3_MULTILINGUAL_ID.to_string(),
         secondary_model_id: secondary_model_for_locale(app_language, machine_tier),
         active_runtime_model_id: None,
     }
@@ -723,7 +723,7 @@ pub(crate) fn ensure_adaptive_profile(app: &AppHandle, settings: &mut AppSetting
         changed = true;
     } else if let Some(existing) = settings.adaptive_machine_profile.as_mut() {
         let current_selected_model = settings.selected_model.clone();
-        let new_recommended = preferred_model_for_locale(&settings.app_language);
+        let new_recommended = PARAKEET_V3_MULTILINGUAL_ID.to_string();
         let new_secondary =
             secondary_model_for_locale(&settings.app_language, existing.machine_tier);
         let has_diff = existing.profile_schema_version != ADAPTIVE_PROFILE_SCHEMA_VERSION

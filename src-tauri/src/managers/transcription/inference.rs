@@ -274,7 +274,7 @@ fn build_correction_terms(
     settings: &crate::settings::AppSettings,
     session_keyterms: &[String],
     session_glossary_terms: &[String],
-    active_model_id: Option<&str>,
+    _active_model_id: Option<&str>,
     profile: ParakeetDomainProfile,
 ) -> Vec<String> {
     let mut terms = settings.custom_words.clone();
@@ -294,14 +294,12 @@ fn build_correction_terms(
         terms.extend(session_glossary_terms.iter().cloned());
     }
 
-    if matches!(active_model_id, Some(id) if is_parakeet_v3_model_id(id)) {
-        if profile == ParakeetDomainProfile::General {
-            terms.extend(parakeet_builtin_correction_terms_with_profile(
-                &settings.selected_language,
-                profile,
-            ));
-            terms.extend(session_keyterms.iter().cloned());
-        }
+    if profile == ParakeetDomainProfile::General {
+        terms.extend(parakeet_builtin_correction_terms_with_profile(
+            &settings.selected_language,
+            profile,
+        ));
+        terms.extend(session_keyterms.iter().cloned());
     }
 
     let mut deduped = Vec::new();
@@ -698,12 +696,7 @@ impl TranscriptionManager {
             active_model_id.as_deref(),
             correction_profile,
         );
-        let correction_threshold = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
-        {
-            settings.word_correction_threshold.max(0.24)
-        } else {
-            settings.word_correction_threshold
-        };
+        let correction_threshold = settings.word_correction_threshold.max(0.24);
         push_timing(
             &mut timings,
             st,
@@ -764,40 +757,6 @@ impl TranscriptionManager {
             let transcribe_result = catch_unwind(AssertUnwindSafe(
                 || -> Result<EngineTranscriptionResult> {
                     match &mut engine {
-                        LoadedEngine::Parakeet(parakeet_engine) => {
-                            let boosted_audio = maybe_boost_low_energy_parakeet_audio(&audio);
-                            if let Some((_, gain)) = boosted_audio.as_ref() {
-                                info!(
-                                    "Applying low-energy boost to Parakeet input (gain={:.2})",
-                                    gain
-                                );
-                            }
-                            let params = ParakeetInferenceParams {
-                                timestamp_granularity: TimestampGranularity::Segment,
-                                ..Default::default()
-                            };
-                            parakeet_engine
-                                .transcribe_samples(
-                                    boosted_audio
-                                        .as_ref()
-                                        .map(|(samples, _)| samples.clone())
-                                        .unwrap_or(audio),
-                                    Some(params),
-                                )
-                                .map(|result| {
-                                    check_parakeet_language_drift(
-                                        &result.text,
-                                        &settings.selected_language,
-                                    );
-                                    EngineTranscriptionResult {
-                                        text: result.text,
-                                        segments: None,
-                                    }
-                                })
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Parakeet transcription failed: {}", e)
-                                })
-                        }
                         LoadedEngine::ParakeetV3(parakeet_engine) => {
                             let is_short_phrase = audio.len() < PARAKEET_SHORT_PHRASE_SAMPLES;
 
@@ -1170,16 +1129,11 @@ impl TranscriptionManager {
             )),
         );
         let finalize_started = std::time::Instant::now();
-        let corrected_result = if matches!(active_model_id.as_deref(), Some(id) if is_parakeet_v3_model_id(id))
-        {
-            finalize_parakeet_text_with_profile(
-                &corrected_result,
-                &settings.selected_language,
-                profile,
-            )
-        } else {
-            corrected_result
-        };
+        let corrected_result = finalize_parakeet_text_with_profile(
+            &corrected_result,
+            &settings.selected_language,
+            profile,
+        );
         record_parakeet_brain_stage(
             &self.app_handle,
             "after_finalize_parakeet_text",

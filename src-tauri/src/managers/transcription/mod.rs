@@ -1,11 +1,10 @@
 mod engine_loader;
 pub(crate) mod inference;
 
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
-use crate::context_detector::{AppContextCategory, AppTranscriptionContext};
+use crate::audio_toolkit::apply_custom_words;
+use crate::context_detector::AppTranscriptionContext;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
-use crate::model_ids::is_parakeet_v3_model_id;
 use crate::runtime_observability::PipelineStepTiming;
 use crate::settings::{get_settings, set_active_runtime_model, NpuKind};
 use crate::transcription_confidence::{
@@ -26,13 +25,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
-use transcribe_rs::{
-    engines::parakeet::{
-        ParakeetEngine as TranscribeParakeetEngine, ParakeetInferenceParams, ParakeetModelParams,
-        TimestampGranularity,
-    },
-    TranscriptionEngine,
-};
 
 const MODEL_UNLOAD_IDLE_MS: u64 = 10_000;
 const ACTIVE_SESSION_STALE_MS: u64 = 30_000;
@@ -140,7 +132,6 @@ struct EngineTranscriptionResult {
 }
 
 enum LoadedEngine {
-    Parakeet(TranscribeParakeetEngine),
     ParakeetV3(ParakeetTDT),
 }
 
@@ -301,20 +292,10 @@ impl TranscriptionManager {
 
     fn filter_transcription_output_for_context(
         text: String,
-        model_id: Option<&str>,
-        app_context: Option<&AppTranscriptionContext>,
+        _model_id: Option<&str>,
+        _app_context: Option<&AppTranscriptionContext>,
     ) -> String {
-        if matches!(
-            app_context.map(|context| context.category),
-            Some(AppContextCategory::Code)
-        ) {
-            return text;
-        }
-
-        match model_id {
-            Some(id) if is_parakeet_v3_model_id(id) => text,
-            _ => filter_transcription_output(&text),
-        }
+        text
     }
 
     pub fn new(app_handle: &AppHandle, model_manager: Arc<ModelManager>) -> Result<Self> {
@@ -457,12 +438,6 @@ impl TranscriptionManager {
 
         {
             let mut engine = self.lock_engine();
-            if let Some(ref mut loaded_engine) = *engine {
-                match loaded_engine {
-                    LoadedEngine::Parakeet(ref mut e) => e.unload_model(),
-                    LoadedEngine::ParakeetV3(_) => {}
-                }
-            }
             *engine = None; // Drop the engine to free memory
         }
         {

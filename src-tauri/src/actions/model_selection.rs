@@ -1,5 +1,4 @@
 use crate::managers::model::{ModelInfo, ModelManager};
-use crate::model_ids::is_parakeet_v3_model_id;
 use crate::settings::AppSettings;
 
 pub(super) fn normalize_language_for_model_support(language: &str) -> &str {
@@ -51,10 +50,6 @@ pub(super) fn resolve_runtime_model_override(
     settings: &AppSettings,
 ) -> Option<(ModelInfo, String)> {
     let model_info = current_model_info?;
-
-    if !is_parakeet_v3_model_id(&model_info.id) {
-        return None;
-    }
 
     if settings.translate_to_english && !model_info.supports_translation {
         let fallback = find_best_model_fallback(model_manager, settings, true, &model_info.id)?;

@@ -67,89 +67,68 @@ impl TranscriptionManager {
         // Create appropriate engine based on model type
         let loaded_engine = match model_info.engine_type {
             EngineType::Parakeet => {
-                if is_parakeet_v3_model_id(model_id) {
-                    let provider_candidates = parakeet_v3_provider_candidates(&self.app_handle);
-                    let mut last_error = None;
-                    let mut loaded_engine = None;
+                let provider_candidates = parakeet_v3_provider_candidates(&self.app_handle);
+                let mut last_error = None;
+                let mut loaded_engine = None;
 
-                    // Cache pre-optimized ONNX sessions in AppData to skip the
-                    // Level3 graph optimization on subsequent launches (~2-3s → ~300ms).
-                    let ort_cache_dir = self
-                        .app_handle
-                        .path()
-                        .app_data_dir()
-                        .ok()
-                        .map(|d| d.join("cache").join("parakeet").join(model_id));
+                // Cache pre-optimized ONNX sessions in AppData to skip the
+                // Level3 graph optimization on subsequent launches (~2-3s → ~300ms).
+                let ort_cache_dir = self
+                    .app_handle
+                    .path()
+                    .app_data_dir()
+                    .ok()
+                    .map(|d| d.join("cache").join("parakeet").join(model_id));
 
-                    for provider in provider_candidates {
-                        let provider_label = parakeet_provider_label(provider);
-                        info!(
-                            "Attempting to load Parakeet V3 '{}' with provider {}",
-                            model_id, provider_label
-                        );
+                for provider in provider_candidates {
+                    let provider_label = parakeet_provider_label(provider);
+                    info!(
+                        "Attempting to load Parakeet V3 '{}' with provider {}",
+                        model_id, provider_label
+                    );
 
-                        match ParakeetTDT::from_pretrained_with_cache(
-                            &model_path,
-                            Some(parakeet_v3_execution_config(provider)),
-                            ort_cache_dir.as_deref(),
-                        ) {
-                            Ok(engine) => {
-                                info!(
-                                    "Loaded Parakeet V3 '{}' with provider {}",
-                                    model_id, provider_label
-                                );
-                                loaded_engine = Some(engine);
-                                break;
-                            }
-                            Err(err) => {
-                                warn!(
-                                    "Parakeet V3 provider {} failed for '{}': {}",
-                                    provider_label, model_id, err
-                                );
-                                last_error =
-                                    Some(format!("provider {} failed: {}", provider_label, err));
-                            }
+                    match ParakeetTDT::from_pretrained_with_cache(
+                        &model_path,
+                        Some(parakeet_v3_execution_config(provider)),
+                        ort_cache_dir.as_deref(),
+                    ) {
+                        Ok(engine) => {
+                            info!(
+                                "Loaded Parakeet V3 '{}' with provider {}",
+                                model_id, provider_label
+                            );
+                            loaded_engine = Some(engine);
+                            break;
+                        }
+                        Err(err) => {
+                            warn!(
+                                "Parakeet V3 provider {} failed for '{}': {}",
+                                provider_label, model_id, err
+                            );
+                            last_error =
+                                Some(format!("provider {} failed: {}", provider_label, err));
                         }
                     }
-
-                    let engine = loaded_engine.ok_or_else(|| {
-                        let error_msg = format!(
-                            "Failed to load Parakeet V3 model {}: {}",
-                            model_id,
-                            last_error.unwrap_or_else(|| "no provider succeeded".to_string())
-                        );
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
-                        anyhow::anyhow!(error_msg)
-                    })?;
-                    LoadedEngine::ParakeetV3(engine)
-                } else {
-                    let mut engine = TranscribeParakeetEngine::new();
-                    engine
-                        .load_model_with_params(&model_path, ParakeetModelParams::int8())
-                        .map_err(|e| {
-                            let error_msg =
-                                format!("Failed to load parakeet model {}: {}", model_id, e);
-                            let _ = self.app_handle.emit(
-                                "model-state-changed",
-                                ModelStateEvent {
-                                    event_type: "loading_failed".to_string(),
-                                    model_id: Some(model_id.to_string()),
-                                    model_name: Some(model_info.name.clone()),
-                                    error: Some(error_msg.clone()),
-                                },
-                            );
-                            anyhow::anyhow!(error_msg)
-                        })?;
-                    LoadedEngine::Parakeet(engine)
                 }
+
+                let engine = loaded_engine.ok_or_else(|| {
+                    let error_msg = format!(
+                        "Failed to load Parakeet V3 model {}: {}",
+                        model_id,
+                        last_error.unwrap_or_else(|| "no provider succeeded".to_string())
+                    );
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.clone()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::ParakeetV3(engine)
             }
         };
 

@@ -535,22 +535,8 @@ fn preferred_transcription_language_from_locale(locale: &str) -> String {
     }
 }
 
-fn preferred_model_for_locale(locale: &str) -> String {
-    let _ = locale;
-    PARAKEET_V3_MULTILINGUAL_ID.to_string()
-}
-
-fn secondary_model_for_locale(locale: &str, tier: MachineTier) -> Option<String> {
-    let base_language = locale.split('-').next().unwrap_or("en");
-    if base_language == "en" {
-        return Some("turbo".to_string());
-    }
-
-    match tier {
-        MachineTier::High => Some("large".to_string()),
-        MachineTier::Medium => Some("turbo".to_string()),
-        MachineTier::Low => Some("small".to_string()),
-    }
+fn secondary_model_for_locale(_locale: &str, _tier: MachineTier) -> Option<String> {
+    None
 }
 
 fn default_show_tray_icon() -> bool {

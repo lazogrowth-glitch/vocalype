@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
@@ -11,8 +11,6 @@ import type { ModelInfo } from "@/bindings";
 const PRIMARY_LOCAL_MODEL_ID = "parakeet-tdt-0.6b-v3-multilingual";
 const isPrimaryModel = (model: ModelInfo): boolean =>
   model.id === PRIMARY_LOCAL_MODEL_ID;
-
-type ModelsTab = "transcription";
 
 interface AdaptiveProfileSnapshot {
   machine_tier: "low" | "medium" | "high";
@@ -36,7 +34,6 @@ const isCopilotOptimizedParakeet = (
 
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<ModelsTab>("transcription");
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
   const [cancellingModelId, setCancellingModelId] = useState<string | null>(
     null,
@@ -147,31 +144,8 @@ export const ModelsSettings: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div
-        className="flex border-b border-white/8"
-        style={{ gap: 4 }}
-        role="tablist"
-      >
-        {(["transcription"] as const).map((tab) => (
-          <button
-            key={tab}
-            role="tab"
-            aria-selected={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
-            style={{ padding: "7px 14px 9px" }}
-            className={`border-b-2 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 ${
-              activeTab === tab
-                ? "border-logo-primary text-logo-primary"
-                : "border-transparent text-white/40 hover:text-white/65"
-            }`}
-          >
-            {t(`settings.models.tabs.${tab}`)}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "transcription" && visibleModels.length > 0 ? (
-        <div className="flex flex-col gap-3 pt-6" role="tabpanel">
+      {visibleModels.length > 0 ? (
+        <div className="flex flex-col gap-3 pt-2">
           <p className="voca-label-caps mb-1">
             {t("settings.models.yourModels")}
           </p>
@@ -195,11 +169,11 @@ export const ModelsSettings: React.FC = () => {
             />
           ))}
         </div>
-      ) : activeTab === "transcription" ? (
+      ) : (
         <div className="py-8 text-center text-text/50">
           {t("settings.models.noModelsMatch")}
         </div>
-      ) : null}
+      )}
     </div>
   );
 };

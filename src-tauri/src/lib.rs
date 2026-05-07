@@ -124,7 +124,7 @@ const MAIN_WINDOW_HEIGHT: f64 = 875.0;
 const MIN_MAIN_WINDOW_WIDTH: f64 = 760.0;
 const MIN_MAIN_WINDOW_HEIGHT: f64 = 540.0;
 const MAX_MAIN_WINDOW_SCALE: f64 = 1.0;
-const LAUNCH_HIDDEN_WORKSPACES_ENABLED: bool = false;
+const LAUNCH_HIDDEN_WORKSPACES_ENABLED: bool = true;
 
 fn create_browser_auth_state() -> String {
     rand::thread_rng()

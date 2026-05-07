@@ -21,6 +21,18 @@ const GeneralSettings = React.lazy(() =>
   })),
 );
 
+const MeetingsSettings = React.lazy(() =>
+  import("./settings/meetings/MeetingsSettings").then((m) => ({
+    default: m.MeetingsSettings,
+  })),
+);
+
+const NotesSettings = React.lazy(() =>
+  import("./settings/notes/NotesSettings").then((m) => ({
+    default: m.NotesSettings,
+  })),
+);
+
 const AdvancedSettings = React.lazy(() =>
   import("./settings/advanced/AdvancedSettings").then((m) => ({
     default: m.AdvancedSettings,
@@ -89,8 +101,6 @@ export type SidebarSection =
 
 const LAUNCH_HIDDEN_SECTIONS = new Set<SidebarSection>([
   "models",
-  "meetings",
-  "notes",
   "snippets",
   "stats",
   "debug",
@@ -142,14 +152,14 @@ export const SECTIONS_CONFIG = {
   meetings: {
     labelKey: "sidebar.meetings",
     icon: Mic,
-    component: GeneralSettings,
-    enabled: () => isLaunchVisible("meetings"),
+    component: MeetingsSettings,
+    enabled: () => true,
   },
   notes: {
     labelKey: "sidebar.notes",
     icon: NotebookPen,
-    component: GeneralSettings,
-    enabled: () => isLaunchVisible("notes"),
+    component: NotesSettings,
+    enabled: () => true,
   },
   stats: {
     labelKey: "sidebar.stats",

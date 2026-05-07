@@ -2,57 +2,11 @@ use super::*;
 use crate::managers::model::ModelInfo;
 
 impl TranscriptionManager {
-    fn local_parakeet_backbone_candidates(
-        &self,
-        model_id: &str,
-    ) -> Vec<(&'static str, std::path::PathBuf)> {
-        if !is_parakeet_v3_model_id(model_id) {
-            return Vec::new();
-        }
-
-        let settings = get_settings(&self.app_handle);
-        let language = settings.selected_language.trim().to_ascii_lowercase();
-        let root = std::path::PathBuf::from(r"C:\developer\sas");
-        let default_backbone = root
-            .join("quant-sweeps")
-            .join("encoder-quint8-attn-proj-outonly-late12");
-        let english_backbone = root
-            .join("quant-sweeps")
-            .join("encoder-quint8-attn-proj-perchannel");
-        match language.as_str() {
-            "en" => vec![
-                ("english-perchannel", english_backbone),
-                ("default-late12", default_backbone),
-            ],
-            "fr" | "es" | "auto" => vec![("default-late12", default_backbone)],
-            _ => vec![("default-late12", default_backbone)],
-        }
-    }
-
-    fn parakeet_backbone_is_usable(path: &std::path::Path) -> bool {
-        [
-            "decoder_joint-model.int8.onnx",
-            "encoder-model.onnx",
-            "nemo128.onnx",
-            "vocab.txt",
-        ]
-        .iter()
-        .all(|name| path.join(name).exists())
-    }
-
     fn resolve_runtime_model_path(
         &self,
         model_id: &str,
         _model_info: &ModelInfo,
     ) -> Result<(std::path::PathBuf, Option<String>)> {
-        if is_parakeet_v3_model_id(model_id) {
-            for (label, candidate) in self.local_parakeet_backbone_candidates(model_id) {
-                if Self::parakeet_backbone_is_usable(&candidate) {
-                    return Ok((candidate, Some(label.to_string())));
-                }
-            }
-        }
-
         Ok((self.model_manager.get_model_path(model_id)?, None))
     }
 

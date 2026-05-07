@@ -1044,7 +1044,6 @@ pub fn run(cli_args: CliArgs) {
         commands::app_context::set_app_context_override,
         commands::app_context::remove_app_context_override,
         commands::app_context::set_app_context_enabled,
-        commands::agent::dismiss_agent_overlay,
         secret_store::get_secure_auth_token,
         secret_store::set_secure_auth_token,
         secret_store::clear_secure_auth_token,

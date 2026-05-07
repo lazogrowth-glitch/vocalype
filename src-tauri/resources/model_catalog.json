@@ -46,23 +46,6 @@
       "is_recommended": true,
       "supported_languages_ref": "parakeet_v3_multilingual",
       "requires_license_key": true
-    },
-    {
-      "id": "parakeet-tdt-0.6b-v3",
-      "name": "Parakeet V3",
-      "description": "Legacy alias for Parakeet V3. Redirects to the single Parakeet V3 model entry.",
-      "filename": "parakeet-tdt-0.6b-v3-int8",
-      "asset_path": "parakeet-v3-int8.tar.gz",
-      "expected_etag": null,
-      "size_mb": 478,
-      "is_directory": true,
-      "engine_type": "Parakeet",
-      "accuracy_score": 0.0,
-      "speed_score": 0.0,
-      "supports_translation": false,
-      "is_recommended": false,
-      "supported_languages_ref": "parakeet_v3_multilingual",
-      "requires_license_key": true
     }
   ]
 }

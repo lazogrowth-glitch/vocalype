@@ -131,11 +131,7 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const visibleModels = useMemo(
-    () =>
-      models.filter(
-        (model: ModelInfo) =>
-          isPrimaryModel(model) && model.id !== "parakeet-tdt-0.6b-v3",
-      ),
+    () => models.filter((model: ModelInfo) => isPrimaryModel(model)),
     [models],
   );
 

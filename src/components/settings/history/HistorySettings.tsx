@@ -3,19 +3,13 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import {
-  Copy,
-  Star,
   Check,
-  Trash2,
-  RefreshCw,
   Loader2,
   Download,
   FileAudio,
   Eraser,
   Sparkles,
-  Pencil,
   X,
-  Share2,
 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -28,7 +22,6 @@ import {
 } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
-import { useModelStore } from "@/stores/modelStore";
 import { ConfidenceText } from "./ConfidenceText";
 import { usePlan } from "@/lib/subscription/context";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
@@ -529,14 +522,6 @@ export const HistorySettings: React.FC = () => {
     };
   }, []);
 
-  const openRecordingsFolder = async () => {
-    try {
-      await commands.openRecordingsFolder();
-    } catch (error) {
-      console.error("Failed to open recordings folder:", error);
-    }
-  };
-
   if (loading) {
     return (
       <div
@@ -800,17 +785,14 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
   const [showShared, setShowShared] = useState(false);
-  const [showModelPicker, setShowModelPicker] = useState(false);
-  const [reprocessing, setReprocessing] = useState(false);
+  void showShared;
   const [processingActionKey, setProcessingActionKey] = useState<number | null>(
     null,
   );
   const [clearingPostProcess, setClearingPostProcess] = useState(false);
-  const [showAllActions, setShowAllActions] = useState(false);
   const [showAudio, setShowAudio] = useState(false);
   const [showTransform, setShowTransform] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const pickerRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // ── Inline edit state ────────────────────────────────────────────────────
@@ -905,19 +887,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     }
     setCorrectionSuggestions((prev) => prev.filter((x) => x.from !== s.from));
   };
-  const models = useModelStore((s) => s.models);
-
-  const downloadedModels = models.filter(
-    (m) => m.id === "parakeet-tdt-0.6b-v3-multilingual" && m.is_downloaded,
-  );
   const sortedPostProcessActions = [...postProcessActions].sort(
     (a, b) => a.key - b.key,
   );
-  const visiblePostProcessActions = showAllActions
-    ? sortedPostProcessActions
-    : sortedPostProcessActions.slice(0, 4);
-  const hiddenActionCount =
-    sortedPostProcessActions.length - visiblePostProcessActions.length;
+  const visiblePostProcessActions = sortedPostProcessActions.slice(0, 4);
+  void visiblePostProcessActions;
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -949,6 +923,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       /* ignore */
     }
   };
+
+  void handleShare;
 
   const handleCopyExplicitText = async (
     text: string,
@@ -1041,18 +1017,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     }
   };
 
-  const handleReprocess = async (modelId: string) => {
-    setShowModelPicker(false);
-    setReprocessing(true);
-    try {
-      await commands.reprocessHistoryEntry(entry.id, modelId);
-    } catch (error) {
-      console.error("Failed to reprocess entry:", error);
-    } finally {
-      setReprocessing(false);
-    }
-  };
-
   const handleApplyAction = async (action: PostProcessAction) => {
     if (processingActionKey !== null) return;
     setProcessingActionKey(action.key);
@@ -1109,17 +1073,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       setClearingPostProcess(false);
     }
   };
-
-  useEffect(() => {
-    if (!showModelPicker) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setShowModelPicker(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showModelPicker]);
 
   useEffect(() => {
     if (!showMoreMenu) return;

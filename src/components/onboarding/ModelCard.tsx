@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Globe, Loader2, Trash2 } from "lucide-react";
+import { Globe, Loader2, Trash2 } from "lucide-react";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
 import {
@@ -19,17 +19,6 @@ function formatEta(remainingBytes: number, speedMbps: number): string | null {
   return `~${Math.ceil(seconds / 60)}min`;
 }
 
-type ProductBadge = {
-  label: string;
-  variant:
-    | "primary"
-    | "success"
-    | "secondary"
-    | "quality"
-    | "speed"
-    | "experimental";
-};
-
 const getLanguageDisplayText = (
   supportedLanguages: string[],
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -41,27 +30,6 @@ const getLanguageDisplayText = (
     return t("modelSelector.capabilities.languageOnly", { language: langName });
   }
   return t("modelSelector.capabilities.multiLanguage");
-};
-
-const getProductBadges = (
-  model: ModelInfo,
-  t: (key: string, options?: Record<string, unknown>) => string,
-  copilotOptimized: boolean,
-): ProductBadge[] => {
-  const hardwareBadges: ProductBadge[] = copilotOptimized
-    ? [{ label: "Optimized Copilot+", variant: "success" }]
-    : [];
-
-  return [
-    { label: t("onboarding.recommended"), variant: "primary" },
-    {
-      label: t("modelSelector.badges.multilingualExperimental", {
-        defaultValue: "Multilingual",
-      }),
-      variant: "secondary",
-    },
-    ...hardwareBadges,
-  ];
 };
 
 export type ModelCardStatus =
@@ -100,8 +68,6 @@ const ModelCard: React.FC<ModelCardProps> = ({
   onCancel,
   downloadProgress,
   downloadSpeed,
-  showRecommended = true,
-  copilotOptimized = false,
 }) => {
   const { t } = useTranslation();
   const isFeatured = variant === "featured";
@@ -110,7 +76,6 @@ const ModelCard: React.FC<ModelCardProps> = ({
 
   const displayName = getTranslatedModelName(model, t);
   const displayDescription = getTranslatedModelDescription(model, t);
-  const productBadges = getProductBadges(model, t, copilotOptimized);
 
   const getInteractiveClasses = () => {
     if (!isClickable) return "";

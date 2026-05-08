@@ -102,6 +102,56 @@ export function getUserFacingErrorMessage(
   }
 
   if (
+    raw === "NO_AI_PROVIDER_CONFIGURED" ||
+    normalized.includes("no ai provider configured") ||
+    normalized.includes("no ai model configured") ||
+    normalized.includes("no_ai_provider_configured")
+  ) {
+    return translate(
+      options.t,
+      "errors.userFacing.aiProviderMissing",
+      "Configurez un modele IA dans Post-traitement pour utiliser cette action.",
+    );
+  }
+
+  if (
+    raw === "MEETING_EMPTY" ||
+    raw === "NOTE_EMPTY" ||
+    normalized.includes("meeting_empty") ||
+    normalized.includes("note_empty")
+  ) {
+    return translate(
+      options.t,
+      "errors.userFacing.emptySource",
+      "Ajoutez d'abord du contenu ou une transcription avant de lancer cette action.",
+    );
+  }
+
+  if (
+    raw === "MEETING_NOT_FOUND" ||
+    raw === "NOTE_NOT_FOUND" ||
+    normalized.includes("meeting_not_found") ||
+    normalized.includes("note_not_found")
+  ) {
+    return translate(
+      options.t,
+      "errors.userFacing.itemMissing",
+      "Cet element n'existe plus. Rechargez la liste et reessayez.",
+    );
+  }
+
+  if (
+    normalized.includes("failed to generate") ||
+    normalized.includes("failed to extract")
+  ) {
+    return translate(
+      options.t,
+      "errors.userFacing.aiActionFailed",
+      "L'action IA n'a pas pu aboutir. Verifiez votre configuration puis reessayez.",
+    );
+  }
+
+  if (
     normalized.includes("network") ||
     normalized.includes("fetch") ||
     normalized.includes("connect") ||

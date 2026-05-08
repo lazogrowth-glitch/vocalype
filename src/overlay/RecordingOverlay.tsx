@@ -1,4 +1,4 @@
-import { listen } from "@tauri-apps/api/event";
+import { listen, type Event as TauriEvent } from "@tauri-apps/api/event";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
@@ -146,16 +146,19 @@ const RecordingOverlay: React.FC = () => {
     let active = true;
     const cleanups: Array<() => void> = [];
 
-    const register = (eventName: string, handler: any) => {
-      listen(eventName, handler).then((fn) => {
+    const register = <T,>(
+      eventName: string,
+      handler: (event: TauriEvent<T>) => void | Promise<void>,
+    ) => {
+      listen<T>(eventName, handler).then((fn) => {
         if (!active) fn();
         else cleanups.push(fn);
       });
     };
 
-    register("show-overlay", async (event: any) => {
+    register<OverlayState>("show-overlay", async (event) => {
       await syncLanguageFromSettings();
-      const overlayState = event.payload as OverlayState;
+      const overlayState = event.payload;
       setState(overlayState);
       setIsVisible(true);
       if (overlayState === "recording" || overlayState === "preparing") {
@@ -175,50 +178,52 @@ const RecordingOverlay: React.FC = () => {
       }
     });
 
-    register("transcription-lifecycle", async (event: any) => {
-      await syncLanguageFromSettings();
-      const lifecycleState = (event.payload as LifecycleStateEventPayload)
-        .state;
-      if (
-        lifecycleState === "idle" ||
-        lifecycleState === "completed" ||
-        lifecycleState === "cancelled" ||
-        lifecycleState === "error"
-      ) {
-        setIsVisible(false);
-        setSelectedAction(null);
-        setCancelPending(false);
-        setMicActive(false);
-        return;
-      }
-
-      setIsVisible(true);
-      if (lifecycleState === "preparing_microphone") {
-        setState("preparing");
-        setTimerStart(Date.now());
-        setSelectedAction(null);
-        return;
-      }
-
-      if (
-        lifecycleState === "recording" ||
-        lifecycleState === "paused" ||
-        lifecycleState === "stopping"
-      ) {
-        setState("recording");
-        if (lifecycleState === "recording") {
-          setTimerStart((prev) => (prev === 0 ? Date.now() : prev));
+    register<LifecycleStateEventPayload>(
+      "transcription-lifecycle",
+      async (event) => {
+        await syncLanguageFromSettings();
+        const lifecycleState = event.payload.state;
+        if (
+          lifecycleState === "idle" ||
+          lifecycleState === "completed" ||
+          lifecycleState === "cancelled" ||
+          lifecycleState === "error"
+        ) {
+          setIsVisible(false);
+          setSelectedAction(null);
+          setCancelPending(false);
+          setMicActive(false);
+          return;
         }
-        return;
-      }
 
-      if (lifecycleState === "transcribing") {
-        setState("transcribing");
-        return;
-      }
+        setIsVisible(true);
+        if (lifecycleState === "preparing_microphone") {
+          setState("preparing");
+          setTimerStart(Date.now());
+          setSelectedAction(null);
+          return;
+        }
 
-      setState("processing");
-    });
+        if (
+          lifecycleState === "recording" ||
+          lifecycleState === "paused" ||
+          lifecycleState === "stopping"
+        ) {
+          setState("recording");
+          if (lifecycleState === "recording") {
+            setTimerStart((prev) => (prev === 0 ? Date.now() : prev));
+          }
+          return;
+        }
+
+        if (lifecycleState === "transcribing") {
+          setState("transcribing");
+          return;
+        }
+
+        setState("processing");
+      },
+    );
 
     register("cancel-pending", () => {
       setCancelPending(true);
@@ -229,16 +234,16 @@ const RecordingOverlay: React.FC = () => {
       }, 1700);
     });
 
-    register("action-selected", (event: any) => {
-      setSelectedAction(event.payload as ActionInfo);
+    register<ActionInfo>("action-selected", (event) => {
+      setSelectedAction(event.payload);
     });
 
     register("action-deselected", () => {
       setSelectedAction(null);
     });
 
-    register("mic-level", (event: any) => {
-      const levels = event.payload as number[];
+    register<number[]>("mic-level", (event) => {
+      const levels = event.payload;
       const avg = levels.reduce((a, b) => a + b, 0) / levels.length;
       if (avg > 0.02) {
         setMicActive(true);

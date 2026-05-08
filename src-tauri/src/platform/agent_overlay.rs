@@ -97,6 +97,7 @@ pub fn show_agent_overlay(app: &AppHandle) {
     }
 }
 
+#[allow(dead_code)]
 pub fn hide_agent_overlay(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("agent_overlay") {
         let _ = window.hide();

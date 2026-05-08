@@ -1019,6 +1019,7 @@ pub fn run(cli_args: CliArgs) {
         commands::transcription::get_model_load_status,
         commands::transcription::unload_model_manually,
         commands::transcription::trigger_transcription_binding,
+        commands::transcription::toggle_transcription_binding,
         commands::history::get_history_entries,
         commands::history::get_history_entries_paginated,
         commands::history::toggle_history_entry_saved,

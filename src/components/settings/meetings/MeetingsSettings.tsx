@@ -502,6 +502,7 @@ export const MeetingsSettings: React.FC = () => {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
   const createMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -796,6 +797,7 @@ export const MeetingsSettings: React.FC = () => {
         }
         setMeetings((prev) => [created.data, ...prev]);
         setSelectedId(created.data.id);
+        invoke("set_active_meeting", { id: created.data.id }).catch(() => {});
       }
       await invoke("trigger_transcription_binding", {
         bindingId: "meeting_key",
@@ -963,7 +965,7 @@ export const MeetingsSettings: React.FC = () => {
     }
   };
 
-  const handleCopy = async () => {
+  const handleCopyTranscript = async () => {
     const text = editTranscriptRef.current.trim();
     if (!text) {
       toast.error("Aucune transcription à copier.");
@@ -971,7 +973,21 @@ export const MeetingsSettings: React.FC = () => {
     }
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Copié.");
+      toast.success("Transcription copiée.");
+    } catch {
+      toast.error("Impossible de copier.");
+    }
+  };
+
+  const handleCopySummary = async () => {
+    const text = selectedMeeting?.summary?.trim();
+    if (!text) {
+      toast.error("Aucun résumé disponible.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Résumé copié.");
     } catch {
       toast.error("Impossible de copier.");
     }
@@ -1023,6 +1039,16 @@ export const MeetingsSettings: React.FC = () => {
 
   const handleGenTitle = async () => {
     if (!selectedMeeting) return;
+    // Flush any pending save so the backend has the latest transcript before generating
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      await commands.updateMeeting(
+        selectedMeeting.id,
+        editTitleRef.current,
+        editTranscriptRef.current,
+      );
+    }
     toast.loading("Génération du titre...", { id: "m-title" });
     try {
       const r = await commands.generateMeetingTitle(selectedMeeting.id);
@@ -2038,15 +2064,79 @@ export const MeetingsSettings: React.FC = () => {
                 </div>
               </div>
               <div style={s.dhActions}>
-                <button
-                  className="mts-btn-ghost"
-                  style={s.btnGhost}
-                  title="Copier"
-                  onClick={() => void handleCopy()}
-                >
-                  <IcoShare size={14} color={T.txt2} />
-                  Partager
-                </button>
+                <div style={{ position: "relative" }}>
+                  <button
+                    className="mts-btn-ghost"
+                    style={s.btnGhost}
+                    onClick={() => setShowShareMenu((v) => !v)}
+                  >
+                    <IcoShare size={14} color={T.txt2} />
+                    Partager
+                  </button>
+                  {showShareMenu && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 6px)",
+                        left: 0,
+                        zIndex: 99,
+                        background: "#18181f",
+                        border: `1px solid ${T.line2}`,
+                        borderRadius: 10,
+                        padding: "4px 0",
+                        minWidth: 200,
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                      }}
+                      onMouseLeave={() => setShowShareMenu(false)}
+                    >
+                      {[
+                        {
+                          label: "Copier la transcription",
+                          fn: () => {
+                            setShowShareMenu(false);
+                            void handleCopyTranscript();
+                          },
+                        },
+                        {
+                          label: "Copier le résumé",
+                          fn: () => {
+                            setShowShareMenu(false);
+                            void handleCopySummary();
+                          },
+                        },
+                        {
+                          label: "Exporter en fichier…",
+                          fn: () => {
+                            setShowShareMenu(false);
+                            void handleExport();
+                          },
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          className="mts-menu-item"
+                          onClick={item.fn}
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            textAlign: "left",
+                            padding: "8px 14px",
+                            background: "none",
+                            border: "none",
+                            color: T.txt1,
+                            fontSize: 13,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div style={{ position: "relative" }} ref={moreMenuRef}>
                   <button
                     className="mts-btn-ghost"

@@ -32,6 +32,7 @@ static MIGRATIONS: &[M] = &[
         FOREIGN KEY(meeting_id) REFERENCES meetings(id) ON DELETE CASCADE
     );",
     ),
+    M::up("ALTER TABLE meetings ADD COLUMN kind TEXT NOT NULL DEFAULT 'meeting';"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -105,7 +106,9 @@ impl MeetingManager {
             return Ok(0);
         }
 
-        let version = if Self::table_exists(conn, "meeting_segments")? {
+        let version = if Self::column_exists(conn, "meetings", "kind")? {
+            8
+        } else if Self::table_exists(conn, "meeting_segments")? {
             7
         } else if Self::column_exists(conn, "meetings", "category")? {
             6
@@ -170,7 +173,10 @@ impl MeetingManager {
     pub fn get_meetings(&self) -> Result<Vec<MeetingEntry>> {
         let conn = self.open()?;
         let mut stmt = conn.prepare(
-            "SELECT id, title, app_name, transcript, category, is_pinned, is_archived, summary, action_items, created_at, updated_at FROM meetings ORDER BY is_archived ASC, is_pinned DESC, updated_at DESC",
+            "SELECT id, title, app_name, transcript, category, is_pinned, is_archived, summary, action_items, created_at, updated_at
+             FROM meetings
+             WHERE kind = 'meeting'
+             ORDER BY is_archived ASC, is_pinned DESC, updated_at DESC",
         )?;
         let rows = stmt
             .query_map([], |row| {
@@ -226,7 +232,7 @@ impl MeetingManager {
         let conn = self.open()?;
         let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
-            "INSERT INTO meetings (title, app_name, transcript, created_at, updated_at) VALUES (?1, ?2, '', ?3, ?4)",
+            "INSERT INTO meetings (title, app_name, transcript, created_at, updated_at, kind) VALUES (?1, ?2, '', ?3, ?4, 'meeting')",
             params![title, app_name, now, now],
         )?;
         let id = conn.last_insert_rowid();
@@ -250,7 +256,10 @@ impl MeetingManager {
         let conn = self.open()?;
         let source_segments = Self::load_segments(&conn, id)?;
         let mut stmt = conn.prepare(
-            "SELECT title, app_name, transcript, category, summary, action_items FROM meetings WHERE id = ?1 LIMIT 1",
+            "SELECT title, app_name, transcript, category, summary, action_items
+             FROM meetings
+             WHERE id = ?1 AND kind = 'meeting'
+             LIMIT 1",
         )?;
         let (title, app_name, transcript, category, summary, action_items): (
             String,
@@ -315,7 +324,7 @@ impl MeetingManager {
         let conn = self.open()?;
         let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
-            "UPDATE meetings SET transcript = transcript || ?1, updated_at = ?2 WHERE id = ?3",
+            "UPDATE meetings SET transcript = transcript || ?1, updated_at = ?2 WHERE id = ?3 AND kind = 'meeting'",
             params![segment, now, id],
         )?;
         conn.execute(
@@ -335,7 +344,7 @@ impl MeetingManager {
         let conn = self.open()?;
         let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
-            "UPDATE meetings SET title = ?1, transcript = ?2, updated_at = ?3 WHERE id = ?4",
+            "UPDATE meetings SET title = ?1, transcript = ?2, updated_at = ?3 WHERE id = ?4 AND kind = 'meeting'",
             params![title, transcript, now, id],
         )?;
         Ok(())
@@ -343,7 +352,10 @@ impl MeetingManager {
 
     pub fn delete_meeting(&self, id: i64) -> Result<()> {
         let conn = self.open()?;
-        conn.execute("DELETE FROM meetings WHERE id = ?1", params![id])?;
+        conn.execute(
+            "DELETE FROM meetings WHERE id = ?1 AND kind = 'meeting'",
+            params![id],
+        )?;
         Ok(())
     }
 
@@ -352,7 +364,8 @@ impl MeetingManager {
         let pattern = format!("%{}%", query);
         let mut stmt = conn.prepare(
             "SELECT id, title, app_name, transcript, category, is_pinned, is_archived, summary, action_items, created_at, updated_at FROM meetings
-             WHERE title LIKE ?1 OR transcript LIKE ?1 OR category LIKE ?1 OR summary LIKE ?1 OR action_items LIKE ?1
+             WHERE kind = 'meeting'
+               AND (title LIKE ?1 OR transcript LIKE ?1 OR category LIKE ?1 OR summary LIKE ?1 OR action_items LIKE ?1)
              ORDER BY is_archived ASC, is_pinned DESC, updated_at DESC",
         )?;
         let rows = stmt
@@ -409,7 +422,7 @@ impl MeetingManager {
         let conn = self.open()?;
         let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
-            "UPDATE meetings SET category = ?1, updated_at = ?2 WHERE id = ?3",
+            "UPDATE meetings SET category = ?1, updated_at = ?2 WHERE id = ?3 AND kind = 'meeting'",
             params![category.trim(), now, id],
         )?;
         Ok(())
@@ -419,7 +432,7 @@ impl MeetingManager {
         let conn = self.open()?;
         let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
-            "UPDATE meetings SET is_pinned = ?1, updated_at = ?2 WHERE id = ?3",
+            "UPDATE meetings SET is_pinned = ?1, updated_at = ?2 WHERE id = ?3 AND kind = 'meeting'",
             params![if pinned { 1 } else { 0 }, now, id],
         )?;
         Ok(())
@@ -429,7 +442,7 @@ impl MeetingManager {
         let conn = self.open()?;
         let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
-            "UPDATE meetings SET is_archived = ?1, updated_at = ?2 WHERE id = ?3",
+            "UPDATE meetings SET is_archived = ?1, updated_at = ?2 WHERE id = ?3 AND kind = 'meeting'",
             params![if archived { 1 } else { 0 }, now, id],
         )?;
         Ok(())
@@ -448,7 +461,7 @@ impl MeetingManager {
              SET summary = COALESCE(?1, summary),
                  action_items = COALESCE(?2, action_items),
                  updated_at = ?3
-             WHERE id = ?4",
+             WHERE id = ?4 AND kind = 'meeting'",
             params![summary, action_items, now, id],
         )?;
         Ok(())

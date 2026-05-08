@@ -153,5 +153,17 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "toggle_language".to_string(),
         Arc::new(ToggleLanguageAction) as Arc<dyn ShortcutAction>,
     );
+    map.insert(
+        "meeting_key".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "note_key".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+        }) as Arc<dyn ShortcutAction>,
+    );
     map
 });

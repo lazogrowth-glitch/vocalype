@@ -854,6 +854,14 @@ async triggerTranscriptionBinding(bindingId: string) : Promise<Result<null, stri
     else return { status: "error", error: e  as any };
 }
 },
+async toggleTranscriptionBinding(bindingId: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("toggle_transcription_binding", { bindingId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getHistoryEntries() : Promise<Result<HistoryEntry[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_history_entries") };

@@ -1,7 +1,7 @@
 /* eslint-disable i18next/no-literal-string */
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { commands } from "@/bindings";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 interface AgentResponsePayload {
@@ -66,7 +66,7 @@ export const AgentOverlay: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const dismiss = useCallback(async () => {
-    await commands.dismissAgentOverlay();
+    await getCurrentWindow().hide();
     setQuestion("");
     setResponse(null);
     setError(null);

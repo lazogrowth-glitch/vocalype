@@ -26,15 +26,6 @@ function formatDate(iso: string | null | undefined): string {
   }
 }
 
-function isPlaceholderDate(iso: string | null | undefined): boolean {
-  if (!iso) return false;
-  try {
-    return new Date(iso).getFullYear() >= 2090;
-  } catch {
-    return false;
-  }
-}
-
 function UsageBar({ used, limit }: { used: number; limit: number }) {
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const isHigh = pct >= 80;
@@ -107,7 +98,6 @@ export const BillingSettings: React.FC = () => {
 
   const sub = session?.subscription;
   const isPremium = sub?.tier === "premium";
-  const canManageBilling = sub?.can_manage_billing ?? false;
 
   // Tier label
   const tierLabel = isTrialing

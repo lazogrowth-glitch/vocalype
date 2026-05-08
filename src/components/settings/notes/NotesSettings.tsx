@@ -86,21 +86,21 @@ function InfoPanel({
   }
 
   return (
-    <div className="rounded-[16px] border border-white/8 bg-white/[0.03]">
-      <div className="flex items-center gap-2 border-b border-white/6 px-4 py-3">
+    <div className="voca-insight-panel">
+      <div className="flex items-center gap-3 border-b border-white/6 px-5 py-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-logo-primary/18 bg-logo-primary/[0.08] text-logo-primary/82">
           {icon}
         </div>
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.08em] text-white/64 uppercase">
+          <p className="text-[11px] font-semibold tracking-[0.08em] text-white/60 uppercase">
             {label}
           </p>
-          <p className="text-[10.5px] text-white/24">
+          <p className="mt-1 text-[10.5px] text-white/28">
             {t("common.words", { count: countWords(value) })}
           </p>
         </div>
       </div>
-      <div className="px-4 py-4 text-[12.5px] leading-7 whitespace-pre-wrap text-white/72">
+      <div className="px-5 py-5 text-[12.5px] leading-7 whitespace-pre-wrap text-white/74">
         {value}
       </div>
     </div>
@@ -133,6 +133,32 @@ export const NotesSettings: React.FC = () => {
   const selectedNoteRef = useRef<NoteEntry | null>(null);
   const editTitleRef = useRef("");
   const editContentRef = useRef("");
+
+  const requireNoteForAction = (
+    note: NoteEntry | null,
+    requiresContent = false,
+  ): note is NoteEntry => {
+    if (!note) {
+      toast.error(
+        t("notes.selectOrCreate", {
+          defaultValue: "Selectionnez une note ou creez-en une nouvelle",
+        }),
+      );
+      return false;
+    }
+
+    if (requiresContent && !editContentRef.current.trim()) {
+      toast.error(
+        t("notes.contentRequired", {
+          defaultValue:
+            "Ajoutez d'abord du contenu avant d'utiliser cette action.",
+        }),
+      );
+      return false;
+    }
+
+    return true;
+  };
 
   const loadNotes = useCallback(async () => {
     const res = await commands.getNotes();
@@ -274,9 +300,10 @@ export const NotesSettings: React.FC = () => {
         }
         setNotes((prev) => [created.data, ...prev]);
         setSelectedId(created.data.id);
+        await commands.setActiveNote(created.data.id);
       }
 
-      await invoke("trigger_transcription_binding", { bindingId: "note_key" });
+      await invoke("toggle_transcription_binding", { bindingId: "note_key" });
     } catch (error) {
       toast.error(
         t("notes.captureError", {
@@ -306,7 +333,7 @@ export const NotesSettings: React.FC = () => {
   };
 
   const handleExportNote = async () => {
-    if (!selectedNote) {
+    if (!requireNoteForAction(selectedNote)) {
       return;
     }
 
@@ -356,7 +383,7 @@ export const NotesSettings: React.FC = () => {
     try {
       const selected = await open({
         multiple: false,
-        filters: [{ name: "Audio", extensions: ["wav", "flac"] }],
+        filters: [{ name: "Audio WAV", extensions: ["wav", "wave"] }],
       });
       if (!selected || typeof selected !== "string") {
         return;
@@ -471,7 +498,7 @@ export const NotesSettings: React.FC = () => {
   };
 
   const handleSummarizeNote = async () => {
-    if (!selectedNote) {
+    if (!requireNoteForAction(selectedNote, true)) {
       return;
     }
 
@@ -515,7 +542,7 @@ export const NotesSettings: React.FC = () => {
   };
 
   const handleExtractActions = async () => {
-    if (!selectedNote) {
+    if (!requireNoteForAction(selectedNote, true)) {
       return;
     }
 
@@ -559,7 +586,7 @@ export const NotesSettings: React.FC = () => {
   };
 
   const handleGenerateTitle = async () => {
-    if (!selectedNote) {
+    if (!requireNoteForAction(selectedNote, true)) {
       return;
     }
 
@@ -1174,8 +1201,8 @@ export const NotesSettings: React.FC = () => {
               className="border-b border-white/8 bg-white/[0.02]"
               style={{ padding: "18px 22px 16px" }}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-0 basis-full">
                   <input
                     type="text"
                     placeholder={t("notes.titlePlaceholder", {
@@ -1183,14 +1210,14 @@ export const NotesSettings: React.FC = () => {
                     })}
                     value={editTitle}
                     onChange={(e) => handleTitleChange(e.target.value)}
-                    className="w-full bg-transparent text-[17px] font-semibold text-white/88 placeholder-white/20 outline-none"
+                    className="w-full bg-transparent text-[19px] font-semibold text-white/88 placeholder-white/20 outline-none"
                   />
-                  <p className="mt-1 text-[10.5px] text-white/25">
+                  <p className="mt-2 text-[11px] text-white/30">
                     {saving
                       ? t("notes.saving", { defaultValue: "Enregistrement..." })
                       : `${formatNoteDate(selectedNote.updated_at)} · ${t("common.words", { count: countWords(editContent) })}`}
                   </p>
-                  <div className="mt-3 max-w-[220px]">
+                  <div className="mt-3 max-w-[280px]">
                     <input
                       type="text"
                       list="note-categories"
@@ -1208,13 +1235,13 @@ export const NotesSettings: React.FC = () => {
                     </datalist>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
                     onClick={() => void handleGenerateTitle()}
                     variant="secondary"
                     size="sm"
-                    className="mt-1 shrink-0"
+                    className="shrink-0"
                   >
                     <Tag size={13} />
                     {t("notes.titleAi", { defaultValue: "Titre IA" })}
@@ -1224,7 +1251,7 @@ export const NotesSettings: React.FC = () => {
                     onClick={() => void handleExtractActions()}
                     variant="secondary"
                     size="sm"
-                    className="mt-1 shrink-0"
+                    className="shrink-0"
                   >
                     <CheckSquare size={13} />
                     {t("notes.actions", { defaultValue: "Actions" })}
@@ -1234,7 +1261,7 @@ export const NotesSettings: React.FC = () => {
                     onClick={() => void handleSummarizeNote()}
                     variant="secondary"
                     size="sm"
-                    className="mt-1 shrink-0"
+                    className="shrink-0"
                   >
                     <Sparkles size={13} />
                     {t("notes.summarize", { defaultValue: "Resumer" })}
@@ -1244,7 +1271,7 @@ export const NotesSettings: React.FC = () => {
                     onClick={() => void handleCopyNote()}
                     variant="secondary"
                     size="sm"
-                    className="mt-1 shrink-0"
+                    className="shrink-0"
                   >
                     <Copy size={13} />
                     {t("common.copy", { defaultValue: "Copier" })}
@@ -1254,7 +1281,7 @@ export const NotesSettings: React.FC = () => {
                     onClick={() => void handleImportAudio()}
                     variant="secondary"
                     size="sm"
-                    className="mt-1 shrink-0"
+                    className="shrink-0"
                   >
                     <FileAudio size={13} />
                     {t("notes.importAudio", { defaultValue: "Importer" })}
@@ -1264,7 +1291,7 @@ export const NotesSettings: React.FC = () => {
                     onClick={() => void handleExportNote()}
                     variant="secondary"
                     size="sm"
-                    className="mt-1 shrink-0"
+                    className="shrink-0"
                   >
                     <Download size={13} />
                     {t("notes.export", { defaultValue: "Exporter" })}
@@ -1274,7 +1301,7 @@ export const NotesSettings: React.FC = () => {
                     onClick={() => void handleToggleNoteCapture()}
                     variant={noteCaptureActive ? "secondary" : "primary-soft"}
                     size="sm"
-                    className="mt-1 shrink-0"
+                    className="shrink-0"
                   >
                     {noteCaptureActive ? (
                       <Square size={13} />
@@ -1290,7 +1317,7 @@ export const NotesSettings: React.FC = () => {
                     onClick={() => void handleCloseNote()}
                     variant="secondary"
                     size="sm"
-                    className="mt-1 shrink-0"
+                    className="shrink-0"
                     title={t("notes.closeTitle", {
                       defaultValue:
                         "Terminer la note active - la prochaine dictée creera une nouvelle note",
@@ -1333,7 +1360,7 @@ export const NotesSettings: React.FC = () => {
                   }
                 }}
                 style={{ padding: "18px 20px", fontFamily: "inherit" }}
-                className="min-h-[320px] flex-1 resize-none rounded-[16px] border border-white/8 bg-black/10 text-[13px] leading-7 text-white/78 placeholder-white/20 outline-none"
+                className="voca-editor-panel placeholder-white/20"
               />
             </div>
           </>

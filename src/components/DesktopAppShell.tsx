@@ -67,6 +67,9 @@ const renderSettingsContent = (section: SidebarSection, settings: unknown) => {
   );
 };
 
+const isSectionFullBleed = (section: SidebarSection) =>
+  (SECTIONS_CONFIG[section] as { fullBleed?: boolean })?.fullBleed === true;
+
 export function DesktopAppShell({
   t,
   direction,
@@ -221,53 +224,63 @@ export function DesktopAppShell({
 
           <main
             id="main-content"
-            className="app-main"
-            style={{
-              padding: mainContentPadding,
-              ["--main-pad-top" as string]:
-                layoutTier === "compact"
-                  ? "24px"
-                  : layoutTier === "cozy"
-                    ? "32px"
-                    : "40px",
-              ["--main-pad-x" as string]:
-                layoutTier === "compact"
-                  ? "26px"
-                  : layoutTier === "cozy"
-                    ? "40px"
-                    : "48px",
-            }}
+            className={`app-main${isSectionFullBleed(currentSection) ? " app-main--full-bleed" : ""}`}
+            style={
+              isSectionFullBleed(currentSection)
+                ? {}
+                : {
+                    padding: mainContentPadding,
+                    ["--main-pad-top" as string]:
+                      layoutTier === "compact"
+                        ? "24px"
+                        : layoutTier === "cozy"
+                          ? "32px"
+                          : "40px",
+                    ["--main-pad-x" as string]:
+                      layoutTier === "compact"
+                        ? "26px"
+                        : layoutTier === "cozy"
+                          ? "40px"
+                          : "48px",
+                  }
+            }
           >
-            <div className="app-main-inner">
-              <div className="app-header-block">
-                <h1
-                  className="app-page-title"
-                  style={{ fontSize: mainHeadingSize }}
-                >
-                  {pageTitle}
-                </h1>
-                <p className="app-page-subtitle">{pageDescription}</p>
+            {isSectionFullBleed(currentSection) ? (
+              <div className="app-main-inner app-main-inner--full-bleed">
+                {renderSettingsContent(currentSection, settings)}
               </div>
-
-              {showFirstLaunchHint ? (
-                <div className="app-first-launch-hint">
-                  <span>
-                    Votre premiere dictee : utilisez{" "}
-                    {settings?.bindings?.transcribe?.current_binding ??
-                      "Ctrl+Space"}{" "}
-                    et dites une phrase courte pour verifier que tout
-                    fonctionne.{" "}
-                    {t("hints.firstLaunch", {
-                      shortcut:
-                        settings?.bindings?.transcribe?.current_binding ??
-                        "Ctrl+Space",
-                    })}
-                  </span>
+            ) : (
+              <div className="app-main-inner">
+                <div className="app-header-block">
+                  <h1
+                    className="app-page-title"
+                    style={{ fontSize: mainHeadingSize }}
+                  >
+                    {pageTitle}
+                  </h1>
+                  <p className="app-page-subtitle">{pageDescription}</p>
                 </div>
-              ) : null}
 
-              {renderSettingsContent(currentSection, settings)}
-            </div>
+                {showFirstLaunchHint ? (
+                  <div className="app-first-launch-hint">
+                    <span>
+                      Votre premiere dictee : utilisez{" "}
+                      {settings?.bindings?.transcribe?.current_binding ??
+                        "Ctrl+Space"}{" "}
+                      et dites une phrase courte pour verifier que tout
+                      fonctionne.{" "}
+                      {t("hints.firstLaunch", {
+                        shortcut:
+                          settings?.bindings?.transcribe?.current_binding ??
+                          "Ctrl+Space",
+                      })}
+                    </span>
+                  </div>
+                ) : null}
+
+                {renderSettingsContent(currentSection, settings)}
+              </div>
+            )}
           </main>
         </div>
       </div>

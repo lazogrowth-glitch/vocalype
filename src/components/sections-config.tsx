@@ -76,6 +76,7 @@ interface SectionConfig {
   icon: React.ComponentType<IconProps>;
   component: React.ComponentType;
   enabled: (settings: unknown) => boolean;
+  fullBleed?: boolean;
 }
 
 export type SidebarSection =
@@ -146,6 +147,7 @@ export const SECTIONS_CONFIG = {
     icon: Mic,
     component: MeetingsSettings,
     enabled: () => true,
+    fullBleed: true,
   },
   notes: {
     labelKey: "sidebar.notes",

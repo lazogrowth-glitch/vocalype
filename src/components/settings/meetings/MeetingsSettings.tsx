@@ -830,9 +830,7 @@ export const MeetingsSettings: React.FC = () => {
     }
     setMeetings((prev) =>
       [
-        ...prev.map((x) =>
-          x.id === m.id ? { ...x, is_pinned: next, updated_at: Date.now() } : x,
-        ),
+        ...prev.map((x) => (x.id === m.id ? { ...x, is_pinned: next } : x)),
       ].sort(
         (a, b) =>
           Number(b.is_pinned) - Number(a.is_pinned) ||
@@ -851,11 +849,7 @@ export const MeetingsSettings: React.FC = () => {
     }
     setMeetings((prev) =>
       [
-        ...prev.map((x) =>
-          x.id === m.id
-            ? { ...x, is_archived: next, updated_at: Date.now() }
-            : x,
-        ),
+        ...prev.map((x) => (x.id === m.id ? { ...x, is_archived: next } : x)),
       ].sort(
         (a, b) =>
           Number(a.is_archived) - Number(b.is_archived) ||

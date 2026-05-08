@@ -654,9 +654,7 @@ export const NotesSettings: React.FC = () => {
     setNotes((prev) =>
       [
         ...prev.map((entry) =>
-          entry.id === note.id
-            ? { ...entry, is_pinned: nextPinned, updated_at: Date.now() }
-            : entry,
+          entry.id === note.id ? { ...entry, is_pinned: nextPinned } : entry,
         ),
       ].sort(
         (a, b) =>
@@ -679,7 +677,7 @@ export const NotesSettings: React.FC = () => {
       [
         ...prev.map((entry) =>
           entry.id === note.id
-            ? { ...entry, is_archived: nextArchived, updated_at: Date.now() }
+            ? { ...entry, is_archived: nextArchived }
             : entry,
         ),
       ].sort(

@@ -444,20 +444,18 @@ impl NoteManager {
 
     pub fn set_pinned(&self, id: i64, pinned: bool) -> Result<()> {
         let conn = self.open()?;
-        let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
-            "UPDATE meetings SET is_pinned = ?1, updated_at = ?2 WHERE id = ?3 AND kind = ?4",
-            params![if pinned { 1 } else { 0 }, now, id, NOTE_KIND],
+            "UPDATE meetings SET is_pinned = ?1 WHERE id = ?2 AND kind = ?3",
+            params![if pinned { 1 } else { 0 }, id, NOTE_KIND],
         )?;
         Ok(())
     }
 
     pub fn set_archived(&self, id: i64, archived: bool) -> Result<()> {
         let conn = self.open()?;
-        let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
-            "UPDATE meetings SET is_archived = ?1, updated_at = ?2 WHERE id = ?3 AND kind = ?4",
-            params![if archived { 1 } else { 0 }, now, id, NOTE_KIND],
+            "UPDATE meetings SET is_archived = ?1 WHERE id = ?2 AND kind = ?3",
+            params![if archived { 1 } else { 0 }, id, NOTE_KIND],
         )?;
         Ok(())
     }

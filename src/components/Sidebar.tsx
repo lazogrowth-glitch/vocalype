@@ -1,10 +1,18 @@
-import React, { useMemo } from "react";
+import React, {
+  useMemo,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { useTranslation } from "react-i18next";
 import VocalypeLogo from "./icons/VocalypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
 import { useSettings } from "../hooks/useSettings";
 import { usePlan } from "@/lib/subscription/context";
 import { SECTIONS_CONFIG } from "./sections-config";
+import { commands } from "@/bindings";
+import { listen } from "@tauri-apps/api/event";
 
 const BOTTOM_SECTION_IDS = new Set(["billing", "about", "debug"]);
 
@@ -28,6 +36,80 @@ function useTrialBadge(trialEndsAt: string | null) {
   return { days, urgency: "urgent" as const };
 }
 
+function useSidebarCounts(settings: unknown) {
+  const [historyCount, setHistoryCount] = useState<number | null>(null);
+  const [meetingsCount, setMeetingsCount] = useState<number | null>(null);
+
+  // Post-processing actions count — from settings (synchronous)
+  const actionsCount = useMemo(() => {
+    if (
+      typeof settings === "object" &&
+      settings !== null &&
+      "post_process_actions" in settings &&
+      Array.isArray((settings as Record<string, unknown>).post_process_actions)
+    ) {
+      return (
+        (settings as Record<string, unknown>).post_process_actions as unknown[]
+      ).length;
+    }
+    return null;
+  }, [settings]);
+
+  // Use refs so the event callbacks always call the latest setter
+  // without needing to re-register listeners on every render
+  const setHistoryRef = useRef(setHistoryCount);
+  const setMeetingsRef = useRef(setMeetingsCount);
+  setHistoryRef.current = setHistoryCount;
+  setMeetingsRef.current = setMeetingsCount;
+
+  const refreshHistory = useCallback(() => {
+    commands
+      .getHistoryStats()
+      .then((res) => {
+        if (res.status === "ok") setHistoryRef.current(res.data.total_entries);
+      })
+      .catch(() => {});
+  }, []);
+
+  const refreshMeetings = useCallback(() => {
+    commands
+      .getMeetings()
+      .then((res) => {
+        if (res.status === "ok") setMeetingsRef.current(res.data.length);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    refreshHistory();
+    refreshMeetings();
+
+    // History — driven by Tauri backend event (already reliable)
+    const unlisteners: Array<() => void> = [];
+    listen("history-updated", refreshHistory)
+      .then((fn) => unlisteners.push(fn))
+      .catch(() => {});
+
+    // Meetings — driven by window CustomEvent dispatched from MeetingsSettings
+    // (synchronous, no async timing issue unlike Tauri listen)
+    const handleMeetingsCount = (e: Event) => {
+      const count = (e as CustomEvent<number>).detail;
+      setMeetingsRef.current(count);
+    };
+    window.addEventListener("vocalype:meetings-count", handleMeetingsCount);
+
+    return () => {
+      unlisteners.forEach((fn) => fn());
+      window.removeEventListener(
+        "vocalype:meetings-count",
+        handleMeetingsCount,
+      );
+    };
+  }, [refreshHistory, refreshMeetings]);
+
+  return { historyCount, meetingsCount, actionsCount };
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
@@ -38,6 +120,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { settings } = useSettings();
   const { isTrialing, trialEndsAt, onStartCheckout } = usePlan();
   const trialBadge = useTrialBadge(isTrialing ? trialEndsAt : null);
+  const { historyCount, meetingsCount, actionsCount } =
+    useSidebarCounts(settings);
+
+  const sectionCounts: Partial<
+    Record<import("./sections-config").SidebarSection, number>
+  > = useMemo(
+    () => ({
+      ...(historyCount != null && historyCount > 0
+        ? { history: historyCount }
+        : {}),
+      ...(meetingsCount != null && meetingsCount > 0
+        ? { meetings: meetingsCount }
+        : {}),
+      ...(actionsCount != null && actionsCount > 0
+        ? { postprocessing: actionsCount }
+        : {}),
+    }),
+    [historyCount, meetingsCount, actionsCount],
+  );
 
   const allSections = useMemo(
     () =>
@@ -75,11 +176,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         flexShrink: 0,
         height: "100%",
         overflow: "hidden",
-        background:
-          "linear-gradient(180deg, rgba(16,16,16,0.98), rgba(10,10,10,0.96))",
+        background: "linear-gradient(180deg, #080810, #050508)",
         border: "1px solid rgba(255,255,255,0.06)",
         borderRadius: collapsed ? 22 : 24,
-        boxShadow: "0 14px 30px rgba(0,0,0,0.24)",
+        boxShadow: "0 14px 30px rgba(0,0,0,0.28)",
         display: "flex",
         flexDirection: "column",
         transition: "width 0.2s ease, border-radius 0.2s ease",
@@ -190,6 +290,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           const showConfigLabel = !collapsed && section.id === "general";
           const showUsageLabel = !collapsed && section.id === "history";
           const showAdvancedLabel = !collapsed && section.id === "advanced";
+          const count = sectionCounts[section.id];
 
           return (
             <React.Fragment key={section.id}>
@@ -262,8 +363,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       height: 18,
                       width: 3,
                       borderRadius: 999,
-                      background: "#f0d080",
-                      boxShadow: "0 0 18px rgba(201,168,76,0.32)",
+                      background: "#c9a84c",
+                      boxShadow: "0 0 14px rgba(201,168,76,0.45)",
                       pointerEvents: "none",
                     }}
                   />
@@ -287,19 +388,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   />
                 </span>
                 {!collapsed && (
-                  <span
-                    style={{
-                      fontSize: isCompact ? 13 : 13.5,
-                      fontWeight: isActive ? 600 : 500,
-                      lineHeight: "20px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                    title={t(section.labelKey)}
-                  >
-                    {t(section.labelKey)}
-                  </span>
+                  <>
+                    <span
+                      style={{
+                        fontSize: isCompact ? 13 : 13.5,
+                        fontWeight: isActive ? 600 : 500,
+                        lineHeight: "20px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        flex: 1,
+                      }}
+                      title={t(section.labelKey)}
+                    >
+                      {t(section.labelKey)}
+                    </span>
+                    {count != null && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 500,
+                          color: isActive
+                            ? "rgba(201,168,76,0.65)"
+                            : "rgba(255,255,255,0.22)",
+                          fontVariantNumeric: "tabular-nums",
+                          flexShrink: 0,
+                          lineHeight: "20px",
+                        }}
+                      >
+                        {count > 9999 ? "9999+" : count}
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
             </React.Fragment>

@@ -2,36 +2,36 @@
 
 @theme {
   /* ── Backgrounds ── */
-  --color-background: #0a0908;
-  --color-panel: #0e0d0b;
+  --color-background: #0a0a0e;
+  --color-panel: #0e0e14;
 
   /* ── Surface layers ── */
-  --color-card: #131211;
-  --color-card-hover: #191815;
-  --color-row: #100f0d;
-  --color-row-hover: #161513;
-  --color-surface: #161513;
-  --color-surface-elevated: #1d1c19;
-  --color-surface-strong: #0c0b09;
+  --color-card: #101015;
+  --color-card-hover: #14141c;
+  --color-row: #101015;
+  --color-row-hover: #13131b;
+  --color-surface: #15151c;
+  --color-surface-elevated: #1c1c26;
+  --color-surface-strong: #0c0c12;
 
   /* ── Text ── */
-  --color-text: #f4f4f5;
-  --color-text-sub: rgba(255, 255, 255, 0.55);
-  --color-text-faint: rgba(255, 255, 255, 0.36);
-  --color-text-ghost: rgba(255, 255, 255, 0.28);
-  --color-muted: #a1a1aa;
+  --color-text: rgba(255, 255, 255, 0.94);
+  --color-text-sub: rgba(255, 255, 255, 0.64);
+  --color-text-faint: rgba(255, 255, 255, 0.38);
+  --color-text-ghost: rgba(255, 255, 255, 0.22);
+  --color-muted: rgba(255, 255, 255, 0.45);
 
   /* ── Borders ── */
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-border-strong: rgba(255, 255, 255, 0.12);
-  --color-border-row: rgba(255, 255, 255, 0.06);
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-strong: rgba(255, 255, 255, 0.1);
+  --color-border-row: rgba(255, 255, 255, 0.05);
 
-  /* ── Accent ── */
-  --color-accent: #f5c300;
-  --color-accent-soft: rgba(245, 195, 0, 0.1);
-  --color-accent-border: rgba(245, 195, 0, 0.18);
-  --color-accent-glow: rgba(245, 195, 0, 0.4);
-  --color-accent-hover-border: rgba(245, 195, 0, 0.16);
+  /* ── Accent (gold) ── */
+  --color-accent: #c9a84c;
+  --color-accent-soft: rgba(201, 168, 76, 0.12);
+  --color-accent-border: rgba(201, 168, 76, 0.32);
+  --color-accent-glow: rgba(201, 168, 76, 0.4);
+  --color-accent-hover-border: rgba(201, 168, 76, 0.22);
 
   /* ── Status ── */
   --color-success: #34d399;
@@ -41,11 +41,11 @@
 
   /* ── Brand ── */
   --color-logo-primary: #c9a84c;
-  --color-logo-stroke: #f0d080;
-  --color-accent-v: #f5c300;
+  --color-logo-stroke: #e8c87a;
+  --color-accent-v: #c9a84c;
   --color-text-stroke: #09090b;
   --color-mid-gray: #8a8a8a;
-  --color-background-ui: #1a1a1a;
+  --color-background-ui: #15151c;
 }
 
 :root {
@@ -548,8 +548,8 @@ body {
  * To remove it: move sidebar visual states to CSS data-attributes.
  */
 .sidebar-nav-btn:not([data-active="true"]):hover {
-  background: rgba(255, 255, 255, 0.032) !important;
-  color: rgba(255, 255, 255, 0.84) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
   border-color: rgba(255, 255, 255, 0.05) !important;
   transform: translateX(1px);
 }
@@ -627,16 +627,12 @@ body {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.032);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
-  background: linear-gradient(
-    180deg,
-    var(--color-panel),
-    var(--color-background)
-  );
+  background: linear-gradient(180deg, #101015, #0a0a0e);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.014),
-    0 12px 28px rgba(0, 0, 0, 0.16);
+    inset 0 1px 0 rgba(255, 255, 255, 0.018),
+    0 12px 28px rgba(0, 0, 0, 0.22);
 }
 .app-main::before {
   content: "";
@@ -650,6 +646,19 @@ body {
 .app-main-inner {
   max-width: 1080px;
   margin: 0 auto;
+}
+
+.hist-entry-text {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: -0.005em;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .app-main--full-bleed {

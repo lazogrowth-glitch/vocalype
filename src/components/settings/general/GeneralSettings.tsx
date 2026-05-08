@@ -40,7 +40,7 @@ export const GeneralSettings: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="voca-segmented-tabs" role="tablist">
+      <div className="general-settings-tabs" role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -49,7 +49,7 @@ export const GeneralSettings: React.FC = () => {
             aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
             data-active={activeTab === tab.id ? "true" : "false"}
-            className="voca-segmented-tab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            className="general-settings-tab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background"
           >
             {tab.label}
           </button>

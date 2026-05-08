@@ -1,4 +1,4 @@
-/* eslint-disable no-console, i18next/no-literal-string */
+/* eslint-disable no-console */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
@@ -14,7 +14,7 @@ import {
 } from "@/bindings";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
-// ── Design tokens (exact from mockup) ─────────────────────────────────────
+// â”€â”€ Design tokens (exact from mockup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const T = {
   gold: "#c9a84c",
   goldSoft: "rgba(201,168,76,0.12)",
@@ -31,7 +31,7 @@ const T = {
   rec: "#ef4444",
 };
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function fmt(ms: number) {
   try {
@@ -54,25 +54,25 @@ function fmtClock(ms: number) {
   return `${h}:${m}:${s}`;
 }
 
-function dayLabel(ms: number) {
+function dayLabel(ms: number, labels: { today: string; yesterday: string }) {
   const d = new Date(ms),
     now = new Date(),
     yest = new Date(now);
   yest.setDate(yest.getDate() - 1);
-  if (d.toDateString() === now.toDateString()) return "Aujourd'hui";
-  if (d.toDateString() === yest.toDateString()) return "Hier";
+  if (d.toDateString() === now.toDateString()) return labels.today;
+  if (d.toDateString() === yest.toDateString()) return labels.yesterday;
   return new Intl.DateTimeFormat(undefined, {
     day: "numeric",
     month: "long",
   }).format(d);
 }
 
-function meetingTitle(m: MeetingEntry) {
-  return m.title?.trim() || m.category?.trim() || "Réunion";
+function meetingTitle(m: MeetingEntry, fallback: string) {
+  return m.title?.trim() || m.category?.trim() || fallback;
 }
 
-function meetingPreview(m: MeetingEntry) {
-  return m.transcript.replace(/\s+/g, " ").trim() || "Aucune transcription";
+function meetingPreview(m: MeetingEntry, fallback: string) {
+  return m.transcript.replace(/\s+/g, " ").trim() || fallback;
 }
 
 function durationLabel(m: MeetingEntry) {
@@ -85,17 +85,20 @@ function durationLabel(m: MeetingEntry) {
   return min > 0 ? `${min} min` : "";
 }
 
-function itemTag(category: string) {
+function itemTag(category: string, fallback: string) {
   const c = category.trim();
-  if (!c) return "Réunion";
+  if (!c) return fallback;
   return c;
 }
 
-// ── Chapter helpers ────────────────────────────────────────────────────────
+// â”€â”€ Chapter helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type Chapter = { id: string; startMs: number; label: string; preview: string };
 
-function buildChapters(segs: MeetingSegmentEntry[]): Chapter[] {
+function buildChapters(
+  segs: MeetingSegmentEntry[],
+  fallback: string,
+): Chapter[] {
   if (!segs.length) return [];
   const out: Chapter[] = [];
   let cur: MeetingSegmentEntry[] = [];
@@ -109,7 +112,7 @@ function buildChapters(segs: MeetingSegmentEntry[]): Chapter[] {
     out.push({
       id: `${cur[0].id}-${cur[cur.length - 1].id}`,
       startMs: cur[0].timestamp_ms,
-      label: words.slice(0, 6).join(" ") || "Chapitre",
+      label: words.slice(0, 6).join(" ") || fallback,
       preview: combined,
     });
     cur = [];
@@ -132,7 +135,7 @@ function buildChapters(segs: MeetingSegmentEntry[]): Chapter[] {
   return out;
 }
 
-// ── SVG icons (inline, exact from mockup) ────────────────────────────────
+// â”€â”€ SVG icons (inline, exact from mockup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function IcoPhone({
   size = 14,
@@ -477,12 +480,33 @@ function ItemIcon({ category }: { category: string }) {
   return <IcoUsers size={14} color={T.txt2} />;
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
+// â”€â”€ Main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type Tab = "summary" | "transcript" | "chapters" | "actions";
 
 export const MeetingsSettings: React.FC = () => {
   const { t } = useTranslation();
+  const meetingFallback = t("meetings.new", { defaultValue: "Meeting" });
+  const meetingPreviewFallback = t("meetings.copyEmpty", {
+    defaultValue: "No transcript",
+  });
+  const chapterFallback = t("meetings.chapters", { defaultValue: "Chapters" });
+  const meetingCategoryFallback = t("meetings.defaultCategory", {
+    defaultValue: "Meetings",
+  });
+  const createMeetingLabel = t("meetings.meetingLabel", {
+    defaultValue: "Meeting",
+  });
+  const createCallLabel = t("meetings.callLabel", { defaultValue: "Call" });
+  const createVoiceNoteLabel = t("meetings.voiceNoteLabel", {
+    defaultValue: "Voice note",
+  });
+  const dayLabels = {
+    today: t("settings.history.groupToday", { defaultValue: "Today" }),
+    yesterday: t("settings.history.groupYesterday", {
+      defaultValue: "Yesterday",
+    }),
+  };
 
   const [meetings, setMeetings] = useState<MeetingEntry[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -521,7 +545,12 @@ export const MeetingsSettings: React.FC = () => {
 
   const loadMeetings = useCallback(async () => {
     const res = await commands.getMeetings();
-    if (res.status === "ok") setMeetings(res.data);
+    if (res.status === "ok") {
+      setMeetings(res.data);
+      window.dispatchEvent(
+        new CustomEvent("vocalype:meetings-count", { detail: res.data.length }),
+      );
+    }
   }, []);
 
   useEffect(() => {
@@ -578,7 +607,7 @@ export const MeetingsSettings: React.FC = () => {
 
   const selectedMeeting = meetings.find((m) => m.id === selectedId) ?? null;
   const chapters = selectedMeeting
-    ? buildChapters(selectedMeeting.segments)
+    ? buildChapters(selectedMeeting.segments, chapterFallback)
     : [];
   const recentThreshold = Date.now() - 7 * 24 * 3600 * 1000;
 
@@ -593,14 +622,14 @@ export const MeetingsSettings: React.FC = () => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
-        meetingTitle(m).toLowerCase().includes(q) ||
+        meetingTitle(m, meetingFallback).toLowerCase().includes(q) ||
         m.transcript.toLowerCase().includes(q)
       );
     });
 
   const groups: { label: string; items: MeetingEntry[] }[] = [];
   for (const m of visibleMeetings) {
-    const lbl = dayLabel(m.updated_at);
+    const lbl = dayLabel(m.updated_at, dayLabels);
     const g = groups.find((x) => x.label === lbl);
     if (g) g.items.push(m);
     else groups.push({ label: lbl, items: [m] });
@@ -772,10 +801,10 @@ export const MeetingsSettings: React.FC = () => {
   }, [scheduleSave]);
 
   // Handlers
-  const handleCreate = async (category = "Réunion") => {
+  const handleCreate = async (category = meetingFallback) => {
     const r = await commands.createMeeting("", detectedApp ?? "");
     if (r.status === "ok") {
-      if (category !== "Réunion")
+      if (category !== meetingFallback)
         await commands.setMeetingCategory(r.data.id, category);
       setMeetings((prev) => [{ ...r.data, category }, ...prev]);
       setSelectedId(r.data.id);
@@ -896,9 +925,13 @@ export const MeetingsSettings: React.FC = () => {
         return;
       }
       await writeTextFile(fp, r.data);
-      toast.success("Réunion exportée.");
+      toast.success(
+        t("meetings.exportSuccess", { defaultValue: "Meeting exported." }),
+      );
     } catch {
-      toast.error("Impossible d'exporter.");
+      toast.error(
+        t("meetings.exportError", { defaultValue: "Unable to export meeting" }),
+      );
     }
   };
 
@@ -909,7 +942,12 @@ export const MeetingsSettings: React.FC = () => {
         filters: [{ name: "Audio", extensions: ["wav", "flac"] }],
       });
       if (!sel || typeof sel !== "string") return;
-      toast.loading("Transcription du fichier audio...", { id: "m-import" });
+      toast.loading(
+        t("meetings.importingAudio", {
+          defaultValue: "Transcribing audio file...",
+        }),
+        { id: "m-import" },
+      );
       const r = await commands.transcribeAudioFile(sel);
       if (r.status !== "ok") {
         toast.error(getUserFacingErrorMessage(r.error, { t }), {
@@ -919,7 +957,12 @@ export const MeetingsSettings: React.FC = () => {
       }
       const imported = r.data.trim();
       if (!imported) {
-        toast.error("Aucun texte extrait.", { id: "m-import" });
+        toast.error(
+          t("meetings.importAudioEmpty", {
+            defaultValue: "No text was extracted from the file",
+          }),
+          { id: "m-import" },
+        );
         return;
       }
       if (selectedId === null) {
@@ -953,43 +996,76 @@ export const MeetingsSettings: React.FC = () => {
           ),
         );
       }
-      toast.success("Audio ajouté.", { id: "m-import" });
+      toast.success(
+        t("meetings.importAudioSuccess", {
+          defaultValue: "Audio added to the meeting.",
+        }),
+        { id: "m-import" },
+      );
     } catch {
-      toast.error("Impossible d'importer.", { id: "m-import" });
+      toast.error(
+        t("meetings.importAudioError", {
+          defaultValue: "Unable to import audio file",
+        }),
+        { id: "m-import" },
+      );
     }
   };
 
   const handleCopyTranscript = async () => {
     const text = editTranscriptRef.current.trim();
     if (!text) {
-      toast.error("Aucune transcription à copier.");
+      toast.error(
+        t("meetings.copyEmpty", { defaultValue: "No transcript to copy" }),
+      );
       return;
     }
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Transcription copiée.");
+      toast.success(
+        t("meetings.copySuccess", { defaultValue: "Meeting copied." }),
+      );
     } catch {
-      toast.error("Impossible de copier.");
+      toast.error(
+        t("meetings.copyError", {
+          defaultValue: "Unable to copy the meeting",
+        }),
+      );
     }
   };
 
   const handleCopySummary = async () => {
     const text = selectedMeeting?.summary?.trim();
     if (!text) {
-      toast.error("Aucun résumé disponible.");
+      toast.error(
+        t("meetings.noSummaryAvailable", {
+          defaultValue: "No summary available.",
+        }),
+      );
       return;
     }
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Résumé copié.");
+      toast.success(
+        t("meetings.summaryCopySuccess", {
+          defaultValue: "Summary copied.",
+        }),
+      );
     } catch {
-      toast.error("Impossible de copier.");
+      toast.error(
+        t("meetings.copyError", {
+          defaultValue: "Unable to copy the meeting",
+        }),
+      );
     }
   };
 
   const handleSummarize = async () => {
     if (!selectedMeeting) return;
-    toast.loading("Génération du résumé...", { id: "m-sum" });
+    toast.loading(
+      t("meetings.summarizing", { defaultValue: "Generating summary..." }),
+      { id: "m-sum" },
+    );
     try {
       const r = await commands.summarizeMeeting(selectedMeeting.id);
       if (r.status !== "ok") {
@@ -1003,15 +1079,30 @@ export const MeetingsSettings: React.FC = () => {
             : m,
         ),
       );
-      toast.success("Résumé mis à jour.", { id: "m-sum" });
+      toast.success(
+        t("meetings.summarizeSuccess", {
+          defaultValue: "Summary updated.",
+        }),
+        { id: "m-sum" },
+      );
     } catch {
-      toast.error("Impossible de générer.", { id: "m-sum" });
+      toast.error(
+        t("meetings.summarizeError", {
+          defaultValue: "Unable to generate the summary",
+        }),
+        { id: "m-sum" },
+      );
     }
   };
 
   const handleExtractActions = async () => {
     if (!selectedMeeting) return;
-    toast.loading("Extraction des actions...", { id: "m-act" });
+    toast.loading(
+      t("meetings.extractingActions", {
+        defaultValue: "Extracting actions...",
+      }),
+      { id: "m-act" },
+    );
     try {
       const r = await commands.extractMeetingActions(selectedMeeting.id);
       if (r.status !== "ok") {
@@ -1025,9 +1116,19 @@ export const MeetingsSettings: React.FC = () => {
             : m,
         ),
       );
-      toast.success("Actions mises à jour.", { id: "m-act" });
+      toast.success(
+        t("meetings.extractActionsSuccess", {
+          defaultValue: "Actions updated.",
+        }),
+        { id: "m-act" },
+      );
     } catch {
-      toast.error("Impossible d'extraire.", { id: "m-act" });
+      toast.error(
+        t("meetings.extractActionsError", {
+          defaultValue: "Unable to extract actions",
+        }),
+        { id: "m-act" },
+      );
     }
   };
 
@@ -1043,7 +1144,10 @@ export const MeetingsSettings: React.FC = () => {
         editTranscriptRef.current,
       );
     }
-    toast.loading("Génération du titre...", { id: "m-title" });
+    toast.loading(
+      t("meetings.generatingTitle", { defaultValue: "Generating title..." }),
+      { id: "m-title" },
+    );
     try {
       const r = await commands.generateMeetingTitle(selectedMeeting.id);
       if (r.status !== "ok") {
@@ -1062,9 +1166,19 @@ export const MeetingsSettings: React.FC = () => {
             : m,
         ),
       );
-      toast.success("Titre généré.", { id: "m-title" });
+      toast.success(
+        t("meetings.generateTitleSuccess", {
+          defaultValue: "Title generated.",
+        }),
+        { id: "m-title" },
+      );
     } catch {
-      toast.error("Impossible.", { id: "m-title" });
+      toast.error(
+        t("meetings.generateTitleError", {
+          defaultValue: "Unable to generate the title",
+        }),
+        { id: "m-title" },
+      );
     }
   };
 
@@ -1145,10 +1259,15 @@ export const MeetingsSettings: React.FC = () => {
   const handleCloseMeeting = async () => {
     await commands.closeMeeting();
     setCaptureActive(false);
-    toast.success("Réunion terminée.");
+    toast.success(
+      t("meetings.closed", {
+        defaultValue:
+          "Meeting finished - the next recording will create a new meeting",
+      }),
+    );
   };
 
-  // ── Styles (exact from mockup CSS) ───────────────────────────────────────
+  // â”€â”€ Styles (exact from mockup CSS) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const s = {
     // Root grid
     root: {
@@ -1493,20 +1612,27 @@ export const MeetingsSettings: React.FC = () => {
     transition: "color .15s, border-color .15s",
   });
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const tabDef: { id: Tab; label: string; badge?: number; ai?: boolean }[] = [
-    { id: "summary", label: "Résumé", ai: true },
-    { id: "transcript", label: "Transcription" },
+    {
+      id: "summary",
+      label: t("meetings.summary", { defaultValue: "Summary" }),
+      ai: true,
+    },
+    {
+      id: "transcript",
+      label: t("meetings.transcript", { defaultValue: "Transcript" }),
+    },
     {
       id: "chapters",
-      label: "Chapitres",
+      label: t("meetings.chapters", { defaultValue: "Chapters" }),
       badge: chapters.length,
       ai: chapters.length > 0,
     },
     {
       id: "actions",
-      label: "Actions",
+      label: t("meetings.actions", { defaultValue: "Actions" }),
       badge: selectedMeeting?.action_items.trim() ? 1 : 0,
       ai: !!selectedMeeting?.action_items.trim(),
     },
@@ -1531,7 +1657,7 @@ export const MeetingsSettings: React.FC = () => {
         button { transition: background .14s, filter .14s, border-color .14s, color .14s, transform .12s, box-shadow .14s; }
       `}</style>
 
-      {/* ═══════════════════════════════════════════════════════ LIST PANE */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• LIST PANE */}
       <section style={s.list}>
         {detectedApp && (
           <div
@@ -1552,9 +1678,6 @@ export const MeetingsSettings: React.FC = () => {
               style={{
                 fontSize: 11,
                 color: "rgba(62,207,110,0.8)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
               }}
             >
               {detectedApp}
@@ -1564,12 +1687,16 @@ export const MeetingsSettings: React.FC = () => {
 
         <div style={s.listHead}>
           <div style={s.listTitleRow}>
-            <span style={s.listTitle}>Appels &amp; notes</span>
+            <span style={s.listTitle}>
+              {t("sidebar.meetings", { defaultValue: "Calls & notes" })}
+            </span>
             <span style={s.listCount}>{visibleMeetings.length}</span>
           </div>
           <p style={s.listSub}>
-            Vos appels, réunions et notes vocales — au même endroit pour écrire
-            plus vite.
+            {t("shell.sectionDescriptions.meetings", {
+              defaultValue:
+                "Keep calls, meetings, and voice notes together in one writing workspace.",
+            })}
           </p>
           <div style={s.searchRow}>
             <div style={{ ...s.search, position: "relative" }}>
@@ -1580,7 +1707,9 @@ export const MeetingsSettings: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => void handleSearch(e.target.value)}
-                placeholder={`Rechercher dans ${meetings.length} enregistrements…`}
+                placeholder={t("meetings.search", {
+                  defaultValue: "Search...",
+                })}
                 style={s.searchInput}
               />
             </div>
@@ -1592,14 +1721,13 @@ export const MeetingsSettings: React.FC = () => {
                 className="mts-btn-new"
                 style={s.btnNew}
                 onClick={() => setShowCreateMenu((v) => !v)}
-                title="Nouveau"
+                title={t("meetings.new", { defaultValue: "New meeting" })}
               >
                 <IcoPlus size={16} color="#1a1407" />
               </button>
               {showCreateMenu && (
                 <div
                   style={{
-                    position: "absolute",
                     top: "calc(100% + 6px)",
                     right: 0,
                     zIndex: 99,
@@ -1607,7 +1735,6 @@ export const MeetingsSettings: React.FC = () => {
                     border: `1px solid ${T.line2}`,
                     borderRadius: 10,
                     padding: "4px 0",
-                    minWidth: 160,
                     boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
                   }}
                   onMouseLeave={() => setShowCreateMenu(false)}
@@ -1615,15 +1742,15 @@ export const MeetingsSettings: React.FC = () => {
                   {(
                     [
                       {
-                        label: "Réunion",
+                        label: createMeetingLabel,
                         icon: <IcoUsers size={13} color={T.txt2} />,
                       },
                       {
-                        label: "Appel",
+                        label: createCallLabel,
                         icon: <IcoPhone size={13} color={T.txt2} />,
                       },
                       {
-                        label: "Note vocale",
+                        label: createVoiceNoteLabel,
                         icon: <IcoMic size={13} color={T.txt2} />,
                       },
                     ] as const
@@ -1665,16 +1792,22 @@ export const MeetingsSettings: React.FC = () => {
             [
               {
                 id: "all" as const,
-                label: "Tout",
+                label: t("common.all", { defaultValue: "All" }),
                 count: meetings.filter((m) => !m.is_archived).length,
               },
               {
                 id: "pinned" as const,
-                label: "Épinglés",
+                label: t("common.pinned", { defaultValue: "Pinned" }),
                 count: meetings.filter((m) => m.is_pinned).length,
               },
-              { id: "recent" as const, label: "Récents" },
-              { id: "archived" as const, label: "Archivés" },
+              {
+                id: "recent" as const,
+                label: t("common.recent", { defaultValue: "Recent" }),
+              },
+              {
+                id: "archived" as const,
+                label: t("common.archived", { defaultValue: "Archived" }),
+              },
             ] as const
           ).map((f) => (
             <button
@@ -1725,8 +1858,12 @@ export const MeetingsSettings: React.FC = () => {
                 }}
               >
                 {searchQuery
-                  ? "Aucun résultat pour cette recherche."
-                  : "Aucune réunion.\nAppuyez sur + pour commencer."}
+                  ? t("meetings.emptySearch", {
+                      defaultValue: "No results for this search.",
+                    })
+                  : t("meetings.empty", {
+                      defaultValue: "No meetings yet.\nPress + to get started.",
+                    })}
               </p>
             </div>
           )}
@@ -1738,7 +1875,7 @@ export const MeetingsSettings: React.FC = () => {
                 const isOn = selectedId === m.id;
                 const isHov = hoveredId === m.id && !isOn;
                 const dur = durationLabel(m);
-                const tag = itemTag(m.category);
+                const tag = itemTag(m.category, meetingCategoryFallback);
                 return (
                   <div
                     key={m.id}
@@ -1784,7 +1921,7 @@ export const MeetingsSettings: React.FC = () => {
                             flex: 1,
                           }}
                         >
-                          {meetingTitle(m)}
+                          {meetingTitle(m, meetingFallback)}
                         </span>
                         {m.is_pinned && <IcoPinFill size={12} color={T.gold} />}
                         {captureActive && isOn && (
@@ -1800,7 +1937,7 @@ export const MeetingsSettings: React.FC = () => {
                               letterSpacing: "0.06em",
                             }}
                           >
-                            ● Live
+                            {t("meetings.live", { defaultValue: "Live" })}
                           </span>
                         )}
                       </div>
@@ -1816,7 +1953,7 @@ export const MeetingsSettings: React.FC = () => {
                           WebkitBoxOrient: "vertical" as const,
                         }}
                       >
-                        {meetingPreview(m)}
+                        {meetingPreview(m, meetingPreviewFallback)}
                       </div>
                       <div
                         style={{
@@ -1917,7 +2054,7 @@ export const MeetingsSettings: React.FC = () => {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════ DETAIL PANE */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DETAIL PANE */}
       <section style={s.detail}>
         {selectedMeeting === null ? (
           <div style={{ ...s.empty, flex: 1 }}>
@@ -1944,8 +2081,10 @@ export const MeetingsSettings: React.FC = () => {
                 color: T.txt3,
               }}
             >
-              Sélectionnez une réunion ou démarrez un enregistrement pour en
-              créer une
+              {t("meetings.selectOrCreate", {
+                defaultValue:
+                  "Select a meeting or start recording to create one",
+              })}
             </p>
             <button
               className="mts-btn-rec"
@@ -1960,12 +2099,14 @@ export const MeetingsSettings: React.FC = () => {
                   background: "#1a1407",
                 }}
               />
-              Démarrer une réunion
+              {t("meetings.startCapture", {
+                defaultValue: "Start meeting",
+              })}
             </button>
           </div>
         ) : (
           <>
-            {/* ── Detail header ── */}
+            {/* â”€â”€ Detail header â”€â”€ */}
             <div style={s.detailHead}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
@@ -1980,7 +2121,7 @@ export const MeetingsSettings: React.FC = () => {
                 >
                   <span style={s.dhFolder}>
                     <IcoFolder size={11} color={T.txt2} />
-                    {editCategory.trim() || "Réunions"}
+                    {editCategory.trim() || meetingCategoryFallback}
                   </span>
                 </div>
                 <h2 style={s.dhTitle}>
@@ -1989,7 +2130,9 @@ export const MeetingsSettings: React.FC = () => {
                       ref={titleInputRef}
                       type="text"
                       value={editTitle}
-                      placeholder="Titre de la réunion"
+                      placeholder={t("meetings.titlePlaceholder", {
+                        defaultValue: "Meeting title",
+                      })}
                       onChange={(e) => handleTitleChange(e.target.value)}
                       onBlur={() => setTitleEditing(false)}
                       onKeyDown={(e) => {
@@ -2010,7 +2153,8 @@ export const MeetingsSettings: React.FC = () => {
                     />
                   ) : (
                     <>
-                      {editTitle || meetingTitle(selectedMeeting)}
+                      {editTitle ||
+                        meetingTitle(selectedMeeting, meetingFallback)}
                       <span
                         style={{
                           width: 28,
@@ -2046,13 +2190,13 @@ export const MeetingsSettings: React.FC = () => {
                     style={{ display: "flex", alignItems: "center", gap: 6 }}
                   >
                     <IcoClock size={13} color={T.txt3} />
-                    {durationLabel(selectedMeeting) || "—"}
+                    {durationLabel(selectedMeeting) || "-"}
                     {selectedMeeting.segments.length > 0 &&
-                      ` · ${selectedMeeting.segments.length} segments`}
+                      ` | ${t("meetings.segmentCount", { count: selectedMeeting.segments.length, defaultValue: `${selectedMeeting.segments.length} segments` })}`}
                   </span>
                   {saving && (
                     <span style={{ color: T.gold, fontSize: 11 }}>
-                      Enregistrement…
+                      {t("meetings.saving", { defaultValue: "Saving..." })}
                     </span>
                   )}
                 </div>
@@ -2068,7 +2212,7 @@ export const MeetingsSettings: React.FC = () => {
                     }}
                   >
                     <IcoShare size={14} color={T.txt2} />
-                    Partager
+                    {t("meetings.share", { defaultValue: "Share" })}
                   </button>
                   {showShareMenu && (
                     <div
@@ -2088,21 +2232,27 @@ export const MeetingsSettings: React.FC = () => {
                     >
                       {[
                         {
-                          label: "Copier la transcription",
+                          label: t("meetings.copyTranscript", {
+                            defaultValue: "Copy transcript",
+                          }),
                           fn: () => {
                             setShowShareMenu(false);
                             void handleCopyTranscript();
                           },
                         },
                         {
-                          label: "Copier le résumé",
+                          label: t("meetings.copySummary", {
+                            defaultValue: "Copy summary",
+                          }),
                           fn: () => {
                             setShowShareMenu(false);
                             void handleCopySummary();
                           },
                         },
                         {
-                          label: "Exporter en fichier…",
+                          label: t("meetings.exportToFile", {
+                            defaultValue: "Export to file...",
+                          }),
                           fn: () => {
                             setShowShareMenu(false);
                             void handleExport();
@@ -2138,7 +2288,9 @@ export const MeetingsSettings: React.FC = () => {
                   <button
                     className="mts-btn-ghost"
                     style={{ ...s.btnGhost, padding: 0, width: 38 }}
-                    title="Plus d'options"
+                    title={t("common.moreOptions", {
+                      defaultValue: "More options",
+                    })}
                     onClick={() => {
                       setShowShareMenu(false);
                       setShowMoreMenu((v) => !v);
@@ -2164,28 +2316,36 @@ export const MeetingsSettings: React.FC = () => {
                     >
                       {[
                         {
-                          label: "Générer le titre",
+                          label: t("meetings.generateTitle", {
+                            defaultValue: "Generate title",
+                          }),
                           fn: () => {
                             setShowMoreMenu(false);
                             void handleGenTitle();
                           },
                         },
                         {
-                          label: "Importer audio",
+                          label: t("meetings.importAudio", {
+                            defaultValue: "Import audio",
+                          }),
                           fn: () => {
                             setShowMoreMenu(false);
                             void handleImportAudio();
                           },
                         },
                         {
-                          label: "Exporter",
+                          label: t("meetings.export", {
+                            defaultValue: "Export",
+                          }),
                           fn: () => {
                             setShowMoreMenu(false);
                             void handleExport();
                           },
                         },
                         {
-                          label: "Dupliquer",
+                          label: t("meetings.duplicate", {
+                            defaultValue: "Duplicate",
+                          }),
                           fn: () => {
                             setShowMoreMenu(false);
                             if (selectedMeeting)
@@ -2199,8 +2359,12 @@ export const MeetingsSettings: React.FC = () => {
                         },
                         {
                           label: selectedMeeting?.is_archived
-                            ? "Désarchiver"
-                            : "Archiver",
+                            ? t("meetings.unarchive", {
+                                defaultValue: "Unarchive",
+                              })
+                            : t("meetings.archive", {
+                                defaultValue: "Archive",
+                              }),
                           fn: () => {
                             setShowMoreMenu(false);
                             if (selectedMeeting)
@@ -2215,7 +2379,9 @@ export const MeetingsSettings: React.FC = () => {
                         ...(captureActive
                           ? [
                               {
-                                label: "Terminer la réunion",
+                                label: t("meetings.finishMeeting", {
+                                  defaultValue: "Finish meeting",
+                                }),
                                 fn: () => {
                                   setShowMoreMenu(false);
                                   void handleCloseMeeting();
@@ -2265,12 +2431,16 @@ export const MeetingsSettings: React.FC = () => {
                         : "none",
                     }}
                   />
-                  {captureActive ? "Arrêter" : "Démarrer une réunion"}
+                  {captureActive
+                    ? t("meetings.stopCapture", { defaultValue: "Stop" })
+                    : t("meetings.startCapture", {
+                        defaultValue: "Start meeting",
+                      })}
                 </button>
               </div>
             </div>
 
-            {/* ── Tabs ── */}
+            {/* â”€â”€ Tabs â”€â”€ */}
             <div style={s.tabs}>
               {tabDef.map((tab) => (
                 <button
@@ -2314,9 +2484,9 @@ export const MeetingsSettings: React.FC = () => {
               ))}
             </div>
 
-            {/* ── Body ── */}
+            {/* â”€â”€ Body â”€â”€ */}
             <div style={s.body}>
-              {/* ── Résumé tab ── */}
+              {/* â”€â”€ RÃ©sumÃ© tab â”€â”€ */}
               {activeTab === "summary" && (
                 <>
                   <div style={s.summary}>
@@ -2331,8 +2501,12 @@ export const MeetingsSettings: React.FC = () => {
                       <span style={s.summaryBadge}>
                         <IcoSparkle size={11} color={T.gold} />
                         {selectedMeeting.summary.trim()
-                          ? "Résumé IA"
-                          : "Aucun résumé"}
+                          ? t("meetings.summaryAi", {
+                              defaultValue: "AI summary",
+                            })
+                          : t("meetings.noSummary", {
+                              defaultValue: "No summary",
+                            })}
                       </span>
                       <span style={{ marginLeft: "auto" }}>
                         <button
@@ -2355,8 +2529,12 @@ export const MeetingsSettings: React.FC = () => {
                         >
                           <IcoRefresh size={11} color={T.txt2} />
                           {selectedMeeting.summary.trim()
-                            ? "Régénérer"
-                            : "Générer"}
+                            ? t("meetings.regenerate", {
+                                defaultValue: "Regenerate",
+                              })
+                            : t("meetings.generate", {
+                                defaultValue: "Generate",
+                              })}
                         </button>
                       </span>
                     </div>
@@ -2370,8 +2548,10 @@ export const MeetingsSettings: React.FC = () => {
                           fontStyle: "italic",
                         }}
                       >
-                        Cliquez sur "Générer" pour créer un résumé IA de cette
-                        réunion.
+                        {t("meetings.summaryEmptyState", {
+                          defaultValue:
+                            'Click "Generate" to create an AI summary for this meeting.',
+                        })}
                       </p>
                     )}
                   </div>
@@ -2396,10 +2576,19 @@ export const MeetingsSettings: React.FC = () => {
                             color: T.txt3,
                           }}
                         >
-                          Moments clés
+                          {t("meetings.keyMoments", {
+                            defaultValue: "Key moments",
+                          })}
                         </span>
                         <span style={{ fontSize: 12, color: T.txt4 }}>
-                          {chapters.length} repères · cliquer pour écouter
+                          {t("meetings.chapterMarkers", {
+                            count: chapters.length,
+                            defaultValue: `${chapters.length} markers`,
+                          })}{" "}
+                          |{" "}
+                          {t("meetings.clickToListen", {
+                            defaultValue: "click to listen",
+                          })}
                         </span>
                       </div>
                       <div
@@ -2436,13 +2625,14 @@ export const MeetingsSettings: React.FC = () => {
                   )}
                 </>
               )}
-
-              {/* ── Transcription tab ── */}
               {activeTab === "transcript" && (
                 <div style={s.transcript}>
                   <textarea
                     ref={transcriptRef}
-                    placeholder="La transcription apparaîtra ici pendant que vous parlez…"
+                    placeholder={t("meetings.transcriptPlaceholder", {
+                      defaultValue:
+                        "Transcript will appear here while you speak...",
+                    })}
                     value={editTranscript}
                     onChange={(e) => handleTranscriptChange(e.target.value)}
                     onPaste={handleTranscriptPaste}
@@ -2470,7 +2660,7 @@ export const MeetingsSettings: React.FC = () => {
                 </div>
               )}
 
-              {/* ── Chapitres tab ── */}
+              {/* â”€â”€ Chapitres tab â”€â”€ */}
               {activeTab === "chapters" && (
                 <div>
                   <div
@@ -2490,8 +2680,10 @@ export const MeetingsSettings: React.FC = () => {
                         color: T.txt3,
                       }}
                     >
-                      {chapters.length} repère{chapters.length !== 1 ? "s" : ""}{" "}
-                      temporel{chapters.length !== 1 ? "s" : ""}
+                      {t("meetings.timelineMarkers", {
+                        count: chapters.length,
+                        defaultValue: `${chapters.length} timeline markers`,
+                      })}
                     </span>
                     <button
                       onClick={() => void handleGenChapterTitles()}
@@ -2511,7 +2703,9 @@ export const MeetingsSettings: React.FC = () => {
                       }}
                     >
                       <IcoSparkle size={11} color={T.gold} />
-                      Titres IA
+                      {t("meetings.generateChapterTitles", {
+                        defaultValue: "AI titles",
+                      })}
                     </button>
                   </div>
                   {chapters.length === 0 ? (
@@ -2523,7 +2717,10 @@ export const MeetingsSettings: React.FC = () => {
                         textAlign: "center",
                       }}
                     >
-                      Aucun chapitre — ajoutez de la transcription d'abord.
+                      {t("meetings.noChapters", {
+                        defaultValue:
+                          "No chapters yet — add some transcript first.",
+                      })}
                     </p>
                   ) : (
                     <div
@@ -2571,7 +2768,7 @@ export const MeetingsSettings: React.FC = () => {
                 </div>
               )}
 
-              {/* ── Actions tab ── */}
+              {/* â”€â”€ Actions tab â”€â”€ */}
               {activeTab === "actions" && (
                 <div>
                   <div
@@ -2591,7 +2788,9 @@ export const MeetingsSettings: React.FC = () => {
                         color: T.txt3,
                       }}
                     >
-                      Actions
+                      {t("meetings.actions", {
+                        defaultValue: "Actions",
+                      })}
                     </span>
                     <button
                       onClick={() => void handleExtractActions()}
@@ -2612,8 +2811,12 @@ export const MeetingsSettings: React.FC = () => {
                     >
                       <IcoSparkle size={11} color={T.gold} />
                       {selectedMeeting.action_items.trim()
-                        ? "Ré-extraire"
-                        : "Extraire les actions"}
+                        ? t("meetings.reextractActions", {
+                            defaultValue: "Re-extract",
+                          })
+                        : t("meetings.extractActions", {
+                            defaultValue: "Extract actions",
+                          })}
                     </button>
                   </div>
                   {selectedMeeting.action_items.trim() ? (
@@ -2645,8 +2848,10 @@ export const MeetingsSettings: React.FC = () => {
                         textAlign: "center",
                       }}
                     >
-                      Aucune action extraite. Cliquez sur "Extraire les
-                      actions".
+                      {t("meetings.noActions", {
+                        defaultValue:
+                          'No actions extracted yet. Click "Extract actions".',
+                      })}
                     </p>
                   )}
                 </div>

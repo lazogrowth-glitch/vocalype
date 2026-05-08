@@ -60,7 +60,7 @@ const renderSettingsContent = (section: SidebarSection, settings: unknown) => {
   }
 
   const ActiveComponent =
-    SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
+    SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.dictee.component;
   return (
     <ErrorBoundary>
       <ActiveComponent />
@@ -105,7 +105,7 @@ export function DesktopAppShell({
 
   useEffect(() => {
     if (!isSectionVisibleInLaunch(currentSection, settings)) {
-      setCurrentSection("general");
+      setCurrentSection("dictee");
     }
   }, [currentSection, settings, setCurrentSection]);
 

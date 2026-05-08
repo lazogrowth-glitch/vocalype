@@ -11,11 +11,18 @@ import {
   Mic,
   Settings2,
   Zap,
+  AudioWaveform,
 } from "lucide-react";
 
 const GeneralSettings = React.lazy(() =>
   import("./settings/general/GeneralSettings").then((m) => ({
     default: m.GeneralSettings,
+  })),
+);
+
+const DicteeSettings = React.lazy(() =>
+  import("./settings/dictee/DicteeSettings").then((m) => ({
+    default: m.DicteeSettings,
   })),
 );
 
@@ -79,6 +86,7 @@ export type SidebarSection =
   | "snippets"
   | "history"
   | "meetings"
+  | "dictee"
   | "stats"
   | "advanced"
   | "debug"
@@ -103,11 +111,18 @@ export const isSectionVisibleInLaunch = (
 
 export const SECTIONS_CONFIG = {
   // ── Configuration ─────────────────────────────────────
+  dictee: {
+    labelKey: "sidebar.dictee",
+    icon: AudioWaveform,
+    component: DicteeSettings,
+    enabled: () => true,
+    fullBleed: true,
+  },
   general: {
     labelKey: "sidebar.general",
     icon: LayoutGrid,
     component: GeneralSettings,
-    enabled: () => true,
+    enabled: () => false,
   },
   models: {
     labelKey: "sidebar.models",
@@ -133,6 +148,7 @@ export const SECTIONS_CONFIG = {
     icon: History,
     component: HistorySettings,
     enabled: () => true,
+    fullBleed: true,
   },
   meetings: {
     labelKey: "sidebar.meetings",
@@ -171,6 +187,7 @@ export const SECTIONS_CONFIG = {
     icon: CreditCard,
     component: BillingSettings,
     enabled: () => true,
+    fullBleed: true,
   },
   about: {
     labelKey: "sidebar.about",

@@ -1,13 +1,44 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause } from "lucide-react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 
 interface AudioPlayerProps {
-  /** Audio source URL. If not provided, onLoadRequest must be provided. */
   src?: string;
-  /** Called when play is clicked and no src is loaded yet. Should return the audio URL. */
   onLoadRequest?: () => Promise<string | null>;
   className?: string;
   autoPlay?: boolean;
+  /** Stable identifier used to generate the waveform shape (e.g. file_name or entry id) */
+  seed?: string;
+}
+
+const BAR_COUNT = 60;
+
+function generateWaveform(seed: string): number[] {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  }
+  const bars: number[] = [];
+  for (let i = 0; i < BAR_COUNT; i++) {
+    h = (Math.imul(1664525, h) + 1013904223) | 0;
+    const u = (h >>> 0) / 4294967296;
+    // Shape like a voice: taller in the middle, shorter at edges
+    const pos = i / BAR_COUNT;
+    const envelope = 0.35 + 0.65 * Math.sin(pos * Math.PI);
+    bars.push(0.15 + envelope * u * 0.85);
+  }
+  return bars;
+}
+
+function fmt(t: number): string {
+  if (!isFinite(t) || t < 0) return "0:00";
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({
@@ -15,6 +46,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onLoadRequest,
   className = "",
   autoPlay = false,
+  seed,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -24,50 +56,43 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
-  const src = loadedSrc;
   const animationRef = useRef<number>();
-  const dragTimeRef = useRef<number>(0);
-
-  // Use refs to avoid stale closures in animation loop
+  const dragTimeRef = useRef(0);
   const isPlayingRef = useRef(false);
   const isDraggingRef = useRef(false);
+  const prevLoadedSrc = useRef<string | null>(null);
 
-  // Keep refs in sync with state
+  const bars = useMemo(
+    () => generateWaveform(seed ?? loadedSrc ?? initialSrc ?? "default"),
+    [seed, loadedSrc, initialSrc],
+  );
+
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
-
   useEffect(() => {
     isDraggingRef.current = isDragging;
   }, [isDragging]);
 
-  // Stable animation loop with no dependencies
   const tick = useCallback(() => {
     if (audioRef.current && !isDraggingRef.current) {
-      const time = audioRef.current.currentTime;
-      setCurrentTime(time);
+      setCurrentTime(audioRef.current.currentTime);
     }
-
     if (isPlayingRef.current) {
       animationRef.current = requestAnimationFrame(tick);
     }
-  }, []); // Empty dependency array is key!
+  }, []);
 
-  // Manage animation loop lifecycle
   useEffect(() => {
     if (isPlaying && !isDragging) {
-      // Only start if not already running
-      if (!animationRef.current) {
+      if (!animationRef.current)
         animationRef.current = requestAnimationFrame(tick);
-      }
     } else {
-      // Stop animation loop
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = undefined;
       }
     }
-
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
@@ -76,60 +101,42 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     };
   }, [isPlaying, isDragging, tick]);
 
-  // Audio event handlers
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    const handleLoadedMetadata = () => {
+    const onMeta = () => {
       setDuration(audio.duration || 0);
       setCurrentTime(0);
     };
-
-    const handleEnded = () => {
+    const onEnd = () => {
       setIsPlaying(false);
       setCurrentTime(audio.duration || 0);
     };
-
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("play", handlePlay);
-    audio.addEventListener("pause", handlePause);
-
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("ended", onEnd);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
     return () => {
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("play", handlePlay);
-      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("ended", onEnd);
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
     };
   }, []);
 
-  // Auto-play when src becomes available (via onLoadRequest or autoPlay prop)
-  const prevLoadedSrc = useRef<string | null>(null);
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    // Play when loadedSrc changes from null to a value (lazy load case)
     if (loadedSrc && !prevLoadedSrc.current && onLoadRequest) {
-      audio.play().catch((error) => {
-        console.error("Auto-play failed:", error);
-      });
+      audio.play().catch(console.error);
+    } else if (autoPlay && initialSrc && !prevLoadedSrc.current) {
+      audio.play().catch(console.error);
     }
-    // Or when autoPlay is set with initial src
-    else if (autoPlay && initialSrc && !prevLoadedSrc.current) {
-      audio.play().catch((error) => {
-        console.error("Auto-play failed:", error);
-      });
-    }
-
     prevLoadedSrc.current = loadedSrc;
   }, [loadedSrc, autoPlay, initialSrc, onLoadRequest]);
 
-  // Global drag handlers
   const handleMouseUp = useCallback(() => {
     if (isDragging) {
       setIsDragging(false);
@@ -144,7 +151,6 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     if (isDragging) {
       document.addEventListener("mouseup", handleMouseUp);
       document.addEventListener("touchend", handleMouseUp);
-
       return () => {
         document.removeEventListener("mouseup", handleMouseUp);
         document.removeEventListener("touchend", handleMouseUp);
@@ -152,122 +158,152 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   }, [isDragging, handleMouseUp]);
 
-  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
-      if (loadedSrc?.startsWith("blob:")) {
-        URL.revokeObjectURL(loadedSrc);
-      }
+      if (loadedSrc?.startsWith("blob:")) URL.revokeObjectURL(loadedSrc);
     };
   }, [loadedSrc]);
 
   const togglePlay = async () => {
     const audio = audioRef.current;
-    if (!audio) return;
-    if (isLoading) return;
-
+    if (!audio || isLoading) return;
     try {
       if (isPlaying) {
         audio.pause();
-      } else {
-        // If no src loaded yet, request it
-        if (!src && onLoadRequest) {
-          setIsLoading(true);
-          const newSrc = await onLoadRequest();
-          setIsLoading(false);
-          if (newSrc) {
-            setLoadedSrc(newSrc);
-            // Playback will be triggered by the useEffect watching loadedSrc
-          }
-        } else if (src) {
-          await audio.play();
-        }
+      } else if (!loadedSrc && onLoadRequest) {
+        setIsLoading(true);
+        const newSrc = await onLoadRequest();
+        setIsLoading(false);
+        if (newSrc) setLoadedSrc(newSrc);
+      } else if (loadedSrc) {
+        await audio.play();
       }
-    } catch (error) {
-      console.error("Playback failed:", error);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseFloat(e.target.value);
+  const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(
+      0,
+      Math.min(1, (e.clientX - rect.left) / rect.width),
+    );
+    const newTime = ratio * duration;
     dragTimeRef.current = newTime;
     setCurrentTime(newTime);
-
-    if (!isDragging && audioRef.current) {
-      audioRef.current.currentTime = newTime;
-    }
+    if (audioRef.current) audioRef.current.currentTime = newTime;
   };
 
-  const handleSliderMouseDown = () => {
-    setIsDragging(true);
-  };
-
-  const handleSliderTouchStart = () => {
-    setIsDragging(true);
-  };
-
-  const formatTime = (time: number): string => {
-    if (!isFinite(time)) return "0:00";
-
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
-
-  // Fix playhead positioning with better edge case handling
-  const getProgressPercent = (): number => {
-    if (duration <= 0) return 0;
-
-    // Handle the end case - if we're within 0.1 seconds of the end, show 100%
-    if (duration - currentTime < 0.1) return 100;
-
-    const percent = (currentTime / duration) * 100;
-    return Math.min(100, Math.max(0, percent));
-  };
-
-  const progressPercent = getProgressPercent();
+  const progress = duration > 0 ? currentTime / duration : 0;
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <audio ref={audioRef} src={src ?? undefined} preload="metadata" />
+    <div
+      className={className}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        background: "#0e0e12",
+        borderRadius: 12,
+        padding: "10px 16px 10px 12px",
+        border: "1px solid rgba(255,255,255,0.07)",
+      }}
+    >
+      <audio ref={audioRef} src={loadedSrc ?? undefined} preload="metadata" />
 
+      {/* Play/Pause button */}
       <button
         onClick={togglePlay}
         disabled={isLoading}
-        className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/8 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-50"
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: "50%",
+          background: isLoading ? "rgba(201,168,76,0.5)" : "#c9a84c",
+          border: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          flexShrink: 0,
+          boxShadow: "0 2px 10px rgba(201,168,76,0.35)",
+          transition: "filter .14s, box-shadow .14s",
+        }}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.filter = "brightness(1.12)")
+        }
+        onMouseLeave={(e) => (e.currentTarget.style.filter = "")}
         aria-label={isPlaying ? "Pause" : "Play"}
       >
         {isPlaying ? (
-          <Pause width={17} height={17} fill="currentColor" />
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#1a1407">
+            <rect x="5" y="3" width="4" height="18" rx="1" />
+            <rect x="15" y="3" width="4" height="18" rx="1" />
+          </svg>
         ) : (
-          <Play width={17} height={17} fill="currentColor" />
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="#1a1407"
+            style={{ marginLeft: 2 }}
+          >
+            <polygon points="5,3 19,12 5,21" />
+          </svg>
         )}
       </button>
 
-      <div className="flex flex-1 items-center gap-2">
-        <span className="min-w-[30px] text-[11px] text-text/60 tabular-nums">
-          {formatTime(currentTime)}
-        </span>
-
-        <input
-          type="range"
-          min="0"
-          max={duration || 0}
-          step="0.01"
-          value={currentTime}
-          onChange={handleSeek}
-          onMouseDown={handleSliderMouseDown}
-          onTouchStart={handleSliderTouchStart}
-          className={`h-[3px] flex-1 cursor-pointer appearance-none rounded-full focus:outline-none focus:ring-1 focus:ring-logo-primary ${progressPercent >= 99.5 ? "[&::-webkit-slider-thumb]:translate-x-0.5 [&::-moz-range-thumb]:translate-x-0.5" : ""}`}
-          style={{
-            background: `linear-gradient(to right, var(--color-logo-primary) 0%, var(--color-logo-primary) ${progressPercent}%, rgba(128, 128, 128, 0.2) ${progressPercent}%, rgba(128, 128, 128, 0.2) 100%)`,
-          }}
-        />
-
-        <span className="min-w-[30px] text-[11px] text-text/60 tabular-nums">
-          {formatTime(duration)}
-        </span>
+      {/* Waveform */}
+      <div
+        onClick={handleWaveformClick}
+        style={{
+          flex: 1,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          cursor: duration ? "pointer" : "default",
+        }}
+      >
+        {bars.map((h, i) => {
+          const barProgress = i / BAR_COUNT;
+          const played = barProgress < progress;
+          const isCurrent = Math.abs(barProgress - progress) < 1 / BAR_COUNT;
+          const barH = Math.max(3, Math.round(h * 26));
+          return (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                height: barH,
+                borderRadius: 2,
+                background:
+                  played || isCurrent
+                    ? `rgba(201,168,76,${0.5 + h * 0.5})`
+                    : `rgba(255,255,255,${0.08 + h * 0.1})`,
+                transition: "background .05s",
+              }}
+            />
+          );
+        })}
       </div>
+
+      {/* Time */}
+      <span
+        style={{
+          fontSize: 12,
+          color: "rgba(255,255,255,0.45)",
+          fontVariantNumeric: "tabular-nums",
+          letterSpacing: "0.02em",
+          flexShrink: 0,
+          fontFamily: "inherit",
+        }}
+      >
+        {fmt(currentTime)} / {fmt(duration)}
+      </span>
     </div>
   );
 };

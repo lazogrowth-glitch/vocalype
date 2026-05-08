@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { TitleBar } from "./TitleBar";
 import { Sidebar } from "./Sidebar";
+import type { AuthSession } from "@/lib/auth/types";
 import {
   isSectionVisibleInLaunch,
   SidebarSection,
@@ -28,7 +29,7 @@ type DesktopAppShellProps = {
   layoutTier: LayoutTier;
   effectiveSidebarCollapsed: boolean;
   toggleSidebar: () => void;
-  session: any;
+  session: AuthSession | null;
   isTrialing: boolean;
   trialEndsAt: string | null;
   handleLogout: () => void;

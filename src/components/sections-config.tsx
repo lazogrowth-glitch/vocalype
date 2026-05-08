@@ -9,7 +9,6 @@ import {
   Info,
   LayoutGrid,
   Mic,
-  NotebookPen,
   Settings2,
   Zap,
 } from "lucide-react";
@@ -23,12 +22,6 @@ const GeneralSettings = React.lazy(() =>
 const MeetingsSettings = React.lazy(() =>
   import("./settings/meetings/MeetingsSettings").then((m) => ({
     default: m.MeetingsSettings,
-  })),
-);
-
-const NotesSettings = React.lazy(() =>
-  import("./settings/notes/NotesSettings").then((m) => ({
-    default: m.NotesSettings,
   })),
 );
 
@@ -68,7 +61,7 @@ interface IconProps {
   height?: number | string;
   size?: number | string;
   className?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface SectionConfig {
@@ -86,7 +79,6 @@ export type SidebarSection =
   | "snippets"
   | "history"
   | "meetings"
-  | "notes"
   | "stats"
   | "advanced"
   | "debug"
@@ -148,12 +140,6 @@ export const SECTIONS_CONFIG = {
     component: MeetingsSettings,
     enabled: () => true,
     fullBleed: true,
-  },
-  notes: {
-    labelKey: "sidebar.notes",
-    icon: NotebookPen,
-    component: NotesSettings,
-    enabled: () => true,
   },
   stats: {
     labelKey: "sidebar.stats",

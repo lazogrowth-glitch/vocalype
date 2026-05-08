@@ -2068,7 +2068,10 @@ export const MeetingsSettings: React.FC = () => {
                   <button
                     className="mts-btn-ghost"
                     style={s.btnGhost}
-                    onClick={() => setShowShareMenu((v) => !v)}
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      setShowShareMenu((v) => !v);
+                    }}
                   >
                     <IcoShare size={14} color={T.txt2} />
                     Partager
@@ -2142,7 +2145,10 @@ export const MeetingsSettings: React.FC = () => {
                     className="mts-btn-ghost"
                     style={{ ...s.btnGhost, padding: 0, width: 38 }}
                     title="Plus d'options"
-                    onClick={() => setShowMoreMenu((v) => !v)}
+                    onClick={() => {
+                      setShowShareMenu(false);
+                      setShowMoreMenu((v) => !v);
+                    }}
                   >
                     <IcoDots size={15} color={T.txt2} />
                   </button>

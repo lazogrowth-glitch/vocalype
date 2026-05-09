@@ -11,7 +11,7 @@ import { StartupToggle } from "../StartupToggle";
 import { AppLanguageSelector } from "../AppLanguageSelector";
 import { LanguageSelector } from "../LanguageSelector";
 import { ShortcutInput } from "../ShortcutInput";
-import { CloudPostProcessToggle } from "../post-processing/CloudPostProcessToggle";
+import { CloudPostProcessToggle } from "../postprocessing/CloudPostProcessToggle";
 import {
   TranscribeFileButton,
   ExportHistoryButton,

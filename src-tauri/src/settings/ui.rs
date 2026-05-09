@@ -39,6 +39,5 @@ pub enum AutoSubmitKey {
 #[serde(rename_all = "snake_case")]
 pub enum KeyboardImplementation {
     Tauri,
-    #[serde(alias = "handy_keys")]
-    NativeShortcutCapture,
+    NativeKeyboard,
 }

@@ -272,8 +272,7 @@
           "label": "Micr?fono siempre activo",
           "description": "El micr?fono permanece abierto; la VAD detecta el habla autom?ticamente"
         }
-      },
-      "categories": {}
+      }
     },
     "models": {
       "title": "Modelos de Transcripción",
@@ -731,8 +730,8 @@
         "description": "Establece el nivel de detalle del registro"
       },
       "updateChecks": {
-        "label": "Buscar Actualizaciones",
-        "description": "Buscar automáticamente nuevas versiones de Vocalype"
+        "description": "Buscar automáticamente nuevas versiones de Vocalype",
+        "title": "Check for updates"
       },
       "soundTheme": {
         "label": "Tema de Sonido",
@@ -791,7 +790,10 @@
       "paths": {
         "appData": "Datos de la Aplicación:",
         "models": "Modelos:",
-        "settings": "Configuración:"
+        "settings": "Configuración:",
+        "title": "Useful paths",
+        "description": "These locations help when you need logs or precise local file paths for support.",
+        "logs": "Logs"
       },
       "pasteDelay": {
         "title": "Retraso de pegado",
@@ -800,6 +802,203 @@
       "autoPauseMedia": {
         "label": "Pausar medios al grabar",
         "description": "Pausa autom?ticamente Spotify y otros reproductores multimedia durante la grabaci?n y reanuda al terminar."
+      },
+      "description": "Collect a support snapshot, open local logs, and access deeper internal tools when needed.",
+      "internalTitle": "Internal tools",
+      "internalDescription": "These controls are meant for debugging, calibration, and deeper runtime inspection.",
+      "internalLocked": "Advanced developer tools stay hidden during normal use. Enable debug mode if you need the full runtime panels.",
+      "enableInternal": "Enable advanced diagnostics",
+      "showInternal": "Show advanced diagnostics",
+      "hideInternal": "Hide advanced diagnostics",
+      "internalShortcut": "Shortcut: Ctrl+Shift+D or Cmd+Shift+D",
+      "overview": {
+        "title": "Overview",
+        "description": "Capture app state, copy a short summary, or export JSON when something feels off.",
+        "actions": {
+          "refresh": "Refresh snapshot",
+          "copySummary": "Copy summary",
+          "copyFullReport": "Copy full report",
+          "exportSupportPackage": "Export support package",
+          "export": "Export JSON",
+          "openLogs": "Open logs",
+          "contactSupport": "Send to support"
+        },
+        "status": {
+          "refreshed": "Diagnostics refreshed",
+          "copied": "Summary copied",
+          "copyFailed": "Copy failed: {{error}}",
+          "exported": "Diagnostics exported",
+          "exportFailed": "Export failed: {{error}}",
+          "logsOpened": "Log folder opened",
+          "logsOpenFailed": "Could not open logs: {{error}}",
+          "fullReportCopied": "Full support report copied",
+          "fullReportCopyFailed": "Could not copy support report: {{error}}",
+          "supportPackageExported": "Support package exported",
+          "supportPackageExportFailed": "Could not export support package: {{error}}",
+          "supportOpened": "Email draft opened",
+          "supportOpenFailed": "Could not open support email: {{error}}"
+        },
+        "health": {
+          "idle": "No snapshot yet",
+          "warning": "Attention recommended",
+          "good": "No blocking signal detected"
+        },
+        "capturedAt": "Captured at {{value}}",
+        "empty": "Take a snapshot before sending details to support.",
+        "notAvailable": "Not available",
+        "fields": {
+          "version": "Version",
+          "lifecycle": "Lifecycle",
+          "model": "Model",
+          "language": "Language",
+          "microphone": "Microphone",
+          "pasteMethod": "Paste method",
+          "inputLevel": "Input level",
+          "permission": "Microphone permission",
+          "recentErrors": "Recent errors",
+          "attention": "Needs attention"
+        },
+        "summaryFlags": {
+          "modelNotLoaded": "model not loaded",
+          "microphoneMissing": "selected microphone missing",
+          "backendNotReady": "microphone backend not ready",
+          "recentErrors": "recent runtime errors"
+        },
+        "support": {
+          "subject": "Vocalype support request",
+          "bodyIntro": "Hello, I need help with Vocalype. Here is my diagnostics summary:",
+          "bodyIssueSummary": "Issue summary:",
+          "bodySteps": "What I was doing when the issue happened:",
+          "bodyExpected": "What I expected instead:",
+          "bodyAttachment": "If needed, I can also attach the exported diagnostics JSON.",
+          "composeTitle": "Prepare your support message",
+          "composeDescription": "Large apps usually ask for a short repro, expected behavior, and a diagnostics snapshot. Fill this once and reuse it.",
+          "issueSummaryLabel": "Issue summary",
+          "issueSummaryPlaceholder": "Example: paste fails in Slack after recording ends",
+          "stepsLabel": "What happened",
+          "stepsPlaceholder": "List the steps, what app was open, and what Vocalype did.",
+          "expectedLabel": "What you expected",
+          "expectedPlaceholder": "Example: text should be pasted in the active field without losing clipboard content.",
+          "checklistTitle": "Support checklist",
+          "checklistDescription": "This is the kind of context support teams usually ask for first.",
+          "recentErrorsTitle": "Recent errors",
+          "notProvided": "Not provided",
+          "reportTitle": "Vocalype support report",
+          "reportSections": {
+            "issueSummary": "Issue summary",
+            "steps": "What happened",
+            "expected": "Expected behavior",
+            "summary": "Diagnostics summary",
+            "runtime": "Runtime details",
+            "errors": "Recent errors"
+          },
+          "checks": {
+            "snapshotReady": "Snapshot ready",
+            "snapshotMissing": "Take a fresh snapshot before sending",
+            "reproReady": "Reproduction details added",
+            "reproMissing": "Add what happened and where it happened",
+            "expectedReady": "Expected behavior added",
+            "expectedMissing": "Explain what you expected instead",
+            "exportHint": "If support asks for more detail, export the JSON and attach it to your email."
+          }
+        }
+      },
+      "health": {
+        "ok": "All systems running normally",
+        "good": "SYSTEM OK",
+        "warning": "Attention recommended",
+        "idle": "No snapshot yet"
+      },
+      "diag": {
+        "systemState": "System status",
+        "version": "Version",
+        "inputLevel": "Input level",
+        "errors": "Recent errors",
+        "mic": "Microphone",
+        "active": "Active",
+        "missing": "Missing",
+        "cloud": "Vocalype Cloud",
+        "connected": "Connected",
+        "permissions": "Accessibility permissions",
+        "permMeta": "Required for auto-insert",
+        "ok": "OK",
+        "check": "Check",
+        "model": "AI Model",
+        "notLoaded": "Not loaded"
+      },
+      "anchor": {
+        "snapshot": "Snapshot",
+        "support": "Support",
+        "logs": "Logs",
+        "paths": "Paths",
+        "runtime": "Runtime",
+        "lab": "Labs"
+      },
+      "snapshot": {
+        "title": "Support snapshot",
+        "desc": "Captures complete app state — config, version, performance, recent events.",
+        "latest": "Latest snapshot",
+        "copyId": "Copy ID",
+        "empty": "No snapshot yet — click Refresh",
+        "captured": "Captured",
+        "lifecycle": "Lifecycle",
+        "version": "Version",
+        "model": "Model",
+        "quickSend": "Quick send",
+        "shareTitle": "Share with support",
+        "shareDesc": "Includes snapshot, your message and a log fragment. Contains no audio or transcription.",
+        "ready": "Ready to send",
+        "notReady": "Take a snapshot first"
+      },
+      "support": {
+        "title": "Prepare your ticket",
+        "desc": "A good ticket = short repro + expected behavior + snapshot. Support has everything in 30 s.",
+        "formTitle": "Your message",
+        "formDesc": "Be precise about what broke. The shorter, the more useful."
+      },
+      "checklist": {
+        "snap": "Recent snapshot captured",
+        "version": "Version & OS detected",
+        "describe": "Describe what happened",
+        "describeSub": "fields on the left",
+        "expected": "Specify the expected behavior",
+        "logs": "Attach logs if requested",
+        "logsSub": "optional — Export JSON in Runtime"
+      },
+      "logs": {
+        "title": "Live logs",
+        "desc": "Recent events — useful when reproducing a bug.",
+        "filename": "vocalype.log",
+        "live": "live",
+        "empty": "Take a snapshot to see recent events.",
+        "noMatches": "No events for this filter."
+      },
+      "runtime": {
+        "title": "Runtime tools",
+        "desc": "Calibration, debug and live engine inspection."
+      },
+      "cancel": {
+        "title": "Cancel shortcut",
+        "description": "Key to cancel the current recording."
+      },
+      "micDiag": {
+        "title": "Mic diagnostic",
+        "description": "Quick audio chain test via runtime snapshot.",
+        "launch": "Run"
+      },
+      "labs": {
+        "title": "Labs · Voice Feedback",
+        "desc": "Help us improve the model by reporting specific transcription errors."
+      },
+      "voiceFeedback": {
+        "expectedPlaceholder": "Meeting at 2:30 PM with Alex",
+        "actualPlaceholder": "Meeting at two thirty pm with Alexis",
+        "notesPlaceholder": "Low voice, noisy room, French drift, weird punctuation…",
+        "languagePlaceholder": "e.g. en or fr",
+        "tagsSep": "comma-separated",
+        "tagsPlaceholder": "noise, accent, punctuation",
+        "keepAudio": "Keep audio as reference",
+        "save": "Save feedback"
       }
     },
     "about": {

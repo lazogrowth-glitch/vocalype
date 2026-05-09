@@ -2,7 +2,6 @@ import React from "react";
 import {
   AlignLeft,
   BarChart2,
-  Clock3,
   CreditCard,
   FlaskConical,
   History,
@@ -20,9 +19,9 @@ const GeneralSettings = React.lazy(() =>
   })),
 );
 
-const DicteeSettings = React.lazy(() =>
-  import("./settings/dictee/DicteeSettings").then((m) => ({
-    default: m.DicteeSettings,
+const DictationSettings = React.lazy(() =>
+  import("./settings/dictation/DictationSettings").then((m) => ({
+    default: m.DictationSettings,
   })),
 );
 
@@ -32,9 +31,9 @@ const MeetingsSettings = React.lazy(() =>
   })),
 );
 
-const AdvancedSettings = React.lazy(() =>
-  import("./settings/advanced/AdvancedSettings").then((m) => ({
-    default: m.AdvancedSettings,
+const PreferencesSettings = React.lazy(() =>
+  import("./settings/preferences/PreferencesSettings").then((m) => ({
+    default: m.PreferencesSettings,
   })),
 );
 const HistorySettings = React.lazy(() =>
@@ -42,19 +41,14 @@ const HistorySettings = React.lazy(() =>
     default: m.HistorySettings,
   })),
 );
-const DebugSettings = React.lazy(() =>
-  import("./settings/debug/DebugSettings").then((m) => ({
-    default: m.DebugSettings,
+const DiagnosticsSettings = React.lazy(() =>
+  import("./settings/diagnostics/DiagnosticsSettings").then((m) => ({
+    default: m.DiagnosticsSettings,
   })),
 );
 const PostProcessingSettings = React.lazy(() =>
-  import("./settings/post-processing/PostProcessingSettings").then((m) => ({
+  import("./settings/postprocessing/PostProcessingSettings").then((m) => ({
     default: m.PostProcessingSettings,
-  })),
-);
-const ModelsSettings = React.lazy(() =>
-  import("./settings/models/ModelsSettings").then((m) => ({
-    default: m.ModelsSettings,
   })),
 );
 const BillingSettings = React.lazy(() =>
@@ -81,7 +75,6 @@ interface SectionConfig {
 
 export type SidebarSection =
   | "general"
-  | "models"
   | "postprocessing"
   | "snippets"
   | "history"
@@ -94,7 +87,6 @@ export type SidebarSection =
   | "about";
 
 const LAUNCH_HIDDEN_SECTIONS = new Set<SidebarSection>([
-  "models",
   "snippets",
   "stats",
   "debug",
@@ -109,12 +101,12 @@ export const isSectionVisibleInLaunch = (
   settings: unknown,
 ) => SECTIONS_CONFIG[section]?.enabled(settings) === true;
 
-export const SECTIONS_CONFIG = {
+export const SECTIONS_CONFIG: Record<SidebarSection, SectionConfig> = {
   // ── Configuration ─────────────────────────────────────
   dictee: {
     labelKey: "sidebar.dictee",
     icon: AudioWaveform,
-    component: DicteeSettings,
+    component: DictationSettings,
     enabled: () => true,
     fullBleed: true,
   },
@@ -123,12 +115,6 @@ export const SECTIONS_CONFIG = {
     icon: LayoutGrid,
     component: GeneralSettings,
     enabled: () => false,
-  },
-  models: {
-    labelKey: "sidebar.models",
-    icon: Clock3,
-    component: ModelsSettings,
-    enabled: () => isLaunchVisible("models"),
   },
   postprocessing: {
     labelKey: "sidebar.postProcessing",
@@ -167,19 +153,16 @@ export const SECTIONS_CONFIG = {
   advanced: {
     labelKey: "sidebar.advanced",
     icon: Settings2,
-    component: AdvancedSettings,
+    component: PreferencesSettings,
     enabled: () => true,
+    fullBleed: true,
   },
   debug: {
     labelKey: "sidebar.debug",
     icon: FlaskConical,
-    component: DebugSettings,
-    enabled: (settings) =>
-      import.meta.env.DEV &&
-      typeof settings === "object" &&
-      settings !== null &&
-      "debug_mode" in settings &&
-      settings.debug_mode === true,
+    component: DiagnosticsSettings,
+    enabled: () => true,
+    fullBleed: true,
   },
   // ── Bas de sidebar ────────────────────────────────────
   billing: {
@@ -195,4 +178,4 @@ export const SECTIONS_CONFIG = {
     component: GeneralSettings,
     enabled: () => isLaunchVisible("about"),
   },
-} as const satisfies Record<SidebarSection, SectionConfig>;
+};

@@ -206,10 +206,10 @@ pub struct AdaptiveMachineProfile {
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
-        // Default to the native shortcut capture backend only on macOS where it's well-tested.
+        // Default to the native keyboard backend only on macOS where it's well-tested.
         // Windows and Linux use Tauri by default.
         #[cfg(target_os = "macos")]
-        return KeyboardImplementation::NativeShortcutCapture;
+        return KeyboardImplementation::NativeKeyboard;
         #[cfg(not(target_os = "macos"))]
         return KeyboardImplementation::Tauri;
     }
@@ -273,7 +273,7 @@ impl ModelUnloadTimeout {
 /// forward automatically on the next launch.
 pub const CURRENT_SETTINGS_VERSION: u32 = 1;
 
-/* still handy for composing the initial JSON in the store ------------- */
+/* still useful for composing the initial JSON in the store ------------ */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
     /// Schema version used to drive forward migrations.
@@ -347,6 +347,10 @@ pub struct AppSettings {
     pub history_limit: usize,
     #[serde(default = "default_recording_retention_period")]
     pub recording_retention_period: RecordingRetentionPeriod,
+    /// When false, audio is never written to disk — only the transcription text is saved.
+    /// Saves significant disk space (WAV at 16 kHz 16-bit ≈ 32 KB/s).
+    #[serde(default = "default_save_audio_recordings")]
+    pub save_audio_recordings: bool,
     #[serde(default)]
     pub paste_method: PasteMethod,
     #[serde(default)]
@@ -499,12 +503,15 @@ fn default_auto_submit() -> bool {
 }
 
 fn default_history_limit() -> usize {
-    50
+    100_000
 }
 
 fn default_recording_retention_period() -> RecordingRetentionPeriod {
-    // Default to 3 months for GDPR compliance — data should not be kept indefinitely.
-    RecordingRetentionPeriod::Months3
+    RecordingRetentionPeriod::Weeks2
+}
+
+fn default_save_audio_recordings() -> bool {
+    false
 }
 
 fn default_audio_feedback_volume() -> f32 {
@@ -1226,6 +1233,7 @@ pub fn get_default_settings() -> AppSettings {
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         recording_retention_period: default_recording_retention_period(),
+        save_audio_recordings: false,
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
         auto_submit: default_auto_submit(),

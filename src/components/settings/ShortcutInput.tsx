@@ -1,7 +1,7 @@
 import React from "react";
 import { useSettings } from "../../hooks/useSettings";
 import { GlobalShortcutInput } from "./GlobalShortcutInput";
-import { NativeShortcutCaptureInput } from "./NativeShortcutCaptureInput";
+import { NativeKeyboardInput } from "./NativeKeyboardInput";
 
 interface ShortcutInputProps {
   descriptionMode?: "inline" | "tooltip";
@@ -15,15 +15,15 @@ interface ShortcutInputProps {
  * based on the keyboard_implementation setting.
  *
  * - "tauri" (default): Uses GlobalShortcutInput with JS keyboard events
- * - "native_shortcut_capture": Uses NativeShortcutCaptureInput with backend key events
+ * - "native_keyboard": Uses NativeKeyboardInput with backend key events
  */
 export const ShortcutInput: React.FC<ShortcutInputProps> = (props) => {
   const { getSetting } = useSettings();
   const keyboardImplementation = getSetting("keyboard_implementation");
 
   // Default to Tauri implementation if not set
-  if (keyboardImplementation === "native_shortcut_capture") {
-    return <NativeShortcutCaptureInput {...props} />;
+  if (keyboardImplementation === "native_keyboard") {
+    return <NativeKeyboardInput {...props} />;
   }
 
   return <GlobalShortcutInput {...props} />;

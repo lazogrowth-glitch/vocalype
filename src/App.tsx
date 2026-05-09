@@ -49,7 +49,6 @@ const DesktopAppShell = lazy(() => import("./components/DesktopAppShell"));
 
 const SECTION_DESCRIPTION_KEYS: Partial<Record<SidebarSection, string>> = {
   general: "shell.sectionDescriptions.general",
-  models: "shell.sectionDescriptions.models",
   postprocessing: "shell.sectionDescriptions.postprocessing",
   snippets: "shell.sectionDescriptions.snippets",
   history: "shell.sectionDescriptions.history",

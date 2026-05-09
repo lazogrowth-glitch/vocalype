@@ -278,6 +278,7 @@ fn is_known_french_word_no_accent(w: &str) -> bool {
         | "le" | "la" | "les" | "un" | "une" | "des" | "du" | "de" | "l" | "d"
         // ── Possessives ───────────────────────────────────────────────────────
         | "mon" | "ma" | "mes" | "ton" | "ta" | "tes" | "son" | "sa" | "ses"
+        | "garde" | "gardes" | "francais" | "français" | "repars" | "normalement"
         | "notre" | "nos" | "votre" | "vos" | "leur" | "leurs"
         // ── Demonstratives ────────────────────────────────────────────────────
         | "ce" | "cet" | "cette" | "ces" | "celui" | "celle" | "ceux" | "celles"
@@ -712,7 +713,7 @@ fn should_skip_low_signal_vad_chunk(new_slice: &[f32]) -> bool {
         signal.duration_seconds <= 2.2 && signal.rms < 0.0015 && signal.peak < 0.01;
 
     mean_energy < crate::chunking::VAD_SILENT_CHUNK_ENERGY_THRESHOLD
-        || (duration_samples <= 4 * 16_000 && mean_energy < 5e-8)
+        || (duration_samples <= 4 * 16_000 && mean_energy < 1e-8)
         || is_short_low_signal_chunk
 }
 
@@ -2268,8 +2269,8 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
     let selected_action_key = coordinator.selected_action(operation_id);
     let settings = get_settings(app);
     let auto_pause_media = settings.auto_pause_media;
-
     let llm_auto_mode = settings.llm_auto_mode;
+    let post_process_enabled = settings.post_process_enabled;
 
     let chunking_handle = app
         .try_state::<ActiveChunkingHandle>()
@@ -3140,7 +3141,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
 
             if should_auto_paste(effective_status) && !transcription.is_empty() {
                 let effective_post_process = post_process
-                    || language_correction.is_some()
+                    || (language_correction.is_some() && post_process_enabled)
                     || (llm_auto_mode && auto_llm_should_trigger(&ah, &transcription));
                 let outcome = process_transcription_text(
                     &ah,
@@ -3226,7 +3227,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 }
                 emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
                 let effective_post_process = post_process
-                    || language_correction.is_some()
+                    || (language_correction.is_some() && post_process_enabled)
                     || (llm_auto_mode && auto_llm_should_trigger(&ah, &transcription));
                 let outcome = process_transcription_text(
                     &ah,

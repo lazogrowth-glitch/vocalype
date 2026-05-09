@@ -42,25 +42,25 @@ export type SelectProps = BaseProps & (CreatableProps | NonCreatableProps);
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
-    minHeight: 44,
+    minHeight: 32,
     borderRadius: 8,
     borderColor: state.isFocused
       ? "rgba(201,168,76,0.42)"
-      : "rgba(255,255,255,0.08)",
-    boxShadow: state.isFocused ? "0 0 0 1px rgba(201,168,76,0.22)" : "none",
-    backgroundColor: state.isFocused ? "#2A2A30" : "#1F1F23",
-    fontSize: "0.875rem",
+      : "rgba(255,255,255,0.10)",
+    boxShadow: state.isFocused ? "0 0 0 1px rgba(201,168,76,0.18)" : "none",
+    backgroundColor: state.isFocused ? "#24242c" : "#1c1c22",
+    fontSize: "12.5px",
     color: "var(--color-text)",
     transition: "all 150ms ease",
     ":hover": {
-      borderColor: "rgba(255,255,255,0.12)",
-      backgroundColor: "#2A2A30",
+      borderColor: "rgba(255,255,255,0.15)",
+      backgroundColor: "#24242c",
     },
   }),
   valueContainer: (base) => ({
     ...base,
     paddingInline: 12,
-    paddingBlock: 7,
+    paddingBlock: 0,
   }),
   input: (base) => ({
     ...base,
@@ -89,32 +89,37 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   menu: (provided) => ({
     ...provided,
     zIndex: 30,
-    backgroundColor: "#1F1F23",
+    background: "linear-gradient(180deg,#1b1b1e,#131316)",
     color: "var(--color-text)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 8,
-    boxShadow: "0 18px 40px rgba(0, 0, 0, 0.32)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    borderRadius: 10,
+    boxShadow: "0 12px 28px rgba(0, 0, 0, 0.38)",
     overflow: "hidden",
+    padding: 4,
   }),
   menuList: (base) => ({
     ...base,
-    padding: 6,
-    backgroundColor: "#1F1F23",
+    padding: 0,
+    background: "transparent",
   }),
   option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected
-      ? "rgba(201,168,76,0.13)"
+      ? "rgba(212,168,88,0.14)"
       : state.isFocused
-        ? "#2A2A30"
+        ? "#1c1c22"
         : "transparent",
-    color: "var(--color-text)",
-    borderRadius: 6,
-    padding: "11px 12px",
+    color:
+      state.isSelected || state.isFocused
+        ? "var(--color-logo-primary)"
+        : "var(--color-text)",
+    borderRadius: 7,
+    padding: "8px 10px",
+    fontSize: "12.5px",
     cursor: state.isDisabled ? "not-allowed" : base.cursor,
     opacity: state.isDisabled ? 0.5 : 1,
     ":active": {
-      backgroundColor: "rgba(201,168,76,0.18)",
+      backgroundColor: "rgba(212,168,88,0.18)",
     },
   }),
   placeholder: (base) => ({

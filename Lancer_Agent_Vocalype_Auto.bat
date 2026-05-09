@@ -24,7 +24,7 @@ if defined VOCALYPE_BRAIN_EXTERNAL_MODE (
 echo.
 
 echo [Agent] Lancement du routeur operationnel...
-python "C:\developer\sas\vocalype\vocalype-brain\scripts\run_operating_agent.py"
+python "C:\developer\sas\vocalype\internal\brain\scripts\run_operating_agent.py"
 if errorlevel 1 (
     echo.
     echo   ERREUR : run_operating_agent.py a echoue.
@@ -36,8 +36,8 @@ if errorlevel 1 (
 
 REM --- Read the final route from agent_route.txt (written by the agent) ---
 set "ROUTE=unknown"
-if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_route.txt" (
-    set /p ROUTE=<"C:\developer\sas\vocalype\vocalype-brain\outputs\agent_route.txt"
+if exist "C:\developer\sas\vocalype\internal\brain\outputs\agent_route.txt" (
+    set /p ROUTE=<"C:\developer\sas\vocalype\internal\brain\outputs\agent_route.txt"
 )
 echo.
 echo [Route] Route finale detectee : %ROUTE%
@@ -47,15 +47,15 @@ echo [Ouverture] Lecture des resultats...
 echo.
 
 REM --- Always open: recommendation + run report ---
-if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_recommendation.md" (
-    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_recommendation.md"
+if exist "C:\developer\sas\vocalype\internal\brain\outputs\agent_recommendation.md" (
+    start "" "C:\developer\sas\vocalype\internal\brain\outputs\agent_recommendation.md"
     echo   [OUVERT] agent_recommendation.md
 ) else (
     echo   [MANQUANT] agent_recommendation.md introuvable.
 )
 
-if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_run_report.md" (
-    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\agent_run_report.md"
+if exist "C:\developer\sas\vocalype\internal\brain\outputs\agent_run_report.md" (
+    start "" "C:\developer\sas\vocalype\internal\brain\outputs\agent_run_report.md"
     echo   [OUVERT] agent_run_report.md
 ) else (
     echo   [MANQUANT] agent_run_report.md introuvable.
@@ -67,8 +67,8 @@ if "%ROUTE%"=="product_implementation" goto open_mission
 goto skip_mission
 
 :open_mission
-if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\fresh_investigation_mission.md" (
-    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\fresh_investigation_mission.md"
+if exist "C:\developer\sas\vocalype\internal\brain\outputs\fresh_investigation_mission.md" (
+    start "" "C:\developer\sas\vocalype\internal\brain\outputs\fresh_investigation_mission.md"
     echo   [OUVERT] fresh_investigation_mission.md -- copie-colle dans Claude/Codex
 ) else (
     echo   [--] fresh_investigation_mission.md : pas cree ce cycle
@@ -82,16 +82,16 @@ echo        Route data_entry/hold/observation_wait : pas de mission Claude a env
 :after_mission
 
 REM --- next_product_bottleneck.md: always open if present ---
-if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\next_product_bottleneck.md" (
-    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\next_product_bottleneck.md"
+if exist "C:\developer\sas\vocalype\internal\brain\outputs\next_product_bottleneck.md" (
+    start "" "C:\developer\sas\vocalype\internal\brain\outputs\next_product_bottleneck.md"
     echo   [OUVERT] next_product_bottleneck.md
 ) else (
     echo   [--] next_product_bottleneck.md : pas cree ce cycle
 )
 
 REM --- deepseek_response.md: only if exists (auto mode only) ---
-if exist "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md" (
-    start "" "C:\developer\sas\vocalype\vocalype-brain\outputs\deepseek_response.md"
+if exist "C:\developer\sas\vocalype\internal\brain\outputs\deepseek_response.md" (
+    start "" "C:\developer\sas\vocalype\internal\brain\outputs\deepseek_response.md"
     echo   [OUVERT] deepseek_response.md
 )
 
@@ -158,3 +158,4 @@ echo   Pour activer auto (CMD) :
 echo ============================================================
 echo.
 pause
+

@@ -226,12 +226,19 @@ impl HistoryManager {
         model_name: Option<String>,
     ) -> Result<()> {
         let timestamp = Utc::now().timestamp();
-        let file_name = format!("{}-{}.wav", RECORDING_FILE_PREFIX, timestamp);
         let title = self.format_timestamp_title(timestamp);
 
-        // Save WAV file
-        let file_path = self.recordings_dir.join(&file_name);
-        save_wav_file(file_path, &audio_samples).await?;
+        // Save WAV file only if the user has audio recordings enabled.
+        let save_audio = crate::settings::get_settings(&self.app_handle).save_audio_recordings;
+        let file_name = if save_audio {
+            let name = format!("{}-{}.wav", RECORDING_FILE_PREFIX, timestamp);
+            let file_path = self.recordings_dir.join(&name);
+            save_wav_file(file_path, &audio_samples).await?;
+            name
+        } else {
+            // No audio stored — use an empty sentinel so the DB row is consistent.
+            String::new()
+        };
 
         // Save to database
         self.save_to_database(
@@ -286,9 +293,9 @@ impl HistoryManager {
 
         match retention_period {
             crate::settings::RecordingRetentionPeriod::PreserveLimit => {
-                // Use the old count-based logic with history_limit
-                let limit = crate::settings::get_history_limit(&self.app_handle);
-                return self.cleanup_by_count(limit);
+                // Legacy value — treat as Months3 as documented in RecordingRetentionPeriod.
+                // Count-based cleanup (history_limit = 50) is no longer used.
+                return self.cleanup_by_time(crate::settings::RecordingRetentionPeriod::Months3);
             }
             _ => {
                 // Use time-based logic
@@ -312,14 +319,16 @@ impl HistoryManager {
                 params![id],
             )?;
 
-            // Delete WAV file
-            let file_path = self.recordings_dir.join(file_name);
-            if file_path.exists() {
-                if let Err(e) = fs::remove_file(&file_path) {
-                    error!("Failed to delete WAV file {}: {}", file_name, e);
-                } else {
-                    debug!("Deleted old WAV file: {}", file_name);
-                    deleted_count += 1;
+            // Delete WAV file only if one was saved (file_name is non-empty).
+            if !file_name.is_empty() {
+                let file_path = self.recordings_dir.join(file_name);
+                if file_path.exists() {
+                    if let Err(e) = fs::remove_file(&file_path) {
+                        error!("Failed to delete WAV file {}: {}", file_name, e);
+                    } else {
+                        debug!("Deleted old WAV file: {}", file_name);
+                        deleted_count += 1;
+                    }
                 }
             }
         }
@@ -665,21 +674,23 @@ impl HistoryManager {
 
         // Get the entry to find the file name
         if let Some(entry) = self.get_entry_by_id(id).await? {
-            // Delete the audio file first
-            match self.get_audio_file_path(&entry.file_name) {
-                Ok(file_path) => {
-                    if file_path.exists() {
-                        if let Err(e) = fs::remove_file(&file_path) {
-                            error!("Failed to delete audio file {}: {}", entry.file_name, e);
-                            // Continue with database deletion even if file deletion fails
+            // Delete the audio file only if one was saved (file_name is non-empty).
+            if !entry.file_name.is_empty() {
+                match self.get_audio_file_path(&entry.file_name) {
+                    Ok(file_path) => {
+                        if file_path.exists() {
+                            if let Err(e) = fs::remove_file(&file_path) {
+                                error!("Failed to delete audio file {}: {}", entry.file_name, e);
+                                // Continue with database deletion even if file deletion fails
+                            }
                         }
                     }
-                }
-                Err(err) => {
-                    error!(
-                        "Refusing to delete recording for invalid file path '{}': {}",
-                        entry.file_name, err
-                    );
+                    Err(err) => {
+                        error!(
+                            "Refusing to delete recording for invalid file path '{}': {}",
+                            entry.file_name, err
+                        );
+                    }
                 }
             }
         }
@@ -880,8 +891,8 @@ impl HistoryManager {
 
         // Delete all WAV files
         for (_, file_name) in &entries {
-            // Skip file references (entries transcribed from external files)
-            if file_name.starts_with("file::") {
+            // Skip entries with no audio (save_audio_recordings was off) or external file references.
+            if file_name.is_empty() || file_name.starts_with("file::") {
                 continue;
             }
             match Self::sanitize_recording_file_name(file_name) {

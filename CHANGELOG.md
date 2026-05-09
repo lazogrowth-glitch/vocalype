@@ -4,16 +4,16 @@
 
 ### Added
 
-- **RecordingModeSelector** — unified 3-way recording mode picker (Toggle / Push-to-Talk / Always-On) replacing the two separate toggles.
+- **RecordingModeSelector** â€” unified 3-way recording mode picker (Toggle / Push-to-Talk / Always-On) replacing the two separate toggles.
 - **`RecordingMode` enum** in Rust settings with `from_legacy()` migration helper.
-- **`AppError` / `AppResult`** — centralised `thiserror`-derived domain error type with log-level conventions documented in `error.rs`.
-- **`useSessionRefresh` hook** — extracted periodic + on-visibility auth refresh from `useAuthFlow`.
+- **`AppError` / `AppResult`** â€” centralised `thiserror`-derived domain error type with log-level conventions documented in `error.rs`.
+- **`useSessionRefresh` hook** â€” extracted periodic + on-visibility auth refresh from `useAuthFlow`.
 - **`SyncProcessingStep` trait** and `SyncPipeline` in `processing/mod.rs`.
 - **`LlmTextProvider` trait** and `GeminiProvider` in `llm/mod.rs`.
-- **`FORKS.md`** — documents all custom dependency forks (rdev, vad-rs, rodio).
+- **`docs/engineering/FORKS.md`** â€” documents all custom dependency forks (rdev, vad-rs, rodio).
 - **Frontend coverage** reporting via Vitest v8 (`bun run test:coverage`).
 - Store boundary doc-comments on `settingsStore`, `modelStore`, and `auth/client`.
-- `lib/subscription/` — renamed from `lib/plan/` for clarity.
+- `lib/subscription/` â€” renamed from `lib/plan/` for clarity.
 
 ### Changed
 

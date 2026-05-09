@@ -1661,7 +1661,7 @@ mod tests {
     #[test]
     fn normalizes_known_parakeet_brands() {
         let normalized = finalize_parakeet_text(
-            "Today I tested Parakate V tree on Git Hub for Open i inside Vocaltype.",
+            "Today I tested Parakate V tree on Git Hub for Open i inside Vocalype.",
             "en",
         );
         assert!(normalized.contains("Parakeet V3"));

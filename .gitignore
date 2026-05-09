@@ -34,11 +34,14 @@ recording_*
 playwright-report/
 test-results/
 blob-report/
+internal/audits/playwright-report/
+internal/audits/test-results/
 
 .direnv
 .envrc
 
 # Secrets
+.env
 secrets.env
 backend/.env.production
 
@@ -50,10 +53,14 @@ backend/*.db
 # Test/dev artifacts (never commit these)
 .pydeps-onnxasr/
 tmp-parakeet-tests/
+internal/audits/tmp-parakeet-tests/
 r2-upload/
 src-tauri/evals/parakeet/audio/*.wav
 src-tauri/evals/parakeet/reports/*.json
 src-tauri/evals/parakeet/external/
+parakeet_test_150.zip
+Nouveau Document texte.txt
+test.txt
 
 # Log files
 launch.err
@@ -61,79 +68,25 @@ launch.out
 tmp-tauri-*.log
 cargo-check-warnings*.txt
 cargo-test-warnings*.txt
+vite.stdout.log
+vite.stderr.log
+.codex_tauri_loglen.txt
 
 # Python cache
 **/__pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
+__pycache__/
 .aider*
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-.env
-parakeet_test_150.zip
+.aider.chat.history.md
+.aider.input.history
 
-# Vocalype Brain — runtime outputs (generated on each run, never committed)
-vocalype-brain/outputs/agent_recommendation.md
-vocalype-brain/outputs/agent_run_report.md
-vocalype-brain/outputs/context_pack.md
-vocalype-brain/outputs/model_route_decision.md
-vocalype-brain/outputs/next_product_bottleneck.md
-vocalype-brain/outputs/fresh_investigation_mission.md
-vocalype-brain/outputs/agent_route.txt
+# Vocalype Brain runtime outputs (generated on each run, never committed)
+internal/brain/outputs/agent_recommendation.md
+internal/brain/outputs/agent_run_report.md
+internal/brain/outputs/context_pack.md
+internal/brain/outputs/model_route_decision.md
+internal/brain/outputs/next_product_bottleneck.md
+internal/brain/outputs/fresh_investigation_mission.md
+internal/brain/outputs/agent_route.txt

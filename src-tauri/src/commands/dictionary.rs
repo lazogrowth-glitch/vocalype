@@ -17,7 +17,7 @@ pub fn add_dictionary_entry(
     from: String,
     to: String,
 ) -> Result<(), String> {
-    dictionary.add(from, to)
+    dictionary.add_manual(from, to)
 }
 
 #[tauri::command]
@@ -70,7 +70,7 @@ pub fn import_dictionary(
 
     for entry in entries {
         // Skip if already present (when merging)
-        let _ = dictionary.add(entry.from, entry.to);
+        let _ = dictionary.add_manual(entry.from, entry.to);
     }
 
     Ok(())

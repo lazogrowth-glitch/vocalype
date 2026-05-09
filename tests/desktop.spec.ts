@@ -31,36 +31,34 @@ test.describe("Desktop app — with mocked Tauri", () => {
     await expect(root).not.toBeEmpty();
   });
 
-  test("auth portal renders browser sign-in when no session stored", async ({
+  test("auth portal renders inline sign-in when no session stored", async ({
     page,
   }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
+    await expect(page.getByRole("heading", { name: "Bon retour." })).toBeVisible();
+    await expect(page.getByText(/vocalype s'active automatiquement/i)).toBeVisible();
+  });
+
+  test("auth portal has auth mode toggles", async ({ page }) => {
+    await expect(page.locator("#startup-splash")).toBeHidden({
+      timeout: 10000,
+    });
     await expect(
-      page.getByRole("heading", { name: "Connectez-vous." }),
+      page.locator(".auth-seg").getByRole("button", { name: /se connecter/i }),
     ).toBeVisible();
-    await expect(page.getByText(/connexion dans le navigateur/i)).toBeVisible();
+    await expect(
+      page.locator(".auth-seg").getByRole("button", { name: /créer un compte/i }),
+    ).toBeVisible();
   });
 
-  test("auth portal has create-account browser CTA", async ({ page }) => {
+  test("auth portal shows inline email and password fields", async ({ page }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
-    await expect(
-      page.getByRole("button", { name: /creer un compte/i }),
-    ).toBeVisible({ timeout: 8000 });
-  });
-
-  test("auth portal has existing-account browser CTA", async ({ page }) => {
-    await expect(page.locator("#startup-splash")).toBeHidden({
-      timeout: 10000,
-    });
-    await expect(
-      page.getByRole("button", { name: /j'ai deja un compte/i }),
-    ).toBeVisible({
-      timeout: 8000,
-    });
+    await expect(page.locator('input[type="email"]')).toHaveCount(1);
+    await expect(page.locator('input[type="password"]')).toHaveCount(1);
   });
 
   test("auth portal has legal links", async ({ page }) => {
@@ -71,33 +69,38 @@ test.describe("Desktop app — with mocked Tauri", () => {
       page.getByRole("button", { name: "Conditions" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Confidentialite" }),
+      page.getByRole("button", { name: "Politique de confidentialité" }),
     ).toBeVisible();
   });
 
-  test("clicking Create account stays on auth portal", async ({ page }) => {
+  test("clicking Create account switches the auth panel to signup", async ({ page }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
-    const createBtn = page.getByRole("button", { name: /creer un compte/i });
+    const createBtn = page.getByRole("button", { name: /créer un compte/i });
     await createBtn.waitFor({ timeout: 8000 });
     await createBtn.click();
     await expect(
-      page.getByRole("heading", { name: "Connectez-vous." }),
+      page.getByRole("heading", { name: "Crée ton compte." }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Créer mon compte" })).toBeVisible();
+  });
+
+  test("sign-in form has forgot-password shortcut", async ({ page }) => {
+    await expect(page.locator("#startup-splash")).toBeHidden({
+      timeout: 10000,
+    });
+    await expect(
+      page.getByRole("button", { name: /mot de passe oublié/i }),
     ).toBeVisible();
   });
 
-  test("auth portal does not show inline email form", async ({ page }) => {
+  test("sign-in submit button is present", async ({ page }) => {
     await expect(page.locator("#startup-splash")).toBeHidden({
       timeout: 10000,
     });
-    await expect(page.locator('input[type="email"]')).toHaveCount(0);
-  });
-
-  test("auth portal does not show inline password form", async ({ page }) => {
-    await expect(page.locator("#startup-splash")).toBeHidden({
-      timeout: 10000,
-    });
-    await expect(page.locator('input[type="password"]')).toHaveCount(0);
+    await expect(
+      page.locator("form").getByRole("button", { name: "Se connecter" }),
+    ).toBeVisible();
   });
 });

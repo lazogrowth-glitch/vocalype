@@ -1,7 +1,7 @@
 //! Shared shortcut event handling logic
 //!
 //! This module contains the common logic for handling shortcut events,
-//! used by both the Tauri and native shortcut capture implementations.
+//! used by both the Tauri and native keyboard implementations.
 
 use log::warn;
 use std::sync::{Arc, Mutex};

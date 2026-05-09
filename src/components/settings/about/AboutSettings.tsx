@@ -8,7 +8,7 @@ import { Button } from "../../ui/Button";
 import { AppDataDirectory } from "../AppDataDirectory";
 import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ExportImportSettings } from "../ExportImportSettings";
-import { LogDirectory } from "../debug";
+import { LogDirectory } from "../diagnostics";
 import VocalypeLogo from "../../icons/VocalypeLogo";
 
 export const AboutSettings: React.FC = () => {

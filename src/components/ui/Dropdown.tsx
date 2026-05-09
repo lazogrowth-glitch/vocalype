@@ -177,11 +177,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
       <button
         ref={triggerRef}
         type="button"
-        style={{ padding: "11px 16px" }}
-        className={`flex min-h-[44px] w-full items-center justify-between rounded-[8px] border border-white/10 bg-zinc-900 text-start text-[13px] font-normal text-white/76 transition-all duration-150 ${
+        style={{ height: 32, padding: "0 12px" }}
+        className={`flex w-full items-center justify-between rounded-[8px] border text-start text-[12.5px] font-normal text-white/90 transition-all duration-150 ${
           disabled
-            ? "opacity-50 cursor-not-allowed"
-            : "cursor-pointer hover:border-white/15 hover:bg-zinc-800"
+            ? "cursor-not-allowed border-white/10 bg-[#1c1c22] opacity-50"
+            : "cursor-pointer border-white/10 bg-[#1c1c22] hover:border-white/15 hover:bg-[#24242c]"
         }`}
         onClick={handleToggle}
         onKeyDown={handleTriggerKeyDown}
@@ -209,8 +209,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
         <div
           id={listboxId}
           role="listbox"
-          className="absolute right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-[8px] border border-white/10 bg-zinc-900 shadow-lg"
-          style={{ minWidth: "100%", width: "max-content", maxWidth: 320 }}
+          className="absolute right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-[10px] border border-white/10 shadow-lg"
+          style={{
+            minWidth: "100%",
+            width: "max-content",
+            maxWidth: 320,
+            background: "linear-gradient(180deg,#1b1b1e,#131316)",
+            boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
+            padding: 4,
+          }}
         >
           {options.length === 0 ? (
             <div
@@ -224,14 +231,28 @@ export const Dropdown: React.FC<DropdownProps> = ({
               <button
                 key={option.value}
                 type="button"
-                style={{ padding: "11px 16px" }}
-                className={`w-full text-start text-[13px] transition-colors duration-150 hover:bg-logo-primary/[0.06] ${
-                  selectedValue === option.value
-                    ? "bg-logo-primary/14 font-medium text-logo-primary"
-                    : ""
-                } ${
-                  highlightedIndex === index ? "bg-logo-primary/[0.055]" : ""
-                } ${option.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: 7,
+                  border: "none",
+                  background:
+                    selectedValue === option.value
+                      ? "rgba(212,168,88,0.14)"
+                      : highlightedIndex === index
+                        ? "#1c1c22"
+                        : "transparent",
+                  color:
+                    selectedValue === option.value || highlightedIndex === index
+                      ? "#d4a858"
+                      : "rgba(255,255,255,0.94)",
+                  fontSize: 12.5,
+                  textAlign: "left",
+                  transition: "background .14s,color .14s",
+                }}
+                className={`${option.disabled ? "cursor-not-allowed opacity-50" : ""}`}
                 onClick={() => handleSelect(option.value)}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 disabled={option.disabled}

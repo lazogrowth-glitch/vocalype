@@ -1,4 +1,3 @@
- 
 import React, {
   useState,
   useEffect,
@@ -56,9 +55,10 @@ const menuItemStyle: React.CSSProperties = {
   padding: "8px 14px",
   textAlign: "left",
   fontSize: 13,
-  color: T.txt2,
+  color: T.txt1,
   background: "none",
   border: "none",
+  borderRadius: 7,
   fontFamily: "inherit",
   cursor: "pointer",
   display: "block",
@@ -883,8 +883,8 @@ export const HistorySettings: React.FC = () => {
         .hist-filter-chip-active:hover { filter: brightness(1.1); }
         .hist-entry:hover { background: rgba(255,255,255,0.03) !important; }
         .hist-copy-btn:hover { filter: brightness(1.12); box-shadow: 0 4px 14px rgba(201,168,76,0.35) !important; }
-        .hist-more-btn:hover { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.16) !important; }
-        .hist-menu-item:hover { background: rgba(255,255,255,0.06) !important; }
+        .hist-more-btn:hover { background: #24242c !important; border-color: rgba(255,255,255,0.15) !important; }
+        .hist-menu-item:hover { background: #1c1c22 !important; color: #c9a84c !important; }
         .hist-text-action:hover { background: rgba(255,255,255,0.06) !important; }
         .hist-text-action-gold:hover { background: rgba(201,168,76,0.12) !important; }
         .hist-del-btn:hover { background: rgba(239,68,68,0.12) !important; color: #fca5a5 !important; }
@@ -1445,11 +1445,11 @@ export const HistorySettings: React.FC = () => {
                           right: 0,
                           minWidth: 150,
                           zIndex: 50,
-                          borderRadius: 8,
+                          borderRadius: 10,
                           border: `1px solid ${T.line2}`,
-                          background: "#1a1a22",
-                          boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                          padding: "4px 0",
+                          background: "linear-gradient(180deg,#1b1b1e,#131316)",
+                          boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
+                          padding: 4,
                         }}
                       >
                         <button

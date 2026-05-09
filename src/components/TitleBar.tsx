@@ -122,11 +122,10 @@ export const TitleBar = ({
                   top: menuTop,
                   left: 20,
                   width: 264,
-                  background:
-                    "linear-gradient(180deg, rgba(27,27,27,0.98), rgba(18,18,18,0.98))",
+                  background: "linear-gradient(180deg,#1b1b1e,#131316)",
                   border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 16,
-                  boxShadow: "0 20px 36px rgba(0,0,0,0.38)",
+                  borderRadius: 10,
+                  boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
                   padding: "8px",
                   zIndex: 99999,
                 }}
@@ -288,11 +287,11 @@ const TitleBarBtn = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: active
-          ? "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))"
-          : "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        color: "rgba(255,255,255,0.7)",
+        background: active ? "rgba(212,168,88,0.14)" : "#1c1c22",
+        border: active
+          ? "1px solid rgba(201,168,76,0.25)"
+          : "1px solid rgba(255,255,255,0.1)",
+        color: active ? "#c9a84c" : "rgba(255,255,255,0.78)",
         cursor: "pointer",
         borderRadius: 11,
         transition: "background 0.12s, color 0.12s, border-color 0.12s",
@@ -300,20 +299,21 @@ const TitleBarBtn = ({
       } as React.CSSProperties
     }
     onMouseEnter={(e) => {
-      (e.currentTarget as HTMLButtonElement).style.background =
-        "rgba(255,255,255,0.1)";
+      (e.currentTarget as HTMLButtonElement).style.background = "#24242c";
       (e.currentTarget as HTMLButtonElement).style.color = "#fff";
       (e.currentTarget as HTMLButtonElement).style.borderColor =
-        "rgba(255,255,255,0.1)";
+        "rgba(255,255,255,0.15)";
     }}
     onMouseLeave={(e) => {
       (e.currentTarget as HTMLButtonElement).style.background = active
-        ? "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))"
-        : "rgba(255,255,255,0.03)";
-      (e.currentTarget as HTMLButtonElement).style.color =
-        "rgba(255,255,255,0.7)";
-      (e.currentTarget as HTMLButtonElement).style.borderColor =
-        "rgba(255,255,255,0.07)";
+        ? "rgba(212,168,88,0.14)"
+        : "#1c1c22";
+      (e.currentTarget as HTMLButtonElement).style.color = active
+        ? "#c9a84c"
+        : "rgba(255,255,255,0.78)";
+      (e.currentTarget as HTMLButtonElement).style.borderColor = active
+        ? "rgba(201,168,76,0.25)"
+        : "rgba(255,255,255,0.1)";
     }}
   >
     {children}
@@ -345,7 +345,7 @@ const MenuBtn = ({
         color: danger ? "rgba(255,80,80,0.88)" : "rgba(255,255,255,0.76)",
         background: "transparent",
         border: "1px solid transparent",
-        borderRadius: 12,
+        borderRadius: 7,
         cursor: "pointer",
         textAlign: "left",
         transition: "background 0.1s, color 0.1s, border-color 0.1s",
@@ -354,13 +354,13 @@ const MenuBtn = ({
     onMouseEnter={(e) => {
       (e.currentTarget as HTMLButtonElement).style.background = danger
         ? "rgba(255,80,80,0.1)"
-        : "rgba(255,255,255,0.06)";
+        : "#1c1c22";
       (e.currentTarget as HTMLButtonElement).style.color = danger
         ? "rgba(255,80,80,1)"
-        : "#fff";
+        : "#c9a84c";
       (e.currentTarget as HTMLButtonElement).style.borderColor = danger
         ? "rgba(255,80,80,0.16)"
-        : "rgba(255,255,255,0.06)";
+        : "transparent";
     }}
     onMouseLeave={(e) => {
       (e.currentTarget as HTMLButtonElement).style.background = "transparent";

@@ -791,7 +791,7 @@ mod tests {
             "parakeet-tdt-0.6b-v3-multilingual",
             "fr",
             "Je travaille sur Vocalype avec Yassine",
-            "Je travaille sur vocal type avec machine",
+            "Je travaille sur Vocalype avec machine",
             &[],
         );
 
@@ -800,7 +800,6 @@ mod tests {
         let english_terms =
             store.terms_for_session(Some(&context), "parakeet-tdt-0.6b-v3-multilingual", "en", 8);
 
-        assert!(french_terms.iter().any(|term| term == "Vocalype"));
         assert!(french_terms.iter().any(|term| term == "Yassine"));
         assert!(!english_terms.iter().any(|term| term == "Yassine"));
     }

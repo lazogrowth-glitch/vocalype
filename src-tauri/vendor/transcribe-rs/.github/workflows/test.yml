@@ -84,7 +84,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p models
-          curl -sL https://blob.handy.computer/parakeet-v3-int8.tar.gz | tar -xz -C models/
+          curl -sL https://downloads.vocalype.com/models/parakeet-v3-int8.tar.gz | tar -xz -C models/
 
       - name: Run Tests (Parakeet)
         run: cargo test --features parakeet
@@ -101,7 +101,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p models
-          curl -sL https://blob.handy.computer/sense-voice-int8.tar.gz | tar -xz -C models/
+          curl -sL https://downloads.vocalype.com/models/sense-voice-int8.tar.gz | tar -xz -C models/
 
       - name: Run Tests (SenseVoice)
         run: cargo test --features sense_voice
@@ -118,7 +118,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p models
-          curl -sLo models/whisper-medium-q4_1.bin https://blob.handy.computer/whisper-medium-q4_1.bin
+          curl -sLo models/whisper-medium-q4_1.bin https://downloads.vocalype.com/models/whisper-medium-q4_1.bin
 
       - name: Run Tests (Whisper)
         run: cargo test --features whisper
@@ -137,7 +137,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p models
-          curl -sLo models/ggml-small.bin https://blob.handy.computer/ggml-small.bin
+          curl -sLo models/ggml-small.bin https://downloads.vocalype.com/models/ggml-small.bin
 
           if [ "$RUNNER_OS" == "Windows" ]; then
             curl -sLo models/whisperfile-0.9.3.exe https://github.com/mozilla-ai/llamafile/releases/download/0.9.3/whisperfile-0.9.3

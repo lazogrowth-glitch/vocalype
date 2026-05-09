@@ -406,9 +406,9 @@ async changeWakeWordEnabledSetting(enabled: boolean) : Promise<Result<null, stri
 /**
  * Start key recording mode
  */
-async startNativeShortcutCaptureRecording(bindingId: string) : Promise<Result<null, string>> {
+async startNativeKeyboardRecording(bindingId: string) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("start_native_shortcut_capture_recording", { bindingId }) };
+    return { status: "ok", data: await TAURI_INVOKE("start_native_keyboard_recording", { bindingId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -417,9 +417,9 @@ async startNativeShortcutCaptureRecording(bindingId: string) : Promise<Result<nu
 /**
  * Stop key recording mode
  */
-async stopNativeShortcutCaptureRecording() : Promise<Result<null, string>> {
+async stopNativeKeyboardRecording() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("stop_native_shortcut_capture_recording") };
+    return { status: "ok", data: await TAURI_INVOKE("stop_native_keyboard_recording") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -527,6 +527,14 @@ async importSettings(path: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async resetAllSettings() : Promise<Result<AppSettings, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("reset_all_settings") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getMachineDeviceId() : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_machine_device_id") };
@@ -605,6 +613,14 @@ async getRuntimeDiagnostics() : Promise<Result<RuntimeDiagnostics, string>> {
 async exportRuntimeDiagnostics(path: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("export_runtime_diagnostics", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async exportSupportPackage(path: string, supportReport: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("export_support_package", { path, supportReport }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -1704,7 +1720,12 @@ speaking_rate_pauses?: number[];
  * on first load via settings migration (T11). New code should read this
  * field; old code continues to use the booleans until migration is done.
  */
-recording_mode?: RecordingMode; selected_microphone?: string | null; selected_microphone_index?: string | null; clamshell_microphone?: string | null; clamshell_microphone_index?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; 
+recording_mode?: RecordingMode; selected_microphone?: string | null; selected_microphone_index?: string | null; clamshell_microphone?: string | null; clamshell_microphone_index?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; 
+/**
+ * When false, audio is never written to disk — only the transcription text is saved.
+ * Saves significant disk space (WAV at 16 kHz 16-bit ≈ 32 KB/s).
+ */
+save_audio_recordings?: boolean; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; 
 /**
  * When true, LLM post-processing fires automatically whenever the
  * session glossary signals a code context (≥ 3 extracted identifiers).
@@ -1806,7 +1827,7 @@ export type ImplementationChangeResult = { success: boolean;
  */
 reset_bindings: string[] }
 export type IntegritySnapshot = { release_build: boolean; binary_sha256: string | null; tamper_flags: string[]; executable_path: string | null }
-export type KeyboardImplementation = "tauri" | "native_shortcut_capture"
+export type KeyboardImplementation = "tauri" | "native_keyboard"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 /**
  * Aggregated stats about what Vocalype has learned from user corrections.

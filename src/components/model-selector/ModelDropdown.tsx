@@ -32,7 +32,13 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   };
 
   return (
-    <div className="absolute bottom-full start-0 mb-2 w-64 max-h-[60vh] overflow-y-auto bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
+    <div
+      className="absolute bottom-full start-0 z-50 mb-2 max-h-[60vh] w-64 overflow-y-auto rounded-[10px] border border-white/10 py-1"
+      style={{
+        background: "linear-gradient(180deg,#1b1b1e,#131316)",
+        boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
+      }}
+    >
       {downloadedModels.length > 0 ? (
         <div>
           {downloadedModels.map((model) => (
@@ -47,15 +53,15 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
               }}
               tabIndex={0}
               role="button"
-              className={`w-full px-3 py-2 text-start hover:bg-mid-gray/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-1 ${
+              className={`mx-1 w-auto rounded-[7px] px-3 py-2 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-0 ${
                 currentModelId === model.id
-                  ? "bg-logo-primary/10 text-logo-primary"
-                  : ""
+                  ? "bg-[rgba(212,168,88,0.14)] text-logo-primary"
+                  : "cursor-pointer text-white/90 hover:bg-[#1c1c22] hover:text-logo-primary"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm text-text/80">
+                  <div className="text-sm text-current">
                     {getTranslatedModelName(model, t)}
                     {model.is_custom && (
                       <span className="ms-1.5 text-[10px] font-medium text-text/40 uppercase">

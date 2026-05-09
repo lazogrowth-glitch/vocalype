@@ -1272,7 +1272,7 @@ mod tests {
     #[test]
     fn normalizes_parakeet_phrase_variants() {
         let text =
-            "Today I tested Parakate V tree inside Vocaltype and pushed to Git Hub for Open AI.";
+            "Today I tested Parakate V tree inside Vocalype and pushed to Git Hub for Open AI.";
         let normalized = normalize_parakeet_phrase_variants(text, "en");
         assert!(normalized.contains("Parakeet V3"));
         assert!(normalized.contains("Vocalype"));
@@ -1287,7 +1287,11 @@ mod tests {
             "Today I finished the meeting."
         );
         assert_eq!(
-            finalize_parakeet_text_with_profile("My email is alex .martin at example .com.", "en",),
+            finalize_parakeet_text_with_profile(
+                "My email is alex .martin at example .com.",
+                "en",
+                ParakeetDomainProfile::General,
+            ),
             "My email is alex dot martin at example dot com."
         );
     }

@@ -7,3 +7,4 @@ del /f /q "%localappdata%\Microsoft\Windows\Explorer\thumbcache_*.db" >nul 2>&1
 echo Done. Restarting Explorer...
 start explorer.exe
 echo Icon cache cleared!
+

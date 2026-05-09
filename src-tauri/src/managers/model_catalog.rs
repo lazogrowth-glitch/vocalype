@@ -156,21 +156,20 @@ mod tests {
         let models = parse_catalog(FALLBACK_MODEL_CATALOG_JSON, DEFAULT_MODEL_ASSET_BASE_URL)
             .expect("Bundled model catalog should parse");
 
-        assert!(models.contains_key("small"));
-        assert!(models.contains_key("gemini-api"));
+        assert!(models.contains_key("parakeet-tdt-0.6b-v3-multilingual"));
         assert_eq!(
             models
-                .get("gemini-api")
-                .expect("Gemini model should be present")
-                .url,
-            None
+                .get("parakeet-tdt-0.6b-v3-multilingual")
+                .expect("Parakeet model should be present")
+                .name,
+            "Vocalype Native"
         );
         assert!(models
-            .get("small")
-            .expect("Small model should be present")
+            .get("parakeet-tdt-0.6b-v3-multilingual")
+            .expect("Parakeet model should be present")
             .url
             .as_deref()
-            .expect("small should have a URL")
+            .expect("Parakeet model should have a URL")
             .contains(DEFAULT_MODEL_ASSET_BASE_URL));
     }
 }

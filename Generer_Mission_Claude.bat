@@ -1,25 +1,25 @@
 @echo off
 chcp 65001 >nul
 setlocal
-title Vocalype Brain — Générer Mission Claude
+title Vocalype Brain â€” GÃ©nÃ©rer Mission Claude
 set "REPO=C:\developer\sas\vocalype"
 cd /d "%REPO%"
 
 echo ============================================================
-echo   VOCALYPE BRAIN — GÉNÉRER MISSION CLAUDE / CODEX
+echo   VOCALYPE BRAIN â€” GÃ‰NÃ‰RER MISSION CLAUDE / CODEX
 echo ============================================================
 echo.
-echo Ce script génère un package mission prêt à coller dans Claude.
-echo Le package contient : contexte, fichiers autorisés, questions,
-echo format de réponse attendu, et règles de sécurité.
+echo Ce script gÃ©nÃ¨re un package mission prÃªt Ã  coller dans Claude.
+echo Le package contient : contexte, fichiers autorisÃ©s, questions,
+echo format de rÃ©ponse attendu, et rÃ¨gles de sÃ©curitÃ©.
 echo.
 
-echo [1/2] Génération du package mission V11...
-python vocalype-brain\scripts\generate_v11_mission_package.py
+echo [1/2] GÃ©nÃ©ration du package mission V11...
+python internal/brain\scripts\generate_v11_mission_package.py
 if errorlevel 1 (
     echo.
-    echo   ERREUR : generate_v11_mission_package.py a échoué.
-    echo   Assure-toi qu'un rapport unifié existe déjà.
+    echo   ERREUR : generate_v11_mission_package.py a Ã©chouÃ©.
+    echo   Assure-toi qu'un rapport unifiÃ© existe dÃ©jÃ .
     echo   Lance "Lancer Vocalype Brain.bat" en premier si besoin.
     echo.
     pause
@@ -29,22 +29,23 @@ echo   OK.
 echo.
 
 echo [2/2] Ouverture du package mission...
-if exist "vocalype-brain\outputs\v11_mission_package.md" (
-    start "" "vocalype-brain\outputs\v11_mission_package.md"
+if exist "internal/brain\outputs\v11_mission_package.md" (
+    start "" "internal/brain\outputs\v11_mission_package.md"
     echo   v11_mission_package.md ouvert.
     echo.
-    echo   PROCHAINE ÉTAPE :
+    echo   PROCHAINE Ã‰TAPE :
     echo   Copie le contenu de ce fichier et colle-le dans Claude,
-    echo   Codex, ou Aider pour exécuter la mission.
+    echo   Codex, ou Aider pour exÃ©cuter la mission.
 ) else (
-    echo   AVERTISSEMENT : v11_mission_package.md introuvable après génération.
+    echo   AVERTISSEMENT : v11_mission_package.md introuvable aprÃ¨s gÃ©nÃ©ration.
 )
 
 echo.
-if exist "vocalype-brain\outputs\v11_mission_package_report.md" (
-    start "" "vocalype-brain\outputs\v11_mission_package_report.md"
-    echo   Rapport de sécurité des portes ouvert également.
+if exist "internal/brain\outputs\v11_mission_package_report.md" (
+    start "" "internal/brain\outputs\v11_mission_package_report.md"
+    echo   Rapport de sÃ©curitÃ© des portes ouvert Ã©galement.
 )
 
 echo.
 pause
+

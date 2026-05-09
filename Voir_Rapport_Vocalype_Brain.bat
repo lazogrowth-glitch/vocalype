@@ -5,8 +5,9 @@ set "REPO_ROOT=C:\developer\sas\vocalype"
 cd /d "%REPO_ROOT%"
 echo Ouverture du rapport Vocalype Brain...
 echo.
-start "" "vocalype-brain\outputs\night_shift_report.md"
-python vocalype-brain\scripts\review_night_shift.py
+start "" "internal/brain\outputs\night_shift_report.md"
+python internal/brain\scripts\review_night_shift.py
 echo.
 echo Termine. Tu peux fermer cette fenetre.
 pause
+

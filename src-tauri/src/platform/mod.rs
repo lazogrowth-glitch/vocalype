@@ -18,7 +18,7 @@
 //! | Crate | Alias | Role | Where used |
 //! |-------|-------|------|------------|
 //! | `enigo` | — | **Output only** — injects text / simulates paste keystrokes (Ctrl+V, Shift+Insert, direct text) into the focused app after transcription. | `platform/input.rs` |
-//! | `handy-keys` | `native-shortcut-capture-backend` | **Input — shortcut capture** — registers global hotkeys and listens for key events during shortcut-rebinding UI. Used when `keyboard_implementation = NativeShortcutCapture`. | `shortcut/native_shortcut_capture.rs` |
+//! | native shortcut backend | `vocalype-shortcut-backend` | **Input — shortcut capture** — registers global hotkeys and listens for key events during shortcut-rebinding UI. Used when `keyboard_implementation = NativeKeyboard`. | `shortcut/native_keyboard.rs` |
 //! | `tauri-plugin-global-shortcut` | — | **Input — shortcut capture (Tauri)** — registers global hotkeys via Tauri's built-in plugin. Default implementation (`keyboard_implementation = Tauri`). | `shortcut/tauri_impl.rs` |
 //!
 //! ### rdev — dead direct dependency
@@ -26,7 +26,7 @@
 //! `rdev` (rustdesk-org fork) is listed as a direct dependency in `Cargo.toml`
 //! but is **not imported anywhere** in the source tree (`use rdev` returns zero
 //! hits). It appears in `Cargo.lock` both as a direct and as a transitive
-//! dependency of `handy-keys`. Before removing it, verify that `handy-keys`
+//! dependency of the native shortcut backend. Before removing it, verify that the backend
 //! does not require a specific version of rdev that conflicts with its own
 //! transitive resolution — then drop the direct entry from `Cargo.toml`.
 

@@ -77,4 +77,11 @@ export default [
       "no-console": "off",
     },
   },
+  {
+    // Generated bindings intentionally use broad types.
+    files: ["src/bindings.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ];

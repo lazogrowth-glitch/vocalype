@@ -1649,7 +1649,7 @@ export const MeetingsSettings: React.FC = () => {
         .mts-chip-active:hover { filter: brightness(1.1); }
         .mts-tab:hover { color: rgba(255,255,255,0.72) !important; }
         .mts-chapter:hover { background: rgba(255,255,255,0.035) !important; border-color: rgba(255,255,255,0.1) !important; }
-.mts-menu-item:hover { background: rgba(255,255,255,0.06) !important; }
+.mts-menu-item:hover { background: #1c1c22 !important; color: #c9a84c !important; }
         .dh-title-edit:hover { opacity: 1 !important; background: rgba(255,255,255,0.06) !important; }
         .mts-pin-btn:hover { background: rgba(255,255,255,0.07) !important; }
         .mts-del-btn:hover { background: rgba(239,68,68,0.12) !important; border-color: rgba(239,68,68,0.3) !important; }
@@ -1728,14 +1728,15 @@ export const MeetingsSettings: React.FC = () => {
               {showCreateMenu && (
                 <div
                   style={{
+                    position: "absolute",
                     top: "calc(100% + 6px)",
                     right: 0,
                     zIndex: 99,
-                    background: "#18181f",
+                    background: "linear-gradient(180deg,#1b1b1e,#131316)",
                     border: `1px solid ${T.line2}`,
                     borderRadius: 10,
-                    padding: "4px 0",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                    padding: 4,
+                    boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
                   }}
                   onMouseLeave={() => setShowCreateMenu(false)}
                 >
@@ -1771,6 +1772,7 @@ export const MeetingsSettings: React.FC = () => {
                         padding: "8px 14px",
                         background: "none",
                         border: "none",
+                        borderRadius: 7,
                         color: T.txt1,
                         fontSize: 13,
                         cursor: "pointer",
@@ -2221,12 +2223,12 @@ export const MeetingsSettings: React.FC = () => {
                         top: "calc(100% + 6px)",
                         left: 0,
                         zIndex: 99,
-                        background: "#18181f",
+                        background: "linear-gradient(180deg,#1b1b1e,#131316)",
                         border: `1px solid ${T.line2}`,
                         borderRadius: 10,
-                        padding: "4px 0",
+                        padding: 4,
                         minWidth: 200,
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                        boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
                       }}
                       onMouseLeave={() => setShowShareMenu(false)}
                     >
@@ -2272,6 +2274,7 @@ export const MeetingsSettings: React.FC = () => {
                             padding: "8px 14px",
                             background: "none",
                             border: "none",
+                            borderRadius: 7,
                             color: T.txt1,
                             fontSize: 13,
                             cursor: "pointer",
@@ -2305,12 +2308,12 @@ export const MeetingsSettings: React.FC = () => {
                         top: "calc(100% + 6px)",
                         right: 0,
                         zIndex: 99,
-                        background: "#18181f",
+                        background: "linear-gradient(180deg,#1b1b1e,#131316)",
                         border: `1px solid ${T.line2}`,
                         borderRadius: 10,
-                        padding: "4px 0",
+                        padding: 4,
                         minWidth: 180,
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                        boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
                       }}
                       onMouseLeave={() => setShowMoreMenu(false)}
                     >
@@ -2401,6 +2404,7 @@ export const MeetingsSettings: React.FC = () => {
                             padding: "8px 14px",
                             background: "none",
                             border: "none",
+                            borderRadius: 7,
                             color: T.txt1,
                             fontSize: 13,
                             cursor: "pointer",

@@ -61,9 +61,9 @@ rusqlite_migration = "2.3"
 tauri-plugin-fs = "2.4.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# Fork: rustdesk-org fork with Windows/macOS stability fixes — see ../FORKS.md
+# Fork: rustdesk-org fork with Windows/macOS stability fixes â€” see ../docs/engineering/FORKS.md
 # TODO: rdev has zero direct `use rdev` imports; may be redundant (pulled in
-#       transitively by handy-keys). Verify and remove if confirmed unused.
+#       transitively by the native shortcut backend). Verify and remove if confirmed unused.
 rdev = { git = "https://github.com/rustdesk-org/rdev", rev = "a90dbe1172f8832f54c97c62e823c5a34af5fdfe" }
 cpal = "0.16.0"
 anyhow = "1.0.95"
@@ -74,10 +74,10 @@ base64 = "0.22"
 log = "0.4.25"
 env_filter = "0.1.0"
 tokio = "1.43.0"
-# Fork: cjpais fork with Silero VAD v4 support — see ../FORKS.md
+# Fork: cjpais fork with Silero VAD v4 support â€” see ../docs/engineering/FORKS.md
 vad-rs = { git = "https://github.com/cjpais/vad-rs", rev = "88b3a01f72f83a5d80d0e7ea9bacfc0d897fd03f", default-features = false }
 enigo = "0.6.1"
-# Fork: cjpais fork with audio device patches — see ../FORKS.md
+# Fork: cjpais fork with audio device patches â€” see ../docs/engineering/FORKS.md
 rodio = { git = "https://github.com/cjpais/rodio.git", rev = "fed30292db417cb95305c118c0e1d804fb74cbff" }
 reqwest = { version = "0.12", features = ["json", "stream", "multipart"] }
 futures-util = "0.3"
@@ -98,7 +98,7 @@ flate2 = "1.0"
 sysinfo = "0.37"
 transcribe-rs = { version = "0.2.5", features = ["whisper", "parakeet", "moonshine", "sense_voice"] }
 parakeet-rs = "0.2.0"
-native-shortcut-capture-backend = { package = "handy-keys", version = "0.2.1" }
+vocalype-shortcut-backend = { path = "vendor/vocalype-shortcut-backend" }
 ferrous-opencc = "0.2.3"
 parking_lot = "0.12"
 clap = { version = "4", features = ["derive"] }
@@ -107,6 +107,7 @@ specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-deep-link = "2"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
@@ -131,7 +132,6 @@ windows = { version = "0.61.3", features = [
 wmi = "0.14"
 parakeet-rs = { version = "0.2.0", features = ["directml", "openvino", "qnn"] }
 keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }
-zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }

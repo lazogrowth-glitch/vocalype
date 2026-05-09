@@ -2631,25 +2631,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "handy-keys"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36a39b9e2df8dae1286e5e17958c5537533a0beaa722423e8f0b61fbbc620eb3"
-dependencies = [
- "bitflags 2.11.0",
- "block2",
- "objc2",
- "objc2-app-kit",
- "objc2-core-foundation",
- "objc2-core-graphics",
- "objc2-foundation",
- "rdev 0.5.3",
- "serde",
- "thiserror 2.0.18",
- "windows 0.58.0",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8023,7 +8004,6 @@ dependencies = [
  "futures-util",
  "gtk",
  "gtk-layer-shell",
- "handy-keys",
  "hound",
  "keyring",
  "log",
@@ -8074,10 +8054,28 @@ dependencies = [
  "transcribe-rs",
  "url",
  "vad-rs",
+ "vocalype-shortcut-backend",
  "whichlang",
  "windows 0.61.3",
  "wmi",
  "zip 2.4.2",
+]
+
+[[package]]
+name = "vocalype-shortcut-backend"
+version = "0.2.2"
+dependencies = [
+ "bitflags 2.11.0",
+ "block2",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-core-foundation",
+ "objc2-core-graphics",
+ "objc2-foundation",
+ "rdev 0.5.3",
+ "serde",
+ "thiserror 2.0.18",
+ "windows 0.58.0",
 ]
 
 [[package]]

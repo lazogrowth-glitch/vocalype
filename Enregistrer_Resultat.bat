@@ -1,53 +1,53 @@
 @echo off
 chcp 65001 >nul
 setlocal
-title Vocalype Brain — Enregistrer Résultat
+title Vocalype Brain â€” Enregistrer RÃ©sultat
 set "REPO=C:\developer\sas\vocalype"
 cd /d "%REPO%"
 
 echo ============================================================
-echo   VOCALYPE BRAIN — ENREGISTRER ET VOIR RÉSULTATS
+echo   VOCALYPE BRAIN â€” ENREGISTRER ET VOIR RÃ‰SULTATS
 echo ============================================================
 echo.
 echo Ce script relance tous les scripts de review disponibles
-echo et ouvre les rapports générés.
+echo et ouvre les rapports gÃ©nÃ©rÃ©s.
 echo.
 
 set "ANY_ERROR=0"
 
-echo [1/4] Résultats produit...
-if exist "vocalype-brain\scripts\review_results.py" (
-    python vocalype-brain\scripts\review_results.py
-    if errorlevel 1 ( echo   AVERTISSEMENT : review_results.py a retourné une erreur. && set "ANY_ERROR=1" )
+echo [1/4] RÃ©sultats produit...
+if exist "internal/brain\scripts\review_results.py" (
+    python internal/brain\scripts\review_results.py
+    if errorlevel 1 ( echo   AVERTISSEMENT : review_results.py a retournÃ© une erreur. && set "ANY_ERROR=1" )
 ) else (
-    echo   review_results.py introuvable — ignoré.
+    echo   review_results.py introuvable â€” ignorÃ©.
 )
 echo.
 
 echo [2/4] Benchmarks produit...
-if exist "vocalype-brain\scripts\review_benchmarks.py" (
-    python vocalype-brain\scripts\review_benchmarks.py
-    if errorlevel 1 ( echo   AVERTISSEMENT : review_benchmarks.py a retourné une erreur. && set "ANY_ERROR=1" )
+if exist "internal/brain\scripts\review_benchmarks.py" (
+    python internal/brain\scripts\review_benchmarks.py
+    if errorlevel 1 ( echo   AVERTISSEMENT : review_benchmarks.py a retournÃ© une erreur. && set "ANY_ERROR=1" )
 ) else (
-    echo   review_benchmarks.py introuvable — ignoré.
+    echo   review_benchmarks.py introuvable â€” ignorÃ©.
 )
 echo.
 
-echo [3/4] Métriques business...
-if exist "vocalype-brain\scripts\review_business_metrics.py" (
-    python vocalype-brain\scripts\review_business_metrics.py
-    if errorlevel 1 ( echo   AVERTISSEMENT : review_business_metrics.py a retourné une erreur. && set "ANY_ERROR=1" )
+echo [3/4] MÃ©triques business...
+if exist "internal/brain\scripts\review_business_metrics.py" (
+    python internal/brain\scripts\review_business_metrics.py
+    if errorlevel 1 ( echo   AVERTISSEMENT : review_business_metrics.py a retournÃ© une erreur. && set "ANY_ERROR=1" )
 ) else (
-    echo   review_business_metrics.py introuvable — ignoré.
+    echo   review_business_metrics.py introuvable â€” ignorÃ©.
 )
 echo.
 
 echo [4/4] Performance contenu...
-if exist "vocalype-brain\scripts\review_content_performance.py" (
-    python vocalype-brain\scripts\review_content_performance.py
-    if errorlevel 1 ( echo   AVERTISSEMENT : review_content_performance.py a retourné une erreur. && set "ANY_ERROR=1" )
+if exist "internal/brain\scripts\review_content_performance.py" (
+    python internal/brain\scripts\review_content_performance.py
+    if errorlevel 1 ( echo   AVERTISSEMENT : review_content_performance.py a retournÃ© une erreur. && set "ANY_ERROR=1" )
 ) else (
-    echo   review_content_performance.py introuvable — ignoré.
+    echo   review_content_performance.py introuvable â€” ignorÃ©.
 )
 echo.
 
@@ -56,28 +56,29 @@ echo   Ouverture des rapports disponibles...
 echo ============================================================
 echo.
 
-if exist "vocalype-brain\outputs\results_report.md" (
-    start "" "vocalype-brain\outputs\results_report.md"
+if exist "internal/brain\outputs\results_report.md" (
+    start "" "internal/brain\outputs\results_report.md"
     echo   results_report.md ouvert.
 )
-if exist "vocalype-brain\outputs\benchmark_report.md" (
-    start "" "vocalype-brain\outputs\benchmark_report.md"
+if exist "internal/brain\outputs\benchmark_report.md" (
+    start "" "internal/brain\outputs\benchmark_report.md"
     echo   benchmark_report.md ouvert.
 )
-if exist "vocalype-brain\outputs\business_report.md" (
-    start "" "vocalype-brain\outputs\business_report.md"
+if exist "internal/brain\outputs\business_report.md" (
+    start "" "internal/brain\outputs\business_report.md"
     echo   business_report.md ouvert.
 )
-if exist "vocalype-brain\outputs\content_report.md" (
-    start "" "vocalype-brain\outputs\content_report.md"
+if exist "internal/brain\outputs\content_report.md" (
+    start "" "internal/brain\outputs\content_report.md"
     echo   content_report.md ouvert.
 )
 
 echo.
 if "%ANY_ERROR%"=="1" (
-    echo   Certains scripts ont retourné des erreurs — voir ci-dessus.
+    echo   Certains scripts ont retournÃ© des erreurs â€” voir ci-dessus.
 ) else (
-    echo   Tous les scripts ont réussi.
+    echo   Tous les scripts ont rÃ©ussi.
 )
 echo.
 pause
+

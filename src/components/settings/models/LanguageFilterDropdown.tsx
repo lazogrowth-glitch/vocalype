@@ -65,10 +65,10 @@ export const LanguageFilterDropdown: React.FC<LanguageFilterDropdownProps> = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         style={{ padding: "10px 16px" }}
-        className={`flex items-center gap-1.5 rounded-[7px] border text-[12.5px] ${
+        className={`flex items-center gap-1.5 rounded-[8px] border text-[12.5px] transition-all duration-150 ${
           value !== "all"
-            ? "border-logo-primary/25 bg-logo-primary/12 text-logo-primary"
-            : "border-white/10 bg-white/[0.06] text-white/55 hover:text-white/75"
+            ? "border-logo-primary/25 bg-[rgba(212,168,88,0.14)] text-logo-primary"
+            : "border-white/10 bg-[#1c1c22] text-white/65 hover:border-white/15 hover:bg-[#24242c] hover:text-white/85"
         }`}
       >
         <Globe className="h-3.5 w-3.5" />
@@ -79,8 +79,14 @@ export const LanguageFilterDropdown: React.FC<LanguageFilterDropdownProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-lg border border-mid-gray/80 bg-background shadow-lg">
-          <div className="border-b border-mid-gray/40 p-2">
+        <div
+          className="absolute right-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-[10px] border border-white/10"
+          style={{
+            background: "linear-gradient(180deg,#1b1b1e,#131316)",
+            boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
+          }}
+        >
+          <div className="border-b border-white/8 p-2">
             <input
               ref={searchInputRef}
               type="text"
@@ -95,18 +101,18 @@ export const LanguageFilterDropdown: React.FC<LanguageFilterDropdownProps> = ({
               }}
               placeholder={t("settings.general.language.searchPlaceholder")}
               style={{ padding: "10px 16px" }}
-              className="w-full rounded-md border border-mid-gray/40 bg-mid-gray/10 text-sm focus:outline-none focus:ring-1 focus:ring-logo-primary"
+              className="w-full rounded-[8px] border border-white/10 bg-[#1c1c22] text-sm text-white/90 outline-none transition-colors focus:border-logo-primary/40 focus:bg-[#24242c]"
             />
           </div>
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-48 overflow-y-auto p-1">
             <button
               type="button"
               onClick={() => close("all")}
               style={{ padding: "10px 16px" }}
-              className={`w-full text-left text-sm transition-colors ${
+              className={`w-full rounded-[7px] text-left text-sm transition-colors ${
                 value === "all"
-                  ? "bg-logo-primary/20 font-semibold text-logo-primary"
-                  : "hover:bg-mid-gray/10"
+                  ? "bg-[rgba(212,168,88,0.14)] font-semibold text-logo-primary"
+                  : "text-white/90 hover:bg-[#1c1c22] hover:text-logo-primary"
               }`}
             >
               {t("settings.models.filters.allLanguages")}
@@ -117,10 +123,10 @@ export const LanguageFilterDropdown: React.FC<LanguageFilterDropdownProps> = ({
                 type="button"
                 onClick={() => close(lang.value)}
                 style={{ padding: "10px 16px" }}
-                className={`w-full text-left text-sm transition-colors ${
+                className={`w-full rounded-[7px] text-left text-sm transition-colors ${
                   value === lang.value
-                    ? "bg-logo-primary/20 font-semibold text-logo-primary"
-                    : "hover:bg-mid-gray/10"
+                    ? "bg-[rgba(212,168,88,0.14)] font-semibold text-logo-primary"
+                    : "text-white/90 hover:bg-[#1c1c22] hover:text-logo-primary"
                 }`}
               >
                 {lang.label}

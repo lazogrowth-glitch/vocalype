@@ -23,17 +23,24 @@ use crate::voice_feedback::{
     VoiceFeedbackInput, VoiceFeedbackSummary,
 };
 use sha2::{Digest, Sha256};
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::OnceLock;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
+use zip::write::SimpleFileOptions;
 
 const MAX_IMPORTABLE_JSON_BYTES: u64 = 256 * 1024;
 
 enum JsonPathAccess {
     Read,
     Write,
+}
+
+enum ExportPathAccess {
+    ZipWrite,
 }
 
 fn allowed_user_json_roots(app: &AppHandle) -> Vec<PathBuf> {
@@ -144,6 +151,112 @@ fn validate_user_json_path(
     }
 
     Ok(resolved_path)
+}
+
+fn validate_user_export_path(
+    app: &AppHandle,
+    path: &str,
+    access: ExportPathAccess,
+    purpose: &str,
+) -> Result<PathBuf, String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err(format!("Missing path for {}", purpose));
+    }
+
+    let candidate = PathBuf::from(trimmed);
+    if !candidate.is_absolute() {
+        return Err(format!("Path for {} must be absolute", purpose));
+    }
+
+    match access {
+        ExportPathAccess::ZipWrite => {
+            if candidate.extension().and_then(|ext| ext.to_str()) != Some("zip") {
+                return Err(format!("Path for {} must point to a .zip file", purpose));
+            }
+        }
+    }
+
+    let allowed_roots = allowed_user_json_roots(app);
+    if allowed_roots.is_empty() {
+        return Err(format!("No writable roots are available for {}", purpose));
+    }
+
+    let parent = candidate
+        .parent()
+        .ok_or_else(|| format!("Path for {} must include a parent directory", purpose))?;
+    let resolved_parent = parent.canonicalize().map_err(|err| {
+        format!(
+            "Failed to resolve parent directory for {} '{}': {}",
+            purpose,
+            parent.display(),
+            err
+        )
+    })?;
+    let resolved_path = resolved_parent.join(
+        candidate
+            .file_name()
+            .ok_or_else(|| format!("Path for {} must include a file name", purpose))?,
+    );
+
+    let root_matches = allowed_roots.into_iter().any(|root| {
+        let resolved_root = root.canonicalize().unwrap_or(root);
+        path_is_within_root(&resolved_path, &resolved_root)
+    });
+    if !root_matches {
+        return Err(format!(
+            "Path for {} must stay inside app data, config, Downloads, Documents, or Desktop",
+            purpose
+        ));
+    }
+
+    Ok(resolved_path)
+}
+
+fn collect_recent_log_files(app: &AppHandle, limit: usize) -> Result<Vec<PathBuf>, String> {
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|e| format!("Failed to get log directory: {}", e))?;
+
+    let mut entries = std::fs::read_dir(&log_dir)
+        .map_err(|e| format!("Failed to read log directory '{}': {}", log_dir.display(), e))?
+        .flatten()
+        .filter_map(|entry| {
+            let path = entry.path();
+            let metadata = entry.metadata().ok()?;
+            if !metadata.is_file() {
+                return None;
+            }
+            Some((path, metadata.modified().ok()))
+        })
+        .collect::<Vec<_>>();
+
+    entries.sort_by(|a, b| b.1.cmp(&a.1));
+
+    Ok(entries
+        .into_iter()
+        .take(limit)
+        .map(|(path, _)| path)
+        .collect())
+}
+
+fn add_file_to_zip(
+    zip: &mut zip::ZipWriter<File>,
+    archive_path: &str,
+    source_path: &Path,
+) -> Result<(), String> {
+    let options = SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .unix_permissions(0o644);
+    zip.start_file(archive_path, options)
+        .map_err(|e| format!("Failed to create zip entry '{}': {}", archive_path, e))?;
+
+    let mut source = File::open(source_path)
+        .map_err(|e| format!("Failed to open '{}' for zip export: {}", source_path.display(), e))?;
+    std::io::copy(&mut source, zip)
+        .map_err(|e| format!("Failed to add '{}' to zip: {}", source_path.display(), e))?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -314,6 +427,16 @@ pub fn import_settings(app: AppHandle, path: String) -> Result<(), String> {
     write_settings(&app, normalized_settings);
     log::info!("Settings imported from {}", input_path.display());
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn reset_all_settings(app: AppHandle) -> Result<AppSettings, String> {
+    let default_settings = AppSettings::default();
+    write_settings(&app, default_settings);
+    let saved = get_settings(&app);
+    log::info!("Settings reset to defaults");
+    Ok(saved)
 }
 
 fn hex_encode_lower(bytes: &[u8]) -> String {
@@ -540,6 +663,59 @@ pub fn export_runtime_diagnostics(app: AppHandle, path: String) -> Result<(), St
     std::fs::write(&output_path, json)
         .map_err(|e| format!("Failed to write diagnostics file: {}", e))?;
     log::info!("Runtime diagnostics exported to {}", output_path.display());
+    Ok(())
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn export_support_package(
+    app: AppHandle,
+    path: String,
+    support_report: String,
+) -> Result<(), String> {
+    let output_path =
+        validate_user_export_path(&app, &path, ExportPathAccess::ZipWrite, "support package export")?;
+    let diagnostics = collect_runtime_diagnostics(&app);
+    let diagnostics_json = serde_json::to_vec_pretty(&diagnostics)
+        .map_err(|e| format!("Failed to serialize runtime diagnostics: {}", e))?;
+
+    let file = File::create(&output_path)
+        .map_err(|e| format!("Failed to create support package '{}': {}", output_path.display(), e))?;
+    let mut zip = zip::ZipWriter::new(file);
+    let options = SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .unix_permissions(0o644);
+
+    zip.start_file("diagnostics/runtime-diagnostics.json", options)
+        .map_err(|e| format!("Failed to create diagnostics entry: {}", e))?;
+    zip.write_all(&diagnostics_json)
+        .map_err(|e| format!("Failed to write diagnostics entry: {}", e))?;
+
+    zip.start_file("support/support-report.txt", options)
+        .map_err(|e| format!("Failed to create support report entry: {}", e))?;
+    zip.write_all(support_report.as_bytes())
+        .map_err(|e| format!("Failed to write support report entry: {}", e))?;
+
+    let settings = crate::settings::get_public_settings(&app);
+    let settings_json = serde_json::to_vec_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize public settings: {}", e))?;
+    zip.start_file("diagnostics/public-settings.json", options)
+        .map_err(|e| format!("Failed to create settings entry: {}", e))?;
+    zip.write_all(&settings_json)
+        .map_err(|e| format!("Failed to write settings entry: {}", e))?;
+
+    for log_path in collect_recent_log_files(&app, 5)? {
+        let file_name = log_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| format!("Invalid log file name '{}'", log_path.display()))?;
+        add_file_to_zip(&mut zip, &format!("logs/{}", file_name), &log_path)?;
+    }
+
+    zip.finish()
+        .map_err(|e| format!("Failed to finalize support package: {}", e))?;
+
+    log::info!("Support package exported to {}", output_path.display());
     Ok(())
 }
 

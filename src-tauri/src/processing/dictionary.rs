@@ -142,16 +142,31 @@ impl DictionaryManager {
     /// Safety guard: `from` must be at least 5 characters long.  Short words
     /// (≤ 4 chars) like "est", "car", "le" cause false positives when learned
     /// automatically from correction diffs and would corrupt unrelated output.
+    ///
+    /// For manual user entries, use `add_manual` which allows 2+ characters.
     pub fn add(&self, from: String, to: String) -> Result<(), String> {
+        self.add_with_min_chars(from, to, 5)
+    }
+
+    /// Adds a manually entered entry — same as `add` but allows 2+ characters.
+    /// Use this for entries created explicitly by the user (not auto-learned).
+    pub fn add_manual(&self, from: String, to: String) -> Result<(), String> {
+        self.add_with_min_chars(from, to, 2)
+    }
+
+    fn add_with_min_chars(&self, from: String, to: String, min_chars: usize) -> Result<(), String> {
         let from = from.trim().to_string();
         let to = to.trim().to_string();
         if from.is_empty() {
-            return Err("Le champ 'de' ne peut pas être vide".to_string());
+            return Err("Le champ 'Vocalype entend' ne peut pas être vide".to_string());
         }
-        if from.chars().count() < 5 {
+        if to.is_empty() {
+            return Err("Le champ 'Remplacer par' ne peut pas être vide".to_string());
+        }
+        if from.chars().count() < min_chars {
             return Err(format!(
-                "'{}' est trop court pour être appris automatiquement (minimum 5 caractères)",
-                from
+                "'{}' est trop court (minimum {} caractères)",
+                from, min_chars
             ));
         }
         let re = build_pattern(&from).ok_or_else(|| format!("Pattern invalide pour '{}'", from))?;

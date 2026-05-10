@@ -1258,7 +1258,6 @@ mod tests {
     use flate2::write::GzEncoder;
     use flate2::Compression;
     use std::fs;
-    use std::io::Write;
     use tar::Builder;
     use tempfile::TempDir;
 

@@ -10,6 +10,7 @@ use crate::types::{Hotkey, Key, KeyEvent, Modifiers};
 pub type BlockingHotkeys = Arc<Mutex<HashSet<Hotkey>>>;
 
 /// Internal state shared with platform-specific event callbacks
+#[cfg_attr(target_os = "windows", allow(dead_code))]
 pub struct ListenerState {
     pub event_sender: Sender<KeyEvent>,
     /// Track which modifiers are currently held
@@ -19,6 +20,7 @@ pub struct ListenerState {
 }
 
 impl ListenerState {
+    #[cfg_attr(target_os = "windows", allow(dead_code))]
     pub fn new(event_sender: Sender<KeyEvent>, blocking_hotkeys: Option<BlockingHotkeys>) -> Self {
         Self {
             event_sender,
@@ -28,6 +30,7 @@ impl ListenerState {
     }
 
     /// Check if an event matches a blocking hotkey
+    #[cfg_attr(target_os = "windows", allow(dead_code))]
     pub fn should_block(&self, modifiers: Modifiers, key: Option<Key>) -> bool {
         if let Some(ref hotkeys) = self.blocking_hotkeys {
             if let Ok(set) = hotkeys.lock() {

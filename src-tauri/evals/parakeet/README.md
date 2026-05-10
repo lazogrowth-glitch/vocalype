@@ -174,7 +174,7 @@ Download a Common Voice language release from Mozilla, unzip it, then sample a
 bounded eval pack:
 
 ```powershell
-python ..\scripts\prepare-external-asr-dataset.py `
+python ..\..\..\scripts\evals\prepare-external-asr-dataset.py `
   --dataset common_voice `
   --source-dir C:\datasets\common_voice `
   --languages en fr es pt `
@@ -190,7 +190,7 @@ The source folder can either be a single language folder containing
 LibriSpeech is English-only and useful as a clean baseline:
 
 ```powershell
-python ..\scripts\prepare-external-asr-dataset.py `
+python ..\..\..\scripts\evals\prepare-external-asr-dataset.py `
   --dataset librispeech `
   --source-dir C:\datasets\LibriSpeech\test-clean `
   --languages en `
@@ -205,7 +205,7 @@ checks. Install the optional dependency first:
 
 ```powershell
 python -m pip install datasets
-python ..\scripts\prepare-external-asr-dataset.py `
+python ..\..\..\scripts\evals\prepare-external-asr-dataset.py `
   --dataset fleurs `
   --languages en fr es pt `
   --max-per-language 20 `

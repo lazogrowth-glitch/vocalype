@@ -16,12 +16,12 @@ function Show-Usage {
     Write-Host "Parakeet evaluation helper"
     Write-Host ""
     Write-Host "Usage:"
-    Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/run-parakeet-evals.ps1 [-Mode text|pipeline|all] [-ModelDir <dir>] [-ModelId <id>]"
+    Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/evals/run-parakeet-evals.ps1 [-Mode text|pipeline|all] [-ModelDir <dir>] [-ModelId <id>]"
     Write-Host ""
     Write-Host "Examples:"
-    Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/run-parakeet-evals.ps1 -Mode text"
-    Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/run-parakeet-evals.ps1 -Mode pipeline -ModelDir C:\models\parakeet-v3"
-    Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/run-parakeet-evals.ps1 -Mode all -ModelDir C:\models\parakeet-v3 -ModelId parakeet-tdt-0.6b-v3-multilingual"
+    Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/evals/run-parakeet-evals.ps1 -Mode text"
+    Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/evals/run-parakeet-evals.ps1 -Mode pipeline -ModelDir C:\models\parakeet-v3"
+    Write-Host "  powershell -ExecutionPolicy Bypass -File scripts/evals/run-parakeet-evals.ps1 -Mode all -ModelDir C:\models\parakeet-v3 -ModelId parakeet-tdt-0.6b-v3-multilingual"
 }
 
 if ($Help) {

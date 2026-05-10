@@ -65,8 +65,8 @@ proxy that overwrites `X-Forwarded-For`.
 ```text
 backend/app.py
 backend/requirements.txt
-scripts/admin-activate-user.py
-scripts/generate-admin-token.py
+scripts/admin/admin-activate-user.py
+scripts/admin/generate-admin-token.py
 ```
 
 ## Generate an admin token locally
@@ -75,13 +75,13 @@ From the repo root:
 
 ```bash
 export ADMIN_TOKEN_SECRET="replace-me"
-python scripts/generate-admin-token.py --subject your-name
+python scripts/admin/generate-admin-token.py --subject your-name
 ```
 
 Raw token only:
 
 ```bash
-python scripts/generate-admin-token.py --raw
+python scripts/admin/generate-admin-token.py --raw
 ```
 
 Activate a user directly:
@@ -89,7 +89,7 @@ Activate a user directly:
 ```bash
 export ADMIN_TOKEN_SECRET="replace-me"
 export VOCALYPE_API_URL="https://your-railway-api.up.railway.app"
-python scripts/admin-activate-user.py --email user@example.com
+python scripts/admin/admin-activate-user.py --email user@example.com
 ```
 
 ## Frontend variable

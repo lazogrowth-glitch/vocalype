@@ -3,9 +3,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 // Configuration
-const LOCALES_DIR = path.join(__dirname, "..", "src", "i18n", "locales");
+const LOCALES_DIR = path.join(REPO_ROOT, "src", "i18n", "locales");
 const REFERENCE_LANG = "en";
 
 type TranslationData = Record<string, unknown>;

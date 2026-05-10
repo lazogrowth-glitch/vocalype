@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev:vocalypedev": "tauri dev --config src-tauri/tauri.dev.conf.json --no-watch",
-    "tauri:build": "powershell -ExecutionPolicy Bypass -File scripts/build-release.ps1",
+    "tauri:build": "powershell -ExecutionPolicy Bypass -File scripts/build/build-release.ps1",
     "tauri:build:vocalypedev": "tauri build --config src-tauri/tauri.dev.conf.json",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
@@ -24,9 +24,9 @@
     "test:coverage": "vitest run --coverage",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
-    "check:translations": "bun scripts/check-translations.ts",
-    "eval:parakeet": "powershell -ExecutionPolicy Bypass -File scripts/run-parakeet-evals.ps1",
-    "eval:prepare-external": "python scripts/prepare-external-asr-dataset.py",
+    "check:translations": "bun scripts/i18n/check-translations.ts",
+    "eval:parakeet": "powershell -ExecutionPolicy Bypass -File scripts/evals/run-parakeet-evals.ps1",
+    "eval:prepare-external": "python scripts/evals/prepare-external-asr-dataset.py",
     "prepare": "husky"
   },
   "dependencies": {

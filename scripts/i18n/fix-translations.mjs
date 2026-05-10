@@ -1,5 +1,9 @@
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const repoRoot = join(__dirname, "..", "..");
 
 const translations = {
   ar: {
@@ -124,7 +128,7 @@ const translations = {
   },
 };
 
-const localesDir = "src/i18n/locales";
+const localesDir = join(repoRoot, "src", "i18n", "locales");
 
 for (const [lang, userFacing] of Object.entries(translations)) {
   const filePath = join(localesDir, lang, "translation.json");

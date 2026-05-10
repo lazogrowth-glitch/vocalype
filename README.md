@@ -2,6 +2,29 @@
 
 Vocalype is a desktop speech-to-text application built with Tauri, Rust, React, and TypeScript.
 
+## Repository Map
+
+- `src/`: React frontend, UI state, hooks, and browser-facing utilities
+- `src-tauri/`: Tauri app, Rust runtime, native integrations, vendored Rust crates, and eval tooling
+- `backend/`: small Python service and admin/security helpers
+- `assets/`: repo-managed media such as sponsor assets
+- `docs/`: engineering, product, release, and security documentation
+- `scripts/`: local developer automation grouped by purpose
+- `internal/`: founder/ops workflows, audit artifacts, and autonomous tooling
+- `tests/`: Playwright end-to-end coverage
+- `public/`: static web assets
+- `release/`: release metadata and checklists
+
+## Common Commands
+
+```bash
+bun install
+bun run dev:frontend
+bun run tauri:build
+bun run check:translations
+bun run eval:parakeet
+```
+
 ## Development
 
 ```bash

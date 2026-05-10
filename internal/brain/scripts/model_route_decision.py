@@ -92,7 +92,7 @@ ROUTING: dict[str, dict] = {
         "guidance": (
             "Product implementation must be sent manually by the founder.\n\n"
             "STEPS:\n"
-            "  1. Run: Generer_Mission_Claude.bat (or python internal/brain/scripts/generate_v11_mission_package.py)\n"
+            "  1. Run: internal/brain/launcher/Generer_Mission_Claude.bat (or python internal/brain/scripts/generate_v11_mission_package.py)\n"
             "  2. Open: internal/brain/outputs/v11_mission_package.md\n"
             "  3. Review the mission package â€” confirm scope, forbidden files, stop conditions\n"
             "  4. Copy and paste into Claude Code, Codex, or Aider\n"

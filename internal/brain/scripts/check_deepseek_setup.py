@@ -113,7 +113,7 @@ def main() -> None:
     # 4. Status summary
     if api_key:
         print("  STATUS: DeepSeek is CONFIGURED.")
-        print("  You can use 'Creer_Context_DeepSeek.bat' to build a context pack.")
+        print("  You can use 'internal/brain/launcher/Creer_Context_DeepSeek.bat' to build a context pack.")
         print("  Remember to review context_pack.md before sending it externally.")
     else:
         print("  STATUS: DeepSeek is NOT configured.")

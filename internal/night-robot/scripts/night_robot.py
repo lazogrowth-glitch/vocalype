@@ -33,7 +33,7 @@ from result_judge import ResultJudge
 from utils import run_command, setup_logging, timestamp
 
 _ROBOT_DIR = _SCRIPTS_DIR.parent
-_REPO_ROOT = _ROBOT_DIR.parent
+_REPO_ROOT = _ROBOT_DIR.parent.parent
 _CONFIG_PATH = _ROBOT_DIR / "config" / "robot_config.json"
 _DATA_DIR = _ROBOT_DIR / "data"
 _PROMPTS_DIR = _ROBOT_DIR / "prompts"
@@ -409,7 +409,7 @@ def cmd_run(args: argparse.Namespace, config: dict) -> None:
     if not llm.ping():
         print(
             f"ERROR: LLM proxy unreachable at {config['proxy_url']}\n"
-            "Start it with: python nvidia_fallback_proxy.py"
+            "Start it with: python scripts/dev/nvidia_fallback_proxy.py"
         )
         sys.exit(1)
 

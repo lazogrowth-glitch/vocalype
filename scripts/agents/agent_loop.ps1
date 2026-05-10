@@ -130,7 +130,7 @@ function Run-Analysis($localReport, $fleursReport, $iteration) {
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($argsFile, $content, $utf8NoBom)
         Push-Location $REPO
-        $output = python agent_analyze_args.py 2>&1
+        $output = python scripts/agents/agent_analyze_args.py 2>&1
         Pop-Location
     } finally {
         Remove-Item $argsFile -Force -ErrorAction SilentlyContinue
@@ -717,7 +717,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         }
         Push-Location $REPO
         try {
-            & $AIDER --model ollama/qwen2.5-coder:7b-instruct-q8_0 --edit-format diff --no-auto-commits --yes-always --no-show-model-warnings --no-browser --no-gui --map-tokens 0 --read AGENT_MISSION.md @aiderFiles --message-file agent_prompt_temp.txt
+        & $AIDER --model ollama/qwen2.5-coder:7b-instruct-q8_0 --edit-format diff --no-auto-commits --yes-always --no-show-model-warnings --no-browser --no-gui --map-tokens 0 --read internal/ops/docs/AGENT_MISSION.md @aiderFiles --message-file agent_prompt_temp.txt
         } finally {
             Pop-Location
             Remove-Item $aiderIgnore -Force -ErrorAction SilentlyContinue

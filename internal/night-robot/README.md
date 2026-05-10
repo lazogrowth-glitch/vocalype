@@ -25,7 +25,7 @@ pip install httpx
 
 The NVIDIA fallback proxy must be running:
 ```
-python nvidia_fallback_proxy.py
+python scripts/dev/nvidia_fallback_proxy.py
 ```
 
 ## Commands

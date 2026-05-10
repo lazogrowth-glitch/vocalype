@@ -22,7 +22,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 _ROBOT_DIR = Path(__file__).resolve().parent.parent
-_REPO_ROOT = _ROBOT_DIR.parent
+_REPO_ROOT = _ROBOT_DIR.parent.parent
 _RUNS_DIR = _ROBOT_DIR / "data" / "runs"
 
 _MODEL_DIR = (

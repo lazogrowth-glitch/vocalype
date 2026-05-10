@@ -19,6 +19,7 @@ the primary product benchmark.
 - `audio/`: WAV files referenced by the manifest
 - `reports/`: generated evaluation reports
 - `hypotheses/`: optional plain-text hypotheses for `parakeet_eval`
+- `archive/experiments/`: historical experiment result JSON files kept for regression archaeology
 
 ## Audio Requirements
 
@@ -54,6 +55,11 @@ pulled the latest Parakeet runtime changes correctly.
 
 These are kept for archaeology and regression hunting, not as the main
 shipping benchmark.
+
+## Archived Experiment Outputs
+
+Historical one-off experiment outputs are stored in `archive/experiments/` so
+the top level stays focused on active manifests, packs, and documentation.
 
 ## Recommended Scenarios
 

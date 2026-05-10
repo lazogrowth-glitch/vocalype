@@ -1,4 +1,4 @@
-$report = Get-Content 'C:\developer\sas\vocalype\src-tauri\evals\parakeet\external-fleurs-supported-400-no-hi-fr-punct.json' | ConvertFrom-Json
+$report = Get-Content 'C:\developer\sas\vocalype\src-tauri\evals\parakeet\archive\experiments\external-fleurs-supported-400-no-hi-fr-punct.json' | ConvertFrom-Json
 $bad = $report.samples | Where-Object { $_.wer -gt 0.2 } | Sort-Object wer -Descending | Select-Object -First 60
 foreach ($s in $bad) {
     Write-Output "=== $($s.id) [$($s.language)] WER=$($s.wer) OMIT=$($s.omit_rate) HALL=$($s.hall_rate) END=$($s.end_score)"

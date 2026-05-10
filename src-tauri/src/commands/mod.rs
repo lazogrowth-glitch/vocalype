@@ -220,7 +220,13 @@ fn collect_recent_log_files(app: &AppHandle, limit: usize) -> Result<Vec<PathBuf
         .map_err(|e| format!("Failed to get log directory: {}", e))?;
 
     let mut entries = std::fs::read_dir(&log_dir)
-        .map_err(|e| format!("Failed to read log directory '{}': {}", log_dir.display(), e))?
+        .map_err(|e| {
+            format!(
+                "Failed to read log directory '{}': {}",
+                log_dir.display(),
+                e
+            )
+        })?
         .flatten()
         .filter_map(|entry| {
             let path = entry.path();
@@ -252,8 +258,13 @@ fn add_file_to_zip(
     zip.start_file(archive_path, options)
         .map_err(|e| format!("Failed to create zip entry '{}': {}", archive_path, e))?;
 
-    let mut source = File::open(source_path)
-        .map_err(|e| format!("Failed to open '{}' for zip export: {}", source_path.display(), e))?;
+    let mut source = File::open(source_path).map_err(|e| {
+        format!(
+            "Failed to open '{}' for zip export: {}",
+            source_path.display(),
+            e
+        )
+    })?;
     std::io::copy(&mut source, zip)
         .map_err(|e| format!("Failed to add '{}' to zip: {}", source_path.display(), e))?;
     Ok(())
@@ -673,14 +684,23 @@ pub fn export_support_package(
     path: String,
     support_report: String,
 ) -> Result<(), String> {
-    let output_path =
-        validate_user_export_path(&app, &path, ExportPathAccess::ZipWrite, "support package export")?;
+    let output_path = validate_user_export_path(
+        &app,
+        &path,
+        ExportPathAccess::ZipWrite,
+        "support package export",
+    )?;
     let diagnostics = collect_runtime_diagnostics(&app);
     let diagnostics_json = serde_json::to_vec_pretty(&diagnostics)
         .map_err(|e| format!("Failed to serialize runtime diagnostics: {}", e))?;
 
-    let file = File::create(&output_path)
-        .map_err(|e| format!("Failed to create support package '{}': {}", output_path.display(), e))?;
+    let file = File::create(&output_path).map_err(|e| {
+        format!(
+            "Failed to create support package '{}': {}",
+            output_path.display(),
+            e
+        )
+    })?;
     let mut zip = zip::ZipWriter::new(file);
     let options = SimpleFileOptions::default()
         .compression_method(zip::CompressionMethod::Deflated)

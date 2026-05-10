@@ -63,9 +63,7 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
-        KeyboardImplementation::NativeKeyboard => {
-            native_keyboard::unregister_cancel_shortcut(app)
-        }
+        KeyboardImplementation::NativeKeyboard => native_keyboard::unregister_cancel_shortcut(app),
     }
 }
 
@@ -167,9 +165,7 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_shortcut(app, binding),
-        KeyboardImplementation::NativeKeyboard => {
-            native_keyboard::register_shortcut(app, binding)
-        }
+        KeyboardImplementation::NativeKeyboard => native_keyboard::register_shortcut(app, binding),
     }
 }
 
@@ -452,9 +448,7 @@ fn validate_shortcut_for_implementation(
 ) -> Result<(), String> {
     match implementation {
         KeyboardImplementation::Tauri => tauri_impl::validate_shortcut(raw),
-        KeyboardImplementation::NativeKeyboard => {
-            native_keyboard::validate_shortcut(raw)
-        }
+        KeyboardImplementation::NativeKeyboard => native_keyboard::validate_shortcut(raw),
     }
 }
 

@@ -28,9 +28,6 @@
 //! via Tauri's event system.
 
 use log::{debug, error, info, warn};
-use vocalype_shortcuts_backend::{
-    Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener, Modifiers,
-};
 use serde::Serialize;
 use specta::Type;
 use std::collections::HashMap;
@@ -39,6 +36,9 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use tauri::{AppHandle, Emitter, Manager};
+use vocalype_shortcuts_backend::{
+    Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener, Modifiers,
+};
 
 use crate::settings::{self, get_settings, ShortcutBinding};
 
@@ -223,10 +223,7 @@ impl NativeKeyboardState {
                 .unregister(id)
                 .map_err(|e| format!("Failed to unregister hotkey: {}", e))?;
             hotkey_to_binding.remove(&id);
-            debug!(
-                "Unregistered native keyboard shortcut: {}",
-                binding_id
-            );
+            debug!("Unregistered native keyboard shortcut: {}", binding_id);
         }
         Ok(())
     }
@@ -599,10 +596,7 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
 /// Start key recording mode
 #[tauri::command]
 #[specta::specta]
-pub fn start_native_keyboard_recording(
-    app: AppHandle,
-    binding_id: String,
-) -> Result<(), String> {
+pub fn start_native_keyboard_recording(app: AppHandle, binding_id: String) -> Result<(), String> {
     let settings = get_settings(&app);
     if settings.keyboard_implementation != settings::KeyboardImplementation::NativeKeyboard {
         return Err("Native keyboard backend is not the active keyboard implementation".into());

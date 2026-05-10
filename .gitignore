@@ -36,6 +36,7 @@ test-results/
 blob-report/
 internal/audits/playwright-report/
 internal/audits/test-results/
+internal/audits/workdirs/
 
 .direnv
 .envrc
@@ -53,7 +54,6 @@ backend/*.db
 # Test/dev artifacts (never commit these)
 .pydeps-onnxasr/
 tmp-parakeet-tests/
-internal/audits/tmp-parakeet-tests/
 r2-upload/
 src-tauri/evals/parakeet/audio/*.wav
 src-tauri/evals/parakeet/reports/*.json

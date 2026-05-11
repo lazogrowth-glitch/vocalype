@@ -118,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
-  const { isTrialing, trialEndsAt, onStartCheckout } = usePlan();
+  const { isTrialing, trialEndsAt, openUpgradePlans } = usePlan();
   const trialBadge = useTrialBadge(isTrialing ? trialEndsAt : null);
   const { historyCount, meetingsCount, actionsCount } =
     useSidebarCounts(settings);
@@ -238,11 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {!collapsed && trialBadge ? (
         <button
           type="button"
-          onClick={() =>
-            onStartCheckout()
-              .then((url) => url && window.open(url, "_blank"))
-              .catch(() => {})
-          }
+          onClick={openUpgradePlans}
           className={`mx-4 mb-2 rounded-[16px] border px-[16px] py-3 text-left transition-opacity hover:opacity-90 ${
             trialBadge.urgency === "neutral"
               ? "border-logo-primary/15 bg-logo-primary/8"

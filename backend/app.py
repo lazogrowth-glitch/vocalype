@@ -1343,6 +1343,11 @@ def require_billing_configured():
         raise RuntimeError("STRIPE_WEBHOOK_SECRET is required")
 
 
+def append_query_param(url: str, query: str) -> str:
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}{query}"
+
+
 def resolve_checkout_price_id(plan: str | None = None, interval: str | None = None) -> str:
     normalized_plan = (plan or "").strip().lower()
     normalized_interval = (interval or "").strip().lower()
@@ -2254,8 +2259,8 @@ def billing_checkout(user):
             payment_method_types=["card"],
             line_items=[{"price": price_id, "quantity": 1}],
             mode="subscription",
-            success_url=f"{APP_RETURN_URL}%scheckout=success",
-            cancel_url=f"{APP_RETURN_URL}%scheckout=cancelled",
+            success_url=append_query_param(APP_RETURN_URL, "checkout=success"),
+            cancel_url=append_query_param(APP_RETURN_URL, "checkout=cancelled"),
         )
         return jsonify({"url": checkout.url})
     except ValueError as error:

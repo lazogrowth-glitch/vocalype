@@ -1,5 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { TitleBar } from "./TitleBar";
@@ -13,6 +14,7 @@ import {
 import { PlanContext } from "@/lib/subscription/context";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
 import type { AppSettings } from "@/bindings";
+import { UpgradePlansModal } from "./billing/UpgradePlansModal";
 
 type LayoutTier = "compact" | "cozy" | "spacious";
 
@@ -97,6 +99,11 @@ export function DesktopAppShell({
   isBasicTier,
   handleStartCheckout,
 }: DesktopAppShellProps) {
+  const [plansOpen, setPlansOpen] = useState(false);
+  const [checkoutLoadingKey, setCheckoutLoadingKey] = useState<string | null>(
+    null,
+  );
+
   useBackendEvents({
     t,
     currentSection,
@@ -190,6 +197,31 @@ export function DesktopAppShell({
     };
   }, [settings, setCurrentSection]);
 
+  const openUpgradePlans = useCallback(() => {
+    setPlansOpen(true);
+  }, []);
+
+  const closeUpgradePlans = useCallback(() => {
+    setPlansOpen(false);
+  }, []);
+
+  const handleUpgradeCheckout = useCallback(
+    async (selection: BillingCheckoutRequest) => {
+      const loadingKey = `${selection.plan ?? "default"}:${selection.interval ?? "monthly"}`;
+      setCheckoutLoadingKey(loadingKey);
+      try {
+        const url = await handleStartCheckout(selection);
+        if (url) {
+          await openUrl(url);
+        }
+        setPlansOpen(false);
+      } finally {
+        setCheckoutLoadingKey(null);
+      }
+    },
+    [handleStartCheckout],
+  );
+
   return (
     <PlanContext.Provider
       value={{
@@ -198,6 +230,7 @@ export function DesktopAppShell({
         trialEndsAt,
         quota: session?.subscription?.quota ?? null,
         onStartCheckout: handleStartCheckout,
+        openUpgradePlans,
       }}
     >
       <div dir={direction} className="app-shell">
@@ -316,6 +349,12 @@ export function DesktopAppShell({
             )}
           </main>
         </div>
+        <UpgradePlansModal
+          open={plansOpen}
+          onClose={closeUpgradePlans}
+          onCheckout={handleUpgradeCheckout}
+          loadingKey={checkoutLoadingKey}
+        />
       </div>
     </PlanContext.Provider>
   );

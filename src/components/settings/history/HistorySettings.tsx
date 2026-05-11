@@ -424,7 +424,7 @@ export const TranscribeFileButton: React.FC = () => {
 export const HistorySettings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const osType = useOsType();
-  const { isBasicTier, onStartCheckout } = usePlan();
+  const { isBasicTier, onStartCheckout, openUpgradePlans } = usePlan();
   const { getSetting } = useSettings();
 
   // ── Data state ──────────────────────────────────────────────────────────────
@@ -1089,11 +1089,7 @@ export const HistorySettings: React.FC = () => {
                 </span>
                 <button
                   type="button"
-                  onClick={() =>
-                    onStartCheckout().then(
-                      (url) => url && window.open(url, "_blank"),
-                    )
-                  }
+                  onClick={openUpgradePlans}
                   style={{
                     padding: "4px 10px",
                     borderRadius: 6,

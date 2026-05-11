@@ -7,6 +7,7 @@ export interface PlanContextValue {
   trialEndsAt: string | null;
   quota: WeeklyQuota | null;
   onStartCheckout: (selection?: BillingCheckoutRequest) => Promise<string>;
+  openUpgradePlans: () => void;
 }
 
 export const PlanContext = createContext<PlanContextValue>({
@@ -15,6 +16,7 @@ export const PlanContext = createContext<PlanContextValue>({
   trialEndsAt: null,
   quota: null,
   onStartCheckout: async () => "",
+  openUpgradePlans: () => {},
 });
 
 export function usePlan(): PlanContextValue {

@@ -1,12 +1,12 @@
 import { createContext, useContext } from "react";
-import type { WeeklyQuota } from "@/lib/auth/types";
+import type { BillingCheckoutRequest, WeeklyQuota } from "@/lib/auth/types";
 
 export interface PlanContextValue {
   isBasicTier: boolean;
   isTrialing: boolean;
   trialEndsAt: string | null;
   quota: WeeklyQuota | null;
-  onStartCheckout: () => Promise<string>;
+  onStartCheckout: (selection?: BillingCheckoutRequest) => Promise<string>;
 }
 
 export const PlanContext = createContext<PlanContextValue>({

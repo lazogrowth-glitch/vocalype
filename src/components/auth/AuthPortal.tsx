@@ -5,7 +5,11 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
-import type { AuthPayload, AuthSession } from "@/lib/auth/types";
+import type {
+  AuthPayload,
+  AuthSession,
+  BillingCheckoutRequest,
+} from "@/lib/auth/types";
 import type { ActivationStatus } from "@/hooks/useAuthFlow";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import appLogo from "@/assets/logo.png";
@@ -505,7 +509,7 @@ interface AuthPortalProps {
   session: AuthSession | null;
   onLogin: (payload: AuthPayload) => Promise<void>;
   onRegister: (payload: AuthPayload) => Promise<void>;
-  onStartCheckout: () => Promise<string>;
+  onStartCheckout: (selection?: BillingCheckoutRequest) => Promise<string>;
   onOpenBillingPortal: () => Promise<string>;
   onRefreshSession: () => Promise<void>;
   onLogout: () => void;
@@ -544,7 +548,9 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [browserBusy, setBrowserBusy] = useState<"signup" | "login" | null>(
     null,
   );
@@ -565,7 +571,12 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
     activationStatus === "activation_failed" && !displayError
       ? "L'activation sur ce PC n'a pas abouti. Cliquez sur « Réessayer » ou reconnectez-vous."
       : null;
-  const visibleError = displayError ?? activationFailedFallback;
+  const localSignupError =
+    mode === "signup" && confirmPassword && password !== confirmPassword
+      ? t("auth.errors.passwordsDoNotMatch")
+      : null;
+  const visibleError =
+    localSignupError ?? displayError ?? activationFailedFallback;
 
   // Auto-refresh loop when a session is detected (same logic as before)
   useEffect(() => {
@@ -612,6 +623,7 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
     e.preventDefault();
     if (!canInteract || !email.trim() || !password) return;
     if (mode === "signup") {
+      if (password !== confirmPassword) return;
       await onRegister({ email: email.trim(), password });
     } else {
       await onLogin({ email: email.trim(), password });
@@ -822,7 +834,11 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
             >
               <button
                 className={mode === "signin" ? "active" : ""}
-                onClick={() => setMode("signin")}
+                onClick={() => {
+                  setMode("signin");
+                  setConfirmPassword("");
+                  setShowConfirmPw(false);
+                }}
               >
                 Se connecter
               </button>
@@ -950,7 +966,7 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
                       mode === "signup" ? "new-password" : "current-password"
                     }
                     required
-                    minLength={mode === "signup" ? 8 : 1}
+                    minLength={mode === "signup" ? 6 : 1}
                   />
                   <button
                     type="button"
@@ -990,11 +1006,93 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
                 </div>
               </div>
 
+              {mode === "signup" && (
+                <div style={{ marginBottom: 14 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#b6b6bd",
+                      fontWeight: 500,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {t("auth.confirmPassword")}
+                  </div>
+                  <div className="auth-input-wrap">
+                    <span style={{ padding: "0 4px 0 14px", color: "#56565e" }}>
+                      <svg
+                        width={16}
+                        height={16}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.6}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x={4} y={11} width={16} height={10} rx={2} />
+                        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                      </svg>
+                    </span>
+                    <input
+                      type={showConfirmPw ? "text" : "password"}
+                      placeholder="••••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPw((p) => !p)}
+                      style={{
+                        background: "none",
+                        border: 0,
+                        padding: "0 14px",
+                        color: "#82828b",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <svg
+                        width={16}
+                        height={16}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.6}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        {showConfirmPw ? (
+                          <>
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                            <line x1={1} y1={1} x2={23} y2={23} />
+                          </>
+                        ) : (
+                          <>
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx={12} cy={12} r={3} />
+                          </>
+                        )}
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Submit */}
               <button
                 type="submit"
                 className="auth-submit"
-                disabled={!canInteract || !email.trim() || !password}
+                disabled={
+                  !canInteract ||
+                  !email.trim() ||
+                  !password ||
+                  (mode === "signup" &&
+                    (!confirmPassword || password !== confirmPassword))
+                }
               >
                 {isSubmitting ? (
                   <Loader2 size={16} className="animate-spin" />

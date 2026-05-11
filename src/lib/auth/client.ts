@@ -26,6 +26,7 @@
 import type {
   AuthPayload,
   AuthSession,
+  BillingCheckoutRequest,
   BillingLinkResponse,
   ChangePasswordPayload,
   ResetPasswordPayload,
@@ -605,10 +606,13 @@ export const authClient = {
     return session;
   },
 
-  async createCheckout(token: string) {
+  async createCheckout(token: string, selection?: BillingCheckoutRequest) {
     return request<BillingLinkResponse>(
       "/billing/checkout",
-      { method: "POST" },
+      {
+        method: "POST",
+        body: JSON.stringify(selection ?? {}),
+      },
       token,
     );
   },

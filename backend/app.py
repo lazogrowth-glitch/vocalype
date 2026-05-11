@@ -74,7 +74,7 @@ def parse_allowed_origins() -> list[str]:
 CORS_ALLOWED_ORIGINS = parse_allowed_origins()
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 15, 5)
 REFRESH_TOKEN_TTL_DAYS = env_int("REFRESH_TOKEN_TTL_DAYS", 30, 1)
-PASSWORD_MIN_LENGTH = env_int("MIN_PASSWORD_LENGTH", 12, 12)
+PASSWORD_MIN_LENGTH = env_int("MIN_PASSWORD_LENGTH", 6, 6)
 RATE_LIMIT_BUCKETS: defaultdict[str, deque[float]] = defaultdict(deque)
 RATE_LIMIT_LOCK = Lock()
 
@@ -92,6 +92,18 @@ CORS(
 
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
+STRIPE_PRICE_ID_INDEPENDENT_MONTHLY = os.environ.get(
+    "STRIPE_PRICE_ID_INDEPENDENT_MONTHLY", ""
+)
+STRIPE_PRICE_ID_INDEPENDENT_YEARLY = os.environ.get(
+    "STRIPE_PRICE_ID_INDEPENDENT_YEARLY", ""
+)
+STRIPE_PRICE_ID_POWER_USER_MONTHLY = os.environ.get(
+    "STRIPE_PRICE_ID_POWER_USER_MONTHLY", ""
+)
+STRIPE_PRICE_ID_POWER_USER_YEARLY = os.environ.get(
+    "STRIPE_PRICE_ID_POWER_USER_YEARLY", ""
+)
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
@@ -172,6 +184,19 @@ TRUST_X_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "").strip().lowe
 
 stripe.api_key = STRIPE_SECRET_KEY
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+
+STRIPE_PRICE_IDS: dict[tuple[str, str], str] = {
+    ("independent", "monthly"): STRIPE_PRICE_ID_INDEPENDENT_MONTHLY,
+    ("independent", "yearly"): STRIPE_PRICE_ID_INDEPENDENT_YEARLY,
+    ("power_user", "monthly"): STRIPE_PRICE_ID_POWER_USER_MONTHLY,
+    ("power_user", "yearly"): STRIPE_PRICE_ID_POWER_USER_YEARLY,
+}
+STRIPE_DEFAULT_CHECKOUT_ORDER: tuple[tuple[str, str], ...] = (
+    ("power_user", "monthly"),
+    ("independent", "monthly"),
+    ("power_user", "yearly"),
+    ("independent", "yearly"),
+)
 
 FORGOT_PASSWORD_LIMITS = (
     ("forgot_password:ip", 5, 900, 1800),
@@ -254,21 +279,6 @@ def password_validation_error(password: str) -> str | None:
     if len(password) < PASSWORD_MIN_LENGTH:
         return (
             f"Mot de passe trop court (minimum {PASSWORD_MIN_LENGTH} caractères)"
-        )
-
-    classes = sum(
-        (
-            bool(re.search(r"[a-z]", password)),
-            bool(re.search(r"[A-Z]", password)),
-            bool(re.search(r"[0-9]", password)),
-            bool(re.search(r"[^A-Za-z0-9]", password)),
-        )
-    )
-    if classes < 3:
-        return (
-            "Mot de passe trop faible "
-            "(utilisez au moins trois types de caractères : minuscules, "
-            "majuscules, chiffres, symboles)"
         )
 
     return None
@@ -1324,10 +1334,37 @@ def get_current_admin_subject(required_scope: str) -> str | None:
 def require_billing_configured():
     if not STRIPE_SECRET_KEY:
         raise RuntimeError("STRIPE_SECRET_KEY is required")
-    if not STRIPE_PRICE_ID:
-        raise RuntimeError("STRIPE_PRICE_ID is required")
+    if not STRIPE_PRICE_ID and not any(STRIPE_PRICE_IDS.values()):
+        raise RuntimeError(
+            "At least one Stripe price id is required "
+            "(STRIPE_PRICE_ID or STRIPE_PRICE_ID_*)."
+        )
     if not STRIPE_WEBHOOK_SECRET:
         raise RuntimeError("STRIPE_WEBHOOK_SECRET is required")
+
+
+def resolve_checkout_price_id(plan: str | None = None, interval: str | None = None) -> str:
+    normalized_plan = (plan or "").strip().lower()
+    normalized_interval = (interval or "").strip().lower()
+
+    if normalized_plan:
+        resolved_interval = normalized_interval or "monthly"
+        price_id = STRIPE_PRICE_IDS.get((normalized_plan, resolved_interval), "")
+        if not price_id:
+            raise ValueError(
+                f"No Stripe price configured for plan={normalized_plan} interval={resolved_interval}"
+            )
+        return price_id
+
+    if STRIPE_PRICE_ID:
+        return STRIPE_PRICE_ID
+
+    for key in STRIPE_DEFAULT_CHECKOUT_ORDER:
+        price_id = STRIPE_PRICE_IDS.get(key, "")
+        if price_id:
+            return price_id
+
+    raise RuntimeError("No Stripe price configured for checkout")
 
 
 def ensure_customer(user):
@@ -2215,16 +2252,23 @@ def billing_checkout(user):
         if has_premium_access(user):
             return jsonify({"error": "Abonnement premium déjà actif"}), 400
 
+        payload = request.get_json(silent=True) or {}
+        price_id = resolve_checkout_price_id(
+            payload.get("plan"),
+            payload.get("interval"),
+        )
         customer_id = ensure_customer(user)
         checkout = stripe.checkout.Session.create(
             customer=customer_id,
             payment_method_types=["card"],
-            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            line_items=[{"price": price_id, "quantity": 1}],
             mode="subscription",
             success_url=f"{APP_RETURN_URL}%scheckout=success",
             cancel_url=f"{APP_RETURN_URL}%scheckout=cancelled",
         )
         return jsonify({"url": checkout.url})
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
     except Exception:
         app.logger.exception("billing_checkout_failed user_id=%s", user["id"])
         return jsonify({"error": "Erreur interne"}), 500

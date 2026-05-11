@@ -22,10 +22,18 @@ ADMIN_TOKEN_MAX_AGE_SECONDS=300
 JWT_SECRET=
 OPENAI_API_KEY=
 STRIPE_PRICE_ID=
+STRIPE_PRICE_ID_INDEPENDENT_MONTHLY=
+STRIPE_PRICE_ID_INDEPENDENT_YEARLY=
+STRIPE_PRICE_ID_POWER_USER_MONTHLY=
+STRIPE_PRICE_ID_POWER_USER_YEARLY=
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 ```
+
+Use `STRIPE_PRICE_ID` for a single checkout offer, or the plan-specific
+`STRIPE_PRICE_ID_*` variables when the desktop app should open multiple Stripe
+plans (for example Independent/Power User with monthly/yearly billing).
 
 Email delivery for password reset and trial emails:
 
@@ -185,4 +193,3 @@ something like:
   }
 }
 ```
-

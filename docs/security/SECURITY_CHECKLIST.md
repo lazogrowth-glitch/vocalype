@@ -7,7 +7,7 @@
 3. Run the backend behind a real reverse proxy / WSGI stack, not the Flask development server.
 4. Restrict NTFS permissions on the backend folder, SQLite database, and log directory.
 5. Store secrets outside the repo and outside user profile sync folders.
-6. Configure `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, and `STRIPE_WEBHOOK_SECRET` together.
+6. Configure `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and at least one Stripe price id (`STRIPE_PRICE_ID` or `STRIPE_PRICE_ID_*`) together.
 7. Configure SMTP credentials if password reset by email is enabled.
 8. Allow inbound traffic only to the ports you actually use.
 9. Monitor logs for `security_event=login_failed`, `security_event=origin_rejected`, and `security_event=rate_limit_triggered`.

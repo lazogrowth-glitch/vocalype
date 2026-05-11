@@ -4,7 +4,7 @@ import { Toaster } from "sonner";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { TitleBar } from "./TitleBar";
 import { Sidebar } from "./Sidebar";
-import type { AuthSession } from "@/lib/auth/types";
+import type { AuthSession, BillingCheckoutRequest } from "@/lib/auth/types";
 import {
   isSectionVisibleInLaunch,
   SidebarSection,
@@ -41,11 +41,13 @@ type DesktopAppShellProps = {
   pageDescription: string;
   showFirstLaunchHint: boolean;
   isBasicTier: boolean;
-  handleStartCheckout: () => Promise<string>;
+  handleStartCheckout: (selection?: BillingCheckoutRequest) => Promise<string>;
 };
 
 const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
 const NAVIGATE_SETTINGS_SCROLL_RETRIES = 12;
+const NAVIGATE_SETTINGS_HIGHLIGHT_CLASS = "settings-scroll-highlight";
+const NAVIGATE_SETTINGS_HIGHLIGHT_DURATION_MS = 2400;
 
 type NavigateSettingsDetail =
   | SidebarSection
@@ -111,6 +113,34 @@ export function DesktopAppShell({
 
   useEffect(() => {
     let pendingScrollTimer: ReturnType<typeof setTimeout> | null = null;
+    let pendingHighlightTimer: ReturnType<typeof setTimeout> | null = null;
+    let highlightedElement: HTMLElement | null = null;
+
+    const clearTargetHighlight = () => {
+      if (pendingHighlightTimer) {
+        clearTimeout(pendingHighlightTimer);
+        pendingHighlightTimer = null;
+      }
+      if (highlightedElement) {
+        highlightedElement.classList.remove(NAVIGATE_SETTINGS_HIGHLIGHT_CLASS);
+        highlightedElement = null;
+      }
+    };
+
+    const highlightTarget = (target: HTMLElement) => {
+      clearTargetHighlight();
+      target.classList.remove(NAVIGATE_SETTINGS_HIGHLIGHT_CLASS);
+      void target.offsetWidth;
+      target.classList.add(NAVIGATE_SETTINGS_HIGHLIGHT_CLASS);
+      highlightedElement = target;
+      pendingHighlightTimer = setTimeout(() => {
+        target.classList.remove(NAVIGATE_SETTINGS_HIGHLIGHT_CLASS);
+        if (highlightedElement === target) {
+          highlightedElement = null;
+        }
+        pendingHighlightTimer = null;
+      }, NAVIGATE_SETTINGS_HIGHLIGHT_DURATION_MS);
+    };
 
     const scheduleScrollToTarget = (targetId: string) => {
       let attempts = 0;
@@ -119,6 +149,7 @@ export function DesktopAppShell({
         const target = document.getElementById(targetId);
         if (target) {
           target.scrollIntoView({ behavior: "smooth", block: "start" });
+          highlightTarget(target);
           return;
         }
 
@@ -151,6 +182,7 @@ export function DesktopAppShell({
       if (pendingScrollTimer) {
         clearTimeout(pendingScrollTimer);
       }
+      clearTargetHighlight();
       window.removeEventListener(
         NAVIGATE_SETTINGS_EVENT,
         handleNavigateSettings,

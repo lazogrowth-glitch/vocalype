@@ -13,6 +13,8 @@ export interface AuthUser {
 }
 
 export type SubscriptionTier = "premium" | "basic";
+export type BillingPlan = "independent" | "power_user";
+export type BillingInterval = "monthly" | "yearly";
 
 export interface WeeklyQuota {
   count: number;
@@ -48,6 +50,11 @@ export interface AuthPayload {
 
 export interface BillingLinkResponse {
   url: string;
+}
+
+export interface BillingCheckoutRequest {
+  plan?: BillingPlan;
+  interval?: BillingInterval;
 }
 
 export interface ResetPasswordPayload {

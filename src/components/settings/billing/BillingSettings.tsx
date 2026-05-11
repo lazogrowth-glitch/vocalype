@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { CreditCard, Download, ExternalLink, Star, Zap } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
-import type { AuthSession } from "@/lib/auth/types";
+import type { AuthSession, BillingCheckoutRequest } from "@/lib/auth/types";
 import { usePlan } from "@/lib/subscription/context";
 import { commands, type HistoryStats } from "@/bindings";
 
@@ -126,6 +126,61 @@ function UsageCard({
   );
 }
 
+type BillingOffer = BillingCheckoutRequest & {
+  id: string;
+  title: string;
+  price: string;
+  cadence: string;
+  note: string;
+  badge?: string;
+};
+
+const BILLING_OFFERS: BillingOffer[] = [
+  {
+    id: "independent-monthly",
+    plan: "independent",
+    interval: "monthly",
+    title: "Independent",
+    price: "$12",
+    cadence: "/mo",
+    note: "Solo recruiters",
+  },
+  {
+    id: "independent-yearly",
+    plan: "independent",
+    interval: "yearly",
+    title: "Independent",
+    price: "$115.20",
+    cadence: "/yr",
+    note: "Annual billing",
+  },
+  {
+    id: "power-user-monthly",
+    plan: "power_user",
+    interval: "monthly",
+    title: "Power user",
+    price: "$24",
+    cadence: "/mo",
+    note: "Most popular",
+    badge: "Popular",
+  },
+  {
+    id: "power-user-yearly",
+    plan: "power_user",
+    interval: "yearly",
+    title: "Power user",
+    price: "$230.40",
+    cadence: "/yr",
+    note: "Annual billing",
+  },
+];
+
+const getCheckoutSelectionKey = ({
+  plan,
+  interval,
+}: BillingCheckoutRequest): string =>
+  `${plan ?? "default"}:${interval ?? "monthly"}`;
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export const BillingSettings: React.FC = () => {
@@ -135,6 +190,10 @@ export const BillingSettings: React.FC = () => {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [stats, setStats] = useState<HistoryStats | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [checkoutLoadingId, setCheckoutLoadingId] = useState<string | null>(
+    null,
+  );
+  const [selectedOfferId, setSelectedOfferId] = useState("power-user-monthly");
 
   useEffect(() => {
     setSession(authClient.getStoredSession());
@@ -146,14 +205,24 @@ export const BillingSettings: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  const handleUpgrade = useCallback(async () => {
-    try {
-      const url = await onStartCheckout();
-      if (url) await openUrl(url);
-    } catch {
-      /* handled upstream */
-    }
-  }, [onStartCheckout]);
+  const selectedOffer =
+    BILLING_OFFERS.find((offer) => offer.id === selectedOfferId) ??
+    BILLING_OFFERS[0];
+
+  const handleUpgrade = useCallback(
+    async (selection: BillingCheckoutRequest = selectedOffer) => {
+      setCheckoutLoadingId(getCheckoutSelectionKey(selection));
+      try {
+        const url = await onStartCheckout(selection);
+        if (url) await openUrl(url);
+      } catch {
+        /* handled upstream */
+      } finally {
+        setCheckoutLoadingId(null);
+      }
+    },
+    [onStartCheckout, selectedOffer],
+  );
 
   const handleManage = useCallback(async () => {
     const token = authClient.getStoredToken();
@@ -544,6 +613,180 @@ export const BillingSettings: React.FC = () => {
         </div>
 
         {/* ── Usage ── */}
+        {!isPremium && !isTrialing && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.10em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.38)",
+                }}
+              >
+                {t("billing.offers.title", { defaultValue: "Plans" })}
+              </span>
+              <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
+                {t("billing.offers.subtitle", {
+                  defaultValue:
+                    "Choisissez l'offre Stripe a ouvrir dans Checkout.",
+                })}
+              </span>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
+              {BILLING_OFFERS.map((offer) => {
+                const isSelected = selectedOfferId === offer.id;
+                const isLoading =
+                  checkoutLoadingId === getCheckoutSelectionKey(offer);
+                return (
+                  <div
+                    key={offer.id}
+                    onClick={() => setSelectedOfferId(offer.id)}
+                    style={{
+                      padding: "18px 18px 16px",
+                      borderRadius: 12,
+                      border: isSelected
+                        ? "1px solid rgba(201,168,76,0.48)"
+                        : "1px solid rgba(255,255,255,0.08)",
+                      background: isSelected
+                        ? "rgba(201,168,76,0.08)"
+                        : "rgba(255,255,255,0.018)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 12,
+                      textAlign: "left",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span
+                          style={{
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.94)",
+                          }}
+                        >
+                          {offer.title}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: "rgba(255,255,255,0.42)",
+                            marginTop: 2,
+                          }}
+                        >
+                          {offer.note}
+                        </span>
+                      </div>
+                      {offer.badge ? (
+                        <span
+                          style={{
+                            padding: "3px 8px",
+                            borderRadius: 999,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: "#c9a84c",
+                            background: "rgba(201,168,76,0.12)",
+                            border: "1px solid rgba(201,168,76,0.24)",
+                          }}
+                        >
+                          {offer.badge}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 28,
+                          fontWeight: 800,
+                          letterSpacing: "-0.03em",
+                          color: "rgba(255,255,255,0.94)",
+                        }}
+                      >
+                        {offer.price}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: "rgba(255,255,255,0.42)",
+                        }}
+                      >
+                        {offer.cadence}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedOfferId(offer.id);
+                          void handleUpgrade(offer);
+                        }}
+                        disabled={Boolean(checkoutLoadingId)}
+                        style={{
+                          height: 34,
+                          padding: "0 12px",
+                          borderRadius: 9,
+                          border: "none",
+                          background: "#c9a84c",
+                          color: "#1a1407",
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          cursor: checkoutLoadingId ? "not-allowed" : "pointer",
+                          opacity: checkoutLoadingId && !isLoading ? 0.55 : 1,
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {isLoading
+                          ? t("common.loading", {
+                              defaultValue: "Chargement...",
+                            })
+                          : t("billing.offers.checkout", {
+                              defaultValue: "Ouvrir Checkout",
+                            })}
+                      </button>
+                      {isSelected ? (
+                        <span
+                          style={{
+                            alignSelf: "center",
+                            fontSize: 11.5,
+                            color: "rgba(255,255,255,0.42)",
+                          }}
+                        >
+                          {t("billing.offers.selected", {
+                            defaultValue: "Selectionne",
+                          })}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {(quota || stats) && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>

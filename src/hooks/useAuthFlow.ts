@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { listen } from "@tauri-apps/api/event";
 import { authClient } from "@/lib/auth/client";
-import type { AuthPayload, AuthSession } from "@/lib/auth/types";
+import type {
+  AuthPayload,
+  AuthSession,
+  BillingCheckoutRequest,
+} from "@/lib/auth/types";
 import { licenseClient } from "@/lib/license/client";
 import type { LicenseRuntimeState } from "@/lib/license/types";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
@@ -247,14 +251,17 @@ export function useAuthFlow(
     }
   }, [applySession, syncLicenseForSession, setLicenseState, t]);
 
-  const handleStartCheckout = useCallback(async () => {
-    const token = authClient.getStoredToken();
-    if (!token) {
-      throw new Error("You must be logged in first");
-    }
-    const result = await authClient.createCheckout(token);
-    return result.url;
-  }, []);
+  const handleStartCheckout = useCallback(
+    async (selection?: BillingCheckoutRequest) => {
+      const token = authClient.getStoredToken();
+      if (!token) {
+        throw new Error("You must be logged in first");
+      }
+      const result = await authClient.createCheckout(token, selection);
+      return result.url;
+    },
+    [],
+  );
 
   const handleOpenBillingPortal = useCallback(async () => {
     const token = authClient.getStoredToken();

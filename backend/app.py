@@ -1824,15 +1824,6 @@ def register():
     if password_error:
         return jsonify({"error": password_error}), 400
 
-    if device_id and device_is_registered(device_id):
-        log_security_event(
-            "register_blocked_existing_device",
-            email=email,
-            ip=ip_address,
-            device_id=device_id,
-        )
-        return jsonify({"error": "Un compte existe déjà sur cet appareil"}), 409
-
     if load_user_by_email(email):
         log_security_event(
             "register_blocked_existing_email",

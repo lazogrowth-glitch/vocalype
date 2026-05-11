@@ -7,6 +7,8 @@ import React, {
   useRef,
 } from "react";
 import { listen, emit } from "@tauri-apps/api/event";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import {
   commands,
   type AppSettings,
@@ -18,6 +20,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { LANGUAGES } from "@/lib/constants/languages";
 import { getKeyName, normalizeKey } from "@/lib/utils/keyboard";
 import { useOsType } from "@/hooks/useOsType";
+import "./DictationSettings.css";
 
 // ── Waveform — CSS animation au repos, audio réel quand actif ─────────────────
 interface WaveFormProps {
@@ -323,6 +326,10 @@ export const DictationSettings: React.FC = () => {
   const [newFrom, setNewFrom] = useState("");
   const [newTo, setNewTo] = useState("");
   const [dictError, setDictError] = useState<string | null>(null);
+  const [dictStatus, setDictStatus] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const loadDict = useCallback(async () => {
     try {
@@ -341,6 +348,7 @@ export const DictationSettings: React.FC = () => {
     const from = newFrom.trim();
     const to = newTo.trim();
     setDictError(null);
+    setDictStatus(null);
     if (!from || !to) {
       setDictError("Les deux champs sont requis.");
       return;
@@ -371,6 +379,42 @@ export const DictationSettings: React.FC = () => {
       /* noop */
     }
   };
+
+  const handleExportTerms = useCallback(async () => {
+    try {
+      const filePath = await save({
+        defaultPath: `vocalype-termes-${new Date().toISOString().slice(0, 10)}.json`,
+        filters: [
+          { name: "JSON", extensions: ["json"] },
+          { name: "Texte", extensions: ["txt"] },
+        ],
+      });
+      if (!filePath) return;
+
+      const ext = filePath.split(".").pop()?.toLowerCase() ?? "json";
+      const sortedEntries = [...dictEntries].sort((a, b) =>
+        a.from.localeCompare(b.from, "fr"),
+      );
+      const content =
+        ext === "txt"
+          ? sortedEntries.map((entry) => `${entry.from} -> ${entry.to}`).join("\n")
+          : JSON.stringify(sortedEntries, null, 2);
+
+      await writeTextFile(filePath, content);
+      setDictStatus({
+        tone: "success",
+        message:
+          ext === "txt"
+            ? "Termes exportés en .txt."
+            : "Termes exportés en .json.",
+      });
+    } catch {
+      setDictStatus({
+        tone: "error",
+        message: "Échec de l'export des termes.",
+      });
+    }
+  }, [dictEntries]);
 
   // ── History ────────────────────────────────────────────────────────────────
   const [recentEntries, setRecentEntries] = useState<HistoryEntry[]>([]);
@@ -611,207 +655,11 @@ export const DictationSettings: React.FC = () => {
     [updateSetting],
   );
 
-  // "Suppression du bruit" et "Mode privé" — local only (no backend setting yet)
-  const [bruitOn, setBruitOn] = useState(true);
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
       {/* ── All CSS from the mockup ── */}
-      <style>{`
-        /* root tokens */
-        .dv { --bg0:#0a0a0c;--bg1:#111114;--bg2:#16161a;--bg3:#1c1c22;--bg4:#24242c;--line:rgba(255,255,255,0.06);--line2:rgba(255,255,255,0.10);--text:#ededee;--text2:#b6b6bd;--text3:#82828b;--text4:#56565e;--accent:#d4a858;--accent2:#e6bd6c;--accent-soft:rgba(212,168,88,0.14);--accent-line:rgba(212,168,88,0.32);--rec:#ef5a5a;--good:#6cce8c;--radius-lg:14px;--radius-md:10px;--radius-sm:8px; }
-        .dv * { box-sizing:border-box; }
-        .dv button { font-family:inherit;color:inherit;background:none;border:0;cursor:pointer; }
-        .dv ::-webkit-scrollbar { width:10px;height:10px; }
-        .dv ::-webkit-scrollbar-track { background:transparent; }
-        .dv ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.06);border-radius:8px; }
-        .dv ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.12); }
-
-        /* layout */
-        .dv { display:grid;grid-template-columns:1fr;height:100%;overflow:hidden;font-size:14px;font-family:inherit;color:var(--text); }
-
-        /* mid pane */
-        .dv .mid { border-right:1px solid var(--line);background:var(--bg1);display:flex;flex-direction:column;overflow:hidden; }
-        .dv .mid-head { padding:18px 18px 14px; }
-        .dv .mid-title-row { display:flex;align-items:baseline;gap:8px; }
-        .dv .mid-title { font-size:22px;font-weight:700;letter-spacing:-0.01em; }
-        .dv .mid-count { font-size:13px;color:var(--text3);font-weight:500; }
-        .dv .mid-sub { color:var(--text3);font-size:13px;margin-top:6px;line-height:1.5;max-width:320px; }
-        .dv .search-row { display:flex;gap:6px;margin-top:14px; }
-        .dv .search { flex:1;display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg2);color:var(--text3);font-size:12.5px; }
-        .dv .search input { flex:1;background:none;border:0;outline:0;color:var(--text);font:inherit; }
-        .dv .search input::placeholder { color:var(--text3); }
-        .dv .icon-btn-gold { width:34px;height:34px;background:var(--accent);color:#1a1306;border-radius:8px;display:grid;place-items:center;transition:background .15s; }
-        .dv .icon-btn-gold:hover { background:var(--accent2); }
-        .dv .filter-row { display:flex;gap:6px;padding:0 18px 12px; }
-        .dv .chip { height:28px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--bg2);color:var(--text2);font-size:12.5px;display:inline-flex;align-items:center;gap:6px;transition:background .14s; }
-        .dv .chip:hover { background:var(--bg3);color:var(--text); }
-        .dv .chip.active { color:var(--accent);background:var(--accent-soft);border-color:var(--accent-line); }
-        .dv .chip .num { color:var(--text3);font-size:11.5px; }
-        .dv .chip.active .num { color:var(--accent);opacity:.8; }
-        .dv .profiles { flex:1;overflow-y:auto;padding:4px 12px 18px; }
-        .dv .group-label { font-size:10.5px;letter-spacing:0.14em;font-weight:600;color:var(--text4);padding:14px 6px 8px; }
-        .dv .profile { border:1px solid transparent;border-radius:10px;padding:12px;display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:start;margin:2px 0;cursor:pointer;position:relative; }
-        .dv .profile:hover { background:var(--bg2); }
-        .dv .profile.active { background:var(--bg2);border-color:var(--line2); }
-        .dv .profile.active::before { content:"";position:absolute;left:0;top:14px;bottom:14px;width:2px;background:var(--accent);border-radius:2px;margin-left:-1px; }
-        .dv .pico { width:36px;height:36px;border-radius:9px;background:var(--bg3);border:1px solid var(--line);color:var(--text2);display:grid;place-items:center; }
-        .dv .profile.active .pico { background:linear-gradient(135deg,rgba(212,168,88,.2),rgba(212,168,88,.08));border-color:var(--accent-line);color:var(--accent); }
-        .dv .pname { font-weight:600;font-size:14px;color:var(--text);display:flex;align-items:center;gap:8px; }
-        .dv .pmeta { font-size:12px;color:var(--text3);margin-top:4px;line-height:1.4; }
-        .dv .pfoot { margin-top:8px;display:flex;align-items:center;gap:8px;color:var(--text4);font-size:11.5px; }
-        .dv .ptag { font-size:10px;letter-spacing:.1em;font-weight:600;color:var(--text3);background:var(--bg3);border:1px solid var(--line);padding:2px 6px;border-radius:4px;text-transform:uppercase; }
-        .dv .pkbd { font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:var(--text2);background:var(--bg3);border:1px solid var(--line);padding:2px 6px;border-radius:4px; }
-        .dv .ptools { display:flex;gap:2px;opacity:0;transition:opacity .15s; }
-        .dv .profile:hover .ptools,.dv .profile.active .ptools { opacity:1; }
-        .dv .pdot { width:22px;height:22px;border-radius:6px;color:var(--text3);display:grid;place-items:center; }
-        .dv .pdot:hover { background:var(--bg3);color:var(--text); }
-
-        /* main pane */
-        .dv .main { background:var(--bg1);overflow-y:auto;overflow-x:hidden; }
-        .dv .main-head { display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg1);z-index:5;gap:16px; }
-        .dv .crumb { display:flex;align-items:center;gap:8px;color:var(--text3);font-size:12.5px; }
-        .dv .crumb-tag { display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg2);color:var(--text2);font-size:12.5px; }
-        .dv .head-actions { display:flex;gap:6px;align-items:center; }
-        .dv .btn { height:32px;padding:0 14px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:8px;transition:background .15s,border-color .15s; }
-        .dv .btn:hover { background:var(--bg3);border-color:var(--line2); }
-        .dv .btn-icon { width:32px;padding:0;justify-content:center; }
-        .dv .btn-rec { background:var(--accent);color:#1a1306;border-color:transparent;font-weight:600; }
-        .dv .btn-rec:hover { background:var(--accent2); }
-        .dv .btn-rec .dot { width:7px;height:7px;border-radius:50%;background:#1a1306; }
-
-        /* hero */
-        .dv .hero { margin:22px 22px 0;border:1px solid var(--line);border-radius:14px;background:radial-gradient(800px 280px at 90% -50%,rgba(212,168,88,.08),transparent 60%),linear-gradient(180deg,rgba(212,168,88,.025),transparent 60%),var(--bg2);overflow:hidden;position:relative; }
-        .dv .hero-grid { display:grid;grid-template-columns:1fr 1fr; }
-        .dv .hero-left { padding:22px 24px;border-right:1px solid var(--line); }
-        .dv .hero-right { padding:22px 24px; }
-        .dv .hero-status { display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-size:11.5px;letter-spacing:.12em;font-weight:600;text-transform:uppercase; }
-        .dv .pulse { width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 var(--accent);animation:dvPulse 1.8s ease-out infinite; }
-        @keyframes dvPulse { 0%{box-shadow:0 0 0 0 rgba(212,168,88,.6)} 100%{box-shadow:0 0 0 14px rgba(212,168,88,0)} }
-        .dv .hero-h { font-size:26px;font-weight:700;letter-spacing:-.015em;margin:12px 0 6px; }
-        .dv .hero-h .accent { color:var(--accent); }
-        .dv .hero-sub { color:var(--text3);font-size:13.5px;line-height:1.55;max-width:380px; }
-        .dv .kbd-row { margin-top:18px;display:flex;align-items:center;gap:10px; }
-        .dv .kbd-label { color:var(--text3);font-size:12.5px; }
-        .dv .kbd { font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:500;color:var(--text);background:var(--bg3);border:1px solid var(--line2);border-bottom-width:2px;padding:4px 9px;border-radius:6px; }
-        .dv .kbd.gold { color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft); }
-        .dv .kbd-plus { color:var(--text4);font-size:12px; }
-        .dv .mic-card { display:flex;align-items:center;gap:18px;height:100%; }
-        .dv .mic-orb { width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 50% 40%,rgba(212,168,88,.25),transparent 60%),radial-gradient(circle at 50% 60%,rgba(212,168,88,.12),transparent 70%),var(--bg3);border:1px solid var(--accent-line);display:grid;place-items:center;color:var(--accent);flex:0 0 96px;position:relative; }
-        .dv .mic-orb::before,.dv .mic-orb::after { display:none; }
-        .dv .mic-orb.active::before { content:"";display:block;position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(212,168,88,.2);animation:dvRing 2.4s ease-out infinite; }
-        @keyframes dvRing { 0%{transform:scale(.7);opacity:.9;border-color:rgba(212,168,88,.4)} 100%{transform:scale(1.25);opacity:0} }
-        .dv .mic-info { flex:1;min-width:0; }
-        .dv .mic-info .lab { font-size:11.5px;letter-spacing:.12em;font-weight:600;color:var(--text3);text-transform:uppercase; }
-        .dv .mic-info .name { font-size:15px;font-weight:600;margin-top:4px; }
-        .dv .bar { flex:1;height:22%;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:2px;transform-origin:center;opacity:0.45; }
-        @keyframes dvWave { 0%,100%{height:18%} 50%{height:90%} }
-        .dv .meter { margin-top:10px;display:flex;align-items:center;gap:10px;color:var(--text3);font-size:11.5px; }
-        .dv .gauge { flex:1;height:4px;border-radius:2px;background:var(--bg3);overflow:hidden;position:relative; }
-        @keyframes dvMeter { 0%{width:28%} 100%{width:78%} }
-
-        /* stats */
-        .dv .stat-row { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 22px 0; }
-        .dv .stat { border:1px solid var(--line);border-radius:12px;background:var(--bg2);padding:14px 16px; }
-        .dv .stat .lab { color:var(--text3);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;font-weight:600; }
-        .dv .stat .val { font-size:22px;font-weight:700;margin-top:4px;letter-spacing:-.01em; }
-        .dv .stat .delta { color:var(--good);font-size:11.5px;margin-top:2px; }
-        .dv .stat .delta.muted { color:var(--text3); }
-
-        /* tabs */
-        .dv .tabs { margin:22px 22px 0;display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--line); }
-        .dv .tab { height:38px;padding:0 14px;color:var(--text3);font-size:13.5px;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:8px;transition:color .14s; }
-        .dv .tab:hover { color:var(--text2); }
-        .dv .tab.active { color:var(--accent);border-color:var(--accent); }
-        .dv .tab .badge { font-size:11px;padding:1px 6px;background:var(--bg3);border:1px solid var(--line);border-radius:4px;color:var(--text3); }
-        .dv .tab.active .badge { background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent); }
-
-        /* panel */
-        .dv .panel { padding:22px 22px 32px; }
-        .dv .section-h { display:flex;align-items:baseline;justify-content:space-between;margin:22px 4px 12px; }
-        .dv .section-h:first-child { margin-top:4px; }
-        .dv .section-title { font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.005em; }
-        .dv .section-action { color:var(--text3);font-size:12.5px; }
-        .dv .section-action:hover { color:var(--text); }
-
-        /* cards */
-        .dv .card { border:1px solid var(--line);border-radius:12px;background:var(--bg2);padding:16px 18px;margin-bottom:8px;display:grid;grid-template-columns:36px 1fr auto;gap:14px;align-items:center; }
-        .dv .cico { width:36px;height:36px;border-radius:9px;background:var(--bg3);border:1px solid var(--line);display:grid;place-items:center;color:var(--text2); }
-        .dv .card.gold .cico { background:linear-gradient(135deg,rgba(212,168,88,.18),rgba(212,168,88,.06));border-color:var(--accent-line);color:var(--accent); }
-        .dv .ctitle { font-size:14px;font-weight:600; }
-        .dv .csub { color:var(--text3);font-size:12.5px;margin-top:3px;line-height:1.45; }
-        .dv .select-btn { height:32px;padding:0 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--line);color:var(--text);font-size:12.5px;display:inline-flex;align-items:center;gap:8px; }
-        .dv .select-btn:hover { background:var(--bg4); }
-        .dv .select-btn .car { color:var(--text3); }
-        .dv .menu-option { transition:background .14s,color .14s; }
-        .dv .menu-option:hover { background:var(--bg3) !important;color:var(--accent) !important; }
-        .dv .switch { width:38px;height:22px;background:var(--bg4);border-radius:999px;position:relative;border:1px solid var(--line);cursor:pointer;flex-shrink:0; }
-        .dv .switch::after { content:"";position:absolute;left:2px;top:1px;width:18px;height:18px;border-radius:50%;background:#d8d8de;transition:transform .18s,background .18s; }
-        .dv .switch.on { background:var(--accent);border-color:var(--accent); }
-        .dv .switch.on::after { transform:translateX(15px);background:#1a1306; }
-
-        /* radio cards */
-        .dv .radio-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px; }
-        .dv .radio { border:1px solid var(--line);background:var(--bg2);border-radius:12px;padding:14px;cursor:pointer;position:relative;display:flex;flex-direction:column;gap:8px;min-height:116px;transition:background .14s; }
-        .dv .radio:hover { background:var(--bg3); }
-        .dv .radio.active { border-color:var(--accent-line);background:linear-gradient(180deg,rgba(212,168,88,.06),transparent 70%),var(--bg2); }
-        .dv .ric { width:28px;height:28px;border-radius:8px;background:var(--bg3);border:1px solid var(--line);color:var(--text2);display:grid;place-items:center; }
-        .dv .radio.active .ric { background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent); }
-        .dv .rn { font-size:13.5px;font-weight:600; }
-        .dv .rs { color:var(--text3);font-size:11.5px;line-height:1.45; }
-        .dv .check { position:absolute;top:12px;right:12px;width:16px;height:16px;border:1.5px solid var(--text4);border-radius:50%; }
-        .dv .radio.active .check { border-color:var(--accent);background:radial-gradient(circle,var(--accent) 4px,transparent 4.5px); }
-
-        /* terms */
-        .dv .terms-row { display:grid;grid-template-columns:1fr 24px 1fr auto;gap:10px;align-items:center;margin-top:12px; }
-        .dv .input { height:38px;padding:0 12px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:13px;outline:0; }
-        .dv .input:focus { border-color:var(--accent-line);background:var(--bg3); }
-        .dv .input::placeholder { color:var(--text4); }
-        .dv .terms-row .arr { text-align:center;color:var(--text4); }
-        .dv .btn-add { height:38px;padding:0 16px;background:transparent;border:1px solid var(--accent-line);color:var(--accent);border-radius:8px;font-weight:500;font-size:13px; }
-        .dv .btn-add:hover { background:var(--accent-soft); }
-        .dv .terms-list { margin-top:14px;border:1px dashed var(--line2);border-radius:12px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px; }
-        .dv .terms-empty { margin-top:14px;padding:24px;text-align:center;color:var(--text4);font-size:13px;font-style:italic;border:1px dashed var(--line2);border-radius:12px; }
-        .dv .term { display:grid;grid-template-columns:1fr 18px 1fr auto;align-items:center;gap:10px;padding:8px 12px;border-radius:8px; }
-        .dv .term:hover { background:var(--bg2); }
-        .dv .term .heard { color:var(--text3);font-size:12.5px;font-style:italic; }
-        .dv .term .arr { color:var(--text4);text-align:center; }
-        .dv .term .into { color:var(--text);font-weight:500;font-size:13px; }
-        .dv .term .tdel { width:24px;height:24px;border-radius:6px;color:var(--text4);display:grid;place-items:center;opacity:0; }
-        .dv .term:hover .tdel { opacity:1; }
-        .dv .term .tdel:hover { color:var(--text);background:var(--bg3); }
-
-        /* activity */
-        .dv .rec-list { display:flex;flex-direction:column;gap:4px;margin-top:4px; }
-        .dv .rec-item { display:grid;grid-template-columns:32px 1fr auto;gap:12px;padding:10px 12px;border-radius:10px;align-items:center; }
-        .dv .rec-item:hover { background:var(--bg2); }
-        .dv .rec-time { color:var(--text4);font-size:11.5px;font-variant-numeric:tabular-nums; }
-        .dv .rec-text { font-size:13px;color:var(--text2);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical; }
-        .dv .rec-words { color:var(--text4);font-size:11.5px;margin-top:2px; }
-        .dv .rec-ico { width:32px;height:32px;border-radius:8px;background:var(--bg3);border:1px solid var(--line);display:grid;place-items:center;color:var(--text3);font-size:11px;font-weight:600; }
-        .dv .rec-empty { padding:32px;text-align:center;color:var(--text4);font-size:13px;font-style:italic; }
-
-        /* disclosure */
-        .dv .disclosure { margin:18px 4px 0;color:var(--text2);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;user-select:none; }
-        .dv .disclosure:hover { color:var(--text); }
-        .dv .disclosure .car { color:var(--text3);transition:transform .15s; }
-        .dv .disclosure.open .car { transform:rotate(90deg); }
-
-        /* generic icons */
-        .dv .ic { width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round; }
-        .dv .ic-sm { width:14px;height:14px; }
-        .dv .ic-lg { width:20px;height:20px; }
-
-        /* responsive */
-        @media (max-width:1100px) {
-          .dv .stat-row { grid-template-columns:repeat(2,1fr); }
-          .dv .hero-grid { grid-template-columns:1fr; }
-          .dv .hero-left { border-right:0;border-bottom:1px solid var(--line); }
-          .dv .radio-grid { grid-template-columns:1fr; }
-          .dv .terms-list { grid-template-columns:1fr; }
-        }
-      `}</style>
+      
 
       <div className="dv">
         <section className="main">
@@ -1000,12 +848,6 @@ export const DictationSettings: React.FC = () => {
               {/* Raccourci */}
               <div className="section-h">
                 <div className="section-title">Raccourci</div>
-                <button
-                  className="section-action"
-                  onClick={() => void emit("navigate-to-section", "advanced")}
-                >
-                  Voir tous les raccourcis →
-                </button>
               </div>
               <div className="card gold">
                 <div className="cico">
@@ -1255,14 +1097,23 @@ export const DictationSettings: React.FC = () => {
                 <div>
                   <div className="ctitle">Suppression du bruit</div>
                   <div className="csub">
-                    Réduit clavier, ventilateur et bruits de fond. Léger surcoût
-                    CPU.
+                    Pas encore disponible dans cette version. Le contrôle sera
+                    réactivé quand le vrai réglage audio existera.
                   </div>
                 </div>
-                <div
-                  className={`switch${bruitOn ? " on" : ""}`}
-                  onClick={() => setBruitOn((v) => !v)}
-                />
+                <button
+                  type="button"
+                  className="select-btn"
+                  disabled
+                  style={{
+                    opacity: 0.55,
+                    cursor: "not-allowed",
+                    minWidth: 118,
+                  }}
+                  title="Bientôt disponible"
+                >
+                  Bientôt
+                </button>
               </div>
 
               {/* Mode d'enregistrement — real settings */}
@@ -1564,6 +1415,19 @@ export const DictationSettings: React.FC = () => {
                     {dictError}
                   </div>
                 )}
+                {dictStatus && (
+                  <div
+                    style={{
+                      color:
+                        dictStatus.tone === "success" ? "var(--good)" : "#ef5a5a",
+                      fontSize: 12,
+                      marginTop: 6,
+                      paddingLeft: 2,
+                    }}
+                  >
+                    {dictStatus.message}
+                  </div>
+                )}
                 {dictEntries.length === 0 ? (
                   <div className="terms-empty">
                     Aucun terme appris — ajoute des noms propres, acronymes ou
@@ -1643,7 +1507,9 @@ export const DictationSettings: React.FC = () => {
                     · {dictEntries.length}
                   </span>
                 </div>
-                <button className="section-action">Tout exporter →</button>
+                <button className="section-action" onClick={handleExportTerms}>
+                  Tout exporter →
+                </button>
               </div>
               <div
                 className="card"
@@ -1699,6 +1565,19 @@ export const DictationSettings: React.FC = () => {
                     }}
                   >
                     {dictError}
+                  </div>
+                )}
+                {dictStatus && (
+                  <div
+                    style={{
+                      color:
+                        dictStatus.tone === "success" ? "var(--good)" : "#ef5a5a",
+                      fontSize: 12,
+                      marginTop: 6,
+                      paddingLeft: 2,
+                    }}
+                  >
+                    {dictStatus.message}
                   </div>
                 )}
                 {dictEntries.length === 0 ? (

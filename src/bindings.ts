@@ -918,14 +918,6 @@ async deleteHistoryEntry(id: number) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async updateHistoryLimit(limit: number) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("update_history_limit", { limit }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("update_recording_retention_period", { period }) };
@@ -1720,7 +1712,7 @@ speaking_rate_pauses?: number[];
  * on first load via settings migration (T11). New code should read this
  * field; old code continues to use the booleans until migration is done.
  */
-recording_mode?: RecordingMode; selected_microphone?: string | null; selected_microphone_index?: string | null; clamshell_microphone?: string | null; clamshell_microphone_index?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; 
+recording_mode?: RecordingMode; selected_microphone?: string | null; selected_microphone_index?: string | null; clamshell_microphone?: string | null; clamshell_microphone_index?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; recording_retention_period?: RecordingRetentionPeriod; 
 /**
  * When false, audio is never written to disk — only the transcription text is saved.
  * Saves significant disk space (WAV at 16 kHz 16-bit ≈ 32 KB/s).

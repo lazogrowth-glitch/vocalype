@@ -14,7 +14,7 @@ import {
 } from "@/bindings";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
-// â”€â”€ Design tokens (exact from mockup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Design tokens
 const T = {
   gold: "#c9a84c",
   goldSoft: "rgba(201,168,76,0.12)",
@@ -31,7 +31,7 @@ const T = {
   rec: "#ef4444",
 };
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Helpers
 
 function fmt(ms: number) {
   try {
@@ -91,7 +91,7 @@ function itemTag(category: string, fallback: string) {
   return c;
 }
 
-// â”€â”€ Chapter helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Chapter helpers
 
 type Chapter = { id: string; startMs: number; label: string; preview: string };
 
@@ -135,7 +135,7 @@ function buildChapters(
   return out;
 }
 
-// â”€â”€ SVG icons (inline, exact from mockup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SVG icons
 
 function IcoPhone({
   size = 14,
@@ -480,7 +480,7 @@ function ItemIcon({ category }: { category: string }) {
   return <IcoUsers size={14} color={T.txt2} />;
 }
 
-// â”€â”€ Main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Main component
 
 type Tab = "summary" | "transcript" | "chapters" | "actions";
 
@@ -1267,7 +1267,7 @@ export const MeetingsSettings: React.FC = () => {
     );
   };
 
-  // â”€â”€ Styles (exact from mockup CSS) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Styles
   const s = {
     // Root grid
     root: {
@@ -1612,7 +1612,7 @@ export const MeetingsSettings: React.FC = () => {
     transition: "color .15s, border-color .15s",
   });
 
-  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Render
 
   const tabDef: { id: Tab; label: string; badge?: number; ai?: boolean }[] = [
     {
@@ -1657,7 +1657,7 @@ export const MeetingsSettings: React.FC = () => {
         button { transition: background .14s, filter .14s, border-color .14s, color .14s, transform .12s, box-shadow .14s; }
       `}</style>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• LIST PANE */}
+      {/* List pane */}
       <section style={s.list}>
         {detectedApp && (
           <div
@@ -2056,7 +2056,7 @@ export const MeetingsSettings: React.FC = () => {
         </div>
       </section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DETAIL PANE */}
+      {/* Detail pane */}
       <section style={s.detail}>
         {selectedMeeting === null ? (
           <div style={{ ...s.empty, flex: 1 }}>
@@ -2108,7 +2108,7 @@ export const MeetingsSettings: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* â”€â”€ Detail header â”€â”€ */}
+            {/* Detail header */}
             <div style={s.detailHead}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
@@ -2444,7 +2444,7 @@ export const MeetingsSettings: React.FC = () => {
               </div>
             </div>
 
-            {/* â”€â”€ Tabs â”€â”€ */}
+            {/* Tabs */}
             <div style={s.tabs}>
               {tabDef.map((tab) => (
                 <button
@@ -2488,9 +2488,9 @@ export const MeetingsSettings: React.FC = () => {
               ))}
             </div>
 
-            {/* â”€â”€ Body â”€â”€ */}
+            {/* Body */}
             <div style={s.body}>
-              {/* â”€â”€ RÃ©sumÃ© tab â”€â”€ */}
+              {/* Summary tab */}
               {activeTab === "summary" && (
                 <>
                   <div style={s.summary}>
@@ -2664,7 +2664,7 @@ export const MeetingsSettings: React.FC = () => {
                 </div>
               )}
 
-              {/* â”€â”€ Chapitres tab â”€â”€ */}
+              {/* Chapters tab */}
               {activeTab === "chapters" && (
                 <div>
                   <div
@@ -2772,7 +2772,7 @@ export const MeetingsSettings: React.FC = () => {
                 </div>
               )}
 
-              {/* â”€â”€ Actions tab â”€â”€ */}
+              {/* Actions tab */}
               {activeTab === "actions" && (
                 <div>
                   <div

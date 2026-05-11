@@ -498,7 +498,6 @@ export const PreferencesSettings: React.FC = () => {
   // ── Update check options ─────────────────────────────────────────────────
   const updateOptions = [
     { value: "auto", label: "Auto" },
-    { value: "weekly", label: "Hebdo" },
     { value: "manual", label: "Manuel" },
   ];
 
@@ -654,7 +653,7 @@ export const PreferencesSettings: React.FC = () => {
               <PRow
                 icon={<Activity size={16} />}
                 title="Vérifier les mises à jour"
-                desc={`Vocalype 2.4.1 — à jour.`}
+                desc="Choisis si Vocalype vérifie automatiquement les nouvelles versions."
               >
                 <PSeg
                   options={updateOptions}
@@ -898,27 +897,32 @@ export const PreferencesSettings: React.FC = () => {
                 />
               </PRow>
 
-              <PRow
-                gold={cloudActive}
-                icon={<Zap size={16} />}
-                title={
-                  <>
-                    Vocalype Cloud{" "}
-                    <PPill
-                      label={cloudActive ? "Actif" : "Inactif"}
-                      variant={cloudActive ? "good" : "default"}
-                    />
-                  </>
-                }
-                desc="Post-traitement IA sur nos serveurs — reformule, ponctue, corrige."
+              <div
+                id="cloud-post-process-toggle"
+                style={{ scrollMarginTop: 120 }}
               >
-                <PSwitch
-                  on={cloudActive}
-                  onChange={(v) =>
-                    void updateSetting("post_process_enabled", v)
+                <PRow
+                  gold={cloudActive}
+                  icon={<Zap size={16} />}
+                  title={
+                    <>
+                      Vocalype Cloud{" "}
+                      <PPill
+                        label={cloudActive ? "Actif" : "Inactif"}
+                        variant={cloudActive ? "good" : "default"}
+                      />
+                    </>
                   }
-                />
-              </PRow>
+                  desc="Post-traitement IA sur nos serveurs — reformule, ponctue, corrige."
+                >
+                  <PSwitch
+                    on={cloudActive}
+                    onChange={(v) =>
+                      void updateSetting("post_process_enabled", v)
+                    }
+                  />
+                </PRow>
+              </div>
 
               <PRow
                 last
@@ -1040,9 +1044,9 @@ export const PreferencesSettings: React.FC = () => {
               <PRow
                 icon={<Eye size={16} />}
                 title="Télémétrie anonyme"
-                desc="Crashs et performances uniquement. Aucun audio, aucun texte transcrit."
+                desc="Crashs et performances uniquement. Aucun audio, aucun texte transcrit. Ce réglage n'est pas encore personnalisable."
               >
-                <PSwitch on={true} onChange={() => {}} disabled />
+                <PPill label="Toujours actif" />
               </PRow>
 
               <PRow

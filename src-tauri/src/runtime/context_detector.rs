@@ -295,7 +295,16 @@ pub fn classify_process_name(process_name: &str) -> AppContextCategory {
         | "pwsh.exe" => AppContextCategory::Code,
 
         // ── Email clients
-        "outlook.exe" | "thunderbird.exe" | "mailbird.exe" | "postbox.exe" => {
+        "outlook.exe"
+        | "olk.exe"
+        | "hxoutlook.exe"
+        | "thunderbird.exe"
+        | "mailbird.exe"
+        | "postbox.exe"
+        | "emclient.exe"
+        | "sparkdesktop.exe"
+        | "canarymail.exe"
+        | "mailspring.exe" => {
             AppContextCategory::Email
         }
 
@@ -353,12 +362,36 @@ pub fn refine_browser_category(window_title: &str) -> Option<AppContextCategory>
     // ── Webmail
     if t.contains("gmail")
         || t.contains("mail.google")
-        || (t.contains("outlook") && (t.contains("mail") || t.contains("inbox")))
+        || t.contains("inbox")
+        || t.contains("boîte de réception")
+        || t.contains("messagerie")
+        || t.contains("compose")
+        || t.contains("new message")
+        || t.contains("nouveau message")
+        || t.contains("new email")
+        || t.contains("nouvel e-mail")
+        || (t.contains("outlook")
+            && (t.contains("mail")
+                || t.contains("inbox")
+                || t.contains("message")
+                || t.contains("boîte de réception")))
+        || t.contains("outlook.live")
+        || t.contains("outlook.office")
+        || t.contains("office 365")
+        || t.contains("office.com")
         || t.contains("yahoo mail")
+        || t.contains("mail.yahoo")
         || t.contains("proton mail")
         || t.contains("protonmail")
         || t.contains("fastmail")
         || t.contains("zoho mail")
+        || t.contains("icloud mail")
+        || t.contains("mail.icloud")
+        || t.contains("hey mail")
+        || t.contains("hey.com")
+        || t.contains("roundcube")
+        || t.contains("zimbra")
+        || t.contains("mailbox")
         || t.contains("- mail -")
     {
         return Some(AppContextCategory::Email);
@@ -602,6 +635,30 @@ mod tests {
     fn browser_title_outlook_mail_refines_to_email() {
         assert_eq!(
             refine_browser_category("Mail - Outlook"),
+            Some(AppContextCategory::Email)
+        );
+    }
+
+    #[test]
+    fn browser_title_outlook_compose_refines_to_email() {
+        assert_eq!(
+            refine_browser_category("New Message - Outlook - Google Chrome"),
+            Some(AppContextCategory::Email)
+        );
+    }
+
+    #[test]
+    fn browser_title_proton_refines_to_email() {
+        assert_eq!(
+            refine_browser_category("Inbox | Proton Mail"),
+            Some(AppContextCategory::Email)
+        );
+    }
+
+    #[test]
+    fn browser_title_icloud_refines_to_email() {
+        assert_eq!(
+            refine_browser_category("iCloud Mail"),
             Some(AppContextCategory::Email)
         );
     }

@@ -1,0 +1,4569 @@
+{
+  "model_id": "parakeet-tdt-0.6b-v3-multilingual",
+  "manifest_path": ".\\evals\\parakeet\\external\\librispeech_test_other_100\\dataset_manifest_external.json",
+  "aggregate": {
+    "quality": {
+      "samples": 100,
+      "global_wer": 0.106618784,
+      "global_cer": 0.086736225,
+      "global_omission_rate": 0.092757575,
+      "global_duplication_rate": 0.082713835,
+      "global_hallucination_rate": 0.082713835,
+      "average_end_truncation_score": 0.27089578,
+      "top_omitted_terms": [
+        {
+          "word": "hoo",
+          "count": 4
+        },
+        {
+          "word": "the",
+          "count": 4
+        },
+        {
+          "word": "in",
+          "count": 3
+        },
+        {
+          "word": "see",
+          "count": 3
+        },
+        {
+          "word": "you",
+          "count": 3
+        },
+        {
+          "word": "a",
+          "count": 2
+        },
+        {
+          "word": "as",
+          "count": 2
+        },
+        {
+          "word": "at",
+          "count": 2
+        },
+        {
+          "word": "gurr",
+          "count": 2
+        },
+        {
+          "word": "missus",
+          "count": 2
+        }
+      ],
+      "top_duplicated_terms": [
+        {
+          "word": "and",
+          "count": 5
+        },
+        {
+          "word": "the",
+          "count": 4
+        },
+        {
+          "word": "mr",
+          "count": 3
+        },
+        {
+          "word": "not",
+          "count": 3
+        },
+        {
+          "word": "s",
+          "count": 3
+        },
+        {
+          "word": "who",
+          "count": 3
+        },
+        {
+          "word": "a",
+          "count": 2
+        },
+        {
+          "word": "had",
+          "count": 2
+        },
+        {
+          "word": "he",
+          "count": 2
+        },
+        {
+          "word": "sim",
+          "count": 2
+        }
+      ],
+      "top_hallucinated_terms": [
+        {
+          "word": "and",
+          "count": 5
+        },
+        {
+          "word": "the",
+          "count": 4
+        },
+        {
+          "word": "mr",
+          "count": 3
+        },
+        {
+          "word": "not",
+          "count": 3
+        },
+        {
+          "word": "s",
+          "count": 3
+        },
+        {
+          "word": "who",
+          "count": 3
+        },
+        {
+          "word": "a",
+          "count": 2
+        },
+        {
+          "word": "had",
+          "count": 2
+        },
+        {
+          "word": "he",
+          "count": 2
+        },
+        {
+          "word": "sim",
+          "count": 2
+        }
+      ]
+    },
+    "avg_latency_ms": 489.67,
+    "avg_chunk_count": 1.1
+  },
+  "by_scenario": {
+    "librispeech_clean": {
+      "quality": {
+        "samples": 100,
+        "global_wer": 0.106618784,
+        "global_cer": 0.086736225,
+        "global_omission_rate": 0.092757575,
+        "global_duplication_rate": 0.082713835,
+        "global_hallucination_rate": 0.082713835,
+        "average_end_truncation_score": 0.27089578,
+        "top_omitted_terms": [
+          {
+            "word": "hoo",
+            "count": 4
+          },
+          {
+            "word": "the",
+            "count": 4
+          },
+          {
+            "word": "in",
+            "count": 3
+          },
+          {
+            "word": "see",
+            "count": 3
+          },
+          {
+            "word": "you",
+            "count": 3
+          },
+          {
+            "word": "a",
+            "count": 2
+          },
+          {
+            "word": "as",
+            "count": 2
+          },
+          {
+            "word": "at",
+            "count": 2
+          },
+          {
+            "word": "gurr",
+            "count": 2
+          },
+          {
+            "word": "missus",
+            "count": 2
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "and",
+            "count": 5
+          },
+          {
+            "word": "the",
+            "count": 4
+          },
+          {
+            "word": "mr",
+            "count": 3
+          },
+          {
+            "word": "not",
+            "count": 3
+          },
+          {
+            "word": "s",
+            "count": 3
+          },
+          {
+            "word": "who",
+            "count": 3
+          },
+          {
+            "word": "a",
+            "count": 2
+          },
+          {
+            "word": "had",
+            "count": 2
+          },
+          {
+            "word": "he",
+            "count": 2
+          },
+          {
+            "word": "sim",
+            "count": 2
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 5
+          },
+          {
+            "word": "the",
+            "count": 4
+          },
+          {
+            "word": "mr",
+            "count": 3
+          },
+          {
+            "word": "not",
+            "count": 3
+          },
+          {
+            "word": "s",
+            "count": 3
+          },
+          {
+            "word": "who",
+            "count": 3
+          },
+          {
+            "word": "a",
+            "count": 2
+          },
+          {
+            "word": "had",
+            "count": 2
+          },
+          {
+            "word": "he",
+            "count": 2
+          },
+          {
+            "word": "sim",
+            "count": 2
+          }
+        ]
+      },
+      "avg_latency_ms": 489.67,
+      "avg_chunk_count": 1.1
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "librispeech_en_0001_d6012039c6",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 325,
+      "metrics": {
+        "wer": 0.09090909,
+        "cer": 0.13846155,
+        "omission_rate": 0.09090909,
+        "duplication_rate": 0.09090909,
+        "hallucination_rate": 0.09090909,
+        "end_truncation_score": 0.8181818,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 65,
+        "hypothesis_char_count": 60,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 2,
+        "omitted_terms": [
+          {
+            "word": "eighteen",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "18",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "18",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "I stayed there until the eighth of February 18 seventy four."
+    },
+    {
+      "sample_id": "librispeech_en_0002_57397f55ec",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 207,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.05,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 10,
+        "hypothesis_word_count": 10,
+        "reference_char_count": 60,
+        "hypothesis_char_count": 63,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 10,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "It is true, nevertheless, that grave diggers do die themselves."
+    },
+    {
+      "sample_id": "librispeech_en_0003_c1ced2c851",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 195,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.045454547,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 44,
+        "hypothesis_char_count": 46,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 9,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "If they give up one God, they imagine another."
+    },
+    {
+      "sample_id": "librispeech_en_0004_b64b6c7eb7",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 203,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.046511628,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 43,
+        "hypothesis_char_count": 45,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 9,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Finally got our orders for you. It's Mercury."
+    },
+    {
+      "sample_id": "librispeech_en_0005_1ea671804f",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 125,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.037037037,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 5,
+        "hypothesis_word_count": 5,
+        "reference_char_count": 27,
+        "hypothesis_char_count": 28,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 5,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Ever see a Martian election?"
+    },
+    {
+      "sample_id": "librispeech_en_0006_826427eb3e",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 395,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.03773585,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 17,
+        "hypothesis_word_count": 17,
+        "reference_char_count": 106,
+        "hypothesis_char_count": 110,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Larch, by refusing to appear, practically admitted the charges against him, and did not oppose the separation."
+    },
+    {
+      "sample_id": "librispeech_en_0007_fcf251aaed",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 418,
+      "metrics": {
+        "wer": 0.083333336,
+        "cer": 0.046875,
+        "omission_rate": 0.083333336,
+        "duplication_rate": 0.083333336,
+        "hallucination_rate": 0.083333336,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 64,
+        "hypothesis_char_count": 66,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "has",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "had",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "had",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The greatest of human beings had said, conscience is born of love."
+    },
+    {
+      "sample_id": "librispeech_en_0008_858196c861",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 432,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.022222223,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 10,
+        "hypothesis_word_count": 10,
+        "reference_char_count": 45,
+        "hypothesis_char_count": 46,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 10,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Even the sun came out pale and watery at noon,"
+    },
+    {
+      "sample_id": "librispeech_en_0009_80ab098a9d",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 148,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.08695652,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 5,
+        "hypothesis_word_count": 5,
+        "reference_char_count": 23,
+        "hypothesis_char_count": 25,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 5,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Yes, it still holds good."
+    },
+    {
+      "sample_id": "librispeech_en_0010_8a79ed943e",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 855,
+      "metrics": {
+        "wer": 0.2,
+        "cer": 0.12820514,
+        "omission_rate": 0.2,
+        "duplication_rate": 0.2,
+        "hallucination_rate": 0.2,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 15,
+        "hypothesis_word_count": 15,
+        "reference_char_count": 78,
+        "hypothesis_char_count": 77,
+        "omitted_words": 3,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "count",
+            "count": 1
+          },
+          {
+            "word": "grandpap",
+            "count": 1
+          },
+          {
+            "word": "one",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "1",
+            "count": 1
+          },
+          {
+            "word": "called",
+            "count": 1
+          },
+          {
+            "word": "grandpa",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "1",
+            "count": 1
+          },
+          {
+            "word": "called",
+            "count": 1
+          },
+          {
+            "word": "grandpa",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "1 day this no called trifling cousin of Grandpa Buzzard get cold in his feet,"
+    },
+    {
+      "sample_id": "librispeech_en_0011_e3ad487efb",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 524,
+      "metrics": {
+        "wer": 0.25,
+        "cer": 0.16666667,
+        "omission_rate": 0.25,
+        "duplication_rate": 0.14285715,
+        "hallucination_rate": 0.14285715,
+        "end_truncation_score": 0.25,
+        "reference_word_count": 24,
+        "hypothesis_word_count": 21,
+        "reference_char_count": 108,
+        "hypothesis_char_count": 105,
+        "omitted_words": 6,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 9,
+        "omitted_terms": [
+          {
+            "word": "you",
+            "count": 2
+          },
+          {
+            "word": "again",
+            "count": 1
+          },
+          {
+            "word": "have",
+            "count": 1
+          },
+          {
+            "word": "in",
+            "count": 1
+          },
+          {
+            "word": "see",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "yassine",
+            "count": 2
+          },
+          {
+            "word": "had",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "yassine",
+            "count": 2
+          },
+          {
+            "word": "had",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Did Yassine the cabaret we had just left, for I know Yassine, the man whom the charcoal man came to seek."
+    },
+    {
+      "sample_id": "librispeech_en_0012_21fa422c60",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 476,
+      "metrics": {
+        "wer": 0.13043478,
+        "cer": 0.10218978,
+        "omission_rate": 0.13043478,
+        "duplication_rate": 0.13043478,
+        "hallucination_rate": 0.13043478,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 23,
+        "hypothesis_word_count": 23,
+        "reference_char_count": 137,
+        "hypothesis_char_count": 136,
+        "omitted_words": 3,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "oppressors",
+            "count": 1
+          },
+          {
+            "word": "practiced",
+            "count": 1
+          },
+          {
+            "word": "upon",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "impressors",
+            "count": 1
+          },
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "v3",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "impressors",
+            "count": 1
+          },
+          {
+            "word": "parakeet",
+            "count": 1
+          },
+          {
+            "word": "v3",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "and by this means all citizens are under arms to support the iniquities Parakeet V3 them. All citizens have become their own impressors."
+    },
+    {
+      "sample_id": "librispeech_en_0013_90bb07459b",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 290,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.042857144,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 16,
+        "hypothesis_word_count": 16,
+        "reference_char_count": 70,
+        "hypothesis_char_count": 73,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "If you'll excuse me, I'll pretend I'm fishing, and I may catch something."
+    },
+    {
+      "sample_id": "librispeech_en_0014_691e63a90b",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 412,
+      "metrics": {
+        "wer": 0.05263158,
+        "cer": 0.048543688,
+        "omission_rate": 0.05263158,
+        "duplication_rate": 0.05263158,
+        "hallucination_rate": 0.05263158,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 19,
+        "hypothesis_word_count": 19,
+        "reference_char_count": 103,
+        "hypothesis_char_count": 105,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "watonwan",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "watawan",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "watawan",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Sheriff Glispin of Watawan County, who was taking Bob's pistol from him, was also shouting to the fellow."
+    },
+    {
+      "sample_id": "librispeech_en_0015_ab83506183",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 344,
+      "metrics": {
+        "wer": 0.15384616,
+        "cer": 0.1875,
+        "omission_rate": 0.15384616,
+        "duplication_rate": 0.083333336,
+        "hallucination_rate": 0.083333336,
+        "end_truncation_score": 0.25,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 48,
+        "hypothesis_char_count": 51,
+        "omitted_words": 2,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 9,
+        "omitted_terms": [
+          {
+            "word": "drat",
+            "count": 1
+          },
+          {
+            "word": "i",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "dredd",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "dredd",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "I Oh Dredd it, I'm getting old, Izzy. You tell him."
+    },
+    {
+      "sample_id": "librispeech_en_0016_b3c6fbc6bb",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 240,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.01724138,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 58,
+        "hypothesis_char_count": 59,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 11,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Perhaps she could speak for them more than for some others."
+    },
+    {
+      "sample_id": "librispeech_en_0017_f8cc8ddff9",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 344,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.03448276,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 58,
+        "hypothesis_char_count": 60,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "There's one thing sure. I'll not be suspected of complicity."
+    },
+    {
+      "sample_id": "librispeech_en_0018_7f41b03a39",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 223,
+      "metrics": {
+        "wer": 0.14285715,
+        "cer": 0.078947365,
+        "omission_rate": 0.14285715,
+        "duplication_rate": 0.14285715,
+        "hallucination_rate": 0.14285715,
+        "end_truncation_score": 0.14285713,
+        "reference_word_count": 7,
+        "hypothesis_word_count": 7,
+        "reference_char_count": 38,
+        "hypothesis_char_count": 40,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "hermon",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "hermann",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "hermann",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Hermann listened to the pair in silence."
+    },
+    {
+      "sample_id": "librispeech_en_0019_3a92e108eb",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 446,
+      "metrics": {
+        "wer": 0.04347826,
+        "cer": 0.052173913,
+        "omission_rate": 0.04347826,
+        "duplication_rate": 0.04347826,
+        "hallucination_rate": 0.04347826,
+        "end_truncation_score": 0.5833334,
+        "reference_word_count": 23,
+        "hypothesis_word_count": 23,
+        "reference_char_count": 115,
+        "hypothesis_char_count": 117,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 5,
+        "omitted_terms": [
+          {
+            "word": "puddles",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "bottles",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "bottles",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Minnie said the other day she wished she was a pigeon, so she could paddle in the bottles and not fuss about rubbers."
+    },
+    {
+      "sample_id": "librispeech_en_0020_06139a380f",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 198,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.041666668,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 4,
+        "hypothesis_word_count": 4,
+        "reference_char_count": 24,
+        "hypothesis_char_count": 25,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 4,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Directed for your master."
+    },
+    {
+      "sample_id": "librispeech_en_0021_62e2f24c3a",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 206,
+      "metrics": {
+        "wer": 0.875,
+        "cer": 0.6,
+        "omission_rate": 0.875,
+        "duplication_rate": 0.8,
+        "hallucination_rate": 0.8,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 8,
+        "hypothesis_word_count": 5,
+        "reference_char_count": 35,
+        "hypothesis_char_count": 29,
+        "omitted_words": 7,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "see",
+            "count": 2
+          },
+          {
+            "word": "crost",
+            "count": 1
+          },
+          {
+            "word": "him",
+            "count": 1
+          },
+          {
+            "word": "im",
+            "count": 1
+          },
+          {
+            "word": "road",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "sim",
+            "count": 2
+          },
+          {
+            "word": "about",
+            "count": 1
+          },
+          {
+            "word": "questi",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "sim",
+            "count": 2
+          },
+          {
+            "word": "about",
+            "count": 1
+          },
+          {
+            "word": "questi",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Sim? Questi about there? Sim?"
+    },
+    {
+      "sample_id": "librispeech_en_0022_681e537907",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 275,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.028571429,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 15,
+        "hypothesis_word_count": 15,
+        "reference_char_count": 70,
+        "hypothesis_char_count": 72,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "It all comes of dressing up in this stupid way, like a rough fisher lad."
+    },
+    {
+      "sample_id": "librispeech_en_0023_97004497bb",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 332,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.025,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 40,
+        "hypothesis_char_count": 41,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 9,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "And there's no reason you shouldn't know,"
+    },
+    {
+      "sample_id": "librispeech_en_0024_8521d3f35e",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 1419,
+      "metrics": {
+        "wer": 0.020408163,
+        "cer": 0.01984127,
+        "omission_rate": 0.020408163,
+        "duplication_rate": 0.020408163,
+        "hallucination_rate": 0.020408163,
+        "end_truncation_score": 0.08333331,
+        "reference_word_count": 49,
+        "hypothesis_word_count": 49,
+        "reference_char_count": 252,
+        "hypothesis_char_count": 256,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 11,
+        "omitted_terms": [
+          {
+            "word": "planks",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "plank",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "plank",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "When suddenly a violent squall of wind arose and smote the ship, which rose out of the water and settled upon a great reef, the haunt of sea monsters, where it broke up and fell asunder into plank. and all and everything on board were plunged into the sea."
+    },
+    {
+      "sample_id": "librispeech_en_0025_68b2add285",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 248,
+      "metrics": {
+        "wer": 0.16666667,
+        "cer": 0.0862069,
+        "omission_rate": 0.083333336,
+        "duplication_rate": 0.15384616,
+        "hallucination_rate": 0.15384616,
+        "end_truncation_score": 0.3333333,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 58,
+        "hypothesis_char_count": 61,
+        "omitted_words": 1,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 8,
+        "omitted_terms": [
+          {
+            "word": "nexter",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "next",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "next",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "I like you next to my own daddy, and mister Baxter next door."
+    },
+    {
+      "sample_id": "librispeech_en_0026_01021eb157",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 305,
+      "metrics": {
+        "wer": 0.45454547,
+        "cer": 0.30357143,
+        "omission_rate": 0.18181819,
+        "duplication_rate": 0.30769232,
+        "hallucination_rate": 0.30769232,
+        "end_truncation_score": 0.9090909,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 56,
+        "hypothesis_char_count": 58,
+        "omitted_words": 2,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "muttered",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "s",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "s",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Not that he's starting back. She's very devil for a spite."
+    },
+    {
+      "sample_id": "librispeech_en_0027_f76bad4a4a",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 1084,
+      "metrics": {
+        "wer": 0.04761905,
+        "cer": 0.076576576,
+        "omission_rate": 0.04761905,
+        "duplication_rate": 0.024390243,
+        "hallucination_rate": 0.024390243,
+        "end_truncation_score": 0.3333333,
+        "reference_word_count": 42,
+        "hypothesis_word_count": 41,
+        "reference_char_count": 222,
+        "hypothesis_char_count": 221,
+        "omitted_words": 2,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 8,
+        "omitted_terms": [
+          {
+            "word": "adorned",
+            "count": 1
+          },
+          {
+            "word": "collar",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "colour",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "colour",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "He was tall and lean, and dressed throughout in black. His shirt colour was low and wide, and the triangle of linen, a little crumpled, exhibited by the opening of his waistcoat, was by a pin containing a small red stone."
+    },
+    {
+      "sample_id": "librispeech_en_0028_542f249cf4",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 174,
+      "metrics": {
+        "wer": 0.125,
+        "cer": 0.05,
+        "omission_rate": 0.125,
+        "duplication_rate": 0.125,
+        "hallucination_rate": 0.125,
+        "end_truncation_score": 0.875,
+        "reference_word_count": 8,
+        "hypothesis_word_count": 8,
+        "reference_char_count": 40,
+        "hypothesis_char_count": 40,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "gurr",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "gur",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "gur",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "And why did Andy call mister Gur father?"
+    },
+    {
+      "sample_id": "librispeech_en_0029_939ae9b9b7",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 272,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.03125,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 64,
+        "hypothesis_char_count": 66,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "The landlord presented his bill, which had to be paid on the spot."
+    },
+    {
+      "sample_id": "librispeech_en_0030_e17d537cb0",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 328,
+      "metrics": {
+        "wer": 0.22222222,
+        "cer": 0.0952381,
+        "omission_rate": 0.22222222,
+        "duplication_rate": 0.22222222,
+        "hallucination_rate": 0.22222222,
+        "end_truncation_score": 0.22222221,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 42,
+        "hypothesis_char_count": 43,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 7,
+        "omitted_terms": [
+          {
+            "word": "lachryma",
+            "count": 1
+          },
+          {
+            "word": "o",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "lacrima",
+            "count": 1
+          },
+          {
+            "word": "oh",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "lacrima",
+            "count": 1
+          },
+          {
+            "word": "oh",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Oh Lacrima Christi it is of the best grape."
+    },
+    {
+      "sample_id": "librispeech_en_0031_9bffe46545",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 370,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.03846154,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 19,
+        "hypothesis_word_count": 19,
+        "reference_char_count": 104,
+        "hypothesis_char_count": 108,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "The priest says the prayers, makes the sign of the cross, sprinkles the holy water, and takes his departure."
+    },
+    {
+      "sample_id": "librispeech_en_0032_9e5cd0c8e0",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 417,
+      "metrics": {
+        "wer": 0.055555556,
+        "cer": 0.03846154,
+        "omission_rate": 0.055555556,
+        "duplication_rate": 0.055555556,
+        "hallucination_rate": 0.055555556,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 18,
+        "hypothesis_word_count": 18,
+        "reference_char_count": 104,
+        "hypothesis_char_count": 108,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "skilfully",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "skillfully",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "skillfully",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "chuckled the Colonel, as he skillfully played the luckless trout, now struggling to get loose from the hook."
+    },
+    {
+      "sample_id": "librispeech_en_0033_4d1d1bcd72",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 187,
+      "metrics": {
+        "wer": 0.2,
+        "cer": 0.121212125,
+        "omission_rate": 0.2,
+        "duplication_rate": 0.2,
+        "hallucination_rate": 0.2,
+        "end_truncation_score": 0.8,
+        "reference_word_count": 5,
+        "hypothesis_word_count": 5,
+        "reference_char_count": 33,
+        "hypothesis_char_count": 35,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "risdon",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "rusden",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "rusden",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Surely, cried Sir Rusden excitedly,"
+    },
+    {
+      "sample_id": "librispeech_en_0034_702706f500",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 183,
+      "metrics": {
+        "wer": 1.25,
+        "cer": 0.5,
+        "omission_rate": 0.75,
+        "duplication_rate": 0.8333333,
+        "hallucination_rate": 0.8333333,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 4,
+        "hypothesis_word_count": 6,
+        "reference_char_count": 32,
+        "hypothesis_char_count": 35,
+        "omitted_words": 3,
+        "duplicated_words": 5,
+        "hallucinated_words": 5,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "breathless",
+            "count": 1
+          },
+          {
+            "word": "stillness",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "foot",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "print",
+            "count": 1
+          },
+          {
+            "word": "still",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "foot",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          },
+          {
+            "word": "print",
+            "count": 1
+          },
+          {
+            "word": "still",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The print foot still not succeeded."
+    },
+    {
+      "sample_id": "librispeech_en_0035_30125906f8",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 945,
+      "metrics": {
+        "wer": 0.05882353,
+        "cer": 0.04375,
+        "omission_rate": 0.05882353,
+        "duplication_rate": 0.05882353,
+        "hallucination_rate": 0.05882353,
+        "end_truncation_score": 0.25,
+        "reference_word_count": 34,
+        "hypothesis_word_count": 34,
+        "reference_char_count": 160,
+        "hypothesis_char_count": 165,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 9,
+        "omitted_terms": [
+          {
+            "word": "in",
+            "count": 1
+          },
+          {
+            "word": "o",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "and",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "and",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Land after land shalt thou seek and find, but no other life on thy wish shall wait. Fret not thy soul and thy thoughts a night, all woes shall end or sooner or late."
+    },
+    {
+      "sample_id": "librispeech_en_0036_775d5f570d",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 303,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.2,
+        "omission_rate": 0.33333334,
+        "duplication_rate": 0.33333334,
+        "hallucination_rate": 0.33333334,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 21,
+        "hypothesis_word_count": 21,
+        "reference_char_count": 80,
+        "hypothesis_char_count": 83,
+        "omitted_words": 7,
+        "duplicated_words": 7,
+        "hallucinated_words": 7,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "as",
+            "count": 1
+          },
+          {
+            "word": "bag",
+            "count": 1
+          },
+          {
+            "word": "eels",
+            "count": 1
+          },
+          {
+            "word": "goes",
+            "count": 1
+          },
+          {
+            "word": "m",
+            "count": 1
+          },
+          {
+            "word": "ow",
+            "count": 1
+          },
+          {
+            "word": "wheel",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "am",
+            "count": 1
+          },
+          {
+            "word": "fields",
+            "count": 1
+          },
+          {
+            "word": "go",
+            "count": 1
+          },
+          {
+            "word": "how",
+            "count": 1
+          },
+          {
+            "word": "pick",
+            "count": 1
+          },
+          {
+            "word": "us",
+            "count": 1
+          },
+          {
+            "word": "wear",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "am",
+            "count": 1
+          },
+          {
+            "word": "fields",
+            "count": 1
+          },
+          {
+            "word": "go",
+            "count": 1
+          },
+          {
+            "word": "how",
+            "count": 1
+          },
+          {
+            "word": "pick",
+            "count": 1
+          },
+          {
+            "word": "us",
+            "count": 1
+          },
+          {
+            "word": "wear",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "How am I to wear the bloomin' pram if you go on like us if you was a pick of fields?"
+    },
+    {
+      "sample_id": "librispeech_en_0037_5e1dcb5538",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 1914,
+      "metrics": {
+        "wer": 0.19354838,
+        "cer": 0.12376238,
+        "omission_rate": 0.16129032,
+        "duplication_rate": 0.1875,
+        "hallucination_rate": 0.1875,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 31,
+        "hypothesis_word_count": 32,
+        "reference_char_count": 202,
+        "hypothesis_char_count": 201,
+        "omitted_words": 5,
+        "duplicated_words": 6,
+        "hallucinated_words": 6,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "archbishop",
+            "count": 1
+          },
+          {
+            "word": "at",
+            "count": 1
+          },
+          {
+            "word": "hatton",
+            "count": 1
+          },
+          {
+            "word": "inveterate",
+            "count": 1
+          },
+          {
+            "word": "vestry",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "and",
+            "count": 2
+          },
+          {
+            "word": "art",
+            "count": 1
+          },
+          {
+            "word": "hat",
+            "count": 1
+          },
+          {
+            "word": "veterate",
+            "count": 1
+          },
+          {
+            "word": "virtuary",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 2
+          },
+          {
+            "word": "art",
+            "count": 1
+          },
+          {
+            "word": "hat",
+            "count": 1
+          },
+          {
+            "word": "veterate",
+            "count": 1
+          },
+          {
+            "word": "virtuary",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Another eighteenth century clerical worthy, the famous doctor Parr, an and veterate smoker, was accustomed to do what mister Disney prevented Art blackburn from doing. He smoked in his virtuary hat and"
+    },
+    {
+      "sample_id": "librispeech_en_0038_c01e6a838b",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 696,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.21238938,
+        "omission_rate": 0.33333334,
+        "duplication_rate": 0.33333334,
+        "hallucination_rate": 0.33333334,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 24,
+        "hypothesis_word_count": 24,
+        "reference_char_count": 113,
+        "hypothesis_char_count": 122,
+        "omitted_words": 8,
+        "duplicated_words": 8,
+        "hallucinated_words": 8,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "us",
+            "count": 2
+          },
+          {
+            "word": "as",
+            "count": 1
+          },
+          {
+            "word": "dare",
+            "count": 1
+          },
+          {
+            "word": "in",
+            "count": 1
+          },
+          {
+            "word": "let",
+            "count": 1
+          },
+          {
+            "word": "makes",
+            "count": 1
+          },
+          {
+            "word": "we",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "s",
+            "count": 2
+          },
+          {
+            "word": "if",
+            "count": 1
+          },
+          {
+            "word": "mate",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          },
+          {
+            "word": "then",
+            "count": 1
+          },
+          {
+            "word": "there",
+            "count": 1
+          },
+          {
+            "word": "you",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "s",
+            "count": 2
+          },
+          {
+            "word": "if",
+            "count": 1
+          },
+          {
+            "word": "mate",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          },
+          {
+            "word": "then",
+            "count": 1
+          },
+          {
+            "word": "there",
+            "count": 1
+          },
+          {
+            "word": "you",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Let's have faith. That right, mate, might and then that faith. That's there to do our duty, if you understand it. Lincoln."
+    },
+    {
+      "sample_id": "librispeech_en_0039_d09cdcca1f",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 623,
+      "metrics": {
+        "wer": 0.04347826,
+        "cer": 0.06818182,
+        "omission_rate": 0.04347826,
+        "duplication_rate": 0.04347826,
+        "hallucination_rate": 0.04347826,
+        "end_truncation_score": 0.16666669,
+        "reference_word_count": 23,
+        "hypothesis_word_count": 23,
+        "reference_char_count": 132,
+        "hypothesis_char_count": 135,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 10,
+        "omitted_terms": [
+          {
+            "word": "vassilievitch",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "vasilevich",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "vasilevich",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "We walked about the fields and the garden. No, said he, Stepan Vasilevich, everything's well looked after, but your garden's neglected."
+    },
+    {
+      "sample_id": "librispeech_en_0040_fddfcc17a1",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 492,
+      "metrics": {
+        "wer": 0.08695652,
+        "cer": 0.03448276,
+        "omission_rate": 0.08695652,
+        "duplication_rate": 0.08695652,
+        "hallucination_rate": 0.08695652,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 23,
+        "hypothesis_word_count": 23,
+        "reference_char_count": 116,
+        "hypothesis_char_count": 118,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "pikes",
+            "count": 1
+          },
+          {
+            "word": "spanker",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "pipes",
+            "count": 1
+          },
+          {
+            "word": "spinker",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "pipes",
+            "count": 1
+          },
+          {
+            "word": "spinker",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "I heard the rattling of the boarding pipes too, as they were cut adrift from the spinker boom and fell upon the decks."
+    },
+    {
+      "sample_id": "librispeech_en_0041_685683a6b6",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 385,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.027027028,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 15,
+        "hypothesis_word_count": 15,
+        "reference_char_count": 74,
+        "hypothesis_char_count": 76,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "That it may be, but still it ought to be treated a little more respectfully."
+    },
+    {
+      "sample_id": "librispeech_en_0042_60699d253a",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 481,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.022900764,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 27,
+        "hypothesis_word_count": 27,
+        "reference_char_count": 131,
+        "hypothesis_char_count": 134,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "There was a pause, broken by young Horace, who had been watching a group of men gathered about a table at the further end of the room."
+    },
+    {
+      "sample_id": "librispeech_en_0043_6ab0d66581",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 183,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.035714287,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 5,
+        "hypothesis_word_count": 5,
+        "reference_char_count": 28,
+        "hypothesis_char_count": 29,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 5,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "The chief organiser rang off."
+    },
+    {
+      "sample_id": "librispeech_en_0044_073c9912db",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 1962,
+      "metrics": {
+        "wer": 0.024390243,
+        "cer": 0.042918455,
+        "omission_rate": 0.024390243,
+        "duplication_rate": 0.024390243,
+        "hallucination_rate": 0.024390243,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 41,
+        "hypothesis_word_count": 41,
+        "reference_char_count": 233,
+        "hypothesis_char_count": 240,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "morcerf",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "marcef",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "marcef",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "My father, the Comte de Marcef, although of Spanish origin, possesses considerable influence, both at the court of France and Madrid, and I unhesitatingly place the best services of myself, and all to whom my life is dear, at your disposal."
+    },
+    {
+      "sample_id": "librispeech_en_0045_9b9b5b69e4",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 204,
+      "metrics": {
+        "wer": 0.22222222,
+        "cer": 0.1875,
+        "omission_rate": 0.22222222,
+        "duplication_rate": 0.22222222,
+        "hallucination_rate": 0.22222222,
+        "end_truncation_score": 0.8888889,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 48,
+        "hypothesis_char_count": 48,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "gurr",
+            "count": 1
+          },
+          {
+            "word": "mister",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "garr",
+            "count": 1
+          },
+          {
+            "word": "mr",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "garr",
+            "count": 1
+          },
+          {
+            "word": "mr",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Seemed in good spirits last night, Mr. Garr, eh?"
+    },
+    {
+      "sample_id": "librispeech_en_0046_74402c5fdf",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 171,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.04347826,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 4,
+        "hypothesis_word_count": 4,
+        "reference_char_count": 23,
+        "hypothesis_char_count": 24,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 4,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Every event has parents."
+    },
+    {
+      "sample_id": "librispeech_en_0047_febf854759",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 409,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.05263158,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 76,
+        "hypothesis_char_count": 80,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "I said I was golfing, he went on, exceedingly distinctly, though with an effort."
+    },
+    {
+      "sample_id": "librispeech_en_0048_dd8fd736f2",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 344,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.027777778,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 8,
+        "hypothesis_word_count": 8,
+        "reference_char_count": 36,
+        "hypothesis_char_count": 37,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 8,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "The villages will save us in the end,"
+    },
+    {
+      "sample_id": "librispeech_en_0049_2fe7ee51a3",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 282,
+      "metrics": {
+        "wer": 0.083333336,
+        "cer": 0.0952381,
+        "omission_rate": 0.083333336,
+        "duplication_rate": 0.083333336,
+        "hallucination_rate": 0.083333336,
+        "end_truncation_score": 0.3333333,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 63,
+        "hypothesis_char_count": 61,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 8,
+        "omitted_terms": [
+          {
+            "word": "reigned",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "rang",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "rang",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The stillness that rang on both sides was like that of death."
+    },
+    {
+      "sample_id": "librispeech_en_0050_202457d4ee",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 560,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.032520324,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 21,
+        "hypothesis_word_count": 21,
+        "reference_char_count": 123,
+        "hypothesis_char_count": 127,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Only, even though love has wholly disappeared, she still claims consideration, and Althea did not wish to lose Hermon's regard."
+    },
+    {
+      "sample_id": "librispeech_en_0051_a28871030c",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 202,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.019607844,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 51,
+        "hypothesis_char_count": 52,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 11,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "It looks like the trunk of a great thick birch tree."
+    },
+    {
+      "sample_id": "librispeech_en_0052_f2b1b80868",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 509,
+      "metrics": {
+        "wer": 0.20833333,
+        "cer": 0.119266056,
+        "omission_rate": 0.20833333,
+        "duplication_rate": 0.20833333,
+        "hallucination_rate": 0.20833333,
+        "end_truncation_score": 0.9166667,
+        "reference_word_count": 24,
+        "hypothesis_word_count": 24,
+        "reference_char_count": 109,
+        "hypothesis_char_count": 107,
+        "omitted_words": 5,
+        "duplicated_words": 5,
+        "hallucinated_words": 5,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "hoo",
+            "count": 4
+          },
+          {
+            "word": "nought",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "who",
+            "count": 3
+          },
+          {
+            "word": "he",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "who",
+            "count": 3
+          },
+          {
+            "word": "he",
+            "count": 1
+          },
+          {
+            "word": "not",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "But who's come at last? And who's welcome, as long as he'll keep from preaching on what who knows not about"
+    },
+    {
+      "sample_id": "librispeech_en_0053_b6b87af616",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 155,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.035714287,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 5,
+        "hypothesis_word_count": 5,
+        "reference_char_count": 28,
+        "hypothesis_char_count": 29,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 5,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "The Guild of Saint Elizabeth,"
+    },
+    {
+      "sample_id": "librispeech_en_0054_ebd8cae1a7",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 271,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.011235955,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 18,
+        "hypothesis_word_count": 18,
+        "reference_char_count": 89,
+        "hypothesis_char_count": 90,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "It seemed as though some piece of good fortune had come to pass after the doctor had gone."
+    },
+    {
+      "sample_id": "librispeech_en_0055_8ab9c712e4",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 267,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.055555556,
+        "omission_rate": 0.16666667,
+        "duplication_rate": 0.2857143,
+        "hallucination_rate": 0.2857143,
+        "end_truncation_score": 0.8333333,
+        "reference_word_count": 6,
+        "hypothesis_word_count": 7,
+        "reference_char_count": 36,
+        "hypothesis_char_count": 38,
+        "omitted_words": 1,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "lamplit",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "lamp",
+            "count": 1
+          },
+          {
+            "word": "lit",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "lamp",
+            "count": 1
+          },
+          {
+            "word": "lit",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "No electric signs. No lamp lit streets"
+    },
+    {
+      "sample_id": "librispeech_en_0056_209b6572ef",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 761,
+      "metrics": {
+        "wer": 0.11764706,
+        "cer": 0.09659091,
+        "omission_rate": 0.0882353,
+        "duplication_rate": 0.114285715,
+        "hallucination_rate": 0.114285715,
+        "end_truncation_score": 0.5833334,
+        "reference_word_count": 34,
+        "hypothesis_word_count": 35,
+        "reference_char_count": 176,
+        "hypothesis_char_count": 181,
+        "omitted_words": 3,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 5,
+        "omitted_terms": [
+          {
+            "word": "answered",
+            "count": 1
+          },
+          {
+            "word": "telltale",
+            "count": 1
+          },
+          {
+            "word": "when",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "entered",
+            "count": 1
+          },
+          {
+            "word": "tell",
+            "count": 1
+          },
+          {
+            "word": "their",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "entered",
+            "count": 1
+          },
+          {
+            "word": "tell",
+            "count": 1
+          },
+          {
+            "word": "their",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "None were needed. Her tell their face entered for her, as well as the impulse which made her hide her head in the sofa cushion, like a foolish ostrich, and the hunters are after it."
+    },
+    {
+      "sample_id": "librispeech_en_0057_3ec4f53ee9",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 279,
+      "metrics": {
+        "wer": 0.1,
+        "cer": 0.08064516,
+        "omission_rate": 0.1,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.6,
+        "reference_word_count": 10,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 62,
+        "hypothesis_char_count": 59,
+        "omitted_words": 1,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "and",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "husband and wife looked blankly desperately at one another."
+    },
+    {
+      "sample_id": "librispeech_en_0058_d96b509c9a",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 233,
+      "metrics": {
+        "wer": 0.11111111,
+        "cer": 0.083333336,
+        "omission_rate": 0.11111111,
+        "duplication_rate": 0.11111111,
+        "hallucination_rate": 0.11111111,
+        "end_truncation_score": 0.6666666,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 48,
+        "hypothesis_char_count": 52,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "seest",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "seeest",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "seeest",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "And now, inquired the foal, seeest thou nothing now?"
+    },
+    {
+      "sample_id": "librispeech_en_0059_c887924a8e",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 453,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.02020202,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 20,
+        "hypothesis_word_count": 20,
+        "reference_char_count": 99,
+        "hypothesis_char_count": 101,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "I have a remedy against thirst, quite contrary to that which is good against the biting of a mad dog."
+    },
+    {
+      "sample_id": "librispeech_en_0060_b23503e3ea",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 349,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.032967035,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 22,
+        "hypothesis_word_count": 22,
+        "reference_char_count": 91,
+        "hypothesis_char_count": 94,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "A fellow who was shut up in prison for life might do it, he said, but not in a case like this."
+    },
+    {
+      "sample_id": "librispeech_en_0061_77e9868d84",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 185,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.2195122,
+        "omission_rate": 0.33333334,
+        "duplication_rate": 0.33333334,
+        "hallucination_rate": 0.33333334,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 41,
+        "hypothesis_char_count": 43,
+        "omitted_words": 3,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "dream",
+            "count": 1
+          },
+          {
+            "word": "his",
+            "count": 1
+          },
+          {
+            "word": "woke",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "stream",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "walk",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "stream",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "walk",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "A sudden car horn Walk him from the stream."
+    },
+    {
+      "sample_id": "librispeech_en_0062_899ce0cec9",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 159,
+      "metrics": {
+        "wer": 1.0,
+        "cer": 1.0,
+        "omission_rate": 1.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 3,
+        "hypothesis_word_count": 0,
+        "reference_char_count": 16,
+        "hypothesis_char_count": 0,
+        "omitted_words": 3,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "amiable",
+            "count": 1
+          },
+          {
+            "word": "one",
+            "count": 1
+          },
+          {
+            "word": "thou",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": ""
+    },
+    {
+      "sample_id": "librispeech_en_0063_88ae0d8413",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 501,
+      "metrics": {
+        "wer": 0.5,
+        "cer": 0.18,
+        "omission_rate": 0.41666666,
+        "duplication_rate": 0.46153846,
+        "hallucination_rate": 0.46153846,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 50,
+        "hypothesis_char_count": 55,
+        "omitted_words": 5,
+        "duplicated_words": 6,
+        "hallucinated_words": 6,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "an",
+            "count": 1
+          },
+          {
+            "word": "e",
+            "count": 1
+          },
+          {
+            "word": "ead",
+            "count": 1
+          },
+          {
+            "word": "is",
+            "count": 1
+          },
+          {
+            "word": "traindawg",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "dog",
+            "count": 1
+          },
+          {
+            "word": "he",
+            "count": 1
+          },
+          {
+            "word": "head",
+            "count": 1
+          },
+          {
+            "word": "his",
+            "count": 1
+          },
+          {
+            "word": "in",
+            "count": 1
+          },
+          {
+            "word": "train",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "dog",
+            "count": 1
+          },
+          {
+            "word": "he",
+            "count": 1
+          },
+          {
+            "word": "head",
+            "count": 1
+          },
+          {
+            "word": "his",
+            "count": 1
+          },
+          {
+            "word": "in",
+            "count": 1
+          },
+          {
+            "word": "train",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Clever as a train dog he is, in all outer his own head,"
+    },
+    {
+      "sample_id": "librispeech_en_0064_9f59320055",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 1391,
+      "metrics": {
+        "wer": 0.1724138,
+        "cer": 0.083850935,
+        "omission_rate": 0.12068965,
+        "duplication_rate": 0.15,
+        "hallucination_rate": 0.15,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 58,
+        "hypothesis_word_count": 60,
+        "reference_char_count": 322,
+        "hypothesis_char_count": 333,
+        "omitted_words": 7,
+        "duplicated_words": 9,
+        "hallucinated_words": 9,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "councillor",
+            "count": 1
+          },
+          {
+            "word": "fagots",
+            "count": 1
+          },
+          {
+            "word": "grandame",
+            "count": 1
+          },
+          {
+            "word": "straightway",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          },
+          {
+            "word": "unsought",
+            "count": 1
+          },
+          {
+            "word": "wanderer",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "away",
+            "count": 1
+          },
+          {
+            "word": "counsellor",
+            "count": 1
+          },
+          {
+            "word": "dame",
+            "count": 1
+          },
+          {
+            "word": "faggots",
+            "count": 1
+          },
+          {
+            "word": "grand",
+            "count": 1
+          },
+          {
+            "word": "sought",
+            "count": 1
+          },
+          {
+            "word": "straight",
+            "count": 1
+          },
+          {
+            "word": "wife",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "away",
+            "count": 1
+          },
+          {
+            "word": "counsellor",
+            "count": 1
+          },
+          {
+            "word": "dame",
+            "count": 1
+          },
+          {
+            "word": "faggots",
+            "count": 1
+          },
+          {
+            "word": "grand",
+            "count": 1
+          },
+          {
+            "word": "sought",
+            "count": 1
+          },
+          {
+            "word": "straight",
+            "count": 1
+          },
+          {
+            "word": "wife",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The grand dame whom he supplied with faggots, the merchant whom he rescued from robbers, the king's counsellor to whom he gave aid, all became his friends. Up and down the land, beggar or lord, homeless wife,, or high born dame, he gladly gave unselfish service all and sought, and such as he helped straight away became his friends."
+    },
+    {
+      "sample_id": "librispeech_en_0065_d5f0f18748",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 370,
+      "metrics": {
+        "wer": 0.05263158,
+        "cer": 0.08791209,
+        "omission_rate": 0.05263158,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.08333331,
+        "reference_word_count": 19,
+        "hypothesis_word_count": 18,
+        "reference_char_count": 91,
+        "hypothesis_char_count": 90,
+        "omitted_words": 1,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 11,
+        "omitted_terms": [
+          {
+            "word": "long",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "When they had gone thus for a long, way, the foal again asked, Dost thou see anything now?"
+    },
+    {
+      "sample_id": "librispeech_en_0066_f97d73359b",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 640,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.013513514,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 74,
+        "hypothesis_char_count": 75,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "but the present movement is international, and that is why it is invincible"
+    },
+    {
+      "sample_id": "librispeech_en_0067_60e92bb310",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 270,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.033898305,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 59,
+        "hypothesis_char_count": 61,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 11,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Raise the standard among them, and bring me a thousand names."
+    },
+    {
+      "sample_id": "librispeech_en_0068_3c5ed7927b",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 455,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.035714287,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 84,
+        "hypothesis_char_count": 87,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Seven thirty, amended the Prime Minister. We must avoid any appearance of precipitancy."
+    },
+    {
+      "sample_id": "librispeech_en_0069_b0f8bd03e6",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 279,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.03508772,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 57,
+        "hypothesis_char_count": 59,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "That is not always, but sometimes it happened to be so now."
+    },
+    {
+      "sample_id": "librispeech_en_0070_d1c1c8bcc5",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 1831,
+      "metrics": {
+        "wer": 0.1904762,
+        "cer": 0.084033616,
+        "omission_rate": 0.1904762,
+        "duplication_rate": 0.1904762,
+        "hallucination_rate": 0.1904762,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 42,
+        "hypothesis_word_count": 42,
+        "reference_char_count": 238,
+        "hypothesis_char_count": 240,
+        "omitted_words": 8,
+        "duplicated_words": 8,
+        "hallucinated_words": 8,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "at",
+            "count": 1
+          },
+          {
+            "word": "grove",
+            "count": 1
+          },
+          {
+            "word": "hattersley",
+            "count": 1
+          },
+          {
+            "word": "milicent",
+            "count": 1
+          },
+          {
+            "word": "missus",
+            "count": 1
+          },
+          {
+            "word": "mister",
+            "count": 1
+          },
+          {
+            "word": "staying",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "groove",
+            "count": 1
+          },
+          {
+            "word": "huttersley",
+            "count": 1
+          },
+          {
+            "word": "it",
+            "count": 1
+          },
+          {
+            "word": "millicent",
+            "count": 1
+          },
+          {
+            "word": "misses",
+            "count": 1
+          },
+          {
+            "word": "mr",
+            "count": 1
+          },
+          {
+            "word": "seeing",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "groove",
+            "count": 1
+          },
+          {
+            "word": "huttersley",
+            "count": 1
+          },
+          {
+            "word": "it",
+            "count": 1
+          },
+          {
+            "word": "millicent",
+            "count": 1
+          },
+          {
+            "word": "misses",
+            "count": 1
+          },
+          {
+            "word": "mr",
+            "count": 1
+          },
+          {
+            "word": "seeing",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Mr and misses Huttersley have been seeing it to groove a fortnight, and as mister Hargrave is still absent, and the weather was remarkably fine, I never passed a day without seeing my two friends, Millicent and Esther, either there or here."
+    },
+    {
+      "sample_id": "librispeech_en_0071_f38580cb61",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 1812,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.034246575,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 33,
+        "hypothesis_word_count": 33,
+        "reference_char_count": 146,
+        "hypothesis_char_count": 151,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "There's iron, they say, in all our blood and a grain or two, perhaps, is good but his he makes me harshly feel has got a little too much of steel anon."
+    },
+    {
+      "sample_id": "librispeech_en_0072_493a3af129",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 318,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.026666667,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 15,
+        "hypothesis_word_count": 15,
+        "reference_char_count": 75,
+        "hypothesis_char_count": 77,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "These hatreds were soon to make trouble for me, of which I had never dreamed."
+    },
+    {
+      "sample_id": "librispeech_en_0073_3b922fc3c6",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 236,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.051282052,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 8,
+        "hypothesis_word_count": 8,
+        "reference_char_count": 39,
+        "hypothesis_char_count": 41,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 8,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Why, it might have been in the workhouse."
+    },
+    {
+      "sample_id": "librispeech_en_0074_c3fa594bd6",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 552,
+      "metrics": {
+        "wer": 0.05882353,
+        "cer": 0.04255319,
+        "omission_rate": 0.05882353,
+        "duplication_rate": 0.05882353,
+        "hallucination_rate": 0.05882353,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 17,
+        "hypothesis_word_count": 17,
+        "reference_char_count": 94,
+        "hypothesis_char_count": 97,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "follows",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "followed",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "followed",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "It followed that there could not have been any intelligence, any design back of matter and force."
+    },
+    {
+      "sample_id": "librispeech_en_0075_ad18e43b3b",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 939,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.022222223,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 35,
+        "hypothesis_word_count": 35,
+        "reference_char_count": 180,
+        "hypothesis_char_count": 184,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "But it seems this gentleman is not so easy access. But you may acknowledge something due to me. If I incline him to look graciously upon you, and therefore there is not much harm done."
+    },
+    {
+      "sample_id": "librispeech_en_0076_e440dd1129",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 296,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.016129032,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 62,
+        "hypothesis_char_count": 63,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "you will raise the stone with the bar by means of the ring. But"
+    },
+    {
+      "sample_id": "librispeech_en_0077_75e77ed131",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 1996,
+      "metrics": {
+        "wer": 0.083333336,
+        "cer": 0.067010306,
+        "omission_rate": 0.055555556,
+        "duplication_rate": 0.055555556,
+        "hallucination_rate": 0.055555556,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 36,
+        "hypothesis_word_count": 36,
+        "reference_char_count": 194,
+        "hypothesis_char_count": 197,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "zarathustra",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "tustra",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "tustra",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "When, however, the Tustra was quite nigh unto them, then did he hear plainly that human voice spake in the midst of the kine,. And apparently all of them had turned their heads towards the speaker."
+    },
+    {
+      "sample_id": "librispeech_en_0078_cf3f32b16e",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 502,
+      "metrics": {
+        "wer": 0.08,
+        "cer": 0.08888889,
+        "omission_rate": 0.08,
+        "duplication_rate": 0.041666668,
+        "hallucination_rate": 0.041666668,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 25,
+        "hypothesis_word_count": 24,
+        "reference_char_count": 135,
+        "hypothesis_char_count": 136,
+        "omitted_words": 2,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "pleas",
+            "count": 1
+          },
+          {
+            "word": "that",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "players",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "players",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "At the time of the Gallatin Bank robbery, I was gathering cattle in Ellis County, Texas, cattle I bought from players Taylor and Rector."
+    },
+    {
+      "sample_id": "librispeech_en_0079_9d89e6b598",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 375,
+      "metrics": {
+        "wer": 0.071428575,
+        "cer": 0.07042254,
+        "omission_rate": 0.071428575,
+        "duplication_rate": 0.071428575,
+        "hallucination_rate": 0.071428575,
+        "end_truncation_score": 0.08333331,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 71,
+        "hypothesis_char_count": 74,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 11,
+        "omitted_terms": [
+          {
+            "word": "aft",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "out",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "out",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Kite went out, and returned with three or four muskets, and as many pikes."
+    },
+    {
+      "sample_id": "librispeech_en_0080_fa28a6e80b",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 660,
+      "metrics": {
+        "wer": 0.03846154,
+        "cer": 0.030303031,
+        "omission_rate": 0.03846154,
+        "duplication_rate": 0.03846154,
+        "hallucination_rate": 0.03846154,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 26,
+        "hypothesis_word_count": 26,
+        "reference_char_count": 132,
+        "hypothesis_char_count": 135,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "brahman",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "brahmin",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "brahmin",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Three out of the six had given judgment against the Brahmin. But still he did not lose all hope, and determined to ask the other three."
+    },
+    {
+      "sample_id": "librispeech_en_0081_9ec451ffad",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 515,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.03125,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 7,
+        "hypothesis_word_count": 7,
+        "reference_char_count": 32,
+        "hypothesis_char_count": 33,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 7,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "How welcome you will be But alas,"
+    },
+    {
+      "sample_id": "librispeech_en_0082_1ba3ca52f7",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 221,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.03076923,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 65,
+        "hypothesis_char_count": 67,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "You will close the coffin. The sisters will carry it to the chapel."
+    },
+    {
+      "sample_id": "librispeech_en_0083_636eb6852c",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 417,
+      "metrics": {
+        "wer": 0.05,
+        "cer": 0.04761905,
+        "omission_rate": 0.05,
+        "duplication_rate": 0.05,
+        "hallucination_rate": 0.05,
+        "end_truncation_score": 0.3333333,
+        "reference_word_count": 20,
+        "hypothesis_word_count": 20,
+        "reference_char_count": 105,
+        "hypothesis_char_count": 107,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 8,
+        "omitted_terms": [
+          {
+            "word": "rend",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "run",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "run",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Thou shalt have thy liberty, he cried, even though thou shouldst run me in pieces the moment thou art free."
+    },
+    {
+      "sample_id": "librispeech_en_0084_55d66e51b8",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 358,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.012345679,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 81,
+        "hypothesis_char_count": 82,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Margaret was collecting her mother's working materials and preparing to go to bed."
+    },
+    {
+      "sample_id": "librispeech_en_0085_ae2d95a176",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 626,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.027027028,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 28,
+        "hypothesis_word_count": 28,
+        "reference_char_count": 148,
+        "hypothesis_char_count": 152,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "One of my old school teachers, whom I have never seen since the spring or summer of eighteen sixty two, is Stephen B. Elkins, Senator from West Virginia"
+    },
+    {
+      "sample_id": "librispeech_en_0086_76ce2e8bab",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 450,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.010989011,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 22,
+        "hypothesis_word_count": 22,
+        "reference_char_count": 91,
+        "hypothesis_char_count": 92,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "What we want is to go out of here quiet and talk this show up and sell the rest of the town."
+    },
+    {
+      "sample_id": "librispeech_en_0087_e2c6c8e734",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 683,
+      "metrics": {
+        "wer": 0.06666667,
+        "cer": 0.07189543,
+        "omission_rate": 0.06666667,
+        "duplication_rate": 0.06666667,
+        "hallucination_rate": 0.06666667,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 30,
+        "hypothesis_word_count": 30,
+        "reference_char_count": 153,
+        "hypothesis_char_count": 158,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "pulse",
+            "count": 1
+          },
+          {
+            "word": "they",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "part",
+            "count": 1
+          },
+          {
+            "word": "there",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "part",
+            "count": 1
+          },
+          {
+            "word": "there",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "There would be names of women weak, insulted, persecuted, but devoted in every part of their being to the cause, and asking no better fate than to die for it."
+    },
+    {
+      "sample_id": "librispeech_en_0088_7b9d70fed6",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 687,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.02739726,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 27,
+        "hypothesis_word_count": 27,
+        "reference_char_count": 146,
+        "hypothesis_char_count": 150,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Levin advanced, but utterly forgetting what he was to do, and much embarrassed, he turned to Sergey Ivanovitch with the question Where am I to put it?"
+    },
+    {
+      "sample_id": "librispeech_en_0089_a04c860e72",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 640,
+      "metrics": {
+        "wer": 0.083333336,
+        "cer": 0.06818182,
+        "omission_rate": 0.027777778,
+        "duplication_rate": 0.054054055,
+        "hallucination_rate": 0.054054055,
+        "end_truncation_score": 0.3333333,
+        "reference_word_count": 36,
+        "hypothesis_word_count": 37,
+        "reference_char_count": 176,
+        "hypothesis_char_count": 180,
+        "omitted_words": 1,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 8,
+        "omitted_terms": [
+          {
+            "word": "whacks",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "wax",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "wax",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "though your worship was not so badly off having in your arms the incomparable beauty you spoke of, but I what did I have? Except the heaviest wax that I think I had in all my life."
+    },
+    {
+      "sample_id": "librispeech_en_0090_0c3ef69b29",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 330,
+      "metrics": {
+        "wer": 0.0625,
+        "cer": 0.042857144,
+        "omission_rate": 0.0625,
+        "duplication_rate": 0.0625,
+        "hallucination_rate": 0.0625,
+        "end_truncation_score": 0.8333333,
+        "reference_word_count": 16,
+        "hypothesis_word_count": 16,
+        "reference_char_count": 70,
+        "hypothesis_char_count": 72,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 2,
+        "omitted_terms": [
+          {
+            "word": "resk",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "rest",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "rest",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "So I says to myself, Here's another place where I got to rest the truth."
+    },
+    {
+      "sample_id": "librispeech_en_0091_5167722b9d",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 443,
+      "metrics": {
+        "wer": 0.07692308,
+        "cer": 0.12328767,
+        "omission_rate": 0.07692308,
+        "duplication_rate": 0.07692308,
+        "hallucination_rate": 0.07692308,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 73,
+        "hypothesis_char_count": 73,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "missus",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "mr",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "mr",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Mr Thornton, the only mother he has, I believe, said mister Hale quietly."
+    },
+    {
+      "sample_id": "librispeech_en_0092_bef2b35e4e",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 392,
+      "metrics": {
+        "wer": 0.055555556,
+        "cer": 0.021505376,
+        "omission_rate": 0.055555556,
+        "duplication_rate": 0.055555556,
+        "hallucination_rate": 0.055555556,
+        "end_truncation_score": 0.4166667,
+        "reference_word_count": 18,
+        "hypothesis_word_count": 18,
+        "reference_char_count": 93,
+        "hypothesis_char_count": 95,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 7,
+        "omitted_terms": [
+          {
+            "word": "not",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "note",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "note",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The question was now whether we could pass them or note before they got near enough to grapple."
+    },
+    {
+      "sample_id": "librispeech_en_0093_625f759e22",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 219,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.023809524,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 42,
+        "hypothesis_char_count": 43,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 9,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "The learning of magic was by no means easy."
+    },
+    {
+      "sample_id": "librispeech_en_0094_fff5bd0d20",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 249,
+      "metrics": {
+        "wer": 0.14285715,
+        "cer": 0.13559322,
+        "omission_rate": 0.14285715,
+        "duplication_rate": 0.07692308,
+        "hallucination_rate": 0.07692308,
+        "end_truncation_score": 0.6666666,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 59,
+        "hypothesis_char_count": 57,
+        "omitted_words": 2,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "were",
+            "count": 1
+          },
+          {
+            "word": "you",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "will",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "will",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "If I had a picture that will fit for you, should have it."
+    },
+    {
+      "sample_id": "librispeech_en_0095_e38da4565f",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 304,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.011111111,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 16,
+        "hypothesis_word_count": 16,
+        "reference_char_count": 90,
+        "hypothesis_char_count": 91,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "And so every government needs an army also to protect its booty from its neighbor brigands."
+    },
+    {
+      "sample_id": "librispeech_en_0096_d705c9074e",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 434,
+      "metrics": {
+        "wer": 0.083333336,
+        "cer": 0.03797468,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.07692308,
+        "hallucination_rate": 0.07692308,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 79,
+        "hypothesis_char_count": 82,
+        "omitted_words": 0,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 6,
+        "omitted_terms": [],
+        "duplicated_terms": [
+          {
+            "word": "h",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "h",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The absence of detailed reference to h the Hebrews is therefore perfectly natural."
+    },
+    {
+      "sample_id": "librispeech_en_0097_c4057c8fca",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1142,
+      "metrics": {
+        "wer": 0.045454547,
+        "cer": 0.048543688,
+        "omission_rate": 0.045454547,
+        "duplication_rate": 0.045454547,
+        "hallucination_rate": 0.045454547,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 22,
+        "hypothesis_word_count": 22,
+        "reference_char_count": 103,
+        "hypothesis_char_count": 108,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "diners",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "dinners",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "dinners",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "But take these hundred dinners, and give them to the singer, and bring him to me gently, and do him no hurt,"
+    },
+    {
+      "sample_id": "librispeech_en_0098_b0d110c9bc",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 256,
+      "metrics": {
+        "wer": 0.6,
+        "cer": 0.34375,
+        "omission_rate": 0.6,
+        "duplication_rate": 0.5,
+        "hallucination_rate": 0.5,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 5,
+        "hypothesis_word_count": 4,
+        "reference_char_count": 32,
+        "hypothesis_char_count": 27,
+        "omitted_words": 3,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "de",
+            "count": 1
+          },
+          {
+            "word": "fauchelevent",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "fauchel",
+            "count": 1
+          },
+          {
+            "word": "lida",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "fauchel",
+            "count": 1
+          },
+          {
+            "word": "lida",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Ah, Lida exclaimed Fauchel."
+    },
+    {
+      "sample_id": "librispeech_en_0099_7393672c9d",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 566,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.012048192,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 36,
+        "hypothesis_word_count": 36,
+        "reference_char_count": 166,
+        "hypothesis_char_count": 168,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "for we are brothers of the princess whom thou art to have when thou canst tell the king what we eat and drink. But there is a mighty troll who has cast a spell over us."
+    },
+    {
+      "sample_id": "librispeech_en_0100_9729696cb2",
+      "scenario": "librispeech_clean",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 235,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.09090909,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 7,
+        "hypothesis_word_count": 7,
+        "reference_char_count": 33,
+        "hypothesis_char_count": 36,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 7,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "And I do, said her father, laughing."
+    }
+  ]
+}

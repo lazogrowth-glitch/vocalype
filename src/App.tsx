@@ -22,6 +22,7 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import { ensureVoiceStateStore } from "@/stores/voiceState";
 import { cleanupTauriListen, safeUnlisten } from "@/lib/tauri/events";
+import DesktopAppShell from "./components/DesktopAppShell";
 
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
 
@@ -45,18 +46,12 @@ const FirstRunDownload = lazy(
   () => import("./components/onboarding/FirstRunDownload"),
 );
 
-const DesktopAppShell = lazy(() => import("./components/DesktopAppShell"));
-
 const SECTION_DESCRIPTION_KEYS: Partial<Record<SidebarSection, string>> = {
-  general: "shell.sectionDescriptions.general",
   postprocessing: "shell.sectionDescriptions.postprocessing",
-  snippets: "shell.sectionDescriptions.snippets",
   history: "shell.sectionDescriptions.history",
   meetings: "shell.sectionDescriptions.meetings",
-  stats: "shell.sectionDescriptions.stats",
-  advanced: "shell.sectionDescriptions.advanced",
+  settings: "shell.sectionDescriptions.settings",
   billing: "shell.sectionDescriptions.billing",
-  about: "shell.sectionDescriptions.about",
   debug: "shell.sectionDescriptions.debug",
 };
 
@@ -116,7 +111,7 @@ function LoadingShell({
 function App() {
   const { i18n, t } = useTranslation();
   const [currentSection, setCurrentSection] =
-    useState<SidebarSection>("general");
+    useState<SidebarSection>("dictee");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("vt.sidebarCollapsed") === "1",
   );
@@ -197,7 +192,7 @@ function App() {
     layoutTier === "compact" ? 26 : layoutTier === "cozy" ? 30 : 32;
   const pageTitle = SECTIONS_CONFIG[currentSection]
     ? t(SECTIONS_CONFIG[currentSection].labelKey)
-    : t(SECTIONS_CONFIG.general.labelKey);
+    : t(SECTIONS_CONFIG.dictee.labelKey);
   const pageDescription = t(
     SECTION_DESCRIPTION_KEYS[currentSection] ??
       "shell.sectionDescriptions.default",
@@ -459,36 +454,30 @@ function App() {
   }
 
   return (
-    <Suspense
-      fallback={
-        <LoadingShell direction={direction} message={t("common.loading")} />
-      }
-    >
-      <DesktopAppShell
-        t={t}
-        direction={direction}
-        currentSection={currentSection}
-        setCurrentSection={setCurrentSection}
-        settings={settings}
-        updateSetting={updateSetting}
-        layoutTier={layoutTier}
-        effectiveSidebarCollapsed={effectiveSidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        session={session}
-        isTrialing={isTrialing}
-        trialEndsAt={trialEndsAt}
-        handleLogout={handleLogout}
-        handleOpenBillingPortal={handleOpenBillingPortal}
-        isActivationPending={isActivationPending}
-        mainContentPadding={mainContentPadding}
-        mainHeadingSize={mainHeadingSize}
-        pageTitle={pageTitle}
-        pageDescription={pageDescription}
-        showFirstLaunchHint={showFirstLaunchHint}
-        isBasicTier={isBasicTier}
-        handleStartCheckout={handleStartCheckout}
-      />
-    </Suspense>
+    <DesktopAppShell
+      t={t}
+      direction={direction}
+      currentSection={currentSection}
+      setCurrentSection={setCurrentSection}
+      settings={settings}
+      updateSetting={updateSetting}
+      layoutTier={layoutTier}
+      effectiveSidebarCollapsed={effectiveSidebarCollapsed}
+      toggleSidebar={toggleSidebar}
+      session={session}
+      isTrialing={isTrialing}
+      trialEndsAt={trialEndsAt}
+      handleLogout={handleLogout}
+      handleOpenBillingPortal={handleOpenBillingPortal}
+      isActivationPending={isActivationPending}
+      mainContentPadding={mainContentPadding}
+      mainHeadingSize={mainHeadingSize}
+      pageTitle={pageTitle}
+      pageDescription={pageDescription}
+      showFirstLaunchHint={showFirstLaunchHint}
+      isBasicTier={isBasicTier}
+      handleStartCheckout={handleStartCheckout}
+    />
   );
 }
 

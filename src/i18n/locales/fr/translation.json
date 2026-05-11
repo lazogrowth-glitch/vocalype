@@ -8,42 +8,28 @@
     "cancel": "Annuler"
   },
   "sidebar": {
-    "general": "Dictée",
-    "models": "Modèles",
-    "advanced": "Paramètres",
+    "settings": "Paramètres",
     "postProcessing": "Actions",
-    "notes": "Notes",
     "meetings": "Appels & notes",
     "dictee": "Dictée",
     "history": "Historique",
-    "snippets": "Extraits",
-    "stats": "Statistiques",
     "billing": "Facturation",
-    "referral": "Parrainage",
     "debug": "Diagnostics",
-    "about": "À propos",
     "group": {
       "config": "Configuration",
       "usage": "Utilisation",
-      "advanced": "Plus"
+      "settings": "Plus"
     }
   },
   "shell": {
     "workspaceSubtitle": "Espace de dictée IA",
     "sectionDescriptions": {
       "default": "Ajustez votre espace Vocalype avec des contrôles plus clairs et une meilleure cohérence.",
-      "general": "Parle dans n'importe quelle app. Vocalype transforme ta voix en texte propre.",
-      "models": "Choisissez le modèle vocal, le comportement linguistique et l'équilibre entre qualité et vitesse.",
       "postprocessing": "Transforme ta dictée en notes ATS, emails candidats, messages LinkedIn et résumés client.",
-      "snippets": "Créez des commandes réutilisables et des extraits de texte pour aller plus vite.",
       "history": "Retrouve, copie et réutilise tes dernières dictées.",
       "meetings": "Retrouvez au même endroit vos appels, réunions et notes vocales pour écrire plus vite.",
-      "notes": "Réglez les intégrations de notes et la façon dont Vocalype structure les idées capturées.",
-      "stats": "Suivez l'utilisation, l'état du runtime et les performances de l'app dans le temps.",
-      "advanced": "Gardez les réglages système et les options moins courantes hors du chemin principal.",
+      "settings": "Gardez les réglages système et les options moins courantes hors du chemin principal.",
       "billing": "Gérez votre formule, vos limites et les détails de votre abonnement.",
-      "referral": "Invitez d'autres personnes et suivez vos récompenses de parrainage.",
-      "about": "Consultez les détails de l'app, les versions, les liens d'aide et l'état du produit.",
       "debug": "Ouvrez les diagnostics, les journaux locaux et les outils de support quand Vocalype se comporte mal."
     }
   },
@@ -230,12 +216,6 @@
         "fetchModels": "Récupérer les modèles",
         "alreadySaved": "Ce modèle est déjà enregistré."
       },
-      "filters": {
-        "all": "Tous",
-        "multiLanguage": "Multilingue",
-        "translation": "Traduction",
-        "allLanguages": "Toutes les langues"
-      },
       "hardware": {
         "copilotPlusTitle": "PC Copilot+ détecté",
         "copilotPlusDescription": "Vocalype conserve maintenant cette capacité dans le profil adaptatif, mais l'exécution NPU réelle dépend encore du runtime du modèle.",
@@ -310,22 +290,6 @@
         "label": "Appuyer pour parler",
         "description": "Maintenez pour enregistrer, relâchez pour arrêter"
       },
-      "recordingMode": {
-        "label": "Mode d'enregistrement",
-        "description": "Choisissez comment démarrer et arrêter l'enregistrement.",
-        "toggle": {
-          "label": "Bascule",
-          "description": "Appuyez une fois pour démarrer, réappuyez pour arrêter"
-        },
-        "pushToTalk": {
-          "label": "Appuyer pour parler",
-          "description": "Maintenez le raccourci pour enregistrer, relâchez pour arrêter"
-        },
-        "alwaysOn": {
-          "label": "Microphone toujours actif",
-          "description": "Le microphone reste ouvert ; la VAD détecte la parole automatiquement"
-        }
-      },
       "categories": {}
     },
     "sound": {
@@ -360,10 +324,6 @@
         "history": "Historique",
         "experimental": "Expérimental",
         "cloudModels": "Modèles Cloud"
-      },
-      "experimentalToggle": {
-        "label": "Fonctionnalités Expérimentales",
-        "description": "Activer les fonctionnalités expérimentales encore en développement."
       },
       "startHidden": {
         "label": "Démarrer masqué",
@@ -405,66 +365,6 @@
           "top": "Haut"
         }
       },
-      "pasteMethod": {
-        "title": "Méthode de collage",
-        "description": "Choisissez comment le texte est inséré. Direct : simule la frappe via l'entrée système. Aucun : ignore le collage, met uniquement à jour l'historique/presse-papiers.",
-        "options": {
-          "clipboard": "Presse-papiers ({{modifier}}+V)",
-          "clipboardCtrlShiftV": "Presse-papiers (Ctrl+Shift+V)",
-          "clipboardShiftInsert": "Presse-papiers (Shift+Insert)",
-          "direct": "Direct",
-          "none": "Aucun",
-          "externalScript": "Script externe"
-        },
-        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh",
-        "externalScriptHelp": "Les scripts externes doivent utiliser un chemin absolu vers un fichier exécutable local. Les changements sont enregistrés au blur ou avec Entrée."
-      },
-      "typingTool": {
-        "title": "Outil de frappe",
-        "description": "Choisissez quel outil de frappe Linux utiliser pour la méthode de collage direct. Auto détectera et utilisera automatiquement le meilleur outil disponible pour votre système.",
-        "options": {
-          "auto": "Auto (Recommandé)"
-        }
-      },
-      "clipboardHandling": {
-        "title": "Gestion du presse-papiers",
-        "description": "Ne pas modifier le presse-papiers préserve le contenu actuel de votre presse-papiers après la transcription. Copier dans le presse-papiers laisse le résultat de la transcription dans votre presse-papiers après le collage.",
-        "options": {
-          "dontModify": "Ne pas modifier le presse-papiers",
-          "copyToClipboard": "Copier dans le presse-papiers"
-        }
-      },
-      "autoSubmit": {
-        "title": "Envoyer après collage",
-        "description": "Appuie automatiquement sur une touche après le collage — utile pour envoyer un message ou valider.",
-        "options": {
-          "off": "Désactivé",
-          "enter": "Entrée",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
-        }
-      },
-      "translateToEnglish": {
-        "label": "Traduire en anglais",
-        "description": "Traduire automatiquement la parole d'autres langues vers l'anglais pendant la transcription.",
-        "descriptionUnsupported": "La traduction n'est pas prise en charge par le modèle {{model}}."
-      },
-      "modelUnload": {
-        "title": "Décharger le modèle",
-        "description": "Libérer automatiquement la mémoire GPU/CPU lorsque le modèle n'a pas été utilisé pendant le temps spécifié",
-        "options": {
-          "never": "Jamais",
-          "immediately": "Immédiatement",
-          "min2": "Après 2 minutes",
-          "min5": "Après 5 minutes",
-          "min10": "Après 10 minutes",
-          "min15": "Après 15 minutes",
-          "min30": "Après 30 minutes",
-          "hour1": "Après 1 heure",
-          "sec5": "Après 5 secondes (Débogage)"
-        }
-      },
       "customWords": {
         "title": "Mots personnalisés",
         "description": "Ajoutez des mots souvent mal entendus ou mal orthographiés lors de la transcription. Le système corrigera automatiquement les mots similaires pour correspondre à votre liste.",
@@ -472,14 +372,6 @@
         "add": "Ajouter",
         "remove": "Supprimer {{word}}",
         "duplicate": "\"{{word}}\" existe déjà"
-      },
-      "adaptiveVocabulary": {
-        "label": "Apprends mes mots",
-        "description": "Mémorise les termes que tu utilises souvent pour améliorer la précision."
-      },
-      "adaptiveVoiceProfile": {
-        "label": "Profil vocal adaptatif",
-        "description": "Apprend ton rythme de parole et tes pauses sur cet appareil pour ajuster Whisper progressivement."
       }
     },
     "postProcessing": {
@@ -716,8 +608,8 @@
       "correctionYes": "Oui",
       "correctionNo": "Ignorer",
       "correctionAdded": "\"{{from}}\" → \"{{to}}\" ajouté au dictionnaire.",
-      "subtitle": "Retrouve, corrige, transforme et r?utilise toutes tes dict?es au m?me endroit.",
-      "selectEntry": "S?lectionne une dict?e ? gauche pour voir le d?tail, l'audio et les actions disponibles.",
+      "subtitle": "Retrouve, corrige, transforme et réutilise toutes tes dictées au même endroit.",
+      "selectEntry": "Sélectionne une dictée à gauche pour voir le détail, l'audio et les actions disponibles.",
       "original": "Original"
     },
     "debug": {
@@ -831,8 +723,8 @@
         "description": "Définir le niveau de détail de la journalisation"
       },
       "updateChecks": {
-        "label": "Vérifier les mises à jour",
-        "description": "Vérifier automatiquement les nouvelles versions de Vocalype"
+        "title": "Vérifier les mises à jour",
+        "description": "Recherche automatiquement les nouvelles versions."
       },
       "soundTheme": {
         "label": "Thème sonore",
@@ -841,11 +733,6 @@
       "wordCorrectionThreshold": {
         "title": "Seuil de correction des mots",
         "description": "Sensibilité pour les corrections de mots personnalisés"
-      },
-      "historyLimit": {
-        "title": "Limite d'historique",
-        "description": "Nombre maximum d'entrées d'historique à conserver",
-        "entries": "entrées"
       },
       "recordingRetention": {
         "title": "Suppression automatique des enregistrements",
@@ -869,17 +756,9 @@
         "label": "Post-traitement",
         "description": "Activer l'affinage du texte par IA après la transcription"
       },
-      "muteWhileRecording": {
-        "label": "Muet pendant l'enregistrement",
-        "description": "Couper le son du système pendant l'enregistrement"
-      },
       "autoPauseMedia": {
         "label": "Mettre les médias en pause",
         "description": "Met automatiquement en pause Spotify et autres lecteurs multimédias pendant l'enregistrement, puis les reprend à la fin."
-      },
-      "appendTrailingSpace": {
-        "label": "Espace après collage",
-        "description": "Ajoute un espace après le texte collé pour que le mot suivant commence proprement."
       },
       "keyboardImplementation": {
         "title": "Moteur de raccourcis",
@@ -978,10 +857,6 @@
         "title": "Outils runtime",
         "desc": "Calibration, debug et inspection en direct du moteur."
       },
-      "updateChecks": {
-        "title": "Vérifier les mises à jour",
-        "description": "Recherche automatiquement les nouvelles versions."
-      },
       "cancel": {
         "title": "Annulation",
         "description": "Touche pour annuler l'enregistrement en cours."
@@ -1004,40 +879,6 @@
         "tagsPlaceholder": "bruit, accent, ponctuation",
         "keepAudio": "Conserver l'audio comme référence",
         "save": "Enregistrer le feedback"
-      }
-    },
-    "about": {
-      "title": "À propos",
-      "version": {
-        "title": "Version",
-        "description": "Version actuelle de Vocalype"
-      },
-      "versionLabel": "Version v{{version}}",
-      "appDataDirectory": {
-        "title": "Emplacement des données de l'application",
-        "description": "Emplacement où Vocalype stocke ses données"
-      },
-      "exportImport": {
-        "title": "Exporter / Importer les paramètres",
-        "description": "Transférer votre configuration vers un autre ordinateur",
-        "export": "Exporter",
-        "import": "Importer",
-        "exportSuccess": "Paramètres exportés avec succès",
-        "importSuccess": "Paramètres importés avec succès"
-      },
-      "privacyPolicy": "Politique de confidentialité",
-      "supportDevelopment": {
-        "title": "Soutenir le développement",
-        "description": "Aidez-nous à continuer à construire Vocalype",
-        "button": "Faire un don"
-      },
-      "acknowledgments": {
-        "title": "Remerciements",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "Inférence haute performance du modèle de reconnaissance vocale automatique Whisper d'OpenAI",
-          "details": "Vocalype utilise Whisper.cpp pour un traitement rapide et local de la parole en texte. Merci au travail incroyable de Georgi Gerganov et des contributeurs."
-        }
       }
     },
     "wakeWord": {
@@ -1297,55 +1138,6 @@
     "importReplaceSuccess": "Dictionnaire importé (remplacé).",
     "importMergeSuccess": "Dictionnaire importé (fusionné)."
   },
-  "snippets": {
-    "title": "Extraits vocaux",
-    "description": "Dites la phrase déclencheur et Vocalype colle l'expansion à la place.",
-    "empty": "Aucun snippet. Ajoutez-en un ci-dessous.",
-    "triggerPlaceholder": "Phrase déclencheur…",
-    "expansionPlaceholder": "Texte à coller…",
-    "add": "Ajouter",
-    "remove": "Supprimer",
-    "save": "Sauvegarder",
-    "cancel": "Annuler",
-    "duplicate": "\"{{trigger}}\" existe déjà.",
-    "arrow": "→",
-    "addNew": "Ajouter",
-    "addTitle": "Ajouter un snippet",
-    "editTitle": "Modifier le snippet",
-    "addSubmit": "Ajouter",
-    "addFirst": "Créer mon premier snippet",
-    "edit": "Modifier"
-  },
-  "stats": {
-    "title": "Statistiques",
-    "totalWords": "Mots totaux",
-    "totalTranscriptions": "Transcriptions",
-    "today": "Aujourd'hui",
-    "thisWeek": "Cette semaine",
-    "avgWords": "Mots moy.",
-    "mostUsedModel": "Modèle le + utilisé",
-    "timeSaved": "≈ {{time}} économisés",
-    "timeSavedUnit": "min",
-    "noData": "Aucune donnée. Commencez à transcrire pour voir vos stats.",
-    "refresh": "Actualiser",
-    "loading": "Chargement…",
-    "empty": "Aucune donnée disponible.",
-    "subtitle": "Un aperçu simple de votre usage et de vos résultats dans l'app.",
-    "overview": "Vue d'ensemble",
-    "overviewDescription": "Les métriques les plus utiles à lire d'un coup d'oeil.",
-    "totalEntries": "Transcriptions",
-    "totalEntriesSub": "Nombre total de résultats enregistrés.",
-    "transcriptions": "transcriptions",
-    "insights": "Repères",
-    "insightsDescription": "Quelques repères simples pour comprendre votre rythme.",
-    "noModel": "Aucun modèle dominant pour l'instant",
-    "modelSub": "Le moteur que vous utilisez le plus souvent.",
-    "avgWordsSub": "Longueur moyenne de chaque transcription.",
-    "quickRead": "Lecture rapide",
-    "snapshotEntries": "Sessions totales",
-    "snapshotWords": "Mots dictés",
-    "snapshotTime": "Temps gagné estimé"
-  },
   "basic": {
     "copiedToClipboard": "Texte copié dans le presse-papiers",
     "copiedToClipboardDesc": "L’injection native est réservée au plan Premium.",
@@ -1355,7 +1147,7 @@
     "upgradeCta": "Passer à Premium →",
     "upgrade": "Passer à Premium",
     "historyLimited": "Historique limité à {{limit}} entrées en formule Basique",
-    "shortcutsLocked": "Les raccourcis personnalis?s sont une fonction Premium",
+    "shortcutsLocked": "Raccourcis personnalisés réservés à Premium",
     "premiumBadge": "Premium"
   },
   "plan": {
@@ -1364,9 +1156,9 @@
   },
   "commandMode": {
     "label": "Mode commande",
-    "recording": "Parlez maintenant? ({{count}} s)",
-    "processing": "Traitement?",
-    "errorTitle": "Mode commande ? erreur"
+    "recording": "Parle maintenant… ({{count}}s)",
+    "processing": "Traitement en cours…",
+    "errorTitle": "Command Mode — erreur"
   },
   "transcription": {
     "warmup_preparing": "Préparation du micro…",
@@ -1387,11 +1179,7 @@
   },
   "tooltips": {
     "vad": "Détection d'activité vocale — détecte automatiquement quand vous commencez et arrêtez de parler.",
-    "postProcessing": "Lance une IA sur votre transcription après la capture pour corriger la grammaire ou appliquer un prompt personnalisé.",
-    "pasteMethod": "Comment le texte est inséré : Presse-papiers utilise Cmd+V (plus compatible), Direct simule des frappes clavier.",
-    "typingTool": "Backend de saisie Linux pour injecter du texte. Auto choisit le meilleur outil pour votre session.",
-    "adaptiveVocabulary": "Apprend les mots peu courants que vous utilisez dans l'application active pour améliorer la reconnaissance.",
-    "adaptiveVoiceProfile": "Apprend votre rythme d'élocution au fil du temps pour améliorer la détection des silences."
+    "postProcessing": "Lance une IA sur votre transcription après la capture pour corriger la grammaire ou appliquer un prompt personnalisé."
   },
   "a11y": {
     "notifications": "Notifications",
@@ -1519,12 +1307,12 @@
     "generateTitleError": "Impossible de générer le titre",
     "untitled": "Sans titre",
     "emptyContent": "Aucun contenu",
-    "allCategories": "Toutes cat?gories",
+    "allCategories": "Toutes catégories",
     "archive": "Archiver",
-    "unarchive": "D?sarchiver",
+    "unarchive": "Désarchiver",
     "duplicate": "Dupliquer",
-    "pin": "?pingler",
-    "unpin": "Retirer l'?pingle"
+    "pin": "Épingler",
+    "unpin": "Retirer l'épingle"
   },
   "billing": {
     "title": "Compte",

@@ -61,6 +61,12 @@ shipping benchmark.
 Historical one-off experiment outputs are stored in `archive/experiments/` so
 the top level stays focused on active manifests, packs, and documentation.
 
+## Reports Folder Policy
+
+Keep only stable current report snapshots at the top level of `reports/`.
+Move timestamped runs, debugging outputs, and iterative experiment reports into
+`reports/archive/` to keep the folder easy to scan.
+
 ## Recommended Scenarios
 
 - `long_no_pause_fr`

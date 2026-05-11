@@ -1,61 +1,20 @@
 import React from "react";
 import {
   AlignLeft,
-  BarChart2,
   CreditCard,
   FlaskConical,
   History,
-  Info,
-  LayoutGrid,
   Mic,
   Settings2,
-  Zap,
   AudioWaveform,
 } from "lucide-react";
-
-const GeneralSettings = React.lazy(() =>
-  import("./settings/general/GeneralSettings").then((m) => ({
-    default: m.GeneralSettings,
-  })),
-);
-
-const DictationSettings = React.lazy(() =>
-  import("./settings/dictation/DictationSettings").then((m) => ({
-    default: m.DictationSettings,
-  })),
-);
-
-const MeetingsSettings = React.lazy(() =>
-  import("./settings/meetings/MeetingsSettings").then((m) => ({
-    default: m.MeetingsSettings,
-  })),
-);
-
-const PreferencesSettings = React.lazy(() =>
-  import("./settings/preferences/PreferencesSettings").then((m) => ({
-    default: m.PreferencesSettings,
-  })),
-);
-const HistorySettings = React.lazy(() =>
-  import("./settings/history/HistorySettings").then((m) => ({
-    default: m.HistorySettings,
-  })),
-);
-const DiagnosticsSettings = React.lazy(() =>
-  import("./settings/diagnostics/DiagnosticsSettings").then((m) => ({
-    default: m.DiagnosticsSettings,
-  })),
-);
-const PostProcessingSettings = React.lazy(() =>
-  import("./settings/postprocessing/PostProcessingSettings").then((m) => ({
-    default: m.PostProcessingSettings,
-  })),
-);
-const BillingSettings = React.lazy(() =>
-  import("./settings/billing/BillingSettings").then((m) => ({
-    default: m.BillingSettings,
-  })),
-);
+import { DictationSettings } from "./settings/dictation/DictationSettings";
+import { MeetingsSettings } from "./settings/meetings/MeetingsSettings";
+import { PreferencesSettings } from "./settings/preferences/PreferencesSettings";
+import { HistorySettings } from "./settings/history/HistorySettings";
+import { DiagnosticsSettings } from "./settings/diagnostics/DiagnosticsSettings";
+import { PostProcessingSettings } from "./settings/postprocessing/PostProcessingSettings";
+import { BillingSettings } from "./settings/billing/BillingSettings";
 
 interface IconProps {
   width?: number | string;
@@ -74,27 +33,13 @@ interface SectionConfig {
 }
 
 export type SidebarSection =
-  | "general"
   | "postprocessing"
-  | "snippets"
   | "history"
   | "meetings"
   | "dictee"
-  | "stats"
-  | "advanced"
+  | "settings"
   | "debug"
-  | "billing"
-  | "about";
-
-const LAUNCH_HIDDEN_SECTIONS = new Set<SidebarSection>([
-  "snippets",
-  "stats",
-  "debug",
-  "about",
-]);
-
-const isLaunchVisible = (section: SidebarSection) =>
-  !LAUNCH_HIDDEN_SECTIONS.has(section);
+  | "billing";
 
 export const isSectionVisibleInLaunch = (
   section: SidebarSection,
@@ -110,23 +55,11 @@ export const SECTIONS_CONFIG: Record<SidebarSection, SectionConfig> = {
     enabled: () => true,
     fullBleed: true,
   },
-  general: {
-    labelKey: "sidebar.general",
-    icon: LayoutGrid,
-    component: GeneralSettings,
-    enabled: () => false,
-  },
   postprocessing: {
     labelKey: "sidebar.postProcessing",
     icon: AlignLeft,
     component: PostProcessingSettings,
     enabled: () => true,
-  },
-  snippets: {
-    labelKey: "sidebar.snippets",
-    icon: Zap,
-    component: GeneralSettings,
-    enabled: () => isLaunchVisible("snippets"),
   },
   // ── Utilisation ───────────────────────────────────────
   history: {
@@ -143,15 +76,9 @@ export const SECTIONS_CONFIG: Record<SidebarSection, SectionConfig> = {
     enabled: () => true,
     fullBleed: true,
   },
-  stats: {
-    labelKey: "sidebar.stats",
-    icon: BarChart2,
-    component: GeneralSettings,
-    enabled: () => isLaunchVisible("stats"),
-  },
   // ── Avancé ────────────────────────────────────────────
-  advanced: {
-    labelKey: "sidebar.advanced",
+  settings: {
+    labelKey: "sidebar.settings",
     icon: Settings2,
     component: PreferencesSettings,
     enabled: () => true,
@@ -171,11 +98,5 @@ export const SECTIONS_CONFIG: Record<SidebarSection, SectionConfig> = {
     component: BillingSettings,
     enabled: () => true,
     fullBleed: true,
-  },
-  about: {
-    labelKey: "sidebar.about",
-    icon: Info,
-    component: GeneralSettings,
-    enabled: () => isLaunchVisible("about"),
   },
 };

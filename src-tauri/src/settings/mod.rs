@@ -343,8 +343,6 @@ pub struct AppSettings {
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
-    #[serde(default = "default_history_limit")]
-    pub history_limit: usize,
     #[serde(default = "default_recording_retention_period")]
     pub recording_retention_period: RecordingRetentionPeriod,
     /// When false, audio is never written to disk — only the transcription text is saved.
@@ -500,10 +498,6 @@ fn default_paste_delay_ms() -> u64 {
 
 fn default_auto_submit() -> bool {
     false
-}
-
-fn default_history_limit() -> usize {
-    100_000
 }
 
 fn default_recording_retention_period() -> RecordingRetentionPeriod {
@@ -1231,7 +1225,6 @@ pub fn get_default_settings() -> AppSettings {
         adaptive_voice_profile_enabled: true,
         model_unload_timeout: ModelUnloadTimeout::Min5,
         word_correction_threshold: default_word_correction_threshold(),
-        history_limit: default_history_limit(),
         recording_retention_period: default_recording_retention_period(),
         save_audio_recordings: false,
         paste_method: PasteMethod::default(),

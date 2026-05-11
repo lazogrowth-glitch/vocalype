@@ -294,7 +294,6 @@ impl HistoryManager {
         match retention_period {
             crate::settings::RecordingRetentionPeriod::PreserveLimit => {
                 // Legacy value — treat as Months3 as documented in RecordingRetentionPeriod.
-                // Count-based cleanup (history_limit = 50) is no longer used.
                 return self.cleanup_by_time(crate::settings::RecordingRetentionPeriod::Months3);
             }
             _ => {

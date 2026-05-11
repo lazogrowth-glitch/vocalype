@@ -100,6 +100,12 @@ pub(super) async fn process_transcription_text(
         settings.post_process_selected_prompt_id,
         settings.post_process_actions.len()
     );
+    debug!(
+        "[post-process] active context: category={:?} process={:?} title={:?}",
+        active_app_context.map(|ctx| ctx.category),
+        active_app_context.and_then(|ctx| ctx.process_name.clone()),
+        active_app_context.and_then(|ctx| ctx.window_title.clone())
+    );
     let telemetry = app
         .try_state::<Arc<crate::telemetry::TranscriptionTelemetry>>()
         .map(|s| Arc::clone(&*s))
@@ -318,6 +324,14 @@ pub(super) async fn process_transcription_text(
             {
                 post_process_prompt = Some(prompt.prompt.clone());
             }
+        } else if active_app_context
+            .map(|ctx| ctx.category == AppContextCategory::Email)
+            .unwrap_or(false)
+        {
+            post_process_prompt = Some(
+                "Built-in email auto prompt: organize the dictated text as a professional email."
+                    .to_string(),
+            );
         }
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());

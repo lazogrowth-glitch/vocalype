@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:frontend": "powershell -ExecutionPolicy Bypass -File scripts/dev-tauri.ps1",
+    "dev:frontend": "powershell -ExecutionPolicy Bypass -File scripts/dev/dev-tauri.ps1",
     "dev:tauri": "tauri dev --no-watch",
     "build": "vite build",
     "preview": "vite preview",

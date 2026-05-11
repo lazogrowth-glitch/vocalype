@@ -1,0 +1,621 @@
+{
+  "model_id": "parakeet-tdt-0.6b-v3-multilingual",
+  "manifest_path": "vocalype/src-tauri/evals/parakeet/dataset_manifest_smoke.json",
+  "aggregate": {
+    "quality": {
+      "samples": 6,
+      "global_wer": 0.06431969,
+      "global_cer": 0.041306686,
+      "global_omission_rate": 0.03940622,
+      "global_duplication_rate": 0.061489847,
+      "global_hallucination_rate": 0.061489847,
+      "average_end_truncation_score": 0.29166666,
+      "top_omitted_terms": [
+        {
+          "word": "aujourdhui",
+          "count": 1
+        },
+        {
+          "word": "avant",
+          "count": 1
+        },
+        {
+          "word": "coupe",
+          "count": 1
+        },
+        {
+          "word": "longtemps",
+          "count": 1
+        },
+        {
+          "word": "texte",
+          "count": 1
+        },
+        {
+          "word": "yassine",
+          "count": 1
+        }
+      ],
+      "top_duplicated_terms": [
+        {
+          "word": "aujourd",
+          "count": 1
+        },
+        {
+          "word": "avec",
+          "count": 1
+        },
+        {
+          "word": "basse",
+          "count": 1
+        },
+        {
+          "word": "coupes",
+          "count": 1
+        },
+        {
+          "word": "entend",
+          "count": 1
+        },
+        {
+          "word": "hui",
+          "count": 1
+        },
+        {
+          "word": "l",
+          "count": 1
+        },
+        {
+          "word": "mot",
+          "count": 1
+        },
+        {
+          "word": "trois",
+          "count": 1
+        },
+        {
+          "word": "yacine",
+          "count": 1
+        }
+      ],
+      "top_hallucinated_terms": [
+        {
+          "word": "aujourd",
+          "count": 1
+        },
+        {
+          "word": "avec",
+          "count": 1
+        },
+        {
+          "word": "basse",
+          "count": 1
+        },
+        {
+          "word": "coupes",
+          "count": 1
+        },
+        {
+          "word": "entend",
+          "count": 1
+        },
+        {
+          "word": "hui",
+          "count": 1
+        },
+        {
+          "word": "l",
+          "count": 1
+        },
+        {
+          "word": "mot",
+          "count": 1
+        },
+        {
+          "word": "trois",
+          "count": 1
+        },
+        {
+          "word": "yacine",
+          "count": 1
+        }
+      ]
+    },
+    "avg_latency_ms": 549.3333,
+    "avg_chunk_count": 1.3333334
+  },
+  "by_scenario": {
+    "fast_dictation_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.0,
+        "global_cer": 0.005952381,
+        "global_omission_rate": 0.0,
+        "global_duplication_rate": 0.0,
+        "global_hallucination_rate": 0.0,
+        "average_end_truncation_score": 0.0,
+        "top_omitted_terms": [],
+        "top_duplicated_terms": [],
+        "top_hallucinated_terms": []
+      },
+      "avg_latency_ms": 370.0,
+      "avg_chunk_count": 1.0
+    },
+    "franglais_terms": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.13043478,
+        "global_cer": 0.037593983,
+        "global_omission_rate": 0.08695652,
+        "global_duplication_rate": 0.125,
+        "global_hallucination_rate": 0.125,
+        "average_end_truncation_score": 0.75,
+        "top_omitted_terms": [
+          {
+            "word": "aujourdhui",
+            "count": 1
+          },
+          {
+            "word": "avant",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "aujourd",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "hui",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "aujourd",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "hui",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 615.0,
+      "avg_chunk_count": 2.0
+    },
+    "long_no_pause_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.13793103,
+        "global_cer": 0.097402595,
+        "global_omission_rate": 0.06896552,
+        "global_duplication_rate": 0.12903225,
+        "global_hallucination_rate": 0.12903225,
+        "average_end_truncation_score": 0.75,
+        "top_omitted_terms": [
+          {
+            "word": "coupe",
+            "count": 1
+          },
+          {
+            "word": "longtemps",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "coupes",
+            "count": 1
+          },
+          {
+            "word": "entend",
+            "count": 1
+          },
+          {
+            "word": "l",
+            "count": 1
+          },
+          {
+            "word": "trois",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "coupes",
+            "count": 1
+          },
+          {
+            "word": "entend",
+            "count": 1
+          },
+          {
+            "word": "l",
+            "count": 1
+          },
+          {
+            "word": "trois",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 503.0,
+      "avg_chunk_count": 1.0
+    },
+    "proper_nouns": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.04347826,
+        "global_cer": 0.030075189,
+        "global_omission_rate": 0.04347826,
+        "global_duplication_rate": 0.04347826,
+        "global_hallucination_rate": 0.04347826,
+        "average_end_truncation_score": 0.0,
+        "top_omitted_terms": [
+          {
+            "word": "yassine",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "yacine",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "yacine",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 683.0,
+      "avg_chunk_count": 2.0
+    },
+    "low_volume_fr": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.074074075,
+        "global_cer": 0.06918239,
+        "global_omission_rate": 0.037037037,
+        "global_duplication_rate": 0.071428575,
+        "global_hallucination_rate": 0.071428575,
+        "average_end_truncation_score": 0.25,
+        "top_omitted_terms": [
+          {
+            "word": "texte",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "basse",
+            "count": 1
+          },
+          {
+            "word": "mot",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "basse",
+            "count": 1
+          },
+          {
+            "word": "mot",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 483.0,
+      "avg_chunk_count": 1.0
+    },
+    "english_control": {
+      "quality": {
+        "samples": 1,
+        "global_wer": 0.0,
+        "global_cer": 0.007633588,
+        "global_omission_rate": 0.0,
+        "global_duplication_rate": 0.0,
+        "global_hallucination_rate": 0.0,
+        "average_end_truncation_score": 0.0,
+        "top_omitted_terms": [],
+        "top_duplicated_terms": [],
+        "top_hallucinated_terms": []
+      },
+      "avg_latency_ms": 642.0,
+      "avg_chunk_count": 1.0
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "long_no_pause_fr_001",
+      "scenario": "long_no_pause_fr",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 503,
+      "metrics": {
+        "wer": 0.13793103,
+        "cer": 0.097402595,
+        "omission_rate": 0.06896552,
+        "duplication_rate": 0.12903225,
+        "hallucination_rate": 0.12903225,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 29,
+        "hypothesis_word_count": 31,
+        "reference_char_count": 154,
+        "hypothesis_char_count": 162,
+        "omitted_words": 2,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "coupe",
+            "count": 1
+          },
+          {
+            "word": "longtemps",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "coupes",
+            "count": 1
+          },
+          {
+            "word": "entend",
+            "count": 1
+          },
+          {
+            "word": "l",
+            "count": 1
+          },
+          {
+            "word": "trois",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "coupes",
+            "count": 1
+          },
+          {
+            "word": "entend",
+            "count": 1
+          },
+          {
+            "word": "l",
+            "count": 1
+          },
+          {
+            "word": "trois",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Bonjour, je veux tester une phrase longue sans faire de pause pour voir si Parakeet V3 trois coupes des mots a la fin quand je parle l'entend de maniere continue."
+    },
+    {
+      "sample_id": "fast_dictation_fr_001",
+      "scenario": "fast_dictation_fr",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 370,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.005952381,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 27,
+        "hypothesis_word_count": 27,
+        "reference_char_count": 168,
+        "hypothesis_char_count": 169,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Je vais dicter rapidement cette phrase pour verifier si le modele suit correctement quand le debit de parole augmente et que les mots arrivent presque sans interruption."
+    },
+    {
+      "sample_id": "low_volume_fr_001",
+      "scenario": "low_volume_fr",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 483,
+      "metrics": {
+        "wer": 0.074074075,
+        "cer": 0.06918239,
+        "omission_rate": 0.037037037,
+        "duplication_rate": 0.071428575,
+        "hallucination_rate": 0.071428575,
+        "end_truncation_score": 0.25,
+        "reference_word_count": 27,
+        "hypothesis_word_count": 28,
+        "reference_char_count": 159,
+        "hypothesis_char_count": 164,
+        "omitted_words": 1,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 9,
+        "omitted_terms": [
+          {
+            "word": "texte",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "basse",
+            "count": 1
+          },
+          {
+            "word": "mot",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "basse",
+            "count": 1
+          },
+          {
+            "word": "mot",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Je parle volontairement avec une voix basse plus basse pour verifier si le modele comprend encore correctement le mot meme quand le volume du micro est plus faible."
+    },
+    {
+      "sample_id": "franglais_terms_001",
+      "scenario": "franglais_terms",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 615,
+      "metrics": {
+        "wer": 0.13043478,
+        "cer": 0.037593983,
+        "omission_rate": 0.08695652,
+        "duplication_rate": 0.125,
+        "hallucination_rate": 0.125,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 23,
+        "hypothesis_word_count": 24,
+        "reference_char_count": 133,
+        "hypothesis_char_count": 134,
+        "omitted_words": 2,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "aujourdhui",
+            "count": 1
+          },
+          {
+            "word": "avant",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "aujourd",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "hui",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "aujourd",
+            "count": 1
+          },
+          {
+            "word": "avec",
+            "count": 1
+          },
+          {
+            "word": "hui",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "aujourd'hui je dois push le build sur GitHub puis verifier le dashboard et corriger le bug dans le reporting avec le prochain meeting."
+    },
+    {
+      "sample_id": "proper_nouns_001",
+      "scenario": "proper_nouns",
+      "language": "fr",
+      "chunk_count": 2,
+      "latency_ms": 683,
+      "metrics": {
+        "wer": 0.04347826,
+        "cer": 0.030075189,
+        "omission_rate": 0.04347826,
+        "duplication_rate": 0.04347826,
+        "hallucination_rate": 0.04347826,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 23,
+        "hypothesis_word_count": 23,
+        "reference_char_count": 133,
+        "hypothesis_char_count": 134,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 12,
+        "omitted_terms": [
+          {
+            "word": "yassine",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "yacine",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "yacine",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Demain, je dois envoyer un message a Yacine puis verifier le projet Vocalype sur GitHub et preparer une note pour OpenAI et Microsoft."
+    },
+    {
+      "sample_id": "english_control_001",
+      "scenario": "english_control",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 642,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.007633588,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 22,
+        "hypothesis_word_count": 22,
+        "reference_char_count": 131,
+        "hypothesis_char_count": 132,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Today I want to test a longer English sentence to verify whether Parakeet V3 keeps every word correctly without dropping the ending."
+    }
+  ]
+}

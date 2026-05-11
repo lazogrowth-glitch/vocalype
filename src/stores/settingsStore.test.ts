@@ -27,7 +27,6 @@ const mockSettings = {
   clipboard_handling: "restore",
   auto_submit: false,
   auto_submit_key: "Enter",
-  history_limit: 100,
   post_process_enabled: false,
   post_process_selected_prompt_id: "",
   mute_while_recording: false,

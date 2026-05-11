@@ -1,0 +1,3586 @@
+{
+  "model_id": "parakeet_v3_multilingual",
+  "manifest_path": ".\\tmp-parakeet-tests\\dev-bench\\manifest.json",
+  "aggregate": {
+    "quality": {
+      "samples": 50,
+      "global_wer": 0.21955931,
+      "global_cer": 0.088333175,
+      "global_omission_rate": 0.18193533,
+      "global_duplication_rate": 0.18369901,
+      "global_hallucination_rate": 0.18369901,
+      "average_end_truncation_score": 0.62626547,
+      "top_omitted_terms": [
+        {
+          "word": "dash",
+          "count": 6
+        },
+        {
+          "word": "paren",
+          "count": 5
+        },
+        {
+          "word": "a",
+          "count": 3
+        },
+        {
+          "word": "dot",
+          "count": 3
+        },
+        {
+          "word": "supabase",
+          "count": 3
+        },
+        {
+          "word": "users",
+          "count": 3
+        },
+        {
+          "word": "auth",
+          "count": 2
+        },
+        {
+          "word": "comma",
+          "count": 2
+        },
+        {
+          "word": "key",
+          "count": 2
+        },
+        {
+          "word": "null",
+          "count": 2
+        }
+      ],
+      "top_duplicated_terms": [
+        {
+          "word": "use",
+          "count": 6
+        },
+        {
+          "word": "user",
+          "count": 5
+        },
+        {
+          "word": "parent",
+          "count": 4
+        },
+        {
+          "word": "de",
+          "count": 2
+        },
+        {
+          "word": "off",
+          "count": 2
+        },
+        {
+          "word": "props",
+          "count": 2
+        },
+        {
+          "word": "superbase",
+          "count": 2
+        },
+        {
+          "word": "the",
+          "count": 2
+        },
+        {
+          "word": "type",
+          "count": 2
+        },
+        {
+          "word": "9",
+          "count": 1
+        }
+      ],
+      "top_hallucinated_terms": [
+        {
+          "word": "use",
+          "count": 6
+        },
+        {
+          "word": "user",
+          "count": 5
+        },
+        {
+          "word": "parent",
+          "count": 4
+        },
+        {
+          "word": "de",
+          "count": 2
+        },
+        {
+          "word": "off",
+          "count": 2
+        },
+        {
+          "word": "props",
+          "count": 2
+        },
+        {
+          "word": "superbase",
+          "count": 2
+        },
+        {
+          "word": "the",
+          "count": 2
+        },
+        {
+          "word": "type",
+          "count": 2
+        },
+        {
+          "word": "9",
+          "count": 1
+        }
+      ]
+    },
+    "avg_latency_ms": 977.96,
+    "avg_chunk_count": 1.08
+  },
+  "by_scenario": {
+    "react_typescript": {
+      "quality": {
+        "samples": 10,
+        "global_wer": 0.27571872,
+        "global_cer": 0.06073345,
+        "global_omission_rate": 0.18778363,
+        "global_duplication_rate": 0.2332907,
+        "global_hallucination_rate": 0.2332907,
+        "average_end_truncation_score": 0.6830808,
+        "top_omitted_terms": [
+          {
+            "word": "callback",
+            "count": 1
+          },
+          {
+            "word": "called",
+            "count": 1
+          },
+          {
+            "word": "dot",
+            "count": 1
+          },
+          {
+            "word": "extends",
+            "count": 1
+          },
+          {
+            "word": "forwardref",
+            "count": 1
+          },
+          {
+            "word": "null",
+            "count": 1
+          },
+          {
+            "word": "onclick",
+            "count": 1
+          },
+          {
+            "word": "pageprops",
+            "count": 1
+          },
+          {
+            "word": "params",
+            "count": 1
+          },
+          {
+            "word": "paren",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "use",
+            "count": 4
+          },
+          {
+            "word": "props",
+            "count": 2
+          },
+          {
+            "word": "user",
+            "count": 2
+          },
+          {
+            "word": "back",
+            "count": 1
+          },
+          {
+            "word": "bounce",
+            "count": 1
+          },
+          {
+            "word": "call",
+            "count": 1
+          },
+          {
+            "word": "click",
+            "count": 1
+          },
+          {
+            "word": "colored",
+            "count": 1
+          },
+          {
+            "word": "d",
+            "count": 1
+          },
+          {
+            "word": "effect",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "use",
+            "count": 4
+          },
+          {
+            "word": "props",
+            "count": 2
+          },
+          {
+            "word": "user",
+            "count": 2
+          },
+          {
+            "word": "back",
+            "count": 1
+          },
+          {
+            "word": "bounce",
+            "count": 1
+          },
+          {
+            "word": "call",
+            "count": 1
+          },
+          {
+            "word": "click",
+            "count": 1
+          },
+          {
+            "word": "colored",
+            "count": 1
+          },
+          {
+            "word": "d",
+            "count": 1
+          },
+          {
+            "word": "effect",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 1199.9,
+      "avg_chunk_count": 1.2
+    },
+    "llm_prompts": {
+      "quality": {
+        "samples": 10,
+        "global_wer": 0.13892776,
+        "global_cer": 0.049804933,
+        "global_omission_rate": 0.105477855,
+        "global_duplication_rate": 0.11779054,
+        "global_hallucination_rate": 0.11779054,
+        "average_end_truncation_score": 0.5143939,
+        "top_omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "api",
+            "count": 1
+          },
+          {
+            "word": "caching",
+            "count": 1
+          },
+          {
+            "word": "do",
+            "count": 1
+          },
+          {
+            "word": "groq",
+            "count": 1
+          },
+          {
+            "word": "on",
+            "count": 1
+          },
+          {
+            "word": "pgvector",
+            "count": 1
+          },
+          {
+            "word": "refactor",
+            "count": 1
+          },
+          {
+            "word": "refuses",
+            "count": 1
+          },
+          {
+            "word": "semantic",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "appi",
+            "count": 1
+          },
+          {
+            "word": "base",
+            "count": 1
+          },
+          {
+            "word": "catching",
+            "count": 1
+          },
+          {
+            "word": "fuses",
+            "count": 1
+          },
+          {
+            "word": "groc",
+            "count": 1
+          },
+          {
+            "word": "pg",
+            "count": 1
+          },
+          {
+            "word": "refractor",
+            "count": 1
+          },
+          {
+            "word": "samoon",
+            "count": 1
+          },
+          {
+            "word": "script",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "appi",
+            "count": 1
+          },
+          {
+            "word": "base",
+            "count": 1
+          },
+          {
+            "word": "catching",
+            "count": 1
+          },
+          {
+            "word": "fuses",
+            "count": 1
+          },
+          {
+            "word": "groc",
+            "count": 1
+          },
+          {
+            "word": "pg",
+            "count": 1
+          },
+          {
+            "word": "refractor",
+            "count": 1
+          },
+          {
+            "word": "samoon",
+            "count": 1
+          },
+          {
+            "word": "script",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 668.3,
+      "avg_chunk_count": 1.0
+    },
+    "git_terminal": {
+      "quality": {
+        "samples": 10,
+        "global_wer": 0.29183984,
+        "global_cer": 0.17122655,
+        "global_omission_rate": 0.2656061,
+        "global_duplication_rate": 0.22313492,
+        "global_hallucination_rate": 0.22313492,
+        "average_end_truncation_score": 0.7464286,
+        "top_omitted_terms": [
+          {
+            "word": "dash",
+            "count": 6
+          },
+          {
+            "word": "paren",
+            "count": 2
+          },
+          {
+            "word": "3000",
+            "count": 1
+          },
+          {
+            "word": "64",
+            "count": 1
+          },
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "auth",
+            "count": 1
+          },
+          {
+            "word": "bun",
+            "count": 1
+          },
+          {
+            "word": "dev",
+            "count": 1
+          },
+          {
+            "word": "feat",
+            "count": 1
+          },
+          {
+            "word": "feature",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "9",
+            "count": 1
+          },
+          {
+            "word": "am",
+            "count": 1
+          },
+          {
+            "word": "burn",
+            "count": 1
+          },
+          {
+            "word": "fit",
+            "count": 1
+          },
+          {
+            "word": "four",
+            "count": 1
+          },
+          {
+            "word": "futures",
+            "count": 1
+          },
+          {
+            "word": "host",
+            "count": 1
+          },
+          {
+            "word": "local",
+            "count": 1
+          },
+          {
+            "word": "of",
+            "count": 1
+          },
+          {
+            "word": "off",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "9",
+            "count": 1
+          },
+          {
+            "word": "am",
+            "count": 1
+          },
+          {
+            "word": "burn",
+            "count": 1
+          },
+          {
+            "word": "fit",
+            "count": 1
+          },
+          {
+            "word": "four",
+            "count": 1
+          },
+          {
+            "word": "futures",
+            "count": 1
+          },
+          {
+            "word": "host",
+            "count": 1
+          },
+          {
+            "word": "local",
+            "count": 1
+          },
+          {
+            "word": "of",
+            "count": 1
+          },
+          {
+            "word": "off",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 1383.6,
+      "avg_chunk_count": 1.1
+    },
+    "mixed_fr_en": {
+      "quality": {
+        "samples": 10,
+        "global_wer": 0.18787214,
+        "global_cer": 0.09095024,
+        "global_omission_rate": 0.17184648,
+        "global_duplication_rate": 0.15319848,
+        "global_hallucination_rate": 0.15319848,
+        "average_end_truncation_score": 0.6442424,
+        "top_omitted_terms": [
+          {
+            "word": "dot",
+            "count": 2
+          },
+          {
+            "word": "200",
+            "count": 1
+          },
+          {
+            "word": "auth",
+            "count": 1
+          },
+          {
+            "word": "bindings",
+            "count": 1
+          },
+          {
+            "word": "comma",
+            "count": 1
+          },
+          {
+            "word": "dépasse",
+            "count": 1
+          },
+          {
+            "word": "en",
+            "count": 1
+          },
+          {
+            "word": "env",
+            "count": 1
+          },
+          {
+            "word": "erreur",
+            "count": 1
+          },
+          {
+            "word": "faut",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "de",
+            "count": 2
+          },
+          {
+            "word": "bydings.tsk",
+            "count": 1
+          },
+          {
+            "word": "callback",
+            "count": 1
+          },
+          {
+            "word": "coma",
+            "count": 1
+          },
+          {
+            "word": "depass",
+            "count": 1
+          },
+          {
+            "word": "env.production",
+            "count": 1
+          },
+          {
+            "word": "error",
+            "count": 1
+          },
+          {
+            "word": "for",
+            "count": 1
+          },
+          {
+            "word": "leso",
+            "count": 1
+          },
+          {
+            "word": "map",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "de",
+            "count": 2
+          },
+          {
+            "word": "bydings.tsk",
+            "count": 1
+          },
+          {
+            "word": "callback",
+            "count": 1
+          },
+          {
+            "word": "coma",
+            "count": 1
+          },
+          {
+            "word": "depass",
+            "count": 1
+          },
+          {
+            "word": "env.production",
+            "count": 1
+          },
+          {
+            "word": "error",
+            "count": 1
+          },
+          {
+            "word": "for",
+            "count": 1
+          },
+          {
+            "word": "leso",
+            "count": 1
+          },
+          {
+            "word": "map",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 626.6,
+      "avg_chunk_count": 1.0
+    },
+    "supabase_backend": {
+      "quality": {
+        "samples": 10,
+        "global_wer": 0.20343824,
+        "global_cer": 0.06895073,
+        "global_omission_rate": 0.17896271,
+        "global_duplication_rate": 0.19108059,
+        "global_hallucination_rate": 0.19108059,
+        "average_end_truncation_score": 0.5431818,
+        "top_omitted_terms": [
+          {
+            "word": "users",
+            "count": 3
+          },
+          {
+            "word": "key",
+            "count": 2
+          },
+          {
+            "word": "paren",
+            "count": 2
+          },
+          {
+            "word": "100",
+            "count": 1
+          },
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "alter",
+            "count": 1
+          },
+          {
+            "word": "close",
+            "count": 1
+          },
+          {
+            "word": "column",
+            "count": 1
+          },
+          {
+            "word": "comma",
+            "count": 1
+          },
+          {
+            "word": "constraint",
+            "count": 1
+          }
+        ],
+        "top_duplicated_terms": [
+          {
+            "word": "user",
+            "count": 3
+          },
+          {
+            "word": "parent",
+            "count": 2
+          },
+          {
+            "word": "the",
+            "count": 2
+          },
+          {
+            "word": "after",
+            "count": 1
+          },
+          {
+            "word": "closed",
+            "count": 1
+          },
+          {
+            "word": "columns",
+            "count": 1
+          },
+          {
+            "word": "comm",
+            "count": 1
+          },
+          {
+            "word": "contraint",
+            "count": 1
+          },
+          {
+            "word": "day",
+            "count": 1
+          },
+          {
+            "word": "equal",
+            "count": 1
+          }
+        ],
+        "top_hallucinated_terms": [
+          {
+            "word": "user",
+            "count": 3
+          },
+          {
+            "word": "parent",
+            "count": 2
+          },
+          {
+            "word": "the",
+            "count": 2
+          },
+          {
+            "word": "after",
+            "count": 1
+          },
+          {
+            "word": "closed",
+            "count": 1
+          },
+          {
+            "word": "columns",
+            "count": 1
+          },
+          {
+            "word": "comm",
+            "count": 1
+          },
+          {
+            "word": "contraint",
+            "count": 1
+          },
+          {
+            "word": "day",
+            "count": 1
+          },
+          {
+            "word": "equal",
+            "count": 1
+          }
+        ]
+      },
+      "avg_latency_ms": 1011.4,
+      "avg_chunk_count": 1.1
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "dev_01",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1365,
+      "metrics": {
+        "wer": 0.6,
+        "cer": 0.25531915,
+        "omission_rate": 0.5,
+        "duplication_rate": 0.44444445,
+        "hallucination_rate": 0.44444445,
+        "end_truncation_score": 0.9,
+        "reference_word_count": 10,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 47,
+        "hypothesis_char_count": 39,
+        "omitted_words": 5,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "dash",
+            "count": 1
+          },
+          {
+            "word": "feat",
+            "count": 1
+          },
+          {
+            "word": "m",
+            "count": 1
+          },
+          {
+            "word": "useauth",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "am",
+            "count": 1
+          },
+          {
+            "word": "fit",
+            "count": 1
+          },
+          {
+            "word": "of",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "am",
+            "count": 1
+          },
+          {
+            "word": "fit",
+            "count": 1
+          },
+          {
+            "word": "of",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Git commit-am fit colon add use of hook"
+    },
+    {
+      "sample_id": "dev_02",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1335,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.17307693,
+        "omission_rate": 0.33333334,
+        "duplication_rate": 0.33333334,
+        "hallucination_rate": 0.33333334,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 52,
+        "hypothesis_char_count": 52,
+        "omitted_words": 3,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "auth",
+            "count": 1
+          },
+          {
+            "word": "feature",
+            "count": 1
+          },
+          {
+            "word": "supabase",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "futures",
+            "count": 1
+          },
+          {
+            "word": "off",
+            "count": 1
+          },
+          {
+            "word": "superbase",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "futures",
+            "count": 1
+          },
+          {
+            "word": "off",
+            "count": 1
+          },
+          {
+            "word": "superbase",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Git checkout dash b futures slash superbase dash off"
+    },
+    {
+      "sample_id": "dev_03",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1177,
+      "metrics": {
+        "wer": 0.125,
+        "cer": 0.02173913,
+        "omission_rate": 0.125,
+        "duplication_rate": 0.125,
+        "hallucination_rate": 0.125,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 8,
+        "hypothesis_word_count": 8,
+        "reference_char_count": 46,
+        "hypothesis_char_count": 47,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "tanstack",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "transtack",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "transtack",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "npm install at transtack slash react dash query"
+    },
+    {
+      "sample_id": "dev_04",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 861,
+      "metrics": {
+        "wer": 0.5714286,
+        "cer": 0.2857143,
+        "omission_rate": 0.5714286,
+        "duplication_rate": 0.5,
+        "hallucination_rate": 0.5,
+        "end_truncation_score": 0.71428573,
+        "reference_word_count": 7,
+        "hypothesis_word_count": 6,
+        "reference_char_count": 35,
+        "hypothesis_char_count": 30,
+        "omitted_words": 4,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 2,
+        "omitted_terms": [
+          {
+            "word": "bun",
+            "count": 1
+          },
+          {
+            "word": "dash",
+            "count": 1
+          },
+          {
+            "word": "dev",
+            "count": 1
+          },
+          {
+            "word": "tauri",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "burn",
+            "count": 1
+          },
+          {
+            "word": "redev",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "burn",
+            "count": 1
+          },
+          {
+            "word": "redev",
+            "count": 1
+          },
+          {
+            "word": "to",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Burn run to redev dash release"
+    },
+    {
+      "sample_id": "dev_05",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1136,
+      "metrics": {
+        "wer": 0.1,
+        "cer": 0.10204082,
+        "omission_rate": 0.1,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.6,
+        "reference_word_count": 10,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 49,
+        "hypothesis_char_count": 44,
+        "omitted_words": 1,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "dash",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Git rebase origin slash main dash no dash ff"
+    },
+    {
+      "sample_id": "dev_06",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1057,
+      "metrics": {
+        "wer": 0.125,
+        "cer": 0.125,
+        "omission_rate": 0.125,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 8,
+        "hypothesis_word_count": 7,
+        "reference_char_count": 40,
+        "hypothesis_char_count": 35,
+        "omitted_words": 1,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 2,
+        "omitted_terms": [
+          {
+            "word": "dash",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Docker compose up dash d dash build"
+    },
+    {
+      "sample_id": "dev_07",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 754,
+      "metrics": {
+        "wer": 0.2,
+        "cer": 0.10810811,
+        "omission_rate": 0.2,
+        "duplication_rate": 0.2,
+        "hallucination_rate": 0.2,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 10,
+        "hypothesis_word_count": 10,
+        "reference_char_count": 74,
+        "hypothesis_char_count": 70,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "localhost",
+            "count": 1
+          },
+          {
+            "word": "slash",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "host",
+            "count": 1
+          },
+          {
+            "word": "local",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "host",
+            "count": 1
+          },
+          {
+            "word": "local",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Export database underscore URL equals Postgres colon slash local host."
+    },
+    {
+      "sample_id": "dev_08",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 952,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 10,
+        "hypothesis_word_count": 10,
+        "reference_char_count": 51,
+        "hypothesis_char_count": 51,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 10,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Git stash pop stash at curly brace zero curly brace"
+    },
+    {
+      "sample_id": "dev_09",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1472,
+      "metrics": {
+        "wer": 0.36363637,
+        "cer": 0.3125,
+        "omission_rate": 0.27272728,
+        "duplication_rate": 0.2,
+        "hallucination_rate": 0.2,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 10,
+        "reference_char_count": 64,
+        "hypothesis_char_count": 62,
+        "omitted_words": 3,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "dash",
+            "count": 2
+          },
+          {
+            "word": "64",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "four",
+            "count": 1
+          },
+          {
+            "word": "sixty",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "four",
+            "count": 1
+          },
+          {
+            "word": "sixty",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Cargo build dash release dash target x86 underscore sixty four"
+    },
+    {
+      "sample_id": "dev_10",
+      "scenario": "git_terminal",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 3727,
+      "metrics": {
+        "wer": 0.5,
+        "cer": 0.32876712,
+        "omission_rate": 0.42857143,
+        "duplication_rate": 0.42857143,
+        "hallucination_rate": 0.42857143,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 73,
+        "hypothesis_char_count": 74,
+        "omitted_words": 6,
+        "duplicated_words": 6,
+        "hallucinated_words": 6,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "paren",
+            "count": 2
+          },
+          {
+            "word": "3000",
+            "count": 1
+          },
+          {
+            "word": "lsof",
+            "count": 1
+          },
+          {
+            "word": "nine",
+            "count": 1
+          },
+          {
+            "word": "ti",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "9",
+            "count": 1
+          },
+          {
+            "word": "parent",
+            "count": 1
+          },
+          {
+            "word": "soft",
+            "count": 1
+          },
+          {
+            "word": "t",
+            "count": 1
+          },
+          {
+            "word": "thousand",
+            "count": 1
+          },
+          {
+            "word": "three",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "9",
+            "count": 1
+          },
+          {
+            "word": "parent",
+            "count": 1
+          },
+          {
+            "word": "soft",
+            "count": 1
+          },
+          {
+            "word": "t",
+            "count": 1
+          },
+          {
+            "word": "thousand",
+            "count": 1
+          },
+          {
+            "word": "three",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Kill dash 9 dollar sign open parent soft dash t colon three thousand close"
+    },
+    {
+      "sample_id": "dev_11",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 2012,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.045454547,
+        "omission_rate": 0.2,
+        "duplication_rate": 0.29411766,
+        "hallucination_rate": 0.29411766,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 15,
+        "hypothesis_word_count": 17,
+        "reference_char_count": 88,
+        "hypothesis_char_count": 89,
+        "omitted_words": 3,
+        "duplicated_words": 5,
+        "hallucinated_words": 5,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "null",
+            "count": 1
+          },
+          {
+            "word": "setuser",
+            "count": 1
+          },
+          {
+            "word": "usestate",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "nil",
+            "count": 1
+          },
+          {
+            "word": "set",
+            "count": 1
+          },
+          {
+            "word": "state",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "nil",
+            "count": 1
+          },
+          {
+            "word": "set",
+            "count": 1
+          },
+          {
+            "word": "state",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "const open bracket user comma set user close bracket equals use state of type user or nil"
+    },
+    {
+      "sample_id": "dev_12",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 685,
+      "metrics": {
+        "wer": 0.22222222,
+        "cer": 0.035714287,
+        "omission_rate": 0.11111111,
+        "duplication_rate": 0.2,
+        "hallucination_rate": 0.2,
+        "end_truncation_score": 0.111111104,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 10,
+        "reference_char_count": 56,
+        "hypothesis_char_count": 58,
+        "omitted_words": 1,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 8,
+        "omitted_terms": [
+          {
+            "word": "useeffect",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "effect",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "effect",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Use effect with empty dependency array runs only on mount."
+    },
+    {
+      "sample_id": "dev_13",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 556,
+      "metrics": {
+        "wer": 0.30769232,
+        "cer": 0.08219178,
+        "omission_rate": 0.15384616,
+        "duplication_rate": 0.26666668,
+        "hallucination_rate": 0.26666668,
+        "end_truncation_score": 0.4166667,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 15,
+        "reference_char_count": 73,
+        "hypothesis_char_count": 76,
+        "omitted_words": 2,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 7,
+        "omitted_terms": [
+          {
+            "word": "called",
+            "count": 1
+          },
+          {
+            "word": "usedebounce",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "bounce",
+            "count": 1
+          },
+          {
+            "word": "colored",
+            "count": 1
+          },
+          {
+            "word": "d",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "bounce",
+            "count": 1
+          },
+          {
+            "word": "colored",
+            "count": 1
+          },
+          {
+            "word": "d",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Implement a custom hook colored use D bounce that takes a value and a delay."
+    },
+    {
+      "sample_id": "dev_14",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 3552,
+      "metrics": {
+        "wer": 0.54545456,
+        "cer": 0.060240965,
+        "omission_rate": 0.27272728,
+        "duplication_rate": 0.42857143,
+        "hallucination_rate": 0.42857143,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 83,
+        "hypothesis_char_count": 88,
+        "omitted_words": 3,
+        "duplicated_words": 6,
+        "hallucinated_words": 6,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "callback",
+            "count": 1
+          },
+          {
+            "word": "onclick",
+            "count": 1
+          },
+          {
+            "word": "userprops",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "back",
+            "count": 1
+          },
+          {
+            "word": "call",
+            "count": 1
+          },
+          {
+            "word": "click",
+            "count": 1
+          },
+          {
+            "word": "one",
+            "count": 1
+          },
+          {
+            "word": "props",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "back",
+            "count": 1
+          },
+          {
+            "word": "call",
+            "count": 1
+          },
+          {
+            "word": "click",
+            "count": 1
+          },
+          {
+            "word": "one",
+            "count": 1
+          },
+          {
+            "word": "props",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The interface user props extends HTMLDivElement and has an optional one click call back."
+    },
+    {
+      "sample_id": "dev_15",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1543,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.0625,
+        "omission_rate": 0.25,
+        "duplication_rate": 0.30769232,
+        "hallucination_rate": 0.30769232,
+        "end_truncation_score": 0.8333333,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 80,
+        "hypothesis_char_count": 83,
+        "omitted_words": 3,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 2,
+        "omitted_terms": [
+          {
+            "word": "pageprops",
+            "count": 1
+          },
+          {
+            "word": "params",
+            "count": 1
+          },
+          {
+            "word": "paren",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "page",
+            "count": 1
+          },
+          {
+            "word": "parent",
+            "count": 1
+          },
+          {
+            "word": "parents",
+            "count": 1
+          },
+          {
+            "word": "props",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "page",
+            "count": 1
+          },
+          {
+            "word": "parent",
+            "count": 1
+          },
+          {
+            "word": "parents",
+            "count": 1
+          },
+          {
+            "word": "props",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Export default async function page open parent parents colon page props close paren"
+    },
+    {
+      "sample_id": "dev_16",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 939,
+      "metrics": {
+        "wer": 0.09090909,
+        "cer": 0.018518519,
+        "omission_rate": 0.09090909,
+        "duplication_rate": 0.09090909,
+        "hallucination_rate": 0.09090909,
+        "end_truncation_score": 0.6363636,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 54,
+        "hypothesis_char_count": 53,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "extends",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "extend",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "extend",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Add a generic type T that extend record of string any"
+    },
+    {
+      "sample_id": "dev_17",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 481,
+      "metrics": {
+        "wer": 0.09090909,
+        "cer": 0.032786883,
+        "omission_rate": 0.09090909,
+        "duplication_rate": 0.09090909,
+        "hallucination_rate": 0.09090909,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 61,
+        "hypothesis_char_count": 61,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "submitting",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "submiting",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "submiting",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Use a Zod schema to validate the form input before submiting."
+    },
+    {
+      "sample_id": "dev_18",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 711,
+      "metrics": {
+        "wer": 0.25,
+        "cer": 0.14492753,
+        "omission_rate": 0.25,
+        "duplication_rate": 0.18181819,
+        "hallucination_rate": 0.18181819,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 69,
+        "hypothesis_char_count": 64,
+        "omitted_words": 3,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "state",
+            "count": 1
+          },
+          {
+            "word": "store",
+            "count": 1
+          },
+          {
+            "word": "zustand",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "states",
+            "count": 1
+          },
+          {
+            "word": "zostan",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "states",
+            "count": 1
+          },
+          {
+            "word": "zostan",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The Zostan needs a reset action that returns the initial states."
+    },
+    {
+      "sample_id": "dev_19",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 489,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.10714286,
+        "omission_rate": 0.33333334,
+        "duplication_rate": 0.25,
+        "hallucination_rate": 0.25,
+        "end_truncation_score": 0.3333333,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 8,
+        "reference_char_count": 56,
+        "hypothesis_char_count": 53,
+        "omitted_words": 3,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "dot",
+            "count": 1
+          },
+          {
+            "word": "forwardref",
+            "count": 1
+          },
+          {
+            "word": "react",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "react.forward",
+            "count": 1
+          },
+          {
+            "word": "ref",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "react.forward",
+            "count": 1
+          },
+          {
+            "word": "ref",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "React.forward ref with a ref of type HTMLInputElement"
+    },
+    {
+      "sample_id": "dev_20",
+      "scenario": "react_typescript",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1031,
+      "metrics": {
+        "wer": 0.25,
+        "cer": 0.017857144,
+        "omission_rate": 0.125,
+        "duplication_rate": 0.22222222,
+        "hallucination_rate": 0.22222222,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 8,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 56,
+        "hypothesis_char_count": 57,
+        "omitted_words": 1,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "userouter",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "router",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "router",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "const router equals use router from next slash navigation"
+    },
+    {
+      "sample_id": "dev_21",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 669,
+      "metrics": {
+        "wer": 0.15384616,
+        "cer": 0.041666668,
+        "omission_rate": 0.15384616,
+        "duplication_rate": 0.15384616,
+        "hallucination_rate": 0.15384616,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 72,
+        "hypothesis_char_count": 74,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "api",
+            "count": 1
+          },
+          {
+            "word": "groq",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "appi",
+            "count": 1
+          },
+          {
+            "word": "groc",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "appi",
+            "count": 1
+          },
+          {
+            "word": "groc",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Explain how to implement a rag pipeline using Langchain and the Groc appi."
+    },
+    {
+      "sample_id": "dev_22",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 536,
+      "metrics": {
+        "wer": 0.07692308,
+        "cer": 0.039473683,
+        "omission_rate": 0.07692308,
+        "duplication_rate": 0.07692308,
+        "hallucination_rate": 0.07692308,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 76,
+        "hypothesis_char_count": 75,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "refuses",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "fuses",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "fuses",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Write a system prompt for a coding assistant that fuses off topic requests."
+    },
+    {
+      "sample_id": "dev_23",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1417,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 9,
+        "hypothesis_word_count": 9,
+        "reference_char_count": 64,
+        "hypothesis_char_count": 64,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 9,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "implement streaming with the Anthropic SDK using async iterators"
+    },
+    {
+      "sample_id": "dev_24",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 542,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0125,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 80,
+        "hypothesis_char_count": 81,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "What is the difference between Claude Sonnet and Claude Opus for code generation?"
+    },
+    {
+      "sample_id": "dev_25",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 567,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.013157895,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 76,
+        "hypothesis_char_count": 77,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Create a tool use definition for a function that queries a Postgres database."
+    },
+    {
+      "sample_id": "dev_26",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 448,
+      "metrics": {
+        "wer": 0.23076923,
+        "cer": 0.10294118,
+        "omission_rate": 0.23076923,
+        "duplication_rate": 0.16666667,
+        "hallucination_rate": 0.16666667,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 68,
+        "hypothesis_char_count": 68,
+        "omitted_words": 3,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "caching",
+            "count": 1
+          },
+          {
+            "word": "do",
+            "count": 1
+          },
+          {
+            "word": "on",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "catching",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "and",
+            "count": 1
+          },
+          {
+            "word": "catching",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "How I add prompt catching to reduce latency and long system prompts."
+    },
+    {
+      "sample_id": "dev_27",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 436,
+      "metrics": {
+        "wer": 0.27272728,
+        "cer": 0.06557377,
+        "omission_rate": 0.18181819,
+        "duplication_rate": 0.25,
+        "hallucination_rate": 0.25,
+        "end_truncation_score": 0.6363636,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 61,
+        "hypothesis_char_count": 61,
+        "omitted_words": 2,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "typescript",
+            "count": 1
+          },
+          {
+            "word": "zod",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "script",
+            "count": 1
+          },
+          {
+            "word": "type",
+            "count": 1
+          },
+          {
+            "word": "z",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "script",
+            "count": 1
+          },
+          {
+            "word": "type",
+            "count": 1
+          },
+          {
+            "word": "z",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Generate a type script type from this Z schema and export it."
+    },
+    {
+      "sample_id": "dev_28",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1286,
+      "metrics": {
+        "wer": 0.09090909,
+        "cer": 0.012820513,
+        "omission_rate": 0.09090909,
+        "duplication_rate": 0.09090909,
+        "hallucination_rate": 0.09090909,
+        "end_truncation_score": 0.090909064,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 78,
+        "hypothesis_char_count": 79,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 10,
+        "omitted_terms": [
+          {
+            "word": "refactor",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "refractor",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "refractor",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "refractor this function to use the repository pattern with dependency injection"
+    },
+    {
+      "sample_id": "dev_29",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 289,
+      "metrics": {
+        "wer": 0.23076923,
+        "cer": 0.083333336,
+        "omission_rate": 0.15384616,
+        "duplication_rate": 0.15384616,
+        "hallucination_rate": 0.15384616,
+        "end_truncation_score": 0.9166667,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 72,
+        "hypothesis_char_count": 73,
+        "omitted_words": 2,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "supabase",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "base",
+            "count": 1
+          },
+          {
+            "word": "super",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "base",
+            "count": 1
+          },
+          {
+            "word": "super",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Write jest test for this async function that mocks the super base client."
+    },
+    {
+      "sample_id": "dev_30",
+      "scenario": "llm_prompts",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 493,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.12658228,
+        "omission_rate": 0.16666667,
+        "duplication_rate": 0.2857143,
+        "hallucination_rate": 0.2857143,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 79,
+        "hypothesis_char_count": 84,
+        "omitted_words": 2,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "pgvector",
+            "count": 1
+          },
+          {
+            "word": "semantic",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "pg",
+            "count": 1
+          },
+          {
+            "word": "samoon",
+            "count": 1
+          },
+          {
+            "word": "seek",
+            "count": 1
+          },
+          {
+            "word": "vector",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "pg",
+            "count": 1
+          },
+          {
+            "word": "samoon",
+            "count": 1
+          },
+          {
+            "word": "seek",
+            "count": 1
+          },
+          {
+            "word": "vector",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Explain the difference between Samoon Seek Search and Full Text Search in PG Vector."
+    },
+    {
+      "sample_id": "dev_31",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 455,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.014492754,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 69,
+        "hypothesis_char_count": 70,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Create a row level security policy that restricts access to the owner."
+    },
+    {
+      "sample_id": "dev_32",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1333,
+      "metrics": {
+        "wer": 0.2,
+        "cer": 0.037037037,
+        "omission_rate": 0.2,
+        "duplication_rate": 0.2,
+        "hallucination_rate": 0.2,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 15,
+        "hypothesis_word_count": 15,
+        "reference_char_count": 81,
+        "hypothesis_char_count": 78,
+        "omitted_words": 3,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "days",
+            "count": 1
+          },
+          {
+            "word": "users",
+            "count": 1
+          },
+          {
+            "word": "where",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "day",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          },
+          {
+            "word": "were",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "day",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          },
+          {
+            "word": "were",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Select star from user were created at is greater than now minus interval 7 day"
+    },
+    {
+      "sample_id": "dev_33",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 497,
+      "metrics": {
+        "wer": 0.083333336,
+        "cer": 0.028169014,
+        "omission_rate": 0.083333336,
+        "duplication_rate": 0.083333336,
+        "hallucination_rate": 0.083333336,
+        "end_truncation_score": 0.6666666,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 71,
+        "hypothesis_char_count": 72,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 4,
+        "omitted_terms": [
+          {
+            "word": "jwt",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "gwt",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "gwt",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "The edge function needs to verify the GWT before processing the request."
+    },
+    {
+      "sample_id": "dev_34",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 520,
+      "metrics": {
+        "wer": 0.3846154,
+        "cer": 0.12820514,
+        "omission_rate": 0.3846154,
+        "duplication_rate": 0.3846154,
+        "hallucination_rate": 0.3846154,
+        "end_truncation_score": 0.9166667,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 78,
+        "hypothesis_char_count": 75,
+        "omitted_words": 5,
+        "duplicated_words": 5,
+        "hallucinated_words": 5,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "a",
+            "count": 1
+          },
+          {
+            "word": "constraint",
+            "count": 1
+          },
+          {
+            "word": "foreign",
+            "count": 1
+          },
+          {
+            "word": "key",
+            "count": 1
+          },
+          {
+            "word": "users",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "contraint",
+            "count": 1
+          },
+          {
+            "word": "forin",
+            "count": 1
+          },
+          {
+            "word": "k",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "contraint",
+            "count": 1
+          },
+          {
+            "word": "forin",
+            "count": 1
+          },
+          {
+            "word": "k",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Add the forin k contraint on user underscore id referencing the user table."
+    },
+    {
+      "sample_id": "dev_35",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 576,
+      "metrics": {
+        "wer": 0.2,
+        "cer": 0.125,
+        "omission_rate": 0.2,
+        "duplication_rate": 0.14285715,
+        "hallucination_rate": 0.14285715,
+        "end_truncation_score": 0.25,
+        "reference_word_count": 15,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 80,
+        "hypothesis_char_count": 75,
+        "omitted_words": 3,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 9,
+        "omitted_terms": [
+          {
+            "word": "key",
+            "count": 1
+          },
+          {
+            "word": "role",
+            "count": 1
+          },
+          {
+            "word": "supabase",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "r",
+            "count": 1
+          },
+          {
+            "word": "superbase",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "r",
+            "count": 1
+          },
+          {
+            "word": "superbase",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Use the Superbase Service R only server side never expose it to the client."
+    },
+    {
+      "sample_id": "dev_36",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1083,
+      "metrics": {
+        "wer": 0.3846154,
+        "cer": 0.19736843,
+        "omission_rate": 0.23076923,
+        "duplication_rate": 0.33333334,
+        "hallucination_rate": 0.33333334,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 15,
+        "reference_char_count": 76,
+        "hypothesis_char_count": 84,
+        "omitted_words": 3,
+        "duplicated_words": 5,
+        "hallucinated_words": 5,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "100",
+            "count": 1
+          },
+          {
+            "word": "equals",
+            "count": 1
+          },
+          {
+            "word": "ivfflat",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "equal",
+            "count": 1
+          },
+          {
+            "word": "eve",
+            "count": 1
+          },
+          {
+            "word": "flat",
+            "count": 1
+          },
+          {
+            "word": "hundred",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "equal",
+            "count": 1
+          },
+          {
+            "word": "eve",
+            "count": 1
+          },
+          {
+            "word": "flat",
+            "count": 1
+          },
+          {
+            "word": "hundred",
+            "count": 1
+          },
+          {
+            "word": "the",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Create an index on the embeddings column using eve flat with the lists equal hundred"
+    },
+    {
+      "sample_id": "dev_37",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 589,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.013513514,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 74,
+        "hypothesis_char_count": 75,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "The webhook payload needs to be validated with the stripe signature header."
+    },
+    {
+      "sample_id": "dev_38",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 2,
+      "latency_ms": 3430,
+      "metrics": {
+        "wer": 0.26666668,
+        "cer": 0.04347826,
+        "omission_rate": 0.26666668,
+        "duplication_rate": 0.26666668,
+        "hallucination_rate": 0.26666668,
+        "end_truncation_score": 0.9166667,
+        "reference_word_count": 15,
+        "hypothesis_word_count": 15,
+        "reference_char_count": 92,
+        "hypothesis_char_count": 94,
+        "omitted_words": 4,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "paren",
+            "count": 2
+          },
+          {
+            "word": "close",
+            "count": 1
+          },
+          {
+            "word": "comma",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "parent",
+            "count": 2
+          },
+          {
+            "word": "closed",
+            "count": 1
+          },
+          {
+            "word": "comm",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "parent",
+            "count": 2
+          },
+          {
+            "word": "closed",
+            "count": 1
+          },
+          {
+            "word": "comm",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Insert into transcriptions open parent user ID comma text comm created at closed parent values"
+    },
+    {
+      "sample_id": "dev_39",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 1098,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.074074075,
+        "omission_rate": 0.33333334,
+        "duplication_rate": 0.33333334,
+        "hallucination_rate": 0.33333334,
+        "end_truncation_score": 0.5,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 81,
+        "hypothesis_char_count": 79,
+        "omitted_words": 4,
+        "duplicated_words": 4,
+        "hallucinated_words": 4,
+        "suffix_match_words": 6,
+        "omitted_terms": [
+          {
+            "word": "alter",
+            "count": 1
+          },
+          {
+            "word": "column",
+            "count": 1
+          },
+          {
+            "word": "stripe",
+            "count": 1
+          },
+          {
+            "word": "users",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "after",
+            "count": 1
+          },
+          {
+            "word": "columns",
+            "count": 1
+          },
+          {
+            "word": "type",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "after",
+            "count": 1
+          },
+          {
+            "word": "columns",
+            "count": 1
+          },
+          {
+            "word": "type",
+            "count": 1
+          },
+          {
+            "word": "user",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "After table user add columns type underscore customer underscore id text unique"
+    },
+    {
+      "sample_id": "dev_40",
+      "scenario": "supabase_backend",
+      "language": "en",
+      "chunk_count": 1,
+      "latency_ms": 533,
+      "metrics": {
+        "wer": 0.18181819,
+        "cer": 0.028169014,
+        "omission_rate": 0.09090909,
+        "duplication_rate": 0.16666667,
+        "hallucination_rate": 0.16666667,
+        "end_truncation_score": 0.18181819,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 71,
+        "hypothesis_char_count": 73,
+        "omitted_words": 1,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 9,
+        "omitted_terms": [
+          {
+            "word": "realtime",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "real",
+            "count": 1
+          },
+          {
+            "word": "time",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "real",
+            "count": 1
+          },
+          {
+            "word": "time",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Enable real time on the notifications table for insert and update events."
+    },
+    {
+      "sample_id": "dev_41",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 565,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.028985508,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 69,
+        "hypothesis_char_count": 71,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 11,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Ok Claude, explique moi comment implémenter un rate limiter avec Redis."
+    },
+    {
+      "sample_id": "dev_42",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 508,
+      "metrics": {
+        "wer": 0.071428575,
+        "cer": 0.04347826,
+        "omission_rate": 0.071428575,
+        "duplication_rate": 0.071428575,
+        "hallucination_rate": 0.071428575,
+        "end_truncation_score": 0.8333333,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 69,
+        "hypothesis_char_count": 68,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 2,
+        "omitted_terms": [
+          {
+            "word": "mappe",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "map",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "map",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Le composant reçoit un prop de type string array et le map en liste."
+    },
+    {
+      "sample_id": "dev_43",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 524,
+      "metrics": {
+        "wer": 0.16666667,
+        "cer": 0.027777778,
+        "omission_rate": 0.083333336,
+        "duplication_rate": 0.15384616,
+        "hallucination_rate": 0.15384616,
+        "end_truncation_score": 0.25,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 13,
+        "reference_char_count": 72,
+        "hypothesis_char_count": 74,
+        "omitted_words": 1,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 9,
+        "omitted_terms": [
+          {
+            "word": "usecallback",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "callback",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "callback",
+            "count": 1
+          },
+          {
+            "word": "use",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Ajoute un use callback pour éviter les re-renders inutiles sur ce handler."
+    },
+    {
+      "sample_id": "dev_44",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 520,
+      "metrics": {
+        "wer": 0.23076923,
+        "cer": 0.140625,
+        "omission_rate": 0.15384616,
+        "duplication_rate": 0.21428572,
+        "hallucination_rate": 0.21428572,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 64,
+        "hypothesis_char_count": 67,
+        "omitted_words": 2,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "200",
+            "count": 1
+          },
+          {
+            "word": "erreur",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "de",
+            "count": 1
+          },
+          {
+            "word": "error",
+            "count": 1
+          },
+          {
+            "word": "son",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "de",
+            "count": 1
+          },
+          {
+            "word": "error",
+            "count": 1
+          },
+          {
+            "word": "son",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "La fonction async throw une error si le status code est pas de son."
+    },
+    {
+      "sample_id": "dev_45",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 443,
+      "metrics": {
+        "wer": 0.1,
+        "cer": 0.07272727,
+        "omission_rate": 0.1,
+        "duplication_rate": 0.1,
+        "hallucination_rate": 0.1,
+        "end_truncation_score": 0.7,
+        "reference_word_count": 10,
+        "hypothesis_word_count": 10,
+        "reference_char_count": 55,
+        "hypothesis_char_count": 57,
+        "omitted_words": 1,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "comma",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "coma",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "coma",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Crée un type union entre loading, coma, success et error."
+    },
+    {
+      "sample_id": "dev_46",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 472,
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.015873017,
+        "omission_rate": 0.0,
+        "duplication_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "end_truncation_score": 0.0,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 14,
+        "reference_char_count": 63,
+        "hypothesis_char_count": 64,
+        "omitted_words": 0,
+        "duplicated_words": 0,
+        "hallucinated_words": 0,
+        "suffix_match_words": 12,
+        "omitted_terms": [],
+        "duplicated_terms": [],
+        "hallucinated_terms": []
+      },
+      "hypothesis_text": "Le build fail à cause d'un type mismatch sur le retour de Fetch."
+    },
+    {
+      "sample_id": "dev_47",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 642,
+      "metrics": {
+        "wer": 0.21428572,
+        "cer": 0.05882353,
+        "omission_rate": 0.21428572,
+        "duplication_rate": 0.083333336,
+        "hallucination_rate": 0.083333336,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 14,
+        "hypothesis_word_count": 12,
+        "reference_char_count": 85,
+        "hypothesis_char_count": 81,
+        "omitted_words": 3,
+        "duplicated_words": 1,
+        "hallucinated_words": 1,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "dot",
+            "count": 1
+          },
+          {
+            "word": "env",
+            "count": 1
+          },
+          {
+            "word": "production",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "env.production",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "env.production",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "deploy on render avec les variables d'environnement du fichier dot env.production"
+    },
+    {
+      "sample_id": "dev_48",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 578,
+      "metrics": {
+        "wer": 0.33333334,
+        "cer": 0.121212125,
+        "omission_rate": 0.33333334,
+        "duplication_rate": 0.27272728,
+        "hallucination_rate": 0.27272728,
+        "end_truncation_score": 1.0,
+        "reference_word_count": 12,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 66,
+        "hypothesis_char_count": 66,
+        "omitted_words": 4,
+        "duplicated_words": 3,
+        "hallucinated_words": 3,
+        "suffix_match_words": 0,
+        "omitted_terms": [
+          {
+            "word": "auth",
+            "count": 1
+          },
+          {
+            "word": "en",
+            "count": 1
+          },
+          {
+            "word": "loading",
+            "count": 1
+          },
+          {
+            "word": "null",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "nulle",
+            "count": 1
+          },
+          {
+            "word": "off",
+            "count": 1
+          },
+          {
+            "word": "onloading",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "nulle",
+            "count": 1
+          },
+          {
+            "word": "off",
+            "count": 1
+          },
+          {
+            "word": "onloading",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Le hook useOnboarding retourne nulle tant que l'off est onloading."
+    },
+    {
+      "sample_id": "dev_49",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 1358,
+      "metrics": {
+        "wer": 0.45454547,
+        "cer": 0.25714287,
+        "omission_rate": 0.45454547,
+        "duplication_rate": 0.45454547,
+        "hallucination_rate": 0.45454547,
+        "end_truncation_score": 0.9090909,
+        "reference_word_count": 11,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 70,
+        "hypothesis_char_count": 61,
+        "omitted_words": 5,
+        "duplicated_words": 5,
+        "hallucinated_words": 5,
+        "suffix_match_words": 1,
+        "omitted_terms": [
+          {
+            "word": "dépasse",
+            "count": 1
+          },
+          {
+            "word": "faut",
+            "count": 1
+          },
+          {
+            "word": "lazy",
+            "count": 1
+          },
+          {
+            "word": "loader",
+            "count": 1
+          },
+          {
+            "word": "settings",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "de",
+            "count": 1
+          },
+          {
+            "word": "depass",
+            "count": 1
+          },
+          {
+            "word": "for",
+            "count": 1
+          },
+          {
+            "word": "leso",
+            "count": 1
+          },
+          {
+            "word": "série",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "de",
+            "count": 1
+          },
+          {
+            "word": "depass",
+            "count": 1
+          },
+          {
+            "word": "for",
+            "count": 1
+          },
+          {
+            "word": "leso",
+            "count": 1
+          },
+          {
+            "word": "série",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "Bundle size depass 500 kilobytes for leso de les série panels"
+    },
+    {
+      "sample_id": "dev_50",
+      "scenario": "mixed_fr_en",
+      "language": "fr",
+      "chunk_count": 1,
+      "latency_ms": 656,
+      "metrics": {
+        "wer": 0.30769232,
+        "cer": 0.14285715,
+        "omission_rate": 0.30769232,
+        "duplication_rate": 0.18181819,
+        "hallucination_rate": 0.18181819,
+        "end_truncation_score": 0.75,
+        "reference_word_count": 13,
+        "hypothesis_word_count": 11,
+        "reference_char_count": 77,
+        "hypothesis_char_count": 73,
+        "omitted_words": 4,
+        "duplicated_words": 2,
+        "hallucinated_words": 2,
+        "suffix_match_words": 3,
+        "omitted_terms": [
+          {
+            "word": "bindings",
+            "count": 1
+          },
+          {
+            "word": "dot",
+            "count": 1
+          },
+          {
+            "word": "regenerer",
+            "count": 1
+          },
+          {
+            "word": "ts",
+            "count": 1
+          }
+        ],
+        "duplicated_terms": [
+          {
+            "word": "bydings.tsk",
+            "count": 1
+          },
+          {
+            "word": "régénérer",
+            "count": 1
+          }
+        ],
+        "hallucinated_terms": [
+          {
+            "word": "bydings.tsk",
+            "count": 1
+          },
+          {
+            "word": "régénérer",
+            "count": 1
+          }
+        ]
+      },
+      "hypothesis_text": "merge conflict sur le fichier bydings.tsk faut régénérer avec cargo tauri"
+    }
+  ]
+}

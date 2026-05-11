@@ -3140,9 +3140,28 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             }
 
             if should_auto_paste(effective_status) && !transcription.is_empty() {
+                let email_context_post_process = post_process_enabled
+                    && active_app_context
+                        .as_ref()
+                        .map(|ctx| ctx.category == crate::context_detector::AppContextCategory::Email)
+                        .unwrap_or(false);
+                let auto_llm_triggered =
+                    llm_auto_mode && auto_llm_should_trigger(&ah, &transcription);
                 let effective_post_process = post_process
                     || (language_correction.is_some() && post_process_enabled)
-                    || (llm_auto_mode && auto_llm_should_trigger(&ah, &transcription));
+                    || auto_llm_triggered
+                    || email_context_post_process;
+                info!(
+                    "[post-process] finalize auto-paste: ctx={:?} title={:?} post_process_enabled={} shortcut_post_process={} llm_auto_mode={} auto_llm_triggered={} email_ctx_triggered={} effective_post_process={}",
+                    active_app_context.as_ref().map(|ctx| ctx.category),
+                    active_app_context.as_ref().and_then(|ctx| ctx.window_title.clone()),
+                    post_process_enabled,
+                    post_process,
+                    llm_auto_mode,
+                    auto_llm_triggered,
+                    email_context_post_process,
+                    effective_post_process
+                );
                 let outcome = process_transcription_text(
                     &ah,
                     session_id,
@@ -3226,9 +3245,28 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                     );
                 }
                 emit_transcription_preview(&ah, operation_id, "processing", &transcription, true);
+                let email_context_post_process = post_process_enabled
+                    && active_app_context
+                        .as_ref()
+                        .map(|ctx| ctx.category == crate::context_detector::AppContextCategory::Email)
+                        .unwrap_or(false);
+                let auto_llm_triggered =
+                    llm_auto_mode && auto_llm_should_trigger(&ah, &transcription);
                 let effective_post_process = post_process
                     || (language_correction.is_some() && post_process_enabled)
-                    || (llm_auto_mode && auto_llm_should_trigger(&ah, &transcription));
+                    || auto_llm_triggered
+                    || email_context_post_process;
+                info!(
+                    "[post-process] finalize preview-rescue: ctx={:?} title={:?} post_process_enabled={} shortcut_post_process={} llm_auto_mode={} auto_llm_triggered={} email_ctx_triggered={} effective_post_process={}",
+                    active_app_context.as_ref().map(|ctx| ctx.category),
+                    active_app_context.as_ref().and_then(|ctx| ctx.window_title.clone()),
+                    post_process_enabled,
+                    post_process,
+                    llm_auto_mode,
+                    auto_llm_triggered,
+                    email_context_post_process,
+                    effective_post_process
+                );
                 let outcome = process_transcription_text(
                     &ah,
                     session_id,

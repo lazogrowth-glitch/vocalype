@@ -8,47 +8,33 @@
     "cancel": "Cancelar"
   },
   "sidebar": {
-    "general": "General",
-    "models": "Modelos",
-    "advanced": "Avanzado",
+    "settings": "Avanzado",
     "postProcessing": "Posprocesado",
-    "notes": "Notas",
     "meetings": "Llamadas y notas",
     "dictee": "Perfiles de dictado",
     "history": "Historial",
     "debug": "Depuración",
-    "about": "Acerca de",
-    "snippets": "Fragmentos",
-    "stats": "Estadísticas",
     "billing": "Facturación",
-    "referral": "Referidos",
     "group": {
       "config": "Configuración",
       "usage": "Uso",
-      "advanced": "Avanzado"
+      "settings": "Avanzado"
     }
   },
   "shell": {
     "workspaceSubtitle": "Espacio de dictado con IA",
     "sectionDescriptions": {
-      "default": "Ajusta tu espacio de Vocalype con controles m?s claros y una estructura m?s limpia.",
-      "general": "Ajusta atajos, micr?fonos y tu flujo diario de dictado.",
-      "models": "Elige el modelo de voz, el comportamiento por idioma y el equilibrio entre calidad y velocidad.",
+      "default": "Ajusta tu espacio de Vocalype con controles más claros y una estructura más limpia.",
       "postprocessing": "Controla la limpieza, el formato y la forma final de las transcripciones antes de insertarlas.",
-      "snippets": "Crea comandos reutilizables y fragmentos de texto para ir m?s r?pido.",
       "history": "Revisa transcripciones recientes, reutiliza contenido y gestiona la actividad guardada.",
       "meetings": "Reúne llamadas, reuniones y notas de voz en un solo espacio para escribir más rápido.",
-      "notes": "Configura integraciones de notas y c?mo Vocalype organiza lo que capturas.",
-      "stats": "Sigue el uso, el estado del runtime y el rendimiento de la app con el tiempo.",
-      "advanced": "Ajusta el comportamiento del sistema, el inicio, funciones experimentales y controles avanzados.",
-      "billing": "Gestiona tu plan, tus l?mites y los detalles de tu suscripci?n.",
-      "referral": "Invita a otras personas y sigue tus recompensas por referidos.",
-      "about": "Consulta detalles de la app, versiones, enlaces de soporte y estado del producto.",
-      "debug": "Inspecciona diagn?sticos, registros y herramientas internas de depuraci?n."
+      "settings": "Ajusta el comportamiento del sistema, el inicio, funciones experimentales y controles avanzados.",
+      "billing": "Gestiona tu plan, tus límites y los detalles de tu suscripción.",
+      "debug": "Inspecciona diagnósticos, registros y herramientas internas de depuración."
     }
   },
   "onboarding": {
-    "title": "Configuraci?n del modelo",
+    "title": "Model Setup",
     "subtitle": "Para comenzar, elige un modelo de transcripción",
     "recommended": "Recomendado",
     "download": "Descargar",
@@ -63,7 +49,7 @@
       "copilotPlusTitle": "PC Copilot+ detectado",
       "copilotPlusDescription": "Este dispositivo expone una clase de NPU asociada a los PC Copilot+. Vocalype ahora tiene en cuenta esa capacidad en su perfil adaptativo.",
       "npuTitle": "NPU detectada",
-      "npuDescription": "Este dispositivo expone un procesador neuronal. Vocalype ahora lo incluye en la detecci?n del equipo y en los diagn?sticos."
+      "npuDescription": "Este dispositivo expone un procesador neuronal. Vocalype ahora lo incluye en la detección del equipo y en los diagnósticos."
     },
     "models": {
       "parakeet-tdt-0.6b-v3": {
@@ -102,12 +88,12 @@
     },
     "consent": {
       "title": "Tu privacidad",
-      "subtitle": "Antes de empezar, as? es como Vocalype gestiona tus datos.",
-      "localStorageInfo": "Tus grabaciones de audio y transcripciones se almacenan localmente en este dispositivo. Nunca se suben a ning?n servidor.",
-      "serverSentInfo": "Solo se env?an a nuestros servidores un identificador de dispositivo con hash y la versi?n de la aplicaci?n para validar la licencia. Nunca se transmite audio ni texto transcrito.",
+      "subtitle": "Antes de empezar, así es como Vocalype gestiona tus datos.",
+      "localStorageInfo": "Tus grabaciones de audio y transcripciones se almacenan localmente en este dispositivo. Nunca se suben a ningún servidor.",
+      "serverSentInfo": "Solo se envían a nuestros servidores un identificador de dispositivo con hash y la versión de la aplicación para validar la licencia. Nunca se transmite audio ni texto transcrito.",
       "exportInfo": "Puedes exportar o eliminar todos tus datos en cualquier momento desde los ajustes del Historial.",
-      "privacyPolicyLink": "Leer la pol?tica de privacidad completa",
-      "checkboxLabel": "Entiendo y acepto c?mo Vocalype gestiona mis datos.",
+      "privacyPolicyLink": "Leer la política de privacidad completa",
+      "checkboxLabel": "Entiendo y acepto cómo Vocalype gestiona mis datos.",
       "continueButton": "Continuar"
     },
     "progress": {
@@ -143,12 +129,12 @@
       "bestQuality": "Mejor calidad",
       "fastEnglish": "Ingles rapido",
       "experimental": "Experimental",
-      "english": "Ingl?s",
-      "englishOnly": "Solo ingl?s",
-      "multilingualExperimental": "Multiling?e",
+      "english": "Inglés",
+      "englishOnly": "Solo inglés",
+      "multilingualExperimental": "Multilingual Experimental",
       "localOnly": "100% local"
     },
-    "geminiCloudWarning": "Gemini env?a el audio a Google para transcribirlo. Los dem?s modelos procesan todo localmente en tu dispositivo.",
+    "geminiCloudWarning": "Gemini envía el audio a Google para transcribirlo. Los demás modelos procesan todo localmente en tu dispositivo.",
     "custom": "Personalizado",
     "active": "Activo",
     "switching": "Cambiando...",
@@ -185,11 +171,11 @@
     },
     "longAudioModel": {
       "title": "Modelo para audio largo",
-      "description": "Cambia autom?ticamente a otro modelo cuando la duraci?n de la grabaci?n supera el umbral.",
+      "description": "Cambia automáticamente a otro modelo cuando la duración de la grabación supera el umbral.",
       "modelLabel": "Modelo para grabaciones largas",
-      "modelDescription": "Selecciona el modelo que se usar? en grabaciones m?s largas que el umbral.",
-      "thresholdLabel": "Umbral de duraci?n (segundos)",
-      "thresholdDescription": "Cambia al modelo de audio largo cuando la grabaci?n supere esta duraci?n.",
+      "modelDescription": "Selecciona el modelo que se usará en grabaciones más largas que el umbral.",
+      "thresholdLabel": "Umbral de duración (segundos)",
+      "thresholdDescription": "Cambia al modelo de audio largo cuando la grabación supere esta duración.",
       "disabled": "Desactivado",
       "seconds": "{{value}}s"
     },
@@ -224,7 +210,7 @@
           },
           "pause": {
             "name": "Pausar / Reanudar",
-            "description": "El atajo de teclado para pausar o reanudar la grabaci?n actual."
+            "description": "El atajo de teclado para pausar o reanudar la grabación actual."
           },
           "transcribe_with_post_process": {
             "name": "Tecla de Post Procesamiento",
@@ -256,29 +242,13 @@
       "pushToTalk": {
         "label": "Presionar para Hablar",
         "description": "Mantén presionado para grabar, suelta para detener"
-      },
-      "recordingMode": {
-        "label": "Modo de grabaci?n",
-        "description": "Elige c?mo inicias y detienes la grabaci?n.",
-        "toggle": {
-          "label": "Alternar",
-          "description": "Pulsa una vez para empezar y otra vez para detener"
-        },
-        "pushToTalk": {
-          "label": "Pulsar para hablar",
-          "description": "Mant?n el atajo para grabar y su?ltalo para detener"
-        },
-        "alwaysOn": {
-          "label": "Micr?fono siempre activo",
-          "description": "El micr?fono permanece abierto; la VAD detecta el habla autom?ticamente"
-        }
       }
     },
     "models": {
       "title": "Modelos de Transcripción",
       "description": "Selecciona un modelo de transcripción o descarga modelos adicionales. Diferentes modelos ofrecen distintos niveles de precisión y velocidad.",
       "tabs": {
-        "transcription": "Transcripci?n",
+        "transcription": "Transcripción",
         "processing": "Procesamiento"
       },
       "modes": {
@@ -298,24 +268,18 @@
       "deleteConfirm": "¿Estás seguro de que deseas eliminar {{modelName}}? Necesitarás descargarlo de nuevo para usarlo.",
       "deleteActiveConfirm": "{{modelName}} es tu modelo activo. Eliminarlo detendrá las transcripciones hasta que selecciones un nuevo modelo. ¿Estás seguro?",
       "deleteTitle": "Eliminar modelo",
-      "filters": {
-        "all": "Todos",
-        "multiLanguage": "Multiidioma",
-        "translation": "Traducción",
-        "allLanguages": "Todos los idiomas"
-      },
       "hardware": {
         "copilotPlusTitle": "PC Copilot+ detectado",
-        "copilotPlusDescription": "Vocalype ahora conserva esa capacidad en el perfil adaptativo, pero la ejecuci?n real en NPU sigue dependiendo del runtime del modelo.",
+        "copilotPlusDescription": "Vocalype ahora conserva esa capacidad en el perfil adaptativo, pero la ejecución real en NPU sigue dependiendo del runtime del modelo.",
         "npuTitle": "NPU detectada",
-        "npuDescription": "Este equipo expone un procesador neuronal. Vocalype ahora lo muestra en los diagn?sticos y en el perfil de hardware."
+        "npuDescription": "Este equipo expone un procesador neuronal. Vocalype ahora lo muestra en los diagnósticos y en el perfil de hardware."
       },
       "noModelsMatch": "Ningún modelo coincide con este filtro.",
       "processingModels": {
         "title": "Modelos de procesamiento",
         "description": "Guarda modelos LLM para usarlos en acciones de posprocesado.",
-        "noModels": "Todav?a no hay modelos de procesamiento guardados. A?ade uno para usarlo en tus acciones.",
-        "addModel": "A?adir modelo de procesamiento",
+        "noModels": "Todavía no hay modelos de procesamiento guardados. Añade uno para usarlo en tus acciones.",
+        "addModel": "Añadir modelo de procesamiento",
         "provider": "Proveedor",
         "apiKey": "Clave API",
         "apiKeyPlaceholder": "Introduce la clave API",
@@ -324,7 +288,7 @@
         "save": "Guardar",
         "cancel": "Cancelar",
         "fetchModels": "Obtener modelos",
-        "alreadySaved": "Este modelo ya est? guardado."
+        "alreadySaved": "Este modelo ya está guardado."
       }
     },
     "sound": {
@@ -360,10 +324,6 @@
         "experimental": "Experimental",
         "cloudModels": "Modelos en la nube"
       },
-      "experimentalToggle": {
-        "label": "Funciones Experimentales",
-        "description": "Habilitar funciones experimentales que aún están en desarrollo."
-      },
       "startHidden": {
         "label": "Iniciar Oculto",
         "description": "Lanzar en la bandeja del sistema sin abrir la ventana."
@@ -373,22 +333,22 @@
         "description": "Iniciar Vocalype automáticamente cuando inicies sesión en tu computadora."
       },
       "startup": {
-        "label": "Launch on Startup",
-        "description": "Automatically start Vocalype in the background when you log in."
+        "label": "Iniciar al arrancar",
+        "description": "Inicia Vocalype automáticamente en segundo plano cuando inicias sesión."
       },
       "devWorkflow": {
-        "label": "Clean for LLM",
-        "description": "Reformat your dictation into a clean prompt (local LLM, 100% private, no install needed).",
-        "activeDescription": "Active — prompt reformatted locally before paste",
-        "activate": "Enable",
-        "deactivate": "Disable",
+        "label": "Limpiar para LLM",
+        "description": "Reformatea tu dictado en un prompt limpio (LLM local, 100 % privado, sin instalación).",
+        "activeDescription": "Activo — prompt reformateado localmente antes de pegar",
+        "activate": "Activar",
+        "deactivate": "Desactivar",
         "errors": {
-          "checkFailed": "Cannot verify LLM. Please try again.",
-          "notInstalled": "LLM not available. Please try again.",
-          "notStarted": "LLM did not start. Please try again.",
-          "downloading": "Downloading model...",
-          "downloadFailed": "Download failed: {{error}}",
-          "modelNotFound": "Model not found. Restart the app."
+          "checkFailed": "No se pudo verificar el LLM. Inténtalo de nuevo.",
+          "notInstalled": "LLM no disponible. Inténtalo de nuevo.",
+          "notStarted": "El LLM no se inició. Inténtalo de nuevo.",
+          "downloading": "Descargando modelo...",
+          "downloadFailed": "La descarga falló: {{error}}",
+          "modelNotFound": "Modelo no encontrado. Reinicia la app."
         }
       },
       "showTrayIcon": {
@@ -404,66 +364,6 @@
           "top": "Arriba"
         }
       },
-      "pasteMethod": {
-        "title": "Método de Pegado",
-        "description": "Elige cómo se inserta el texto. Directo: simula escritura mediante entrada del sistema. Ninguno: omite el pegado, solo actualiza historial/portapapeles.",
-        "options": {
-          "clipboard": "Portapapeles ({{modifier}}+V)",
-          "clipboardCtrlShiftV": "Portapapeles (Ctrl+Shift+V)",
-          "clipboardShiftInsert": "Portapapeles (Shift+Insert)",
-          "direct": "Directo",
-          "none": "Ninguno",
-          "externalScript": "Script externo"
-        },
-        "externalScriptPlaceholder": "/ruta/a/su/script.sh",
-        "externalScriptHelp": "Los scripts externos deben usar una ruta absoluta a un archivo ejecutable local. Los cambios se guardan al perder el foco o al pulsar Enter."
-      },
-      "typingTool": {
-        "title": "Herramienta de Escritura",
-        "description": "Elige qué herramienta de escritura de Linux usar para el método de pegado directo. Auto detectará y usará automáticamente la mejor herramienta disponible para tu sistema.",
-        "options": {
-          "auto": "Auto (Recomendado)"
-        }
-      },
-      "clipboardHandling": {
-        "title": "Manejo del Portapapeles",
-        "description": "No Modificar Portapapeles conserva el contenido actual de tu portapapeles después de la transcripción. Copiar al Portapapeles deja el resultado de la transcripción en tu portapapeles después de pegar.",
-        "options": {
-          "dontModify": "No Modificar Portapapeles",
-          "copyToClipboard": "Copiar al Portapapeles"
-        }
-      },
-      "autoSubmit": {
-        "title": "Envío automático",
-        "description": "Envía automáticamente la combinación de teclas seleccionada después de insertar el texto. Cmd+Enter se aplica en macOS, mientras que Windows/Linux usan Super+Enter.",
-        "options": {
-          "off": "Desactivado",
-          "enter": "Enter",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
-        }
-      },
-      "translateToEnglish": {
-        "label": "Traducir al Inglés",
-        "description": "Traducir automáticamente el habla de otros idiomas al inglés durante la transcripción.",
-        "descriptionUnsupported": "La traducción no es compatible con el modelo {{model}}."
-      },
-      "modelUnload": {
-        "title": "Descargar Modelo",
-        "description": "Liberar automáticamente la memoria GPU/CPU cuando el modelo no se ha usado durante el tiempo especificado",
-        "options": {
-          "never": "Nunca",
-          "immediately": "Inmediatamente",
-          "min2": "Después de 2 minutos",
-          "min5": "Después de 5 minutos",
-          "min10": "Después de 10 minutos",
-          "min15": "Después de 15 minutos",
-          "min30": "Después de 30 minutos",
-          "hour1": "Después de 1 hora",
-          "sec5": "Después de 5 segundos (Depuración)"
-        }
-      },
       "customWords": {
         "title": "Palabras Personalizadas",
         "description": "Agrega palabras que a menudo se escuchan mal o se escriben incorrectamente durante la transcripción. El sistema corregirá automáticamente palabras similares para que coincidan con tu lista.",
@@ -471,14 +371,6 @@
         "add": "Agregar",
         "remove": "Eliminar {{word}}",
         "duplicate": "\"{{word}}\" ya existe"
-      },
-      "adaptiveVocabulary": {
-        "label": "Adaptive vocabulary",
-        "description": "Learns spellings and terms by app context on this device to better guide Whisper."
-      },
-      "adaptiveVoiceProfile": {
-        "label": "Adaptive voice profile",
-        "description": "Learns your speaking pace and pauses on this device to gradually tune Whisper."
       }
     },
     "postProcessing": {
@@ -520,27 +412,27 @@
         }
       },
       "prompts": {
-        "title": "Instrucci?n",
+        "title": "Instrucción",
         "selectedPrompt": {
-          "title": "Instrucci?n seleccionada",
+          "title": "Prompt Seleccionado",
           "description": "Selecciona una plantilla para refinar las transcripciones o crea una nueva. Usa ${output} dentro del texto del prompt para hacer referencia a la transcripción capturada."
         },
         "noPrompts": "No hay prompts disponibles",
-        "selectPrompt": "Seleccionar una instrucci?n",
-        "createNew": "Crear nueva instrucci?n",
-        "promptLabel": "Etiqueta de la instrucci?n",
+        "selectPrompt": "Seleccionar un prompt",
+        "createNew": "Crear Nuevo Prompt",
+        "promptLabel": "Etiqueta del Prompt",
         "promptLabelPlaceholder": "Ingresa el nombre del prompt",
-        "promptInstructions": "Instrucciones de la instrucci?n",
+        "promptInstructions": "Instrucciones del Prompt",
         "promptInstructionsPlaceholder": "Escribe las instrucciones para ejecutar después de la transcripción. Ejemplo: Mejora la gramática y claridad del siguiente texto: ${output}",
         "promptTip": "Consejo: Usa <code>${output}</code> para insertar el texto transcrito en tu prompt.",
-        "updatePrompt": "Actualizar instrucci?n",
-        "deletePrompt": "Eliminar instrucci?n",
-        "createPrompt": "Crear instrucci?n",
+        "updatePrompt": "Actualizar Prompt",
+        "deletePrompt": "Eliminar Prompt",
+        "createPrompt": "Crear Prompt",
         "cancel": "Cancelar",
         "selectToEdit": "Selecciona un prompt arriba para ver y editar sus detalles.",
-        "createFirst": "Haz clic en \"Crear nueva instrucci?n\" arriba para crear tu primera instrucci?n de posprocesado."
+        "createFirst": "Haz clic en 'Crear Nuevo Prompt' arriba para crear tu primer prompt de post procesamiento."
       },
-      "quickTemplates": "Quick actions",
+      "quickTemplates": "Acciones rápidas",
       "modelPicker": {
         "cloud": "Vocalype Cloud",
         "cloudDesc": "Instantáneo · sin instalar",
@@ -552,55 +444,55 @@
       },
       "actions": {
         "title": "Acciones",
-        "configuredLabel": "Configured actions",
-        "description": "Asigna las teclas Ctrl+n?mero (1-9) a prompts personalizados. Pulsa un atajo durante la grabaci?n para aplicar la acci?n despu?s de la transcripci?n.",
-        "noActions": "Todav?a no hay acciones configuradas.",
-        "createFirst": "Crea tu primera acci?n para procesar transcripciones con tu proveedor configurado.",
-        "addAction": "A?adir acci?n",
-        "editAction": "Editar acci?n",
+        "configuredLabel": "Acciones configuradas",
+        "description": "Asigna Ctrl+número (1-9) a prompts personalizados. Pulsa un atajo durante la grabación para aplicar la acción después de la transcripción.",
+        "noActions": "Todavía no hay acciones configuradas.",
+        "createFirst": "Crea tu primera acción para procesar transcripciones con tu proveedor configurado.",
+        "addAction": "Añadir acción",
+        "editAction": "Editar acción",
         "key": "Tecla",
         "keyLabel": "Tecla (1-9)",
         "name": "Nombre",
         "namePlaceholder": "p. ej. modo correo",
-        "prompt": "Instrucci?n",
-        "promptPlaceholder": "p. ej. Da formato a esto como un correo profesional con saludo y despedida. A?ade saltos de l?nea entre p?rrafos.",
+        "prompt": "Instrucción",
+        "promptPlaceholder": "p. ej. Da formato a esto como un correo profesional con saludo y despedida. Añade saltos de línea entre párrafos.",
         "promptTip": "Consejo: usa <code>${output}</code> para insertar el texto transcrito en tu prompt.",
         "model": "Modelo (opcional)",
         "modelPlaceholder": "Selecciona un modelo",
-        "modelTip": "Selecciona un modelo concreto para esta acci?n o usa el predeterminado de la secci?n API.",
+        "modelTip": "Selecciona un modelo concreto para esta acción o usa el predeterminado de la sección API.",
         "defaultModel": "Predeterminado",
         "save": "Guardar",
         "cancel": "Cancelar",
         "delete": "Eliminar",
-        "maxActionsReached": "Se alcanz? el m?ximo de 9 acciones.",
+        "maxActionsReached": "Se alcanzó el máximo de 9 acciones.",
         "templates": {
-          "title": "Ready-to-use actions",
-          "llmBadge": "LLM required",
-          "readyBadge": "Model ready",
-          "setupBadge": "Setup required",
-          "readyHint": "Actions will use your current post-processing configuration.",
-          "setupHint": "Add an AI model under Models > Post-processing to run these actions.",
-          "description": "Quickly install the most useful actions: correction, summary, professional email, or translation.",
-          "llmHint": "These actions apply after dictation and use the AI model configured in Post-processing. Normal dictation is unchanged.",
+          "title": "Acciones listas para usar",
+          "llmBadge": "LLM requerido",
+          "readyBadge": "Modelo listo",
+          "setupBadge": "Configuración requerida",
+          "readyHint": "Las acciones usarán tu configuración actual de posprocesado.",
+          "setupHint": "Añade un modelo de IA en Modelos > Posprocesado para ejecutar estas acciones.",
+          "description": "Instala rápidamente las acciones más útiles: corrección, resumen, correo profesional o traducción.",
+          "llmHint": "Estas acciones se aplican después del dictado y usan el modelo de IA configurado en Posprocesado. El dictado normal no cambia.",
           "cleanup": {
-            "name": "Fix",
-            "description": "Cleans up dictation without changing the meaning.",
-            "prompt": "Fix the grammar, punctuation, and clarity of the following text without changing its meaning. Keep the original language. Text: ${output}"
+            "name": "Corregir",
+            "description": "Limpia el dictado sin cambiar el sentido.",
+            "prompt": "Corrige la gramática, la puntuación y la claridad del siguiente texto sin cambiar su significado. Mantén el idioma original. Texto: ${output}"
           },
           "summary": {
-            "name": "Summary + actions",
-            "description": "Turns a long dictation into useful bullet points.",
-            "prompt": "Summarize the following text in a few clear points, then add an Actions section if tasks are mentioned. Text: ${output}"
+            "name": "Resumen + acciones",
+            "description": "Convierte un dictado largo en puntos útiles.",
+            "prompt": "Resume el siguiente texto en unos pocos puntos claros y luego añade una sección Acciones si se mencionan tareas. Texto: ${output}"
           },
           "email": {
-            "name": "Pro email",
-            "description": "Reformats the dictation into a ready-to-send email.",
-            "prompt": "Turn the following text into a professional, clear, and natural email. Add a greeting if needed, structure the paragraphs, and keep the message concise. Text: ${output}"
+            "name": "Correo pro",
+            "description": "Reformula el dictado como un correo listo para enviar.",
+            "prompt": "Convierte el siguiente texto en un correo profesional, claro y natural. Añade un saludo si hace falta, estructura los párrafos y mantén el mensaje conciso. Texto: ${output}"
           },
           "translate": {
-            "name": "Translate to French",
-            "description": "Cleanly translates to natural French.",
-            "prompt": "Translate the following text into natural and professional French. Do not add any comments. Text: ${output}"
+            "name": "Traducir al francés",
+            "description": "Traduce limpiamente a un francés natural.",
+            "prompt": "Traduce el siguiente texto a un francés natural y profesional. No añadas comentarios. Texto: ${output}"
           },
           "candidateNote": {
             "name": "Candidate note",
@@ -629,7 +521,7 @@
       "loading": "Cargando historial...",
       "empty": "Aún no hay transcripciones. ¡Comienza a grabar para crear tu historial!",
       "copyToClipboard": "Copiar transcripción al portapapeles",
-      "copyFailed": "No se pudo copiar la transcripci?n.",
+      "copyFailed": "No se pudo copiar la transcripción.",
       "save": "Guardar transcripción",
       "unsave": "Eliminar de guardados",
       "delete": "Eliminar entrada",
@@ -641,23 +533,23 @@
       "selectModel": "Seleccionar modelo",
       "originalTranscript": "Original",
       "postProcessed": "Posprocesado",
-      "action": "Acci?n {{key}}",
+      "action": "Acción {{key}}",
       "export": "Exportar",
       "exportSuccess": "Historial exportado.",
       "exportError": "Error al exportar.",
       "transcribeFile": "Transcribir archivo",
       "transcribeFileSuccess": "Archivo transcrito y copiado al portapapeles.",
-      "transcribeFileError": "La transcripci?n fall?.",
+      "transcribeFileError": "La transcripción falló.",
       "whisperConfidence": "Confianza de Whisper: {{overall}}",
       "wordConfidenceTitle": "Confianza {{confidence}}",
       "exportMyData": "Exportar mis datos",
       "clearAll": "Borrar todo el historial",
-      "clearAllConfirm": "?Seguro? Esto eliminar? de forma permanente todas las grabaciones y transcripciones.",
-      "clearAllSuccess": "Se borr? todo el historial.",
+      "clearAllConfirm": "¿Seguro? Esto eliminará de forma permanente todas las grabaciones y transcripciones.",
+      "clearAllSuccess": "Se borró todo el historial.",
       "clearAllError": "No se pudo borrar el historial.",
-      "loadMore": "Cargar m?s",
-      "loadingMore": "Cargando?",
-      "confirmDeleteAllMessage": "?Eliminar todas las entradas del historial?",
+      "loadMore": "Cargar más",
+      "loadingMore": "Cargando…",
+      "confirmDeleteAllMessage": "¿Eliminar todas las entradas del historial?",
       "confirmYes": "Eliminar todo",
       "filterAll": "Todo",
       "filterFavorites": "Favoritos",
@@ -666,16 +558,16 @@
       "groupWeek": "Esta semana",
       "groupOlder": "Anteriores",
       "wordsCount": "palabras",
-      "search": "Buscar una transcripci?n?",
-      "noResults": "No hay resultados para ? {{query}} ?",
-      "noAiActionsHint": "Crea una acci?n en Posprocesado para corregir, resumir o reformatear aqu? tus dictados anteriores.",
+      "search": "Buscar una transcripción...",
+      "noResults": "No hay resultados para “{{query}}”.",
+      "noAiActionsHint": "Crea una acción en Posprocesado para corregir, resumir o reformatear aquí tus dictados anteriores.",
       "configureActions": "Configurar acciones",
-      "actionApplied": "Acci?n aplicada.",
-      "actionFailed": "No se pudo aplicar la acci?n.",
-      "actionNeedsPremium": "Esta acci?n requiere Premium. Mejora a Premium para transformar el historial.",
-      "actionNeedsModel": "Configura un modelo de IA en Modelos > Posprocesado para usar esta acci?n.",
-      "actionNotFound": "Esta acci?n ya no existe. Revisa tus acciones en Posprocesado.",
-      "emptyActionSource": "Esta entrada del historial est? vac?a.",
+      "actionApplied": "Acción aplicada.",
+      "actionFailed": "No se pudo aplicar la acción.",
+      "actionNeedsPremium": "Esta acción requiere Premium. Mejora a Premium para transformar el historial.",
+      "actionNeedsModel": "Configura un modelo de IA en Modelos > Posprocesado para usar esta acción.",
+      "actionNotFound": "Esta acción ya no existe. Revisa tus acciones en Posprocesado.",
+      "emptyActionSource": "Esta entrada del historial está vacía.",
       "restoreOriginal": "Original",
       "originalRestored": "Original restaurado.",
       "restoreOriginalFailed": "No se pudo restaurar el original.",
@@ -685,7 +577,7 @@
       "copy": "Copiar",
       "copied": "Copiado",
       "reutiliser": "Fijar",
-      "sauvegarde": "? Fijado",
+      "sauvegarde": "★ Fijado",
       "transformer": "Transformar",
       "showAudio": "Mostrar audio",
       "copiedAiResult": "Resultado copiado.",
@@ -697,25 +589,25 @@
       "saveEdit": "Guardar",
       "cancelEdit": "Cancelar",
       "editHint": "Ctrl+Intro para guardar",
-      "editSaveFailed": "No se pudo guardar la correcci?n.",
+      "editSaveFailed": "No se pudo guardar la corrección.",
       "openRecordingsFolder": "Abrir carpeta",
-      "correctionSuggestion": "?Reemplazar siempre \"{{from}}\" por \"{{to}}\"?",
-      "correctionYes": "S?",
+      "correctionSuggestion": "¿Reemplazar siempre \"{{from}}\" por \"{{to}}\"?",
+      "correctionYes": "Sí",
       "correctionNo": "Ignorar",
-      "correctionAdded": "\"{{from}}\" ? \"{{to}}\" se a?adi? al diccionario.",
+      "correctionAdded": "\"{{from}}\" → \"{{to}}\" se añadió al diccionario.",
       "subtitle": "Encuentra, corrige, transforma y reutiliza todos tus dictados en un solo lugar.",
       "selectEntry": "Selecciona un dictado a la izquierda para ver el detalle, el audio y las acciones disponibles.",
       "original": "Original"
     },
     "gemini": {
       "title": "Gemini API",
-      "description": "Usa la API de Gemini de Google para la transcripci?n en la nube. Requiere una clave API.",
+      "description": "Usa la API de Gemini de Google para la transcripción en la nube. Requiere una clave API.",
       "apiKey": "API Key",
       "apiKeyPlaceholder": "Introduce tu clave API de Gemini",
       "model": "Model",
-      "modelDescription": "Selecciona qu? modelo de Gemini usar para la transcripci?n",
+      "modelDescription": "Selecciona qué modelo de Gemini usar para la transcripción",
       "apiKeyRequired": "Se requiere clave API",
-      "apiKeyRequiredDescription": "Introduce tu clave API de Google Gemini para usar la transcripci?n en la nube.",
+      "apiKeyRequiredDescription": "Introduce tu clave API de Google Gemini para usar la transcripción en la nube.",
       "save": "Guardar",
       "cancel": "Cancelar"
     },
@@ -741,11 +633,6 @@
         "title": "Umbral de Corrección de Palabras",
         "description": "Sensibilidad para correcciones de palabras personalizadas"
       },
-      "historyLimit": {
-        "title": "Límite de Historial",
-        "description": "Número máximo de entradas de historial a conservar",
-        "entries": "entradas"
-      },
       "recordingRetention": {
         "title": "Eliminación automática de grabaciones",
         "description": "Eliminar automáticamente grabaciones antiguas para ahorrar espacio",
@@ -768,16 +655,8 @@
         "label": "Post Procesamiento",
         "description": "Habilitar refinamiento de texto impulsado por IA después de la transcripción"
       },
-      "muteWhileRecording": {
-        "label": "Silenciar Durante la Grabación",
-        "description": "Silenciar el audio del sistema durante la grabación"
-      },
-      "appendTrailingSpace": {
-        "label": "Agregar Espacio Final",
-        "description": "Agregar un espacio después de la transcripción pegada"
-      },
       "keyboardImplementation": {
-        "title": "Implementaci?n del teclado",
+        "title": "Keyboard Implementation",
         "description": "Elige el backend de atajos de teclado.",
         "bindingsReset": "Los atajos eran incompatibles y se restablecieron a los valores predeterminados"
       },
@@ -801,13 +680,13 @@
       },
       "autoPauseMedia": {
         "label": "Pausar medios al grabar",
-        "description": "Pausa autom?ticamente Spotify y otros reproductores multimedia durante la grabaci?n y reanuda al terminar."
+        "description": "Pausa automáticamente Spotify y otros reproductores multimedia durante la grabación y reanuda al terminar."
       },
       "description": "Collect a support snapshot, open local logs, and access deeper internal tools when needed.",
       "internalTitle": "Internal tools",
       "internalDescription": "These controls are meant for debugging, calibration, and deeper runtime inspection.",
-      "internalLocked": "Advanced developer tools stay hidden during normal use. Enable debug mode if you need the full runtime panels.",
-      "enableInternal": "Enable advanced diagnostics",
+      "internalLocked": "Las herramientas avanzadas para desarrolladores permanecen ocultas durante el uso normal. Activa el modo debug si necesitas los paneles completos de runtime.",
+      "enableInternal": "Activar diagnósticos avanzados",
       "showInternal": "Show advanced diagnostics",
       "hideInternal": "Hide advanced diagnostics",
       "internalShortcut": "Shortcut: Ctrl+Shift+D or Cmd+Shift+D",
@@ -1001,43 +880,9 @@
         "save": "Save feedback"
       }
     },
-    "about": {
-      "title": "Acerca de",
-      "version": {
-        "title": "Versión",
-        "description": "Versión actual de Vocalype"
-      },
-      "versionLabel": "Versi?n v{{version}}",
-      "appDataDirectory": {
-        "title": "Directorio de Datos de la Aplicación",
-        "description": "Ubicación donde Vocalype almacena sus datos"
-      },
-      "exportImport": {
-        "title": "Exportar / importar ajustes",
-        "description": "Transfiere tu configuraci?n a otro equipo",
-        "export": "Exportar",
-        "import": "Importar",
-        "exportSuccess": "Ajustes exportados correctamente",
-        "importSuccess": "Ajustes importados correctamente"
-      },
-      "privacyPolicy": "Pol?tica de privacidad",
-      "supportDevelopment": {
-        "title": "Apoyar el Desarrollo",
-        "description": "Ayúdanos a continuar construyendo Vocalype",
-        "button": "Donar"
-      },
-      "acknowledgments": {
-        "title": "Reconocimientos",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "Inferencia de alto rendimiento del modelo de reconocimiento automático de voz Whisper de OpenAI",
-          "details": "Vocalype usa Whisper.cpp para procesamiento de voz a texto rápido y local. Gracias al increíble trabajo de Georgi Gerganov y colaboradores."
-        }
-      }
-    },
     "wakeWord": {
       "label": "Modo manos libres (di \"dictar\")",
-      "description": "Di \"dictar\" para empezar a grabar sin tocar el teclado. La grabaci?n se detiene autom?ticamente cuando dejas de hablar."
+      "description": "Di \"dictar\" para empezar a grabar sin tocar el teclado. La grabación se detiene automáticamente cuando dejas de hablar."
     }
   },
   "footer": {
@@ -1049,7 +894,7 @@
     "upToDate": "Actualizado",
     "downloadUpdate": "Descargar Actualización",
     "restart": "Reiniciar",
-    "updateCheckingDisabled": "Búsqueda de Actualizaciones Deshabilitada",
+    "updateCheckingDisabled": "Búsqueda de actualizaciones deshabilitada",
     "downloading": "Descargando... {{progress}}%",
     "installing": "Instalando...",
     "preparing": "Preparando...",
@@ -1076,7 +921,7 @@
     "yes": "Sí",
     "no": "No",
     "noOptionsFound": "No se encontraron opciones",
-    "moreInformation": "M?s informaci?n",
+    "moreInformation": "Más información",
     "infoGlyph": "i",
     "back": "Volver",
     "all": "All",
@@ -1085,7 +930,7 @@
     "archived": "Archived",
     "copy": "Copy",
     "words": "{{count}} words",
-    "moreOptions": "M?s opciones"
+    "moreOptions": "Más opciones"
   },
   "accessibility": {
     "permissionsRequired": "Se Requieren Permisos de Accesibilidad",
@@ -1096,10 +941,10 @@
   "errors": {
     "loadDirectory": "Error al cargar el directorio: {{error}}",
     "actionable": {
-      "noModelLoaded": "No hay ning?n modelo cargado. Ve a Modelos y selecciona uno.",
-      "microphoneUnavailable": "No se pudo acceder al micr?fono. Revisa los ajustes de audio del sistema.",
+      "noModelLoaded": "No hay ningún modelo cargado. Ve a Modelos y selecciona uno.",
+      "microphoneUnavailable": "No se pudo acceder al micrófono. Revisa los ajustes de audio del sistema.",
       "outOfMemory": "No hay suficiente memoria. Cierra otras aplicaciones y vuelve a intentarlo.",
-      "audioCaptureFailed": "La captura de audio fall?. Prueba otro micr?fono en Ajustes.",
+      "audioCaptureFailed": "La captura de audio falló. Prueba otro micrófono en Ajustes.",
       "generic": "{{detail}}",
       "unknownPasteReason": "Se produjo un error inesperado."
     },
@@ -1114,7 +959,7 @@
   },
   "error": {
     "boundary": {
-      "sectionMessage": "Se produjo un error en esta secci?n.",
+      "sectionMessage": "Se produjo un error en esta sección.",
       "retry": "Reintentar"
     }
   },
@@ -1125,7 +970,7 @@
   "appContext": {
     "title": "Auto context",
     "description": "Adapt dictation to the active app",
-    "enableToggle": "Enable auto context",
+    "enableToggle": "Activar contexto automático",
     "enableToggleDescription": "Automatically adapt output based on the active app",
     "recentApps": "Recent apps",
     "noRecentApps": "No recent apps",
@@ -1139,7 +984,7 @@
     "notesHint": "Post-processing disabled, text injected as-is",
     "tab": "Context",
     "categories": {
-      "code": "C?digo",
+      "code": "Código",
       "email": "Correo",
       "chat": "Chat",
       "document": "Documento",
@@ -1151,99 +996,99 @@
   },
   "bootstrap": {
     "desktopRuntimeUnavailable": "Vocalype no pudo conectarse al runtime de escritorio. Reinicia la app.",
-    "criticalFallback": "Vocalype encontr? un error cr?tico. Reinicia la app."
+    "criticalFallback": "Vocalype encontró un error crítico. Reinicia la app."
   },
   "overlay": {
     "transcribing": "Transcribiendo...",
     "processing": "Procesando...",
     "cancelConfirm": "Pulsa Esc otra vez para cancelar",
-    "pauseRecording": "Pausar grabaci?n",
-    "resumeRecording": "Reanudar grabaci?n",
-    "cancelRecording": "Cancelar grabaci?n",
-    "pasteSuccess": "Texto pegado ?",
+    "pauseRecording": "Pausar grabación",
+    "resumeRecording": "Reanudar grabación",
+    "cancelRecording": "Cancelar grabación",
+    "pasteSuccess": "Texto pegado.",
     "a11y": {
-      "recording": "Grabaci?n en curso.",
+      "recording": "Grabación en curso.",
       "transcribing": "Transcribiendo audio, espera por favor.",
-      "completed": "Transcripci?n completada. Texto pegado.",
-      "error": "La transcripci?n fall?. Int?ntalo de nuevo."
+      "completed": "Transcripción completada. Texto pegado.",
+      "error": "La transcripción falló. Inténtalo de nuevo."
     }
   },
   "auth": {
-    "trialBadge": "Prueba gratis de 14 d?as, sin tarjeta",
+    "trialBadge": "Prueba gratis de 14 días, sin tarjeta",
     "paidAccess": "Acceso de pago",
     "headline": "Crea tu cuenta y desbloquea Vocalype al instante.",
-    "subheadline": "Cada cuenta empieza con una prueba gratuita de 14 d?as sin necesidad de tarjeta. Cuando termine, podr?s suscribirte por 4,99 $ al mes para seguir dictando sin l?mites en ChatGPT, Claude, Gemini y apps de Windows.",
+    "subheadline": "Cada cuenta empieza con una prueba gratuita de 14 días sin necesidad de tarjeta. Cuando termine, podrás suscribirte por 4,99 $ al mes para seguir dictando sin límites en ChatGPT, Claude, Gemini y apps de Windows.",
     "features": {
       "trial": {
-        "title": "Prueba gratis de 14 d?as",
+        "title": "Prueba gratis de 14 días",
         "description": "Crea una cuenta y prueba el producto completo al instante, sin tarjeta al inicio."
       },
       "subscription": {
-        "title": "Suscripci?n verificada",
-        "description": "La app de escritorio verifica el acceso de la cuenta antes de desbloquear el flujo de transcripci?n."
+        "title": "Suscripción verificada",
+        "description": "La app de escritorio verifica el acceso de la cuenta antes de desbloquear el flujo de transcripción."
       },
       "billing": {
-        "title": "Facturaci?n simple",
-        "description": "Gestiona tu suscripci?n con Stripe desde dentro de la app."
+        "title": "Facturación simple",
+        "description": "Gestiona tu suscripción con Stripe desde dentro de la app."
       }
     },
     "createAccount": "Crear cuenta",
-    "login": "Iniciar sesi?n",
-    "loginToAccount": "Inicia sesi?n en tu cuenta",
+    "login": "Iniciar sesión",
+    "loginToAccount": "Inicia sesión en tu cuenta",
     "account": "Cuenta",
     "unlocked": "Desbloqueado",
     "locked": "Bloqueado",
     "subscribeNow": "Suscribirse ahora",
-    "manageSubscription": "Gestionar suscripci?n",
+    "manageSubscription": "Gestionar suscripción",
     "refreshAccess": "Actualizar acceso",
-    "logout": "Cerrar sesi?n",
-    "trialNote": "Tu prueba gratuita de 14 d?as comienza cuando creas la cuenta. No hace falta tarjeta hasta que termine.",
-    "sessionExpired": "Tu sesi?n ha caducado. Vuelve a iniciar sesi?n.",
+    "logout": "Cerrar sesión",
+    "trialNote": "Tu prueba gratuita de 14 días comienza cuando creas la cuenta. No hace falta tarjeta hasta que termine.",
+    "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
     "fields": {
       "name": "Nombre",
       "namePlaceholder": "Tu nombre",
       "email": "Correo",
       "emailPlaceholder": "you@example.com",
-      "password": "Contrase?a",
-      "passwordPlaceholder": "M?nimo 12 caracteres"
+      "password": "Contraseña",
+      "passwordPlaceholder": "Mínimo 12 caracteres"
     },
     "access": {
-      "active": "Suscripci?n activa",
+      "active": "Suscripción activa",
       "trialActive": "Prueba gratuita activa",
       "trialEndsToday": "La prueba termina hoy",
-      "trialDaysLeft": "{{count}} d?as restantes de prueba",
-      "canceled": "Suscripci?n cancelada",
-      "trialEnded": "La prueba termin?"
+      "trialDaysLeft": "{{count}} días restantes de prueba",
+      "canceled": "Suscripción cancelada",
+      "trialEnded": "La prueba terminó"
     },
-    "forgotPassword": "?Olvidaste la contrase?a?",
-    "backToLogin": "Volver al inicio de sesi?n",
-    "resetPassword": "Restablecer contrase?a",
-    "sendCode": "Enviar c?digo",
-    "verificationCode": "C?digo de 6 d?gitos",
+    "forgotPassword": "¿Olvidaste la contraseña?",
+    "backToLogin": "Volver al inicio de sesión",
+    "resetPassword": "Restablecer contraseña",
+    "sendCode": "Enviar código",
+    "verificationCode": "Código de 6 dígitos",
     "verificationCodePlaceholder": "123456",
-    "codeSent": "Se envi? un c?digo de 6 d?gitos a tu correo.",
-    "newPassword": "Nueva contrase?a",
-    "confirmPassword": "Confirmar contrase?a",
-    "passwordResetSuccess": "Contrase?a restablecida correctamente. Ya has iniciado sesi?n.",
-    "changePassword": "Cambiar contrase?a",
-    "oldPassword": "Contrase?a actual",
-    "passwordChanged": "Contrase?a cambiada correctamente.",
+    "codeSent": "Se envió un código de 6 dígitos a tu correo.",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordResetSuccess": "Contraseña restablecida correctamente. Ya has iniciado sesión.",
+    "changePassword": "Cambiar contraseña",
+    "oldPassword": "Contraseña actual",
+    "passwordChanged": "Contraseña cambiada correctamente.",
     "errors": {
-      "networkError": "No se pudo conectar con el servidor. Revisa tu conexi?n a internet.",
-      "emailExistsSwitchedToLogin": "Ya existe una cuenta con este correo. Inicia sesi?n.",
-      "deviceAlreadyRegistered": "Ya se cre? una cuenta en este ordenador. Inicia sesi?n con tu cuenta existente.",
-      "passwordsDoNotMatch": "Las contrase?as no coinciden.",
-      "invalidResetCode": "C?digo no v?lido o caducado.",
-      "wrongOldPassword": "La contrase?a actual es incorrecta."
+      "networkError": "No se pudo conectar con el servidor. Revisa tu conexión a internet.",
+      "emailExistsSwitchedToLogin": "Ya existe una cuenta con este correo. Inicia sesión.",
+      "deviceAlreadyRegistered": "Ya se creó una cuenta en este ordenador. Inicia sesión con tu cuenta existente.",
+      "passwordsDoNotMatch": "Las contraseñas no coinciden.",
+      "invalidResetCode": "Código no válido o caducado.",
+      "wrongOldPassword": "La contraseña actual es incorrecta."
     },
-    "sessionExpiredNotice": "Session expired — please sign in again to continue."
+    "sessionExpiredNotice": "La sesión caducó — vuelve a iniciar sesión para continuar."
   },
   "warnings": {
-    "whisperGpuUnavailable": "GPU no disponible ? ejecutando en CPU",
-    "whisperGpuUnavailableDesc": "La transcripci?n puede ser lenta. Cambia a Parakeet V3 para mejor rendimiento en CPU.",
-    "pasteFailed": "Fall? el pegado autom?tico",
-    "pasteFailedCopied": "Fall? el pegado autom?tico ? texto copiado al portapapeles",
-    "pasteFailedDesc": "{{reason}} ? el texto se copi? al portapapeles."
+    "whisperGpuUnavailable": "GPU no disponible — ejecutando en CPU",
+    "whisperGpuUnavailableDesc": "La transcripción puede ser lenta. Cambia a Parakeet V3 para mejor rendimiento en CPU.",
+    "pasteFailed": "Falló el pegado automático",
+    "pasteFailedCopied": "Falló el pegado automático — texto copiado al portapapeles",
+    "pasteFailedDesc": "Motivo: {{reason}}"
   },
   "trial": {
     "welcome": {
@@ -1271,75 +1116,26 @@
   },
   "dictionary": {
     "tab": "Diccionario",
-    "sectionDescription": "Add candidate names, clients, roles, or acronyms for Vocalype to recognize.",
-    "manage": "Manage →",
-    "empty": "Todav?a no hay t?rminos personalizados. A?ade palabras, nombres propios o acr?nimos.",
-    "fromPlaceholder": "Vocalype hears...",
-    "toPlaceholder": "Reemplazar por?",
-    "add": "A?adir",
+    "sectionDescription": "Añade nombres de candidatos, clientes, puestos o acrónimos para que Vocalype los reconozca.",
+    "manage": "Gestionar →",
+    "empty": "Todavía no hay términos personalizados. Añade palabras, nombres propios o acrónimos.",
+    "fromPlaceholder": "Vocalype escucha...",
+    "toPlaceholder": "Reemplazar por...",
+    "add": "Añadir",
     "remove": "Eliminar",
     "save": "Guardar",
     "cancel": "Cancelar",
-    "duplicate": "\"{{from}}\" ya est? en el diccionario.",
-    "arrow": "?",
+    "duplicate": "\"{{from}}\" ya está en el diccionario.",
+    "arrow": "→",
     "export": "Exportar",
     "importMerge": "Importar (fusionar)",
     "exportSuccess": "Diccionario exportado.",
     "importReplaceSuccess": "Diccionario importado (reemplazado).",
     "importMergeSuccess": "Diccionario importado (fusionado).",
-    "autoLearn": "Aprendizaje autom?tico",
-    "autoLearnDesc": "Aprende autom?ticamente correcciones de palabras cuando copias texto modificado despu?s del dictado.",
-    "storedLocally": "Stored locally on your device.",
+    "autoLearn": "Aprendizaje automático",
+    "autoLearnDesc": "Aprende automáticamente correcciones de palabras cuando copias texto modificado después del dictado.",
+    "storedLocally": "Guardado localmente en tu dispositivo.",
     "edit": "Editar"
-  },
-  "snippets": {
-    "title": "Fragmentos de voz",
-    "description": "Di la frase activadora y Vocalype pegar? la expansi?n en su lugar.",
-    "empty": "Todav?a no hay fragmentos. A?ade uno abajo.",
-    "triggerPlaceholder": "Frase activadora?",
-    "expansionPlaceholder": "Texto para pegar?",
-    "add": "A?adir",
-    "remove": "Eliminar",
-    "save": "Guardar",
-    "cancel": "Cancelar",
-    "duplicate": "\"{{trigger}}\" ya existe.",
-    "arrow": "?",
-    "addNew": "Add",
-    "addTitle": "Add a snippet",
-    "editTitle": "Edit snippet",
-    "addSubmit": "Add",
-    "addFirst": "Create my first snippet",
-    "edit": "Edit"
-  },
-  "stats": {
-    "title": "Estad?sticas",
-    "totalWords": "Palabras totales",
-    "totalTranscriptions": "Transcripciones",
-    "today": "Hoy",
-    "thisWeek": "Esta semana",
-    "avgWords": "Media de palabras",
-    "mostUsedModel": "Modelo m?s usado",
-    "timeSaved": "Tiempo ahorrado",
-    "timeSavedUnit": "min",
-    "noData": "Todav?a no hay datos. Empieza a transcribir para construir tus estad?sticas.",
-    "refresh": "Actualizar",
-    "loading": "Loading…",
-    "empty": "No data available.",
-    "subtitle": "A simple overview of your usage and results in the app.",
-    "overview": "Overview",
-    "overviewDescription": "The most useful metrics to read at a glance.",
-    "totalEntries": "Transcriptions",
-    "totalEntriesSub": "Total number of results recorded.",
-    "transcriptions": "transcriptions",
-    "insights": "Benchmarks",
-    "insightsDescription": "A few simple benchmarks to understand your rhythm.",
-    "noModel": "No dominant model yet",
-    "modelSub": "The engine you use most often.",
-    "avgWordsSub": "Average length of each transcription.",
-    "quickRead": "Quick read",
-    "snapshotEntries": "Total sessions",
-    "snapshotWords": "Words dictated",
-    "snapshotTime": "Estimated time saved"
   },
   "basic": {
     "copiedToClipboard": "Texto copiado al portapapeles",
@@ -1350,7 +1146,7 @@
     "upgradeCta": "Pasar a Premium →",
     "upgrade": "Pasar a Premium",
     "historyLimited": "Historial limitado a {{limit}} entradas en Básico",
-    "shortcutsLocked": "Los atajos personalizados son una funci?n Premium",
+    "shortcutsLocked": "Los atajos personalizados son una función Premium",
     "premiumBadge": "Premium"
   },
   "plan": {
@@ -1359,38 +1155,34 @@
   },
   "commandMode": {
     "label": "Modo comando",
-    "recording": "Habla ahora? ({{count}} s)",
-    "processing": "Procesando?",
-    "errorTitle": "Modo comando ? error"
+    "recording": "Habla ahora… ({{count}} s)",
+    "processing": "Procesando…",
+    "errorTitle": "Modo comando — error"
   },
   "transcription": {
-    "warmup_preparing": "Preparando micr?fono?",
-    "warmup_ready": "El dictado estar? disponible autom?ticamente cuando el motor est? listo."
+    "warmup_preparing": "Preparando micrófono...",
+    "warmup_ready": "El dictado estará disponible automáticamente cuando el motor está listo."
   },
   "whisperMode": {
     "label": "Modo Whisper",
     "enabled": "Modo Whisper activado",
     "disabled": "Modo Whisper desactivado",
-    "errorTitle": "Modo Whisper ? error"
+    "errorTitle": "Modo Whisper — error"
   },
   "languageToggle": {
     "switched": "Idioma: {{lang}}",
     "auto": "Auto"
   },
   "hints": {
-    "firstLaunch": "Pulsa {{shortcut}} en cualquier lugar para empezar a dictar ? tu texto aparecer? autom?ticamente."
+    "firstLaunch": "Pulsa {{shortcut}} en cualquier lugar para empezar a dictar — tu texto aparecerá automáticamente."
   },
   "tooltips": {
-    "vad": "Detecci?n de actividad de voz: detecta autom?ticamente cu?ndo empiezas y dejas de hablar.",
-    "postProcessing": "Ejecuta IA sobre tu transcripci?n despu?s de capturarla para corregir gram?tica o aplicar un prompt personalizado.",
-    "pasteMethod": "C?mo se inserta el texto: Portapapeles usa Cmd+V (m?s compatible) y Directo simula pulsaciones de teclas.",
-    "typingTool": "Backend de entrada en Linux para inyectar texto. Auto elige la mejor opci?n para tu sesi?n.",
-    "adaptiveVocabulary": "Aprende palabras poco comunes que usas en la app activa para mejorar el reconocimiento.",
-    "adaptiveVoiceProfile": "Aprende tu ritmo de habla con el tiempo para mejorar la detecci?n de silencios."
+    "vad": "Detección de actividad de voz: detecta automáticamente cuándo empiezas y dejas de hablar.",
+    "postProcessing": "Ejecuta IA sobre tu transcripción después de capturarla para corregir gramática o aplicar un prompt personalizado."
   },
   "a11y": {
     "notifications": "Notificaciones",
-    "settingsNav": "Navegaci?n de ajustes",
+    "settingsNav": "Navegación de ajustes",
     "statusReady": "Listo",
     "statusRecording": "Grabando",
     "statusError": "Error",
@@ -1476,29 +1268,29 @@
   "notes": {
     "search": "Buscar...",
     "new": "Nueva nota",
-    "empty": "A?n no hay notas.\nHaz clic en + para crear una.",
+    "empty": "Aún no hay notas.\nHaz clic en + para crear una.",
     "startCapture": "Dictar una nota",
     "stopCapture": "Detener",
     "importAudio": "Importar audio",
     "selectOrCreate": "Selecciona una nota o crea una nueva",
-    "titlePlaceholder": "T?tulo",
+    "titlePlaceholder": "Título",
     "saving": "Guardando...",
-    "titleAi": "T?tulo IA",
-    "category": "Categor?a / carpeta",
+    "titleAi": "Título IA",
+    "category": "Categoría / carpeta",
     "actions": "Acciones",
     "summarize": "Resumir",
     "export": "Exportar",
-    "closeTitle": "Finalizar la nota ? el pr?ximo dictado crear? una nueva nota",
+    "closeTitle": "Finalizar la nota — el próximo dictado creará una nueva nota",
     "close": "Nueva nota",
     "contentPlaceholder": "Empieza a escribir...",
     "captureError": "No se pudo iniciar el dictado de la nota",
-    "closed": "Nota de voz finalizada ? el pr?ximo dictado crear? una nueva nota",
+    "closed": "Nota de voz finalizada — el próximo dictado creará una nueva nota",
     "closeError": "No se pudo finalizar la nota activa",
     "exportSuccess": "Nota exportada.",
     "exportError": "No se pudo exportar la nota",
     "importingAudio": "Transcribiendo el archivo de audio...",
     "importAudioEmpty": "No se extrajo texto del archivo",
-    "importAudioSuccess": "Audio a?adido a la nota.",
+    "importAudioSuccess": "Audio añadido a la nota.",
     "importAudioError": "No se pudo importar el archivo de audio",
     "copyEmpty": "No hay contenido para copiar",
     "copySuccess": "Nota copiada.",
@@ -1509,36 +1301,36 @@
     "extractingActions": "Extrayendo acciones...",
     "extractActionsSuccess": "Acciones actualizadas.",
     "extractActionsError": "No se pudieron extraer las acciones",
-    "generatingTitle": "Generando t?tulo...",
-    "generateTitleSuccess": "T?tulo generado.",
-    "generateTitleError": "No se pudo generar el t?tulo",
-    "untitled": "Sin t?tulo",
+    "generatingTitle": "Generando título...",
+    "generateTitleSuccess": "Título generado.",
+    "generateTitleError": "No se pudo generar el título",
+    "untitled": "Sin título",
     "emptyContent": "Sin contenido",
-    "allCategories": "Todas las categor?as",
+    "allCategories": "Todas las categorías",
     "archive": "Archivar",
     "unarchive": "Desarchivar",
     "duplicate": "Duplicar",
     "pin": "Fijar",
-    "unpin": "Quitar fijaci?n"
+    "unpin": "Quitar fijación"
   },
   "billing": {
     "title": "Cuenta",
     "subtitle": "Gestiona tu plan, tu uso y tus facturas.",
     "plan": {
       "title": "Plan actual",
-      "noSubscription": "No hay ninguna suscripci?n activa",
+      "noSubscription": "No hay ninguna suscripción activa",
       "trialEnds": "Termina el {{date}}",
       "renewsOn": "Se renueva el {{date}}",
-      "price": "12 ?",
-      "pricePeriod": "/ mes ? facturaci?n anual",
-      "renewsPrefix": "Pr?xima renovaci?n el"
+      "price": "12 €",
+      "pricePeriod": "/ mes — facturación anual",
+      "renewsPrefix": "Próxima renovación el"
     },
     "usage": {
       "title": "Uso semanal",
-      "description": "Se reinicia cada lunes. El uso es aproximado y se basa en el n?mero de transcripciones.",
+      "description": "Se reinicia cada lunes. El uso es aproximado y se basa en el número de transcripciones.",
       "transcriptions": "Transcripciones esta semana",
       "resetsOn": "Se reinicia el {{date}}",
-      "period": "Per?odo actual",
+      "period": "Período actual",
       "weeklyReset": "Reinicio semanal"
     },
     "stats": {
@@ -1546,12 +1338,12 @@
       "words": "Palabras dictadas",
       "sessions": "Dictados totales",
       "allTime": "Total acumulado",
-      "allSessions": "Total hist?rico"
+      "allSessions": "Total histórico"
     },
     "tier": {
       "trial": "Premium (prueba)",
       "premium": "Premium",
-      "basic": "B?sico"
+      "basic": "Básico"
     },
     "status": {
       "trialing": "Prueba en curso",
@@ -1562,23 +1354,23 @@
       "inactive": "Inactiva"
     },
     "actions": {
-      "title": "Suscripci?n",
+      "title": "Suscripción",
       "manage": {
-        "title": "Gestionar suscripci?n",
-        "description": "Modificar, cancelar o actualizar tu suscripci?n.",
-        "button": "Gestionar ?"
+        "title": "Gestionar suscripción",
+        "description": "Modificar, cancelar o actualizar tu suscripción.",
+        "button": "Gestionar →"
       },
       "plans": "Ver todos los planes",
       "upgrade": {
         "title": "Pasar a Premium",
-        "titleTrial": "Iniciar la suscripci?n Premium",
+        "titleTrial": "Iniciar la suscripción Premium",
         "description": "Desbloquea dictado ilimitado y acciones con IA.",
-        "descriptionTrial": "Activa tu suscripci?n antes de que termine la prueba.",
-        "button": "Mejorar ?"
+        "descriptionTrial": "Activa tu suscripción antes de que termine la prueba.",
+        "button": "Mejorar →"
       }
     },
     "payment": {
-      "title": "M?todo de pago",
+      "title": "Método de pago",
       "managed": "Gestionado con Stripe",
       "securePortal": "Portal seguro",
       "modify": "Modificar",
@@ -1586,18 +1378,18 @@
     },
     "invoices": {
       "title": "Facturas recientes",
-      "viewAll": "Ver todo ?",
+      "viewAll": "Ver todo →",
       "colDate": "Fecha",
-      "colDescription": "Descripci?n",
+      "colDescription": "Descripción",
       "colStatus": "Estado",
       "colAmount": "Importe",
-      "portalHint": "Tus facturas est?n disponibles en el portal de Stripe.",
-      "openPortal": "Abrir portal ?"
+      "portalHint": "Tus facturas están disponibles en el portal de Stripe.",
+      "openPortal": "Abrir portal →"
     },
     "upgrade": {
       "title": "Pasar a Premium",
       "description": "Desbloquea dictado ilimitado, atajos personalizados e historial completo en todas tus aplicaciones.",
-      "cta": "Mejorar ahora ?"
+      "cta": "Mejorar ahora →"
     }
   }
 }

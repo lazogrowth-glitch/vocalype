@@ -95,7 +95,7 @@ export const PostProcessingSettings: React.FC = () => {
     window.dispatchEvent(
       new CustomEvent("vocalype:navigate-settings", {
         detail: {
-          section: "advanced",
+          section: "settings",
           scrollToId: "cloud-post-process-toggle",
         },
       }),

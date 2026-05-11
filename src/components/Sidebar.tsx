@@ -14,7 +14,7 @@ import { SECTIONS_CONFIG } from "./sections-config";
 import { commands } from "@/bindings";
 import { listen } from "@tauri-apps/api/event";
 
-const BOTTOM_SECTION_IDS = new Set(["billing", "about", "debug"]);
+const BOTTOM_SECTION_IDS = new Set(["billing", "debug"]);
 
 interface SidebarProps {
   activeSection: import("./sections-config").SidebarSection;
@@ -287,9 +287,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {mainSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
-          const showConfigLabel = !collapsed && section.id === "general";
+          const showConfigLabel = !collapsed && section.id === "dictee";
           const showUsageLabel = !collapsed && section.id === "history";
-          const showAdvancedLabel = !collapsed && section.id === "advanced";
+          const showSettingsLabel = !collapsed && section.id === "settings";
           const count = sectionCounts[section.id];
 
           return (
@@ -307,12 +307,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {t("sidebar.group.usage")}
                 </div>
               )}
-              {showAdvancedLabel && (
+              {showSettingsLabel && (
                 <div
                   className="sidebar-section-label"
                   style={{ paddingTop: 24 }}
                 >
-                  {t("sidebar.group.advanced")}
+                  {t("sidebar.group.settings")}
                 </div>
               )}
               <button

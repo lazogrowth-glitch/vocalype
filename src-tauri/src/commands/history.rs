@@ -83,24 +83,6 @@ pub async fn delete_history_entry(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn update_history_limit(
-    app: AppHandle,
-    history_manager: State<'_, Arc<HistoryManager>>,
-    limit: usize,
-) -> Result<(), String> {
-    let mut settings = crate::settings::get_settings(&app);
-    settings.history_limit = limit;
-    crate::settings::write_settings(&app, settings);
-
-    history_manager
-        .cleanup_old_entries()
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
 pub async fn reprocess_history_entry(
     app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,

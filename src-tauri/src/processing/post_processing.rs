@@ -42,6 +42,9 @@ pub(crate) fn build_standard_post_process_system_prompt(prompt_template: &str) -
 }
 
 const VOCALYPE_CLOUD_70B_MODEL_ID: &str = "llama-3.3-70b-versatile";
+const VOCALYPE_CLOUD_EMAIL_MODEL_ID: &str = "llama-3.1-8b-instant";
+const EMAIL_AUTO_POST_PROCESS_PROMPT_ID: &str = "email_auto_fallback";
+const EMAIL_AUTO_POST_PROCESS_PROMPT: &str = "Transform the dictated text into a clear, professional email body.\n\nKeep the same language as the source.\nPreserve every explicit fact exactly.\nDo not answer questions on behalf of the recipient.\nDo not invent names, dates, explanations, relationships, commitments, context, or background.\nDo not add placeholders such as [Your name] or [Votre nom].\nDo not add a subject line.\nOnly add a greeting or closing if the source clearly already contains one or explicitly asks for one.\nIf the source is short, keep the result short.\nReturn only the email body.\n\nText:\n${output}";
 
 fn standard_post_process_guardrails() -> &'static str {
     "You are Vocalype's transcription post-processor.\n\
@@ -458,19 +461,29 @@ pub(crate) async fn post_process_transcription(
         }
     };
 
-    let model = settings
+    let configured_model = settings
         .post_process_models
         .get(&provider.id)
         .cloned()
         .unwrap_or_default();
 
-    if model.trim().is_empty() {
+    if configured_model.trim().is_empty() {
         info!(
             "[post-process] SKIP — provider '{}' has no model configured",
             provider.id
         );
         return None;
     }
+
+    let is_email_context = app_context
+        .map(|ctx| ctx.category == AppContextCategory::Email)
+        .unwrap_or(false);
+
+    let model = if provider.id == "vocalype-cloud" && is_email_context {
+        VOCALYPE_CLOUD_EMAIL_MODEL_ID.to_string()
+    } else {
+        configured_model
+    };
 
     // For vocalype-cloud, use the user's JWT from keyring as the Bearer token.
     // The backend validates it and proxies to Cerebras.
@@ -500,25 +513,32 @@ pub(crate) async fn post_process_transcription(
             .unwrap_or_default()
     };
 
-    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
-        Some(id) => id.clone(),
-        None => {
-            info!("[post-process] SKIP — no prompt selected (post_process_selected_prompt_id is null)");
-            return None;
-        }
-    };
-
-    let prompt = match settings
-        .post_process_prompts
-        .iter()
-        .find(|prompt| prompt.id == selected_prompt_id)
-    {
-        Some(prompt) => prompt.prompt.clone(),
-        None => {
+    let (selected_prompt_id, prompt) = match &settings.post_process_selected_prompt_id {
+        Some(id) => match settings
+            .post_process_prompts
+            .iter()
+            .find(|prompt| prompt.id == *id)
+        {
+            Some(prompt) => (id.clone(), prompt.prompt.clone()),
+            None => {
+                info!(
+                    "[post-process] SKIP - prompt '{}' not found in post_process_prompts",
+                    id
+                );
+                return None;
+            }
+        },
+        None if is_email_context => {
             info!(
-                "[post-process] SKIP — prompt '{}' not found in post_process_prompts",
-                selected_prompt_id
+                "[post-process] Email context detected with no selected prompt; using built-in email fallback prompt"
             );
+            (
+                EMAIL_AUTO_POST_PROCESS_PROMPT_ID.to_string(),
+                EMAIL_AUTO_POST_PROCESS_PROMPT.to_string(),
+            )
+        }
+        None => {
+            info!("[post-process] SKIP - no prompt selected (post_process_selected_prompt_id is null)");
             return None;
         }
     };
@@ -537,7 +557,7 @@ pub(crate) async fn post_process_transcription(
     // Code context is already blocked upstream; Browser/Unknown produce no hint.
     let context_hint: Option<&'static str> = app_context.and_then(|ctx| match ctx.category {
         AppContextCategory::Email => {
-            Some("Context: email — formal tone, complete punctuation, capitalize names properly. Structure the email with proper line breaks: salutation on its own line followed by a blank line, body paragraphs separated by blank lines, closing phrase on its own line.")
+            Some("Context: email ? rewrite conservatively as an email body, not as a reply with invented content. Keep the same language as the source text. Preserve every explicit fact exactly. Never answer the sender's question on behalf of the recipient. Never invent names, relationships, time references, explanations, promises, or background. Never add placeholders like [Your name] or [Votre nom]. Do not add a subject line. Only add a greeting or closing if the source already implies one very clearly. If the dictated text is short, keep the result short and direct.")
         }
         AppContextCategory::Chat => {
             Some("Context: chat message — casual tone, light punctuation, conversational style.")

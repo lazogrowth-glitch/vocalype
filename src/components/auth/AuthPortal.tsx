@@ -572,9 +572,13 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
       ? "L'activation sur ce PC n'a pas abouti. Cliquez sur « Réessayer » ou reconnectez-vous."
       : null;
   const localSignupError =
-    mode === "signup" && confirmPassword && password !== confirmPassword
-      ? t("auth.errors.passwordsDoNotMatch")
-      : null;
+    mode === "signup" && password && password.length < 6
+      ? "Le mot de passe doit contenir au moins 6 caractères."
+      : mode === "signup" && confirmPassword && confirmPassword.length < 6
+        ? "La confirmation doit contenir au moins 6 caractères."
+        : mode === "signup" && confirmPassword && password !== confirmPassword
+          ? t("auth.errors.passwordsDoNotMatch")
+          : null;
   const visibleError =
     localSignupError ?? displayError ?? activationFailedFallback;
 
@@ -866,6 +870,7 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
 
             {/* Email / password form — opens browser on submit */}
             <form
+              noValidate
               onSubmit={(e) => {
                 void handleSubmit(e);
               }}
@@ -966,7 +971,6 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
                       mode === "signup" ? "new-password" : "current-password"
                     }
                     required
-                    minLength={mode === "signup" ? 6 : 1}
                   />
                   <button
                     type="button"
@@ -1041,7 +1045,6 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       autoComplete="new-password"
                       required
-                      minLength={6}
                     />
                     <button
                       type="button"
@@ -1090,8 +1093,11 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
                   !canInteract ||
                   !email.trim() ||
                   !password ||
+                  (mode === "signup" && password.length < 6) ||
                   (mode === "signup" &&
-                    (!confirmPassword || password !== confirmPassword))
+                    (!confirmPassword ||
+                      confirmPassword.length < 6 ||
+                      password !== confirmPassword))
                 }
               >
                 {isSubmitting ? (

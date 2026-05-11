@@ -325,6 +325,19 @@
   color: #56565e;
 }
 
+.auth-input-wrap input[type="password"]::-ms-reveal,
+.auth-input-wrap input[type="password"]::-ms-clear {
+  display: none;
+}
+
+.auth-input-wrap input[type="password"]::-webkit-credentials-auto-fill-button,
+.auth-input-wrap
+  input[type="password"]::-webkit-textfield-decoration-container {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ---- Checkbox ---- */
 .auth-check {
   display: inline-flex;

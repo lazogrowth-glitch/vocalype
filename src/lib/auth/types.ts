@@ -29,6 +29,8 @@ export interface SubscriptionAccess {
   current_period_ends_at?: string | null;
   has_access: boolean;
   tier: SubscriptionTier;
+  plan?: BillingPlan | "small_agency" | null;
+  billing_plan?: BillingPlan | "small_agency" | null;
   can_manage_billing?: boolean;
   quota?: WeeklyQuota | null;
 }

@@ -454,6 +454,7 @@ def init_db():
     ensure_column(db, "users", "weekly_transcription_count", "INTEGER NOT NULL DEFAULT 0")
     ensure_column(db, "users", "weekly_transcription_reset_at", "TEXT")
     ensure_column(db, "users", "trial_reminder_sent", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column(db, "users", "subscription_plan", "TEXT")
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS premium_device_entitlements (
@@ -500,6 +501,81 @@ def init_db():
         """
     )
     ensure_column(db, "users", "referral_code", "TEXT")
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS organizations (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            billing_contact_email TEXT NOT NULL,
+            support_contact_email TEXT NOT NULL,
+            seats_included INTEGER NOT NULL DEFAULT 5,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS organization_members (
+            id SERIAL PRIMARY KEY,
+            organization_id INTEGER NOT NULL,
+            user_id INTEGER,
+            email TEXT NOT NULL,
+            name TEXT,
+            role TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'invited',
+            invited_by_user_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            accepted_at TEXT,
+            UNIQUE(organization_id, email),
+            FOREIGN KEY (organization_id) REFERENCES organizations(id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (invited_by_user_id) REFERENCES users(id)
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS organization_templates (
+            id SERIAL PRIMARY KEY,
+            organization_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            prompt TEXT NOT NULL,
+            created_by_user_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (organization_id) REFERENCES organizations(id),
+            FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS organization_snippets (
+            id SERIAL PRIMARY KEY,
+            organization_id INTEGER NOT NULL,
+            trigger TEXT NOT NULL,
+            expansion TEXT NOT NULL,
+            created_by_user_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (organization_id) REFERENCES organizations(id),
+            FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS organization_dictionary_terms (
+            id SERIAL PRIMARY KEY,
+            organization_id INTEGER NOT NULL,
+            term TEXT NOT NULL,
+            note TEXT,
+            created_by_user_id INTEGER,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (organization_id) REFERENCES organizations(id),
+            FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+        )
+        """
+    )
     db.commit()
     db.close()
 
@@ -1129,10 +1205,15 @@ def scoped_limits(base_identifier: str, limits: tuple[tuple[str, int, int, int],
 
 
 BASIC_WEEKLY_TRANSCRIPTION_LIMIT = 30
+SUPPORTED_BILLING_PLANS = {"independent", "power_user", "small_agency"}
+WORKSPACE_DEFAULT_SEATS = 5
+WORKSPACE_DEFAULT_SUPPORT_EMAIL = "priority@vocalype.com"
 
 
 def get_user_tier(user) -> str:
     """Returns 'premium' or 'basic'. Never returns a hard-blocked state."""
+    if user_has_small_agency_membership(user["id"]):
+        return "premium"
     status = user["subscription_status"]
     if status == "active":
         return "premium"
@@ -1141,6 +1222,25 @@ def get_user_tier(user) -> str:
         if trial_end and utc_now() < trial_end:
             return "premium"
     return "basic"
+
+
+def normalize_billing_plan(value: str | None) -> str | None:
+    if not value:
+        return None
+    normalized = value.strip().lower()
+    return normalized if normalized in SUPPORTED_BILLING_PLANS else None
+
+
+def get_user_plan(user) -> str | None:
+    if user_has_small_agency_membership(user["id"]):
+        return "small_agency"
+    if get_user_tier(user) != "premium":
+        return None
+    return normalize_billing_plan(user.get("subscription_plan")) or "power_user"
+
+
+def has_small_agency_access(user) -> bool:
+    return get_user_plan(user) == "small_agency"
 
 
 def has_access(user) -> bool:
@@ -1170,8 +1270,304 @@ def get_weekly_quota(user) -> dict:
     }
 
 
+def load_workspace_row_for_user(user_id: int):
+    db = get_db()
+    try:
+        return db.execute(
+            """
+            SELECT
+                o.*,
+                om.id AS membership_id,
+                om.role AS current_user_role,
+                om.status AS current_user_status
+            FROM organizations o
+            JOIN organization_members om
+              ON om.organization_id = o.id
+            WHERE om.user_id = %s
+            ORDER BY o.id ASC
+            LIMIT 1
+            """,
+            (user_id,),
+        ).fetchone()
+    finally:
+        db.close()
+
+
+def user_has_small_agency_membership(user_id: int) -> bool:
+    return load_workspace_row_for_user(user_id) is not None
+
+
+def attach_user_to_pending_workspace_invites(user) -> None:
+    db = get_db()
+    try:
+        db.execute(
+            """
+            UPDATE organization_members
+            SET user_id = %s,
+                status = 'active',
+                accepted_at = COALESCE(accepted_at, %s),
+                name = COALESCE(name, %s)
+            WHERE user_id IS NULL
+              AND email = %s
+            """,
+            (
+                user["id"],
+                dt_to_iso(utc_now()),
+                user.get("name") or user["email"].split("@")[0],
+                user["email"],
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
+def seed_workspace_defaults(db: _PgConn, organization_id: int, user_id: int) -> None:
+    default_templates = [
+        (
+            "Scorecard intake",
+            "Standardise les notes d'appel candidat pour toute l'equipe.",
+            "Turn the dictated text into a recruiter scorecard for the team. Keep the original language. Structure with: fit, strengths, concerns, compensation, and next step. Return only the final scorecard. Text: ${output}",
+        ),
+        (
+            "Client shortlist update",
+            "Resume client partage pour envoyer un shortlist propre.",
+            "Transform the dictated text into a concise shortlist update for the client. Keep the original language. Include candidate status, fit, risks, and recommended next step. Return only the final client-ready update. Text: ${output}",
+        ),
+    ]
+    default_snippets = [
+        (
+            "envoie le debrief",
+            "Je t'envoie le debrief complet dans l'heure avec les prochaines etapes.",
+        ),
+        (
+            "shortlist client",
+            "Je partage la shortlist client aujourd'hui avec les points de vigilance et la recommandation finale.",
+        ),
+    ]
+    default_terms = [
+        ("Greenhouse", "ATS principal de l'equipe"),
+        ("scorecard", None),
+        ("retained search", None),
+    ]
+
+    for name, description, prompt in default_templates:
+        db.execute(
+            """
+            INSERT INTO organization_templates (organization_id, name, description, prompt, created_by_user_id)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (organization_id, name, description, prompt, user_id),
+        )
+    for trigger, expansion in default_snippets:
+        db.execute(
+            """
+            INSERT INTO organization_snippets (organization_id, trigger, expansion, created_by_user_id)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (organization_id, trigger, expansion, user_id),
+        )
+    for term, note in default_terms:
+        db.execute(
+            """
+            INSERT INTO organization_dictionary_terms (organization_id, term, note, created_by_user_id)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (organization_id, term, note, user_id),
+        )
+
+
+def ensure_small_agency_workspace(user):
+    if not has_small_agency_access(user):
+        return None
+
+    existing = load_workspace_row_for_user(user["id"])
+    if existing:
+        return existing
+
+    owner_name = (user.get("name") or user["email"].split("@")[0]).strip()
+    workspace_name = f"{owner_name.split(' ')[0]}'s agency"
+    db = get_db()
+    try:
+        row = db.execute(
+            """
+            INSERT INTO organizations (
+                name,
+                billing_contact_email,
+                support_contact_email,
+                seats_included
+            )
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+            """,
+            (
+                workspace_name,
+                user["email"],
+                WORKSPACE_DEFAULT_SUPPORT_EMAIL,
+                WORKSPACE_DEFAULT_SEATS,
+            ),
+        ).fetchone()
+        organization_id = row["id"]
+        db.execute(
+            """
+            INSERT INTO organization_members (
+                organization_id,
+                user_id,
+                email,
+                name,
+                role,
+                status,
+                invited_by_user_id,
+                accepted_at
+            )
+            VALUES (%s, %s, %s, %s, 'owner', 'active', %s, %s)
+            """,
+            (
+                organization_id,
+                user["id"],
+                user["email"],
+                owner_name,
+                user["id"],
+                dt_to_iso(utc_now()),
+            ),
+        )
+        seed_workspace_defaults(db, organization_id, user["id"])
+        db.commit()
+    finally:
+        db.close()
+
+    return load_workspace_row_for_user(user["id"])
+
+
+def list_workspace_members(organization_id: int) -> list[dict]:
+    db = get_db()
+    try:
+        rows = db.execute(
+            """
+            SELECT id, user_id, email, name, role, status, created_at, accepted_at
+            FROM organization_members
+            WHERE organization_id = %s
+            ORDER BY
+                CASE role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,
+                created_at ASC,
+                id ASC
+            """,
+            (organization_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        db.close()
+
+
+def list_workspace_templates(organization_id: int) -> list[dict]:
+    db = get_db()
+    try:
+        rows = db.execute(
+            """
+            SELECT id, name, description, prompt, created_at
+            FROM organization_templates
+            WHERE organization_id = %s
+            ORDER BY created_at ASC, id ASC
+            """,
+            (organization_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        db.close()
+
+
+def list_workspace_snippets(organization_id: int) -> list[dict]:
+    db = get_db()
+    try:
+        rows = db.execute(
+            """
+            SELECT id, trigger, expansion, created_at
+            FROM organization_snippets
+            WHERE organization_id = %s
+            ORDER BY created_at ASC, id ASC
+            """,
+            (organization_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        db.close()
+
+
+def list_workspace_dictionary(organization_id: int) -> list[dict]:
+    db = get_db()
+    try:
+        rows = db.execute(
+            """
+            SELECT id, term, note, created_at
+            FROM organization_dictionary_terms
+            WHERE organization_id = %s
+            ORDER BY created_at ASC, id ASC
+            """,
+            (organization_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        db.close()
+
+
+def serialize_workspace(workspace_row: dict) -> dict:
+    organization_id = workspace_row["id"]
+    return {
+        "id": str(organization_id),
+        "name": workspace_row["name"],
+        "current_user_role": workspace_row["current_user_role"],
+        "seats_included": int(workspace_row["seats_included"] or 0),
+        "billing_contact_email": workspace_row["billing_contact_email"],
+        "support_contact_email": workspace_row["support_contact_email"],
+        "members": [
+            {
+                "id": str(member["id"]),
+                "user_id": str(member["user_id"]) if member.get("user_id") else None,
+                "name": member.get("name") or member["email"].split("@")[0],
+                "email": member["email"],
+                "role": member["role"],
+                "status": member["status"],
+            }
+            for member in list_workspace_members(organization_id)
+        ],
+        "shared_templates": [
+            {
+                "id": str(template["id"]),
+                "name": template["name"],
+                "description": template.get("description") or "",
+                "prompt": template["prompt"],
+            }
+            for template in list_workspace_templates(organization_id)
+        ],
+        "shared_snippets": [
+            {
+                "id": str(snippet["id"]),
+                "trigger": snippet["trigger"],
+                "expansion": snippet["expansion"],
+            }
+            for snippet in list_workspace_snippets(organization_id)
+        ],
+        "shared_dictionary": [
+            {
+                "id": str(term["id"]),
+                "term": term["term"],
+                "note": term.get("note"),
+            }
+            for term in list_workspace_dictionary(organization_id)
+        ],
+    }
+
+
+def require_small_agency_workspace(user):
+    workspace = ensure_small_agency_workspace(user)
+    if not workspace:
+        return None, (jsonify({"error": "Small agency requis"}), 403)
+    return workspace, None
+
+
 def build_user_response(user, token: str, *, refresh_token: str | None = None, show_trial_reminder: bool = False):
     tier = get_user_tier(user)
+    plan = get_user_plan(user)
     response = {
         "token": token,
         "user": {
@@ -1185,6 +1581,8 @@ def build_user_response(user, token: str, *, refresh_token: str | None = None, s
             "current_period_ends_at": user["period_end"],
             "has_access": True,
             "tier": tier,
+            "plan": plan,
+            "billing_plan": plan,
             "can_manage_billing": bool(user["stripe_customer_id"]),
         },
     }
@@ -1353,6 +1751,8 @@ def resolve_checkout_price_id(plan: str | None = None, interval: str | None = No
     normalized_interval = (interval or "").strip().lower()
 
     if normalized_plan:
+        if normalized_plan == "small_agency":
+            raise ValueError("Small agency requires sales-assisted checkout")
         resolved_interval = normalized_interval or "monthly"
         price_id = STRIPE_PRICE_IDS.get((normalized_plan, resolved_interval), "")
         if not price_id:
@@ -1370,6 +1770,32 @@ def resolve_checkout_price_id(plan: str | None = None, interval: str | None = No
             return price_id
 
     raise RuntimeError("No Stripe price configured for checkout")
+
+
+def infer_subscription_plan_from_checkout_payload(payload: dict | None) -> str | None:
+    if not payload:
+        return None
+    return normalize_billing_plan(payload.get("plan"))
+
+
+def infer_subscription_plan_from_stripe_object(data: dict | None) -> str | None:
+    if not data:
+        return None
+
+    metadata = data.get("metadata") or {}
+    plan_from_metadata = normalize_billing_plan(metadata.get("plan"))
+    if plan_from_metadata:
+        return plan_from_metadata
+
+    items = (((data.get("items") or {}).get("data")) or []) if isinstance(data, dict) else []
+    for item in items:
+        price = item.get("price") or {}
+        price_id = (price.get("id") or "").strip()
+        for (plan, _interval), configured_price_id in STRIPE_PRICE_IDS.items():
+            if configured_price_id and configured_price_id == price_id:
+                return plan
+
+    return None
 
 
 def ensure_customer(user):
@@ -1880,6 +2306,7 @@ def register():
             db.close()
 
         register_device(device_id, user["id"])
+        attach_user_to_pending_workspace_invites(user)
 
         token = make_token(user)
         refresh_token = make_refresh_token(user)
@@ -1958,6 +2385,7 @@ def login():
             ip=ip_address,
         )
 
+    attach_user_to_pending_workspace_invites(user)
     token = make_token(user)
     refresh_token = make_refresh_token(user)
     log_security_event("login_success", user_id=user["id"], email=email, ip=ip_address)
@@ -1967,6 +2395,7 @@ def login():
 @app.route("/auth/session", methods=["GET"])
 @auth_required
 def session(user):
+    attach_user_to_pending_workspace_invites(user)
     token = make_token(user)
     refresh_token = make_refresh_token(user)
     show_reminder = maybe_send_trial_reminder(user)
@@ -2001,6 +2430,7 @@ def refresh_token_endpoint():
     if claimed_version != token_version:
         return jsonify({"error": "Token révoqué"}), 401
 
+    attach_user_to_pending_workspace_invites(user)
     new_access = make_token(user)
     new_refresh = make_refresh_token(user)
     return jsonify(build_user_response(user, new_access, refresh_token=new_refresh))
@@ -2249,6 +2679,7 @@ def billing_checkout(user):
             return jsonify({"error": "Abonnement premium déjà actif"}), 400
 
         payload = request.get_json(silent=True) or {}
+        requested_plan = infer_subscription_plan_from_checkout_payload(payload)
         price_id = resolve_checkout_price_id(
             payload.get("plan"),
             payload.get("interval"),
@@ -2259,6 +2690,18 @@ def billing_checkout(user):
             payment_method_types=["card"],
             line_items=[{"price": price_id, "quantity": 1}],
             mode="subscription",
+            metadata={
+                "user_id": str(user["id"]),
+                "plan": requested_plan or "",
+                "interval": (payload.get("interval") or "monthly"),
+            },
+            subscription_data={
+                "metadata": {
+                    "user_id": str(user["id"]),
+                    "plan": requested_plan or "",
+                    "interval": (payload.get("interval") or "monthly"),
+                }
+            },
             success_url=append_query_param(APP_RETURN_URL, "checkout=success"),
             cancel_url=append_query_param(APP_RETURN_URL, "checkout=cancelled"),
         )
@@ -2307,6 +2750,7 @@ def webhook():
     def update_subscription(
         customer_id: str,
         status: str,
+        subscription_plan: str | None = None,
         trial_end: int | None = None,
         period_end: int | None = None,
     ):
@@ -2315,10 +2759,19 @@ def webhook():
             db.execute(
                 """
                 UPDATE users
-                SET subscription_status = %s, trial_end = %s, period_end = %s
+                SET subscription_status = %s,
+                    subscription_plan = COALESCE(%s, subscription_plan),
+                    trial_end = %s,
+                    period_end = %s
                 WHERE stripe_customer_id = %s
                 """,
-                (status, to_iso(trial_end), to_iso(period_end), customer_id),
+                (
+                    status,
+                    subscription_plan,
+                    to_iso(trial_end),
+                    to_iso(period_end),
+                    customer_id,
+                ),
             )
             db.commit()
             row = db.execute(
@@ -2348,9 +2801,11 @@ def webhook():
         "customer.subscription.created",
         "customer.subscription.updated",
     ):
+        resolved_plan = infer_subscription_plan_from_stripe_object(data)
         update_subscription(
             data["customer"],
             data["status"],
+            resolved_plan,
             data.get("trial_end"),
             data.get("current_period_end"),
         )
@@ -2358,6 +2813,7 @@ def webhook():
         update_subscription(
             data["customer"],
             "canceled",
+            infer_subscription_plan_from_stripe_object(data),
             data.get("trial_end"),
             data.get("current_period_end"),
         )
@@ -2365,10 +2821,275 @@ def webhook():
     return jsonify({"ok": True})
 
 
+@app.route("/workspace/team", methods=["GET"])
+@auth_required
+def workspace_team(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    return jsonify({"workspace": serialize_workspace(workspace)})
+
+
+@app.route("/workspace/team/invite", methods=["POST"])
+@auth_required
+def workspace_invite_member(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    data = request.get_json(silent=True) or {}
+    email_value, error = require_json_string(data, "email")
+    if error:
+        return error
+    name, error = optional_json_string(data, "name")
+    if error:
+        return error
+    role = str(data.get("role", "member")).strip().lower() or "member"
+    if role not in {"admin", "member"}:
+        return jsonify({"error": "Role invalide"}), 400
+
+    email = normalize_email(email_value)
+    if not email_is_valid(email):
+        return jsonify({"error": "Email invalide"}), 400
+
+    if len(list_workspace_members(workspace["id"])) >= int(workspace["seats_included"] or 0):
+        return jsonify({"error": "Plus de siege disponible"}), 409
+
+    db = get_db()
+    try:
+        existing = db.execute(
+            """
+            SELECT id FROM organization_members
+            WHERE organization_id = %s AND email = %s
+            """,
+            (workspace["id"], email),
+        ).fetchone()
+        if existing:
+            return jsonify({"error": "Membre deja present ou invite"}), 409
+
+        linked_user = db.execute(
+            "SELECT id, name FROM users WHERE email = %s",
+            (email,),
+        ).fetchone()
+        accepted_at = dt_to_iso(utc_now()) if linked_user else None
+        status = "active" if linked_user else "invited"
+        db.execute(
+            """
+            INSERT INTO organization_members (
+                organization_id,
+                user_id,
+                email,
+                name,
+                role,
+                status,
+                invited_by_user_id,
+                accepted_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                workspace["id"],
+                linked_user["id"] if linked_user else None,
+                email,
+                name or (linked_user["name"] if linked_user else email.split("@")[0]),
+                role,
+                status,
+                user["id"],
+                accepted_at,
+            ),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"workspace": serialize_workspace(refreshed_workspace)})
+
+
+@app.route("/workspace/team/member/remove", methods=["POST"])
+@auth_required
+def workspace_remove_member(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    data = request.get_json(silent=True) or {}
+    member_id, error = require_json_string(data, "member_id")
+    if error:
+        return error
+
+    db = get_db()
+    try:
+        row = db.execute(
+            """
+            SELECT * FROM organization_members
+            WHERE id = %s AND organization_id = %s
+            """,
+            (member_id, workspace["id"]),
+        ).fetchone()
+        if not row:
+            return jsonify({"error": "Membre introuvable"}), 404
+        if row["role"] == "owner":
+            return jsonify({"error": "Impossible de retirer le owner"}), 400
+
+        db.execute(
+            "DELETE FROM organization_members WHERE id = %s",
+            (member_id,),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"workspace": serialize_workspace(refreshed_workspace)})
+
+
+@app.route("/workspace/shared-assets", methods=["GET"])
+@auth_required
+def workspace_shared_assets(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    serialized = serialize_workspace(workspace)
+    return jsonify(
+        {
+            "templates": serialized["shared_templates"],
+            "snippets": serialized["shared_snippets"],
+            "dictionary": serialized["shared_dictionary"],
+        }
+    )
+
+
+@app.route("/workspace/shared-assets/template", methods=["POST"])
+@auth_required
+def workspace_add_template(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    data = request.get_json(silent=True) or {}
+    name, error = require_json_string(data, "name")
+    if error:
+        return error
+    description, error = optional_json_string(data, "description")
+    if error:
+        return error
+    prompt, error = require_json_string(data, "prompt")
+    if error:
+        return error
+
+    db = get_db()
+    try:
+        db.execute(
+            """
+            INSERT INTO organization_templates (
+                organization_id,
+                name,
+                description,
+                prompt,
+                created_by_user_id
+            )
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (workspace["id"], name, description, prompt, user["id"]),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"templates": serialize_workspace(refreshed_workspace)["shared_templates"]})
+
+
+@app.route("/workspace/shared-assets/snippet", methods=["POST"])
+@auth_required
+def workspace_add_snippet(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    data = request.get_json(silent=True) or {}
+    trigger, error = require_json_string(data, "trigger")
+    if error:
+        return error
+    expansion, error = require_json_string(data, "expansion")
+    if error:
+        return error
+
+    db = get_db()
+    try:
+        db.execute(
+            """
+            INSERT INTO organization_snippets (
+                organization_id,
+                trigger,
+                expansion,
+                created_by_user_id
+            )
+            VALUES (%s, %s, %s, %s)
+            """,
+            (workspace["id"], trigger, expansion, user["id"]),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"snippets": serialize_workspace(refreshed_workspace)["shared_snippets"]})
+
+
+@app.route("/workspace/shared-assets/dictionary", methods=["POST"])
+@auth_required
+def workspace_add_dictionary_term(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    data = request.get_json(silent=True) or {}
+    term, error = require_json_string(data, "term")
+    if error:
+        return error
+    note, error = optional_json_string(data, "note")
+    if error:
+        return error
+
+    db = get_db()
+    try:
+        db.execute(
+            """
+            INSERT INTO organization_dictionary_terms (
+                organization_id,
+                term,
+                note,
+                created_by_user_id
+            )
+            VALUES (%s, %s, %s, %s)
+            """,
+            (workspace["id"], term, note, user["id"]),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"dictionary": serialize_workspace(refreshed_workspace)["shared_dictionary"]})
+
+
 @app.route("/admin/activate", methods=["POST"])
 def admin_activate():
     data = request.get_json(silent=True) or {}
     email = normalize_email(data.get("email", ""))
+    requested_plan = normalize_billing_plan(data.get("plan")) or "power_user"
     ip_address = client_ip()
     admin_subject = get_current_admin_subject("admin:activate")
 
@@ -2398,10 +3119,10 @@ def admin_activate():
         db.execute(
             """
             UPDATE users
-            SET subscription_status = %s, period_end = %s
+            SET subscription_status = %s, subscription_plan = %s, period_end = %s
             WHERE email = %s
             """,
-            ("active", far_future, email),
+            ("active", requested_plan, far_future, email),
         )
         db.commit()
     finally:
@@ -2420,6 +3141,7 @@ def admin_activate():
             "ok": True,
             "email": email,
             "status": "active",
+            "plan": requested_plan,
             "admin_subject": admin_subject,
         }
     )
@@ -2723,6 +3445,7 @@ def reset_password():
     clear_rate_limit("verify_reset:email", email)
     clear_rate_limit("forgot_password:email", email)
     token = make_token(user)
+    attach_user_to_pending_workspace_invites(user)
     return jsonify(build_user_response(user, token))
 
 

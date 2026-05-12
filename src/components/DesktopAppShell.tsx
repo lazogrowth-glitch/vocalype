@@ -12,6 +12,16 @@ import {
   SECTIONS_CONFIG,
 } from "./sections-config";
 import { PlanContext } from "@/lib/subscription/context";
+import {
+  deriveAppPlan,
+  getPlanCapabilities,
+} from "@/lib/subscription/plans";
+import {
+  deriveTeamWorkspace,
+  loadPersistedTeamWorkspace,
+  savePersistedTeamWorkspace,
+  type TeamWorkspace,
+} from "@/lib/subscription/workspace";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
 import type { AppSettings } from "@/bindings";
 import { UpgradePlansModal } from "./billing/UpgradePlansModal";
@@ -103,6 +113,11 @@ export function DesktopAppShell({
   const [checkoutLoadingKey, setCheckoutLoadingKey] = useState<string | null>(
     null,
   );
+  const currentPlan = deriveAppPlan(session);
+  const capabilities = getPlanCapabilities(currentPlan);
+  const [teamWorkspace, setTeamWorkspace] = useState<TeamWorkspace | null>(
+    deriveTeamWorkspace(session, currentPlan),
+  );
 
   useBackendEvents({
     t,
@@ -111,6 +126,26 @@ export function DesktopAppShell({
     settings,
     updateSetting,
   });
+
+  useEffect(() => {
+    const defaultWorkspace = deriveTeamWorkspace(session, currentPlan);
+    const userId = session?.user?.id;
+    if (!userId || !defaultWorkspace) {
+      setTeamWorkspace(null);
+      return;
+    }
+
+    const persistedWorkspace = loadPersistedTeamWorkspace(userId);
+    setTeamWorkspace(persistedWorkspace ?? defaultWorkspace);
+  }, [currentPlan, session]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId || currentPlan !== "small_agency") {
+      return;
+    }
+    savePersistedTeamWorkspace(userId, teamWorkspace);
+  }, [currentPlan, session, teamWorkspace]);
 
   useEffect(() => {
     if (!isSectionVisibleInLaunch(currentSection, settings)) {
@@ -222,9 +257,31 @@ export function DesktopAppShell({
     [handleStartCheckout],
   );
 
+  const updateTeamWorkspace = useCallback(
+    (
+      updater:
+        | TeamWorkspace
+        | null
+        | ((current: TeamWorkspace | null) => TeamWorkspace | null),
+    ) => {
+      setTeamWorkspace((current) =>
+        typeof updater === "function"
+          ? (updater as (current: TeamWorkspace | null) => TeamWorkspace | null)(
+              current,
+            )
+          : updater,
+      );
+    },
+    [],
+  );
+
   return (
     <PlanContext.Provider
       value={{
+        currentPlan,
+        capabilities,
+        teamWorkspace,
+        updateTeamWorkspace,
         isBasicTier,
         isTrialing,
         trialEndsAt,

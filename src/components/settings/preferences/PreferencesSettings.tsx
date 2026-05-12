@@ -41,6 +41,7 @@ import {
 } from "../history/HistorySettings";
 import { commands } from "@/bindings";
 import type { OverlayPosition, RecordingRetentionPeriod } from "@/bindings";
+import { usePlan } from "@/lib/subscription/context";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const C = {
@@ -417,6 +418,7 @@ const PSection: React.FC<{
 // ── Main component ─────────────────────────────────────────────────────────
 export const PreferencesSettings: React.FC = () => {
   const { settings, getSetting, updateSetting, isUpdating } = useSettings();
+  const { capabilities, openUpgradePlans, teamWorkspace } = usePlan();
   const mainRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const [activeCat, setActiveCat] = useState<CatId>("general");
@@ -938,6 +940,56 @@ export const PreferencesSettings: React.FC = () => {
                 />
               </PRow>
             </PGroup>
+
+            {capabilities.hasSharedDictionary && teamWorkspace ? (
+              <div style={{ marginTop: 18 }}>
+                <PGroup>
+                  <PRow
+                    icon={<Layers size={16} />}
+                    title={
+                      <>
+                        Dictionnaire partage{" "}
+                        <PPill
+                          label={String(teamWorkspace.sharedDictionary.length)}
+                          variant="good"
+                        />
+                      </>
+                    }
+                    desc="Termes metier visibles par toute l'equipe pour garder la meme orthographe."
+                  >
+                    <PPill label={teamWorkspace.currentUserRole} variant="gold" />
+                  </PRow>
+
+                  <PRow
+                    icon={<Code2 size={16} />}
+                    title={
+                      <>
+                        Snippets d'equipe{" "}
+                        <PPill
+                          label={String(teamWorkspace.sharedSnippets.length)}
+                          variant="good"
+                        />
+                      </>
+                    }
+                    desc="Raccourcis vocaux partages pour les messages et mises a jour recurrentes."
+                  >
+                    <PPill label="Partage" variant="good" />
+                  </PRow>
+
+                  <PRow
+                    last
+                    icon={<Star size={16} />}
+                    title="Workspace Vocalype"
+                    desc={`Bibliotheque commune de ${teamWorkspace.name}. La facturation et les ressources partagees passent par le meme espace equipe.`}
+                  >
+                    <PPill
+                      label={`${teamWorkspace.members.length}/${teamWorkspace.seatsIncluded} sieges`}
+                      variant="gold"
+                    />
+                  </PRow>
+                </PGroup>
+              </div>
+            ) : null}
           </PSection>
 
           {/* ── SORTIE TEXTE ─────────────────────────────────────────────── */}
@@ -1054,7 +1106,10 @@ export const PreferencesSettings: React.FC = () => {
                 title="Transcrire un fichier"
                 desc="Importe un fichier WAV ou FLAC et copie la transcription."
               >
-                <TranscribeFileButton />
+                <TranscribeFileButton
+                  disabled={!capabilities.canImportAudioFiles}
+                  onUpgrade={openUpgradePlans}
+                />
               </PRow>
 
               <PRow
@@ -1062,7 +1117,10 @@ export const PreferencesSettings: React.FC = () => {
                 title="Exporter mes données"
                 desc="Télécharge toutes tes transcriptions en TXT, CSV ou JSON."
               >
-                <ExportHistoryButton />
+                <ExportHistoryButton
+                  allowedFormats={capabilities.exportFormats}
+                  onUpgrade={openUpgradePlans}
+                />
               </PRow>
 
               <PRow

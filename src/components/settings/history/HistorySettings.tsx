@@ -32,6 +32,7 @@ import { usePlan } from "@/lib/subscription/context";
 import { getUserFacingErrorMessage } from "@/lib/userFacingErrors";
 import { Button } from "../../ui/Button";
 import { useSettings } from "@/hooks/useSettings";
+import type { ExportFormat } from "@/lib/subscription/plans";
 
 const PAGE_SIZE = 30;
 const BASIC_HISTORY_LIMIT = 5;
@@ -208,25 +209,49 @@ export const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   </Button>
 );
 
-export const ExportHistoryButton: React.FC = () => {
+export const ExportHistoryButton: React.FC<{
+  allowedFormats?: ExportFormat[];
+  onUpgrade?: () => void;
+}> = ({ allowedFormats, onUpgrade }) => {
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
     try {
+      if (allowedFormats && allowedFormats.length === 0) {
+        onUpgrade?.();
+        return;
+      }
+
+      const filters = [
+        { name: "Texte", extensions: ["txt"] },
+        { name: "CSV", extensions: ["csv"] },
+        { name: "Markdown", extensions: ["md"] },
+        { name: "JSON", extensions: ["json"] },
+      ].filter((filter) =>
+        allowedFormats
+          ? filter.extensions.some((extension) =>
+              allowedFormats.includes(extension as ExportFormat),
+            )
+          : true,
+      );
+
       const filePath = await save({
         defaultPath: `vocalype-history-${new Date().toISOString().slice(0, 10)}.txt`,
-        filters: [
-          { name: "Texte", extensions: ["txt"] },
-          { name: "CSV", extensions: ["csv"] },
-          { name: "Markdown", extensions: ["md"] },
-          { name: "JSON", extensions: ["json"] },
-        ],
+        filters,
       });
       if (!filePath) return;
       setExporting(true);
       const ext = filePath.split(".").pop()?.toLowerCase() ?? "txt";
       const format = ["csv", "md", "json"].includes(ext) ? ext : "txt";
+      if (allowedFormats && !allowedFormats.includes(format as ExportFormat)) {
+        toast.error(
+          t("settings.history.exportError", {
+            defaultValue: "Format d'export non disponible sur votre plan.",
+          }),
+        );
+        return;
+      }
       const result = await commands.exportHistoryEntries(format);
       if (result.status === "ok") {
         await writeTextFile(filePath, result.data);
@@ -360,12 +385,19 @@ export const ClearAllHistoryButton: React.FC<{ onCleared: () => void }> = ({
   );
 };
 
-export const TranscribeFileButton: React.FC = () => {
+export const TranscribeFileButton: React.FC<{
+  disabled?: boolean;
+  onUpgrade?: () => void;
+}> = ({ disabled = false, onUpgrade }) => {
   const { t } = useTranslation();
   const [transcribing, setTranscribing] = useState(false);
 
   const handleTranscribeFile = async () => {
     try {
+      if (disabled) {
+        onUpgrade?.();
+        return;
+      }
       const selected = await open({
         multiple: false,
         filters: [{ name: "Audio", extensions: ["wav", "flac"] }],
@@ -424,7 +456,13 @@ export const TranscribeFileButton: React.FC = () => {
 export const HistorySettings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const osType = useOsType();
-  const { isBasicTier, onStartCheckout, openUpgradePlans } = usePlan();
+  const {
+    isBasicTier,
+    onStartCheckout,
+    openUpgradePlans,
+    capabilities,
+    currentPlan,
+  } = usePlan();
   const { getSetting } = useSettings();
 
   // ── Data state ──────────────────────────────────────────────────────────────
@@ -468,7 +506,12 @@ export const HistorySettings: React.FC = () => {
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const filteredEntries = useMemo(() => {
-    let list = isBasicTier ? entries.slice(0, BASIC_HISTORY_LIMIT) : entries;
+    let list = entries;
+    if (isBasicTier) {
+      list = entries.slice(0, BASIC_HISTORY_LIMIT);
+    } else if (capabilities.historyLimit !== null) {
+      list = entries.slice(0, capabilities.historyLimit);
+    }
     if (filter === "favoris") list = list.filter((e) => e.saved);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -479,7 +522,7 @@ export const HistorySettings: React.FC = () => {
       );
     }
     return list;
-  }, [entries, isBasicTier, filter, searchQuery]);
+  }, [entries, isBasicTier, capabilities.historyLimit, filter, searchQuery]);
 
   const locale = i18n.resolvedLanguage || i18n.language || undefined;
   const groupLabels = useMemo(
@@ -677,6 +720,20 @@ export const HistorySettings: React.FC = () => {
 
   const showActionError = (error: string) => {
     const normalized = error.toLowerCase();
+    if (error === "PLAN_RESTRICTED") {
+      toast.error(
+        currentPlan === "independent"
+          ? "Cette fonction est reservee au plan Power user."
+          : "Cette fonction n'est pas disponible sur votre plan.",
+        {
+          action: {
+            label: t("basic.upgrade", { defaultValue: "Upgrade" }),
+            onClick: openUpgradePlans,
+          },
+        },
+      );
+      return;
+    }
     if (error === "PREMIUM_REQUIRED" || normalized.includes("premium")) {
       toast.error(
         t("settings.history.actionNeedsPremium", {
@@ -713,6 +770,10 @@ export const HistorySettings: React.FC = () => {
 
   const handleApplyAction = async (action: PostProcessAction) => {
     if (!selectedEntry || processingActionKey !== null) return;
+    if (!capabilities.canUseHistoryAiActions) {
+      showActionError("PLAN_RESTRICTED");
+      return;
+    }
     setProcessingActionKey(action.key);
     try {
       const result = await commands.applyHistoryPostProcessAction(
@@ -742,6 +803,10 @@ export const HistorySettings: React.FC = () => {
 
   const handleClearPostProcess = async () => {
     if (!selectedEntry || clearingPostProcess) return;
+    if (!capabilities.canUseHistoryAiActions) {
+      showActionError("PLAN_RESTRICTED");
+      return;
+    }
     setClearingPostProcess(true);
     try {
       const result = await commands.clearHistoryPostProcessAction(
@@ -1065,8 +1130,12 @@ export const HistorySettings: React.FC = () => {
               gap: 1,
             }}
           >
-            {/* Basic tier banner */}
-            {isBasicTier && entries.length > BASIC_HISTORY_LIMIT && (
+            {/* Plan limit banner */}
+            {(isBasicTier || capabilities.historyLimit !== null) &&
+              entries.length >
+                (isBasicTier
+                  ? BASIC_HISTORY_LIMIT
+                  : (capabilities.historyLimit ?? entries.length)) && (
               <div
                 style={{
                   margin: "8px 2px 4px",
@@ -1083,8 +1152,10 @@ export const HistorySettings: React.FC = () => {
               >
                 <span style={{ color: "rgba(252,211,77,0.8)" }}>
                   {t("basic.historyLimited", {
-                    defaultValue: `Limité à ${BASIC_HISTORY_LIMIT} entrées`,
-                    limit: BASIC_HISTORY_LIMIT,
+                    defaultValue: `Limite a ${isBasicTier ? BASIC_HISTORY_LIMIT : capabilities.historyLimit} entrees`,
+                    limit: isBasicTier
+                      ? BASIC_HISTORY_LIMIT
+                      : capabilities.historyLimit,
                   })}
                 </span>
                 <button

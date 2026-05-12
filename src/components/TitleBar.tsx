@@ -11,6 +11,10 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AuthSession } from "@/lib/auth/types";
+import {
+  deriveAppPlan,
+  getPlanCapabilities,
+} from "@/lib/subscription/plans";
 
 interface TitleBarProps {
   sidebarCollapsed?: boolean;
@@ -65,6 +69,8 @@ export const TitleBar = ({
   const isCozy = layoutTier === "cozy";
   const barHeight = isCompact ? 56 : isCozy ? 60 : 62;
   const menuTop = isCompact ? 54 : 58;
+  const currentPlan = deriveAppPlan(session ?? null);
+  const planLabel = getPlanCapabilities(currentPlan).label;
 
   return (
     <div
@@ -171,10 +177,10 @@ export const TitleBar = ({
                           count: trialDaysLeft,
                         })}
                       </span>
-                    ) : session.subscription?.tier === "premium" ? (
-                      <span style={pillStyle(true)}>{t("plan.premium")}</span>
                     ) : (
-                      <span style={pillStyle(false)}>{t("plan.basic")}</span>
+                      <span style={pillStyle(currentPlan !== "basic")}>
+                        {planLabel}
+                      </span>
                     )}
                   </div>
                 </div>

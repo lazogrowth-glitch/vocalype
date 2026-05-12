@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { TitleBar } from "./TitleBar";
 import { Sidebar } from "./Sidebar";
+import { authClient } from "@/lib/auth/client";
 import type { AuthSession, BillingCheckoutRequest } from "@/lib/auth/types";
 import {
   isSectionVisibleInLaunch,
@@ -19,6 +20,7 @@ import {
 import {
   deriveTeamWorkspace,
   loadPersistedTeamWorkspace,
+  mapTeamWorkspacePayload,
   savePersistedTeamWorkspace,
   type TeamWorkspace,
 } from "@/lib/subscription/workspace";
@@ -137,6 +139,26 @@ export function DesktopAppShell({
 
     const persistedWorkspace = loadPersistedTeamWorkspace(userId);
     setTeamWorkspace(persistedWorkspace ?? defaultWorkspace);
+
+    const token = session?.token ?? authClient.getStoredToken();
+    if (!token) {
+      return;
+    }
+
+    let cancelled = false;
+    authClient
+      .fetchWorkspaceTeam(token)
+      .then((response) => {
+        if (cancelled) return;
+        setTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
+      })
+      .catch(() => {
+        // Keep the local fallback if the backend workspace is not reachable yet.
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentPlan, session]);
 
   useEffect(() => {

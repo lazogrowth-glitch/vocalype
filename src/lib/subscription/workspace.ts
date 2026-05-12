@@ -44,6 +44,39 @@ export type TeamWorkspace = {
   sharedDictionary: SharedWorkspaceTerm[];
 };
 
+export type TeamWorkspacePayload = {
+  id: string;
+  name: string;
+  current_user_role: TeamRole;
+  seats_included: number;
+  billing_contact_email: string;
+  support_contact_email: string;
+  members: Array<{
+    id: string;
+    user_id?: string | null;
+    name: string;
+    email: string;
+    role: TeamRole;
+    status: TeamMemberStatus;
+  }>;
+  shared_templates: Array<{
+    id: string;
+    name: string;
+    description: string;
+    prompt: string;
+  }>;
+  shared_snippets: Array<{
+    id: string;
+    trigger: string;
+    expansion: string;
+  }>;
+  shared_dictionary: Array<{
+    id: string;
+    term: string;
+    note?: string | null;
+  }>;
+};
+
 const WORKSPACE_STORAGE_PREFIX = "vocalype.workspace.";
 
 export function deriveTeamWorkspace(
@@ -119,6 +152,42 @@ export function deriveTeamWorkspace(
         note: "Nom de domaine equipe",
       },
     ],
+  };
+}
+
+export function mapTeamWorkspacePayload(
+  payload: TeamWorkspacePayload,
+): TeamWorkspace {
+  return {
+    id: payload.id,
+    name: payload.name,
+    currentUserRole: payload.current_user_role,
+    seatsIncluded: payload.seats_included,
+    billingContactEmail: payload.billing_contact_email,
+    supportContactEmail: payload.support_contact_email,
+    members: payload.members.map((member) => ({
+      id: member.id,
+      name: member.name,
+      email: member.email,
+      role: member.role,
+      status: member.status,
+    })),
+    sharedTemplates: payload.shared_templates.map((template) => ({
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      prompt: template.prompt,
+    })),
+    sharedSnippets: payload.shared_snippets.map((snippet) => ({
+      id: snippet.id,
+      trigger: snippet.trigger,
+      expansion: snippet.expansion,
+    })),
+    sharedDictionary: payload.shared_dictionary.map((term) => ({
+      id: term.id,
+      term: term.term,
+      note: term.note ?? undefined,
+    })),
   };
 }
 

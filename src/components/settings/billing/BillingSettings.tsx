@@ -16,6 +16,7 @@ import {
 import { authClient } from "@/lib/auth/client";
 import type { AuthSession } from "@/lib/auth/types";
 import { usePlan } from "@/lib/subscription/context";
+import { mapTeamWorkspacePayload } from "@/lib/subscription/workspace";
 import type { TeamMember, TeamRole } from "@/lib/subscription/workspace";
 import { commands, type HistoryStats } from "@/bindings";
 
@@ -401,6 +402,7 @@ export const BillingSettings: React.FC = () => {
   const [showPlanComparison, setShowPlanComparison] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<TeamRole>("member");
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
 
   useEffect(() => {
     setSession(authClient.getStoredSession());
@@ -464,7 +466,7 @@ export const BillingSettings: React.FC = () => {
     teamWorkspace?.currentUserRole === "owner" ||
     teamWorkspace?.currentUserRole === "admin";
 
-  const handleInviteMember = useCallback(() => {
+  const handleInviteMember = useCallback(async () => {
     const normalizedEmail = inviteEmail.trim().toLowerCase();
     if (
       !teamWorkspace ||
@@ -475,25 +477,23 @@ export const BillingSettings: React.FC = () => {
       return;
     }
 
-    const inferredName = normalizedEmail.split("@")[0].replace(/[._-]+/g, " ");
-    updateTeamWorkspace((current) => {
-      if (!current) return current;
-      return {
-        ...current,
-        members: [
-          ...current.members,
-          {
-            id: `invited-${normalizedEmail}`,
-            name: inferredName || normalizedEmail,
-            email: normalizedEmail,
-            role: inviteRole,
-            status: "invited",
-          },
-        ],
-      };
-    });
-    setInviteEmail("");
-    setInviteRole("member");
+    const token = authClient.getStoredToken();
+    if (!token) return;
+
+    setWorkspaceLoading(true);
+    try {
+      const response = await authClient.inviteWorkspaceMember(token, {
+        email: normalizedEmail,
+        role: inviteRole,
+      });
+      updateTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
+      setInviteEmail("");
+      setInviteRole("member");
+    } catch (error) {
+      console.error("Failed to invite workspace member:", error);
+    } finally {
+      setWorkspaceLoading(false);
+    }
   }, [
     inviteEmail,
     inviteRole,
@@ -503,14 +503,19 @@ export const BillingSettings: React.FC = () => {
     updateTeamWorkspace,
   ]);
 
-  const handleRemoveMember = useCallback((memberId: string) => {
-    updateTeamWorkspace((current) => {
-      if (!current) return current;
-      return {
-        ...current,
-        members: current.members.filter((member) => member.id !== memberId),
-      };
-    });
+  const handleRemoveMember = useCallback(async (memberId: string) => {
+    const token = authClient.getStoredToken();
+    if (!token) return;
+
+    setWorkspaceLoading(true);
+    try {
+      const response = await authClient.removeWorkspaceMember(token, memberId);
+      updateTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
+    } catch (error) {
+      console.error("Failed to remove workspace member:", error);
+    } finally {
+      setWorkspaceLoading(false);
+    }
   }, [updateTeamWorkspace]);
 
   return (
@@ -1141,7 +1146,9 @@ export const BillingSettings: React.FC = () => {
                     value={inviteEmail}
                     onChange={(event) => setInviteEmail(event.target.value)}
                     placeholder="coequipier@agence.com"
-                    disabled={!canManageWorkspace || seatsRemaining <= 0}
+                    disabled={
+                      workspaceLoading || !canManageWorkspace || seatsRemaining <= 0
+                    }
                     style={{
                       height: 40,
                       borderRadius: 10,
@@ -1157,7 +1164,9 @@ export const BillingSettings: React.FC = () => {
                   <select
                     value={inviteRole}
                     onChange={(event) => setInviteRole(event.target.value as TeamRole)}
-                    disabled={!canManageWorkspace || seatsRemaining <= 0}
+                    disabled={
+                      workspaceLoading || !canManageWorkspace || seatsRemaining <= 0
+                    }
                     style={{
                       height: 40,
                       borderRadius: 10,
@@ -1174,8 +1183,13 @@ export const BillingSettings: React.FC = () => {
                   </select>
                   <button
                     type="button"
-                    onClick={handleInviteMember}
-                    disabled={!canManageWorkspace || !inviteEmail.trim() || seatsRemaining <= 0}
+                    onClick={() => void handleInviteMember()}
+                    disabled={
+                      workspaceLoading ||
+                      !canManageWorkspace ||
+                      !inviteEmail.trim() ||
+                      seatsRemaining <= 0
+                    }
                     style={{
                       height: 40,
                       padding: "0 14px",
@@ -1191,7 +1205,10 @@ export const BillingSettings: React.FC = () => {
                       alignItems: "center",
                       gap: 8,
                       opacity:
-                        !canManageWorkspace || !inviteEmail.trim() || seatsRemaining <= 0
+                        workspaceLoading ||
+                        !canManageWorkspace ||
+                        !inviteEmail.trim() ||
+                        seatsRemaining <= 0
                           ? 0.45
                           : 1,
                     }}
@@ -1264,8 +1281,8 @@ export const BillingSettings: React.FC = () => {
                       {member.role !== "owner" ? (
                         <button
                           type="button"
-                          onClick={() => handleRemoveMember(member.id)}
-                          disabled={!canManageWorkspace}
+                          onClick={() => void handleRemoveMember(member.id)}
+                          disabled={workspaceLoading || !canManageWorkspace}
                           style={{
                             height: 32,
                             padding: "0 10px",

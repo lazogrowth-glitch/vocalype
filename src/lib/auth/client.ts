@@ -31,6 +31,10 @@ import type {
   ChangePasswordPayload,
   ResetPasswordPayload,
 } from "./types";
+import type {
+  TeamRole,
+  TeamWorkspacePayload,
+} from "@/lib/subscription/workspace";
 import { load } from "@tauri-apps/plugin-store";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -45,6 +49,16 @@ const AUTH_STORE_FILE = "auth.store.json";
 
 type PersistedAuthSession = Omit<AuthSession, "token"> & {
   token?: string | null;
+};
+
+type WorkspaceTeamResponse = {
+  workspace: TeamWorkspacePayload;
+};
+
+type WorkspaceInvitePayload = {
+  email: string;
+  name?: string;
+  role: TeamRole;
 };
 
 let cachedToken: string | null = null;
@@ -621,6 +635,36 @@ export const authClient = {
     return request<BillingLinkResponse>(
       "/billing/portal",
       { method: "POST" },
+      token,
+    );
+  },
+
+  async fetchWorkspaceTeam(token: string) {
+    return request<WorkspaceTeamResponse>(
+      "/workspace/team",
+      { method: "GET" },
+      token,
+    );
+  },
+
+  async inviteWorkspaceMember(token: string, payload: WorkspaceInvitePayload) {
+    return request<WorkspaceTeamResponse>(
+      "/workspace/team/invite",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+  },
+
+  async removeWorkspaceMember(token: string, memberId: string) {
+    return request<WorkspaceTeamResponse>(
+      "/workspace/team/member/remove",
+      {
+        method: "POST",
+        body: JSON.stringify({ member_id: memberId }),
+      },
       token,
     );
   },

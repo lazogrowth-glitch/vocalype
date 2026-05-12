@@ -32,6 +32,9 @@ import type {
   ResetPasswordPayload,
 } from "./types";
 import type {
+  SharedWorkspaceSnippetPayload,
+  SharedWorkspaceTemplatePayload,
+  SharedWorkspaceTermPayload,
   TeamRole,
   TeamWorkspacePayload,
 } from "@/lib/subscription/workspace";
@@ -59,6 +62,34 @@ type WorkspaceInvitePayload = {
   email: string;
   name?: string;
   role: TeamRole;
+};
+
+type WorkspaceTemplatePayload = {
+  name: string;
+  description?: string;
+  prompt: string;
+};
+
+type WorkspaceSnippetPayload = {
+  trigger: string;
+  expansion: string;
+};
+
+type WorkspaceDictionaryPayload = {
+  term: string;
+  note?: string;
+};
+
+type WorkspaceTemplatesResponse = {
+  templates: SharedWorkspaceTemplatePayload[];
+};
+
+type WorkspaceSnippetsResponse = {
+  snippets: SharedWorkspaceSnippetPayload[];
+};
+
+type WorkspaceDictionaryResponse = {
+  dictionary: SharedWorkspaceTermPayload[];
 };
 
 let cachedToken: string | null = null;
@@ -664,6 +695,42 @@ export const authClient = {
       {
         method: "POST",
         body: JSON.stringify({ member_id: memberId }),
+      },
+      token,
+    );
+  },
+
+  async addWorkspaceTemplate(token: string, payload: WorkspaceTemplatePayload) {
+    return request<WorkspaceTemplatesResponse>(
+      "/workspace/shared-assets/template",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+  },
+
+  async addWorkspaceSnippet(token: string, payload: WorkspaceSnippetPayload) {
+    return request<WorkspaceSnippetsResponse>(
+      "/workspace/shared-assets/snippet",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+  },
+
+  async addWorkspaceDictionaryTerm(
+    token: string,
+    payload: WorkspaceDictionaryPayload,
+  ) {
+    return request<WorkspaceDictionaryResponse>(
+      "/workspace/shared-assets/dictionary",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
       },
       token,
     );

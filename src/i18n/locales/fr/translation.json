@@ -1316,81 +1316,200 @@
   },
   "billing": {
     "title": "Compte",
-    "subtitle": "Gérez votre formule, votre utilisation et vos factures.",
+    "subtitle": "G?rez votre formule, votre utilisation et vos factures.",
     "plan": {
       "title": "Formule actuelle",
       "noSubscription": "Aucun abonnement actif",
       "trialEnds": "Se termine le {{date}}",
       "renewsOn": "Renouvellement le {{date}}",
-      "price": "12 €",
-      "pricePeriod": "/ mois · facturation annuelle",
+      "pricePeriodAnnual": "/ mois ? facturation annuelle",
+      "pricePeriodSeat": "/ si?ge / mois",
       "renewsPrefix": "Prochain renouvellement le"
     },
     "usage": {
       "title": "Utilisation hebdomadaire",
-      "description": "Réinitialisé chaque lundi. L'utilisation est approximative — basée sur le nombre de transcriptions.",
       "transcriptions": "Transcriptions cette semaine",
-      "resetsOn": "Réinitialisation le {{date}}",
-      "period": "Période en cours",
-      "weeklyReset": "Réinitialisation hebdomadaire"
+      "resetsOn": "R?initialisation le {{date}}",
+      "period": "P?riode en cours",
+      "weeklyReset": "R?initialisation hebdomadaire"
     },
     "stats": {
       "title": "Utilisation",
-      "words": "Mots dictés",
-      "sessions": "Dictées totales",
-      "allTime": "Total depuis le début",
+      "words": "Mots dict?s",
+      "sessions": "Dict?es totales",
+      "allTime": "Total depuis le d?but",
       "allSessions": "Total historique"
     },
     "tier": {
       "trial": "Premium (essai)",
       "premium": "Premium",
-      "basic": "Basic"
+      "basic": "Basic",
+      "independent": "Independent",
+      "power_user": "Power user",
+      "small_agency": "Small agency"
     },
     "status": {
       "trialing": "Essai en cours",
       "active": "Actif",
       "pastDue": "Paiement en retard",
-      "canceled": "Annulé",
+      "canceled": "Annul?",
       "incomplete": "Incomplet",
       "inactive": "Inactif"
     },
     "actions": {
       "title": "Abonnement",
       "manage": {
-        "title": "Gérer l'abonnement",
-        "description": "Modifier, annuler ou mettre à jour votre abonnement.",
-        "button": "Gérer →"
+        "title": "G?rer l'abonnement",
+        "description": "Modifier, annuler ou mettre ? jour votre abonnement.",
+        "button": "G?rer l'abonnement"
       },
       "plans": "Voir tous les plans",
       "upgrade": {
-        "title": "Passer à Premium",
-        "titleTrial": "Démarrer l'abonnement Premium",
-        "description": "Débloque la dictée illimitée et les actions IA.",
-        "descriptionTrial": "Démarrez votre abonnement avant la fin de l'essai.",
-        "button": "Mettre à niveau →"
+        "title": "Passer ? Premium",
+        "titleTrial": "D?marrer l'abonnement Premium",
+        "description": "D?bloque la dict?e illimit?e et les actions IA.",
+        "descriptionTrial": "D?marrez votre abonnement avant la fin de l'essai.",
+        "button": "Passer ? Premium"
+      }
+    },
+    "comparison": {
+      "eyebrow": "Comparatif des plans",
+      "subtitle": "R?sum? rapide avant d'ouvrir le d?tail",
+      "cardTitle": "Independent, Power user, Small agency",
+      "cardDescription": "Ouvre le comparatif complet pour voir les diff?rences sur l'historique, les actions IA, les templates, l'?quipe et le support.",
+      "button": "Voir les diff?rences",
+      "modalTitle": "Voir les diff?rences",
+      "modalSubtitle": "Compare exactement ce que chaque plan d?bloque.",
+      "feature": "Fonctionnalit?",
+      "columns": {
+        "independent": "Independent",
+        "powerUser": "Power user",
+        "smallAgency": "Small agency"
+      },
+      "values": {
+        "yes": "Oui",
+        "no": "Non",
+        "limited": "Limit?",
+        "basic": "Basique",
+        "personal": "Personnel",
+        "personalAdvanced": "Personnel avanc?",
+        "personalTeam": "Personnel + ?quipe",
+        "threeTemplates": "3 templates",
+        "allTemplates": "Tous les templates",
+        "sharedTemplates": "Templates partag?s",
+        "oneToTwoMax": "1 ? 2 max",
+        "nineActions": "9 actions",
+        "nineSharedActions": "9 + partag?es",
+        "limitedOptional": "Limit? / optionnel",
+        "team": "?quipe",
+        "normal": "Normal"
+      },
+      "rows": {
+        "unlimitedDictation": "Dict?e illimit?e",
+        "pasteAnywhere": "Collage dans n'importe quelle app",
+        "localOffline": "Local / hors ligne par d?faut",
+        "platforms": "Mac / Windows / Linux",
+        "microphoneShortcut": "Choix micro + raccourci",
+        "languageDetection": "Langue / auto-d?tection",
+        "simpleHistory": "Historique simple",
+        "unlimitedHistory": "Historique illimit?",
+        "historyExport": "Export historique",
+        "customWords": "Mots personnalis?s",
+        "adaptiveVocabulary": "Vocabulaire adaptatif",
+        "recruiterTemplates": "Templates recruteur",
+        "customActions": "Actions IA custom Ctrl+1..9",
+        "cloudPostProcessing": "Post-traitement cloud IA",
+        "privateMode": "Mode priv? qui coupe le cloud",
+        "audioImport": "Import audio wav/flac",
+        "reprocessHistory": "Retraiter une ancienne dict?e",
+        "advancedStats": "Stats avanc?es",
+        "sharedRecruiterTemplates": "Templates recruteur partag?s",
+        "sharedDictionary": "Dictionnaire / snippets d'?quipe",
+        "seatManagement": "Gestion des si?ges",
+        "centralBilling": "Facturation centralis?e",
+        "prioritySupport": "Support prioritaire",
+        "adminControls": "Contr?les admin / owner"
+      }
+    },
+    "workspace": {
+      "title": "Workspace agence",
+      "subtitle": "Si?ges, membres, templates et admin au m?me endroit",
+      "ownerWorkspace": "Workspace owner",
+      "adminWorkspace": "Workspace admin",
+      "seatsUsed": "{{used}}/{{total}} si?ges utilis?s",
+      "seatsAvailable_one": "{{count}} si?ge libre",
+      "seatsAvailable_other": "{{count}} si?ges libres",
+      "invitePlaceholder": "coequipier@agence.com",
+      "inviteButton": "Inviter",
+      "removeButton": "Retirer",
+      "ownerBadge": "Owner",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Membre"
+      },
+      "memberStatus": {
+        "active": "Actif",
+        "invited": "Invit?"
+      },
+      "sharedLibraryTitle": "Biblioth?que partag?e",
+      "adminBillingTitle": "Admin et facturation",
+      "adminBillingDescription": "Le workspace centralise les si?ges, les ressources partag?es et le contact de facturation.",
+      "metrics": {
+        "templates": "Templates",
+        "snippets": "Snippets",
+        "terms": "Termes",
+        "support": "Support"
+      },
+      "supportPriority": "Priorit?",
+      "billingOwner": "Billing owner",
+      "supportContact": "Contact support",
+      "managedByWorkspace": "Ce compte est g?r? par votre workspace agence.",
+      "managedByWorkspaceDescription": "La facturation et les acc?s sont g?r?s par l'admin du workspace.",
+      "createTitle": "Ajouter une ressource partag?e",
+      "forms": {
+        "template": {
+          "title": "Template d'?quipe",
+          "name": "Nom du template",
+          "description": "Description courte",
+          "prompt": "Prompt partag? pour toute l'?quipe",
+          "submit": "Ajouter le template"
+        },
+        "snippet": {
+          "title": "Snippet d'?quipe",
+          "trigger": "D?clencheur vocal",
+          "expansion": "Texte d?velopp?",
+          "submit": "Ajouter le snippet"
+        },
+        "dictionary": {
+          "title": "Terme du dictionnaire",
+          "term": "Terme ou nom produit",
+          "note": "Note optionnelle",
+          "submit": "Ajouter le terme"
+        }
       }
     },
     "payment": {
-      "title": "Méthode de paiement",
-      "managed": "Géré via Stripe",
-      "securePortal": "Portail sécurisé",
+      "title": "M?thode de paiement",
+      "managed": "G?r? via Stripe",
+      "securePortal": "Portail s?curis?",
       "modify": "Modifier",
-      "billedTo": "Facturé à"
+      "billedTo": "Factur? ?"
     },
     "invoices": {
-      "title": "Factures récentes",
-      "viewAll": "Tout voir →",
+      "title": "Factures r?centes",
+      "viewAll": "Tout voir",
       "colDate": "Date",
       "colDescription": "Description",
       "colStatus": "Statut",
       "colAmount": "Montant",
       "portalHint": "Vos factures sont disponibles dans le portail Stripe.",
-      "openPortal": "Ouvrir le portail →"
+      "openPortal": "Ouvrir le portail"
     },
     "upgrade": {
-      "title": "Passer à Premium",
-      "description": "Débloque la dictée illimitée, les raccourcis personnalisés et l'historique complet.",
-      "cta": "Mettre à niveau →"
+      "title": "Passer ? Premium",
+      "description": "D?bloque la dict?e illimit?e, les raccourcis personnalis?s et l'historique complet.",
+      "cta": "Passer ? Premium"
     }
   }
 }

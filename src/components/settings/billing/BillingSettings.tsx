@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
@@ -13,17 +13,32 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { commands, type HistoryStats } from "@/bindings";
 import { authClient } from "@/lib/auth/client";
 import type { AuthSession } from "@/lib/auth/types";
 import { usePlan } from "@/lib/subscription/context";
-import { mapTeamWorkspacePayload } from "@/lib/subscription/workspace";
-import type { TeamMember, TeamRole } from "@/lib/subscription/workspace";
-import { commands, type HistoryStats } from "@/bindings";
+import {
+  mapSharedDictionary,
+  mapSharedSnippets,
+  mapSharedTemplates,
+  mapTeamWorkspacePayload,
+} from "@/lib/subscription/workspace";
+import type { TeamRole } from "@/lib/subscription/workspace";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+type TeamFeatureCell = {
+  label: string;
+  tone?: "neutral" | "good";
+};
+
+type TeamFeatureRow = {
+  feature: string;
+  independent: TeamFeatureCell;
+  powerUser: TeamFeatureCell;
+  smallAgency: TeamFeatureCell;
+};
 
 function formatDate(iso: string | null | undefined, locale?: string): string {
-  if (!iso) return "—";
+  if (!iso) return "\u2014";
   try {
     return new Intl.DateTimeFormat(locale, {
       day: "numeric",
@@ -33,6 +48,215 @@ function formatDate(iso: string | null | undefined, locale?: string): string {
   } catch {
     return iso;
   }
+}
+
+function getPlanPrice(plan: string): string | null {
+  switch (plan) {
+    case "independent":
+      return "\u20AC12";
+    case "power_user":
+      return "\u20AC24";
+    case "small_agency":
+      return "\u20AC18";
+    default:
+      return null;
+  }
+}
+
+function buildPlanComparisonRows(
+  t: (key: string, options?: Record<string, unknown>) => string,
+): TeamFeatureRow[] {
+  return [
+    {
+      feature: t("billing.comparison.rows.unlimitedDictation"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.pasteAnywhere"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.localOffline"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.platforms"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.microphoneShortcut"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.languageDetection"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.simpleHistory"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.unlimitedHistory"),
+      independent: { label: t("billing.comparison.values.limited") },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.historyExport"),
+      independent: { label: t("billing.comparison.values.basic") },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.customWords"),
+      independent: {
+        label: t("billing.comparison.values.personal"),
+        tone: "good",
+      },
+      powerUser: {
+        label: t("billing.comparison.values.personalAdvanced"),
+        tone: "good",
+      },
+      smallAgency: {
+        label: t("billing.comparison.values.personalTeam"),
+        tone: "good",
+      },
+    },
+    {
+      feature: t("billing.comparison.rows.adaptiveVocabulary"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.recruiterTemplates"),
+      independent: { label: t("billing.comparison.values.threeTemplates") },
+      powerUser: {
+        label: t("billing.comparison.values.allTemplates"),
+        tone: "good",
+      },
+      smallAgency: {
+        label: t("billing.comparison.values.sharedTemplates"),
+        tone: "good",
+      },
+    },
+    {
+      feature: t("billing.comparison.rows.customActions"),
+      independent: { label: t("billing.comparison.values.oneToTwoMax") },
+      powerUser: { label: t("billing.comparison.values.nineActions"), tone: "good" },
+      smallAgency: {
+        label: t("billing.comparison.values.nineSharedActions"),
+        tone: "good",
+      },
+    },
+    {
+      feature: t("billing.comparison.rows.cloudPostProcessing"),
+      independent: { label: t("billing.comparison.values.limitedOptional") },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.privateMode"),
+      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.audioImport"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.reprocessHistory"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.advancedStats"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
+      smallAgency: { label: t("billing.comparison.values.team"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.sharedRecruiterTemplates"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.no") },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.sharedDictionary"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.no") },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.seatManagement"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.no") },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.centralBilling"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.no") },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.prioritySupport"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.normal") },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+    {
+      feature: t("billing.comparison.rows.adminControls"),
+      independent: { label: t("billing.comparison.values.no") },
+      powerUser: { label: t("billing.comparison.values.no") },
+      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
+    },
+  ];
+}
+
+function FeatureCell({ cell }: { cell: TeamFeatureCell }) {
+  const isGood = cell.tone === "good";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 32,
+        padding: "6px 10px",
+        borderRadius: 8,
+        background: isGood ? "rgba(52,211,153,0.10)" : "rgba(255,255,255,0.03)",
+        border: isGood
+          ? "1px solid rgba(52,211,153,0.22)"
+          : "1px solid rgba(255,255,255,0.06)",
+        color: isGood ? "#8ef0bf" : "rgba(255,255,255,0.72)",
+        fontSize: 12.5,
+        fontWeight: isGood ? 600 : 500,
+        lineHeight: 1.3,
+        textAlign: "center",
+      }}
+    >
+      {cell.label}
+    </span>
+  );
 }
 
 function UsageCard({
@@ -139,78 +363,16 @@ function UsageCard({
   );
 }
 
-type PlanFeatureCell = {
-  label: string;
-  tone?: "neutral" | "good";
-};
-
-type PlanFeatureRow = {
-  feature: string;
-  independent: PlanFeatureCell;
-  powerUser: PlanFeatureCell;
-  smallAgency: PlanFeatureCell;
-};
-
-const PLAN_COMPARISON_ROWS: PlanFeatureRow[] = [
-  { feature: "Dictee illimitee", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Paste dans n'importe quelle app", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Local / offline par defaut", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Mac / Windows / Linux", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Choix micro + raccourci", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Langue / auto-detection", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Historique simple", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Historique illimite", independent: { label: "Limite" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Export historique", independent: { label: "Basique" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Mots personnalises", independent: { label: "Personnel", tone: "good" }, powerUser: { label: "Personnel avance", tone: "good" }, smallAgency: { label: "Personnel + equipe", tone: "good" } },
-  { feature: "Vocabulaire adaptatif", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Templates recruteur", independent: { label: "3 templates" }, powerUser: { label: "Tous les templates", tone: "good" }, smallAgency: { label: "Templates partages", tone: "good" } },
-  { feature: "Actions IA custom Ctrl+1..9", independent: { label: "1 a 2 max" }, powerUser: { label: "9 actions", tone: "good" }, smallAgency: { label: "9 + partagees", tone: "good" } },
-  { feature: "AI post-processing cloud", independent: { label: "Limite / optionnel" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Mode prive qui coupe le cloud", independent: { label: "Oui", tone: "good" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Import audio wav/flac", independent: { label: "Non" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Reprocess ancienne dictee", independent: { label: "Non" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Stats avancees", independent: { label: "Non" }, powerUser: { label: "Oui", tone: "good" }, smallAgency: { label: "Equipe", tone: "good" } },
-  { feature: "Shared recruiter templates", independent: { label: "Non" }, powerUser: { label: "Non" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Shared dictionary / snippets team", independent: { label: "Non" }, powerUser: { label: "Non" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Gestion des sieges", independent: { label: "Non" }, powerUser: { label: "Non" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Billing centralise", independent: { label: "Non" }, powerUser: { label: "Non" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Priority support", independent: { label: "Non" }, powerUser: { label: "Normal" }, smallAgency: { label: "Oui", tone: "good" } },
-  { feature: "Admin / owner controls", independent: { label: "Non" }, powerUser: { label: "Non" }, smallAgency: { label: "Oui", tone: "good" } },
-];
-
-function FeatureCell({ cell }: { cell: PlanFeatureCell }) {
-  const isGood = cell.tone === "good";
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: 32,
-        padding: "6px 10px",
-        borderRadius: 8,
-        background: isGood ? "rgba(52,211,153,0.10)" : "rgba(255,255,255,0.03)",
-        border: isGood
-          ? "1px solid rgba(52,211,153,0.22)"
-          : "1px solid rgba(255,255,255,0.06)",
-        color: isGood ? "#8ef0bf" : "rgba(255,255,255,0.72)",
-        fontSize: 12.5,
-        fontWeight: isGood ? 600 : 500,
-        lineHeight: 1.3,
-        textAlign: "center",
-      }}
-    >
-      {cell.label}
-    </span>
-  );
-}
-
 function PlanComparisonModal({
   open,
   onClose,
+  rows,
+  t,
 }: {
   open: boolean;
   onClose: () => void;
+  rows: TeamFeatureRow[];
+  t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   if (!open) return null;
 
@@ -264,7 +426,7 @@ function PlanComparisonModal({
                 color: "rgba(255,255,255,0.94)",
               }}
             >
-              Voir les differences
+              {t("billing.comparison.modalTitle")}
             </h2>
             <p
               style={{
@@ -274,7 +436,7 @@ function PlanComparisonModal({
                 color: "rgba(255,255,255,0.42)",
               }}
             >
-              Compare exactement ce que chaque plan debloque.
+              {t("billing.comparison.modalSubtitle")}
             </p>
           </div>
 
@@ -328,9 +490,13 @@ function PlanComparisonModal({
                   color: "rgba(255,255,255,0.42)",
                 }}
               >
-                Fonctionnalite
+                {t("billing.comparison.feature")}
               </div>
-              {["Independent", "Power user", "Small agency"].map((label) => (
+              {[
+                t("billing.comparison.columns.independent"),
+                t("billing.comparison.columns.powerUser"),
+                t("billing.comparison.columns.smallAgency"),
+              ].map((label) => (
                 <div
                   key={label}
                   style={{
@@ -346,7 +512,7 @@ function PlanComparisonModal({
               ))}
             </div>
 
-            {PLAN_COMPARISON_ROWS.map((row, index) => (
+            {rows.map((row, index) => (
               <div
                 key={row.feature}
                 style={{
@@ -355,7 +521,7 @@ function PlanComparisonModal({
                   gap: 12,
                   padding: "12px 18px",
                   borderBottom:
-                    index === PLAN_COMPARISON_ROWS.length - 1
+                    index === rows.length - 1
                       ? "none"
                       : "1px solid rgba(255,255,255,0.05)",
                   alignItems: "center",
@@ -382,7 +548,19 @@ function PlanComparisonModal({
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+function roleLabel(
+  role: TeamRole,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  switch (role) {
+    case "owner":
+      return t("billing.workspace.roles.owner");
+    case "admin":
+      return t("billing.workspace.roles.admin");
+    default:
+      return t("billing.workspace.roles.member");
+  }
+}
 
 export const BillingSettings: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -403,6 +581,13 @@ export const BillingSettings: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<TeamRole>("member");
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [templatePrompt, setTemplatePrompt] = useState("");
+  const [snippetTrigger, setSnippetTrigger] = useState("");
+  const [snippetExpansion, setSnippetExpansion] = useState("");
+  const [dictionaryTerm, setDictionaryTerm] = useState("");
+  const [dictionaryNote, setDictionaryNote] = useState("");
 
   useEffect(() => {
     setSession(authClient.getStoredSession());
@@ -414,6 +599,8 @@ export const BillingSettings: React.FC = () => {
       .catch(() => {});
   }, []);
 
+  const comparisonRows = useMemo(() => buildPlanComparisonRows(t), [t]);
+
   const handleManage = useCallback(async () => {
     const token = authClient.getStoredToken();
     if (!token) return;
@@ -422,31 +609,33 @@ export const BillingSettings: React.FC = () => {
       const { url } = await authClient.createPortal(token);
       await openUrl(url);
     } catch {
-      /* ignore */
+      // Ignore portal launch errors; the upgrade modal remains available.
     } finally {
       setPortalLoading(false);
     }
   }, []);
 
   const sub = session?.subscription;
-  const isPremium = sub?.tier === "premium";
   const locale = i18n.resolvedLanguage || i18n.language || undefined;
-  const planPrice =
-    capabilities.plan === "independent"
-      ? "12 €"
-      : capabilities.plan === "power_user"
-        ? "24 €"
-        : capabilities.plan === "small_agency"
-          ? "18 €"
-          : null;
+  const planPrice = getPlanPrice(capabilities.plan);
   const planPriceSuffix =
     capabilities.plan === "small_agency"
-      ? "/ seat / mois"
-      : "/ mois · facturation annuelle";
-
+      ? t("billing.plan.pricePeriodSeat")
+      : t("billing.plan.pricePeriodAnnual");
+  const isPremium = sub?.tier === "premium";
+  const isManagedByAgency =
+    capabilities.plan === "small_agency" && sub?.can_manage_billing === false;
   const tierLabel = isTrialing
     ? t("billing.tier.trial")
-    : capabilities.label;
+    : t(`billing.tier.${capabilities.plan}`, { defaultValue: capabilities.label });
+  const showPersonalBilling = !isManagedByAgency;
+  const teamMembers = teamWorkspace?.members ?? [];
+  const seatsIncluded = teamWorkspace?.seatsIncluded ?? 0;
+  const seatsUsed = teamMembers.length;
+  const seatsRemaining = Math.max(0, seatsIncluded - seatsUsed);
+  const canManageWorkspace =
+    teamWorkspace?.currentUserRole === "owner" ||
+    teamWorkspace?.currentUserRole === "admin";
 
   const statusMap: Record<string, string> = {
     trialing: t("billing.status.trialing"),
@@ -456,15 +645,6 @@ export const BillingSettings: React.FC = () => {
     incomplete: t("billing.status.incomplete"),
     inactive: t("billing.status.inactive"),
   };
-
-  const isActive = sub?.status === "active" || sub?.status === "trialing";
-  const teamMembers = teamWorkspace?.members ?? [];
-  const seatsIncluded = teamWorkspace?.seatsIncluded ?? 0;
-  const seatsUsed = teamMembers.length;
-  const seatsRemaining = Math.max(0, seatsIncluded - seatsUsed);
-  const canManageWorkspace =
-    teamWorkspace?.currentUserRole === "owner" ||
-    teamWorkspace?.currentUserRole === "admin";
 
   const handleInviteMember = useCallback(async () => {
     const normalizedEmail = inviteEmail.trim().toLowerCase();
@@ -503,269 +683,435 @@ export const BillingSettings: React.FC = () => {
     updateTeamWorkspace,
   ]);
 
-  const handleRemoveMember = useCallback(async (memberId: string) => {
+  const handleRemoveMember = useCallback(
+    async (memberId: string) => {
+      const token = authClient.getStoredToken();
+      if (!token) return;
+
+      setWorkspaceLoading(true);
+      try {
+        const response = await authClient.removeWorkspaceMember(token, memberId);
+        updateTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
+      } catch (error) {
+        console.error("Failed to remove workspace member:", error);
+      } finally {
+        setWorkspaceLoading(false);
+      }
+    },
+    [updateTeamWorkspace],
+  );
+
+  const handleAddTemplate = useCallback(async () => {
     const token = authClient.getStoredToken();
-    if (!token) return;
+    const name = templateName.trim();
+    const description = templateDescription.trim();
+    const prompt = templatePrompt.trim();
+    if (!token || !teamWorkspace || !canManageWorkspace || !name || !prompt) return;
 
     setWorkspaceLoading(true);
     try {
-      const response = await authClient.removeWorkspaceMember(token, memberId);
-      updateTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
+      const response = await authClient.addWorkspaceTemplate(token, {
+        name,
+        description: description || undefined,
+        prompt,
+      });
+      updateTeamWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              sharedTemplates: mapSharedTemplates(response.templates),
+            }
+          : current,
+      );
+      setTemplateName("");
+      setTemplateDescription("");
+      setTemplatePrompt("");
     } catch (error) {
-      console.error("Failed to remove workspace member:", error);
+      console.error("Failed to add workspace template:", error);
     } finally {
       setWorkspaceLoading(false);
     }
-  }, [updateTeamWorkspace]);
+  }, [
+    canManageWorkspace,
+    teamWorkspace,
+    templateDescription,
+    templateName,
+    templatePrompt,
+    updateTeamWorkspace,
+  ]);
+
+  const handleAddSnippet = useCallback(async () => {
+    const token = authClient.getStoredToken();
+    const trigger = snippetTrigger.trim();
+    const expansion = snippetExpansion.trim();
+    if (!token || !teamWorkspace || !canManageWorkspace || !trigger || !expansion) return;
+
+    setWorkspaceLoading(true);
+    try {
+      const response = await authClient.addWorkspaceSnippet(token, {
+        trigger,
+        expansion,
+      });
+      updateTeamWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              sharedSnippets: mapSharedSnippets(response.snippets),
+            }
+          : current,
+      );
+      setSnippetTrigger("");
+      setSnippetExpansion("");
+    } catch (error) {
+      console.error("Failed to add workspace snippet:", error);
+    } finally {
+      setWorkspaceLoading(false);
+    }
+  }, [
+    canManageWorkspace,
+    snippetExpansion,
+    snippetTrigger,
+    teamWorkspace,
+    updateTeamWorkspace,
+  ]);
+
+  const handleAddDictionaryTerm = useCallback(async () => {
+    const token = authClient.getStoredToken();
+    const term = dictionaryTerm.trim();
+    const note = dictionaryNote.trim();
+    if (!token || !teamWorkspace || !canManageWorkspace || !term) return;
+
+    setWorkspaceLoading(true);
+    try {
+      const response = await authClient.addWorkspaceDictionaryTerm(token, {
+        term,
+        note: note || undefined,
+      });
+      updateTeamWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              sharedDictionary: mapSharedDictionary(response.dictionary),
+            }
+          : current,
+      );
+      setDictionaryTerm("");
+      setDictionaryNote("");
+    } catch (error) {
+      console.error("Failed to add workspace dictionary term:", error);
+    } finally {
+      setWorkspaceLoading(false);
+    }
+  }, [
+    canManageWorkspace,
+    dictionaryNote,
+    dictionaryTerm,
+    teamWorkspace,
+    updateTeamWorkspace,
+  ]);
 
   return (
     <>
       <PlanComparisonModal
         open={showPlanComparison}
         onClose={() => setShowPlanComparison(false)}
+        rows={comparisonRows}
+        t={t}
       />
-      <div
-        style={{
-          height: "100%",
-          overflowY: "auto",
-          overflowX: "hidden",
-        }}
-      >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 26,
-          padding: "26px 36px 36px",
-        }}
-      >
-        {/* ── Page header ── */}
-        <div>
-          <h1
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              letterSpacing: "-0.025em",
-              color: "rgba(255,255,255,0.94)",
-              lineHeight: 1.2,
-            }}
-          >
-            {t("billing.title")}
-          </h1>
-          <p
-            style={{
-              fontSize: 13,
-              color: "rgba(255,255,255,0.38)",
-              marginTop: 4,
-            }}
-          >
-            {t("billing.subtitle", {
-              defaultValue:
-                "Gérez votre formule, votre utilisation et vos factures.",
-            })}
-          </p>
-        </div>
 
-        {/* ── Plan hero card ── */}
+      <div style={{ height: "100%", overflowY: "auto", overflowX: "hidden" }}>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto",
-            gap: 24,
-            alignItems: "center",
-            padding: "26px 28px",
-            borderRadius: 14,
-            border: "1px solid rgba(201,168,76,0.32)",
-            background:
-              "radial-gradient(ellipse 60% 100% at 100% 0%, rgba(201,168,76,0.10) 0%, transparent 60%), linear-gradient(180deg, rgba(201,168,76,0.06), rgba(201,168,76,0.015))",
-            position: "relative",
-            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            gap: 26,
+            padding: "26px 36px 36px",
           }}
         >
-          {/* decorative corner gradient */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              background:
-                "radial-gradient(ellipse 100% 60% at 0% 100%, rgba(201,168,76,0.04) 0%, transparent 50%)",
-            }}
-          />
+          <div>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 26,
+                fontWeight: 700,
+                letterSpacing: "-0.025em",
+                color: "rgba(255,255,255,0.94)",
+                lineHeight: 1.2,
+              }}
+            >
+              {t("billing.title")}
+            </h1>
+            <p
+              style={{
+                fontSize: 13,
+                color: "rgba(255,255,255,0.38)",
+                marginTop: 4,
+              }}
+            >
+              {t("billing.subtitle")}
+            </p>
+          </div>
 
-          {/* left column */}
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-              minWidth: 0,
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
+              gap: 24,
+              alignItems: "center",
+              padding: "26px 28px",
+              borderRadius: 14,
+              border: "1px solid rgba(201,168,76,0.32)",
+              background:
+                "radial-gradient(ellipse 60% 100% at 100% 0%, rgba(201,168,76,0.10) 0%, transparent 60%), linear-gradient(180deg, rgba(201,168,76,0.06), rgba(201,168,76,0.015))",
               position: "relative",
-              zIndex: 1,
+              overflow: "hidden",
             }}
           >
-            {/* badge + status */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  background: "rgba(201,168,76,0.12)",
-                  border: "1px solid rgba(201,168,76,0.32)",
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  color: "#c9a84c",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                <Star size={11} fill="currentColor" />
-                {tierLabel}
-              </span>
-              {isActive && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                background:
+                  "radial-gradient(ellipse 100% 60% at 0% 100%, rgba(201,168,76,0.04) 0%, transparent 50%)",
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                minWidth: 0,
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    background: "rgba(201,168,76,0.12)",
+                    border: "1px solid rgba(201,168,76,0.32)",
                     fontSize: 11.5,
-                    color: "#34d399",
-                    fontWeight: 500,
+                    fontWeight: 600,
+                    color: "#c9a84c",
+                    letterSpacing: "0.02em",
                   }}
                 >
+                  <Star size={11} fill="currentColor" />
+                  {tierLabel}
+                </span>
+                {(sub?.status === "active" || sub?.status === "trialing") && (
                   <span
                     style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: "#34d399",
-                      boxShadow: "0 0 8px rgba(52,211,153,0.5)",
-                      display: "inline-block",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 11.5,
+                      color: "#34d399",
+                      fontWeight: 500,
                     }}
-                  />
-                  {statusMap[sub?.status ?? "active"] ??
-                    t("billing.status.active")}
-                </span>
-              )}
-            </div>
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: "#34d399",
+                        boxShadow: "0 0 8px rgba(52,211,153,0.5)",
+                        display: "inline-block",
+                      }}
+                    />
+                    {statusMap[sub?.status ?? "active"] ?? t("billing.status.active")}
+                  </span>
+                )}
+              </div>
 
-            {/* plan name */}
-            <div
-              style={{
-                fontSize: 36,
-                fontWeight: 800,
-                letterSpacing: "-0.03em",
-                color: "rgba(255,255,255,0.94)",
-                lineHeight: 1,
-              }}
-            >
-              {tierLabel}
-            </div>
-
-            {/* price */}
-            {planPrice && !isTrialing && (
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 4,
+                  fontSize: 36,
+                  fontWeight: 800,
+                  letterSpacing: "-0.03em",
+                  color: "rgba(255,255,255,0.94)",
+                  lineHeight: 1,
                 }}
               >
-                <span
+                {tierLabel}
+              </div>
+
+              {planPrice && !isTrialing && (
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                  <span
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,0.94)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {planPrice}
+                  </span>
+                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.38)" }}>
+                    {planPriceSuffix}
+                  </span>
+                </div>
+              )}
+
+              <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.38)" }}>
+                {isManagedByAgency ? (
+                  t("billing.workspace.managedByWorkspaceDescription")
+                ) : null}
+                {isTrialing && trialEndsAt && (
+                  <>
+                    {t("billing.plan.trialEnds", {
+                      date: formatDate(trialEndsAt, locale),
+                    })}
+                    {session?.user?.email ? (
+                      <>
+                        {" · "}
+                        <span
+                          style={{
+                            color: "rgba(255,255,255,0.64)",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {session.user.email}
+                        </span>
+                      </>
+                    ) : null}
+                  </>
+                )}
+                {isPremium && !isTrialing && sub?.current_period_ends_at && showPersonalBilling ? (
+                  <>
+                    {t("billing.plan.renewsPrefix")}{" "}
+                    <span
+                      style={{
+                        color: "rgba(255,255,255,0.64)",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {formatDate(sub.current_period_ends_at, locale)}
+                    </span>
+                    {session?.user?.email ? (
+                      <>
+                        {" · "}
+                        <span
+                          style={{
+                            color: "rgba(255,255,255,0.64)",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {session.user.email}
+                        </span>
+                      </>
+                    ) : null}
+                  </>
+                ) : null}
+                {isBasicTier && !isTrialing && session?.user?.email ? (
+                  <span
+                    style={{
+                      color: "rgba(255,255,255,0.64)",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {session.user.email}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                alignItems: "stretch",
+                minWidth: 220,
+              }}
+            >
+              {showPersonalBilling && (isPremium || isTrialing) ? (
+                <>
+                  <button
+                    onClick={() => void handleManage()}
+                    disabled={portalLoading}
+                    style={{
+                      height: 36,
+                      padding: "0 14px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      borderRadius: 9,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: portalLoading ? "not-allowed" : "pointer",
+                      background: "#c9a84c",
+                      color: "#1a1407",
+                      border: "none",
+                      boxShadow:
+                        "0 4px 14px rgba(201,168,76,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
+                      opacity: portalLoading ? 0.6 : 1,
+                      transition: "filter 0.15s",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <ExternalLink size={13} />
+                    {portalLoading
+                      ? t("common.loading", { defaultValue: "Loading..." })
+                      : t("billing.actions.manage.button")}
+                  </button>
+                  <button
+                    onClick={openUpgradePlans}
+                    style={{
+                      height: 36,
+                      padding: "0 14px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      borderRadius: 9,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      background: "rgba(255,255,255,0.03)",
+                      color: "rgba(255,255,255,0.64)",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {t("billing.actions.plans")}
+                  </button>
+                </>
+              ) : null}
+
+              {!showPersonalBilling ? (
+                <div
                   style={{
-                    fontSize: 22,
-                    fontWeight: 700,
-                    color: "rgba(255,255,255,0.94)",
-                    letterSpacing: "-0.02em",
+                    padding: "14px 16px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "rgba(255,255,255,0.03)",
+                    color: "rgba(255,255,255,0.72)",
+                    fontSize: 12.5,
+                    lineHeight: 1.5,
+                    maxWidth: 260,
                   }}
                 >
-                  {t("billing.plan.price", { defaultValue: planPrice })}
-                </span>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.38)" }}>
-                  {t("billing.plan.pricePeriod", {
-                    defaultValue: planPriceSuffix,
-                  })}
-                </span>
-              </div>
-            )}
+                  {t("billing.workspace.managedByWorkspace")}
+                </div>
+              ) : null}
 
-            {/* meta */}
-            <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.38)" }}>
-              {isTrialing && trialEndsAt && (
-                <>
-                  {t("billing.plan.trialEnds", {
-                    date: formatDate(trialEndsAt, locale),
-                  })}
-                  {session?.user?.email && (
-                    <>
-                      {" · "}
-                      <span
-                        style={{
-                          color: "rgba(255,255,255,0.64)",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {session.user.email}
-                      </span>
-                    </>
-                  )}
-                </>
-              )}
-              {isPremium && !isTrialing && sub?.current_period_ends_at && (
-                <>
-                  {t("billing.plan.renewsPrefix", {
-                    defaultValue: "Prochain renouvellement le",
-                  })}{" "}
-                  <span
-                    style={{ color: "rgba(255,255,255,0.64)", fontWeight: 500 }}
-                  >
-                    {formatDate(sub.current_period_ends_at, locale)}
-                  </span>
-                  {session?.user?.email && (
-                    <>
-                      {" · "}
-                      <span
-                        style={{
-                          color: "rgba(255,255,255,0.64)",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {session.user.email}
-                      </span>
-                    </>
-                  )}
-                </>
-              )}
-              {isBasicTier && !isTrialing && session?.user?.email && (
-                <span
-                  style={{ color: "rgba(255,255,255,0.64)", fontWeight: 500 }}
-                >
-                  {session.user.email}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* right column — actions */}
-          <div
-            style={{
-              position: "relative",
-              zIndex: 1,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              alignItems: "stretch",
-              minWidth: 220,
-            }}
-          >
-            {isPremium || isTrialing ? (
-              <>
+              {showPersonalBilling && !isPremium && !isTrialing ? (
                 <button
                   onClick={openUpgradePlans}
-                  disabled={portalLoading}
                   style={{
                     height: 36,
                     padding: "0 14px",
@@ -776,318 +1122,457 @@ export const BillingSettings: React.FC = () => {
                     borderRadius: 9,
                     fontSize: 13,
                     fontWeight: 600,
-                    cursor: portalLoading ? "not-allowed" : "pointer",
+                    cursor: "pointer",
                     background: "#c9a84c",
                     color: "#1a1407",
                     border: "none",
                     boxShadow:
                       "0 4px 14px rgba(201,168,76,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
-                    opacity: portalLoading ? 0.6 : 1,
                     transition: "filter 0.15s",
                     fontFamily: "inherit",
                   }}
-                  onMouseEnter={(e) =>
-                    !portalLoading &&
-                    ((e.currentTarget as HTMLButtonElement).style.filter =
-                      "brightness(1.07)")
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.filter = "")
-                  }
                 >
-                  <ExternalLink size={13} />
-                  {portalLoading
-                    ? t("common.loading", { defaultValue: "Chargement…" })
-                    : t("billing.actions.manage.button", {
-                        defaultValue: "Gérer l'abonnement →",
-                      })}
+                  <Zap size={13} />
+                  {t("billing.actions.upgrade.button")}
                 </button>
-                <button
-                  onClick={() => void handleManage()}
+              ) : null}
+            </div>
+          </div>
+
+          {(quota || (stats && capabilities.canViewAdvancedStats)) && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                <span
                   style={{
-                    height: 36,
-                    padding: "0 14px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    borderRadius: 9,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    background: "rgba(255,255,255,0.03)",
-                    color: "rgba(255,255,255,0.64)",
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    transition: "background 0.15s, color 0.15s",
-                    fontFamily: "inherit",
-                  }}
-                  onMouseEnter={(e) => {
-                    const b = e.currentTarget as HTMLButtonElement;
-                    b.style.background = "rgba(255,255,255,0.06)";
-                    b.style.color = "rgba(255,255,255,0.94)";
-                  }}
-                  onMouseLeave={(e) => {
-                    const b = e.currentTarget as HTMLButtonElement;
-                    b.style.background = "rgba(255,255,255,0.03)";
-                    b.style.color = "rgba(255,255,255,0.64)";
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.10em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.38)",
                   }}
                 >
-                  {t("billing.actions.plans", {
-                    defaultValue: "Voir tous les plans",
-                  })}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={openUpgradePlans}
-                style={{
-                  height: 36,
-                  padding: "0 14px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  borderRadius: 9,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  background: "#c9a84c",
-                  color: "#1a1407",
-                  border: "none",
-                  boxShadow:
-                    "0 4px 14px rgba(201,168,76,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
-                  transition: "filter 0.15s",
-                  fontFamily: "inherit",
-                }}
-                onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLButtonElement).style.filter =
-                    "brightness(1.07)")
-                }
-                onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLButtonElement).style.filter = "")
-                }
-              >
-                <Zap size={13} />
-                {t("billing.actions.upgrade.button", {
-                  defaultValue: "Passer à Premium →",
-                })}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ── Usage ── */}
-        {(quota || (stats && capabilities.canViewAdvancedStats)) && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.10em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.38)",
-                }}
-              >
-                {t("billing.usage.title", { defaultValue: "Utilisation" })}
-              </span>
-              <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
-                {t("billing.usage.period", {
-                  defaultValue: "Période en cours",
-                })}
-              </span>
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  quota && stats && capabilities.canViewAdvancedStats
-                    ? "1fr 1fr 1fr"
-                    : quota
-                      ? "1fr 1fr"
-                      : "1fr 1fr",
-                gap: 12,
-              }}
-            >
-              {quota && (
-                <UsageCard
-                  label={t("billing.usage.transcriptions", {
-                    defaultValue: "Dictées",
-                  })}
-                  used={quota.count}
-                  limit={quota.limit}
-                  locale={locale}
-                  footer={
-                    quota.reset_at
-                      ? t("billing.usage.resetsOn", {
-                          defaultValue: "Réinitialisation le {{date}}",
-                          date: formatDate(quota.reset_at, locale),
-                        })
-                      : t("billing.usage.weeklyReset", {
-                          defaultValue: "Reset hebdomadaire",
-                        })
-                  }
-                />
-              )}
-              {stats && capabilities.canViewAdvancedStats && (
-                <UsageCard
-                  label={t("billing.stats.words", {
-                    defaultValue: "Mots dictés",
-                  })}
-                  used={stats.total_words}
-                  limit={Math.max(stats.total_words, 10000)}
-                  locale={locale}
-                  footer={t("billing.stats.allTime", {
-                    defaultValue: "Total depuis le début",
-                  })}
-                />
-              )}
-              {stats && capabilities.canViewAdvancedStats && (
-                <UsageCard
-                  label={t("billing.stats.sessions", {
-                    defaultValue: "Dictées totales",
-                  })}
-                  used={stats.total_entries}
-                  limit={Math.max(stats.total_entries, 500)}
-                  locale={locale}
-                  footer={t("billing.stats.allSessions", {
-                    defaultValue: "Total historique",
-                  })}
-                />
-              )}
-            </div>
-          </div>
-        )}
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.10em",
-                textTransform: "uppercase",
-                color: "rgba(255,255,255,0.38)",
-              }}
-            >
-              Comparatif des plans
-            </span>
-            <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
-              Resume rapide avant d'ouvrir le detail
-            </span>
-          </div>
-
-          <div
-            style={{
-              padding: "18px 20px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.06)",
-              background: "rgba(255,255,255,0.018)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 18,
-              flexWrap: "wrap",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                maxWidth: 620,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "rgba(255,255,255,0.94)",
-                }}
-              >
-                Independent, Power user, Small agency
+                  {t("billing.usage.title")}
+                </span>
+                <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
+                  {t("billing.usage.period")}
+                </span>
               </div>
               <div
                 style={{
-                  fontSize: 12.5,
-                  lineHeight: 1.5,
-                  color: "rgba(255,255,255,0.42)",
-                }}
-              >
-                Ouvre le comparatif complet pour voir les differences sur
-                l'historique, les actions IA, les templates, l'equipe et le
-                support.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowPlanComparison(true)}
-              style={{
-                height: 40,
-                padding: "0 16px",
-                borderRadius: 10,
-                border: "1px solid rgba(201,168,76,0.26)",
-                background: "rgba(201,168,76,0.10)",
-                color: "#d8b866",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Voir les differences
-            </button>
-          </div>
-        </div>
-
-        {teamWorkspace ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.10em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.38)",
-                }}
-              >
-                Workspace agence
-              </span>
-              <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
-                SiÃ¨ges, membres, templates et admin au mÃªme endroit
-              </span>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0, 1.25fr) minmax(320px, 0.75fr)",
-                gap: 16,
-                alignItems: "start",
-              }}
-            >
-              <div
-                style={{
-                  padding: "18px 20px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  background: "rgba(255,255,255,0.018)",
                   display: "grid",
-                  gap: 16,
+                  gridTemplateColumns:
+                    quota && stats && capabilities.canViewAdvancedStats
+                      ? "1fr 1fr 1fr"
+                      : "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                {quota ? (
+                  <UsageCard
+                    label={t("billing.usage.transcriptions")}
+                    used={quota.count}
+                    limit={quota.limit}
+                    locale={locale}
+                    footer={
+                      quota.reset_at
+                        ? t("billing.usage.resetsOn", {
+                            date: formatDate(quota.reset_at, locale),
+                          })
+                        : t("billing.usage.weeklyReset")
+                    }
+                  />
+                ) : null}
+                {stats && capabilities.canViewAdvancedStats ? (
+                  <UsageCard
+                    label={t("billing.stats.words")}
+                    used={stats.total_words}
+                    limit={Math.max(stats.total_words, 10000)}
+                    locale={locale}
+                    footer={t("billing.stats.allTime")}
+                  />
+                ) : null}
+                {stats && capabilities.canViewAdvancedStats ? (
+                  <UsageCard
+                    label={t("billing.stats.sessions")}
+                    used={stats.total_entries}
+                    limit={Math.max(stats.total_entries, 500)}
+                    locale={locale}
+                    footer={t("billing.stats.allSessions")}
+                  />
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.10em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.38)",
+                }}
+              >
+                {t("billing.comparison.eyebrow")}
+              </span>
+              <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
+                {t("billing.comparison.subtitle")}
+              </span>
+            </div>
+
+            <div
+              style={{
+                padding: "18px 20px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.018)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 18,
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  maxWidth: 620,
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 14,
-                    flexWrap: "wrap",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "rgba(255,255,255,0.94)",
                   }}
                 >
-                  <div style={{ display: "grid", gap: 4 }}>
+                  {t("billing.comparison.cardTitle")}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    lineHeight: 1.5,
+                    color: "rgba(255,255,255,0.42)",
+                  }}
+                >
+                  {t("billing.comparison.cardDescription")}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPlanComparison(true)}
+                style={{
+                  height: 40,
+                  padding: "0 16px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(201,168,76,0.26)",
+                  background: "rgba(201,168,76,0.10)",
+                  color: "#d8b866",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t("billing.comparison.button")}
+              </button>
+            </div>
+          </div>
+
+          {teamWorkspace ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.10em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.38)",
+                  }}
+                >
+                  {t("billing.workspace.title")}
+                </span>
+                <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
+                  {t("billing.workspace.subtitle")}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1.25fr) minmax(320px, 0.75fr)",
+                  gap: 16,
+                  alignItems: "start",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "18px 20px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: "rgba(255,255,255,0.018)",
+                    display: "grid",
+                    gap: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 14,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ display: "grid", gap: 4 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          color: "rgba(255,255,255,0.94)",
+                        }}
+                      >
+                        <Building2 size={16} />
+                        <span style={{ fontSize: 16, fontWeight: 600 }}>
+                          {teamWorkspace.name}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          color: "rgba(255,255,255,0.42)",
+                        }}
+                      >
+                        {teamWorkspace.currentUserRole === "owner"
+                          ? t("billing.workspace.ownerWorkspace")
+                          : t("billing.workspace.adminWorkspace")}{" "}
+                        ·{" "}
+                        {t("billing.workspace.seatsUsed", {
+                          used: seatsUsed,
+                          total: seatsIncluded,
+                        })}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "8px 10px",
+                        borderRadius: 999,
+                        border: "1px solid rgba(201,168,76,0.22)",
+                        background: "rgba(201,168,76,0.10)",
+                        color: "#e8c87a",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Users size={14} />
+                      {t("billing.workspace.seatsAvailable", {
+                        count: seatsRemaining,
+                      })}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr auto auto",
+                      gap: 10,
+                    }}
+                  >
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(event) => setInviteEmail(event.target.value)}
+                      placeholder={t("billing.workspace.invitePlaceholder")}
+                      disabled={
+                        workspaceLoading || !canManageWorkspace || seatsRemaining <= 0
+                      }
+                      style={{
+                        height: 40,
+                        borderRadius: 10,
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        background: "rgba(255,255,255,0.03)",
+                        color: "rgba(255,255,255,0.94)",
+                        padding: "0 12px",
+                        fontSize: 13,
+                        fontFamily: "inherit",
+                        outline: "none",
+                      }}
+                    />
+                    <select
+                      value={inviteRole}
+                      onChange={(event) => setInviteRole(event.target.value as TeamRole)}
+                      disabled={
+                        workspaceLoading || !canManageWorkspace || seatsRemaining <= 0
+                      }
+                      style={{
+                        height: 40,
+                        borderRadius: 10,
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        background: "rgba(255,255,255,0.03)",
+                        color: "rgba(255,255,255,0.94)",
+                        padding: "0 12px",
+                        fontSize: 13,
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      <option value="member">{t("billing.workspace.roles.member")}</option>
+                      <option value="admin">{t("billing.workspace.roles.admin")}</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => void handleInviteMember()}
+                      disabled={
+                        workspaceLoading ||
+                        !canManageWorkspace ||
+                        !inviteEmail.trim() ||
+                        seatsRemaining <= 0
+                      }
+                      style={{
+                        height: 40,
+                        padding: "0 14px",
+                        borderRadius: 10,
+                        border: "1px solid rgba(201,168,76,0.26)",
+                        background: "rgba(201,168,76,0.10)",
+                        color: "#d8b866",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        opacity:
+                          workspaceLoading ||
+                          !canManageWorkspace ||
+                          !inviteEmail.trim() ||
+                          seatsRemaining <= 0
+                            ? 0.45
+                            : 1,
+                      }}
+                    >
+                      <UserPlus size={14} />
+                      {t("billing.workspace.inviteButton")}
+                    </button>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {teamMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr auto auto",
+                          gap: 12,
+                          alignItems: "center",
+                          padding: "12px 14px",
+                          borderRadius: 10,
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          background: "rgba(255,255,255,0.022)",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: 13.5,
+                              fontWeight: 600,
+                              color: "rgba(255,255,255,0.94)",
+                            }}
+                          >
+                            {member.name}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 3,
+                              fontSize: 12,
+                              color: "rgba(255,255,255,0.42)",
+                            }}
+                          >
+                            {member.email}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "6px 9px",
+                            borderRadius: 999,
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            background:
+                              member.status === "active"
+                                ? "rgba(52,211,153,0.10)"
+                                : "rgba(255,255,255,0.04)",
+                            color:
+                              member.status === "active"
+                                ? "#8ef0bf"
+                                : "rgba(255,255,255,0.68)",
+                            fontSize: 11.5,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {roleLabel(member.role, t)} ·{" "}
+                          {member.status === "active"
+                            ? t("billing.workspace.memberStatus.active")
+                            : t("billing.workspace.memberStatus.invited")}
+                        </div>
+
+                        {member.role !== "owner" ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleRemoveMember(member.id)}
+                            disabled={workspaceLoading || !canManageWorkspace}
+                            style={{
+                              height: 32,
+                              padding: "0 10px",
+                              borderRadius: 8,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.03)",
+                              color: "rgba(255,255,255,0.68)",
+                              fontSize: 12,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            {t("billing.workspace.removeButton")}
+                          </button>
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: 11.5,
+                              color: "rgba(255,255,255,0.32)",
+                            }}
+                          >
+                            {t("billing.workspace.ownerBadge")}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gap: 16 }}>
+                  <div
+                    style={{
+                      padding: "18px 20px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "rgba(255,255,255,0.018)",
+                      display: "grid",
+                      gap: 14,
+                    }}
+                  >
                     <div
                       style={{
                         display: "flex",
@@ -1096,230 +1581,450 @@ export const BillingSettings: React.FC = () => {
                         color: "rgba(255,255,255,0.94)",
                       }}
                     >
-                      <Building2 size={16} />
-                      <span style={{ fontSize: 16, fontWeight: 600 }}>
-                        {teamWorkspace.name}
+                      <Layers size={16} />
+                      <span style={{ fontSize: 15, fontWeight: 600 }}>
+                        {t("billing.workspace.sharedLibraryTitle")}
+                      </span>
+                    </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 10,
+                      }}
+                    >
+                      {[
+                        [
+                          t("billing.workspace.metrics.templates"),
+                          String(teamWorkspace.sharedTemplates.length),
+                        ],
+                        [
+                          t("billing.workspace.metrics.snippets"),
+                          String(teamWorkspace.sharedSnippets.length),
+                        ],
+                        [
+                          t("billing.workspace.metrics.terms"),
+                          String(teamWorkspace.sharedDictionary.length),
+                        ],
+                        [
+                          t("billing.workspace.metrics.support"),
+                          t("billing.workspace.supportPriority"),
+                        ],
+                      ].map(([label, value]) => (
+                        <div
+                          key={label}
+                          style={{
+                            padding: "12px 12px",
+                            borderRadius: 10,
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(255,255,255,0.022)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 11.5,
+                              color: "rgba(255,255,255,0.38)",
+                            }}
+                          >
+                            {label}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 6,
+                              fontSize: 18,
+                              fontWeight: 700,
+                              color: "rgba(255,255,255,0.94)",
+                            }}
+                          >
+                            {value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {canManageWorkspace ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 12,
+                          paddingTop: 4,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            color: "rgba(255,255,255,0.38)",
+                          }}
+                        >
+                          {t("billing.workspace.createTitle", {
+                            defaultValue: "Ajouter une ressource partagée",
+                          })}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 10,
+                            padding: "12px",
+                            borderRadius: 10,
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(255,255,255,0.022)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: "rgba(255,255,255,0.94)",
+                            }}
+                          >
+                            {t("billing.workspace.forms.template.title", {
+                              defaultValue: "Template d'équipe",
+                            })}
+                          </div>
+                          <input
+                            type="text"
+                            value={templateName}
+                            onChange={(event) => setTemplateName(event.target.value)}
+                            placeholder={t("billing.workspace.forms.template.name", {
+                              defaultValue: "Nom du template",
+                            })}
+                            disabled={workspaceLoading}
+                            style={{
+                              height: 38,
+                              borderRadius: 9,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.03)",
+                              color: "rgba(255,255,255,0.94)",
+                              padding: "0 12px",
+                              fontSize: 13,
+                              fontFamily: "inherit",
+                            }}
+                          />
+                          <input
+                            type="text"
+                            value={templateDescription}
+                            onChange={(event) =>
+                              setTemplateDescription(event.target.value)
+                            }
+                            placeholder={t(
+                              "billing.workspace.forms.template.description",
+                              {
+                                defaultValue: "Description courte",
+                              },
+                            )}
+                            disabled={workspaceLoading}
+                            style={{
+                              height: 38,
+                              borderRadius: 9,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.03)",
+                              color: "rgba(255,255,255,0.94)",
+                              padding: "0 12px",
+                              fontSize: 13,
+                              fontFamily: "inherit",
+                            }}
+                          />
+                          <textarea
+                            value={templatePrompt}
+                            onChange={(event) => setTemplatePrompt(event.target.value)}
+                            placeholder={t("billing.workspace.forms.template.prompt", {
+                              defaultValue: "Prompt partagé pour toute l'équipe",
+                            })}
+                            disabled={workspaceLoading}
+                            rows={4}
+                            style={{
+                              borderRadius: 9,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.03)",
+                              color: "rgba(255,255,255,0.94)",
+                              padding: "10px 12px",
+                              fontSize: 13,
+                              fontFamily: "inherit",
+                              resize: "vertical",
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleAddTemplate()}
+                            disabled={workspaceLoading || !templateName.trim() || !templatePrompt.trim()}
+                            style={{
+                              height: 36,
+                              borderRadius: 9,
+                              border: "1px solid rgba(201,168,76,0.26)",
+                              background: "rgba(201,168,76,0.10)",
+                              color: "#d8b866",
+                              fontSize: 12.5,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                              opacity:
+                                workspaceLoading || !templateName.trim() || !templatePrompt.trim()
+                                  ? 0.45
+                                  : 1,
+                            }}
+                          >
+                            {t("billing.workspace.forms.template.submit", {
+                              defaultValue: "Ajouter le template",
+                            })}
+                          </button>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 10,
+                            padding: "12px",
+                            borderRadius: 10,
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(255,255,255,0.022)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: "rgba(255,255,255,0.94)",
+                            }}
+                          >
+                            {t("billing.workspace.forms.snippet.title", {
+                              defaultValue: "Snippet d'équipe",
+                            })}
+                          </div>
+                          <input
+                            type="text"
+                            value={snippetTrigger}
+                            onChange={(event) => setSnippetTrigger(event.target.value)}
+                            placeholder={t("billing.workspace.forms.snippet.trigger", {
+                              defaultValue: "Déclencheur vocal",
+                            })}
+                            disabled={workspaceLoading}
+                            style={{
+                              height: 38,
+                              borderRadius: 9,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.03)",
+                              color: "rgba(255,255,255,0.94)",
+                              padding: "0 12px",
+                              fontSize: 13,
+                              fontFamily: "inherit",
+                            }}
+                          />
+                          <textarea
+                            value={snippetExpansion}
+                            onChange={(event) => setSnippetExpansion(event.target.value)}
+                            placeholder={t("billing.workspace.forms.snippet.expansion", {
+                              defaultValue: "Texte développé",
+                            })}
+                            disabled={workspaceLoading}
+                            rows={3}
+                            style={{
+                              borderRadius: 9,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.03)",
+                              color: "rgba(255,255,255,0.94)",
+                              padding: "10px 12px",
+                              fontSize: 13,
+                              fontFamily: "inherit",
+                              resize: "vertical",
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleAddSnippet()}
+                            disabled={workspaceLoading || !snippetTrigger.trim() || !snippetExpansion.trim()}
+                            style={{
+                              height: 36,
+                              borderRadius: 9,
+                              border: "1px solid rgba(201,168,76,0.26)",
+                              background: "rgba(201,168,76,0.10)",
+                              color: "#d8b866",
+                              fontSize: 12.5,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                              opacity:
+                                workspaceLoading || !snippetTrigger.trim() || !snippetExpansion.trim()
+                                  ? 0.45
+                                  : 1,
+                            }}
+                          >
+                            {t("billing.workspace.forms.snippet.submit", {
+                              defaultValue: "Ajouter le snippet",
+                            })}
+                          </button>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 10,
+                            padding: "12px",
+                            borderRadius: 10,
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(255,255,255,0.022)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: "rgba(255,255,255,0.94)",
+                            }}
+                          >
+                            {t("billing.workspace.forms.dictionary.title", {
+                              defaultValue: "Terme du dictionnaire",
+                            })}
+                          </div>
+                          <input
+                            type="text"
+                            value={dictionaryTerm}
+                            onChange={(event) => setDictionaryTerm(event.target.value)}
+                            placeholder={t("billing.workspace.forms.dictionary.term", {
+                              defaultValue: "Terme ou nom produit",
+                            })}
+                            disabled={workspaceLoading}
+                            style={{
+                              height: 38,
+                              borderRadius: 9,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.03)",
+                              color: "rgba(255,255,255,0.94)",
+                              padding: "0 12px",
+                              fontSize: 13,
+                              fontFamily: "inherit",
+                            }}
+                          />
+                          <input
+                            type="text"
+                            value={dictionaryNote}
+                            onChange={(event) => setDictionaryNote(event.target.value)}
+                            placeholder={t("billing.workspace.forms.dictionary.note", {
+                              defaultValue: "Note optionnelle",
+                            })}
+                            disabled={workspaceLoading}
+                            style={{
+                              height: 38,
+                              borderRadius: 9,
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              background: "rgba(255,255,255,0.03)",
+                              color: "rgba(255,255,255,0.94)",
+                              padding: "0 12px",
+                              fontSize: 13,
+                              fontFamily: "inherit",
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleAddDictionaryTerm()}
+                            disabled={workspaceLoading || !dictionaryTerm.trim()}
+                            style={{
+                              height: 36,
+                              borderRadius: 9,
+                              border: "1px solid rgba(201,168,76,0.26)",
+                              background: "rgba(201,168,76,0.10)",
+                              color: "#d8b866",
+                              fontSize: 12.5,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                              opacity:
+                                workspaceLoading || !dictionaryTerm.trim()
+                                  ? 0.45
+                                  : 1,
+                            }}
+                          >
+                            {t("billing.workspace.forms.dictionary.submit", {
+                              defaultValue: "Ajouter le terme",
+                            })}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "18px 20px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "rgba(255,255,255,0.018)",
+                      display: "grid",
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        color: "rgba(255,255,255,0.94)",
+                      }}
+                    >
+                      <ShieldCheck size={16} />
+                      <span style={{ fontSize: 15, fontWeight: 600 }}>
+                        {t("billing.workspace.adminBillingTitle")}
                       </span>
                     </div>
                     <div
                       style={{
                         fontSize: 12.5,
+                        lineHeight: 1.55,
                         color: "rgba(255,255,255,0.42)",
                       }}
                     >
-                      {teamWorkspace.currentUserRole === "owner"
-                        ? "Owner workspace"
-                        : "Admin workspace"}{" "}
-                      · {seatsUsed}/{seatsIncluded} siÃ¨ges utilisÃ©s
+                      {t("billing.workspace.adminBillingDescription")}
+                    </div>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)" }}>
+                        {t("billing.workspace.billingOwner")}:{" "}
+                        {teamWorkspace.billingContactEmail}
+                      </div>
+                      <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)" }}>
+                        {t("billing.workspace.supportContact")}:{" "}
+                        {teamWorkspace.supportContactEmail}
+                      </div>
                     </div>
                   </div>
-
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "8px 10px",
-                      borderRadius: 999,
-                      border: "1px solid rgba(201,168,76,0.22)",
-                      background: "rgba(201,168,76,0.10)",
-                      color: "#e8c87a",
-                      fontSize: 12,
-                      fontWeight: 600,
-                    }}
-                  >
-                    <Users size={14} />
-                    {seatsRemaining} siÃ¨ge{seatsRemaining > 1 ? "s" : ""} libre
-                    {seatsRemaining > 1 ? "s" : ""}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto auto",
-                    gap: 10,
-                  }}
-                >
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(event) => setInviteEmail(event.target.value)}
-                    placeholder="coequipier@agence.com"
-                    disabled={
-                      workspaceLoading || !canManageWorkspace || seatsRemaining <= 0
-                    }
-                    style={{
-                      height: 40,
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.10)",
-                      background: "rgba(255,255,255,0.03)",
-                      color: "rgba(255,255,255,0.94)",
-                      padding: "0 12px",
-                      fontSize: 13,
-                      fontFamily: "inherit",
-                      outline: "none",
-                    }}
-                  />
-                  <select
-                    value={inviteRole}
-                    onChange={(event) => setInviteRole(event.target.value as TeamRole)}
-                    disabled={
-                      workspaceLoading || !canManageWorkspace || seatsRemaining <= 0
-                    }
-                    style={{
-                      height: 40,
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.10)",
-                      background: "rgba(255,255,255,0.03)",
-                      color: "rgba(255,255,255,0.94)",
-                      padding: "0 12px",
-                      fontSize: 13,
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => void handleInviteMember()}
-                    disabled={
-                      workspaceLoading ||
-                      !canManageWorkspace ||
-                      !inviteEmail.trim() ||
-                      seatsRemaining <= 0
-                    }
-                    style={{
-                      height: 40,
-                      padding: "0 14px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(201,168,76,0.26)",
-                      background: "rgba(201,168,76,0.10)",
-                      color: "#d8b866",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      opacity:
-                        workspaceLoading ||
-                        !canManageWorkspace ||
-                        !inviteEmail.trim() ||
-                        seatsRemaining <= 0
-                          ? 0.45
-                          : 1,
-                    }}
-                  >
-                    <UserPlus size={14} />
-                    Inviter
-                  </button>
-                </div>
-
-                <div style={{ display: "grid", gap: 10 }}>
-                  {teamMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr auto auto",
-                        gap: 12,
-                        alignItems: "center",
-                        padding: "12px 14px",
-                        borderRadius: 10,
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        background: "rgba(255,255,255,0.022)",
-                      }}
-                    >
-                      <div style={{ minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontSize: 13.5,
-                            fontWeight: 600,
-                            color: "rgba(255,255,255,0.94)",
-                          }}
-                        >
-                          {member.name}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: 3,
-                            fontSize: 12,
-                            color: "rgba(255,255,255,0.42)",
-                          }}
-                        >
-                          {member.email}
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 8,
-                          padding: "6px 9px",
-                          borderRadius: 999,
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          background:
-                            member.status === "active"
-                              ? "rgba(52,211,153,0.10)"
-                              : "rgba(255,255,255,0.04)",
-                          color:
-                            member.status === "active"
-                              ? "#8ef0bf"
-                              : "rgba(255,255,255,0.68)",
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {member.role} · {member.status}
-                      </div>
-
-                      {member.role !== "owner" ? (
-                        <button
-                          type="button"
-                          onClick={() => void handleRemoveMember(member.id)}
-                          disabled={workspaceLoading || !canManageWorkspace}
-                          style={{
-                            height: 32,
-                            padding: "0 10px",
-                            borderRadius: 8,
-                            border: "1px solid rgba(255,255,255,0.10)",
-                            background: "rgba(255,255,255,0.03)",
-                            color: "rgba(255,255,255,0.68)",
-                            fontSize: 12,
-                            cursor: "pointer",
-                            fontFamily: "inherit",
-                          }}
-                        >
-                          Retirer
-                        </button>
-                      ) : (
-                        <span
-                          style={{
-                            fontSize: 11.5,
-                            color: "rgba(255,255,255,0.32)",
-                          }}
-                        >
-                          Owner
-                        </span>
-                      )}
-                    </div>
-                  ))}
                 </div>
               </div>
+            </div>
+          ) : null}
 
-              <div style={{ display: "grid", gap: 16 }}>
+          {showPersonalBilling ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "380px 1fr",
+                gap: 24,
+                alignItems: "flex-start",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: "0.10em",
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.38)",
+                    }}
+                  >
+                    {t("billing.payment.title")}
+                  </span>
+                </div>
                 <div
                   style={{
                     padding: "18px 20px",
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.06)",
                     background: "rgba(255,255,255,0.018)",
-                    display: "grid",
+                    display: "flex",
+                    flexDirection: "column",
                     gap: 14,
                   }}
                 >
@@ -1327,416 +2032,236 @@ export const BillingSettings: React.FC = () => {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 10,
-                      color: "rgba(255,255,255,0.94)",
+                      gap: 14,
+                      padding: "12px 14px",
+                      borderRadius: 10,
+                      background: "rgba(255,255,255,0.025)",
+                      border: "1px solid rgba(255,255,255,0.06)",
                     }}
                   >
-                    <Layers size={16} />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>
-                      Bibliotheque partagee
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 10,
-                    }}
-                  >
-                    {[
-                      ["Templates", String(teamWorkspace.sharedTemplates.length)],
-                      ["Snippets", String(teamWorkspace.sharedSnippets.length)],
-                      ["Termes", String(teamWorkspace.sharedDictionary.length)],
-                      ["Support", "Priority"],
-                    ].map(([label, value]) => (
+                    <div
+                      style={{
+                        width: 40,
+                        height: 28,
+                        borderRadius: 5,
+                        background: "linear-gradient(135deg, #1a1a24, #0f0f15)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <CreditCard
+                        size={14}
+                        style={{ color: "rgba(255,255,255,0.64)" }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
                       <div
-                        key={label}
                         style={{
-                          padding: "12px 12px",
-                          borderRadius: 10,
-                          border: "1px solid rgba(255,255,255,0.06)",
-                          background: "rgba(255,255,255,0.022)",
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "rgba(255,255,255,0.94)",
+                          fontFamily: "ui-monospace, monospace",
+                          letterSpacing: "0.02em",
                         }}
                       >
-                        <div
-                          style={{
-                            fontSize: 11.5,
-                            color: "rgba(255,255,255,0.38)",
-                          }}
-                        >
-                          {label}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: 6,
-                            fontSize: 18,
-                            fontWeight: 700,
-                            color: "rgba(255,255,255,0.94)",
-                          }}
-                        >
-                          {value}
-                        </div>
+                        {t("billing.payment.managed")}
                       </div>
-                    ))}
+                      <div
+                        style={{
+                          fontSize: 11.5,
+                          color: "rgba(255,255,255,0.38)",
+                          marginTop: 2,
+                        }}
+                      >
+                        {t("billing.payment.securePortal")}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => void handleManage()}
+                      disabled={portalLoading}
+                      style={{
+                        fontSize: 12,
+                        color: "rgba(255,255,255,0.64)",
+                        cursor: "pointer",
+                        padding: "6px 10px",
+                        borderRadius: 7,
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        background: "rgba(255,255,255,0.02)",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      {t("billing.payment.modify")}
+                    </button>
                   </div>
+                  {session?.user?.email ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.64)",
+                      }}
+                    >
+                      <span style={{ color: "rgba(255,255,255,0.38)" }}>
+                        {t("billing.payment.billedTo")}
+                      </span>
+                      <span
+                        style={{
+                          color: "rgba(255,255,255,0.94)",
+                          fontFamily: "ui-monospace, monospace",
+                          fontSize: 12,
+                        }}
+                      >
+                        {session.user.email}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
+              </div>
 
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: "0.10em",
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.38)",
+                    }}
+                  >
+                    {t("billing.invoices.title")}
+                  </span>
+                  <button
+                    onClick={() => void handleManage()}
+                    style={{
+                      marginLeft: "auto",
+                      fontSize: 12.5,
+                      color: "#c9a84c",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {t("billing.invoices.viewAll")}
+                  </button>
+                </div>
                 <div
                   style={{
-                    padding: "18px 20px",
-                    borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: 12,
                     background: "rgba(255,255,255,0.018)",
-                    display: "grid",
-                    gap: 12,
+                    overflow: "hidden",
                   }}
                 >
                   <div
                     style={{
-                      display: "flex",
+                      display: "grid",
+                      gridTemplateColumns: "110px 1fr 90px 70px 32px",
+                      gap: 14,
                       alignItems: "center",
-                      gap: 10,
-                      color: "rgba(255,255,255,0.94)",
+                      padding: "11px 18px",
+                      background: "rgba(0,0,0,0.18)",
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      letterSpacing: "0.10em",
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.22)",
                     }}
                   >
-                    <ShieldCheck size={16} />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>
-                      Admin et facturation
+                    <span>{t("billing.invoices.colDate")}</span>
+                    <span>{t("billing.invoices.colDescription")}</span>
+                    <span>{t("billing.invoices.colStatus")}</span>
+                    <span style={{ textAlign: "right" }}>
+                      {t("billing.invoices.colAmount")}
                     </span>
+                    <span />
                   </div>
+
                   <div
                     style={{
-                      fontSize: 12.5,
-                      lineHeight: 1.55,
-                      color: "rgba(255,255,255,0.42)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "32px 18px",
+                      gap: 10,
                     }}
                   >
-                    Le workspace centralise les siÃ¨ges, les ressources
-                    partagÃ©es et le contact de facturation.
-                  </div>
-                  <div style={{ display: "grid", gap: 8 }}>
-                    <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)" }}>
-                      Billing owner: {teamWorkspace.billingContactEmail}
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 9,
+                        background: "rgba(255,255,255,0.025)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Download
+                        size={15}
+                        style={{ color: "rgba(255,255,255,0.38)" }}
+                      />
                     </div>
-                    <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)" }}>
-                      Priority support: {teamWorkspace.supportContactEmail}
-                    </div>
+                    <p
+                      style={{
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.38)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {t("billing.invoices.portalHint")}
+                    </p>
+                    <button
+                      onClick={() => void handleManage()}
+                      disabled={portalLoading}
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: "#c9a84c",
+                        cursor: "pointer",
+                        background: "rgba(201,168,76,0.08)",
+                        border: "1px solid rgba(201,168,76,0.20)",
+                        borderRadius: 7,
+                        padding: "6px 12px",
+                        fontFamily: "inherit",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <ExternalLink size={11} />
+                      {t("billing.invoices.openPortal")}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ) : null}
-
-        {/* ── Bottom row: Payment + Invoices ── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "380px 1fr",
-            gap: 24,
-            alignItems: "flex-start",
-          }}
-        >
-          {/* Payment method */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.10em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.38)",
-                }}
-              >
-                {t("billing.payment.title", {
-                  defaultValue: "Méthode de paiement",
-                })}
-              </span>
-            </div>
+          ) : (
             <div
               style={{
                 padding: "18px 20px",
                 borderRadius: 12,
                 border: "1px solid rgba(255,255,255,0.06)",
                 background: "rgba(255,255,255,0.018)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
+                color: "rgba(255,255,255,0.72)",
+                fontSize: 13,
+                lineHeight: 1.6,
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "12px 14px",
-                  borderRadius: 10,
-                  background: "rgba(255,255,255,0.025)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
-              >
-                <div
-                  style={{
-                    width: 40,
-                    height: 28,
-                    borderRadius: 5,
-                    background: "linear-gradient(135deg, #1a1a24, #0f0f15)",
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <CreditCard
-                    size={14}
-                    style={{ color: "rgba(255,255,255,0.64)" }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: "rgba(255,255,255,0.94)",
-                      fontFamily: "ui-monospace, monospace",
-                      letterSpacing: "0.02em",
-                    }}
-                  >
-                    {t("billing.payment.managed", {
-                      defaultValue: "Géré via Stripe",
-                    })}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11.5,
-                      color: "rgba(255,255,255,0.38)",
-                      marginTop: 2,
-                    }}
-                  >
-                    {t("billing.payment.securePortal", {
-                      defaultValue: "Portail sécurisé",
-                    })}
-                  </div>
-                </div>
-                <button
-                  onClick={() => void handleManage()}
-                  disabled={portalLoading}
-                  style={{
-                    fontSize: 12,
-                    color: "rgba(255,255,255,0.64)",
-                    cursor: "pointer",
-                    padding: "6px 10px",
-                    borderRadius: 7,
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    background: "rgba(255,255,255,0.02)",
-                    transition: "background 0.15s, color 0.15s",
-                    fontFamily: "inherit",
-                  }}
-                  onMouseEnter={(e) => {
-                    const b = e.currentTarget as HTMLButtonElement;
-                    b.style.background = "rgba(255,255,255,0.06)";
-                    b.style.color = "rgba(255,255,255,0.94)";
-                  }}
-                  onMouseLeave={(e) => {
-                    const b = e.currentTarget as HTMLButtonElement;
-                    b.style.background = "rgba(255,255,255,0.02)";
-                    b.style.color = "rgba(255,255,255,0.64)";
-                  }}
-                >
-                  {t("billing.payment.modify", { defaultValue: "Modifier" })}
-                </button>
-              </div>
-              {session?.user?.email && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    fontSize: 12.5,
-                    color: "rgba(255,255,255,0.64)",
-                  }}
-                >
-                  <span style={{ color: "rgba(255,255,255,0.38)" }}>
-                    {t("billing.payment.billedTo", {
-                      defaultValue: "Facturé à",
-                    })}
-                  </span>
-                  <span
-                    style={{
-                      color: "rgba(255,255,255,0.94)",
-                      fontFamily: "ui-monospace, monospace",
-                      fontSize: 12,
-                    }}
-                  >
-                    {session.user.email}
-                  </span>
-                </div>
-              )}
+              {t("billing.workspace.managedByWorkspaceDescription")}
             </div>
-          </div>
-
-          {/* Invoices */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.10em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.38)",
-                }}
-              >
-                {t("billing.invoices.title", {
-                  defaultValue: "Factures récentes",
-                })}
-              </span>
-              <button
-                onClick={() => void handleManage()}
-                style={{
-                  marginLeft: "auto",
-                  fontSize: 12.5,
-                  color: "#c9a84c",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  fontFamily: "inherit",
-                  transition: "color 0.15s",
-                }}
-                onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLButtonElement).style.color =
-                    "#e8c87a")
-                }
-                onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLButtonElement).style.color =
-                    "#c9a84c")
-                }
-              >
-                {t("billing.invoices.viewAll", { defaultValue: "Tout voir →" })}
-              </button>
-            </div>
-            <div
-              style={{
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 12,
-                background: "rgba(255,255,255,0.018)",
-                overflow: "hidden",
-              }}
-            >
-              {/* Table header */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "110px 1fr 90px 70px 32px",
-                  gap: 14,
-                  alignItems: "center",
-                  padding: "11px 18px",
-                  background: "rgba(0,0,0,0.18)",
-                  fontSize: 10.5,
-                  fontWeight: 700,
-                  letterSpacing: "0.10em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.22)",
-                }}
-              >
-                <span>
-                  {t("billing.invoices.colDate", { defaultValue: "Date" })}
-                </span>
-                <span>
-                  {t("billing.invoices.colDescription", {
-                    defaultValue: "Description",
-                  })}
-                </span>
-                <span>
-                  {t("billing.invoices.colStatus", { defaultValue: "Statut" })}
-                </span>
-                <span style={{ textAlign: "right" }}>
-                  {t("billing.invoices.colAmount", { defaultValue: "Montant" })}
-                </span>
-                <span />
-              </div>
-
-              {/* Empty state — data lives in Stripe portal */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "32px 18px",
-                  gap: 10,
-                }}
-              >
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 9,
-                    background: "rgba(255,255,255,0.025)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Download
-                    size={15}
-                    style={{ color: "rgba(255,255,255,0.38)" }}
-                  />
-                </div>
-                <p
-                  style={{
-                    fontSize: 12.5,
-                    color: "rgba(255,255,255,0.38)",
-                    textAlign: "center",
-                  }}
-                >
-                  {t("billing.invoices.portalHint", {
-                    defaultValue:
-                      "Vos factures sont disponibles dans le portail Stripe.",
-                  })}
-                </p>
-                <button
-                  onClick={() => void handleManage()}
-                  disabled={portalLoading}
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: "#c9a84c",
-                    cursor: "pointer",
-                    background: "rgba(201,168,76,0.08)",
-                    border: "1px solid rgba(201,168,76,0.20)",
-                    borderRadius: 7,
-                    padding: "6px 12px",
-                    fontFamily: "inherit",
-                    transition: "background 0.15s",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.background =
-                      "rgba(201,168,76,0.13)")
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.background =
-                      "rgba(201,168,76,0.08)")
-                  }
-                >
-                  <ExternalLink size={11} />
-                  {t("billing.invoices.openPortal", {
-                    defaultValue: "Ouvrir le portail →",
-                  })}
-                </button>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-      </div>
       </div>
     </>
   );

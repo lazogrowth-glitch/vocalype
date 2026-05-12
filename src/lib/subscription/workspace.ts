@@ -77,6 +77,13 @@ export type TeamWorkspacePayload = {
   }>;
 };
 
+export type SharedWorkspaceTemplatePayload =
+  TeamWorkspacePayload["shared_templates"][number];
+export type SharedWorkspaceSnippetPayload =
+  TeamWorkspacePayload["shared_snippets"][number];
+export type SharedWorkspaceTermPayload =
+  TeamWorkspacePayload["shared_dictionary"][number];
+
 const WORKSPACE_STORAGE_PREFIX = "vocalype.workspace.";
 
 export function deriveTeamWorkspace(
@@ -172,23 +179,41 @@ export function mapTeamWorkspacePayload(
       role: member.role,
       status: member.status,
     })),
-    sharedTemplates: payload.shared_templates.map((template) => ({
-      id: template.id,
-      name: template.name,
-      description: template.description,
-      prompt: template.prompt,
-    })),
-    sharedSnippets: payload.shared_snippets.map((snippet) => ({
-      id: snippet.id,
-      trigger: snippet.trigger,
-      expansion: snippet.expansion,
-    })),
-    sharedDictionary: payload.shared_dictionary.map((term) => ({
-      id: term.id,
-      term: term.term,
-      note: term.note ?? undefined,
-    })),
+    sharedTemplates: mapSharedTemplates(payload.shared_templates),
+    sharedSnippets: mapSharedSnippets(payload.shared_snippets),
+    sharedDictionary: mapSharedDictionary(payload.shared_dictionary),
   };
+}
+
+export function mapSharedTemplates(
+  templates: SharedWorkspaceTemplatePayload[],
+): SharedWorkspaceTemplate[] {
+  return templates.map((template) => ({
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    prompt: template.prompt,
+  }));
+}
+
+export function mapSharedSnippets(
+  snippets: SharedWorkspaceSnippetPayload[],
+): SharedWorkspaceSnippet[] {
+  return snippets.map((snippet) => ({
+    id: snippet.id,
+    trigger: snippet.trigger,
+    expansion: snippet.expansion,
+  }));
+}
+
+export function mapSharedDictionary(
+  dictionary: SharedWorkspaceTermPayload[],
+): SharedWorkspaceTerm[] {
+  return dictionary.map((term) => ({
+    id: term.id,
+    term: term.term,
+    note: term.note ?? undefined,
+  }));
 }
 
 function getWorkspaceStorageKey(userId: string): string {

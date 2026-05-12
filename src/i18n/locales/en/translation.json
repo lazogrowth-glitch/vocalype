@@ -1319,17 +1319,16 @@
     "plan": {
       "title": "Current plan",
       "noSubscription": "No active subscription",
-      "trialEnds": "Ends {{date}}",
-      "renewsOn": "Renews {{date}}",
-      "price": "€12",
-      "pricePeriod": "/ month · billed annually",
+      "trialEnds": "Ends on {{date}}",
+      "renewsOn": "Renews on {{date}}",
+      "pricePeriodAnnual": "/ month ? billed annually",
+      "pricePeriodSeat": "/ seat / month",
       "renewsPrefix": "Next renewal on"
     },
     "usage": {
       "title": "Weekly usage",
-      "description": "Resets every Monday. Usage is approximate — based on transcription count.",
       "transcriptions": "Transcriptions this week",
-      "resetsOn": "Resets {{date}}",
+      "resetsOn": "Resets on {{date}}",
       "period": "Current period",
       "weeklyReset": "Weekly reset"
     },
@@ -1338,15 +1337,18 @@
       "words": "Words dictated",
       "sessions": "Total dictations",
       "allTime": "All-time total",
-      "allSessions": "Total sessions"
+      "allSessions": "Total history"
     },
     "tier": {
       "trial": "Premium (trial)",
       "premium": "Premium",
-      "basic": "Basic"
+      "basic": "Basic",
+      "independent": "Independent",
+      "power_user": "Power user",
+      "small_agency": "Small agency"
     },
     "status": {
-      "trialing": "Trialing",
+      "trialing": "Trial in progress",
       "active": "Active",
       "pastDue": "Past due",
       "canceled": "Canceled",
@@ -1358,7 +1360,7 @@
       "manage": {
         "title": "Manage subscription",
         "description": "Update, cancel, or change your subscription.",
-        "button": "Manage →"
+        "button": "Manage subscription"
       },
       "plans": "View all plans",
       "upgrade": {
@@ -1366,7 +1368,124 @@
         "titleTrial": "Start Premium subscription",
         "description": "Unlock unlimited dictation and AI actions.",
         "descriptionTrial": "Start your paid subscription before the trial ends.",
-        "button": "Upgrade →"
+        "button": "Upgrade to Premium"
+      }
+    },
+    "comparison": {
+      "eyebrow": "Plan comparison",
+      "subtitle": "Quick summary before opening the full detail",
+      "cardTitle": "Independent, Power user, Small agency",
+      "cardDescription": "Open the full comparison to see the differences across history, AI actions, templates, team features, and support.",
+      "button": "See differences",
+      "modalTitle": "See differences",
+      "modalSubtitle": "Compare exactly what each plan unlocks.",
+      "feature": "Feature",
+      "columns": {
+        "independent": "Independent",
+        "powerUser": "Power user",
+        "smallAgency": "Small agency"
+      },
+      "values": {
+        "yes": "Yes",
+        "no": "No",
+        "limited": "Limited",
+        "basic": "Basic",
+        "personal": "Personal",
+        "personalAdvanced": "Advanced personal",
+        "personalTeam": "Personal + team",
+        "threeTemplates": "3 templates",
+        "allTemplates": "All templates",
+        "sharedTemplates": "Shared templates",
+        "oneToTwoMax": "1 to 2 max",
+        "nineActions": "9 actions",
+        "nineSharedActions": "9 + shared",
+        "limitedOptional": "Limited / optional",
+        "team": "Team",
+        "normal": "Normal"
+      },
+      "rows": {
+        "unlimitedDictation": "Unlimited dictation",
+        "pasteAnywhere": "Paste into any app",
+        "localOffline": "Local / offline by default",
+        "platforms": "Mac / Windows / Linux",
+        "microphoneShortcut": "Microphone choice + shortcut",
+        "languageDetection": "Language / auto-detection",
+        "simpleHistory": "Simple history",
+        "unlimitedHistory": "Unlimited history",
+        "historyExport": "History export",
+        "customWords": "Custom words",
+        "adaptiveVocabulary": "Adaptive vocabulary",
+        "recruiterTemplates": "Recruiter templates",
+        "customActions": "Custom AI actions Ctrl+1..9",
+        "cloudPostProcessing": "Cloud AI post-processing",
+        "privateMode": "Private mode that disables cloud",
+        "audioImport": "Audio import wav/flac",
+        "reprocessHistory": "Reprocess old dictation",
+        "advancedStats": "Advanced stats",
+        "sharedRecruiterTemplates": "Shared recruiter templates",
+        "sharedDictionary": "Shared dictionary / team snippets",
+        "seatManagement": "Seat management",
+        "centralBilling": "Centralized billing",
+        "prioritySupport": "Priority support",
+        "adminControls": "Admin / owner controls"
+      }
+    },
+    "workspace": {
+      "title": "Agency workspace",
+      "subtitle": "Seats, members, templates, and admin in one place",
+      "ownerWorkspace": "Workspace owner",
+      "adminWorkspace": "Workspace admin",
+      "seatsUsed": "{{used}}/{{total}} seats used",
+      "seatsAvailable_one": "{{count}} seat left",
+      "seatsAvailable_other": "{{count}} seats left",
+      "invitePlaceholder": "teammate@agency.com",
+      "inviteButton": "Invite",
+      "removeButton": "Remove",
+      "ownerBadge": "Owner",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Member"
+      },
+      "memberStatus": {
+        "active": "Active",
+        "invited": "Invited"
+      },
+      "sharedLibraryTitle": "Shared library",
+      "adminBillingTitle": "Admin and billing",
+      "adminBillingDescription": "The workspace centralizes seats, shared resources, and the billing contact.",
+      "metrics": {
+        "templates": "Templates",
+        "snippets": "Snippets",
+        "terms": "Terms",
+        "support": "Support"
+      },
+      "supportPriority": "Priority",
+      "billingOwner": "Billing owner",
+      "supportContact": "Support contact",
+      "managedByWorkspace": "This account is managed by your agency workspace.",
+      "managedByWorkspaceDescription": "Billing and access are managed by the workspace admin.",
+      "createTitle": "Add a shared asset",
+      "forms": {
+        "template": {
+          "title": "Team template",
+          "name": "Template name",
+          "description": "Short description",
+          "prompt": "Shared prompt for the whole team",
+          "submit": "Add template"
+        },
+        "snippet": {
+          "title": "Team snippet",
+          "trigger": "Voice trigger",
+          "expansion": "Expanded text",
+          "submit": "Add snippet"
+        },
+        "dictionary": {
+          "title": "Dictionary term",
+          "term": "Term or product name",
+          "note": "Optional note",
+          "submit": "Add term"
+        }
       }
     },
     "payment": {
@@ -1378,18 +1497,18 @@
     },
     "invoices": {
       "title": "Recent invoices",
-      "viewAll": "View all →",
+      "viewAll": "View all",
       "colDate": "Date",
       "colDescription": "Description",
       "colStatus": "Status",
       "colAmount": "Amount",
       "portalHint": "Your invoices are available in the Stripe portal.",
-      "openPortal": "Open portal →"
+      "openPortal": "Open portal"
     },
     "upgrade": {
       "title": "Upgrade to Premium",
       "description": "Unlock unlimited dictation, custom shortcuts, and full history across all your apps.",
-      "cta": "Upgrade now →"
+      "cta": "Upgrade to Premium"
     }
   }
 }

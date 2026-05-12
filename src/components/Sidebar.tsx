@@ -6,6 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { ArrowRight, X } from "lucide-react";
 import VocalypeLogo from "./icons/VocalypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
 import { useSettings } from "../hooks/useSettings";
@@ -15,6 +16,7 @@ import { commands } from "@/bindings";
 import { listen } from "@tauri-apps/api/event";
 
 const BOTTOM_SECTION_IDS = new Set(["billing", "debug"]);
+const TRIAL_CARD_DISMISSED_KEY = "vt.trialCardDismissed";
 
 interface SidebarProps {
   activeSection: import("./sections-config").SidebarSection;
@@ -120,8 +122,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { settings } = useSettings();
   const { isTrialing, trialEndsAt, openUpgradePlans } = usePlan();
   const trialBadge = useTrialBadge(isTrialing ? trialEndsAt : null);
+  const [isTrialCardDismissed, setIsTrialCardDismissed] = useState(
+    () => localStorage.getItem(TRIAL_CARD_DISMISSED_KEY) === "1",
+  );
   const { historyCount, meetingsCount, actionsCount } =
     useSidebarCounts(settings);
+
+  useEffect(() => {
+    if (!isTrialing) {
+      localStorage.removeItem(TRIAL_CARD_DISMISSED_KEY);
+      setIsTrialCardDismissed(false);
+    }
+  }, [isTrialing]);
 
   const sectionCounts: Partial<
     Record<import("./sections-config").SidebarSection, number>
@@ -167,6 +179,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const itemGap = isCompact ? 10 : 11;
   const itemFontSize = isCompact ? 13 : 14;
   const bottomFontSize = isCompact ? 12 : 14;
+  const premiumCopy =
+    trialBadge?.urgency === "neutral"
+      ? t("trial.badge.neutral", { count: trialBadge.days })
+      : trialBadge?.urgency === "warning"
+        ? t("trial.badge.warning", { count: trialBadge.days })
+        : trialBadge?.days === 0
+          ? t("trial.badge.today")
+          : trialBadge
+            ? t("trial.badge.urgent", { count: trialBadge.days })
+            : null;
+  const premiumTone =
+    trialBadge?.urgency === "neutral"
+      ? {
+          border: "rgba(201,168,76,0.26)",
+          glow: "rgba(201,168,76,0.20)",
+          chipBg: "rgba(201,168,76,0.15)",
+          chipColor: "rgba(255,232,182,0.92)",
+          ctaBg: "rgba(255,255,255,0.05)",
+          ctaBorder: "rgba(255,255,255,0.08)",
+        }
+      : trialBadge?.urgency === "warning"
+        ? {
+            border: "rgba(251,146,60,0.28)",
+            glow: "rgba(251,146,60,0.18)",
+            chipBg: "rgba(251,146,60,0.15)",
+            chipColor: "rgba(255,214,170,0.94)",
+            ctaBg: "rgba(255,255,255,0.05)",
+            ctaBorder: "rgba(255,255,255,0.08)",
+          }
+        : {
+            border: "rgba(248,113,113,0.28)",
+            glow: "rgba(248,113,113,0.18)",
+            chipBg: "rgba(248,113,113,0.14)",
+            chipColor: "rgba(255,214,214,0.95)",
+            ctaBg: "rgba(255,255,255,0.05)",
+            ctaBorder: "rgba(255,255,255,0.08)",
+          };
 
   return (
     <nav
@@ -176,10 +225,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         flexShrink: 0,
         height: "100%",
         overflow: "hidden",
-        background: "linear-gradient(180deg, #080810, #050508)",
+        background:
+          "radial-gradient(circle at top, rgba(201,168,76,0.08), transparent 34%), linear-gradient(180deg, #0b0b12 0%, #06060a 100%)",
         border: "1px solid rgba(255,255,255,0.06)",
         borderRadius: collapsed ? 22 : 24,
-        boxShadow: "0 14px 30px rgba(0,0,0,0.28)",
+        boxShadow:
+          "0 18px 40px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.03)",
         display: "flex",
         flexDirection: "column",
         transition: "width 0.2s ease, border-radius 0.2s ease",
@@ -191,12 +242,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <div
             style={{
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 16,
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 18,
               background:
-                "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018))",
-              padding: isCompact ? "11px" : "12px",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
+                "linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02))",
+              padding: isCompact ? "12px" : "14px",
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 26px rgba(0,0,0,0.16)",
             }}
           >
             <div className="flex items-center gap-[12px] min-w-0">
@@ -221,10 +273,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <VocalypeLogo width={isCompact ? 104 : 112} />
                 <p
                   style={{
-                    marginTop: 3,
+                    marginTop: 5,
                     fontSize: 11,
                     lineHeight: "16px",
-                    color: "rgba(255,255,255,0.42)",
+                    color: "rgba(255,255,255,0.48)",
                   }}
                 >
                   {t("shell.workspaceSubtitle")}
@@ -235,40 +287,112 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {!collapsed && trialBadge ? (
-        <button
-          type="button"
-          onClick={openUpgradePlans}
-          className={`mx-4 mb-2 rounded-[16px] border px-[16px] py-3 text-left transition-opacity hover:opacity-90 ${
-            trialBadge.urgency === "neutral"
-              ? "border-logo-primary/15 bg-logo-primary/8"
-              : trialBadge.urgency === "warning"
-                ? "border-orange-500/20 bg-orange-500/10"
-                : "border-red-500/20 bg-red-500/10"
-          }`}
-        >
-          <p
-            className={`text-[11px] font-medium leading-tight tracking-[0.01em] ${
+      {!collapsed && trialBadge && !isTrialCardDismissed ? (
+        <div
+          className="mx-4 mb-3 text-left"
+          style={{
+            position: "relative",
+            borderRadius: 18,
+            border: `1px solid ${premiumTone.border}`,
+            background:
               trialBadge.urgency === "neutral"
-                ? "text-logo-primary"
+                ? "linear-gradient(180deg, rgba(51,37,14,0.88), rgba(24,18,10,0.96))"
                 : trialBadge.urgency === "warning"
-                  ? "text-orange-400"
-                  : "text-red-400"
-            }`}
+                  ? "linear-gradient(180deg, rgba(59,31,10,0.88), rgba(26,18,10,0.96))"
+                  : "linear-gradient(180deg, rgba(56,18,18,0.88), rgba(24,10,10,0.96))",
+            padding: isCompact ? "12px" : "12px 13px",
+            boxShadow: `0 14px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px ${premiumTone.glow}`,
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Masquer l'encart Premium"
+            onClick={() => {
+              localStorage.setItem(TRIAL_CARD_DISMISSED_KEY, "1");
+              setIsTrialCardDismissed(true);
+            }}
+            className="trial-card-close-btn"
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              width: 24,
+              height: 24,
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.04)",
+              color: "rgba(255,255,255,0.48)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
           >
-            {trialBadge.urgency === "neutral" &&
-              t("trial.badge.neutral", { count: trialBadge.days })}
-            {trialBadge.urgency === "warning" &&
-              t("trial.badge.warning", { count: trialBadge.days })}
-            {trialBadge.urgency === "urgent" &&
-              (trialBadge.days === 0
-                ? t("trial.badge.today")
-                : t("trial.badge.urgent", { count: trialBadge.days }))}
-          </p>
-          <p className="mt-1.5 text-[11px] text-white/42">
-            {t("trial.badge.cta")}
-          </p>
-        </button>
+            <X size={12} strokeWidth={2.2} />
+          </button>
+          <div className="flex items-start gap-2.5">
+            <div className="min-w-0 flex-1">
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  borderRadius: 999,
+                  padding: "4px 8px",
+                  background: premiumTone.chipBg,
+                  color: premiumTone.chipColor,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Premium
+              </div>
+              <p
+                style={{
+                  marginTop: 8,
+                  fontSize: 12.5,
+                  lineHeight: "17px",
+                  fontWeight: 600,
+                  color: "rgba(255,248,239,0.96)",
+                }}
+              >
+                {premiumCopy}
+              </p>
+              <p
+                style={{
+                  marginTop: 4,
+                  fontSize: 10.5,
+                  lineHeight: "14px",
+                  color: "rgba(255,255,255,0.58)",
+                }}
+              >
+                Injection native, historique complet et dictée illimitée.
+              </p>
+              <button
+                type="button"
+                onClick={openUpgradePlans}
+                style={{
+                  marginTop: 10,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  minHeight: 30,
+                  borderRadius: 10,
+                  border: `1px solid ${premiumTone.ctaBorder}`,
+                  background: premiumTone.ctaBg,
+                  padding: "0 10px",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  color: "rgba(255,248,239,0.90)",
+                  cursor: "pointer",
+                }}
+              >
+                {t("trial.badge.cta")}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       <div
@@ -427,8 +551,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className="flex flex-col shrink-0"
         style={{
           borderTop: "1px solid rgba(255,255,255,0.07)",
-          margin: "4px 8px 0",
-          paddingTop: 10,
+          margin: "8px 8px 0",
+          paddingTop: 12,
           paddingBottom: 10,
         }}
       >

@@ -23,6 +23,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { ensureVoiceStateStore } from "@/stores/voiceState";
 import { cleanupTauriListen, safeUnlisten } from "@/lib/tauri/events";
 import DesktopAppShell from "./components/DesktopAppShell";
+import { deriveAppPlan } from "@/lib/subscription/plans";
 
 const DESIGN_WINDOW_SIZE = { width: 1348, height: 875 };
 
@@ -157,10 +158,13 @@ function App() {
   const canEnterApp = hasAnyAccess;
   const isActivationPending = hasAccountAccess && !hasAnyAccess;
   const currentTier = session?.subscription?.tier ?? null;
+  const currentPlan = deriveAppPlan(session);
   const isBasicTier = canEnterApp && currentTier === "basic";
   const hasPremiumAccess = canEnterApp && currentTier === "premium";
   const isTrialing =
-    session?.subscription?.status === "trialing" && hasPremiumAccess;
+    currentPlan !== "small_agency" &&
+    session?.subscription?.status === "trialing" &&
+    hasPremiumAccess;
   const trialEndsAt = isTrialing
     ? (session?.subscription?.trial_ends_at ?? null)
     : null;

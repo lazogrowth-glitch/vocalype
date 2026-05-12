@@ -1568,6 +1568,10 @@ def require_small_agency_workspace(user):
 def build_user_response(user, token: str, *, refresh_token: str | None = None, show_trial_reminder: bool = False):
     tier = get_user_tier(user)
     plan = get_user_plan(user)
+    is_workspace_managed = plan == "small_agency"
+    effective_status = "active" if is_workspace_managed else user["subscription_status"]
+    effective_trial_end = None if is_workspace_managed else user["trial_end"]
+    effective_period_end = None if is_workspace_managed else user["period_end"]
     response = {
         "token": token,
         "user": {
@@ -1576,19 +1580,19 @@ def build_user_response(user, token: str, *, refresh_token: str | None = None, s
             "name": user["name"] or user["email"].split("@")[0],
         },
         "subscription": {
-            "status": user["subscription_status"],
-            "trial_ends_at": user["trial_end"],
-            "current_period_ends_at": user["period_end"],
+            "status": effective_status,
+            "trial_ends_at": effective_trial_end,
+            "current_period_ends_at": effective_period_end,
             "has_access": True,
             "tier": tier,
             "plan": plan,
             "billing_plan": plan,
-            "can_manage_billing": bool(user["stripe_customer_id"]),
+            "can_manage_billing": bool(user["stripe_customer_id"]) and not is_workspace_managed,
         },
     }
     if tier == "basic":
         response["subscription"]["quota"] = get_weekly_quota(user)
-    if show_trial_reminder:
+    if show_trial_reminder and not is_workspace_managed:
         response["show_trial_reminder"] = True
     if refresh_token:
         response["refresh_token"] = refresh_token

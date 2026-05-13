@@ -140,7 +140,7 @@ export function DesktopAppShell({
     setTeamWorkspace(sessionWorkspace ?? persistedWorkspace ?? null);
 
     const token = session?.token ?? authClient.getStoredToken();
-    if (!token) {
+    if (!token || sessionWorkspace) {
       return;
     }
 

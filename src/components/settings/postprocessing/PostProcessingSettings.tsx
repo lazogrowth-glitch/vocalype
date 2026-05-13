@@ -12,7 +12,6 @@ import {
   Mail,
   Pencil,
   Plus,
-  Search,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -97,7 +96,6 @@ export const PostProcessingSettings: React.FC = () => {
     null,
   );
   const [selectedKey, setSelectedKey] = useState<number | null>(null);
-  const [libraryQuery, setLibraryQuery] = useState("");
 
   const outputPlaceholder = t("settings.postProcessing.actions.outputPlaceholder", {
     defaultValue: "dictated text",
@@ -390,48 +388,6 @@ export const PostProcessingSettings: React.FC = () => {
     }
   };
 
-  const allowedPresetIds = capabilities.allowedTemplateIds;
-  const visiblePresets = presets.filter((preset) =>
-    allowedPresetIds ? allowedPresetIds.includes(preset.id) : true,
-  );
-
-  const libraryItems = [
-    ...sortedActions.map((action) => {
-      const preset =
-        presets.find((item) => item.id === getActionPresetId(action)) ?? presets[0];
-      return {
-        id: `action-${action.key}`,
-        name: action.name,
-        description:
-          action.description ||
-          preset.description ||
-          getPromptPreview(action.prompt, outputPlaceholder),
-        toneClass: preset.toneClass,
-        icon: preset.icon,
-        key: action.key,
-        onClick: () => setSelectedKey(action.key),
-      };
-    }),
-    ...visiblePresets
-      .filter(
-        (preset) =>
-          !sortedActions.some((action) => getActionPresetId(action) === preset.id),
-      )
-      .map((preset) => ({
-        id: `preset-${preset.id}`,
-        name: preset.label,
-        description: preset.description,
-        toneClass: preset.toneClass,
-        icon: preset.icon,
-        key: null,
-        onClick: () => handleStartFromTemplate(preset),
-      })),
-  ].filter((item) => {
-    if (!libraryQuery.trim()) return true;
-    const haystack = `${item.name} ${item.description}`.toLowerCase();
-    return haystack.includes(libraryQuery.trim().toLowerCase());
-  });
-
   const teamTemplateItems =
     capabilities.hasSharedTemplates && teamWorkspace
       ? teamWorkspace.sharedTemplates
@@ -439,12 +395,6 @@ export const PostProcessingSettings: React.FC = () => {
             ...template,
             onClick: () => handleStartFromTemplate(template),
           }))
-          .filter((item) => {
-            if (!libraryQuery.trim()) return true;
-            const haystack =
-              `${item.name} ${item.description} ${item.prompt}`.toLowerCase();
-            return haystack.includes(libraryQuery.trim().toLowerCase());
-          })
       : [];
 
   return (
@@ -841,34 +791,17 @@ export const PostProcessingSettings: React.FC = () => {
             </section>
           ) : null}
 
-          <section className="voca-actions-library">
+          {teamTemplateItems.length ? (
+            <section className="voca-actions-library">
             <div className="voca-actions-side-head">
-              <span className="voca-actions-side-title">Bibliothèque</span>
+              <span className="voca-actions-side-title">Templates partages</span>
               <span className="voca-actions-side-count">
-                {libraryItems.length + teamTemplateItems.length}
+                {teamTemplateItems.length}
               </span>
             </div>
-
-            <div className="voca-actions-search">
-              <Search size={13} aria-hidden="true" />
-              <input
-                type="text"
-                value={libraryQuery}
-                onChange={(event) => setLibraryQuery(event.target.value)}
-                placeholder={t("common.search", {
-                  defaultValue: "Search actions...",
-                })}
-              />
-            </div>
-
-            {teamTemplateItems.length ? (
               <div
                 style={{
-                  marginBottom: 14,
                   padding: 12,
-                  borderRadius: 14,
-                  border: "1px solid rgba(52,211,153,0.16)",
-                  background: "rgba(52,211,153,0.07)",
                   display: "grid",
                   gap: 8,
                 }}
@@ -876,31 +809,22 @@ export const PostProcessingSettings: React.FC = () => {
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     justifyContent: "space-between",
                     gap: 12,
+                    padding: "0 2px 4px",
                   }}
                 >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12.5,
-                        fontWeight: 600,
-                        color: "rgba(255,255,255,0.94)",
-                      }}
-                    >
-                      Templates partages
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 3,
-                        fontSize: 11.5,
-                        lineHeight: 1.45,
-                        color: "rgba(255,255,255,0.44)",
-                      }}
-                    >
-                      Bibliotheque commune de {teamWorkspace?.name}
-                    </div>
+                  <div
+                    style={{
+                      minWidth: 0,
+                      flex: 1,
+                      fontSize: 11.5,
+                      lineHeight: 1.45,
+                      color: "rgba(255,255,255,0.44)",
+                    }}
+                  >
+                    Bibliotheque commune de {teamWorkspace?.name}
                   </div>
                   <span
                     style={{
@@ -914,15 +838,16 @@ export const PostProcessingSettings: React.FC = () => {
                       border: "1px solid rgba(52,211,153,0.2)",
                       background: "rgba(52,211,153,0.10)",
                       color: "#8ef0bf",
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: 700,
+                      flexShrink: 0,
                     }}
                   >
                     Team
                   </span>
                 </div>
 
-                <div style={{ display: "grid", gap: 8 }}>
+                <div className="voca-actions-library-list" style={{ padding: 0 }}>
                   {teamTemplateItems.map((item) => (
                     <button
                       key={item.id}
@@ -941,39 +866,31 @@ export const PostProcessingSettings: React.FC = () => {
                           {item.description}
                         </span>
                       </span>
-                      <span className="voca-actions-library-shortcut">
+                      <span
+                        className="voca-actions-library-shortcut"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: 0,
+                          height: 22,
+                          padding: "0 8px",
+                          borderRadius: 999,
+                          border: "1px solid rgba(52,211,153,0.18)",
+                          background: "rgba(52,211,153,0.08)",
+                          color: "#8ef0bf",
+                          fontSize: 10,
+                          fontWeight: 700,
+                        }}
+                      >
                         Team
                       </span>
                     </button>
                   ))}
                 </div>
               </div>
-            ) : null}
-
-            <div className="voca-actions-library-list">
-              {libraryItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`voca-actions-library-row${item.key === resolvedSelectedKey ? " is-active" : ""}`}
-                  onClick={item.onClick}
-                >
-                  <span className={`voca-actions-library-icon ${item.toneClass}`}>
-                    {item.icon}
-                  </span>
-                  <span className="voca-actions-library-copy">
-                    <span className="voca-actions-library-name">{item.name}</span>
-                    <span className="voca-actions-library-desc">
-                      {item.description}
-                    </span>
-                  </span>
-                  <span className="voca-actions-library-shortcut">
-                    {item.key ? `Ctrl ${item.key}` : "Nouveau"}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
+            </section>
+          ) : null}
         </aside>
       </div>
     </div>

@@ -1570,6 +1570,9 @@ def build_user_response(user, token: str, *, refresh_token: str | None = None, s
     plan = get_user_plan(user)
     is_workspace_managed = plan == "small_agency"
     workspace = ensure_small_agency_workspace(user) if is_workspace_managed else None
+    can_manage_billing = bool(user["stripe_customer_id"])
+    if is_workspace_managed:
+        can_manage_billing = bool(workspace) and workspace["current_user_role"] == "owner" and can_manage_billing
     effective_status = "active" if is_workspace_managed else user["subscription_status"]
     effective_trial_end = None if is_workspace_managed else user["trial_end"]
     effective_period_end = None if is_workspace_managed else user["period_end"]
@@ -1588,7 +1591,7 @@ def build_user_response(user, token: str, *, refresh_token: str | None = None, s
             "tier": tier,
             "plan": plan,
             "billing_plan": plan,
-            "can_manage_billing": bool(user["stripe_customer_id"]) and not is_workspace_managed,
+            "can_manage_billing": can_manage_billing,
         },
     }
     if workspace:

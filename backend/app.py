@@ -914,7 +914,8 @@ def evaluate_build_integrity(
     anomalies: list[str] = []
     binary_sha256 = str(integrity.get("binary_sha256", "")).strip().lower() or None
     release_build = bool(integrity.get("release_build", False))
-    tamper_flags = integrity.get("tamper_flags") or []
+    raw_tamper_flags = integrity.get("tamper_flags") or []
+    is_dev_channel = (app_channel or "").strip().lower() == "dev"
 
     if app_channel and LICENSE_ALLOWED_CHANNELS and app_channel not in LICENSE_ALLOWED_CHANNELS:
         anomalies.append(f"channel_not_allowed:{app_channel}")
@@ -922,9 +923,11 @@ def evaluate_build_integrity(
     if not release_build and not LICENSE_ALLOW_DEBUG_BUILDS:
         anomalies.append("debug_build_disallowed")
 
-    for item in tamper_flags:
+    for item in raw_tamper_flags:
         value = str(item).strip()
         if value:
+            if is_dev_channel and value in {"debug_build", "debug_path"}:
+                continue
             anomalies.append(f"tamper_flag:{value}")
 
     if LICENSE_APPROVED_BUILD_HASHES and binary_sha256 not in LICENSE_APPROVED_BUILD_HASHES:
@@ -1256,7 +1259,7 @@ WORKSPACE_DEFAULT_SUPPORT_EMAIL = "priority@vocalype.com"
 
 def get_user_tier(user) -> str:
     """Returns 'premium' or 'basic'. Never returns a hard-blocked state."""
-    if user_has_small_agency_membership(user["id"]):
+    if get_user_workspace_row(user) is not None:
         return "premium"
     status = user["subscription_status"]
     if status == "active":
@@ -1276,7 +1279,7 @@ def normalize_billing_plan(value: str | None) -> str | None:
 
 
 def get_user_plan(user) -> str | None:
-    if user_has_small_agency_membership(user["id"]):
+    if get_user_workspace_row(user) is not None:
         return "small_agency"
     if get_user_tier(user) != "premium":
         return None
@@ -1314,8 +1317,10 @@ def get_weekly_quota(user) -> dict:
     }
 
 
-def load_workspace_row_for_user(user_id: int):
-    db = get_db()
+def load_workspace_row_for_user(user_id: int, db: _PgConn | None = None):
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         return db.execute(
             """
@@ -1334,7 +1339,19 @@ def load_workspace_row_for_user(user_id: int):
             (user_id,),
         ).fetchone()
     finally:
-        db.close()
+        if owns_db:
+            db.close()
+
+
+def get_user_workspace_row(user):
+    if user is None:
+        return None
+    if "__workspace_row_loaded__" in user:
+        return user.get("__workspace_row__")
+    workspace_row = load_workspace_row_for_user(user["id"])
+    user["__workspace_row_loaded__"] = True
+    user["__workspace_row__"] = workspace_row
+    return workspace_row
 
 
 def user_has_small_agency_membership(user_id: int) -> bool:
@@ -1425,7 +1442,7 @@ def ensure_small_agency_workspace(user):
     if not has_small_agency_access(user):
         return None
 
-    existing = load_workspace_row_for_user(user["id"])
+    existing = get_user_workspace_row(user)
     if existing:
         return existing
 
@@ -1480,7 +1497,10 @@ def ensure_small_agency_workspace(user):
     finally:
         db.close()
 
-    return load_workspace_row_for_user(user["id"])
+    workspace_row = load_workspace_row_for_user(user["id"])
+    user["__workspace_row_loaded__"] = True
+    user["__workspace_row__"] = workspace_row
+    return workspace_row
 
 
 def list_workspace_members(organization_id: int, db: _PgConn | None = None) -> list[dict]:
@@ -2600,8 +2620,6 @@ def prepare_license_response(
 ):
     with timed_block("license.issue", "register_device", user_id=user["id"]):
         register_device(device_id, user["id"])
-    with timed_block("license.issue", "bootstrap_entitlement", user_id=user["id"]):
-        bootstrap_device_entitlement(user, device_id, app_version, app_channel)
     with timed_block("license.issue", "sync_entitlement_state", user_id=user["id"]):
         entitlement = sync_device_entitlement_state(
             user,

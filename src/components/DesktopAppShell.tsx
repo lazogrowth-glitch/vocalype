@@ -13,12 +13,8 @@ import {
   SECTIONS_CONFIG,
 } from "./sections-config";
 import { PlanContext } from "@/lib/subscription/context";
+import { deriveAppPlan, getPlanCapabilities } from "@/lib/subscription/plans";
 import {
-  deriveAppPlan,
-  getPlanCapabilities,
-} from "@/lib/subscription/plans";
-import {
-  deriveTeamWorkspace,
   loadPersistedTeamWorkspace,
   mapTeamWorkspacePayload,
   savePersistedTeamWorkspace,
@@ -118,7 +114,7 @@ export function DesktopAppShell({
   const currentPlan = deriveAppPlan(session);
   const capabilities = getPlanCapabilities(currentPlan);
   const [teamWorkspace, setTeamWorkspace] = useState<TeamWorkspace | null>(
-    deriveTeamWorkspace(session, currentPlan),
+    null,
   );
 
   useBackendEvents({
@@ -130,15 +126,14 @@ export function DesktopAppShell({
   });
 
   useEffect(() => {
-    const defaultWorkspace = deriveTeamWorkspace(session, currentPlan);
     const userId = session?.user?.id;
-    if (!userId || !defaultWorkspace) {
+    if (!userId || currentPlan !== "small_agency") {
       setTeamWorkspace(null);
       return;
     }
 
     const persistedWorkspace = loadPersistedTeamWorkspace(userId);
-    setTeamWorkspace(persistedWorkspace ?? defaultWorkspace);
+    setTeamWorkspace(persistedWorkspace ?? null);
 
     const token = session?.token ?? authClient.getStoredToken();
     if (!token) {
@@ -153,7 +148,7 @@ export function DesktopAppShell({
         setTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
       })
       .catch(() => {
-        // Keep the local fallback if the backend workspace is not reachable yet.
+        // Keep the persisted workspace if the backend workspace is not reachable yet.
       });
 
     return () => {
@@ -288,9 +283,9 @@ export function DesktopAppShell({
     ) => {
       setTeamWorkspace((current) =>
         typeof updater === "function"
-          ? (updater as (current: TeamWorkspace | null) => TeamWorkspace | null)(
-              current,
-            )
+          ? (
+              updater as (current: TeamWorkspace | null) => TeamWorkspace | null
+            )(current)
           : updater,
       );
     },

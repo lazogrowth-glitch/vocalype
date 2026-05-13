@@ -271,6 +271,16 @@ def optional_json_string(data: dict, field: str) -> tuple[str | None, object | N
     return value or None, None
 
 
+def require_json_int(data: dict, field: str) -> tuple[int | None, object | None]:
+    value = data.get(field)
+    if value is None:
+        return None, (jsonify({"error": f"Champ requis: {field}"}), 400)
+    try:
+        return int(str(value).strip()), None
+    except (TypeError, ValueError):
+        return None, (jsonify({"error": f"Champ invalide: {field}"}), 400)
+
+
 def email_is_valid(email: str) -> bool:
     return bool(EMAIL_REGEX.fullmatch(email))
 
@@ -2966,7 +2976,7 @@ def workspace_remove_member(user):
         return jsonify({"error": "Droits admin requis"}), 403
 
     data = request.get_json(silent=True) or {}
-    member_id, error = require_json_string(data, "member_id")
+    member_id, error = require_json_int(data, "member_id")
     if error:
         return error
 

@@ -670,6 +670,17 @@ export const authClient = {
     );
   },
 
+  async updateProfile(token: string, payload: { name: string }) {
+    return request<AuthSession>(
+      "/auth/profile",
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+  },
+
   async fetchWorkspaceTeam(token: string) {
     return request<WorkspaceTeamResponse>(
       "/workspace/team",

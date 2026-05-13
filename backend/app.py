@@ -2406,6 +2406,40 @@ def session(user):
     return jsonify(build_user_response(user, token, refresh_token=refresh_token, show_trial_reminder=show_reminder))
 
 
+@app.route("/auth/profile", methods=["PATCH"])
+@auth_required
+def update_profile(user):
+    data = request.get_json(silent=True) or {}
+    name, error = require_json_string(data, "name")
+    if error:
+        return error
+
+    name = name.strip()
+    if len(name) < 2:
+        return jsonify({"error": "Nom trop court"}), 400
+    if len(name) > 80:
+        return jsonify({"error": "Nom trop long"}), 400
+
+    db = get_db()
+    try:
+        db.execute(
+            "UPDATE users SET name = %s WHERE id = %s",
+            (name, user["id"]),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_user = load_user_by_id(user["id"])
+    if not refreshed_user:
+        return jsonify({"error": "Utilisateur introuvable"}), 404
+
+    attach_user_to_pending_workspace_invites(refreshed_user)
+    token = make_token(refreshed_user)
+    refresh_token = make_refresh_token(refreshed_user)
+    return jsonify(build_user_response(refreshed_user, token, refresh_token=refresh_token))
+
+
 @app.route("/auth/refresh", methods=["POST"])
 def refresh_token_endpoint():
     data = request.get_json(silent=True) or {}

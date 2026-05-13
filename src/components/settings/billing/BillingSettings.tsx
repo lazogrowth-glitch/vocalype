@@ -7,6 +7,7 @@ import {
   Download,
   ExternalLink,
   Layers,
+  Pencil,
   ShieldCheck,
   Star,
   UserPlus,
@@ -53,11 +54,11 @@ function formatDate(iso: string | null | undefined, locale?: string): string {
 function getPlanPrice(plan: string): string | null {
   switch (plan) {
     case "independent":
-      return "\u20AC12";
+      return "CA$12";
     case "power_user":
-      return "\u20AC24";
+      return "CA$24";
     case "small_agency":
-      return "\u20AC18";
+      return "CA$18";
     default:
       return null;
   }
@@ -581,6 +582,8 @@ export const BillingSettings: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<TeamRole>("member");
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [pendingName, setPendingName] = useState("");
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templatePrompt, setTemplatePrompt] = useState("");
@@ -598,6 +601,11 @@ export const BillingSettings: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!session?.user?.name) return;
+    setPendingName(session.user.name);
+  }, [session?.user?.name]);
 
   const comparisonRows = useMemo(() => buildPlanComparisonRows(t), [t]);
 
@@ -809,6 +817,38 @@ export const BillingSettings: React.FC = () => {
     teamWorkspace,
     updateTeamWorkspace,
   ]);
+
+  const handleSaveOwnName = useCallback(async () => {
+    const token = authClient.getStoredToken();
+    const nextName = pendingName.trim();
+    if (!token || !session?.user || nextName.length < 2) return;
+
+    setWorkspaceLoading(true);
+    try {
+      const updatedSession = await authClient.updateProfile(token, {
+        name: nextName,
+      });
+      await authClient.setStoredSession(updatedSession);
+      setSession(updatedSession);
+      updateTeamWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              members: current.members.map((member) =>
+                member.email.toLowerCase() === updatedSession.user.email.toLowerCase()
+                  ? { ...member, name: updatedSession.user.name?.trim() || member.name }
+                  : member,
+              ),
+            }
+          : current,
+      );
+      setEditingName(false);
+    } catch (error) {
+      console.error("Failed to update profile name:", error);
+    } finally {
+      setWorkspaceLoading(false);
+    }
+  }, [pendingName, session?.user, updateTeamWorkspace]);
 
   return (
     <>
@@ -1382,89 +1422,81 @@ export const BillingSettings: React.FC = () => {
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr auto auto",
-                      gap: 10,
-                    }}
-                  >
-                    <input
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(event) => setInviteEmail(event.target.value)}
-                      placeholder={t("billing.workspace.invitePlaceholder")}
-                      disabled={
-                        workspaceLoading || !canManageWorkspace || seatsRemaining <= 0
-                      }
+                  {canManageWorkspace ? (
+                    <div
                       style={{
-                        height: 40,
-                        borderRadius: 10,
-                        border: "1px solid rgba(255,255,255,0.10)",
-                        background: "rgba(255,255,255,0.03)",
-                        color: "rgba(255,255,255,0.94)",
-                        padding: "0 12px",
-                        fontSize: 13,
-                        fontFamily: "inherit",
-                        outline: "none",
-                      }}
-                    />
-                    <select
-                      value={inviteRole}
-                      onChange={(event) => setInviteRole(event.target.value as TeamRole)}
-                      disabled={
-                        workspaceLoading || !canManageWorkspace || seatsRemaining <= 0
-                      }
-                      style={{
-                        height: 40,
-                        borderRadius: 10,
-                        border: "1px solid rgba(255,255,255,0.10)",
-                        background: "rgba(255,255,255,0.03)",
-                        color: "rgba(255,255,255,0.94)",
-                        padding: "0 12px",
-                        fontSize: 13,
-                        fontFamily: "inherit",
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto auto",
+                        gap: 10,
                       }}
                     >
-                      <option value="member">{t("billing.workspace.roles.member")}</option>
-                      <option value="admin">{t("billing.workspace.roles.admin")}</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => void handleInviteMember()}
-                      disabled={
-                        workspaceLoading ||
-                        !canManageWorkspace ||
-                        !inviteEmail.trim() ||
-                        seatsRemaining <= 0
-                      }
-                      style={{
-                        height: 40,
-                        padding: "0 14px",
-                        borderRadius: 10,
-                        border: "1px solid rgba(201,168,76,0.26)",
-                        background: "rgba(201,168,76,0.10)",
-                        color: "#d8b866",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                        opacity:
-                          workspaceLoading ||
-                          !canManageWorkspace ||
-                          !inviteEmail.trim() ||
-                          seatsRemaining <= 0
-                            ? 0.45
-                            : 1,
-                      }}
-                    >
-                      <UserPlus size={14} />
-                      {t("billing.workspace.inviteButton")}
-                    </button>
-                  </div>
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(event) => setInviteEmail(event.target.value)}
+                        placeholder={t("billing.workspace.invitePlaceholder")}
+                        disabled={workspaceLoading || seatsRemaining <= 0}
+                        style={{
+                          height: 40,
+                          borderRadius: 10,
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          background: "rgba(255,255,255,0.03)",
+                          color: "rgba(255,255,255,0.94)",
+                          padding: "0 12px",
+                          fontSize: 13,
+                          fontFamily: "inherit",
+                          outline: "none",
+                        }}
+                      />
+                      <select
+                        value={inviteRole}
+                        onChange={(event) => setInviteRole(event.target.value as TeamRole)}
+                        disabled={workspaceLoading || seatsRemaining <= 0}
+                        style={{
+                          height: 40,
+                          borderRadius: 10,
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          background: "rgba(255,255,255,0.03)",
+                          color: "rgba(255,255,255,0.94)",
+                          padding: "0 12px",
+                          fontSize: 13,
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        <option value="member">{t("billing.workspace.roles.member")}</option>
+                        <option value="admin">{t("billing.workspace.roles.admin")}</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void handleInviteMember()}
+                        disabled={
+                          workspaceLoading || !inviteEmail.trim() || seatsRemaining <= 0
+                        }
+                        style={{
+                          height: 40,
+                          padding: "0 14px",
+                          borderRadius: 10,
+                          border: "1px solid rgba(201,168,76,0.26)",
+                          background: "rgba(201,168,76,0.10)",
+                          color: "#d8b866",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          opacity:
+                            workspaceLoading || !inviteEmail.trim() || seatsRemaining <= 0
+                              ? 0.45
+                              : 1,
+                        }}
+                      >
+                        <UserPlus size={14} />
+                        {t("billing.workspace.inviteButton")}
+                      </button>
+                    </div>
+                  ) : null}
 
                   <div style={{ display: "grid", gap: 10 }}>
                     {teamMembers.map((member) => (
@@ -1482,15 +1514,114 @@ export const BillingSettings: React.FC = () => {
                         }}
                       >
                         <div style={{ minWidth: 0 }}>
-                          <div
-                            style={{
-                              fontSize: 13.5,
-                              fontWeight: 600,
-                              color: "rgba(255,255,255,0.94)",
-                            }}
-                          >
-                            {member.name}
-                          </div>
+                          {session?.user?.email &&
+                          member.email.toLowerCase() === session.user.email.toLowerCase() ? (
+                            editingName ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  marginBottom: 2,
+                                }}
+                              >
+                                <input
+                                  type="text"
+                                  value={pendingName}
+                                  onChange={(event) => setPendingName(event.target.value)}
+                                  disabled={workspaceLoading}
+                                  style={{
+                                    height: 34,
+                                    minWidth: 0,
+                                    width: "100%",
+                                    maxWidth: 220,
+                                    borderRadius: 8,
+                                    border: "1px solid rgba(255,255,255,0.10)",
+                                    background: "rgba(255,255,255,0.03)",
+                                    color: "rgba(255,255,255,0.94)",
+                                    padding: "0 10px",
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    fontFamily: "inherit",
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => void handleSaveOwnName()}
+                                  disabled={workspaceLoading || pendingName.trim().length < 2}
+                                  style={{
+                                    height: 32,
+                                    padding: "0 10px",
+                                    borderRadius: 8,
+                                    border: "1px solid rgba(201,168,76,0.26)",
+                                    background: "rgba(201,168,76,0.10)",
+                                    color: "#d8b866",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    fontFamily: "inherit",
+                                    opacity:
+                                      workspaceLoading || pendingName.trim().length < 2
+                                        ? 0.45
+                                        : 1,
+                                  }}
+                                >
+                                  OK
+                                </button>
+                              </div>
+                            ) : (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 13.5,
+                                    fontWeight: 600,
+                                    color: "rgba(255,255,255,0.94)",
+                                  }}
+                                >
+                                  {member.name}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPendingName(member.name);
+                                    setEditingName(true);
+                                  }}
+                                  disabled={workspaceLoading}
+                                  aria-label="Modifier mon nom"
+                                  style={{
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: 999,
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    background: "rgba(255,255,255,0.03)",
+                                    color: "rgba(255,255,255,0.56)",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <Pencil size={12} />
+                                </button>
+                              </div>
+                            )
+                          ) : (
+                            <div
+                              style={{
+                                fontSize: 13.5,
+                                fontWeight: 600,
+                                color: "rgba(255,255,255,0.94)",
+                              }}
+                            >
+                              {member.name}
+                            </div>
+                          )}
                           <div
                             style={{
                               marginTop: 3,
@@ -1528,11 +1659,11 @@ export const BillingSettings: React.FC = () => {
                             : t("billing.workspace.memberStatus.invited")}
                         </div>
 
-                        {member.role !== "owner" ? (
+                        {member.role !== "owner" && canManageWorkspace ? (
                           <button
                             type="button"
                             onClick={() => void handleRemoveMember(member.id)}
-                            disabled={workspaceLoading || !canManageWorkspace}
+                            disabled={workspaceLoading}
                             style={{
                               height: 32,
                               padding: "0 10px",
@@ -1547,7 +1678,7 @@ export const BillingSettings: React.FC = () => {
                           >
                             {t("billing.workspace.removeButton")}
                           </button>
-                        ) : (
+                        ) : member.role === "owner" ? (
                           <span
                             style={{
                               fontSize: 11.5,
@@ -1556,7 +1687,7 @@ export const BillingSettings: React.FC = () => {
                           >
                             {t("billing.workspace.ownerBadge")}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     ))}
                   </div>
@@ -1946,49 +2077,51 @@ export const BillingSettings: React.FC = () => {
                     ) : null}
                   </div>
 
-                  <div
-                    style={{
-                      padding: "18px 20px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      background: "rgba(255,255,255,0.018)",
-                      display: "grid",
-                      gap: 12,
-                    }}
-                  >
+                  {canManageWorkspace ? (
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        color: "rgba(255,255,255,0.94)",
+                        padding: "18px 20px",
+                        borderRadius: 12,
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        background: "rgba(255,255,255,0.018)",
+                        display: "grid",
+                        gap: 12,
                       }}
                     >
-                      <ShieldCheck size={16} />
-                      <span style={{ fontSize: 15, fontWeight: 600 }}>
-                        {t("billing.workspace.adminBillingTitle")}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12.5,
-                        lineHeight: 1.55,
-                        color: "rgba(255,255,255,0.42)",
-                      }}
-                    >
-                      {t("billing.workspace.adminBillingDescription")}
-                    </div>
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)" }}>
-                        {t("billing.workspace.billingOwner")}:{" "}
-                        {teamWorkspace.billingContactEmail}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          color: "rgba(255,255,255,0.94)",
+                        }}
+                      >
+                        <ShieldCheck size={16} />
+                        <span style={{ fontSize: 15, fontWeight: 600 }}>
+                          {t("billing.workspace.adminBillingTitle")}
+                        </span>
                       </div>
-                      <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)" }}>
-                        {t("billing.workspace.supportContact")}:{" "}
-                        {teamWorkspace.supportContactEmail}
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          lineHeight: 1.55,
+                          color: "rgba(255,255,255,0.42)",
+                        }}
+                      >
+                        {t("billing.workspace.adminBillingDescription")}
+                      </div>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)" }}>
+                          {t("billing.workspace.billingOwner")}:{" "}
+                          {teamWorkspace.billingContactEmail}
+                        </div>
+                        <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.7)" }}>
+                          {t("billing.workspace.supportContact")}:{" "}
+                          {teamWorkspace.supportContactEmail}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               </div>
             </div>

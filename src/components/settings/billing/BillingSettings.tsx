@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
@@ -20,18 +20,6 @@ import type { AuthSession } from "@/lib/auth/types";
 import { usePlan } from "@/lib/subscription/context";
 import { mapTeamWorkspacePayload } from "@/lib/subscription/workspace";
 import type { TeamRole } from "@/lib/subscription/contracts";
-
-type TeamFeatureCell = {
-  label: string;
-  tone?: "neutral" | "good";
-};
-
-type TeamFeatureRow = {
-  feature: string;
-  independent: TeamFeatureCell;
-  powerUser: TeamFeatureCell;
-  smallAgency: TeamFeatureCell;
-};
 
 function formatDate(iso: string | null | undefined, locale?: string): string {
   if (!iso) return "\u2014";
@@ -57,202 +45,6 @@ function getPlanPrice(plan: string): string | null {
     default:
       return null;
   }
-}
-
-function buildPlanComparisonRows(
-  t: (key: string, options?: Record<string, unknown>) => string,
-): TeamFeatureRow[] {
-  return [
-    {
-      feature: t("billing.comparison.rows.unlimitedDictation"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.pasteAnywhere"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.localOffline"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.platforms"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.microphoneShortcut"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.languageDetection"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.simpleHistory"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.unlimitedHistory"),
-      independent: { label: t("billing.comparison.values.limited") },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.historyExport"),
-      independent: { label: t("billing.comparison.values.basic") },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.customWords"),
-      independent: {
-        label: t("billing.comparison.values.personal"),
-        tone: "good",
-      },
-      powerUser: {
-        label: t("billing.comparison.values.personalAdvanced"),
-        tone: "good",
-      },
-      smallAgency: {
-        label: t("billing.comparison.values.personalTeam"),
-        tone: "good",
-      },
-    },
-    {
-      feature: t("billing.comparison.rows.adaptiveVocabulary"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.recruiterTemplates"),
-      independent: { label: t("billing.comparison.values.threeTemplates") },
-      powerUser: {
-        label: t("billing.comparison.values.allTemplates"),
-        tone: "good",
-      },
-      smallAgency: {
-        label: t("billing.comparison.values.sharedTemplates"),
-        tone: "good",
-      },
-    },
-    {
-      feature: t("billing.comparison.rows.customActions"),
-      independent: { label: t("billing.comparison.values.oneToTwoMax") },
-      powerUser: { label: t("billing.comparison.values.nineActions"), tone: "good" },
-      smallAgency: {
-        label: t("billing.comparison.values.nineSharedActions"),
-        tone: "good",
-      },
-    },
-    {
-      feature: t("billing.comparison.rows.cloudPostProcessing"),
-      independent: { label: t("billing.comparison.values.limitedOptional") },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.privateMode"),
-      independent: { label: t("billing.comparison.values.yes"), tone: "good" },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.audioImport"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.reprocessHistory"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.advancedStats"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.yes"), tone: "good" },
-      smallAgency: { label: t("billing.comparison.values.team"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.sharedRecruiterTemplates"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.no") },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.sharedDictionary"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.no") },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.seatManagement"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.no") },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.centralBilling"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.no") },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.prioritySupport"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.normal") },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-    {
-      feature: t("billing.comparison.rows.adminControls"),
-      independent: { label: t("billing.comparison.values.no") },
-      powerUser: { label: t("billing.comparison.values.no") },
-      smallAgency: { label: t("billing.comparison.values.yes"), tone: "good" },
-    },
-  ];
-}
-
-function FeatureCell({ cell }: { cell: TeamFeatureCell }) {
-  const isGood = cell.tone === "good";
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: 32,
-        padding: "6px 10px",
-        borderRadius: 8,
-        background: isGood ? "rgba(52,211,153,0.10)" : "rgba(255,255,255,0.03)",
-        border: isGood
-          ? "1px solid rgba(52,211,153,0.22)"
-          : "1px solid rgba(255,255,255,0.06)",
-        color: isGood ? "#8ef0bf" : "rgba(255,255,255,0.72)",
-        fontSize: 12.5,
-        fontWeight: isGood ? 600 : 500,
-        lineHeight: 1.3,
-        textAlign: "center",
-      }}
-    >
-      {cell.label}
-    </span>
-  );
 }
 
 function UsageCard({
@@ -573,7 +365,6 @@ export const BillingSettings: React.FC = () => {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [stats, setStats] = useState<HistoryStats | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [showPlanComparison, setShowPlanComparison] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<TeamRole>("member");
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
@@ -594,8 +385,6 @@ export const BillingSettings: React.FC = () => {
     if (!session?.user?.name) return;
     setPendingName(session.user.name);
   }, [session?.user?.name]);
-
-  const comparisonRows = useMemo(() => buildPlanComparisonRows(t), [t]);
 
   const handleManage = useCallback(async () => {
     const token = authClient.getStoredToken();
@@ -738,13 +527,6 @@ export const BillingSettings: React.FC = () => {
 
   return (
     <>
-      <PlanComparisonModal
-        open={showPlanComparison}
-        onClose={() => setShowPlanComparison(false)}
-        rows={comparisonRows}
-        t={t}
-      />
-
       <div style={{ height: "100%", overflowY: "auto", overflowX: "hidden" }}>
         <div
           style={{
@@ -1151,86 +933,6 @@ export const BillingSettings: React.FC = () => {
               </div>
             </div>
           )}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.10em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.38)",
-                }}
-              >
-                {t("billing.comparison.eyebrow")}
-              </span>
-              <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
-                {t("billing.comparison.subtitle")}
-              </span>
-            </div>
-
-            <div
-              style={{
-                padding: "18px 20px",
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.06)",
-                background: "rgba(255,255,255,0.018)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 18,
-                flexWrap: "wrap",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 6,
-                  maxWidth: 620,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: "rgba(255,255,255,0.94)",
-                  }}
-                >
-                  {t("billing.comparison.cardTitle")}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12.5,
-                    lineHeight: 1.5,
-                    color: "rgba(255,255,255,0.42)",
-                  }}
-                >
-                  {t("billing.comparison.cardDescription")}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPlanComparison(true)}
-                style={{
-                  height: 40,
-                  padding: "0 16px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(201,168,76,0.26)",
-                  background: "rgba(201,168,76,0.10)",
-                  color: "#d8b866",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {t("billing.comparison.button")}
-              </button>
-            </div>
-          </div>
 
           {teamWorkspace ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

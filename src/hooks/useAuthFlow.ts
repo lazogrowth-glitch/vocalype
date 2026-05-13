@@ -73,6 +73,7 @@ export function useAuthFlow(
   const [showTrialWelcome, setShowTrialWelcome] = useState(false);
   const hasCompletedPostOnboardingInit = useRef(false);
   const trialReminderShownRef = useRef(false);
+  const reportedIntegritySignatureRef = useRef<string | null>(null);
 
   const applySession = useCallback((nextSession: AuthSession | null) => {
     setSession(nextSession);
@@ -530,6 +531,13 @@ export function useAuthFlow(
         runtime.reason?.includes("Binary integrity changed") ||
         (runtime.integrity_anomalies?.length ?? 0) > 0
       ) {
+        const signature = JSON.stringify({
+          reason: runtime.reason ?? null,
+          anomalies: runtime.integrity_anomalies ?? [],
+        });
+        if (reportedIntegritySignatureRef.current === signature) {
+          return;
+        }
         try {
           const integrity = await licenseClient.getIntegritySnapshot();
           await licenseClient.reportAnomaly(
@@ -540,6 +548,7 @@ export function useAuthFlow(
               integrity,
             },
           );
+          reportedIntegritySignatureRef.current = signature;
         } catch (error) {
           console.warn("Failed to report integrity anomaly:", error);
         }

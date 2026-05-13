@@ -6,6 +6,7 @@ import secrets
 import smtplib
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from psycopg2.pool import SimpleConnectionPool
 import re
 import time
 import uuid
@@ -135,6 +136,9 @@ APP_RETURN_URL = os.environ.get(
     os.environ.get("FRONTEND_URL", "https://vocalype.com"),
 )
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+DB_POOL_MIN_CONN = env_int("DB_POOL_MIN_CONN", 1, 1)
+DB_POOL_MAX_CONN = env_int("DB_POOL_MAX_CONN", 8, 1)
+DB_CONNECT_TIMEOUT_SECONDS = env_int("DB_CONNECT_TIMEOUT_SECONDS", 5, 1)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 CLOUD_LLM_MODEL = os.environ.get("CLOUD_LLM_MODEL", "llama-3.1-8b-instant")
 CLOUD_LLM_ALLOWED_MODELS = [
@@ -367,11 +371,29 @@ def dt_to_iso(value: datetime | None) -> str | None:
     return value.astimezone(timezone.utc).isoformat()
 
 
+_DB_POOL: SimpleConnectionPool | None = None
+
+
+def get_db_pool() -> SimpleConnectionPool:
+    global _DB_POOL
+    if _DB_POOL is None:
+        if not DATABASE_URL:
+            raise RuntimeError("DATABASE_URL is required")
+        _DB_POOL = SimpleConnectionPool(
+            DB_POOL_MIN_CONN,
+            DB_POOL_MAX_CONN,
+            dsn=DATABASE_URL,
+            connect_timeout=DB_CONNECT_TIMEOUT_SECONDS,
+        )
+    return _DB_POOL
+
+
 class _PgConn:
     """Thin wrapper around psycopg2 that mimics the sqlite3 connection API."""
 
     def __init__(self):
-        self._conn = psycopg2.connect(DATABASE_URL)
+        self._pool = get_db_pool()
+        self._conn = self._pool.getconn()
         self._conn.autocommit = False
         self._cur = self._conn.cursor(cursor_factory=RealDictCursor)
 
@@ -383,8 +405,14 @@ class _PgConn:
         self._conn.commit()
 
     def close(self):
-        self._cur.close()
-        self._conn.close()
+        try:
+            self._cur.close()
+        finally:
+            try:
+                self._conn.rollback()
+            except Exception:
+                pass
+            self._pool.putconn(self._conn)
 
 
 def get_db() -> _PgConn:
@@ -1449,8 +1477,10 @@ def ensure_small_agency_workspace(user):
     return load_workspace_row_for_user(user["id"])
 
 
-def list_workspace_members(organization_id: int) -> list[dict]:
-    db = get_db()
+def list_workspace_members(organization_id: int, db: _PgConn | None = None) -> list[dict]:
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         rows = db.execute(
             """
@@ -1466,11 +1496,14 @@ def list_workspace_members(organization_id: int) -> list[dict]:
         ).fetchall()
         return [dict(row) for row in rows]
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
-def list_workspace_templates(organization_id: int) -> list[dict]:
-    db = get_db()
+def list_workspace_templates(organization_id: int, db: _PgConn | None = None) -> list[dict]:
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         rows = db.execute(
             """
@@ -1483,11 +1516,14 @@ def list_workspace_templates(organization_id: int) -> list[dict]:
         ).fetchall()
         return [dict(row) for row in rows]
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
-def list_workspace_snippets(organization_id: int) -> list[dict]:
-    db = get_db()
+def list_workspace_snippets(organization_id: int, db: _PgConn | None = None) -> list[dict]:
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         rows = db.execute(
             """
@@ -1500,11 +1536,14 @@ def list_workspace_snippets(organization_id: int) -> list[dict]:
         ).fetchall()
         return [dict(row) for row in rows]
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
-def list_workspace_dictionary(organization_id: int) -> list[dict]:
-    db = get_db()
+def list_workspace_dictionary(organization_id: int, db: _PgConn | None = None) -> list[dict]:
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         rows = db.execute(
             """
@@ -1517,11 +1556,21 @@ def list_workspace_dictionary(organization_id: int) -> list[dict]:
         ).fetchall()
         return [dict(row) for row in rows]
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
 def serialize_workspace(workspace_row: dict) -> dict:
     organization_id = workspace_row["id"]
+    db = get_db()
+    try:
+        members = list_workspace_members(organization_id, db=db)
+        templates = list_workspace_templates(organization_id, db=db)
+        snippets = list_workspace_snippets(organization_id, db=db)
+        dictionary = list_workspace_dictionary(organization_id, db=db)
+    finally:
+        db.close()
+
     return {
         "id": str(organization_id),
         "name": workspace_row["name"],
@@ -1538,7 +1587,7 @@ def serialize_workspace(workspace_row: dict) -> dict:
                 "role": member["role"],
                 "status": member["status"],
             }
-            for member in list_workspace_members(organization_id)
+            for member in members
         ],
         "shared_templates": [
             {
@@ -1547,7 +1596,7 @@ def serialize_workspace(workspace_row: dict) -> dict:
                 "description": template.get("description") or "",
                 "prompt": template["prompt"],
             }
-            for template in list_workspace_templates(organization_id)
+            for template in templates
         ],
         "shared_snippets": [
             {
@@ -1555,7 +1604,7 @@ def serialize_workspace(workspace_row: dict) -> dict:
                 "trigger": snippet["trigger"],
                 "expansion": snippet["expansion"],
             }
-            for snippet in list_workspace_snippets(organization_id)
+            for snippet in snippets
         ],
         "shared_dictionary": [
             {
@@ -1563,7 +1612,7 @@ def serialize_workspace(workspace_row: dict) -> dict:
                 "term": term["term"],
                 "note": term.get("note"),
             }
-            for term in list_workspace_dictionary(organization_id)
+            for term in dictionary
         ],
     }
 

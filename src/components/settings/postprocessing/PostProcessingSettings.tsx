@@ -123,7 +123,16 @@ export const PostProcessingSettings: React.FC = () => {
     async (id: string) => {
       const token = authClient.getStoredToken();
       if (!token || !teamWorkspace || !canManageWorkspace) return;
+      const previousWorkspace = teamWorkspace;
       setWsLoading(true);
+      updateTeamWorkspace((cur) =>
+        cur
+          ? {
+              ...cur,
+              sharedTemplates: cur.sharedTemplates.filter((template) => template.id !== id),
+            }
+          : cur,
+      );
       try {
         const res = await authClient.removeWorkspaceTemplate(token, id);
         updateTeamWorkspace((cur) =>
@@ -134,6 +143,7 @@ export const PostProcessingSettings: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to remove workspace template:", err);
+        updateTeamWorkspace(previousWorkspace);
       } finally {
         setWsLoading(false);
       }
@@ -146,21 +156,54 @@ export const PostProcessingSettings: React.FC = () => {
     const name = tplName.trim();
     const prompt = tplPrompt.trim();
     if (!token || !teamWorkspace || !canManageWorkspace || !name || !prompt) return;
+    const previousWorkspace = teamWorkspace;
+    const description = tplDesc.trim() || "";
+    const optimisticId = editingTplId ?? `template-${crypto.randomUUID()}`;
     setWsLoading(true);
+    updateTeamWorkspace((cur) =>
+      cur
+        ? {
+            ...cur,
+            sharedTemplates: editingTplId
+              ? cur.sharedTemplates.map((template) =>
+                  template.id === editingTplId
+                    ? { ...template, name, description, prompt }
+                    : template,
+                )
+              : [
+                  {
+                    id: optimisticId,
+                    name,
+                    description,
+                    prompt,
+                  },
+                  ...cur.sharedTemplates,
+                ],
+          }
+        : cur,
+    );
+    setTplName("");
+    setTplDesc("");
+    setTplPrompt("");
+    setEditingTplId(null);
     try {
       const res = editingTplId
         ? await authClient.updateWorkspaceTemplate(token, editingTplId, {
-            name, description: tplDesc.trim() || undefined, prompt,
+            name, description: description || undefined, prompt,
           })
         : await authClient.addWorkspaceTemplate(token, {
-            name, description: tplDesc.trim() || undefined, prompt,
+            name, description: description || undefined, prompt,
           });
       updateTeamWorkspace((cur) =>
         cur ? { ...cur, sharedTemplates: mapSharedTemplates(res.templates) } : cur,
       );
-      setTplName(""); setTplDesc(""); setTplPrompt(""); setEditingTplId(null);
     } catch (err) {
       console.error("Failed to save workspace template:", err);
+      updateTeamWorkspace(previousWorkspace);
+      setTplName(name);
+      setTplDesc(description);
+      setTplPrompt(prompt);
+      setEditingTplId(editingTplId);
     } finally {
       setWsLoading(false);
     }

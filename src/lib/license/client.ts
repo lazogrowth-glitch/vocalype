@@ -16,6 +16,20 @@ const getApiBaseUrl = () => {
   return baseUrl.replace(/\/+$/, "");
 };
 
+const shouldTraceLicenseTiming = () => import.meta.env.DEV;
+
+const logLicenseTiming = (
+  method: string,
+  path: string,
+  durationMs: number,
+  outcome: string,
+) => {
+  if (!shouldTraceLicenseTiming()) return;
+  console.info(
+    `[license] ${method.toUpperCase()} ${path} ${durationMs}ms ${outcome}`,
+  );
+};
+
 const buildHeaders = (token: string) => ({
   Authorization: `Bearer ${token}`,
   "Content-Type": "application/json",
@@ -65,6 +79,7 @@ async function postLicense(
   path: string,
   token: string,
 ): Promise<StoredLicenseBundle> {
+  const startedAt = performance.now();
   const rawDeviceId = await authClient.getOrCreateDeviceId();
   const device_id = await hashDeviceId(rawDeviceId);
   const app_version = await getAppVersionSafe();
@@ -72,11 +87,29 @@ async function postLicense(
   const rawIntegrity = await licenseClient.getIntegritySnapshot();
   // Strip sensitive fields (executable_path may contain the OS username)
   const integrity = sanitizeIntegrityForServer(rawIntegrity);
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    method: "POST",
-    headers: buildHeaders(token),
-    body: JSON.stringify({ device_id, app_version, app_channel, integrity }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
+      method: "POST",
+      headers: buildHeaders(token),
+      body: JSON.stringify({ device_id, app_version, app_channel, integrity }),
+    });
+  } catch (error) {
+    logLicenseTiming(
+      "POST",
+      path,
+      Math.round(performance.now() - startedAt),
+      "network_error",
+    );
+    throw error;
+  }
+
+  logLicenseTiming(
+    "POST",
+    path,
+    Math.round(performance.now() - startedAt),
+    `status=${response.status}`,
+  );
 
   if (!response.ok) {
     const message = await parseError(response);
@@ -138,14 +171,33 @@ export const licenseClient = {
   },
 
   async status(token: string): Promise<LicenseRuntimeState> {
+    const startedAt = performance.now();
     const rawDeviceId = await authClient.getOrCreateDeviceId();
     const device_id = await hashDeviceId(rawDeviceId);
-    const response = await fetch(
-      `${getApiBaseUrl()}/license/status?device_id=${encodeURIComponent(device_id)}`,
-      {
-        method: "GET",
-        headers: buildHeaders(token),
-      },
+    let response: Response;
+    try {
+      response = await fetch(
+        `${getApiBaseUrl()}/license/status?device_id=${encodeURIComponent(device_id)}`,
+        {
+          method: "GET",
+          headers: buildHeaders(token),
+        },
+      );
+    } catch (error) {
+      logLicenseTiming(
+        "GET",
+        "/license/status",
+        Math.round(performance.now() - startedAt),
+        "network_error",
+      );
+      throw error;
+    }
+
+    logLicenseTiming(
+      "GET",
+      "/license/status",
+      Math.round(performance.now() - startedAt),
+      `status=${response.status}`,
     );
 
     if (!response.ok) {
@@ -163,16 +215,33 @@ export const licenseClient = {
     anomalyType: string,
     details: Record<string, unknown>,
   ): Promise<void> {
+    const startedAt = performance.now();
     const rawDeviceId = await authClient.getOrCreateDeviceId();
     const device_id = await hashDeviceId(rawDeviceId);
-    await fetch(`${getApiBaseUrl()}/license/report-anomaly`, {
-      method: "POST",
-      headers: buildHeaders(token),
-      body: JSON.stringify({
-        device_id,
-        anomaly_type: anomalyType,
-        details,
-      }),
-    });
+    try {
+      await fetch(`${getApiBaseUrl()}/license/report-anomaly`, {
+        method: "POST",
+        headers: buildHeaders(token),
+        body: JSON.stringify({
+          device_id,
+          anomaly_type: anomalyType,
+          details,
+        }),
+      });
+      logLicenseTiming(
+        "POST",
+        "/license/report-anomaly",
+        Math.round(performance.now() - startedAt),
+        "status=sent",
+      );
+    } catch (error) {
+      logLicenseTiming(
+        "POST",
+        "/license/report-anomaly",
+        Math.round(performance.now() - startedAt),
+        "network_error",
+      );
+      throw error;
+    }
   },
 };

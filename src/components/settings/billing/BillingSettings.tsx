@@ -20,6 +20,7 @@ import type { AuthSession } from "@/lib/auth/types";
 import { usePlan } from "@/lib/subscription/context";
 import { mapTeamWorkspacePayload } from "@/lib/subscription/workspace";
 import type { TeamRole } from "@/lib/subscription/contracts";
+import { Dropdown } from "@/components/ui";
 
 function formatDate(iso: string | null | undefined, locale?: string): string {
   if (!iso) return "\u2014";
@@ -1058,24 +1059,22 @@ export const BillingSettings: React.FC = () => {
                           outline: "none",
                         }}
                       />
-                      <select
-                        value={inviteRole}
-                        onChange={(event) => setInviteRole(event.target.value as TeamRole)}
+                      <Dropdown
+                        className="min-w-[120px]"
+                        selectedValue={inviteRole}
+                        onSelect={(value) => setInviteRole(value as TeamRole)}
                         disabled={workspaceLoading || seatsRemaining <= 0}
-                        style={{
-                          height: 40,
-                          borderRadius: 10,
-                          border: "1px solid rgba(255,255,255,0.10)",
-                          background: "rgba(255,255,255,0.03)",
-                          color: "rgba(255,255,255,0.94)",
-                          padding: "0 12px",
-                          fontSize: 13,
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        <option value="member">{t("billing.workspace.roles.member")}</option>
-                        <option value="admin">{t("billing.workspace.roles.admin")}</option>
-                      </select>
+                        options={[
+                          {
+                            value: "member",
+                            label: t("billing.workspace.roles.member"),
+                          },
+                          {
+                            value: "admin",
+                            label: t("billing.workspace.roles.admin"),
+                          },
+                        ]}
+                      />
                       <button
                         type="button"
                         onClick={() => void handleInviteMember()}

@@ -94,12 +94,29 @@ type WorkspaceDictionaryResponse = {
   dictionary: SharedWorkspaceTermPayload[];
 };
 
+type WorkspaceTeamCacheEntry = {
+  token: string;
+  data: WorkspaceTeamResponse;
+  createdAt: number;
+};
+
+type WorkspaceTeamInflightEntry = {
+  token: string;
+  promise: Promise<WorkspaceTeamResponse>;
+  createdAt: number;
+};
+
 let cachedToken: string | null = null;
 let cachedSession: AuthSession | null = null;
 let cachedDeviceId: string | null = null;
 let cachedRegisteredEmails: string[] | null = null;
 let hasHydratedToken = false;
 let storePromise: ReturnType<typeof load> | null = null;
+let workspaceTeamCache: WorkspaceTeamCacheEntry | null = null;
+let workspaceTeamInflight: WorkspaceTeamInflightEntry | null = null;
+
+const WORKSPACE_TEAM_CACHE_TTL_MS = 5000;
+const WORKSPACE_TEAM_INFLIGHT_TTL_MS = 15000;
 
 const getSecureAuthToken = () => invoke<string | null>("get_secure_auth_token");
 const setSecureAuthToken = (token: string) =>
@@ -110,6 +127,23 @@ const getSecureAuthSession = () =>
 const setSecureAuthSession = (sessionJson: string) =>
   invoke<void>("set_secure_auth_session", { sessionJson });
 const clearSecureAuthSession = () => invoke<void>("clear_secure_auth_session");
+
+const setWorkspaceTeamCache = (
+  token: string,
+  data: WorkspaceTeamResponse,
+): WorkspaceTeamResponse => {
+  workspaceTeamCache = {
+    token,
+    data,
+    createdAt: Date.now(),
+  };
+  return data;
+};
+
+const clearWorkspaceTeamCache = () => {
+  workspaceTeamCache = null;
+  workspaceTeamInflight = null;
+};
 
 export class AuthApiError extends Error {
   status: number;
@@ -235,6 +269,21 @@ const getApiBaseUrl = () => {
   return baseUrl.replace(/\/+$/, "");
 };
 
+const shouldTraceApiTiming = () => import.meta.env.DEV;
+
+const logApiTiming = (
+  scope: "auth" | "license",
+  method: string,
+  path: string,
+  durationMs: number,
+  outcome: string,
+) => {
+  if (!shouldTraceApiTiming()) return;
+  console.info(
+    `[${scope}] ${method.toUpperCase()} ${path} ${durationMs}ms ${outcome}`,
+  );
+};
+
 const buildHeaders = (token?: string) => {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -264,13 +313,36 @@ async function request<T>(
   init: RequestInit = {},
   token?: string,
 ): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      ...buildHeaders(token),
-      ...(init.headers ?? {}),
-    },
-  });
+  const method = (init.method ?? "GET").toUpperCase();
+  const startedAt = performance.now();
+  let response: Response;
+
+  try {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
+      ...init,
+      headers: {
+        ...buildHeaders(token),
+        ...(init.headers ?? {}),
+      },
+    });
+  } catch (error) {
+    logApiTiming(
+      "auth",
+      method,
+      path,
+      Math.round(performance.now() - startedAt),
+      "network_error",
+    );
+    throw error;
+  }
+
+  logApiTiming(
+    "auth",
+    method,
+    path,
+    Math.round(performance.now() - startedAt),
+    `status=${response.status}`,
+  );
 
   if (!response.ok) {
     throw new AuthApiError(await parseError(response), response.status);
@@ -551,6 +623,7 @@ export const authClient = {
     cachedSession = null;
     cachedDeviceId = null;
     cachedRegisteredEmails = null;
+    clearWorkspaceTeamCache();
     clearLegacyLocalAuth();
     await this.clearStoredToken();
 
@@ -567,6 +640,7 @@ export const authClient = {
   async clearStoredToken() {
     cachedToken = null;
     hasHydratedToken = true;
+    clearWorkspaceTeamCache();
     clearLegacyLocalAuth();
 
     try {
@@ -689,11 +763,43 @@ export const authClient = {
   },
 
   async fetchWorkspaceTeam(token: string) {
-    return request<WorkspaceTeamResponse>(
+    const now = Date.now();
+
+    if (
+      workspaceTeamCache &&
+      workspaceTeamCache.token === token &&
+      now - workspaceTeamCache.createdAt < WORKSPACE_TEAM_CACHE_TTL_MS
+    ) {
+      return workspaceTeamCache.data;
+    }
+
+    if (
+      workspaceTeamInflight &&
+      workspaceTeamInflight.token === token &&
+      now - workspaceTeamInflight.createdAt < WORKSPACE_TEAM_INFLIGHT_TTL_MS
+    ) {
+      return workspaceTeamInflight.promise;
+    }
+
+    const promise = request<WorkspaceTeamResponse>(
       "/workspace/team",
       { method: "GET" },
       token,
-    );
+    )
+      .then((response) => setWorkspaceTeamCache(token, response))
+      .finally(() => {
+        if (workspaceTeamInflight?.promise === promise) {
+          workspaceTeamInflight = null;
+        }
+      });
+
+    workspaceTeamInflight = {
+      token,
+      promise,
+      createdAt: now,
+    };
+
+    return promise;
   },
 
   async inviteWorkspaceMember(token: string, payload: WorkspaceInvitePayload) {
@@ -704,7 +810,7 @@ export const authClient = {
         body: JSON.stringify(payload),
       },
       token,
-    );
+    ).then((response) => setWorkspaceTeamCache(token, response));
   },
 
   async removeWorkspaceMember(token: string, memberId: string) {
@@ -715,7 +821,7 @@ export const authClient = {
         body: JSON.stringify({ member_id: memberId }),
       },
       token,
-    );
+    ).then((response) => setWorkspaceTeamCache(token, response));
   },
 
   async addWorkspaceTemplate(token: string, payload: WorkspaceTemplatePayload) {

@@ -450,7 +450,16 @@ export const PreferencesSettings: React.FC = () => {
     async (id: string) => {
       const token = authClient.getStoredToken();
       if (!token || !teamWorkspace || !canManageWorkspace) return;
+      const previousWorkspace = teamWorkspace;
       setWsLoading(true);
+      updateTeamWorkspace((cur) =>
+        cur
+          ? {
+              ...cur,
+              sharedSnippets: cur.sharedSnippets.filter((snippet) => snippet.id !== id),
+            }
+          : cur,
+      );
       try {
         const res = await authClient.removeWorkspaceSnippet(token, id);
         updateTeamWorkspace((cur) =>
@@ -461,6 +470,7 @@ export const PreferencesSettings: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to remove workspace snippet:", err);
+        updateTeamWorkspace(previousWorkspace);
       } finally {
         setWsLoading(false);
       }
@@ -473,7 +483,33 @@ export const PreferencesSettings: React.FC = () => {
     const trigger = snippetTrigger.trim();
     const expansion = snippetExpansion.trim();
     if (!token || !teamWorkspace || !canManageWorkspace || !trigger || !expansion) return;
+    const previousWorkspace = teamWorkspace;
+    const optimisticId = editingSnippetId ?? `snippet-${crypto.randomUUID()}`;
     setWsLoading(true);
+    updateTeamWorkspace((cur) =>
+      cur
+        ? {
+            ...cur,
+            sharedSnippets: editingSnippetId
+              ? cur.sharedSnippets.map((snippet) =>
+                  snippet.id === editingSnippetId
+                    ? { ...snippet, trigger, expansion }
+                    : snippet,
+                )
+              : [
+                  {
+                    id: optimisticId,
+                    trigger,
+                    expansion,
+                  },
+                  ...cur.sharedSnippets,
+                ],
+          }
+        : cur,
+    );
+    setSnippetTrigger("");
+    setSnippetExpansion("");
+    setEditingSnippetId(null);
     try {
       const res = editingSnippetId
         ? await authClient.updateWorkspaceSnippet(token, editingSnippetId, { trigger, expansion })
@@ -481,9 +517,12 @@ export const PreferencesSettings: React.FC = () => {
       updateTeamWorkspace((cur) =>
         cur ? { ...cur, sharedSnippets: mapSharedSnippets(res.snippets) } : cur,
       );
-      setSnippetTrigger(""); setSnippetExpansion(""); setEditingSnippetId(null);
     } catch (err) {
       console.error("Failed to save workspace snippet:", err);
+      updateTeamWorkspace(previousWorkspace);
+      setSnippetTrigger(trigger);
+      setSnippetExpansion(expansion);
+      setEditingSnippetId(editingSnippetId);
     } finally {
       setWsLoading(false);
     }
@@ -504,7 +543,16 @@ export const PreferencesSettings: React.FC = () => {
     async (id: string) => {
       const token = authClient.getStoredToken();
       if (!token || !teamWorkspace || !canManageWorkspace) return;
+      const previousWorkspace = teamWorkspace;
       setWsLoading(true);
+      updateTeamWorkspace((cur) =>
+        cur
+          ? {
+              ...cur,
+              sharedDictionary: cur.sharedDictionary.filter((term) => term.id !== id),
+            }
+          : cur,
+      );
       try {
         const res = await authClient.removeWorkspaceDictionaryTerm(token, id);
         updateTeamWorkspace((cur) =>
@@ -515,6 +563,7 @@ export const PreferencesSettings: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to remove workspace dictionary term:", err);
+        updateTeamWorkspace(previousWorkspace);
       } finally {
         setWsLoading(false);
       }
@@ -526,17 +575,40 @@ export const PreferencesSettings: React.FC = () => {
     const token = authClient.getStoredToken();
     const term = dictTerm.trim();
     if (!token || !teamWorkspace || !canManageWorkspace || !term) return;
+    const previousWorkspace = teamWorkspace;
+    const note = dictNote.trim() || undefined;
+    const optimisticId = editingDictId ?? `term-${crypto.randomUUID()}`;
     setWsLoading(true);
+    updateTeamWorkspace((cur) =>
+      cur
+        ? {
+            ...cur,
+            sharedDictionary: editingDictId
+              ? cur.sharedDictionary.map((entry) =>
+                  entry.id === editingDictId
+                    ? { ...entry, term, note }
+                    : entry,
+                )
+              : [{ id: optimisticId, term, note }, ...cur.sharedDictionary],
+          }
+        : cur,
+    );
+    setDictTerm("");
+    setDictNote("");
+    setEditingDictId(null);
     try {
       const res = editingDictId
-        ? await authClient.updateWorkspaceDictionaryTerm(token, editingDictId, { term, note: dictNote.trim() || undefined })
-        : await authClient.addWorkspaceDictionaryTerm(token, { term, note: dictNote.trim() || undefined });
+        ? await authClient.updateWorkspaceDictionaryTerm(token, editingDictId, { term, note })
+        : await authClient.addWorkspaceDictionaryTerm(token, { term, note });
       updateTeamWorkspace((cur) =>
         cur ? { ...cur, sharedDictionary: mapSharedDictionary(res.dictionary) } : cur,
       );
-      setDictTerm(""); setDictNote(""); setEditingDictId(null);
     } catch (err) {
       console.error("Failed to save workspace dictionary term:", err);
+      updateTeamWorkspace(previousWorkspace);
+      setDictTerm(term);
+      setDictNote(note ?? "");
+      setEditingDictId(editingDictId);
     } finally {
       setWsLoading(false);
     }

@@ -1,3 +1,5 @@
+import type { TeamWorkspacePayload } from "@/lib/subscription/contracts";
+
 export type SubscriptionStatus =
   | "trialing"
   | "active"
@@ -40,6 +42,7 @@ export interface AuthSession {
   refresh_token?: string | null;
   user: AuthUser;
   subscription: SubscriptionAccess;
+  workspace?: TeamWorkspacePayload | null;
   show_trial_reminder?: boolean;
 }
 

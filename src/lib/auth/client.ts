@@ -32,11 +32,13 @@ import type {
   ResetPasswordPayload,
 } from "./types";
 import type {
+  TeamRole,
+  TeamWorkspacePayload,
+} from "@/lib/subscription/contracts";
+import type {
   SharedWorkspaceSnippetPayload,
   SharedWorkspaceTemplatePayload,
   SharedWorkspaceTermPayload,
-  TeamRole,
-  TeamWorkspacePayload,
 } from "@/lib/subscription/workspace";
 import { load } from "@tauri-apps/plugin-store";
 import { invoke } from "@tauri-apps/api/core";

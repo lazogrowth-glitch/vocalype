@@ -113,6 +113,9 @@ export function DesktopAppShell({
   );
   const currentPlan = deriveAppPlan(session);
   const capabilities = getPlanCapabilities(currentPlan);
+  const sessionWorkspace = session?.workspace
+    ? mapTeamWorkspacePayload(session.workspace)
+    : null;
   const [teamWorkspace, setTeamWorkspace] = useState<TeamWorkspace | null>(
     null,
   );
@@ -133,7 +136,7 @@ export function DesktopAppShell({
     }
 
     const persistedWorkspace = loadPersistedTeamWorkspace(userId);
-    setTeamWorkspace(persistedWorkspace ?? null);
+    setTeamWorkspace(sessionWorkspace ?? persistedWorkspace ?? null);
 
     const token = session?.token ?? authClient.getStoredToken();
     if (!token) {
@@ -154,7 +157,7 @@ export function DesktopAppShell({
     return () => {
       cancelled = true;
     };
-  }, [currentPlan, session]);
+  }, [currentPlan, session, sessionWorkspace]);
 
   useEffect(() => {
     const userId = session?.user?.id;

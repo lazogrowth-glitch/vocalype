@@ -24,7 +24,7 @@ import {
   mapSharedTemplates,
   mapTeamWorkspacePayload,
 } from "@/lib/subscription/workspace";
-import type { TeamRole } from "@/lib/subscription/workspace";
+import type { TeamRole } from "@/lib/subscription/contracts";
 
 type TeamFeatureCell = {
   label: string;

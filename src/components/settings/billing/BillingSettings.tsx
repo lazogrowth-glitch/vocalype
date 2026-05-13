@@ -587,10 +587,13 @@ export const BillingSettings: React.FC = () => {
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templatePrompt, setTemplatePrompt] = useState("");
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [snippetTrigger, setSnippetTrigger] = useState("");
   const [snippetExpansion, setSnippetExpansion] = useState("");
+  const [editingSnippetId, setEditingSnippetId] = useState<string | null>(null);
   const [dictionaryTerm, setDictionaryTerm] = useState("");
   const [dictionaryNote, setDictionaryNote] = useState("");
+  const [editingDictionaryId, setEditingDictionaryId] = useState<string | null>(null);
 
   useEffect(() => {
     setSession(authClient.getStoredSession());
@@ -718,11 +721,17 @@ export const BillingSettings: React.FC = () => {
 
     setWorkspaceLoading(true);
     try {
-      const response = await authClient.addWorkspaceTemplate(token, {
-        name,
-        description: description || undefined,
-        prompt,
-      });
+      const response = editingTemplateId
+        ? await authClient.updateWorkspaceTemplate(token, editingTemplateId, {
+            name,
+            description: description || undefined,
+            prompt,
+          })
+        : await authClient.addWorkspaceTemplate(token, {
+            name,
+            description: description || undefined,
+            prompt,
+          });
       updateTeamWorkspace((current) =>
         current
           ? {
@@ -734,6 +743,7 @@ export const BillingSettings: React.FC = () => {
       setTemplateName("");
       setTemplateDescription("");
       setTemplatePrompt("");
+      setEditingTemplateId(null);
     } catch (error) {
       console.error("Failed to add workspace template:", error);
     } finally {
@@ -741,12 +751,58 @@ export const BillingSettings: React.FC = () => {
     }
   }, [
     canManageWorkspace,
+    editingTemplateId,
     teamWorkspace,
     templateDescription,
     templateName,
     templatePrompt,
     updateTeamWorkspace,
   ]);
+
+  const handleEditTemplate = useCallback(
+    (templateId: string) => {
+      const template = teamWorkspace?.sharedTemplates.find(
+        (entry) => entry.id === templateId,
+      );
+      if (!template) return;
+      setTemplateName(template.name);
+      setTemplateDescription(template.description);
+      setTemplatePrompt(template.prompt);
+      setEditingTemplateId(template.id);
+    },
+    [teamWorkspace],
+  );
+
+  const handleDeleteTemplate = useCallback(
+    async (templateId: string) => {
+      const token = authClient.getStoredToken();
+      if (!token || !teamWorkspace || !canManageWorkspace) return;
+
+      setWorkspaceLoading(true);
+      try {
+        const response = await authClient.removeWorkspaceTemplate(token, templateId);
+        updateTeamWorkspace((current) =>
+          current
+            ? {
+                ...current,
+                sharedTemplates: mapSharedTemplates(response.templates),
+              }
+            : current,
+        );
+        if (editingTemplateId === templateId) {
+          setTemplateName("");
+          setTemplateDescription("");
+          setTemplatePrompt("");
+          setEditingTemplateId(null);
+        }
+      } catch (error) {
+        console.error("Failed to remove workspace template:", error);
+      } finally {
+        setWorkspaceLoading(false);
+      }
+    },
+    [canManageWorkspace, editingTemplateId, teamWorkspace, updateTeamWorkspace],
+  );
 
   const handleAddSnippet = useCallback(async () => {
     const token = authClient.getStoredToken();
@@ -756,10 +812,15 @@ export const BillingSettings: React.FC = () => {
 
     setWorkspaceLoading(true);
     try {
-      const response = await authClient.addWorkspaceSnippet(token, {
-        trigger,
-        expansion,
-      });
+      const response = editingSnippetId
+        ? await authClient.updateWorkspaceSnippet(token, editingSnippetId, {
+            trigger,
+            expansion,
+          })
+        : await authClient.addWorkspaceSnippet(token, {
+            trigger,
+            expansion,
+          });
       updateTeamWorkspace((current) =>
         current
           ? {
@@ -770,6 +831,7 @@ export const BillingSettings: React.FC = () => {
       );
       setSnippetTrigger("");
       setSnippetExpansion("");
+      setEditingSnippetId(null);
     } catch (error) {
       console.error("Failed to add workspace snippet:", error);
     } finally {
@@ -777,11 +839,55 @@ export const BillingSettings: React.FC = () => {
     }
   }, [
     canManageWorkspace,
+    editingSnippetId,
     snippetExpansion,
     snippetTrigger,
     teamWorkspace,
     updateTeamWorkspace,
   ]);
+
+  const handleEditSnippet = useCallback(
+    (snippetId: string) => {
+      const snippet = teamWorkspace?.sharedSnippets.find(
+        (entry) => entry.id === snippetId,
+      );
+      if (!snippet) return;
+      setSnippetTrigger(snippet.trigger);
+      setSnippetExpansion(snippet.expansion);
+      setEditingSnippetId(snippet.id);
+    },
+    [teamWorkspace],
+  );
+
+  const handleDeleteSnippet = useCallback(
+    async (snippetId: string) => {
+      const token = authClient.getStoredToken();
+      if (!token || !teamWorkspace || !canManageWorkspace) return;
+
+      setWorkspaceLoading(true);
+      try {
+        const response = await authClient.removeWorkspaceSnippet(token, snippetId);
+        updateTeamWorkspace((current) =>
+          current
+            ? {
+                ...current,
+                sharedSnippets: mapSharedSnippets(response.snippets),
+              }
+            : current,
+        );
+        if (editingSnippetId === snippetId) {
+          setSnippetTrigger("");
+          setSnippetExpansion("");
+          setEditingSnippetId(null);
+        }
+      } catch (error) {
+        console.error("Failed to remove workspace snippet:", error);
+      } finally {
+        setWorkspaceLoading(false);
+      }
+    },
+    [canManageWorkspace, editingSnippetId, teamWorkspace, updateTeamWorkspace],
+  );
 
   const handleAddDictionaryTerm = useCallback(async () => {
     const token = authClient.getStoredToken();
@@ -791,10 +897,15 @@ export const BillingSettings: React.FC = () => {
 
     setWorkspaceLoading(true);
     try {
-      const response = await authClient.addWorkspaceDictionaryTerm(token, {
-        term,
-        note: note || undefined,
-      });
+      const response = editingDictionaryId
+        ? await authClient.updateWorkspaceDictionaryTerm(token, editingDictionaryId, {
+            term,
+            note: note || undefined,
+          })
+        : await authClient.addWorkspaceDictionaryTerm(token, {
+            term,
+            note: note || undefined,
+          });
       updateTeamWorkspace((current) =>
         current
           ? {
@@ -805,6 +916,7 @@ export const BillingSettings: React.FC = () => {
       );
       setDictionaryTerm("");
       setDictionaryNote("");
+      setEditingDictionaryId(null);
     } catch (error) {
       console.error("Failed to add workspace dictionary term:", error);
     } finally {
@@ -814,9 +926,51 @@ export const BillingSettings: React.FC = () => {
     canManageWorkspace,
     dictionaryNote,
     dictionaryTerm,
+    editingDictionaryId,
     teamWorkspace,
     updateTeamWorkspace,
   ]);
+
+  const handleEditDictionaryTerm = useCallback(
+    (termId: string) => {
+      const term = teamWorkspace?.sharedDictionary.find((entry) => entry.id === termId);
+      if (!term) return;
+      setDictionaryTerm(term.term);
+      setDictionaryNote(term.note ?? "");
+      setEditingDictionaryId(term.id);
+    },
+    [teamWorkspace],
+  );
+
+  const handleDeleteDictionaryTerm = useCallback(
+    async (termId: string) => {
+      const token = authClient.getStoredToken();
+      if (!token || !teamWorkspace || !canManageWorkspace) return;
+
+      setWorkspaceLoading(true);
+      try {
+        const response = await authClient.removeWorkspaceDictionaryTerm(token, termId);
+        updateTeamWorkspace((current) =>
+          current
+            ? {
+                ...current,
+                sharedDictionary: mapSharedDictionary(response.dictionary),
+              }
+            : current,
+        );
+        if (editingDictionaryId === termId) {
+          setDictionaryTerm("");
+          setDictionaryNote("");
+          setEditingDictionaryId(null);
+        }
+      } catch (error) {
+        console.error("Failed to remove workspace dictionary term:", error);
+      } finally {
+        setWorkspaceLoading(false);
+      }
+    },
+    [canManageWorkspace, editingDictionaryId, teamWorkspace, updateTeamWorkspace],
+  );
 
   const handleSaveOwnName = useCallback(async () => {
     const token = authClient.getStoredToken();
@@ -1878,30 +2032,164 @@ export const BillingSettings: React.FC = () => {
                               resize: "vertical",
                             }}
                           />
-                          <button
-                            type="button"
-                            onClick={() => void handleAddTemplate()}
-                            disabled={workspaceLoading || !templateName.trim() || !templatePrompt.trim()}
-                            style={{
-                              height: 36,
-                              borderRadius: 9,
-                              border: "1px solid rgba(201,168,76,0.26)",
-                              background: "rgba(201,168,76,0.10)",
-                              color: "#d8b866",
-                              fontSize: 12.5,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontFamily: "inherit",
-                              opacity:
-                                workspaceLoading || !templateName.trim() || !templatePrompt.trim()
-                                  ? 0.45
-                                  : 1,
-                            }}
-                          >
-                            {t("billing.workspace.forms.template.submit", {
-                              defaultValue: "Ajouter le template",
-                            })}
-                          </button>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              onClick={() => void handleAddTemplate()}
+                              disabled={
+                                workspaceLoading ||
+                                !templateName.trim() ||
+                                !templatePrompt.trim()
+                              }
+                              style={{
+                                height: 36,
+                                borderRadius: 9,
+                                border: "1px solid rgba(201,168,76,0.26)",
+                                background: "rgba(201,168,76,0.10)",
+                                color: "#d8b866",
+                                fontSize: 12.5,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                                padding: "0 12px",
+                                opacity:
+                                  workspaceLoading ||
+                                  !templateName.trim() ||
+                                  !templatePrompt.trim()
+                                    ? 0.45
+                                    : 1,
+                              }}
+                            >
+                              {editingTemplateId
+                                ? t("dictionary.save")
+                                : t("billing.workspace.forms.template.submit", {
+                                    defaultValue: "Ajouter le template",
+                                  })}
+                            </button>
+                            {editingTemplateId ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingTemplateId(null);
+                                  setTemplateName("");
+                                  setTemplateDescription("");
+                                  setTemplatePrompt("");
+                                }}
+                                disabled={workspaceLoading}
+                                style={{
+                                  height: 36,
+                                  borderRadius: 9,
+                                  border: "1px solid rgba(255,255,255,0.10)",
+                                  background: "rgba(255,255,255,0.03)",
+                                  color: "rgba(255,255,255,0.72)",
+                                  fontSize: 12.5,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                  padding: "0 12px",
+                                }}
+                              >
+                                {t("dictionary.cancel")}
+                              </button>
+                            ) : null}
+                          </div>
+                          {teamWorkspace.sharedTemplates.length ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              {teamWorkspace.sharedTemplates.map((template) => (
+                                <div
+                                  key={template.id}
+                                  style={{
+                                    display: "grid",
+                                    gap: 8,
+                                    padding: "10px 12px",
+                                    borderRadius: 9,
+                                    border: "1px solid rgba(255,255,255,0.06)",
+                                    background: "rgba(255,255,255,0.018)",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0 }}>
+                                      <div
+                                        style={{
+                                          fontSize: 13,
+                                          fontWeight: 600,
+                                          color: "rgba(255,255,255,0.94)",
+                                        }}
+                                      >
+                                        {template.name}
+                                      </div>
+                                      {template.description ? (
+                                        <div
+                                          style={{
+                                            marginTop: 3,
+                                            fontSize: 12,
+                                            color: "rgba(255,255,255,0.42)",
+                                          }}
+                                        >
+                                          {template.description}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditTemplate(template.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.edit")}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteTemplate(template.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.remove")}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: 12,
+                                      lineHeight: 1.5,
+                                      color: "rgba(255,255,255,0.56)",
+                                      whiteSpace: "pre-wrap",
+                                    }}
+                                  >
+                                    {template.prompt}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
 
                         <div
@@ -1963,30 +2251,152 @@ export const BillingSettings: React.FC = () => {
                               resize: "vertical",
                             }}
                           />
-                          <button
-                            type="button"
-                            onClick={() => void handleAddSnippet()}
-                            disabled={workspaceLoading || !snippetTrigger.trim() || !snippetExpansion.trim()}
-                            style={{
-                              height: 36,
-                              borderRadius: 9,
-                              border: "1px solid rgba(201,168,76,0.26)",
-                              background: "rgba(201,168,76,0.10)",
-                              color: "#d8b866",
-                              fontSize: 12.5,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontFamily: "inherit",
-                              opacity:
-                                workspaceLoading || !snippetTrigger.trim() || !snippetExpansion.trim()
-                                  ? 0.45
-                                  : 1,
-                            }}
-                          >
-                            {t("billing.workspace.forms.snippet.submit", {
-                              defaultValue: "Ajouter le snippet",
-                            })}
-                          </button>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              onClick={() => void handleAddSnippet()}
+                              disabled={
+                                workspaceLoading ||
+                                !snippetTrigger.trim() ||
+                                !snippetExpansion.trim()
+                              }
+                              style={{
+                                height: 36,
+                                borderRadius: 9,
+                                border: "1px solid rgba(201,168,76,0.26)",
+                                background: "rgba(201,168,76,0.10)",
+                                color: "#d8b866",
+                                fontSize: 12.5,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                                padding: "0 12px",
+                                opacity:
+                                  workspaceLoading ||
+                                  !snippetTrigger.trim() ||
+                                  !snippetExpansion.trim()
+                                    ? 0.45
+                                    : 1,
+                              }}
+                            >
+                              {editingSnippetId
+                                ? t("dictionary.save")
+                                : t("billing.workspace.forms.snippet.submit", {
+                                    defaultValue: "Ajouter le snippet",
+                                  })}
+                            </button>
+                            {editingSnippetId ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSnippetId(null);
+                                  setSnippetTrigger("");
+                                  setSnippetExpansion("");
+                                }}
+                                disabled={workspaceLoading}
+                                style={{
+                                  height: 36,
+                                  borderRadius: 9,
+                                  border: "1px solid rgba(255,255,255,0.10)",
+                                  background: "rgba(255,255,255,0.03)",
+                                  color: "rgba(255,255,255,0.72)",
+                                  fontSize: 12.5,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                  padding: "0 12px",
+                                }}
+                              >
+                                {t("dictionary.cancel")}
+                              </button>
+                            ) : null}
+                          </div>
+                          {teamWorkspace.sharedSnippets.length ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              {teamWorkspace.sharedSnippets.map((snippet) => (
+                                <div
+                                  key={snippet.id}
+                                  style={{
+                                    display: "grid",
+                                    gap: 8,
+                                    padding: "10px 12px",
+                                    borderRadius: 9,
+                                    border: "1px solid rgba(255,255,255,0.06)",
+                                    background: "rgba(255,255,255,0.018)",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0 }}>
+                                      <div
+                                        style={{
+                                          fontSize: 13,
+                                          fontWeight: 600,
+                                          color: "rgba(255,255,255,0.94)",
+                                        }}
+                                      >
+                                        {snippet.trigger}
+                                      </div>
+                                      <div
+                                        style={{
+                                          marginTop: 3,
+                                          fontSize: 12,
+                                          color: "rgba(255,255,255,0.42)",
+                                          whiteSpace: "pre-wrap",
+                                        }}
+                                      >
+                                        {snippet.expansion}
+                                      </div>
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditSnippet(snippet.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.edit")}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteSnippet(snippet.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.remove")}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
 
                         <div
@@ -2048,30 +2458,147 @@ export const BillingSettings: React.FC = () => {
                               fontFamily: "inherit",
                             }}
                           />
-                          <button
-                            type="button"
-                            onClick={() => void handleAddDictionaryTerm()}
-                            disabled={workspaceLoading || !dictionaryTerm.trim()}
-                            style={{
-                              height: 36,
-                              borderRadius: 9,
-                              border: "1px solid rgba(201,168,76,0.26)",
-                              background: "rgba(201,168,76,0.10)",
-                              color: "#d8b866",
-                              fontSize: 12.5,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontFamily: "inherit",
-                              opacity:
-                                workspaceLoading || !dictionaryTerm.trim()
-                                  ? 0.45
-                                  : 1,
-                            }}
-                          >
-                            {t("billing.workspace.forms.dictionary.submit", {
-                              defaultValue: "Ajouter le terme",
-                            })}
-                          </button>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              onClick={() => void handleAddDictionaryTerm()}
+                              disabled={workspaceLoading || !dictionaryTerm.trim()}
+                              style={{
+                                height: 36,
+                                borderRadius: 9,
+                                border: "1px solid rgba(201,168,76,0.26)",
+                                background: "rgba(201,168,76,0.10)",
+                                color: "#d8b866",
+                                fontSize: 12.5,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                                padding: "0 12px",
+                                opacity:
+                                  workspaceLoading || !dictionaryTerm.trim()
+                                    ? 0.45
+                                    : 1,
+                              }}
+                            >
+                              {editingDictionaryId
+                                ? t("dictionary.save")
+                                : t("billing.workspace.forms.dictionary.submit", {
+                                    defaultValue: "Ajouter le terme",
+                                  })}
+                            </button>
+                            {editingDictionaryId ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingDictionaryId(null);
+                                  setDictionaryTerm("");
+                                  setDictionaryNote("");
+                                }}
+                                disabled={workspaceLoading}
+                                style={{
+                                  height: 36,
+                                  borderRadius: 9,
+                                  border: "1px solid rgba(255,255,255,0.10)",
+                                  background: "rgba(255,255,255,0.03)",
+                                  color: "rgba(255,255,255,0.72)",
+                                  fontSize: 12.5,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                  padding: "0 12px",
+                                }}
+                              >
+                                {t("dictionary.cancel")}
+                              </button>
+                            ) : null}
+                          </div>
+                          {teamWorkspace.sharedDictionary.length ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              {teamWorkspace.sharedDictionary.map((term) => (
+                                <div
+                                  key={term.id}
+                                  style={{
+                                    display: "grid",
+                                    gap: 8,
+                                    padding: "10px 12px",
+                                    borderRadius: 9,
+                                    border: "1px solid rgba(255,255,255,0.06)",
+                                    background: "rgba(255,255,255,0.018)",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0 }}>
+                                      <div
+                                        style={{
+                                          fontSize: 13,
+                                          fontWeight: 600,
+                                          color: "rgba(255,255,255,0.94)",
+                                        }}
+                                      >
+                                        {term.term}
+                                      </div>
+                                      {term.note ? (
+                                        <div
+                                          style={{
+                                            marginTop: 3,
+                                            fontSize: 12,
+                                            color: "rgba(255,255,255,0.42)",
+                                          }}
+                                        >
+                                          {term.note}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditDictionaryTerm(term.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.edit")}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteDictionaryTerm(term.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.remove")}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     ) : null}

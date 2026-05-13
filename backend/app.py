@@ -83,7 +83,7 @@ CORS(
     resources={
         r"/*": {
             "origins": CORS_ALLOWED_ORIGINS,
-            "methods": ["GET", "POST", "PATCH", "OPTIONS"],
+            "methods": ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
             "allow_headers": ["Authorization", "Content-Type"],
             "max_age": 600,
         }
@@ -3052,6 +3052,57 @@ def workspace_add_template(user):
     return jsonify({"templates": serialize_workspace(refreshed_workspace)["shared_templates"]})
 
 
+@app.route("/workspace/shared-assets/template/<asset_id>", methods=["PATCH", "DELETE"])
+@auth_required
+def workspace_manage_template(user, asset_id):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    db = get_db()
+    try:
+        existing = db.execute(
+            """
+            SELECT id FROM organization_templates
+            WHERE id = %s AND organization_id = %s
+            """,
+            (asset_id, workspace["id"]),
+        ).fetchone()
+        if not existing:
+            return jsonify({"error": "Template introuvable"}), 404
+
+        if request.method == "DELETE":
+            db.execute("DELETE FROM organization_templates WHERE id = %s", (asset_id,))
+        else:
+            data = request.get_json(silent=True) or {}
+            name, error = require_json_string(data, "name")
+            if error:
+                return error
+            description, error = optional_json_string(data, "description")
+            if error:
+                return error
+            prompt, error = require_json_string(data, "prompt")
+            if error:
+                return error
+
+            db.execute(
+                """
+                UPDATE organization_templates
+                SET name = %s, description = %s, prompt = %s
+                WHERE id = %s
+                """,
+                (name, description, prompt, asset_id),
+            )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"templates": serialize_workspace(refreshed_workspace)["shared_templates"]})
+
+
 @app.route("/workspace/shared-assets/snippet", methods=["POST"])
 @auth_required
 def workspace_add_snippet(user):
@@ -3091,6 +3142,54 @@ def workspace_add_snippet(user):
     return jsonify({"snippets": serialize_workspace(refreshed_workspace)["shared_snippets"]})
 
 
+@app.route("/workspace/shared-assets/snippet/<asset_id>", methods=["PATCH", "DELETE"])
+@auth_required
+def workspace_manage_snippet(user, asset_id):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    db = get_db()
+    try:
+        existing = db.execute(
+            """
+            SELECT id FROM organization_snippets
+            WHERE id = %s AND organization_id = %s
+            """,
+            (asset_id, workspace["id"]),
+        ).fetchone()
+        if not existing:
+            return jsonify({"error": "Snippet introuvable"}), 404
+
+        if request.method == "DELETE":
+            db.execute("DELETE FROM organization_snippets WHERE id = %s", (asset_id,))
+        else:
+            data = request.get_json(silent=True) or {}
+            trigger, error = require_json_string(data, "trigger")
+            if error:
+                return error
+            expansion, error = require_json_string(data, "expansion")
+            if error:
+                return error
+
+            db.execute(
+                """
+                UPDATE organization_snippets
+                SET trigger = %s, expansion = %s
+                WHERE id = %s
+                """,
+                (trigger, expansion, asset_id),
+            )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"snippets": serialize_workspace(refreshed_workspace)["shared_snippets"]})
+
+
 @app.route("/workspace/shared-assets/dictionary", methods=["POST"])
 @auth_required
 def workspace_add_dictionary_term(user):
@@ -3122,6 +3221,57 @@ def workspace_add_dictionary_term(user):
             """,
             (workspace["id"], term, note, user["id"]),
         )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"dictionary": serialize_workspace(refreshed_workspace)["shared_dictionary"]})
+
+
+@app.route("/workspace/shared-assets/dictionary/<asset_id>", methods=["PATCH", "DELETE"])
+@auth_required
+def workspace_manage_dictionary_term(user, asset_id):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    db = get_db()
+    try:
+        existing = db.execute(
+            """
+            SELECT id FROM organization_dictionary_terms
+            WHERE id = %s AND organization_id = %s
+            """,
+            (asset_id, workspace["id"]),
+        ).fetchone()
+        if not existing:
+            return jsonify({"error": "Terme introuvable"}), 404
+
+        if request.method == "DELETE":
+            db.execute(
+                "DELETE FROM organization_dictionary_terms WHERE id = %s",
+                (asset_id,),
+            )
+        else:
+            data = request.get_json(silent=True) or {}
+            term, error = require_json_string(data, "term")
+            if error:
+                return error
+            note, error = optional_json_string(data, "note")
+            if error:
+                return error
+
+            db.execute(
+                """
+                UPDATE organization_dictionary_terms
+                SET term = %s, note = %s
+                WHERE id = %s
+                """,
+                (term, note, asset_id),
+            )
         db.commit()
     finally:
         db.close()

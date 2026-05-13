@@ -724,6 +724,29 @@ export const authClient = {
     );
   },
 
+  async updateWorkspaceTemplate(
+    token: string,
+    assetId: string,
+    payload: WorkspaceTemplatePayload,
+  ) {
+    return request<WorkspaceTemplatesResponse>(
+      `/workspace/shared-assets/template/${assetId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+  },
+
+  async removeWorkspaceTemplate(token: string, assetId: string) {
+    return request<WorkspaceTemplatesResponse>(
+      `/workspace/shared-assets/template/${assetId}`,
+      { method: "DELETE" },
+      token,
+    );
+  },
+
   async addWorkspaceSnippet(token: string, payload: WorkspaceSnippetPayload) {
     return request<WorkspaceSnippetsResponse>(
       "/workspace/shared-assets/snippet",
@@ -731,6 +754,29 @@ export const authClient = {
         method: "POST",
         body: JSON.stringify(payload),
       },
+      token,
+    );
+  },
+
+  async updateWorkspaceSnippet(
+    token: string,
+    assetId: string,
+    payload: WorkspaceSnippetPayload,
+  ) {
+    return request<WorkspaceSnippetsResponse>(
+      `/workspace/shared-assets/snippet/${assetId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+  },
+
+  async removeWorkspaceSnippet(token: string, assetId: string) {
+    return request<WorkspaceSnippetsResponse>(
+      `/workspace/shared-assets/snippet/${assetId}`,
+      { method: "DELETE" },
       token,
     );
   },
@@ -745,6 +791,29 @@ export const authClient = {
         method: "POST",
         body: JSON.stringify(payload),
       },
+      token,
+    );
+  },
+
+  async updateWorkspaceDictionaryTerm(
+    token: string,
+    assetId: string,
+    payload: WorkspaceDictionaryPayload,
+  ) {
+    return request<WorkspaceDictionaryResponse>(
+      `/workspace/shared-assets/dictionary/${assetId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+  },
+
+  async removeWorkspaceDictionaryTerm(token: string, assetId: string) {
+    return request<WorkspaceDictionaryResponse>(
+      `/workspace/shared-assets/dictionary/${assetId}`,
+      { method: "DELETE" },
       token,
     );
   },

@@ -479,19 +479,29 @@ export const BillingSettings: React.FC = () => {
   const handleRemoveMember = useCallback(
     async (memberId: string) => {
       const token = authClient.getStoredToken();
-      if (!token) return;
+      if (!token || !teamWorkspace) return;
 
+      const previousWorkspace = teamWorkspace;
       setWorkspaceLoading(true);
+      updateTeamWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              members: current.members.filter((member) => member.id !== memberId),
+            }
+          : current,
+      );
       try {
         const response = await authClient.removeWorkspaceMember(token, memberId);
         updateTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
       } catch (error) {
         console.error("Failed to remove workspace member:", error);
+        updateTeamWorkspace(previousWorkspace);
       } finally {
         setWorkspaceLoading(false);
       }
     },
-    [updateTeamWorkspace],
+    [teamWorkspace, updateTeamWorkspace],
   );
 
   const handleSaveOwnName = useCallback(async () => {

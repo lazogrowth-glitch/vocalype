@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import type { PostProcessAction } from "@/bindings";
 import { commands } from "@/bindings";
 import { Textarea } from "@/components/ui";
@@ -21,6 +21,8 @@ import { Dropdown } from "../../ui/Dropdown";
 import { Input } from "../../ui/Input";
 import { useSettings } from "../../../hooks/useSettings";
 import { usePlan } from "@/lib/subscription/context";
+import { authClient } from "@/lib/auth/client";
+import { mapSharedTemplates } from "@/lib/subscription/workspace";
 
 type EditingAction = {
   key: number;
@@ -91,11 +93,78 @@ const getActionPresetId = (
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting, refreshSettings, settings } = useSettings();
-  const { capabilities, openUpgradePlans, teamWorkspace } = usePlan();
-  const [editingAction, setEditingAction] = useState<EditingAction | null>(
-    null,
-  );
+  const { capabilities, openUpgradePlans, teamWorkspace, updateTeamWorkspace } = usePlan();
+  const [editingAction, setEditingAction] = useState<EditingAction | null>(null);
   const [selectedKey, setSelectedKey] = useState<number | null>(null);
+
+  const canManageWorkspace =
+    teamWorkspace?.currentUserRole === "owner" ||
+    teamWorkspace?.currentUserRole === "admin";
+
+  const [wsLoading, setWsLoading] = useState(false);
+  const [tplName, setTplName] = useState("");
+  const [tplDesc, setTplDesc] = useState("");
+  const [tplPrompt, setTplPrompt] = useState("");
+  const [editingTplId, setEditingTplId] = useState<string | null>(null);
+
+  const handleEditTemplate = useCallback(
+    (id: string) => {
+      const tpl = teamWorkspace?.sharedTemplates.find((t) => t.id === id);
+      if (!tpl) return;
+      setTplName(tpl.name);
+      setTplDesc(tpl.description ?? "");
+      setTplPrompt(tpl.prompt);
+      setEditingTplId(tpl.id);
+    },
+    [teamWorkspace],
+  );
+
+  const handleDeleteTemplate = useCallback(
+    async (id: string) => {
+      const token = authClient.getStoredToken();
+      if (!token || !teamWorkspace || !canManageWorkspace) return;
+      setWsLoading(true);
+      try {
+        const res = await authClient.removeWorkspaceTemplate(token, id);
+        updateTeamWorkspace((cur) =>
+          cur ? { ...cur, sharedTemplates: mapSharedTemplates(res.templates) } : cur,
+        );
+        if (editingTplId === id) {
+          setTplName(""); setTplDesc(""); setTplPrompt(""); setEditingTplId(null);
+        }
+      } catch (err) {
+        console.error("Failed to remove workspace template:", err);
+      } finally {
+        setWsLoading(false);
+      }
+    },
+    [canManageWorkspace, editingTplId, teamWorkspace, updateTeamWorkspace],
+  );
+
+  const handleSaveTemplate = useCallback(async () => {
+    const token = authClient.getStoredToken();
+    const name = tplName.trim();
+    const prompt = tplPrompt.trim();
+    if (!token || !teamWorkspace || !canManageWorkspace || !name || !prompt) return;
+    setWsLoading(true);
+    try {
+      const res = editingTplId
+        ? await authClient.updateWorkspaceTemplate(token, editingTplId, {
+            name, description: tplDesc.trim() || undefined, prompt,
+          })
+        : await authClient.addWorkspaceTemplate(token, {
+            name, description: tplDesc.trim() || undefined, prompt,
+          });
+      updateTeamWorkspace((cur) =>
+        cur ? { ...cur, sharedTemplates: mapSharedTemplates(res.templates) } : cur,
+      );
+      setTplName(""); setTplDesc(""); setTplPrompt(""); setEditingTplId(null);
+    } catch (err) {
+      console.error("Failed to save workspace template:", err);
+    } finally {
+      setWsLoading(false);
+    }
+  }, [canManageWorkspace, editingTplId, tplDesc, tplName, tplPrompt, teamWorkspace, updateTeamWorkspace]);
 
   const outputPlaceholder = t("settings.postProcessing.actions.outputPlaceholder", {
     defaultValue: "dictated text",
@@ -393,7 +462,7 @@ export const PostProcessingSettings: React.FC = () => {
       ? teamWorkspace.sharedTemplates
           .map((template) => ({
             ...template,
-            onClick: () => handleStartFromTemplate(template),
+            onClick: () => handleStartFromTemplate({ label: template.name, prompt: template.prompt }),
           }))
       : [];
 
@@ -791,103 +860,104 @@ export const PostProcessingSettings: React.FC = () => {
             </section>
           ) : null}
 
-          {teamTemplateItems.length ? (
+          {(teamTemplateItems.length > 0 || canManageWorkspace) ? (
             <section className="voca-actions-library">
-            <div className="voca-actions-side-head">
-              <span className="voca-actions-side-title">Templates partages</span>
-              <span className="voca-actions-side-count">
-                {teamTemplateItems.length}
-              </span>
-            </div>
-              <div
-                style={{
-                  padding: 12,
-                  display: "grid",
-                  gap: 8,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    padding: "0 2px 4px",
-                  }}
-                >
-                  <div
-                    style={{
-                      minWidth: 0,
-                      flex: 1,
-                      fontSize: 11.5,
-                      lineHeight: 1.45,
-                      color: "rgba(255,255,255,0.44)",
-                    }}
-                  >
-                    Bibliotheque commune de {teamWorkspace?.name}
+              <div className="voca-actions-side-head">
+                <span className="voca-actions-side-title">Templates d'équipe</span>
+                <span className="voca-actions-side-count">{teamTemplateItems.length}</span>
+              </div>
+              <div style={{ padding: 12, display: "grid", gap: 8 }}>
+                {teamTemplateItems.length > 0 ? (
+                  <div className="voca-actions-library-list" style={{ padding: 0 }}>
+                    {teamTemplateItems.map((item) => (
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <button
+                          type="button"
+                          className="voca-actions-library-row"
+                          onClick={item.onClick}
+                          style={{ flex: 1, minWidth: 0 }}
+                        >
+                          <span className="voca-actions-library-icon voca-tone-green">
+                            <ClipboardList size={17} aria-hidden="true" />
+                          </span>
+                          <span className="voca-actions-library-copy">
+                            <span className="voca-actions-library-name">{item.name}</span>
+                            <span className="voca-actions-library-desc">{item.description}</span>
+                          </span>
+                        </button>
+                        {canManageWorkspace ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleEditTemplate(item.id)}
+                              disabled={wsLoading}
+                              style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.46)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+                            >
+                              <Pencil size={11} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteTemplate(item.id)}
+                              disabled={wsLoading}
+                              style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.46)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                    ))}
                   </div>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minWidth: 28,
-                      height: 28,
-                      padding: "0 8px",
-                      borderRadius: 999,
-                      border: "1px solid rgba(52,211,153,0.2)",
-                      background: "rgba(52,211,153,0.10)",
-                      color: "#8ef0bf",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
-                  >
-                    Team
-                  </span>
-                </div>
+                ) : null}
 
-                <div className="voca-actions-library-list" style={{ padding: 0 }}>
-                  {teamTemplateItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className="voca-actions-library-row"
-                      onClick={item.onClick}
-                    >
-                      <span className="voca-actions-library-icon voca-tone-green">
-                        <ClipboardList size={17} aria-hidden="true" />
-                      </span>
-                      <span className="voca-actions-library-copy">
-                        <span className="voca-actions-library-name">
-                          {item.name}
-                        </span>
-                        <span className="voca-actions-library-desc">
-                          {item.description}
-                        </span>
-                      </span>
-                      <span
-                        className="voca-actions-library-shortcut"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          minWidth: 0,
-                          height: 22,
-                          padding: "0 8px",
-                          borderRadius: 999,
-                          border: "1px solid rgba(52,211,153,0.18)",
-                          background: "rgba(52,211,153,0.08)",
-                          color: "#8ef0bf",
-                          fontSize: 10,
-                          fontWeight: 700,
-                        }}
+                {canManageWorkspace ? (
+                  <div style={{ display: "grid", gap: 6, paddingTop: teamTemplateItems.length ? 4 : 0 }}>
+                    <input
+                      type="text"
+                      value={tplName}
+                      onChange={(e) => setTplName(e.target.value)}
+                      placeholder="Nom du template"
+                      disabled={wsLoading}
+                      style={{ height: 32, borderRadius: 7, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.94)", padding: "0 10px", fontSize: 12, fontFamily: "inherit" }}
+                    />
+                    <input
+                      type="text"
+                      value={tplDesc}
+                      onChange={(e) => setTplDesc(e.target.value)}
+                      placeholder="Description courte"
+                      disabled={wsLoading}
+                      style={{ height: 32, borderRadius: 7, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.94)", padding: "0 10px", fontSize: 12, fontFamily: "inherit" }}
+                    />
+                    <textarea
+                      value={tplPrompt}
+                      onChange={(e) => setTplPrompt(e.target.value)}
+                      placeholder="Prompt partagé pour toute l'équipe"
+                      disabled={wsLoading}
+                      rows={3}
+                      style={{ borderRadius: 7, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.94)", padding: "8px 10px", fontSize: 12, fontFamily: "inherit", resize: "vertical" }}
+                    />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => void handleSaveTemplate()}
+                        disabled={wsLoading || !tplName.trim() || !tplPrompt.trim()}
+                        style={{ flex: 1, height: 30, borderRadius: 7, border: "1px solid rgba(201,168,76,0.26)", background: "rgba(201,168,76,0.10)", color: "#d8b866", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", opacity: wsLoading || !tplName.trim() || !tplPrompt.trim() ? 0.45 : 1 }}
                       >
-                        Team
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                        {editingTplId ? "Enregistrer" : "+ Ajouter"}
+                      </button>
+                      {editingTplId ? (
+                        <button
+                          type="button"
+                          onClick={() => { setTplName(""); setTplDesc(""); setTplPrompt(""); setEditingTplId(null); }}
+                          disabled={wsLoading}
+                          style={{ height: 30, padding: "0 10px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.56)", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
+                        >
+                          Annuler
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </section>
           ) : null}

@@ -168,6 +168,7 @@ const sanitizeSessionForPersistence = (
   session: AuthSession | PersistedAuthSession,
 ): PersistedAuthSession => ({
   ...session,
+  workspace: null,
   token: null,
 });
 
@@ -449,7 +450,7 @@ export const authClient = {
         (await store.get<PersistedAuthSession>(AUTH_SESSION_KEY)) ?? null;
       const secureSessionRaw = await getSecureAuthSession();
       const secureSession = secureSessionRaw
-        ? (JSON.parse(secureSessionRaw) as AuthSession)
+        ? (JSON.parse(secureSessionRaw) as PersistedAuthSession)
         : null;
       const resolvedSession = secureSession ?? storedSession ?? legacySession;
 
@@ -483,7 +484,9 @@ export const authClient = {
 
         if (sessionToPersist) {
           cachedSession = sessionToPersist;
-          await setSecureAuthSession(JSON.stringify(sessionToPersist));
+          await setSecureAuthSession(
+            JSON.stringify(sanitizeSessionForPersistence(sessionToPersist)),
+          );
         }
       }
 
@@ -518,7 +521,9 @@ export const authClient = {
     await this.setStoredToken(session.token);
 
     try {
-      await setSecureAuthSession(JSON.stringify(session));
+      await setSecureAuthSession(
+        JSON.stringify(sanitizeSessionForPersistence(session)),
+      );
       const store = await getAuthStore();
       await store.delete(AUTH_SESSION_KEY);
       await store.save();

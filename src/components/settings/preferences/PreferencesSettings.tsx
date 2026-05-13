@@ -11,6 +11,7 @@ import {
   Power,
   Cpu,
   Zap,
+  Pencil,
   TriangleAlert,
   Trash2,
   RotateCcw,
@@ -42,6 +43,8 @@ import {
 import { commands } from "@/bindings";
 import type { OverlayPosition, RecordingRetentionPeriod } from "@/bindings";
 import { usePlan } from "@/lib/subscription/context";
+import { authClient } from "@/lib/auth/client";
+import { mapSharedSnippets, mapSharedDictionary } from "@/lib/subscription/workspace";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const C = {
@@ -418,7 +421,126 @@ const PSection: React.FC<{
 // ── Main component ─────────────────────────────────────────────────────────
 export const PreferencesSettings: React.FC = () => {
   const { settings, getSetting, updateSetting, isUpdating } = useSettings();
-  const { capabilities, openUpgradePlans, teamWorkspace } = usePlan();
+  const { capabilities, openUpgradePlans, teamWorkspace, updateTeamWorkspace } = usePlan();
+
+  const canManageWorkspace =
+    teamWorkspace?.currentUserRole === "owner" ||
+    teamWorkspace?.currentUserRole === "admin";
+
+  const [wsLoading, setWsLoading] = useState(false);
+  const [snippetTrigger, setSnippetTrigger] = useState("");
+  const [snippetExpansion, setSnippetExpansion] = useState("");
+  const [editingSnippetId, setEditingSnippetId] = useState<string | null>(null);
+  const [dictTerm, setDictTerm] = useState("");
+  const [dictNote, setDictNote] = useState("");
+  const [editingDictId, setEditingDictId] = useState<string | null>(null);
+
+  const handleEditSnippet = useCallback(
+    (id: string) => {
+      const s = teamWorkspace?.sharedSnippets.find((x) => x.id === id);
+      if (!s) return;
+      setSnippetTrigger(s.trigger);
+      setSnippetExpansion(s.expansion);
+      setEditingSnippetId(s.id);
+    },
+    [teamWorkspace],
+  );
+
+  const handleDeleteSnippet = useCallback(
+    async (id: string) => {
+      const token = authClient.getStoredToken();
+      if (!token || !teamWorkspace || !canManageWorkspace) return;
+      setWsLoading(true);
+      try {
+        const res = await authClient.removeWorkspaceSnippet(token, id);
+        updateTeamWorkspace((cur) =>
+          cur ? { ...cur, sharedSnippets: mapSharedSnippets(res.snippets) } : cur,
+        );
+        if (editingSnippetId === id) {
+          setSnippetTrigger(""); setSnippetExpansion(""); setEditingSnippetId(null);
+        }
+      } catch (err) {
+        console.error("Failed to remove workspace snippet:", err);
+      } finally {
+        setWsLoading(false);
+      }
+    },
+    [canManageWorkspace, editingSnippetId, teamWorkspace, updateTeamWorkspace],
+  );
+
+  const handleSaveSnippet = useCallback(async () => {
+    const token = authClient.getStoredToken();
+    const trigger = snippetTrigger.trim();
+    const expansion = snippetExpansion.trim();
+    if (!token || !teamWorkspace || !canManageWorkspace || !trigger || !expansion) return;
+    setWsLoading(true);
+    try {
+      const res = editingSnippetId
+        ? await authClient.updateWorkspaceSnippet(token, editingSnippetId, { trigger, expansion })
+        : await authClient.addWorkspaceSnippet(token, { trigger, expansion });
+      updateTeamWorkspace((cur) =>
+        cur ? { ...cur, sharedSnippets: mapSharedSnippets(res.snippets) } : cur,
+      );
+      setSnippetTrigger(""); setSnippetExpansion(""); setEditingSnippetId(null);
+    } catch (err) {
+      console.error("Failed to save workspace snippet:", err);
+    } finally {
+      setWsLoading(false);
+    }
+  }, [canManageWorkspace, editingSnippetId, snippetExpansion, snippetTrigger, teamWorkspace, updateTeamWorkspace]);
+
+  const handleEditDictTerm = useCallback(
+    (id: string) => {
+      const term = teamWorkspace?.sharedDictionary.find((x) => x.id === id);
+      if (!term) return;
+      setDictTerm(term.term);
+      setDictNote(term.note ?? "");
+      setEditingDictId(term.id);
+    },
+    [teamWorkspace],
+  );
+
+  const handleDeleteDictTerm = useCallback(
+    async (id: string) => {
+      const token = authClient.getStoredToken();
+      if (!token || !teamWorkspace || !canManageWorkspace) return;
+      setWsLoading(true);
+      try {
+        const res = await authClient.removeWorkspaceDictionaryTerm(token, id);
+        updateTeamWorkspace((cur) =>
+          cur ? { ...cur, sharedDictionary: mapSharedDictionary(res.dictionary) } : cur,
+        );
+        if (editingDictId === id) {
+          setDictTerm(""); setDictNote(""); setEditingDictId(null);
+        }
+      } catch (err) {
+        console.error("Failed to remove workspace dictionary term:", err);
+      } finally {
+        setWsLoading(false);
+      }
+    },
+    [canManageWorkspace, editingDictId, teamWorkspace, updateTeamWorkspace],
+  );
+
+  const handleSaveDictTerm = useCallback(async () => {
+    const token = authClient.getStoredToken();
+    const term = dictTerm.trim();
+    if (!token || !teamWorkspace || !canManageWorkspace || !term) return;
+    setWsLoading(true);
+    try {
+      const res = editingDictId
+        ? await authClient.updateWorkspaceDictionaryTerm(token, editingDictId, { term, note: dictNote.trim() || undefined })
+        : await authClient.addWorkspaceDictionaryTerm(token, { term, note: dictNote.trim() || undefined });
+      updateTeamWorkspace((cur) =>
+        cur ? { ...cur, sharedDictionary: mapSharedDictionary(res.dictionary) } : cur,
+      );
+      setDictTerm(""); setDictNote(""); setEditingDictId(null);
+    } catch (err) {
+      console.error("Failed to save workspace dictionary term:", err);
+    } finally {
+      setWsLoading(false);
+    }
+  }, [canManageWorkspace, dictNote, dictTerm, editingDictId, teamWorkspace, updateTeamWorkspace]);
   const mainRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const [activeCat, setActiveCat] = useState<CatId>("general");
@@ -942,50 +1064,102 @@ export const PreferencesSettings: React.FC = () => {
             </PGroup>
 
             {capabilities.hasSharedDictionary && teamWorkspace ? (
-              <div style={{ marginTop: 18 }}>
+              <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
+
+                {/* ── Dictionnaire partagé ─── */}
                 <PGroup>
                   <PRow
                     icon={<Layers size={16} />}
-                    title={
-                      <>
-                        Dictionnaire partage{" "}
-                        <PPill
-                          label={String(teamWorkspace.sharedDictionary.length)}
-                          variant="good"
-                        />
-                      </>
-                    }
-                    desc="Termes metier visibles par toute l'equipe pour garder la meme orthographe."
+                    title={<>Dictionnaire d'équipe <PPill label={String(teamWorkspace.sharedDictionary.length)} variant="good" /></>}
+                    desc="Termes métier visibles par toute l'équipe."
                   >
                     <PPill label={teamWorkspace.currentUserRole} variant="gold" />
                   </PRow>
+                  {teamWorkspace.sharedDictionary.length > 0 ? (
+                    <div style={{ padding: "0 16px 10px" }}>
+                      {teamWorkspace.sharedDictionary.map((term) => (
+                        <div key={term.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.88)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{term.term}</div>
+                            {term.note ? <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.38)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{term.note}</div> : null}
+                          </div>
+                          {canManageWorkspace ? (
+                            <>
+                              <button type="button" onClick={() => handleEditDictTerm(term.id)} disabled={wsLoading} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.40)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Pencil size={11} /></button>
+                              <button type="button" onClick={() => void handleDeleteDictTerm(term.id)} disabled={wsLoading} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.40)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Trash2 size={11} /></button>
+                            </>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {canManageWorkspace ? (
+                    <div style={{ padding: "0 16px 14px", display: "grid", gap: 6 }}>
+                      <input type="text" value={dictTerm} onChange={(e) => setDictTerm(e.target.value)} placeholder="Terme ou nom produit" disabled={wsLoading} style={{ height: 34, borderRadius: 8, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.94)", padding: "0 10px", fontSize: 13, fontFamily: "inherit" }} />
+                      <input type="text" value={dictNote} onChange={(e) => setDictNote(e.target.value)} placeholder="Note optionnelle" disabled={wsLoading} style={{ height: 34, borderRadius: 8, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.94)", padding: "0 10px", fontSize: 13, fontFamily: "inherit" }} />
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button type="button" onClick={() => void handleSaveDictTerm()} disabled={wsLoading || !dictTerm.trim()} style={{ flex: 1, height: 32, borderRadius: 8, border: "1px solid rgba(201,168,76,0.26)", background: "rgba(201,168,76,0.10)", color: "#d8b866", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", opacity: wsLoading || !dictTerm.trim() ? 0.45 : 1 }}>
+                          {editingDictId ? "Enregistrer" : "+ Ajouter le terme"}
+                        </button>
+                        {editingDictId ? (
+                          <button type="button" onClick={() => { setDictTerm(""); setDictNote(""); setEditingDictId(null); }} disabled={wsLoading} style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.09)", background: "none", color: "rgba(255,255,255,0.50)", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </PGroup>
 
+                {/* ── Snippets d'équipe ─── */}
+                <PGroup>
                   <PRow
                     icon={<Code2 size={16} />}
-                    title={
-                      <>
-                        Snippets d'equipe{" "}
-                        <PPill
-                          label={String(teamWorkspace.sharedSnippets.length)}
-                          variant="good"
-                        />
-                      </>
-                    }
-                    desc="Raccourcis vocaux partages pour les messages et mises a jour recurrentes."
+                    title={<>Snippets d'équipe <PPill label={String(teamWorkspace.sharedSnippets.length)} variant="good" /></>}
+                    desc="Raccourcis vocaux partagés pour toute l'équipe."
                   >
-                    <PPill label="Partage" variant="good" />
+                    <PPill label="Partagé" variant="good" />
                   </PRow>
+                  {teamWorkspace.sharedSnippets.length > 0 ? (
+                    <div style={{ padding: "0 16px 10px" }}>
+                      {teamWorkspace.sharedSnippets.map((snippet) => (
+                        <div key={snippet.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.88)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{snippet.trigger}</div>
+                            <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.38)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{snippet.expansion}</div>
+                          </div>
+                          {canManageWorkspace ? (
+                            <>
+                              <button type="button" onClick={() => handleEditSnippet(snippet.id)} disabled={wsLoading} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.40)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Pencil size={11} /></button>
+                              <button type="button" onClick={() => void handleDeleteSnippet(snippet.id)} disabled={wsLoading} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.40)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Trash2 size={11} /></button>
+                            </>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {canManageWorkspace ? (
+                    <div style={{ padding: "0 16px 14px", display: "grid", gap: 6 }}>
+                      <input type="text" value={snippetTrigger} onChange={(e) => setSnippetTrigger(e.target.value)} placeholder="Déclencheur vocal" disabled={wsLoading} style={{ height: 34, borderRadius: 8, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.94)", padding: "0 10px", fontSize: 13, fontFamily: "inherit" }} />
+                      <textarea value={snippetExpansion} onChange={(e) => setSnippetExpansion(e.target.value)} placeholder="Texte développé" disabled={wsLoading} rows={2} style={{ borderRadius: 8, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.94)", padding: "8px 10px", fontSize: 13, fontFamily: "inherit", resize: "vertical" }} />
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button type="button" onClick={() => void handleSaveSnippet()} disabled={wsLoading || !snippetTrigger.trim() || !snippetExpansion.trim()} style={{ flex: 1, height: 32, borderRadius: 8, border: "1px solid rgba(201,168,76,0.26)", background: "rgba(201,168,76,0.10)", color: "#d8b866", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", opacity: wsLoading || !snippetTrigger.trim() || !snippetExpansion.trim() ? 0.45 : 1 }}>
+                          {editingSnippetId ? "Enregistrer" : "+ Ajouter le snippet"}
+                        </button>
+                        {editingSnippetId ? (
+                          <button type="button" onClick={() => { setSnippetTrigger(""); setSnippetExpansion(""); setEditingSnippetId(null); }} disabled={wsLoading} style={{ height: 32, padding: "0 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.09)", background: "none", color: "rgba(255,255,255,0.50)", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </PGroup>
 
+                <PGroup>
                   <PRow
                     last
                     icon={<Star size={16} />}
                     title="Workspace Vocalype"
-                    desc={`Bibliotheque commune de ${teamWorkspace.name}. La facturation et les ressources partagees passent par le meme espace equipe.`}
+                    desc={`Bibliothèque commune de ${teamWorkspace.name}. La facturation et les ressources partagées passent par le même espace équipe.`}
                   >
-                    <PPill
-                      label={`${teamWorkspace.members.length}/${teamWorkspace.seatsIncluded} sieges`}
-                      variant="gold"
-                    />
+                    <PPill label={`${teamWorkspace.members.length}/${teamWorkspace.seatsIncluded} sièges`} variant="gold" />
                   </PRow>
                 </PGroup>
               </div>

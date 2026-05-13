@@ -410,9 +410,11 @@ const Showcase: React.FC = () => (
         }}
       >
         {["Ctrl", "Space"].map((k, i) => (
-          <>
+          <span
+            key={k}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+          >
             <span
-              key={k}
               style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 11,
@@ -428,7 +430,7 @@ const Showcase: React.FC = () => (
               {k}
             </span>
             {i === 0 && <span style={{ color: "#56565e" }}>+</span>}
-          </>
+          </span>
         ))}
         <span style={{ color: "#56565e" }}>·</span>
         <span>

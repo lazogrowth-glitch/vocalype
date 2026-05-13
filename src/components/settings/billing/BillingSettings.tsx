@@ -1927,6 +1927,324 @@ export const BillingSettings: React.FC = () => {
                       ))}
                     </div>
 
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 12,
+                        paddingTop: 2,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color: "rgba(255,255,255,0.38)",
+                        }}
+                      >
+                        {t("billing.workspace.resourcesTitle")}
+                      </div>
+                      <div style={{ display: "grid", gap: 10 }}>
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 10,
+                            padding: "12px",
+                            borderRadius: 10,
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(255,255,255,0.022)",
+                          }}
+                        >
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                            {t("billing.workspace.existingTemplates")}
+                          </div>
+                          {teamWorkspace.sharedTemplates.length ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              {teamWorkspace.sharedTemplates.map((template) => (
+                                <div
+                                  key={template.id}
+                                  style={{
+                                    display: "grid",
+                                    gap: 8,
+                                    padding: "10px 12px",
+                                    borderRadius: 9,
+                                    border: "1px solid rgba(255,255,255,0.06)",
+                                    background: "rgba(255,255,255,0.018)",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                                        {template.name}
+                                      </div>
+                                      {template.description ? (
+                                        <div style={{ marginTop: 3, fontSize: 12, color: "rgba(255,255,255,0.42)" }}>
+                                          {template.description}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditTemplate(template.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.edit")}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteTemplate(template.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.remove")}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: 12,
+                                      lineHeight: 1.5,
+                                      color: "rgba(255,255,255,0.56)",
+                                      whiteSpace: "pre-wrap",
+                                    }}
+                                  >
+                                    {template.prompt}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.42)" }}>
+                              {t("billing.workspace.emptyTemplates")}
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 10,
+                            padding: "12px",
+                            borderRadius: 10,
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(255,255,255,0.022)",
+                          }}
+                        >
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                            {t("billing.workspace.existingSnippets")}
+                          </div>
+                          {teamWorkspace.sharedSnippets.length ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              {teamWorkspace.sharedSnippets.map((snippet) => (
+                                <div
+                                  key={snippet.id}
+                                  style={{
+                                    display: "grid",
+                                    gap: 8,
+                                    padding: "10px 12px",
+                                    borderRadius: 9,
+                                    border: "1px solid rgba(255,255,255,0.06)",
+                                    background: "rgba(255,255,255,0.018)",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                                        {snippet.trigger}
+                                      </div>
+                                      <div
+                                        style={{
+                                          marginTop: 3,
+                                          fontSize: 12,
+                                          color: "rgba(255,255,255,0.42)",
+                                          whiteSpace: "pre-wrap",
+                                        }}
+                                      >
+                                        {snippet.expansion}
+                                      </div>
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditSnippet(snippet.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.edit")}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteSnippet(snippet.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.remove")}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.42)" }}>
+                              {t("billing.workspace.emptySnippets")}
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 10,
+                            padding: "12px",
+                            borderRadius: 10,
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(255,255,255,0.022)",
+                          }}
+                        >
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                            {t("billing.workspace.existingTerms")}
+                          </div>
+                          {teamWorkspace.sharedDictionary.length ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              {teamWorkspace.sharedDictionary.map((term) => (
+                                <div
+                                  key={term.id}
+                                  style={{
+                                    display: "grid",
+                                    gap: 8,
+                                    padding: "10px 12px",
+                                    borderRadius: 9,
+                                    border: "1px solid rgba(255,255,255,0.06)",
+                                    background: "rgba(255,255,255,0.018)",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                                        {term.term}
+                                      </div>
+                                      {term.note ? (
+                                        <div style={{ marginTop: 3, fontSize: 12, color: "rgba(255,255,255,0.42)" }}>
+                                          {term.note}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditDictionaryTerm(term.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.edit")}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteDictionaryTerm(term.id)}
+                                        disabled={workspaceLoading}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          borderRadius: 8,
+                                          border: "1px solid rgba(255,255,255,0.10)",
+                                          background: "rgba(255,255,255,0.03)",
+                                          color: "rgba(255,255,255,0.72)",
+                                          fontSize: 12,
+                                          cursor: "pointer",
+                                          fontFamily: "inherit",
+                                        }}
+                                      >
+                                        {t("dictionary.remove")}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.42)" }}>
+                              {t("billing.workspace.emptyTerms")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
                     {canManageWorkspace ? (
                       <div
                         style={{
@@ -2093,103 +2411,6 @@ export const BillingSettings: React.FC = () => {
                               </button>
                             ) : null}
                           </div>
-                          {teamWorkspace.sharedTemplates.length ? (
-                            <div style={{ display: "grid", gap: 8 }}>
-                              {teamWorkspace.sharedTemplates.map((template) => (
-                                <div
-                                  key={template.id}
-                                  style={{
-                                    display: "grid",
-                                    gap: 8,
-                                    padding: "10px 12px",
-                                    borderRadius: 9,
-                                    border: "1px solid rgba(255,255,255,0.06)",
-                                    background: "rgba(255,255,255,0.018)",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <div style={{ minWidth: 0 }}>
-                                      <div
-                                        style={{
-                                          fontSize: 13,
-                                          fontWeight: 600,
-                                          color: "rgba(255,255,255,0.94)",
-                                        }}
-                                      >
-                                        {template.name}
-                                      </div>
-                                      {template.description ? (
-                                        <div
-                                          style={{
-                                            marginTop: 3,
-                                            fontSize: 12,
-                                            color: "rgba(255,255,255,0.42)",
-                                          }}
-                                        >
-                                          {template.description}
-                                        </div>
-                                      ) : null}
-                                    </div>
-                                    <div style={{ display: "flex", gap: 8 }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleEditTemplate(template.id)}
-                                        disabled={workspaceLoading}
-                                        style={{
-                                          height: 30,
-                                          padding: "0 10px",
-                                          borderRadius: 8,
-                                          border: "1px solid rgba(255,255,255,0.10)",
-                                          background: "rgba(255,255,255,0.03)",
-                                          color: "rgba(255,255,255,0.72)",
-                                          fontSize: 12,
-                                          cursor: "pointer",
-                                          fontFamily: "inherit",
-                                        }}
-                                      >
-                                        {t("dictionary.edit")}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleDeleteTemplate(template.id)}
-                                        disabled={workspaceLoading}
-                                        style={{
-                                          height: 30,
-                                          padding: "0 10px",
-                                          borderRadius: 8,
-                                          border: "1px solid rgba(255,255,255,0.10)",
-                                          background: "rgba(255,255,255,0.03)",
-                                          color: "rgba(255,255,255,0.72)",
-                                          fontSize: 12,
-                                          cursor: "pointer",
-                                          fontFamily: "inherit",
-                                        }}
-                                      >
-                                        {t("dictionary.remove")}
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <div
-                                    style={{
-                                      fontSize: 12,
-                                      lineHeight: 1.5,
-                                      color: "rgba(255,255,255,0.56)",
-                                      whiteSpace: "pre-wrap",
-                                    }}
-                                  >
-                                    {template.prompt}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : null}
                         </div>
 
                         <div
@@ -2311,92 +2532,6 @@ export const BillingSettings: React.FC = () => {
                               </button>
                             ) : null}
                           </div>
-                          {teamWorkspace.sharedSnippets.length ? (
-                            <div style={{ display: "grid", gap: 8 }}>
-                              {teamWorkspace.sharedSnippets.map((snippet) => (
-                                <div
-                                  key={snippet.id}
-                                  style={{
-                                    display: "grid",
-                                    gap: 8,
-                                    padding: "10px 12px",
-                                    borderRadius: 9,
-                                    border: "1px solid rgba(255,255,255,0.06)",
-                                    background: "rgba(255,255,255,0.018)",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <div style={{ minWidth: 0 }}>
-                                      <div
-                                        style={{
-                                          fontSize: 13,
-                                          fontWeight: 600,
-                                          color: "rgba(255,255,255,0.94)",
-                                        }}
-                                      >
-                                        {snippet.trigger}
-                                      </div>
-                                      <div
-                                        style={{
-                                          marginTop: 3,
-                                          fontSize: 12,
-                                          color: "rgba(255,255,255,0.42)",
-                                          whiteSpace: "pre-wrap",
-                                        }}
-                                      >
-                                        {snippet.expansion}
-                                      </div>
-                                    </div>
-                                    <div style={{ display: "flex", gap: 8 }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleEditSnippet(snippet.id)}
-                                        disabled={workspaceLoading}
-                                        style={{
-                                          height: 30,
-                                          padding: "0 10px",
-                                          borderRadius: 8,
-                                          border: "1px solid rgba(255,255,255,0.10)",
-                                          background: "rgba(255,255,255,0.03)",
-                                          color: "rgba(255,255,255,0.72)",
-                                          fontSize: 12,
-                                          cursor: "pointer",
-                                          fontFamily: "inherit",
-                                        }}
-                                      >
-                                        {t("dictionary.edit")}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleDeleteSnippet(snippet.id)}
-                                        disabled={workspaceLoading}
-                                        style={{
-                                          height: 30,
-                                          padding: "0 10px",
-                                          borderRadius: 8,
-                                          border: "1px solid rgba(255,255,255,0.10)",
-                                          background: "rgba(255,255,255,0.03)",
-                                          color: "rgba(255,255,255,0.72)",
-                                          fontSize: 12,
-                                          cursor: "pointer",
-                                          fontFamily: "inherit",
-                                        }}
-                                      >
-                                        {t("dictionary.remove")}
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : null}
                         </div>
 
                         <div
@@ -2512,93 +2647,6 @@ export const BillingSettings: React.FC = () => {
                               </button>
                             ) : null}
                           </div>
-                          {teamWorkspace.sharedDictionary.length ? (
-                            <div style={{ display: "grid", gap: 8 }}>
-                              {teamWorkspace.sharedDictionary.map((term) => (
-                                <div
-                                  key={term.id}
-                                  style={{
-                                    display: "grid",
-                                    gap: 8,
-                                    padding: "10px 12px",
-                                    borderRadius: 9,
-                                    border: "1px solid rgba(255,255,255,0.06)",
-                                    background: "rgba(255,255,255,0.018)",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      gap: 10,
-                                    }}
-                                  >
-                                    <div style={{ minWidth: 0 }}>
-                                      <div
-                                        style={{
-                                          fontSize: 13,
-                                          fontWeight: 600,
-                                          color: "rgba(255,255,255,0.94)",
-                                        }}
-                                      >
-                                        {term.term}
-                                      </div>
-                                      {term.note ? (
-                                        <div
-                                          style={{
-                                            marginTop: 3,
-                                            fontSize: 12,
-                                            color: "rgba(255,255,255,0.42)",
-                                          }}
-                                        >
-                                          {term.note}
-                                        </div>
-                                      ) : null}
-                                    </div>
-                                    <div style={{ display: "flex", gap: 8 }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleEditDictionaryTerm(term.id)}
-                                        disabled={workspaceLoading}
-                                        style={{
-                                          height: 30,
-                                          padding: "0 10px",
-                                          borderRadius: 8,
-                                          border: "1px solid rgba(255,255,255,0.10)",
-                                          background: "rgba(255,255,255,0.03)",
-                                          color: "rgba(255,255,255,0.72)",
-                                          fontSize: 12,
-                                          cursor: "pointer",
-                                          fontFamily: "inherit",
-                                        }}
-                                      >
-                                        {t("dictionary.edit")}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleDeleteDictionaryTerm(term.id)}
-                                        disabled={workspaceLoading}
-                                        style={{
-                                          height: 30,
-                                          padding: "0 10px",
-                                          borderRadius: 8,
-                                          border: "1px solid rgba(255,255,255,0.10)",
-                                          background: "rgba(255,255,255,0.03)",
-                                          color: "rgba(255,255,255,0.72)",
-                                          fontSize: 12,
-                                          cursor: "pointer",
-                                          fontFamily: "inherit",
-                                        }}
-                                      >
-                                        {t("dictionary.remove")}
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : null}
                         </div>
                       </div>
                     ) : null}

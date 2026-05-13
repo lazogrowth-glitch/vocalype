@@ -1465,6 +1465,13 @@
       "supportContact": "Contacto de soporte",
       "managedByWorkspace": "Esta cuenta est\u00e1 gestionada por tu workspace de agencia.",
       "managedByWorkspaceDescription": "La facturaci\u00f3n y los accesos los gestiona el admin del workspace.",
+      "resourcesTitle": "Recursos existentes",
+      "existingTemplates": "Plantillas compartidas",
+      "existingSnippets": "Snippets compartidos",
+      "existingTerms": "T\u00e9rminos compartidos",
+      "emptyTemplates": "Todav\u00eda no hay plantillas compartidas.",
+      "emptySnippets": "Todav\u00eda no hay snippets compartidos.",
+      "emptyTerms": "Todav\u00eda no hay t\u00e9rminos compartidos.",
       "createTitle": "Agregar un recurso compartido",
       "forms": {
         "template": {

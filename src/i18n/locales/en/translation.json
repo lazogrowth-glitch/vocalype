@@ -1465,6 +1465,13 @@
       "supportContact": "Support contact",
       "managedByWorkspace": "This account is managed by your agency workspace.",
       "managedByWorkspaceDescription": "Billing and access are managed by the workspace admin.",
+      "resourcesTitle": "Existing resources",
+      "existingTemplates": "Shared templates",
+      "existingSnippets": "Shared snippets",
+      "existingTerms": "Shared terms",
+      "emptyTemplates": "No shared template yet.",
+      "emptySnippets": "No shared snippet yet.",
+      "emptyTerms": "No shared term yet.",
       "createTitle": "Add a shared asset",
       "forms": {
         "template": {

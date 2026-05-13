@@ -6,7 +6,6 @@ import secrets
 import smtplib
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from psycopg2.pool import SimpleConnectionPool
 import re
 import time
 import uuid
@@ -136,8 +135,6 @@ APP_RETURN_URL = os.environ.get(
     os.environ.get("FRONTEND_URL", "https://vocalype.com"),
 )
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
-DB_POOL_MIN_CONN = env_int("DB_POOL_MIN_CONN", 1, 1)
-DB_POOL_MAX_CONN = env_int("DB_POOL_MAX_CONN", 8, 1)
 DB_CONNECT_TIMEOUT_SECONDS = env_int("DB_CONNECT_TIMEOUT_SECONDS", 5, 1)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 CLOUD_LLM_MODEL = os.environ.get("CLOUD_LLM_MODEL", "llama-3.1-8b-instant")
@@ -371,29 +368,14 @@ def dt_to_iso(value: datetime | None) -> str | None:
     return value.astimezone(timezone.utc).isoformat()
 
 
-_DB_POOL: SimpleConnectionPool | None = None
-
-
-def get_db_pool() -> SimpleConnectionPool:
-    global _DB_POOL
-    if _DB_POOL is None:
-        if not DATABASE_URL:
-            raise RuntimeError("DATABASE_URL is required")
-        _DB_POOL = SimpleConnectionPool(
-            DB_POOL_MIN_CONN,
-            DB_POOL_MAX_CONN,
-            dsn=DATABASE_URL,
-            connect_timeout=DB_CONNECT_TIMEOUT_SECONDS,
-        )
-    return _DB_POOL
-
-
 class _PgConn:
     """Thin wrapper around psycopg2 that mimics the sqlite3 connection API."""
 
     def __init__(self):
-        self._pool = get_db_pool()
-        self._conn = self._pool.getconn()
+        self._conn = psycopg2.connect(
+            DATABASE_URL,
+            connect_timeout=DB_CONNECT_TIMEOUT_SECONDS,
+        )
         self._conn.autocommit = False
         self._cur = self._conn.cursor(cursor_factory=RealDictCursor)
 
@@ -405,14 +387,8 @@ class _PgConn:
         self._conn.commit()
 
     def close(self):
-        try:
-            self._cur.close()
-        finally:
-            try:
-                self._conn.rollback()
-            except Exception:
-                pass
-            self._pool.putconn(self._conn)
+        self._cur.close()
+        self._conn.close()
 
 
 def get_db() -> _PgConn:

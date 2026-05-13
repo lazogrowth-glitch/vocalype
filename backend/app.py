@@ -2426,6 +2426,10 @@ def update_profile(user):
             "UPDATE users SET name = %s WHERE id = %s",
             (name, user["id"]),
         )
+        db.execute(
+            "UPDATE organization_members SET name = %s WHERE user_id = %s",
+            (name, user["id"]),
+        )
         db.commit()
     finally:
         db.close()

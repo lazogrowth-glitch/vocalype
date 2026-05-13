@@ -83,7 +83,7 @@ CORS(
     resources={
         r"/*": {
             "origins": CORS_ALLOWED_ORIGINS,
-            "methods": ["GET", "POST", "OPTIONS"],
+            "methods": ["GET", "POST", "PATCH", "OPTIONS"],
             "allow_headers": ["Authorization", "Content-Type"],
             "max_age": 600,
         }

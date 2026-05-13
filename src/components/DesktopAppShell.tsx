@@ -1,5 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -113,9 +113,10 @@ export function DesktopAppShell({
   );
   const currentPlan = deriveAppPlan(session);
   const capabilities = getPlanCapabilities(currentPlan);
-  const sessionWorkspace = session?.workspace
-    ? mapTeamWorkspacePayload(session.workspace)
-    : null;
+  const sessionWorkspace = useMemo(
+    () => (session?.workspace ? mapTeamWorkspacePayload(session.workspace) : null),
+    [session?.workspace],
+  );
   const [teamWorkspace, setTeamWorkspace] = useState<TeamWorkspace | null>(
     null,
   );
@@ -157,7 +158,7 @@ export function DesktopAppShell({
     return () => {
       cancelled = true;
     };
-  }, [currentPlan, session, sessionWorkspace]);
+  }, [currentPlan, session?.token, session?.user?.id, sessionWorkspace]);
 
   useEffect(() => {
     const userId = session?.user?.id;

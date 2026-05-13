@@ -11,6 +11,7 @@ import time
 import uuid
 import hashlib
 import json
+from contextlib import contextmanager
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
@@ -144,6 +145,7 @@ CLOUD_LLM_ALLOWED_MODELS = [
     if model.strip()
 ]
 CLOUD_LLM_RATE_LIMIT_PER_HOUR = env_int("CLOUD_LLM_RATE_LIMIT_PER_HOUR", 300, 10)
+AUTH_TIMING_ENABLED = env_bool("AUTH_TIMING_ENABLED", True)
 
 # Ed25519 private key for signing license bundles.
 # Set LICENSE_SIGNING_KEY in Railway env vars (base64-encoded 32-byte seed).
@@ -247,6 +249,34 @@ def log_security_event(event: str, **fields) -> None:
         app.logger.warning("security_event=%s %s", event, rendered_fields)
     else:
         app.logger.warning("security_event=%s", event)
+
+
+@contextmanager
+def timed_block(scope: str, stage: str, **fields):
+    started_at = time.perf_counter()
+    try:
+        yield
+    finally:
+        if AUTH_TIMING_ENABLED:
+            duration_ms = round((time.perf_counter() - started_at) * 1000, 1)
+            rendered_fields = " ".join(
+                f"{key}={value}" for key, value in fields.items() if value not in (None, "")
+            )
+            if rendered_fields:
+                app.logger.warning(
+                    "perf scope=%s stage=%s duration_ms=%s %s",
+                    scope,
+                    stage,
+                    duration_ms,
+                    rendered_fields,
+                )
+            else:
+                app.logger.warning(
+                    "perf scope=%s stage=%s duration_ms=%s",
+                    scope,
+                    stage,
+                    duration_ms,
+                )
 
 
 def normalize_email(value: str) -> str:
@@ -2373,6 +2403,7 @@ def register():
 
 @app.route("/auth/login", methods=["POST"])
 def login():
+    route_started_at = time.perf_counter()
     data = request.get_json(silent=True) or {}
     email_value, error = require_json_string(data, "email")
     if error:
@@ -2413,8 +2444,11 @@ def login():
     if response:
         return response
 
-    user = load_user_by_email(email)
-    if not user or not check_password_hash(user["password_hash"], password):
+    with timed_block("auth.login", "load_user", email=email):
+        user = load_user_by_email(email)
+    with timed_block("auth.login", "check_password_hash", email=email):
+        password_ok = bool(user) and check_password_hash(user["password_hash"], password)
+    if not user or not password_ok:
         log_security_event("login_failed", email=email, ip=ip_address)
         return jsonify({"error": "Email ou mot de passe incorrect"}), 401
 
@@ -2422,7 +2456,8 @@ def login():
         return jsonify({"error": "Identifiant appareil invalide"}), 400
 
     if device_id and device_id_is_stable(device_id):
-        register_device(device_id, user["id"])
+        with timed_block("auth.login", "register_device", user_id=user["id"]):
+            register_device(device_id, user["id"])
     elif device_id:
         log_security_event(
             "login_unstable_device_id_ignored",
@@ -2430,11 +2465,21 @@ def login():
             ip=ip_address,
         )
 
-    attach_user_to_pending_workspace_invites(user)
-    token = make_token(user)
-    refresh_token = make_refresh_token(user)
+    with timed_block("auth.login", "attach_pending_workspace_invites", user_id=user["id"]):
+        attach_user_to_pending_workspace_invites(user)
+    with timed_block("auth.login", "make_tokens", user_id=user["id"]):
+        token = make_token(user)
+        refresh_token = make_refresh_token(user)
     log_security_event("login_success", user_id=user["id"], email=email, ip=ip_address)
-    return jsonify(build_user_response(user, token, refresh_token=refresh_token))
+    with timed_block("auth.login", "build_user_response", user_id=user["id"]):
+        response_payload = build_user_response(user, token, refresh_token=refresh_token)
+    if AUTH_TIMING_ENABLED:
+        app.logger.warning(
+            "perf scope=auth.login stage=total duration_ms=%s user_id=%s",
+            round((time.perf_counter() - route_started_at) * 1000, 1),
+            user["id"],
+        )
+    return jsonify(response_payload)
 
 
 @app.route("/auth/session", methods=["GET"])
@@ -2553,37 +2598,40 @@ def prepare_license_response(
     app_channel: str | None,
     integrity: dict | None,
 ):
-    register_device(device_id, user["id"])
-    bootstrap_device_entitlement(user, device_id, app_version, app_channel)
-    entitlement = sync_device_entitlement_state(
-        user,
-        device_id,
-        app_version=app_version,
-        app_channel=app_channel,
-    )
-    integrity_evaluation = evaluate_build_integrity(
-        user=user,
-        device_id=device_id,
-        app_channel=app_channel,
-        integrity=integrity,
-    )
+    with timed_block("license.issue", "register_device", user_id=user["id"]):
+        register_device(device_id, user["id"])
+    with timed_block("license.issue", "bootstrap_entitlement", user_id=user["id"]):
+        bootstrap_device_entitlement(user, device_id, app_version, app_channel)
+    with timed_block("license.issue", "sync_entitlement_state", user_id=user["id"]):
+        entitlement = sync_device_entitlement_state(
+            user,
+            device_id,
+            app_version=app_version,
+            app_channel=app_channel,
+        )
+    with timed_block("license.issue", "evaluate_build_integrity", user_id=user["id"]):
+        integrity_evaluation = evaluate_build_integrity(
+            user=user,
+            device_id=device_id,
+            app_channel=app_channel,
+            integrity=integrity,
+        )
     if not entitlement_allows_access(entitlement) or integrity_evaluation["blocked"]:
         return None, entitlement, integrity_evaluation
-    return (
-        build_license_payloads(
+    with timed_block("license.issue", "build_license_payloads", user_id=user["id"]):
+        license_payload = build_license_payloads(
             user,
             entitlement,
             device_id=device_id,
             integrity_evaluation=integrity_evaluation,
-        ),
-        entitlement,
-        integrity_evaluation,
-    )
+        )
+    return (license_payload, entitlement, integrity_evaluation)
 
 
 @app.route("/license/issue", methods=["POST"])
 @auth_required
 def issue_license(user):
+    route_started_at = time.perf_counter()
     _, device_id, app_version, app_channel, integrity = parse_license_request_data()
     validation = validate_license_device(device_id)
     if validation:
@@ -2604,6 +2652,13 @@ def issue_license(user):
         device_id=device_id,
         status=entitlement["entitlement_status"] if entitlement else None,
     )
+    if AUTH_TIMING_ENABLED:
+        app.logger.warning(
+            "perf scope=license.issue stage=total duration_ms=%s user_id=%s device_id=%s",
+            round((time.perf_counter() - route_started_at) * 1000, 1),
+            user["id"],
+            device_id,
+        )
     return jsonify({"license": license_payload})
 
 

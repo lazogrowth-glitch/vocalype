@@ -647,20 +647,26 @@ def make_refresh_token(user) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
 
-def load_user_by_id(user_id: int):
-    db = get_db()
+def load_user_by_id(user_id: int, db: _PgConn | None = None):
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         return db.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
-def load_user_by_email(email: str):
-    db = get_db()
+def load_user_by_email(email: str, db: _PgConn | None = None):
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         return db.execute("SELECT * FROM users WHERE email = %s", (email,)).fetchone()
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
 def record_license_integrity_event(
@@ -793,11 +799,15 @@ def sync_device_entitlement_state(
     *,
     app_version: str | None = None,
     app_channel: str | None = None,
+    db: _PgConn | None = None,
+    workspace_row=None,
 ):
     if not device_id:
         return None
 
-    db = get_db()
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         now = utc_now()
         now_iso = dt_to_iso(now)
@@ -809,7 +819,7 @@ def sync_device_entitlement_state(
             (user["id"], device_id),
         ).fetchone()
 
-        tier = get_user_tier(user)
+        tier = get_user_tier(user, workspace_row=workspace_row)
         if row is None:
             db.execute(
                 """
@@ -870,7 +880,8 @@ def sync_device_entitlement_state(
             (user["id"], device_id),
         ).fetchone()
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
 def sync_all_entitlements_for_user(user_id: int) -> None:
@@ -1086,10 +1097,12 @@ def device_is_registered(device_id: str) -> bool:
         db.close()
 
 
-def register_device(device_id: str, user_id: int) -> None:
+def register_device(device_id: str, user_id: int, db: _PgConn | None = None) -> None:
     if not device_id:
         return
-    db = get_db()
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         db.execute(
             "INSERT INTO device_registrations (device_id, user_id) VALUES (%s, %s) ON CONFLICT (device_id) DO NOTHING",
@@ -1097,7 +1110,8 @@ def register_device(device_id: str, user_id: int) -> None:
         )
         db.commit()
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
 def get_current_user():
@@ -1257,9 +1271,11 @@ WORKSPACE_DEFAULT_SEATS = 5
 WORKSPACE_DEFAULT_SUPPORT_EMAIL = "priority@vocalype.com"
 
 
-def get_user_tier(user) -> str:
+def get_user_tier(user, workspace_row=None) -> str:
     """Returns 'premium' or 'basic'. Never returns a hard-blocked state."""
-    if get_user_workspace_row(user) is not None:
+    if workspace_row is None:
+        workspace_row = get_user_workspace_row(user)
+    if workspace_row is not None:
         return "premium"
     status = user["subscription_status"]
     if status == "active":
@@ -1278,10 +1294,12 @@ def normalize_billing_plan(value: str | None) -> str | None:
     return normalized if normalized in SUPPORTED_BILLING_PLANS else None
 
 
-def get_user_plan(user) -> str | None:
-    if get_user_workspace_row(user) is not None:
+def get_user_plan(user, workspace_row=None) -> str | None:
+    if workspace_row is None:
+        workspace_row = get_user_workspace_row(user)
+    if workspace_row is not None:
         return "small_agency"
-    if get_user_tier(user) != "premium":
+    if get_user_tier(user, workspace_row=workspace_row) != "premium":
         return None
     return normalize_billing_plan(user.get("subscription_plan")) or "power_user"
 
@@ -1358,8 +1376,10 @@ def user_has_small_agency_membership(user_id: int) -> bool:
     return load_workspace_row_for_user(user_id) is not None
 
 
-def attach_user_to_pending_workspace_invites(user) -> None:
-    db = get_db()
+def attach_user_to_pending_workspace_invites(user, db: _PgConn | None = None) -> None:
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         db.execute(
             """
@@ -1380,7 +1400,8 @@ def attach_user_to_pending_workspace_invites(user) -> None:
         )
         db.commit()
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
 
 def seed_workspace_defaults(db: _PgConn, organization_id: int, user_id: int) -> None:
@@ -1586,16 +1607,19 @@ def list_workspace_dictionary(organization_id: int, db: _PgConn | None = None) -
             db.close()
 
 
-def serialize_workspace(workspace_row: dict) -> dict:
+def serialize_workspace(workspace_row: dict, db: _PgConn | None = None) -> dict:
     organization_id = workspace_row["id"]
-    db = get_db()
+    owns_db = db is None
+    if db is None:
+        db = get_db()
     try:
         members = list_workspace_members(organization_id, db=db)
         templates = list_workspace_templates(organization_id, db=db)
         snippets = list_workspace_snippets(organization_id, db=db)
         dictionary = list_workspace_dictionary(organization_id, db=db)
     finally:
-        db.close()
+        if owns_db:
+            db.close()
 
     return {
         "id": str(organization_id),
@@ -1650,11 +1674,21 @@ def require_small_agency_workspace(user):
     return workspace, None
 
 
-def build_user_response(user, token: str, *, refresh_token: str | None = None, show_trial_reminder: bool = False):
-    tier = get_user_tier(user)
-    plan = get_user_plan(user)
+def build_user_response(
+    user,
+    token: str,
+    *,
+    refresh_token: str | None = None,
+    show_trial_reminder: bool = False,
+    workspace_row=None,
+    workspace_payload=None,
+):
+    tier = get_user_tier(user, workspace_row=workspace_row)
+    plan = get_user_plan(user, workspace_row=workspace_row)
     is_workspace_managed = plan == "small_agency"
-    workspace = ensure_small_agency_workspace(user) if is_workspace_managed else None
+    workspace = workspace_row
+    if workspace is None and workspace_payload is None and is_workspace_managed:
+        workspace = ensure_small_agency_workspace(user)
     can_manage_billing = bool(user["stripe_customer_id"])
     if is_workspace_managed:
         can_manage_billing = bool(workspace) and workspace["current_user_role"] == "owner" and can_manage_billing
@@ -1679,7 +1713,9 @@ def build_user_response(user, token: str, *, refresh_token: str | None = None, s
             "can_manage_billing": can_manage_billing,
         },
     }
-    if workspace:
+    if workspace_payload:
+        response["workspace"] = workspace_payload
+    elif workspace:
         response["workspace"] = serialize_workspace(workspace)
     if tier == "basic":
         response["subscription"]["quota"] = get_weekly_quota(user)
@@ -2464,42 +2500,59 @@ def login():
     if response:
         return response
 
-    with timed_block("auth.login", "load_user", email=email):
-        user = load_user_by_email(email)
-    with timed_block("auth.login", "check_password_hash", email=email):
-        password_ok = bool(user) and check_password_hash(user["password_hash"], password)
-    if not user or not password_ok:
-        log_security_event("login_failed", email=email, ip=ip_address)
-        return jsonify({"error": "Email ou mot de passe incorrect"}), 401
+    db = get_db()
+    try:
+        with timed_block("auth.login", "load_user", email=email):
+            user = load_user_by_email(email, db=db)
+        with timed_block("auth.login", "check_password_hash", email=email):
+            password_ok = bool(user) and check_password_hash(user["password_hash"], password)
+        if not user or not password_ok:
+            log_security_event("login_failed", email=email, ip=ip_address)
+            return jsonify({"error": "Email ou mot de passe incorrect"}), 401
 
-    if device_id and not device_id_is_valid(device_id):
-        return jsonify({"error": "Identifiant appareil invalide"}), 400
+        if device_id and not device_id_is_valid(device_id):
+            return jsonify({"error": "Identifiant appareil invalide"}), 400
 
-    if device_id and device_id_is_stable(device_id):
-        with timed_block("auth.login", "register_device", user_id=user["id"]):
-            register_device(device_id, user["id"])
-    elif device_id:
-        log_security_event(
-            "login_unstable_device_id_ignored",
-            email=email,
-            ip=ip_address,
-        )
+        if device_id and device_id_is_stable(device_id):
+            with timed_block("auth.login", "register_device", user_id=user["id"]):
+                register_device(device_id, user["id"], db=db)
+        elif device_id:
+            log_security_event(
+                "login_unstable_device_id_ignored",
+                email=email,
+                ip=ip_address,
+            )
 
-    with timed_block("auth.login", "attach_pending_workspace_invites", user_id=user["id"]):
-        attach_user_to_pending_workspace_invites(user)
-    with timed_block("auth.login", "make_tokens", user_id=user["id"]):
-        token = make_token(user)
-        refresh_token = make_refresh_token(user)
-    log_security_event("login_success", user_id=user["id"], email=email, ip=ip_address)
-    with timed_block("auth.login", "build_user_response", user_id=user["id"]):
-        response_payload = build_user_response(user, token, refresh_token=refresh_token)
-    if AUTH_TIMING_ENABLED:
-        app.logger.warning(
-            "perf scope=auth.login stage=total duration_ms=%s user_id=%s",
-            round((time.perf_counter() - route_started_at) * 1000, 1),
-            user["id"],
-        )
-    return jsonify(response_payload)
+        with timed_block("auth.login", "attach_pending_workspace_invites", user_id=user["id"]):
+            attach_user_to_pending_workspace_invites(user, db=db)
+        with timed_block("auth.login", "load_workspace", user_id=user["id"]):
+            workspace_row = load_workspace_row_for_user(user["id"], db=db)
+            user["__workspace_row_loaded__"] = True
+            user["__workspace_row__"] = workspace_row
+        with timed_block("auth.login", "make_tokens", user_id=user["id"]):
+            token = make_token(user)
+            refresh_token = make_refresh_token(user)
+        log_security_event("login_success", user_id=user["id"], email=email, ip=ip_address)
+        with timed_block("auth.login", "build_user_response", user_id=user["id"]):
+            workspace_payload = (
+                serialize_workspace(workspace_row, db=db) if workspace_row is not None else None
+            )
+            response_payload = build_user_response(
+                user,
+                token,
+                refresh_token=refresh_token,
+                workspace_row=workspace_row,
+                workspace_payload=workspace_payload,
+            )
+        if AUTH_TIMING_ENABLED:
+            app.logger.warning(
+                "perf scope=auth.login stage=total duration_ms=%s user_id=%s",
+                round((time.perf_counter() - route_started_at) * 1000, 1),
+                user["id"],
+            )
+        return jsonify(response_payload)
+    finally:
+        db.close()
 
 
 @app.route("/auth/session", methods=["GET"])
@@ -2617,15 +2670,20 @@ def prepare_license_response(
     app_version: str | None,
     app_channel: str | None,
     integrity: dict | None,
+    *,
+    db: _PgConn | None = None,
+    workspace_row=None,
 ):
     with timed_block("license.issue", "register_device", user_id=user["id"]):
-        register_device(device_id, user["id"])
+        register_device(device_id, user["id"], db=db)
     with timed_block("license.issue", "sync_entitlement_state", user_id=user["id"]):
         entitlement = sync_device_entitlement_state(
             user,
             device_id,
             app_version=app_version,
             app_channel=app_channel,
+            db=db,
+            workspace_row=workspace_row,
         )
     with timed_block("license.issue", "evaluate_build_integrity", user_id=user["id"]):
         integrity_evaluation = evaluate_build_integrity(
@@ -2655,29 +2713,42 @@ def issue_license(user):
     if validation:
         return validation
 
-    license_payload, entitlement, integrity_evaluation = prepare_license_response(
-        user, device_id, app_version, app_channel, integrity
-    )
-    if not license_payload:
-        status_payload = build_license_status_response(user, entitlement, device_id=device_id)
-        status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
-        status_payload["integrity_anomalies"] = integrity_evaluation["anomalies"]
-        return jsonify({"error": "Accès premium inactif", "license": status_payload}), 403
-
-    log_security_event(
-        "license_issue_success",
-        user_id=user["id"],
-        device_id=device_id,
-        status=entitlement["entitlement_status"] if entitlement else None,
-    )
-    if AUTH_TIMING_ENABLED:
-        app.logger.warning(
-            "perf scope=license.issue stage=total duration_ms=%s user_id=%s device_id=%s",
-            round((time.perf_counter() - route_started_at) * 1000, 1),
-            user["id"],
+    db = get_db()
+    try:
+        workspace_row = load_workspace_row_for_user(user["id"], db=db)
+        user["__workspace_row_loaded__"] = True
+        user["__workspace_row__"] = workspace_row
+        license_payload, entitlement, integrity_evaluation = prepare_license_response(
+            user,
             device_id,
+            app_version,
+            app_channel,
+            integrity,
+            db=db,
+            workspace_row=workspace_row,
         )
-    return jsonify({"license": license_payload})
+        if not license_payload:
+            status_payload = build_license_status_response(user, entitlement, device_id=device_id)
+            status_payload["refresh_after_seconds"] = LICENSE_REFRESH_INTERVAL_SECONDS
+            status_payload["integrity_anomalies"] = integrity_evaluation["anomalies"]
+            return jsonify({"error": "Accès premium inactif", "license": status_payload}), 403
+
+        log_security_event(
+            "license_issue_success",
+            user_id=user["id"],
+            device_id=device_id,
+            status=entitlement["entitlement_status"] if entitlement else None,
+        )
+        if AUTH_TIMING_ENABLED:
+            app.logger.warning(
+                "perf scope=license.issue stage=total duration_ms=%s user_id=%s device_id=%s",
+                round((time.perf_counter() - route_started_at) * 1000, 1),
+                user["id"],
+                device_id,
+            )
+        return jsonify({"license": license_payload})
+    finally:
+        db.close()
 
 
 @app.route("/license/refresh", methods=["POST"])

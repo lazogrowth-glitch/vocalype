@@ -368,7 +368,13 @@ impl VoiceProfile {
         }
 
         if let Ok(content) = serde_json::to_string_pretty(self) {
-            let _ = fs::write(path, content);
+            if let Err(e) = fs::write(&path, content) {
+                log::warn!(
+                    "[voice_profile] Failed to persist profile to {}: {}",
+                    path.display(),
+                    e
+                );
+            }
         }
     }
 

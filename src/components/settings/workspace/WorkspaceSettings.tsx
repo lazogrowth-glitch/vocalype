@@ -1,4 +1,5 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+﻿/* eslint-disable i18next/no-literal-string */
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BookText,
   Clock3,
@@ -84,11 +85,7 @@ function navigateToSection(section: "billing" | "workspace") {
 }
 
 function getInitials(name: string, fallback = "W") {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
   if (parts.length === 0) return fallback;
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
 }
@@ -111,14 +108,17 @@ function getAvatarPalette(seed: string) {
       ring: "rgba(132,103,196,0.24)",
     },
   ];
-  const hash = Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const hash = Array.from(seed).reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0,
+  );
   return palettes[hash % palettes.length];
 }
 
 function roleLabel(role: TeamRole) {
   switch (role) {
     case "owner":
-      return "PropriÃ©taire";
+      return "Propriétaire";
     case "admin":
       return "Admin";
     default:
@@ -127,7 +127,7 @@ function roleLabel(role: TeamRole) {
 }
 
 function personLabel(name?: string, email?: string) {
-  return name?.trim() || email?.split("@")[0] || "Ã‰quipe";
+  return name?.trim() || email?.split("@")[0] || "Équipe";
 }
 
 function formatShortDate(value?: string) {
@@ -148,8 +148,10 @@ function formatRelativeTime(value?: string) {
   const absSeconds = Math.round(Math.abs(deltaMs) / 1000);
   const rtf = new Intl.RelativeTimeFormat("fr", { numeric: "auto" });
   if (absSeconds < 60) return rtf.format(Math.round(deltaMs / 1000), "second");
-  if (absSeconds < 3600) return rtf.format(Math.round(deltaMs / 60000), "minute");
-  if (absSeconds < 86400) return rtf.format(Math.round(deltaMs / 3600000), "hour");
+  if (absSeconds < 3600)
+    return rtf.format(Math.round(deltaMs / 60000), "minute");
+  if (absSeconds < 86400)
+    return rtf.format(Math.round(deltaMs / 3600000), "hour");
   return rtf.format(Math.round(deltaMs / 86400000), "day");
 }
 
@@ -352,11 +354,11 @@ function MemberRow({
 
   const secondary =
     member.status === "invited"
-      ? "InvitÃ© rÃ©cemment"
+      ? "Invité récemment"
       : member.role === "owner"
         ? "Responsable du workspace"
         : member.role === "admin"
-          ? "Admin opÃ©rationnel"
+          ? "Admin opérationnel"
           : "Membre actif";
 
   return (
@@ -374,7 +376,9 @@ function MemberRow({
             : "transparent",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+      <div
+        style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}
+      >
         <div
           style={{
             width: 38,
@@ -516,7 +520,13 @@ function MemberRow({
 
       <button
         type="button"
-        onClick={member.role === "owner" ? undefined : canManageSeats ? onRemove : undefined}
+        onClick={
+          member.role === "owner"
+            ? undefined
+            : canManageSeats
+              ? onRemove
+              : undefined
+        }
         className={
           member.role !== "owner" && canManageSeats
             ? "voca-inline-action-btn voca-inline-action-btn--danger"
@@ -529,7 +539,8 @@ function MemberRow({
           display: "grid",
           placeItems: "center",
           color: "rgba(255,255,255,0.36)",
-          cursor: member.role !== "owner" && canManageSeats ? "pointer" : "default",
+          cursor:
+            member.role !== "owner" && canManageSeats ? "pointer" : "default",
           opacity: member.role !== "owner" && canManageSeats ? 1 : 0.5,
           border: "1px solid transparent",
           background: "transparent",
@@ -582,7 +593,7 @@ function AssetCard({
 }) {
   const author = personLabel(createdByName, createdByEmail);
   const updatePerson = personLabel(updatedByName, updatedByEmail);
-  const stamp = formatRelativeTime(updatedAt || createdAt) ?? "Ã  lâ€™instant";
+  const stamp = formatRelativeTime(updatedAt || createdAt) ?? "à l’instant";
   const palette = getAvatarPalette(createdByEmail || createdByName || title);
 
   return (
@@ -603,7 +614,9 @@ function AssetCard({
             fontSize: mono ? 12.5 : 13.5,
             letterSpacing: "-0.005em",
             color: mono ? "#d4a858" : "rgba(255,255,255,0.95)",
-            fontFamily: mono ? "ui-monospace, SFMono-Regular, Menlo, monospace" : "inherit",
+            fontFamily: mono
+              ? "ui-monospace, SFMono-Regular, Menlo, monospace"
+              : "inherit",
             flex: 1,
             minWidth: 0,
             overflow: "hidden",
@@ -722,23 +735,43 @@ function AssetCard({
           {author}
         </span>
         <span
-          style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }}
-        />
-        <span>{usage} {triggerLabel}</span>
-        <span
-          style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }}
+          style={{
+            width: 2,
+            height: 2,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.18)",
+          }}
         />
         <span>
-          {updatedAt ? `ModifiÃ© ${stamp}` : `CrÃ©Ã© ${stamp}`}
+          {usage} {triggerLabel}
         </span>
         <span
-          style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }}
+          style={{
+            width: 2,
+            height: 2,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.18)",
+          }}
+        />
+        <span>{updatedAt ? `Modifié ${stamp}` : `Créé ${stamp}`}</span>
+        <span
+          style={{
+            width: 2,
+            height: 2,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.18)",
+          }}
         />
         <span>{workspaceName}</span>
         {updatedAt ? (
           <>
             <span
-              style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }}
+              style={{
+                width: 2,
+                height: 2,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.18)",
+              }}
             />
             <span>par {updatePerson}</span>
           </>
@@ -746,7 +779,12 @@ function AssetCard({
         {formatShortDate(updatedAt || createdAt) ? (
           <>
             <span
-              style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }}
+              style={{
+                width: 2,
+                height: 2,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.18)",
+              }}
             />
             <span>{formatShortDate(updatedAt || createdAt)}</span>
           </>
@@ -770,12 +808,20 @@ function LibraryColumn({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ ...shellPanel, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div
+      style={{
+        ...shellPanel,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <div
         style={{
           padding: "18px 18px 14px",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
-          background: "linear-gradient(180deg, rgba(255,255,255,0.018), transparent)",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.018), transparent)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -829,7 +875,14 @@ function LibraryColumn({
           {description}
         </p>
       </div>
-      <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div
+        style={{
+          padding: 10,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}
+      >
         {children}
       </div>
     </div>
@@ -872,7 +925,9 @@ export const WorkspaceSettings: React.FC = () => {
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [assetLoading, setAssetLoading] = useState(false);
-  const [memberRoleLoadingId, setMemberRoleLoadingId] = useState<string | null>(null);
+  const [memberRoleLoadingId, setMemberRoleLoadingId] = useState<string | null>(
+    null,
+  );
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<TeamRole>("member");
   const [editingName, setEditingName] = useState(false);
@@ -908,13 +963,17 @@ export const WorkspaceSettings: React.FC = () => {
     teamWorkspace?.currentUserRole === "owner" ||
     teamWorkspace?.currentUserRole === "admin";
   const canManageSeats = canManageWorkspace && capabilities.hasSeatManagement;
-  const canManageTemplates = canManageWorkspace && capabilities.hasSharedTemplates;
-  const canManageSharedAssets = canManageWorkspace && capabilities.hasSharedDictionary;
+  const canManageTemplates =
+    canManageWorkspace && capabilities.hasSharedTemplates;
+  const canManageSharedAssets =
+    canManageWorkspace && capabilities.hasSharedDictionary;
   const isOwner = teamWorkspace?.currentUserRole === "owner";
 
   const members = teamWorkspace?.members ?? [];
   const activeMembers = members.filter((member) => member.status === "active");
-  const pendingMembers = members.filter((member) => member.status === "invited");
+  const pendingMembers = members.filter(
+    (member) => member.status === "invited",
+  );
   const seatsIncluded = teamWorkspace?.seatsIncluded ?? 0;
   const seatsUsed = members.length;
   const seatsRemaining = Math.max(0, seatsIncluded - seatsUsed);
@@ -929,21 +988,26 @@ export const WorkspaceSettings: React.FC = () => {
       { key: "members" as const, label: "Membres", count: members.length },
       {
         key: "library" as const,
-        label: "BibliothÃ¨que",
+        label: "Bibliothèque",
         count:
           (teamWorkspace?.sharedTemplates.length ?? 0) +
           (teamWorkspace?.sharedSnippets.length ?? 0) +
           (teamWorkspace?.sharedDictionary.length ?? 0),
       },
-      { key: "activity" as const, label: "ActivitÃ©", count: 4 },
-      { key: "settings" as const, label: "RÃ©glages", count: 2 },
+      { key: "activity" as const, label: "Activité", count: 4 },
+      { key: "settings" as const, label: "Réglages", count: 2 },
     ],
     [members.length, teamWorkspace],
   );
 
   const activityFeed = useMemo(() => {
     if (!teamWorkspace) return [];
-    const feed: Array<{ key: string; who: string; text: string; time: string }> = [];
+    const feed: Array<{
+      key: string;
+      who: string;
+      text: string;
+      time: string;
+    }> = [];
     const latestTemplate = teamWorkspace.sharedTemplates[0];
     const latestSnippet = teamWorkspace.sharedSnippets[0];
     const latestPending = pendingMembers[0];
@@ -951,31 +1015,43 @@ export const WorkspaceSettings: React.FC = () => {
     if (latestTemplate) {
       feed.push({
         key: `tpl-${latestTemplate.id}`,
-        who: personLabel(latestTemplate.createdByName, latestTemplate.createdByEmail),
-        text: `a ajoutÃ© ou modifiÃ© le template "${latestTemplate.name}".`,
-        time: formatRelativeTime(latestTemplate.updatedAt || latestTemplate.createdAt) ?? "rÃ©cemment",
+        who: personLabel(
+          latestTemplate.createdByName,
+          latestTemplate.createdByEmail,
+        ),
+        text: `a ajouté ou modifié le template "${latestTemplate.name}".`,
+        time:
+          formatRelativeTime(
+            latestTemplate.updatedAt || latestTemplate.createdAt,
+          ) ?? "récemment",
       });
     }
     if (latestSnippet) {
       feed.push({
         key: `snip-${latestSnippet.id}`,
-        who: personLabel(latestSnippet.createdByName, latestSnippet.createdByEmail),
-        text: `a touchÃ© au snippet "${latestSnippet.trigger}".`,
-        time: formatRelativeTime(latestSnippet.updatedAt || latestSnippet.createdAt) ?? "rÃ©cemment",
+        who: personLabel(
+          latestSnippet.createdByName,
+          latestSnippet.createdByEmail,
+        ),
+        text: `a touché au snippet "${latestSnippet.trigger}".`,
+        time:
+          formatRelativeTime(
+            latestSnippet.updatedAt || latestSnippet.createdAt,
+          ) ?? "récemment",
       });
     }
     if (latestPending) {
       feed.push({
         key: `invite-${latestPending.id}`,
         who: actorName,
-        text: `a invitÃ© ${latestPending.email} dans le workspace.`,
-        time: "rÃ©cemment",
+        text: `a invité ${latestPending.email} dans le workspace.`,
+        time: "récemment",
       });
     }
     feed.push({
       key: "billing",
       who: actorName,
-      text: `garde la facturation centralisÃ©e sur ${teamWorkspace.billingContactEmail}.`,
+      text: `garde la facturation centralisée sur ${teamWorkspace.billingContactEmail}.`,
       time: "toujours actif",
     });
     return feed;
@@ -1000,7 +1076,10 @@ export const WorkspaceSettings: React.FC = () => {
       if (!token || !teamWorkspace || !canManageWorkspace) return;
       setWorkspaceLoading(true);
       try {
-        const response = await authClient.updateWorkspaceSettings(token, payload);
+        const response = await authClient.updateWorkspaceSettings(
+          token,
+          payload,
+        );
         updateTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
       } catch (error) {
         console.error("Failed to update workspace settings:", error);
@@ -1015,7 +1094,7 @@ export const WorkspaceSettings: React.FC = () => {
     const token = authClient.getStoredToken();
     if (!token || !teamWorkspace || !isOwner) return;
     const confirmed = window.confirm(
-      `Supprimer ${teamWorkspace.name} ? Cette action est irrÃ©versible.`,
+      `Supprimer ${teamWorkspace.name} ? Cette action est irréversible.`,
     );
     if (!confirmed) return;
     setWorkspaceLoading(true);
@@ -1035,7 +1114,9 @@ export const WorkspaceSettings: React.FC = () => {
     if (!token || !pendingName.trim()) return;
     setWorkspaceLoading(true);
     try {
-      const nextSession = await authClient.updateProfile(token, { name: pendingName.trim() });
+      const nextSession = await authClient.updateProfile(token, {
+        name: pendingName.trim(),
+      });
       await authClient.setStoredSession(nextSession);
       setSession(nextSession);
       updateTeamWorkspace((current) =>
@@ -1058,7 +1139,12 @@ export const WorkspaceSettings: React.FC = () => {
     } finally {
       setWorkspaceLoading(false);
     }
-  }, [pendingName, refreshFromServer, session?.user?.email, updateTeamWorkspace]);
+  }, [
+    pendingName,
+    refreshFromServer,
+    session?.user?.email,
+    updateTeamWorkspace,
+  ]);
 
   const handleInviteMember = useCallback(async () => {
     const token = authClient.getStoredToken();
@@ -1093,9 +1179,7 @@ export const WorkspaceSettings: React.FC = () => {
         email,
         role: inviteRole,
       });
-      updateTeamWorkspace((current) =>
-        current ? { ...current, ...response.workspace } : current,
-      );
+      updateTeamWorkspace(() => mapTeamWorkspacePayload(response.workspace));
     } catch (error) {
       console.error("Failed to invite workspace member:", error);
       updateTeamWorkspace(previousWorkspace);
@@ -1103,7 +1187,14 @@ export const WorkspaceSettings: React.FC = () => {
     } finally {
       setInviteLoading(false);
     }
-  }, [inviteEmail, inviteRole, members, seatsRemaining, teamWorkspace, updateTeamWorkspace]);
+  }, [
+    inviteEmail,
+    inviteRole,
+    members,
+    seatsRemaining,
+    teamWorkspace,
+    updateTeamWorkspace,
+  ]);
 
   const handleRemoveMember = useCallback(
     async (memberId: string) => {
@@ -1112,14 +1203,20 @@ export const WorkspaceSettings: React.FC = () => {
       const previousWorkspace = teamWorkspace;
       updateTeamWorkspace((current) =>
         current
-          ? { ...current, members: current.members.filter((member) => member.id !== memberId) }
+          ? {
+              ...current,
+              members: current.members.filter(
+                (member) => member.id !== memberId,
+              ),
+            }
           : current,
       );
       try {
-        const response = await authClient.removeWorkspaceMember(token, memberId);
-        updateTeamWorkspace((current) =>
-          current ? { ...current, ...response.workspace } : current,
+        const response = await authClient.removeWorkspaceMember(
+          token,
+          memberId,
         );
+        updateTeamWorkspace(() => mapTeamWorkspacePayload(response.workspace));
       } catch (error) {
         console.error("Failed to remove workspace member:", error);
         updateTeamWorkspace(previousWorkspace);
@@ -1145,10 +1242,12 @@ export const WorkspaceSettings: React.FC = () => {
           : current,
       );
       try {
-        const response = await authClient.updateWorkspaceMemberRole(token, memberId, role);
-        updateTeamWorkspace((current) =>
-          current ? { ...current, ...response.workspace } : current,
+        const response = await authClient.updateWorkspaceMemberRole(
+          token,
+          memberId,
+          role,
         );
+        updateTeamWorkspace(() => mapTeamWorkspacePayload(response.workspace));
       } catch (error) {
         console.error("Failed to update workspace role:", error);
         updateTeamWorkspace(previousWorkspace);
@@ -1161,7 +1260,9 @@ export const WorkspaceSettings: React.FC = () => {
 
   const handleEditTemplate = useCallback(
     (id: string) => {
-      const template = teamWorkspace?.sharedTemplates.find((item) => item.id === id);
+      const template = teamWorkspace?.sharedTemplates.find(
+        (item) => item.id === id,
+      );
       if (!template) return;
       setActiveTab("library");
       setTemplateComposerOpen(true);
@@ -1182,14 +1283,21 @@ export const WorkspaceSettings: React.FC = () => {
         current
           ? {
               ...current,
-              sharedTemplates: current.sharedTemplates.filter((item) => item.id !== id),
+              sharedTemplates: current.sharedTemplates.filter(
+                (item) => item.id !== id,
+              ),
             }
           : current,
       );
       try {
         const response = await authClient.removeWorkspaceTemplate(token, id);
         updateTeamWorkspace((current) =>
-          current ? { ...current, sharedTemplates: mapSharedTemplates(response.templates) } : current,
+          current
+            ? {
+                ...current,
+                sharedTemplates: mapSharedTemplates(response.templates),
+              }
+            : current,
         );
       } catch (error) {
         console.error("Failed to remove workspace template:", error);
@@ -1204,7 +1312,8 @@ export const WorkspaceSettings: React.FC = () => {
     const name = tplName.trim();
     const prompt = tplPrompt.trim();
     const description = tplDesc.trim() || "";
-    if (!token || !teamWorkspace || !canManageTemplates || !name || !prompt) return;
+    if (!token || !teamWorkspace || !canManageTemplates || !name || !prompt)
+      return;
 
     const previousWorkspace = teamWorkspace;
     const optimisticId = editingTplId ?? `template-${crypto.randomUUID()}`;
@@ -1261,7 +1370,12 @@ export const WorkspaceSettings: React.FC = () => {
             prompt,
           });
       updateTeamWorkspace((current) =>
-        current ? { ...current, sharedTemplates: mapSharedTemplates(response.templates) } : current,
+        current
+          ? {
+              ...current,
+              sharedTemplates: mapSharedTemplates(response.templates),
+            }
+          : current,
       );
     } catch (error) {
       console.error("Failed to save workspace template:", error);
@@ -1288,7 +1402,9 @@ export const WorkspaceSettings: React.FC = () => {
 
   const handleEditSnippet = useCallback(
     (id: string) => {
-      const snippet = teamWorkspace?.sharedSnippets.find((item) => item.id === id);
+      const snippet = teamWorkspace?.sharedSnippets.find(
+        (item) => item.id === id,
+      );
       if (!snippet) return;
       setActiveTab("library");
       setSnippetComposerOpen(true);
@@ -1308,14 +1424,21 @@ export const WorkspaceSettings: React.FC = () => {
         current
           ? {
               ...current,
-              sharedSnippets: current.sharedSnippets.filter((item) => item.id !== id),
+              sharedSnippets: current.sharedSnippets.filter(
+                (item) => item.id !== id,
+              ),
             }
           : current,
       );
       try {
         const response = await authClient.removeWorkspaceSnippet(token, id);
         updateTeamWorkspace((current) =>
-          current ? { ...current, sharedSnippets: mapSharedSnippets(response.snippets) } : current,
+          current
+            ? {
+                ...current,
+                sharedSnippets: mapSharedSnippets(response.snippets),
+              }
+            : current,
         );
       } catch (error) {
         console.error("Failed to remove workspace snippet:", error);
@@ -1329,7 +1452,14 @@ export const WorkspaceSettings: React.FC = () => {
     const token = authClient.getStoredToken();
     const trigger = snippetTrigger.trim();
     const expansion = snippetExpansion.trim();
-    if (!token || !teamWorkspace || !canManageSharedAssets || !trigger || !expansion) return;
+    if (
+      !token ||
+      !teamWorkspace ||
+      !canManageSharedAssets ||
+      !trigger ||
+      !expansion
+    )
+      return;
     const previousWorkspace = teamWorkspace;
     const optimisticId = editingSnippetId ?? `snippet-${crypto.randomUUID()}`;
     const nowIso = new Date().toISOString();
@@ -1380,7 +1510,9 @@ export const WorkspaceSettings: React.FC = () => {
             expansion,
           });
       updateTeamWorkspace((current) =>
-        current ? { ...current, sharedSnippets: mapSharedSnippets(response.snippets) } : current,
+        current
+          ? { ...current, sharedSnippets: mapSharedSnippets(response.snippets) }
+          : current,
       );
     } catch (error) {
       console.error("Failed to save workspace snippet:", error);
@@ -1405,7 +1537,9 @@ export const WorkspaceSettings: React.FC = () => {
 
   const handleEditDictionaryTerm = useCallback(
     (id: string) => {
-      const term = teamWorkspace?.sharedDictionary.find((item) => item.id === id);
+      const term = teamWorkspace?.sharedDictionary.find(
+        (item) => item.id === id,
+      );
       if (!term) return;
       setActiveTab("library");
       setDictionaryComposerOpen(true);
@@ -1425,14 +1559,24 @@ export const WorkspaceSettings: React.FC = () => {
         current
           ? {
               ...current,
-              sharedDictionary: current.sharedDictionary.filter((item) => item.id !== id),
+              sharedDictionary: current.sharedDictionary.filter(
+                (item) => item.id !== id,
+              ),
             }
           : current,
       );
       try {
-        const response = await authClient.removeWorkspaceDictionaryTerm(token, id);
+        const response = await authClient.removeWorkspaceDictionaryTerm(
+          token,
+          id,
+        );
         updateTeamWorkspace((current) =>
-          current ? { ...current, sharedDictionary: mapSharedDictionary(response.dictionary) } : current,
+          current
+            ? {
+                ...current,
+                sharedDictionary: mapSharedDictionary(response.dictionary),
+              }
+            : current,
         );
       } catch (error) {
         console.error("Failed to remove workspace dictionary term:", error);
@@ -1497,7 +1641,12 @@ export const WorkspaceSettings: React.FC = () => {
             note: note || undefined,
           });
       updateTeamWorkspace((current) =>
-        current ? { ...current, sharedDictionary: mapSharedDictionary(response.dictionary) } : current,
+        current
+          ? {
+              ...current,
+              sharedDictionary: mapSharedDictionary(response.dictionary),
+            }
+          : current,
       );
     } catch (error) {
       console.error("Failed to save workspace dictionary term:", error);
@@ -1523,16 +1672,35 @@ export const WorkspaceSettings: React.FC = () => {
   if (!teamWorkspace) {
     return (
       <div style={{ padding: "28px" }}>
-        <div style={{ ...shellPanel, padding: "28px", display: "grid", gap: 14 }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "rgba(255,255,255,0.94)" }}>
-            Workspace Ã©quipe
+        <div
+          style={{ ...shellPanel, padding: "28px", display: "grid", gap: 14 }}
+        >
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.94)",
+            }}
+          >
+            Workspace équipe
           </div>
-          <div style={{ color: "rgba(255,255,255,0.42)", lineHeight: 1.6, maxWidth: 720 }}>
-            Cette page est rÃ©servÃ©e aux comptes agence. Active un workspace pour centraliser les
-            membres, les templates, les snippets et le dictionnaire partagÃ©.
+          <div
+            style={{
+              color: "rgba(255,255,255,0.42)",
+              lineHeight: 1.6,
+              maxWidth: 720,
+            }}
+          >
+            Cette page est réservée aux comptes agence. Active un workspace pour
+            centraliser les membres, les templates, les snippets et le
+            dictionnaire partagé.
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <Button type="button" variant="primary-soft" onClick={openUpgradePlans}>
+            <Button
+              type="button"
+              variant="primary-soft"
+              onClick={openUpgradePlans}
+            >
               Voir les plans
             </Button>
           </div>
@@ -1605,7 +1773,8 @@ export const WorkspaceSettings: React.FC = () => {
                   textTransform: "uppercase",
                   padding: "3px 8px",
                   borderRadius: 5,
-                  background: "linear-gradient(135deg, rgba(212,168,88,0.22), rgba(212,168,88,0.08))",
+                  background:
+                    "linear-gradient(135deg, rgba(212,168,88,0.22), rgba(212,168,88,0.08))",
                   color: "#d4a858",
                   border: "1px solid rgba(212,168,88,0.32)",
                 }}
@@ -1641,16 +1810,42 @@ export const WorkspaceSettings: React.FC = () => {
                 {roleLabel(teamWorkspace.currentUserRole)}
               </span>
               <span>
-                Contact facturation <b style={{ color: "rgba(255,255,255,0.76)" }}>{teamWorkspace.billingContactEmail}</b>
+                Contact facturation{" "}
+                <b style={{ color: "rgba(255,255,255,0.76)" }}>
+                  {teamWorkspace.billingContactEmail}
+                </b>
               </span>
-              <span style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }} />
+              <span
+                style={{
+                  width: 3,
+                  height: 3,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.18)",
+                }}
+              />
               <span>
-                RÃ©gion <b style={{ color: "rgba(255,255,255,0.76)" }}>CA-Toronto</b>
+                Région{" "}
+                <b style={{ color: "rgba(255,255,255,0.76)" }}>
+                  {processingRegion === "us" ? "États-Unis" : "Canada"}
+                </b>
               </span>
-              <span style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }} />
+              <span
+                style={{
+                  width: 3,
+                  height: 3,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.18)",
+                }}
+              />
               <span>
-                <b style={{ color: "rgba(255,255,255,0.76)" }}>{activeMembers.length}</b> membres actifs Â·{" "}
-                <b style={{ color: "rgba(255,255,255,0.76)" }}>{pendingMembers.length}</b> invitation{pendingMembers.length > 1 ? "s" : ""} en attente
+                <b style={{ color: "rgba(255,255,255,0.76)" }}>
+                  {activeMembers.length}
+                </b>{" "}
+                membres actifs ·{" "}
+                <b style={{ color: "rgba(255,255,255,0.76)" }}>
+                  {pendingMembers.length}
+                </b>{" "}
+                invitation{pendingMembers.length > 1 ? "s" : ""} en attente
               </span>
             </div>
           </div>
@@ -1686,8 +1881,15 @@ export const WorkspaceSettings: React.FC = () => {
                     background: "#16161a",
                   }}
                 />
-                <span style={{ position: "relative", fontWeight: 700, fontSize: 14 }}>
-                  <b style={{ color: "#d4a858" }}>{seatsUsed}</b>/{seatsIncluded}
+                <span
+                  style={{
+                    position: "relative",
+                    fontWeight: 700,
+                    fontSize: 14,
+                  }}
+                >
+                  <b style={{ color: "#d4a858" }}>{seatsUsed}</b>/
+                  {seatsIncluded}
                 </span>
               </div>
               <div>
@@ -1700,13 +1902,14 @@ export const WorkspaceSettings: React.FC = () => {
                     textTransform: "uppercase",
                   }}
                 >
-                  SiÃ¨ges
+                  Sièges
                 </div>
                 <div style={{ marginTop: 2, fontSize: 14, fontWeight: 600 }}>
-                  {seatsUsed} utilisÃ©s Â· {seatsIncluded} inclus
+                  {seatsUsed} utilisés · {seatsIncluded} inclus
                 </div>
                 <div style={{ marginTop: 2, fontSize: 12, color: "#6cce8c" }}>
-                  {seatsRemaining} siÃ¨ge{seatsRemaining > 1 ? "s" : ""} disponible{seatsRemaining > 1 ? "s" : ""}
+                  {seatsRemaining} siège{seatsRemaining > 1 ? "s" : ""}{" "}
+                  disponible{seatsRemaining > 1 ? "s" : ""}
                 </div>
               </div>
             </div>
@@ -1738,7 +1941,8 @@ export const WorkspaceSettings: React.FC = () => {
             gap: 2,
             padding: "0 22px",
             borderBottom: "1px solid rgba(255,255,255,0.06)",
-            background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.01))",
+            background:
+              "linear-gradient(180deg, transparent, rgba(255,255,255,0.01))",
           }}
         >
           {tabs.map((tab) => {
@@ -1755,7 +1959,9 @@ export const WorkspaceSettings: React.FC = () => {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  color: active ? "rgba(255,255,255,0.94)" : "rgba(255,255,255,0.34)",
+                  color: active
+                    ? "rgba(255,255,255,0.94)"
+                    : "rgba(255,255,255,0.34)",
                   fontSize: 13.5,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -1770,7 +1976,9 @@ export const WorkspaceSettings: React.FC = () => {
                     fontWeight: 700,
                     padding: "2px 7px",
                     borderRadius: 5,
-                    background: active ? "rgba(212,168,88,0.14)" : "rgba(255,255,255,0.03)",
+                    background: active
+                      ? "rgba(212,168,88,0.14)"
+                      : "rgba(255,255,255,0.03)",
                     color: active ? "#d4a858" : "rgba(255,255,255,0.4)",
                   }}
                 >
@@ -1807,9 +2015,18 @@ export const WorkspaceSettings: React.FC = () => {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>Inviter un membre</div>
-                  <div style={{ marginTop: 4, fontSize: 12.5, color: "rgba(255,255,255,0.34)" }}>
-                    Ajoute une personne au workspace avec le bon rÃ´le dÃ¨s le dÃ©part.
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>
+                    Inviter un membre
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      fontSize: 12.5,
+                      color: "rgba(255,255,255,0.34)",
+                    }}
+                  >
+                    Ajoute une personne au workspace avec le bon rôle dès le
+                    départ.
                   </div>
                 </div>
                 {canManageSeats ? (
@@ -1826,14 +2043,18 @@ export const WorkspaceSettings: React.FC = () => {
                       value={inviteEmail}
                       onChange={(event) => setInviteEmail(event.target.value)}
                       placeholder="email@agence.com"
-                      disabled={workspaceLoading || inviteLoading || seatsRemaining <= 0}
+                      disabled={
+                        workspaceLoading || inviteLoading || seatsRemaining <= 0
+                      }
                       style={{ ...inputStyle, minWidth: 240 }}
                     />
                     <Dropdown
                       className="min-w-[120px]"
                       selectedValue={inviteRole}
                       onSelect={(value) => setInviteRole(value as TeamRole)}
-                      disabled={workspaceLoading || inviteLoading || seatsRemaining <= 0}
+                      disabled={
+                        workspaceLoading || inviteLoading || seatsRemaining <= 0
+                      }
                       options={[
                         { value: "member", label: "Membre" },
                         { value: "admin", label: "Admin" },
@@ -1865,13 +2086,14 @@ export const WorkspaceSettings: React.FC = () => {
                 <SectionTitle
                   title="Membres actifs"
                   count={String(activeMembers.length)}
-                  description="PrÃ©sents dans le workspace"
+                  description="Présents dans le workspace"
                 />
                 <div style={{ ...shellPanel, overflow: "hidden" }}>
                   {activeMembers.map((member) => {
                     const isCurrentUser =
                       !!session?.user?.email &&
-                      member.email.toLowerCase() === session.user.email.toLowerCase();
+                      member.email.toLowerCase() ===
+                        session.user.email.toLowerCase();
                     if (editingName && isCurrentUser) {
                       return (
                         <div
@@ -1888,7 +2110,9 @@ export const WorkspaceSettings: React.FC = () => {
                           <input
                             type="text"
                             value={pendingName}
-                            onChange={(event) => setPendingName(event.target.value)}
+                            onChange={(event) =>
+                              setPendingName(event.target.value)
+                            }
                             disabled={workspaceLoading}
                             style={{ ...inputStyle, maxWidth: 340 }}
                           />
@@ -1898,7 +2122,10 @@ export const WorkspaceSettings: React.FC = () => {
                               variant="primary-soft"
                               size="sm"
                               onClick={() => void handleSaveOwnName()}
-                              disabled={workspaceLoading || pendingName.trim().length < 2}
+                              disabled={
+                                workspaceLoading ||
+                                pendingName.trim().length < 2
+                              }
                             >
                               Enregistrer
                             </Button>
@@ -1924,14 +2151,20 @@ export const WorkspaceSettings: React.FC = () => {
                         member={member}
                         currentUserEmail={session?.user?.email}
                         canManageSeats={canManageSeats}
-                        canChangeRole={isOwner && member.role !== "owner" && member.status === "active"}
+                        canChangeRole={
+                          isOwner &&
+                          member.role !== "owner" &&
+                          member.status === "active"
+                        }
                         roleLoading={memberRoleLoadingId === member.id}
                         onEditSelf={() => {
                           setPendingName(member.name);
                           setEditingName(true);
                         }}
                         onRemove={() => void handleRemoveMember(member.id)}
-                        onRoleChange={(role) => void handleChangeMemberRole(member.id, role)}
+                        onRoleChange={(role) =>
+                          void handleChangeMemberRole(member.id, role)
+                        }
                       />
                     );
                   })}
@@ -1943,7 +2176,7 @@ export const WorkspaceSettings: React.FC = () => {
                   <SectionTitle
                     title="Invitations en attente"
                     count={String(pendingMembers.length)}
-                    description="L'invitation expire aprÃ¨s 7 jours sans connexion."
+                    description="L'invitation expire après 7 jours sans connexion."
                   />
                   <div style={{ ...shellPanel, overflow: "hidden" }}>
                     {pendingMembers.map((member) => (
@@ -1955,7 +2188,9 @@ export const WorkspaceSettings: React.FC = () => {
                         roleLoading={memberRoleLoadingId === member.id}
                         onEditSelf={() => undefined}
                         onRemove={() => void handleRemoveMember(member.id)}
-                        onRoleChange={(role) => void handleChangeMemberRole(member.id, role)}
+                        onRoleChange={(role) =>
+                          void handleChangeMemberRole(member.id, role)
+                        }
                       />
                     ))}
                   </div>
@@ -1978,7 +2213,7 @@ export const WorkspaceSettings: React.FC = () => {
                   icon={<Layers size={16} />}
                   label="Templates"
                   value={String(teamWorkspace.sharedTemplates.length)}
-                  meta="partagÃ©s"
+                  meta="partagés"
                   trend={`+${Math.min(2, teamWorkspace.sharedTemplates.length)} ce mois`}
                   gold
                 />
@@ -1991,14 +2226,14 @@ export const WorkspaceSettings: React.FC = () => {
                 />
                 <StatCard
                   icon={<BookText size={16} />}
-                  label="Termes mÃ©tier"
+                  label="Termes métier"
                   value={String(teamWorkspace.sharedDictionary.length)}
                   meta="dans le lexique"
                 />
                 <StatCard
                   icon={<ShieldCheck size={16} />}
                   label="Support"
-                  value="RÃ©ponse < 4 h"
+                  value="Réponse < 4 h"
                   meta="Canal agence"
                   trend="Prioritaire"
                 />
@@ -2014,9 +2249,9 @@ export const WorkspaceSettings: React.FC = () => {
               >
                 <LibraryColumn
                   icon={<FileText size={16} />}
-                  title="Templates partagÃ©s"
+                  title="Templates partagés"
                   badge={String(teamWorkspace.sharedTemplates.length)}
-                  description="Prompts communs pour homogÃ©nÃ©iser les sorties IA dans toute l'Ã©quipe."
+                  description="Prompts communs pour homogénéiser les sorties IA dans toute l'équipe."
                 >
                   {teamWorkspace.sharedTemplates.map((template) => (
                     <AssetCard
@@ -2039,12 +2274,25 @@ export const WorkspaceSettings: React.FC = () => {
                     />
                   ))}
                   {teamWorkspace.sharedTemplates.length === 0 ? (
-                    <div style={{ padding: "14px 12px", fontSize: 12.5, color: "rgba(255,255,255,0.42)" }}>
-                      Aucun template partagÃ© pour le moment.
+                    <div
+                      style={{
+                        padding: "14px 12px",
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.42)",
+                      }}
+                    >
+                      Aucun template partagé pour le moment.
                     </div>
                   ) : null}
                   {templateComposerOpen ? (
-                    <div style={{ ...innerTile, padding: 12, display: "grid", gap: 8 }}>
+                    <div
+                      style={{
+                        ...innerTile,
+                        padding: 12,
+                        display: "grid",
+                        gap: 8,
+                      }}
+                    >
                       <input
                         type="text"
                         value={tplName}
@@ -2064,7 +2312,7 @@ export const WorkspaceSettings: React.FC = () => {
                       <textarea
                         value={tplPrompt}
                         onChange={(event) => setTplPrompt(event.target.value)}
-                        placeholder="Prompt partagÃ© pour l'Ã©quipe"
+                        placeholder="Prompt partagé pour l'équipe"
                         disabled={assetLoading}
                         rows={4}
                         style={textAreaStyle}
@@ -2076,7 +2324,9 @@ export const WorkspaceSettings: React.FC = () => {
                           size="sm"
                           className="flex-1"
                           onClick={() => void handleSaveTemplate()}
-                          disabled={assetLoading || !tplName.trim() || !tplPrompt.trim()}
+                          disabled={
+                            assetLoading || !tplName.trim() || !tplPrompt.trim()
+                          }
                         >
                           {editingTplId ? "Enregistrer" : "Nouveau template"}
                         </Button>
@@ -2115,16 +2365,16 @@ export const WorkspaceSettings: React.FC = () => {
                   icon={<Code2 size={16} />}
                   title="Snippets vocaux"
                   badge={String(teamWorkspace.sharedSnippets.length)}
-                  description="Raccourcis : tu dis un mot-clÃ©, Vocalype insÃ¨re la phrase complÃ¨te."
+                  description="Raccourcis : tu dis un mot-clé, Vocalype insère la phrase complète."
                 >
                   {teamWorkspace.sharedSnippets.map((snippet) => (
                     <AssetCard
                       key={snippet.id}
                       kind="snippet"
-                      title={`${snippet.trigger} â†’`}
+                      title={`${snippet.trigger} →`}
                       description={snippet.expansion}
                       usage={useFakeUsage(snippet.id, "snippet")}
-                      triggerLabel="dÃ©clenchements"
+                      triggerLabel="déclenchements"
                       workspaceName={workspaceName}
                       mono
                       createdByName={snippet.createdByName}
@@ -2139,24 +2389,41 @@ export const WorkspaceSettings: React.FC = () => {
                     />
                   ))}
                   {teamWorkspace.sharedSnippets.length === 0 ? (
-                    <div style={{ padding: "14px 12px", fontSize: 12.5, color: "rgba(255,255,255,0.42)" }}>
-                      Aucun snippet vocal partagÃ© pour le moment.
+                    <div
+                      style={{
+                        padding: "14px 12px",
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.42)",
+                      }}
+                    >
+                      Aucun snippet vocal partagé pour le moment.
                     </div>
                   ) : null}
                   {snippetComposerOpen ? (
-                    <div style={{ ...innerTile, padding: 12, display: "grid", gap: 8 }}>
+                    <div
+                      style={{
+                        ...innerTile,
+                        padding: 12,
+                        display: "grid",
+                        gap: 8,
+                      }}
+                    >
                       <input
                         type="text"
                         value={snippetTrigger}
-                        onChange={(event) => setSnippetTrigger(event.target.value)}
+                        onChange={(event) =>
+                          setSnippetTrigger(event.target.value)
+                        }
                         placeholder="Trigger vocal"
                         disabled={assetLoading}
                         style={inputStyle}
                       />
                       <textarea
                         value={snippetExpansion}
-                        onChange={(event) => setSnippetExpansion(event.target.value)}
-                        placeholder="Phrase complÃ¨te"
+                        onChange={(event) =>
+                          setSnippetExpansion(event.target.value)
+                        }
+                        placeholder="Phrase complète"
                         disabled={assetLoading}
                         rows={3}
                         style={textAreaStyle}
@@ -2168,7 +2435,11 @@ export const WorkspaceSettings: React.FC = () => {
                           size="sm"
                           className="flex-1"
                           onClick={() => void handleSaveSnippet()}
-                          disabled={assetLoading || !snippetTrigger.trim() || !snippetExpansion.trim()}
+                          disabled={
+                            assetLoading ||
+                            !snippetTrigger.trim() ||
+                            !snippetExpansion.trim()
+                          }
                         >
                           {editingSnippetId ? "Enregistrer" : "Nouveau snippet"}
                         </Button>
@@ -2203,9 +2474,9 @@ export const WorkspaceSettings: React.FC = () => {
 
                 <LibraryColumn
                   icon={<BookText size={16} />}
-                  title="Termes mÃ©tier"
+                  title="Termes métier"
                   badge={String(teamWorkspace.sharedDictionary.length)}
-                  description="Vocabulaire reconnu en prioritÃ© : ATS, noms de produit, jargon recrutement."
+                  description="Vocabulaire reconnu en priorité : ATS, noms de produit, jargon recrutement."
                 >
                   {teamWorkspace.sharedDictionary.map((term) => (
                     <AssetCard
@@ -2228,17 +2499,30 @@ export const WorkspaceSettings: React.FC = () => {
                     />
                   ))}
                   {teamWorkspace.sharedDictionary.length === 0 ? (
-                    <div style={{ padding: "14px 12px", fontSize: 12.5, color: "rgba(255,255,255,0.42)" }}>
-                      Aucun terme mÃ©tier partagÃ© pour le moment.
+                    <div
+                      style={{
+                        padding: "14px 12px",
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.42)",
+                      }}
+                    >
+                      Aucun terme métier partagé pour le moment.
                     </div>
                   ) : null}
                   {dictionaryComposerOpen ? (
-                    <div style={{ ...innerTile, padding: 12, display: "grid", gap: 8 }}>
+                    <div
+                      style={{
+                        ...innerTile,
+                        padding: 12,
+                        display: "grid",
+                        gap: 8,
+                      }}
+                    >
                       <input
                         type="text"
                         value={dictTerm}
                         onChange={(event) => setDictTerm(event.target.value)}
-                        placeholder="Terme mÃ©tier"
+                        placeholder="Terme métier"
                         disabled={assetLoading}
                         style={inputStyle}
                       />
@@ -2246,7 +2530,7 @@ export const WorkspaceSettings: React.FC = () => {
                         type="text"
                         value={dictNote}
                         onChange={(event) => setDictNote(event.target.value)}
-                        placeholder="Note ou rÃ¨gle dâ€™usage"
+                        placeholder="Note ou règle d’usage"
                         disabled={assetLoading}
                         style={inputStyle}
                       />
@@ -2296,8 +2580,8 @@ export const WorkspaceSettings: React.FC = () => {
           {activeTab === "activity" ? (
             <>
               <SectionTitle
-                title="ActivitÃ© rÃ©cente"
-                description="14 derniers jours Â· partagÃ©e avec tous les membres"
+                title="Activité récente"
+                description="14 derniers jours · partagée avec tous les membres"
               />
               <div style={{ ...shellPanel, padding: "6px 0" }}>
                 {activityFeed.map((item, index) => {
@@ -2332,14 +2616,24 @@ export const WorkspaceSettings: React.FC = () => {
                       >
                         {getInitials(item.who, "W")}
                       </div>
-                      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5 }}>
-                        <b style={{ color: "rgba(255,255,255,0.94)" }}>{item.who}</b> {item.text}
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "rgba(255,255,255,0.72)",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <b style={{ color: "rgba(255,255,255,0.94)" }}>
+                          {item.who}
+                        </b>{" "}
+                        {item.text}
                       </div>
                       <div
                         style={{
                           fontSize: 11.5,
                           color: "rgba(255,255,255,0.24)",
-                          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, monospace",
                         }}
                       >
                         {item.time}
@@ -2368,20 +2662,40 @@ export const WorkspaceSettings: React.FC = () => {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "rgba(255,255,255,0.94)",
+                      }}
+                    >
                       Nom du workspace
                     </div>
-                    <div style={{ marginTop: 2, fontSize: 12.5, color: "rgba(255,255,255,0.34)" }}>
+                    <div
+                      style={{
+                        marginTop: 2,
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.34)",
+                      }}
+                    >
                       Affiché en haut de l'app pour tous les membres.
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
                     <input
                       value={pendingWorkspaceName}
-                      onChange={(event) => setPendingWorkspaceName(event.target.value)}
+                      onChange={(event) =>
+                        setPendingWorkspaceName(event.target.value)
+                      }
                       readOnly={!canManageWorkspace}
                       disabled={!canManageWorkspace || workspaceLoading}
-                      style={{ ...inputStyle, minWidth: 240, opacity: canManageWorkspace ? 1 : 0.78 }}
+                      style={{
+                        ...inputStyle,
+                        minWidth: 240,
+                        opacity: canManageWorkspace ? 1 : 0.78,
+                      }}
                     />
                     {canManageWorkspace ? (
                       <Button
@@ -2415,11 +2729,24 @@ export const WorkspaceSettings: React.FC = () => {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "rgba(255,255,255,0.94)",
+                      }}
+                    >
                       Région de traitement
                     </div>
-                    <div style={{ marginTop: 2, fontSize: 12.5, color: "rgba(255,255,255,0.34)" }}>
-                      Vos audios sont traités puis supprimés dans la région choisie.
+                    <div
+                      style={{
+                        marginTop: 2,
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.34)",
+                      }}
+                    >
+                      Vos audios sont traités puis supprimés dans la région
+                      choisie.
                     </div>
                   </div>
                   <Dropdown
@@ -2449,16 +2776,31 @@ export const WorkspaceSettings: React.FC = () => {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.94)" }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "rgba(255,255,255,0.94)",
+                      }}
+                    >
                       Lexique partagé par défaut
                     </div>
-                    <div style={{ marginTop: 2, fontSize: 12.5, color: "rgba(255,255,255,0.34)" }}>
-                      Les nouveaux membres héritent automatiquement des termes métier.
+                    <div
+                      style={{
+                        marginTop: 2,
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.34)",
+                      }}
+                    >
+                      Les nouveaux membres héritent automatiquement des termes
+                      métier.
                     </div>
                   </div>
                   <Dropdown
                     className="min-w-[160px]"
-                    selectedValue={sharedLexiconEnabled ? "enabled" : "disabled"}
+                    selectedValue={
+                      sharedLexiconEnabled ? "enabled" : "disabled"
+                    }
                     onSelect={(value) =>
                       void handleSaveWorkspaceSettings({
                         shared_lexicon_enabled: value === "enabled",
@@ -2482,11 +2824,24 @@ export const WorkspaceSettings: React.FC = () => {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#f08585" }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#f08585",
+                      }}
+                    >
                       Supprimer le workspace
                     </div>
-                    <div style={{ marginTop: 2, fontSize: 12.5, color: "rgba(255,255,255,0.34)" }}>
-                      Action irréversible. Tous les membres perdent l'accès immédiatement.
+                    <div
+                      style={{
+                        marginTop: 2,
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.34)",
+                      }}
+                    >
+                      Action irréversible. Tous les membres perdent l'accès
+                      immédiatement.
                     </div>
                   </div>
                   {isOwner ? (
@@ -2512,7 +2867,12 @@ export const WorkspaceSettings: React.FC = () => {
                       Supprimer…
                     </button>
                   ) : (
-                    <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.28)" }}>
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        color: "rgba(255,255,255,0.28)",
+                      }}
+                    >
                       Réservé au propriétaire
                     </div>
                   )}

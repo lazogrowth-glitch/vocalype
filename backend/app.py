@@ -2973,44 +2973,54 @@ def transcription_record(user):
         return jsonify({"tier": "premium", "ok": True})
 
     now = utc_now()
-    reset_at = parse_iso(user.get("weekly_transcription_reset_at"))
-    count = int(user.get("weekly_transcription_count") or 0)
+    new_reset_at = dt_to_iso(now + timedelta(days=7))
 
-    # Reset counter if the week window has passed
-    if reset_at is None or now >= reset_at:
-        count = 0
-        reset_at = now + timedelta(days=7)
-
-    if count >= BASIC_WEEKLY_TRANSCRIPTION_LIMIT:
-        quota = {
-            "count": count,
-            "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
-            "remaining": 0,
-            "reset_at": dt_to_iso(reset_at),
-        }
-        return jsonify({"error": "Quota hebdomadaire atteint", "tier": "basic", "quota": quota}), 429
-
-    count += 1
     db = get_db()
     try:
-        db.execute(
+        # Atomic increment: reset if expired, then increment and enforce limit in one query.
+        row = db.execute(
             """
             UPDATE users
-            SET weekly_transcription_count = %s,
-                weekly_transcription_reset_at = %s
+            SET
+                weekly_transcription_count = CASE
+                    WHEN weekly_transcription_reset_at IS NULL OR %s >= weekly_transcription_reset_at
+                    THEN 1
+                    ELSE weekly_transcription_count + 1
+                END,
+                weekly_transcription_reset_at = CASE
+                    WHEN weekly_transcription_reset_at IS NULL OR %s >= weekly_transcription_reset_at
+                    THEN %s
+                    ELSE weekly_transcription_reset_at
+                END
             WHERE id = %s
+            RETURNING weekly_transcription_count, weekly_transcription_reset_at
             """,
-            (count, dt_to_iso(reset_at), user["id"]),
-        )
+            (now.isoformat(), now.isoformat(), new_reset_at, user["id"]),
+        ).fetchone()
         db.commit()
     finally:
         db.close()
 
+    if not row:
+        return jsonify({"error": "Utilisateur introuvable"}), 404
+
+    count = int(row[0])
+    reset_at_str = row[1]
+
+    if count > BASIC_WEEKLY_TRANSCRIPTION_LIMIT:
+        quota = {
+            "count": count,
+            "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
+            "remaining": 0,
+            "reset_at": reset_at_str,
+        }
+        return jsonify({"error": "Quota hebdomadaire atteint", "tier": "basic", "quota": quota}), 429
+
     quota = {
         "count": count,
         "limit": BASIC_WEEKLY_TRANSCRIPTION_LIMIT,
-        "remaining": BASIC_WEEKLY_TRANSCRIPTION_LIMIT - count,
-        "reset_at": dt_to_iso(reset_at),
+        "remaining": max(0, BASIC_WEEKLY_TRANSCRIPTION_LIMIT - count),
+        "reset_at": reset_at_str,
     }
     return jsonify({"tier": "basic", "ok": True, "quota": quota})
 

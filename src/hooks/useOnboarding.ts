@@ -19,9 +19,13 @@ export function useOnboarding({
 
   // Persist completion across auth re-evaluations so the download screen
   // never re-appears after the user finishes onboarding mid-session.
-  const [completedFirstRun, setCompletedFirstRun] = useState(
-    () => localStorage.getItem(FIRST_RUN_COMPLETED_KEY) === "1",
-  );
+  const [completedFirstRun, setCompletedFirstRun] = useState(() => {
+    try {
+      return localStorage.getItem(FIRST_RUN_COMPLETED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(null);
 
@@ -44,7 +48,11 @@ export function useOnboarding({
   ]);
 
   const handleFirstRunComplete = useCallback(() => {
-    localStorage.setItem(FIRST_RUN_COMPLETED_KEY, "1");
+    try {
+      localStorage.setItem(FIRST_RUN_COMPLETED_KEY, "1");
+    } catch {
+      // Non-critical
+    }
     setCompletedFirstRun(true);
     setOnboardingStep("done");
   }, []);

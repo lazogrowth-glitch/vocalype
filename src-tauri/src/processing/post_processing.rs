@@ -42,6 +42,7 @@ pub(crate) fn build_standard_post_process_system_prompt(prompt_template: &str) -
 }
 
 const VOCALYPE_CLOUD_70B_MODEL_ID: &str = "llama-3.3-70b-versatile";
+const VOCALYPE_CLOUD_EMAIL_MODEL_ID: &str = "qwen/qwen3-32b";
 const EMAIL_AUTO_POST_PROCESS_PROMPT_ID: &str = "email_auto_fallback";
 const EMAIL_AUTO_POST_PROCESS_PROMPT: &str = "Fix punctuation, capitalization, and speech artifacts in this dictated email text. Output only the corrected text. Keep the same language as the source. Do not add, invent, or remove any content. Do not add greetings or closings unless they are explicitly in the source.\n\n${output}";
 
@@ -478,7 +479,11 @@ pub(crate) async fn post_process_transcription(
         .map(|ctx| ctx.category == AppContextCategory::Email)
         .unwrap_or(false);
 
-    let model = configured_model;
+    let model = if provider.id == "vocalype-cloud" && is_email_context {
+        VOCALYPE_CLOUD_EMAIL_MODEL_ID.to_string()
+    } else {
+        configured_model
+    };
 
     // For vocalype-cloud, use the user's JWT from keyring as the Bearer token.
     // The backend validates it and proxies to Cerebras.

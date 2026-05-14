@@ -87,10 +87,13 @@ fn persist_settings_payload(
 }
 
 pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
-    // Initialize store
-    let store = app
-        .store(SETTINGS_STORE_PATH)
-        .expect("Failed to initialize store");
+    let store = match app.store(SETTINGS_STORE_PATH) {
+        Ok(s) => s,
+        Err(e) => {
+            log::error!("[settings] Failed to initialize settings store: {e}");
+            return get_default_settings();
+        }
+    };
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
@@ -151,9 +154,13 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 }
 
 pub fn get_settings(app: &AppHandle) -> AppSettings {
-    let store = app
-        .store(SETTINGS_STORE_PATH)
-        .expect("Failed to initialize store");
+    let store = match app.store(SETTINGS_STORE_PATH) {
+        Ok(s) => s,
+        Err(e) => {
+            log::error!("[settings] Failed to initialize settings store: {e}");
+            return get_default_settings();
+        }
+    };
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
         serde_json::from_value::<AppSettings>(settings_value).unwrap_or_else(|_| {
@@ -186,9 +193,13 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
 /// Use at startup so the app window appears instantly.
 /// Always follow this with `refresh_adaptive_profile_if_needed()` in a background thread.
 pub fn get_settings_fast(app: &AppHandle) -> AppSettings {
-    let store = app
-        .store(SETTINGS_STORE_PATH)
-        .expect("Failed to initialize store");
+    let store = match app.store(SETTINGS_STORE_PATH) {
+        Ok(s) => s,
+        Err(e) => {
+            log::error!("[settings] Failed to initialize settings store: {e}");
+            return get_default_settings();
+        }
+    };
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
         serde_json::from_value::<AppSettings>(settings_value).unwrap_or_else(|_| {
@@ -220,9 +231,13 @@ pub fn get_settings_fast(app: &AppHandle) -> AppSettings {
 /// Runs adaptive hardware profile detection (WMI GPU/NPU queries) and persists
 /// the result. Safe to call from a background thread after startup.
 pub fn refresh_adaptive_profile_if_needed(app: &AppHandle) {
-    let store = app
-        .store(SETTINGS_STORE_PATH)
-        .expect("Failed to initialize store");
+    let store = match app.store(SETTINGS_STORE_PATH) {
+        Ok(s) => s,
+        Err(e) => {
+            log::error!("[settings] Failed to initialize settings store: {e}");
+            return;
+        }
+    };
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
         serde_json::from_value::<AppSettings>(settings_value)
@@ -248,9 +263,13 @@ pub fn refresh_adaptive_profile_if_needed(app: &AppHandle) {
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
-    let store = app
-        .store(SETTINGS_STORE_PATH)
-        .expect("Failed to initialize store");
+    let store = match app.store(SETTINGS_STORE_PATH) {
+        Ok(s) => s,
+        Err(e) => {
+            log::error!("[settings] Failed to initialize settings store for write: {e}");
+            return;
+        }
+    };
 
     match serde_json::to_value(exportable_settings(settings)) {
         Ok(value) => {

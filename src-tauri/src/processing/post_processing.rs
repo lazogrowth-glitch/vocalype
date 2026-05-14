@@ -42,9 +42,8 @@ pub(crate) fn build_standard_post_process_system_prompt(prompt_template: &str) -
 }
 
 const VOCALYPE_CLOUD_70B_MODEL_ID: &str = "llama-3.3-70b-versatile";
-const VOCALYPE_CLOUD_EMAIL_MODEL_ID: &str = "llama-3.1-8b-instant";
 const EMAIL_AUTO_POST_PROCESS_PROMPT_ID: &str = "email_auto_fallback";
-const EMAIL_AUTO_POST_PROCESS_PROMPT: &str = "Transform the dictated text into a clear, professional email body.\n\nKeep the same language as the source.\nPreserve every explicit fact exactly.\nDo not answer questions on behalf of the recipient.\nDo not invent names, dates, explanations, relationships, commitments, context, or background.\nDo not add placeholders such as [Your name] or [Votre nom].\nDo not add a subject line.\nOnly add a greeting or closing if the source clearly already contains one or explicitly asks for one.\nIf the source is short, keep the result short.\nReturn only the email body.\n\nText:\n${output}";
+const EMAIL_AUTO_POST_PROCESS_PROMPT: &str = "Fix punctuation, capitalization, and speech artifacts in this dictated email text. Output only the corrected text. Keep the same language as the source. Do not add, invent, or remove any content. Do not add greetings or closings unless they are explicitly in the source.\n\n${output}";
 
 fn standard_post_process_guardrails() -> &'static str {
     "You are Vocalype's transcription post-processor.\n\
@@ -479,11 +478,7 @@ pub(crate) async fn post_process_transcription(
         .map(|ctx| ctx.category == AppContextCategory::Email)
         .unwrap_or(false);
 
-    let model = if provider.id == "vocalype-cloud" && is_email_context {
-        VOCALYPE_CLOUD_EMAIL_MODEL_ID.to_string()
-    } else {
-        configured_model
-    };
+    let model = configured_model;
 
     // For vocalype-cloud, use the user's JWT from keyring as the Bearer token.
     // The backend validates it and proxies to Cerebras.
@@ -557,7 +552,7 @@ pub(crate) async fn post_process_transcription(
     // Code context is already blocked upstream; Browser/Unknown produce no hint.
     let context_hint: Option<&'static str> = app_context.and_then(|ctx| match ctx.category {
         AppContextCategory::Email => {
-            Some("Context: email — rewrite conservatively as an email body, not as a reply with invented content. Keep the same language as the source text. Preserve every explicit fact exactly. Never answer the sender's question on behalf of the recipient. Never invent names, relationships, time references, explanations, promises, or background. Never add placeholders like [Your name] or [Votre nom]. Do not add a subject line. Only add a greeting or closing if the source already implies one very clearly. If the dictated text is short, keep the result short and direct.")
+            Some("Context: email — clean up the dictation only. Do not add greetings, closings, answers, subject lines, or any content not explicitly said by the speaker.")
         }
         AppContextCategory::Chat => {
             Some("Context: chat message — casual tone, light punctuation, conversational style.")

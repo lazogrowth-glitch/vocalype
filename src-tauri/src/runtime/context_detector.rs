@@ -360,25 +360,21 @@ pub fn refine_browser_category(window_title: &str) -> Option<AppContextCategory>
     let t = window_title.to_ascii_lowercase();
 
     // ── Webmail
+    // Keep patterns tight: only match when there is clear, unambiguous email
+    // signal. Generic words like "inbox", "compose", "new message", or "mailbox"
+    // are intentionally excluded — they also appear in GitHub, Discord, Twitter,
+    // Jira, etc. and would trigger false-positive email mode.
     if t.contains("gmail")
         || t.contains("mail.google")
-        || t.contains("inbox")
         || t.contains("boîte de réception")
-        || t.contains("messagerie")
-        || t.contains("compose")
-        || t.contains("new message")
-        || t.contains("nouveau message")
         || t.contains("new email")
         || t.contains("nouvel e-mail")
+        || t.contains("nouveau courriel")
         || (t.contains("outlook")
-            && (t.contains("mail")
-                || t.contains("inbox")
-                || t.contains("message")
-                || t.contains("boîte de réception")))
+            && (t.contains("mail") || t.contains("message") || t.contains("boîte de réception")))
         || t.contains("outlook.live")
         || t.contains("outlook.office")
-        || t.contains("office 365")
-        || t.contains("office.com")
+        || t.contains("office.com/mail")
         || t.contains("yahoo mail")
         || t.contains("mail.yahoo")
         || t.contains("proton mail")
@@ -391,8 +387,6 @@ pub fn refine_browser_category(window_title: &str) -> Option<AppContextCategory>
         || t.contains("hey.com")
         || t.contains("roundcube")
         || t.contains("zimbra")
-        || t.contains("mailbox")
-        || t.contains("- mail -")
     {
         return Some(AppContextCategory::Email);
     }
@@ -693,6 +687,32 @@ mod tests {
             refine_browser_category("Wikipedia – The Free Encyclopedia"),
             None
         );
+    }
+
+    #[test]
+    fn browser_title_github_inbox_does_not_trigger_email() {
+        assert_ne!(
+            refine_browser_category("Inbox · GitHub"),
+            Some(AppContextCategory::Email)
+        );
+    }
+
+    #[test]
+    fn browser_title_discord_new_message_does_not_trigger_email() {
+        assert_eq!(
+            refine_browser_category("New Message - Discord"),
+            Some(AppContextCategory::Chat)
+        );
+    }
+
+    #[test]
+    fn browser_title_twitter_compose_does_not_trigger_email() {
+        assert_eq!(refine_browser_category("Compose new post / X"), None);
+    }
+
+    #[test]
+    fn browser_title_jira_mailbox_does_not_trigger_email() {
+        assert_eq!(refine_browser_category("Jira Service Desk - Mailbox"), None);
     }
 
     // ── AppContextCategory helpers ─────────────────────────────────────────────

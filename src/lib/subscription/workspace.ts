@@ -19,18 +19,36 @@ export type SharedWorkspaceTemplate = {
   name: string;
   description: string;
   prompt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdByName?: string;
+  createdByEmail?: string;
+  updatedByName?: string;
+  updatedByEmail?: string;
 };
 
 export type SharedWorkspaceSnippet = {
   id: string;
   trigger: string;
   expansion: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdByName?: string;
+  createdByEmail?: string;
+  updatedByName?: string;
+  updatedByEmail?: string;
 };
 
 export type SharedWorkspaceTerm = {
   id: string;
   term: string;
   note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdByName?: string;
+  createdByEmail?: string;
+  updatedByName?: string;
+  updatedByEmail?: string;
 };
 
 export type TeamWorkspace = {
@@ -38,6 +56,8 @@ export type TeamWorkspace = {
   name: string;
   currentUserRole: TeamRole;
   seatsIncluded: number;
+  processingRegion: "ca" | "us";
+  sharedLexiconEnabled: boolean;
   billingContactEmail: string;
   supportContactEmail: string;
   members: TeamMember[];
@@ -73,6 +93,8 @@ export function deriveTeamWorkspace(
     name: workspaceName,
     currentUserRole: "owner",
     seatsIncluded: 5,
+    processingRegion: "ca",
+    sharedLexiconEnabled: true,
     billingContactEmail: session.user.email,
     supportContactEmail: "priority@vocalype.com",
     members: [
@@ -91,6 +113,8 @@ export function deriveTeamWorkspace(
         description: "Standardise les notes d'appel candidat pour toute l'equipe.",
         prompt:
           "Turn the dictated text into a recruiter scorecard for the team. Keep the original language. Structure with: fit, strengths, concerns, compensation, and next step. Return only the final scorecard. Text: ${output}",
+        createdByName: userName,
+        createdByEmail: session.user.email,
       },
       {
         id: "team-shortlist",
@@ -98,6 +122,8 @@ export function deriveTeamWorkspace(
         description: "Resume client partage pour envoyer un shortlist propre.",
         prompt:
           "Transform the dictated text into a concise shortlist update for the client. Keep the original language. Include candidate status, fit, risks, and recommended next step. Return only the final client-ready update. Text: ${output}",
+        createdByName: userName,
+        createdByEmail: session.user.email,
       },
     ],
     sharedSnippets: [
@@ -105,11 +131,15 @@ export function deriveTeamWorkspace(
         id: "snippet-1",
         trigger: "envoie le debrief",
         expansion: "Je t'envoie le debrief complet dans l'heure avec les prochaines etapes.",
+        createdByName: userName,
+        createdByEmail: session.user.email,
       },
       {
         id: "snippet-2",
         trigger: "shortlist client",
         expansion: "Je partage la shortlist client aujourd'hui avec les points de vigilance et la recommandation finale.",
+        createdByName: userName,
+        createdByEmail: session.user.email,
       },
     ],
     sharedDictionary: [
@@ -117,15 +147,21 @@ export function deriveTeamWorkspace(
         id: "term-1",
         term: "Greenhouse",
         note: "ATS principal de l'equipe",
+        createdByName: userName,
+        createdByEmail: session.user.email,
       },
       {
         id: "term-2",
         term: "scorecard",
+        createdByName: userName,
+        createdByEmail: session.user.email,
       },
       {
         id: "term-3",
         term: domain.split(".")[0],
         note: "Nom de domaine equipe",
+        createdByName: userName,
+        createdByEmail: session.user.email,
       },
     ],
   };
@@ -139,6 +175,8 @@ export function mapTeamWorkspacePayload(
     name: payload.name,
     currentUserRole: payload.current_user_role,
     seatsIncluded: payload.seats_included,
+    processingRegion: payload.processing_region === "us" ? "us" : "ca",
+    sharedLexiconEnabled: payload.shared_lexicon_enabled !== false,
     billingContactEmail: payload.billing_contact_email,
     supportContactEmail: payload.support_contact_email,
     members: payload.members.map((member) => ({
@@ -162,6 +200,12 @@ export function mapSharedTemplates(
     name: template.name,
     description: template.description,
     prompt: template.prompt,
+    createdAt: template.created_at ?? undefined,
+    updatedAt: template.updated_at ?? undefined,
+    createdByName: template.created_by_name ?? undefined,
+    createdByEmail: template.created_by_email ?? undefined,
+    updatedByName: template.updated_by_name ?? undefined,
+    updatedByEmail: template.updated_by_email ?? undefined,
   }));
 }
 
@@ -172,6 +216,12 @@ export function mapSharedSnippets(
     id: snippet.id,
     trigger: snippet.trigger,
     expansion: snippet.expansion,
+    createdAt: snippet.created_at ?? undefined,
+    updatedAt: snippet.updated_at ?? undefined,
+    createdByName: snippet.created_by_name ?? undefined,
+    createdByEmail: snippet.created_by_email ?? undefined,
+    updatedByName: snippet.updated_by_name ?? undefined,
+    updatedByEmail: snippet.updated_by_email ?? undefined,
   }));
 }
 
@@ -182,6 +232,12 @@ export function mapSharedDictionary(
     id: term.id,
     term: term.term,
     note: term.note ?? undefined,
+    createdAt: term.created_at ?? undefined,
+    updatedAt: term.updated_at ?? undefined,
+    createdByName: term.created_by_name ?? undefined,
+    createdByEmail: term.created_by_email ?? undefined,
+    updatedByName: term.updated_by_name ?? undefined,
+    updatedByEmail: term.updated_by_email ?? undefined,
   }));
 }
 

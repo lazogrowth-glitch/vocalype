@@ -277,7 +277,7 @@ fn build_correction_terms(
     _active_model_id: Option<&str>,
     profile: ParakeetDomainProfile,
 ) -> Vec<String> {
-    let mut terms = settings.custom_words.clone();
+    let mut terms = settings.effective_custom_words();
     let parakeet_builtins = parakeet_builtin_correction_terms(&settings.selected_language);
     if let Some(vocalype_term) = parakeet_builtins
         .into_iter()
@@ -672,10 +672,11 @@ impl TranscriptionManager {
         } else {
             Vec::new()
         };
+        let effective_custom_words = settings.effective_custom_words();
         let session_keyterms = build_session_keyterms(
             app_context.as_ref(),
             &settings.selected_language,
-            &settings.custom_words,
+            &effective_custom_words,
             &voice_terms,
             &vocabulary_terms,
         )
@@ -704,7 +705,7 @@ impl TranscriptionManager {
                 "samples={} app_context={} custom_words={} keyterms={} glossary_terms={}",
                 audio.len(),
                 app_context.is_some(),
-                settings.custom_words.len(),
+                effective_custom_words.len(),
                 session_keyterms.len(),
                 session_glossary_terms.len()
             )),

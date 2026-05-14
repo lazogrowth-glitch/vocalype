@@ -93,6 +93,11 @@ type WorkspaceSnippetsResponse = {
 type WorkspaceDictionaryResponse = {
   dictionary: SharedWorkspaceTermPayload[];
 };
+type WorkspaceSettingsPayload = {
+  name?: string;
+  processing_region?: "ca" | "us";
+  shared_lexicon_enabled?: boolean;
+};
 
 type WorkspaceTeamCacheEntry = {
   token: string;
@@ -824,6 +829,21 @@ export const authClient = {
     ).then((response) => setWorkspaceTeamCache(token, response));
   },
 
+  async updateWorkspaceMemberRole(
+    token: string,
+    memberId: string,
+    role: "admin" | "member",
+  ) {
+    return request<WorkspaceTeamResponse>(
+      "/workspace/team/member/role",
+      {
+        method: "POST",
+        body: JSON.stringify({ member_id: memberId, role }),
+      },
+      token,
+    ).then((response) => setWorkspaceTeamCache(token, response));
+  },
+
   async addWorkspaceTemplate(token: string, payload: WorkspaceTemplatePayload) {
     return request<WorkspaceTemplatesResponse>(
       "/workspace/shared-assets/template",
@@ -924,6 +944,28 @@ export const authClient = {
   async removeWorkspaceDictionaryTerm(token: string, assetId: string) {
     return request<WorkspaceDictionaryResponse>(
       `/workspace/shared-assets/dictionary/${assetId}`,
+      { method: "DELETE" },
+      token,
+    );
+  },
+
+  async updateWorkspaceSettings(
+    token: string,
+    payload: WorkspaceSettingsPayload,
+  ) {
+    return request<{ workspace: TeamWorkspacePayload }>(
+      "/workspace/settings",
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+  },
+
+  async deleteWorkspace(token: string) {
+    return request<{ ok: boolean }>(
+      "/workspace",
       { method: "DELETE" },
       token,
     );

@@ -1,5 +1,7 @@
 use crate::dictionary::{DictionaryEntry, DictionaryManager};
+use crate::settings::{get_settings, write_settings};
 use std::sync::Arc;
+use tauri::AppHandle;
 use tauri::State;
 
 #[tauri::command]
@@ -73,5 +75,32 @@ pub fn import_dictionary(
         let _ = dictionary.add_manual(entry.from, entry.to);
     }
 
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn sync_workspace_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), String> {
+    let mut deduped = Vec::new();
+
+    for word in words {
+        let trimmed = word.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        if deduped
+            .iter()
+            .any(|existing: &String| existing.eq_ignore_ascii_case(trimmed))
+        {
+            continue;
+        }
+
+        deduped.push(trimmed.to_string());
+    }
+
+    let mut settings = get_settings(&app);
+    settings.workspace_custom_words = deduped;
+    write_settings(&app, settings);
     Ok(())
 }

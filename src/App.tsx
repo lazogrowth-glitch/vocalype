@@ -51,6 +51,7 @@ const SECTION_DESCRIPTION_KEYS: Partial<Record<SidebarSection, string>> = {
   postprocessing: "shell.sectionDescriptions.postprocessing",
   history: "shell.sectionDescriptions.history",
   meetings: "shell.sectionDescriptions.meetings",
+  workspace: "shell.sectionDescriptions.workspace",
   settings: "shell.sectionDescriptions.settings",
   billing: "shell.sectionDescriptions.billing",
   debug: "shell.sectionDescriptions.debug",

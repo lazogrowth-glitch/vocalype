@@ -11,6 +11,7 @@
     "settings": "Settings",
     "postProcessing": "Actions",
     "meetings": "Calls & notes",
+    "workspace": "Workspace",
     "dictee": "Dictation Profiles",
     "history": "History",
     "billing": "Billing",
@@ -18,6 +19,7 @@
     "group": {
       "config": "Configuration",
       "usage": "Usage",
+      "team": "Team",
       "settings": "More"
     }
   },
@@ -28,6 +30,7 @@
       "postprocessing": "Turn your dictation into ATS notes, candidate emails, LinkedIn messages, and client summaries.",
       "history": "Find, copy and reuse your recent dictations.",
       "meetings": "Keep calls, meetings, and voice notes together in one writing workspace.",
+      "workspace": "Manage the team, templates, snippets, and the shared dictionary in one place.",
       "settings": "Keep system behavior and less common options out of the main path.",
       "billing": "Manage your plan, limits, and subscription details.",
       "debug": "Open diagnostics, local logs, and support tools when Vocalype is misbehaving."

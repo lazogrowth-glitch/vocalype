@@ -11,6 +11,7 @@
     "settings": "Param\u00e8tres",
     "postProcessing": "Actions",
     "meetings": "Appels & notes",
+    "workspace": "Workspace",
     "dictee": "Dict\u00e9e",
     "history": "Historique",
     "billing": "Facturation",
@@ -18,6 +19,7 @@
     "group": {
       "config": "Configuration",
       "usage": "Utilisation",
+      "team": "\u00c9quipe",
       "settings": "Plus"
     }
   },
@@ -28,6 +30,7 @@
       "postprocessing": "Transforme ta dict\u00e9e en notes ATS, emails candidats, messages LinkedIn et r\u00e9sum\u00e9s client.",
       "history": "Retrouve, copie et r\u00e9utilise tes derni\u00e8res dict\u00e9es.",
       "meetings": "Retrouvez au m\u00eame endroit vos appels, r\u00e9unions et notes vocales pour \u00e9crire plus vite.",
+      "workspace": "G\u00e9rez l\u2019\u00e9quipe, les templates, les snippets et le dictionnaire partag\u00e9 dans un seul espace.",
       "settings": "Gardez les r\u00e9glages syst\u00e8me et les options moins courantes hors du chemin principal.",
       "billing": "G\u00e9rez votre formule, vos limites et les d\u00e9tails de votre abonnement.",
       "debug": "Ouvrez les diagnostics, les journaux locaux et les outils de support quand Vocalype se comporte mal."

@@ -11,6 +11,7 @@
     "settings": "Avanzado",
     "postProcessing": "Posprocesado",
     "meetings": "Llamadas y notas",
+    "workspace": "Workspace",
     "dictee": "Perfiles de dictado",
     "history": "Historial",
     "debug": "Depuraci\u00f3n",
@@ -18,6 +19,7 @@
     "group": {
       "config": "Configuraci\u00f3n",
       "usage": "Uso",
+      "team": "Equipo",
       "settings": "Avanzado"
     }
   },
@@ -28,6 +30,7 @@
       "postprocessing": "Controla la limpieza, el formato y la forma final de las transcripciones antes de insertarlas.",
       "history": "Revisa transcripciones recientes, reutiliza contenido y gestiona la actividad guardada.",
       "meetings": "Re\u00fane llamadas, reuniones y notas de voz en un solo espacio para escribir m\u00e1s r\u00e1pido.",
+      "workspace": "Gestiona el equipo, las plantillas, los snippets y el diccionario compartido en un solo lugar.",
       "settings": "Ajusta el comportamiento del sistema, el inicio, funciones experimentales y controles avanzados.",
       "billing": "Gestiona tu plan, tus l\u00edmites y los detalles de tu suscripci\u00f3n.",
       "debug": "Inspecciona diagn\u00f3sticos, registros y herramientas internas de depuraci\u00f3n."

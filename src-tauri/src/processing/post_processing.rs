@@ -557,7 +557,7 @@ pub(crate) async fn post_process_transcription(
     // Code context is already blocked upstream; Browser/Unknown produce no hint.
     let context_hint: Option<&'static str> = app_context.and_then(|ctx| match ctx.category {
         AppContextCategory::Email => {
-            Some("Context: email ? rewrite conservatively as an email body, not as a reply with invented content. Keep the same language as the source text. Preserve every explicit fact exactly. Never answer the sender's question on behalf of the recipient. Never invent names, relationships, time references, explanations, promises, or background. Never add placeholders like [Your name] or [Votre nom]. Do not add a subject line. Only add a greeting or closing if the source already implies one very clearly. If the dictated text is short, keep the result short and direct.")
+            Some("Context: email — rewrite conservatively as an email body, not as a reply with invented content. Keep the same language as the source text. Preserve every explicit fact exactly. Never answer the sender's question on behalf of the recipient. Never invent names, relationships, time references, explanations, promises, or background. Never add placeholders like [Your name] or [Votre nom]. Do not add a subject line. Only add a greeting or closing if the source already implies one very clearly. If the dictated text is short, keep the result short and direct.")
         }
         AppContextCategory::Chat => {
             Some("Context: chat message — casual tone, light punctuation, conversational style.")

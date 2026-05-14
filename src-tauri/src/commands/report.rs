@@ -72,7 +72,7 @@ pub async fn get_weekly_report(
 
     let settings = get_settings(&app);
     let corrections_total: u32 = correction_tracker.all_counts().values().sum();
-    let profile_terms = settings.custom_words.len();
+    let profile_terms = settings.effective_custom_words().len();
     let dictionary_entries = dictionary.entries().len();
 
     let peak_hour_label = raw.peak_hour_block.map(|b| {

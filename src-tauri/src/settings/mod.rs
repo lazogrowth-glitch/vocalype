@@ -335,6 +335,8 @@ pub struct AppSettings {
     pub log_level: LogLevel,
     #[serde(default)]
     pub custom_words: Vec<String>,
+    #[serde(default)]
+    pub workspace_custom_words: Vec<String>,
     #[serde(default = "default_adaptive_vocabulary_enabled")]
     pub adaptive_vocabulary_enabled: bool,
     #[serde(default = "default_adaptive_voice_profile_enabled")]
@@ -1221,6 +1223,7 @@ pub fn get_default_settings() -> AppSettings {
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
+        workspace_custom_words: Vec::new(),
         adaptive_vocabulary_enabled: true,
         adaptive_voice_profile_enabled: true,
         model_unload_timeout: ModelUnloadTimeout::Min5,
@@ -1265,6 +1268,32 @@ pub fn get_default_settings() -> AppSettings {
 }
 
 impl AppSettings {
+    pub fn effective_custom_words(&self) -> Vec<String> {
+        let mut deduped = Vec::new();
+
+        for word in self
+            .custom_words
+            .iter()
+            .chain(self.workspace_custom_words.iter())
+        {
+            let trimmed = word.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            if deduped
+                .iter()
+                .any(|existing: &String| existing.eq_ignore_ascii_case(trimmed))
+            {
+                continue;
+            }
+
+            deduped.push(trimmed.to_string());
+        }
+
+        deduped
+    }
+
     pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
         self.post_process_providers
             .iter()

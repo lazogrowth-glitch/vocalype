@@ -1,5 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -7,6 +7,7 @@ import { TitleBar } from "./TitleBar";
 import { Sidebar } from "./Sidebar";
 import { authClient } from "@/lib/auth/client";
 import type { AuthSession, BillingCheckoutRequest } from "@/lib/auth/types";
+import { commands, type AppSettings, type VoiceSnippet } from "@/bindings";
 import {
   isSectionVisibleInLaunch,
   SidebarSection,
@@ -21,7 +22,7 @@ import {
   type TeamWorkspace,
 } from "@/lib/subscription/workspace";
 import { useBackendEvents } from "@/hooks/useBackendEvents";
-import type { AppSettings } from "@/bindings";
+import { useSettingsStore } from "@/stores/settingsStore";
 import { UpgradePlansModal } from "./billing/UpgradePlansModal";
 
 type LayoutTier = "compact" | "cozy" | "spacious";
@@ -58,6 +59,7 @@ const NAVIGATE_SETTINGS_EVENT = "vocalype:navigate-settings";
 const NAVIGATE_SETTINGS_SCROLL_RETRIES = 12;
 const NAVIGATE_SETTINGS_HIGHLIGHT_CLASS = "settings-scroll-highlight";
 const NAVIGATE_SETTINGS_HIGHLIGHT_DURATION_MS = 2400;
+const WORKSPACE_SNIPPET_ID_PREFIX = "workspace:";
 
 type NavigateSettingsDetail =
   | SidebarSection
@@ -82,6 +84,46 @@ const renderSettingsContent = (section: SidebarSection, settings: unknown) => {
 
 const isSectionFullBleed = (section: SidebarSection) =>
   (SECTIONS_CONFIG[section] as { fullBleed?: boolean })?.fullBleed === true;
+
+function isWorkspaceManagedSnippet(snippet: VoiceSnippet) {
+  return snippet.id.startsWith(WORKSPACE_SNIPPET_ID_PREFIX);
+}
+
+function serializeSnippetShape(snippets: VoiceSnippet[]) {
+  return JSON.stringify(
+    [...snippets]
+      .map((snippet) => ({
+        id: snippet.id,
+        trigger: snippet.trigger,
+        expansion: snippet.expansion,
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id)),
+  );
+}
+
+function mapWorkspaceVoiceSnippets(
+  workspace: TeamWorkspace | null,
+): VoiceSnippet[] {
+  if (!workspace) return [];
+  return workspace.sharedSnippets.map((snippet) => ({
+    id: `${WORKSPACE_SNIPPET_ID_PREFIX}${workspace.id}:${snippet.id}`,
+    trigger: snippet.trigger,
+    expansion: snippet.expansion,
+  }));
+}
+
+function serializeWordList(words: string[]) {
+  return JSON.stringify(
+    [...words].map((word) => word.trim()).filter(Boolean).sort((left, right) =>
+      left.localeCompare(right),
+    ),
+  );
+}
+
+function mapWorkspaceCustomWords(workspace: TeamWorkspace | null): string[] {
+  if (!workspace) return [];
+  return workspace.sharedDictionary.map((entry) => entry.term);
+}
 
 export function DesktopAppShell({
   t,
@@ -111,6 +153,9 @@ export function DesktopAppShell({
   const [checkoutLoadingKey, setCheckoutLoadingKey] = useState<string | null>(
     null,
   );
+  const refreshSettings = useSettingsStore((state) => state.refreshSettings);
+  const workspaceSnippetSyncRef = useRef<string | null>(null);
+  const workspaceCustomWordsSyncRef = useRef<string | null>(null);
   const currentPlan = deriveAppPlan(session);
   const capabilities = getPlanCapabilities(currentPlan);
   const sessionWorkspace = useMemo(
@@ -167,6 +212,84 @@ export function DesktopAppShell({
     }
     savePersistedTeamWorkspace(userId, teamWorkspace);
   }, [currentPlan, session, teamWorkspace]);
+
+  useEffect(() => {
+    if (!settings) {
+      return;
+    }
+
+    const currentManagedSnippets = (settings.voice_snippets ?? []).filter(
+      isWorkspaceManagedSnippet,
+    );
+    const desiredManagedSnippets =
+      currentPlan === "small_agency"
+        ? mapWorkspaceVoiceSnippets(teamWorkspace)
+        : [];
+
+    const currentShape = serializeSnippetShape(currentManagedSnippets);
+    const desiredShape = serializeSnippetShape(desiredManagedSnippets);
+
+    if (currentShape === desiredShape) {
+      workspaceSnippetSyncRef.current = null;
+      return;
+    }
+
+    if (workspaceSnippetSyncRef.current === desiredShape) {
+      return;
+    }
+
+    workspaceSnippetSyncRef.current = desiredShape;
+    let cancelled = false;
+
+    void (async () => {
+      const result =
+        await commands.syncWorkspaceVoiceSnippets(desiredManagedSnippets);
+      if (cancelled) {
+        return;
+      }
+      if (result.status !== "ok") {
+        console.error(
+          "Failed to sync workspace voice snippets:",
+          result.error,
+        );
+        workspaceSnippetSyncRef.current = null;
+        return;
+      }
+      await refreshSettings();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPlan, teamWorkspace, settings, refreshSettings]);
+
+  useEffect(() => {
+    const desiredWorkspaceWords =
+      currentPlan === "small_agency" ? mapWorkspaceCustomWords(teamWorkspace) : [];
+    const desiredShape = serializeWordList(desiredWorkspaceWords);
+
+    if (workspaceCustomWordsSyncRef.current === desiredShape) {
+      return;
+    }
+
+    workspaceCustomWordsSyncRef.current = desiredShape;
+    let cancelled = false;
+
+    void (async () => {
+      const result = await commands.syncWorkspaceCustomWords(desiredWorkspaceWords);
+      if (cancelled) {
+        return;
+      }
+      if (result.status !== "ok") {
+        console.error("Failed to sync workspace custom words:", result.error);
+        workspaceCustomWordsSyncRef.current = null;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPlan, teamWorkspace]);
 
   useEffect(() => {
     if (!isSectionVisibleInLaunch(currentSection, settings)) {

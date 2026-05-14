@@ -1652,7 +1652,7 @@ export const MeetingsSettings: React.FC = () => {
 .mts-menu-item:hover { background: #1c1c22 !important; color: #c9a84c !important; }
         .dh-title-edit:hover { opacity: 1 !important; background: rgba(255,255,255,0.06) !important; }
         .mts-pin-btn:hover { background: rgba(255,255,255,0.07) !important; }
-        .mts-del-btn:hover { background: rgba(239,68,68,0.12) !important; border-color: rgba(239,68,68,0.3) !important; }
+        .mts-del-btn:hover { background: rgba(239,68,68,0.12) !important; border-color: rgba(239,68,68,0.3) !important; color: #fca5a5 !important; }
         .mts-regen-btn:hover { background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.14) !important; }
         button { transition: background .14s, filter .14s, border-color .14s, color .14s, transform .12s, box-shadow .14s; }
       `}</style>
@@ -2038,13 +2038,14 @@ export const MeetingsSettings: React.FC = () => {
                             borderRadius: 6,
                             border: `1px solid ${T.line2}`,
                             background: "rgba(255,255,255,0.03)",
+                            color: T.txt3,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             cursor: "pointer",
                           }}
                         >
-                          <IcoTrash size={11} color={T.txt3} />
+                          <IcoTrash size={11} />
                         </button>
                       </div>
                     )}

@@ -772,7 +772,7 @@ pub fn submit_voice_feedback_command(
                     selected_language,
                     &entry.expected_text,
                     &entry.actual_text,
-                    &settings.custom_words,
+                    &settings.effective_custom_words(),
                 );
                 store.save(&app);
             }

@@ -516,7 +516,7 @@ pub async fn update_history_entry_text(
                     "auto",
                     &new_text,                 // expected (corrected by user)
                     &entry.transcription_text, // actual (what model produced)
-                    &settings.custom_words,
+                    &settings.effective_custom_words(),
                 );
                 store.save(&app);
             }

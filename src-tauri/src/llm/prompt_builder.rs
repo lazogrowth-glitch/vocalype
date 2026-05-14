@@ -58,7 +58,8 @@ pub fn build_whisper_initial_prompt(
 
     let mut terms = BTreeSet::new();
     if settings.adaptive_vocabulary_enabled {
-        for word in default_seed_terms_for_context(context, &settings.custom_words) {
+        let effective_custom_words = settings.effective_custom_words();
+        for word in default_seed_terms_for_context(context, &effective_custom_words) {
             terms.insert(word);
             if terms.len() >= MAX_PROMPT_TERMS {
                 break;

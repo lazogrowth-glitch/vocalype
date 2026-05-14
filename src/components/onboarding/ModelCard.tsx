@@ -215,7 +215,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
           size="sm"
           onClick={handleDelete}
           title={t("modelSelector.deleteModel", { modelName: displayName })}
-          className="ml-auto shrink-0 text-white/35 hover:text-logo-primary"
+          className="ml-auto shrink-0 text-white/35 hover:bg-red-500/10 hover:text-red-300"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>

@@ -553,9 +553,18 @@ def init_db():
             billing_contact_email TEXT NOT NULL,
             support_contact_email TEXT NOT NULL,
             seats_included INTEGER NOT NULL DEFAULT 5,
+            processing_region TEXT NOT NULL DEFAULT 'ca',
+            shared_lexicon_enabled BOOLEAN NOT NULL DEFAULT TRUE,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         """
+    )
+    ensure_column(db, "organizations", "processing_region", "TEXT NOT NULL DEFAULT 'ca'")
+    ensure_column(
+        db,
+        "organizations",
+        "shared_lexicon_enabled",
+        "BOOLEAN NOT NULL DEFAULT TRUE",
     )
     db.execute(
         """
@@ -587,8 +596,11 @@ def init_db():
             prompt TEXT NOT NULL,
             created_by_user_id INTEGER,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_by_user_id INTEGER,
+            updated_at TEXT,
             FOREIGN KEY (organization_id) REFERENCES organizations(id),
-            FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+            FOREIGN KEY (created_by_user_id) REFERENCES users(id),
+            FOREIGN KEY (updated_by_user_id) REFERENCES users(id)
         )
         """
     )
@@ -601,8 +613,11 @@ def init_db():
             expansion TEXT NOT NULL,
             created_by_user_id INTEGER,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_by_user_id INTEGER,
+            updated_at TEXT,
             FOREIGN KEY (organization_id) REFERENCES organizations(id),
-            FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+            FOREIGN KEY (created_by_user_id) REFERENCES users(id),
+            FOREIGN KEY (updated_by_user_id) REFERENCES users(id)
         )
         """
     )
@@ -615,10 +630,31 @@ def init_db():
             note TEXT,
             created_by_user_id INTEGER,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_by_user_id INTEGER,
+            updated_at TEXT,
             FOREIGN KEY (organization_id) REFERENCES organizations(id),
-            FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+            FOREIGN KEY (created_by_user_id) REFERENCES users(id),
+            FOREIGN KEY (updated_by_user_id) REFERENCES users(id)
         )
         """
+    )
+    db.execute(
+        "ALTER TABLE organization_templates ADD COLUMN IF NOT EXISTS updated_by_user_id INTEGER"
+    )
+    db.execute(
+        "ALTER TABLE organization_templates ADD COLUMN IF NOT EXISTS updated_at TEXT"
+    )
+    db.execute(
+        "ALTER TABLE organization_snippets ADD COLUMN IF NOT EXISTS updated_by_user_id INTEGER"
+    )
+    db.execute(
+        "ALTER TABLE organization_snippets ADD COLUMN IF NOT EXISTS updated_at TEXT"
+    )
+    db.execute(
+        "ALTER TABLE organization_dictionary_terms ADD COLUMN IF NOT EXISTS updated_by_user_id INTEGER"
+    )
+    db.execute(
+        "ALTER TABLE organization_dictionary_terms ADD COLUMN IF NOT EXISTS updated_at TEXT"
     )
     db.commit()
     db.close()
@@ -1477,9 +1513,11 @@ def ensure_small_agency_workspace(user):
                 name,
                 billing_contact_email,
                 support_contact_email,
-                seats_included
+                seats_included,
+                processing_region,
+                shared_lexicon_enabled
             )
-            VALUES (%s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
@@ -1487,6 +1525,8 @@ def ensure_small_agency_workspace(user):
                 user["email"],
                 WORKSPACE_DEFAULT_SUPPORT_EMAIL,
                 WORKSPACE_DEFAULT_SEATS,
+                "ca",
+                True,
             ),
         ).fetchone()
         organization_id = row["id"]
@@ -1554,10 +1594,24 @@ def list_workspace_templates(organization_id: int, db: _PgConn | None = None) ->
     try:
         rows = db.execute(
             """
-            SELECT id, name, description, prompt, created_at
-            FROM organization_templates
+            SELECT
+                t.id,
+                t.name,
+                t.description,
+                t.prompt,
+                t.created_at,
+                t.updated_at,
+                creator.id AS created_by_user_id,
+                creator.name AS created_by_name,
+                creator.email AS created_by_email,
+                updater.id AS updated_by_user_id,
+                updater.name AS updated_by_name,
+                updater.email AS updated_by_email
+            FROM organization_templates t
+            LEFT JOIN users creator ON creator.id = t.created_by_user_id
+            LEFT JOIN users updater ON updater.id = t.updated_by_user_id
             WHERE organization_id = %s
-            ORDER BY created_at ASC, id ASC
+            ORDER BY COALESCE(t.updated_at, t.created_at) DESC, t.id DESC
             """,
             (organization_id,),
         ).fetchall()
@@ -1574,10 +1628,23 @@ def list_workspace_snippets(organization_id: int, db: _PgConn | None = None) -> 
     try:
         rows = db.execute(
             """
-            SELECT id, trigger, expansion, created_at
-            FROM organization_snippets
+            SELECT
+                s.id,
+                s.trigger,
+                s.expansion,
+                s.created_at,
+                s.updated_at,
+                creator.id AS created_by_user_id,
+                creator.name AS created_by_name,
+                creator.email AS created_by_email,
+                updater.id AS updated_by_user_id,
+                updater.name AS updated_by_name,
+                updater.email AS updated_by_email
+            FROM organization_snippets s
+            LEFT JOIN users creator ON creator.id = s.created_by_user_id
+            LEFT JOIN users updater ON updater.id = s.updated_by_user_id
             WHERE organization_id = %s
-            ORDER BY created_at ASC, id ASC
+            ORDER BY COALESCE(s.updated_at, s.created_at) DESC, s.id DESC
             """,
             (organization_id,),
         ).fetchall()
@@ -1594,10 +1661,23 @@ def list_workspace_dictionary(organization_id: int, db: _PgConn | None = None) -
     try:
         rows = db.execute(
             """
-            SELECT id, term, note, created_at
-            FROM organization_dictionary_terms
+            SELECT
+                d.id,
+                d.term,
+                d.note,
+                d.created_at,
+                d.updated_at,
+                creator.id AS created_by_user_id,
+                creator.name AS created_by_name,
+                creator.email AS created_by_email,
+                updater.id AS updated_by_user_id,
+                updater.name AS updated_by_name,
+                updater.email AS updated_by_email
+            FROM organization_dictionary_terms d
+            LEFT JOIN users creator ON creator.id = d.created_by_user_id
+            LEFT JOIN users updater ON updater.id = d.updated_by_user_id
             WHERE organization_id = %s
-            ORDER BY created_at ASC, id ASC
+            ORDER BY COALESCE(d.updated_at, d.created_at) DESC, d.id DESC
             """,
             (organization_id,),
         ).fetchall()
@@ -1626,6 +1706,14 @@ def serialize_workspace(workspace_row: dict, db: _PgConn | None = None) -> dict:
         "name": workspace_row["name"],
         "current_user_role": workspace_row["current_user_role"],
         "seats_included": int(workspace_row["seats_included"] or 0),
+        "processing_region": "us"
+        if (workspace_row.get("processing_region") or "").strip().lower() == "us"
+        else "ca",
+        "shared_lexicon_enabled": bool(
+            True
+            if workspace_row.get("shared_lexicon_enabled") is None
+            else workspace_row.get("shared_lexicon_enabled")
+        ),
         "billing_contact_email": workspace_row["billing_contact_email"],
         "support_contact_email": workspace_row["support_contact_email"],
         "members": [
@@ -1645,6 +1733,16 @@ def serialize_workspace(workspace_row: dict, db: _PgConn | None = None) -> dict:
                 "name": template["name"],
                 "description": template.get("description") or "",
                 "prompt": template["prompt"],
+                "created_at": template.get("created_at"),
+                "updated_at": template.get("updated_at"),
+                "created_by_name": template.get("created_by_name")
+                or (template.get("created_by_email") or "").split("@")[0]
+                or None,
+                "created_by_email": template.get("created_by_email"),
+                "updated_by_name": template.get("updated_by_name")
+                or (template.get("updated_by_email") or "").split("@")[0]
+                or None,
+                "updated_by_email": template.get("updated_by_email"),
             }
             for template in templates
         ],
@@ -1653,6 +1751,16 @@ def serialize_workspace(workspace_row: dict, db: _PgConn | None = None) -> dict:
                 "id": str(snippet["id"]),
                 "trigger": snippet["trigger"],
                 "expansion": snippet["expansion"],
+                "created_at": snippet.get("created_at"),
+                "updated_at": snippet.get("updated_at"),
+                "created_by_name": snippet.get("created_by_name")
+                or (snippet.get("created_by_email") or "").split("@")[0]
+                or None,
+                "created_by_email": snippet.get("created_by_email"),
+                "updated_by_name": snippet.get("updated_by_name")
+                or (snippet.get("updated_by_email") or "").split("@")[0]
+                or None,
+                "updated_by_email": snippet.get("updated_by_email"),
             }
             for snippet in snippets
         ],
@@ -1661,6 +1769,16 @@ def serialize_workspace(workspace_row: dict, db: _PgConn | None = None) -> dict:
                 "id": str(term["id"]),
                 "term": term["term"],
                 "note": term.get("note"),
+                "created_at": term.get("created_at"),
+                "updated_at": term.get("updated_at"),
+                "created_by_name": term.get("created_by_name")
+                or (term.get("created_by_email") or "").split("@")[0]
+                or None,
+                "created_by_email": term.get("created_by_email"),
+                "updated_by_name": term.get("updated_by_name")
+                or (term.get("updated_by_email") or "").split("@")[0]
+                or None,
+                "updated_by_email": term.get("updated_by_email"),
             }
             for term in dictionary
         ],
@@ -3175,6 +3293,139 @@ def workspace_remove_member(user):
     return jsonify({"workspace": serialize_workspace(refreshed_workspace)})
 
 
+@app.route("/workspace/team/member/role", methods=["POST"])
+@auth_required
+def workspace_update_member_role(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] != "owner":
+        return jsonify({"error": "Droits owner requis"}), 403
+
+    data = request.get_json(silent=True) or {}
+    member_id, error = require_json_int(data, "member_id")
+    if error:
+        return error
+    role = str(data.get("role", "")).strip().lower()
+    if role not in {"admin", "member"}:
+        return jsonify({"error": "Role invalide"}), 400
+
+    db = get_db()
+    try:
+        row = db.execute(
+            """
+            SELECT * FROM organization_members
+            WHERE id = %s AND organization_id = %s
+            """,
+            (member_id, workspace["id"]),
+        ).fetchone()
+        if not row:
+            return jsonify({"error": "Membre introuvable"}), 404
+        if row["role"] == "owner":
+            return jsonify({"error": "Impossible de modifier le owner"}), 400
+
+        db.execute(
+            "UPDATE organization_members SET role = %s WHERE id = %s",
+            (role, member_id),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"workspace": serialize_workspace(refreshed_workspace)})
+
+
+@app.route("/workspace/settings", methods=["PATCH"])
+@auth_required
+def workspace_update_settings(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] not in {"owner", "admin"}:
+        return jsonify({"error": "Droits admin requis"}), 403
+
+    data = request.get_json(silent=True) or {}
+    updates = []
+    values = []
+
+    if "name" in data:
+        name, error = require_json_string(data, "name")
+        if error:
+            return error
+        updates.append("name = %s")
+        values.append(name)
+
+    if "processing_region" in data:
+        processing_region = str(data.get("processing_region", "")).strip().lower()
+        if processing_region not in {"ca", "us"}:
+            return jsonify({"error": "Region invalide"}), 400
+        updates.append("processing_region = %s")
+        values.append(processing_region)
+
+    if "shared_lexicon_enabled" in data:
+        shared_lexicon_enabled = data.get("shared_lexicon_enabled")
+        if not isinstance(shared_lexicon_enabled, bool):
+            return jsonify({"error": "shared_lexicon_enabled invalide"}), 400
+        updates.append("shared_lexicon_enabled = %s")
+        values.append(shared_lexicon_enabled)
+
+    if not updates:
+        return jsonify({"error": "Aucune modification fournie"}), 400
+
+    db = get_db()
+    try:
+        values.append(workspace["id"])
+        db.execute(
+            f"UPDATE organizations SET {', '.join(updates)} WHERE id = %s",
+            tuple(values),
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    refreshed_workspace = ensure_small_agency_workspace(user)
+    return jsonify({"workspace": serialize_workspace(refreshed_workspace)})
+
+
+@app.route("/workspace", methods=["DELETE"])
+@auth_required
+def workspace_delete(user):
+    workspace, error = require_small_agency_workspace(user)
+    if error:
+        return error
+    if workspace["current_user_role"] != "owner":
+        return jsonify({"error": "Droits owner requis"}), 403
+
+    organization_id = workspace["id"]
+    db = get_db()
+    try:
+        db.execute(
+            "DELETE FROM organization_templates WHERE organization_id = %s",
+            (organization_id,),
+        )
+        db.execute(
+            "DELETE FROM organization_snippets WHERE organization_id = %s",
+            (organization_id,),
+        )
+        db.execute(
+            "DELETE FROM organization_dictionary_terms WHERE organization_id = %s",
+            (organization_id,),
+        )
+        db.execute(
+            "DELETE FROM organization_members WHERE organization_id = %s",
+            (organization_id,),
+        )
+        db.execute("DELETE FROM organizations WHERE id = %s", (organization_id,))
+        db.commit()
+    finally:
+        db.close()
+
+    user["__workspace_row_loaded__"] = True
+    user["__workspace_row__"] = None
+    return jsonify({"ok": True})
+
+
 @app.route("/workspace/shared-assets", methods=["GET"])
 @auth_required
 def workspace_shared_assets(user):
@@ -3272,10 +3523,14 @@ def workspace_manage_template(user, asset_id):
             db.execute(
                 """
                 UPDATE organization_templates
-                SET name = %s, description = %s, prompt = %s
+                SET name = %s,
+                    description = %s,
+                    prompt = %s,
+                    updated_by_user_id = %s,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
                 """,
-                (name, description, prompt, asset_id),
+                (name, description, prompt, user["id"], asset_id),
             )
         db.commit()
     finally:
@@ -3359,10 +3614,13 @@ def workspace_manage_snippet(user, asset_id):
             db.execute(
                 """
                 UPDATE organization_snippets
-                SET trigger = %s, expansion = %s
+                SET trigger = %s,
+                    expansion = %s,
+                    updated_by_user_id = %s,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
                 """,
-                (trigger, expansion, asset_id),
+                (trigger, expansion, user["id"], asset_id),
             )
         db.commit()
     finally:
@@ -3449,10 +3707,13 @@ def workspace_manage_dictionary_term(user, asset_id):
             db.execute(
                 """
                 UPDATE organization_dictionary_terms
-                SET term = %s, note = %s
+                SET term = %s,
+                    note = %s,
+                    updated_by_user_id = %s,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
                 """,
-                (term, note, asset_id),
+                (term, note, user["id"], asset_id),
             )
         db.commit()
     finally:

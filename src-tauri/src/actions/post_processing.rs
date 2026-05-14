@@ -341,6 +341,7 @@ pub(super) async fn process_transcription_text(
 
     if settings.adaptive_voice_profile_enabled {
         let voice_profile_started = Instant::now();
+        let effective_custom_words = settings.effective_custom_words();
         if let Some(state) = app.try_state::<VoiceProfileState>() {
             if let Ok(mut profile) = state.0.lock() {
                 let active_model_id = app
@@ -350,7 +351,7 @@ pub(super) async fn process_transcription_text(
                 profile.update_from_session(
                     samples,
                     &final_text,
-                    &settings.custom_words,
+                    &effective_custom_words,
                     &active_model_id,
                     &settings.selected_language,
                 );
@@ -368,6 +369,7 @@ pub(super) async fn process_transcription_text(
 
     if settings.adaptive_vocabulary_enabled && !final_text.trim().is_empty() {
         let vocabulary_started = Instant::now();
+        let effective_custom_words = settings.effective_custom_words();
         if let Some(state) = app.try_state::<VocabularyStoreState>() {
             if let Ok(mut store) = state.0.lock() {
                 let active_model_id = app
@@ -379,7 +381,7 @@ pub(super) async fn process_transcription_text(
                     &active_model_id,
                     &settings.selected_language,
                     &final_text,
-                    &settings.custom_words,
+                    &effective_custom_words,
                 );
                 store.save(app);
             }

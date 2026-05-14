@@ -4,6 +4,7 @@ use tauri::AppHandle;
 
 const MAX_TRIGGER_LEN: usize = 200;
 const MAX_EXPANSION_LEN: usize = 10_000;
+const WORKSPACE_MANAGED_SNIPPET_PREFIX: &str = "workspace:";
 
 fn validate_snippet_fields(trigger: &str, expansion: &str) -> Result<(), String> {
     if trigger.is_empty() {
@@ -32,6 +33,10 @@ fn validate_snippet_fields(trigger: &str, expansion: &str) -> Result<(), String>
 fn new_snippet_id() -> String {
     let mut rng = rand::thread_rng();
     format!("snip_{:016x}", rng.gen::<u64>())
+}
+
+fn is_workspace_managed_snippet_id(id: &str) -> bool {
+    id.starts_with(WORKSPACE_MANAGED_SNIPPET_PREFIX)
 }
 
 #[tauri::command]
@@ -126,6 +131,61 @@ pub fn update_voice_snippet(
 
     snippet.trigger = trigger;
     snippet.expansion = expansion;
+    write_settings(&app, settings);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn sync_workspace_voice_snippets(
+    app: AppHandle,
+    snippets: Vec<VoiceSnippet>,
+) -> Result<(), String> {
+    let mut dedupe_ids = std::collections::HashSet::new();
+    let mut dedupe_triggers = std::collections::HashSet::new();
+
+    let mut managed_snippets = Vec::with_capacity(snippets.len());
+    for snippet in snippets {
+        let trigger = snippet.trigger.trim().to_string();
+        let expansion = snippet.expansion.trim().to_string();
+        validate_snippet_fields(&trigger, &expansion)?;
+
+        if !is_workspace_managed_snippet_id(&snippet.id) {
+            return Err(format!(
+                "Workspace-managed snippet ids must start with '{}'",
+                WORKSPACE_MANAGED_SNIPPET_PREFIX
+            ));
+        }
+
+        if !dedupe_ids.insert(snippet.id.clone()) {
+            return Err(format!("Duplicate workspace snippet id '{}'", snippet.id));
+        }
+
+        let normalized_trigger = trigger.to_lowercase();
+        if !dedupe_triggers.insert(normalized_trigger) {
+            return Err(format!(
+                "Duplicate workspace snippet trigger '{}'",
+                trigger
+            ));
+        }
+
+        managed_snippets.push(VoiceSnippet {
+            id: snippet.id,
+            trigger,
+            expansion,
+        });
+    }
+
+    let mut settings = get_settings(&app);
+    let mut local_snippets = settings
+        .voice_snippets
+        .into_iter()
+        .filter(|snippet| !is_workspace_managed_snippet_id(&snippet.id))
+        .collect::<Vec<_>>();
+
+    local_snippets.extend(managed_snippets);
+    settings.voice_snippets = local_snippets;
     write_settings(&app, settings);
 
     Ok(())

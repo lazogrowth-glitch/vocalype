@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AlignLeft,
+  Building2,
   CreditCard,
   FlaskConical,
   History,
@@ -15,6 +16,7 @@ import { HistorySettings } from "./settings/history/HistorySettings";
 import { DiagnosticsSettings } from "./settings/diagnostics/DiagnosticsSettings";
 import { PostProcessingSettings } from "./settings/postprocessing/PostProcessingSettings";
 import { BillingSettings } from "./settings/billing/BillingSettings";
+import { WorkspaceSettings } from "./settings/workspace/WorkspaceSettings";
 
 interface IconProps {
   width?: number | string;
@@ -36,6 +38,7 @@ export type SidebarSection =
   | "postprocessing"
   | "history"
   | "meetings"
+  | "workspace"
   | "dictee"
   | "settings"
   | "debug"
@@ -77,6 +80,13 @@ export const SECTIONS_CONFIG: Record<SidebarSection, SectionConfig> = {
     fullBleed: true,
   },
   // ── Avancé ────────────────────────────────────────────
+  workspace: {
+    labelKey: "sidebar.workspace",
+    icon: Building2,
+    component: WorkspaceSettings,
+    enabled: () => true,
+    fullBleed: true,
+  },
   settings: {
     labelKey: "sidebar.settings",
     icon: Settings2,

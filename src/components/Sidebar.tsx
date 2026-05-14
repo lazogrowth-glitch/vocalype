@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
-  const { isTrialing, trialEndsAt, openUpgradePlans } = usePlan();
+  const { isTrialing, trialEndsAt, openUpgradePlans, capabilities } = usePlan();
   const trialBadge = useTrialBadge(isTrialing ? trialEndsAt : null);
   const [isTrialCardDismissed, setIsTrialCardDismissed] = useState(
     () => localStorage.getItem(TRIAL_CARD_DISMISSED_KEY) === "1",
@@ -155,12 +155,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const allSections = useMemo(
     () =>
       Object.entries(SECTIONS_CONFIG)
-        .filter(([_, config]) => config.enabled(settings))
+        .filter(([id, config]) => {
+          if (id === "workspace" && capabilities.plan !== "small_agency") {
+            return false;
+          }
+          return config.enabled(settings);
+        })
         .map(([id, config]) => ({
           id: id as import("./sections-config").SidebarSection,
           ...config,
         })),
-    [settings],
+    [capabilities.plan, settings],
   );
 
   const mainSections = useMemo(
@@ -409,6 +414,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           const isActive = activeSection === section.id;
           const showConfigLabel = !collapsed && section.id === "dictee";
           const showUsageLabel = !collapsed && section.id === "history";
+          const showTeamLabel = !collapsed && section.id === "workspace";
           const showSettingsLabel = !collapsed && section.id === "settings";
           const count = sectionCounts[section.id];
 
@@ -425,6 +431,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   style={{ paddingTop: 24 }}
                 >
                   {t("sidebar.group.usage")}
+                </div>
+              )}
+              {showTeamLabel && (
+                <div
+                  className="sidebar-section-label"
+                  style={{ paddingTop: 24 }}
+                >
+                  {t("sidebar.group.team")}
                 </div>
               )}
               {showSettingsLabel && (

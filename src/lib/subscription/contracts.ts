@@ -6,6 +6,8 @@ export type TeamWorkspacePayload = {
   name: string;
   current_user_role: TeamRole;
   seats_included: number;
+  processing_region?: "ca" | "us";
+  shared_lexicon_enabled?: boolean;
   billing_contact_email: string;
   support_contact_email: string;
   members: Array<{
@@ -21,15 +23,33 @@ export type TeamWorkspacePayload = {
     name: string;
     description: string;
     prompt: string;
+    created_at?: string | null;
+    updated_at?: string | null;
+    created_by_name?: string | null;
+    created_by_email?: string | null;
+    updated_by_name?: string | null;
+    updated_by_email?: string | null;
   }>;
   shared_snippets: Array<{
     id: string;
     trigger: string;
     expansion: string;
+    created_at?: string | null;
+    updated_at?: string | null;
+    created_by_name?: string | null;
+    created_by_email?: string | null;
+    updated_by_name?: string | null;
+    updated_by_email?: string | null;
   }>;
   shared_dictionary: Array<{
     id: string;
     term: string;
     note?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+    created_by_name?: string | null;
+    created_by_email?: string | null;
+    updated_by_name?: string | null;
+    updated_by_email?: string | null;
   }>;
 };

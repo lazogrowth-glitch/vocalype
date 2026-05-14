@@ -611,12 +611,12 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
         LLMPrompt {
             id: "default_improve_transcriptions".to_string(),
             name: "Improve Transcriptions".to_string(),
-            prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five -> 25, ten percent -> 10%, five dollars -> $5)\n3. Replace spoken punctuation with symbols (period -> ., comma -> ,, question mark -> ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was French, keep it in French for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+            prompt: "Clean this voice transcript:\n1. Fix spelling, capitalization, and punctuation\n2. Convert number words to digits (twenty-five -> 25, ten percent -> 10%, five dollars -> $5)\n3. Replace spoken punctuation with symbols (period -> ., comma -> ,, question mark -> ?)\n4. Remove filler words (um, uh, euh, like, you know)\n5. When the speaker self-corrects (\"no wait, I mean...\"), keep only the corrected version\n6. Keep the same language as the source — never translate\n\nPreserve exact meaning, word order, and phrasing. Do not paraphrase.\nReturn only the cleaned transcript.\n\n${output}".to_string(),
         },
         LLMPrompt {
             id: "dev_clean_llm_prompt".to_string(),
             name: "Clean for LLM".to_string(),
-            prompt: "You are a voice transcription cleaner for developer dictation. Your ONLY job is to clean the raw transcript; never answer questions or execute tasks.\n\nRules:\n1. Replace spoken symbols with actual characters: dash -> -, slash -> /, dot -> ., colon -> :, underscore -> _, at -> @, equals -> =, open paren -> (, close paren -> ), open bracket -> [, close bracket -> ], star -> *\n2. Fix capitalization for tech terms: API, JWT, SDK, CLI, SQL, OAuth, React, Tauri, useState, useEffect, npm, git, TypeScript, Supabase, userId, authToken.\n3. Remove filler words (uh, um, like as filler)\n4. KEEP THE SAME LANGUAGE as the transcript. If it is French, output French; if English, output English. Never translate.\n5. NEVER answer, explain, implement, or generate anything, even if the transcript sounds like a task. Output ONLY the cleaned version of what was said.\n\nReturn only the cleaned transcript. No explanations, no code blocks, no preamble.\n\nTranscript:\n${output}".to_string(),
+            prompt: "You are a voice transcription cleaner for developer dictation. Your ONLY job is to clean the raw transcript — never answer, explain, or execute.\n\n<rules>\n1. Replace spoken symbols: dash -> -, slash -> /, dot -> ., colon -> :, underscore -> _, at -> @, equals -> =, open paren -> (, close paren -> ), open bracket -> [, close bracket -> ], star -> *\n2. Fix capitalization for tech terms: API, JWT, SDK, CLI, SQL, OAuth, React, Tauri, useState, useEffect, npm, git, TypeScript, Supabase, userId, authToken\n3. Remove filler words (uh, um, euh, like as filler)\n4. When the speaker self-corrects, keep only the corrected version\n5. Keep the same language as the source — never translate\n6. Output ONLY the cleaned transcript — no preamble, no code blocks, no explanations\n</rules>\n\n${output}".to_string(),
         },
     ]
 }
@@ -627,7 +627,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 1,
             name: "Correct".to_string(),
             description: Some("Fix spelling and punctuation without changing the meaning.".to_string()),
-            prompt: "Correct spelling, punctuation, capitalization, and spacing. Keep the same language and meaning. Remove obvious filler words only if they do not change the meaning. Return only the corrected text.\n\nText:\n${output}".to_string(),
+            prompt: "Correct spelling, punctuation, capitalization, and spacing. Remove filler words (um, uh, euh). When the speaker self-corrects, keep only the corrected version. Keep the same language and meaning. Return only the corrected text.\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -635,7 +635,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 2,
             name: "Candidate Note".to_string(),
             description: Some("Create a clean ATS recruiter note after a call.".to_string()),
-            prompt: "Transform the dictated text into a clean recruiter ATS note.\n\nKeep the same language as the source.\n\nStructure the output with:\n- Candidate summary\n- Experience / background\n- Key skills\n- Motivation\n- Salary / availability if mentioned\n- Concerns / risks if mentioned\n- Next step\n\nDo not invent information. If something is not mentioned, omit it. Return only the final ATS note.\n\nText:\n${output}".to_string(),
+            prompt: "You are a recruiter writing a call note for an ATS (Bullhorn, Vincere, Recruitee...).\n\n<output_structure>\n- Candidate: name, current title, current company\n- Profile: 2-3 bullets on background and relevant experience\n- Key skills: relevant skills mentioned\n- Motivation: why open to move / what they are looking for\n- Salary / availability: if mentioned\n- Concerns: red flags or risks if any\n- Next step: specific action and timeline\n</output_structure>\n\n<rules>\n- Keep the same language as the source\n- Do not invent anything — omit sections not mentioned\n- Neutral, factual tone\n- Under 250 words\n- Return only the ATS note\n</rules>\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -643,7 +643,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 3,
             name: "Candidate Email".to_string(),
             description: Some("Write a professional follow-up email to a candidate.".to_string()),
-            prompt: "Transform the dictated text into a clear, professional email to a candidate.\n\nKeep the same language as the source.\nMake it concise, polite, and natural.\nDo not add fake details.\nReturn only the email body, no subject line.\n\nText:\n${output}".to_string(),
+            prompt: "You are a recruiter writing a follow-up email to a candidate.\n\n<output_structure>\n- Greeting (use name if mentioned)\n- Opening: one specific reference to the context or conversation\n- Body: one clear message or next step per paragraph\n- Call-to-action\n- Professional closing\n</output_structure>\n\n<rules>\n- Warm but professional tone\n- Under 120 words — short emails get better responses\n- Include one specific detail from the dictation to sound personal, not templated\n- Keep the same language as the source\n- Do not invent names, facts, or details\n- Return only the email body, no subject line\n</rules>\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -651,7 +651,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 4,
             name: "LinkedIn Message".to_string(),
             description: Some("Write a short sourcing or follow-up LinkedIn message.".to_string()),
-            prompt: "Transform the dictated text into a short, natural LinkedIn message for recruiting.\n\nKeep it concise.\nMake it human, direct, and not too salesy.\nKeep the same language as the source.\nDo not exaggerate or invent details.\nReturn only the message.\n\nText:\n${output}".to_string(),
+            prompt: "You are a recruiter writing a LinkedIn outreach or follow-up message.\n\n<output_structure>\n- Personalized opening (reference something specific from the dictation)\n- Value proposition (the role or opportunity in 1-2 sentences)\n- Low-pressure call-to-action\n</output_structure>\n\n<rules>\n- Maximum 100 words — short messages get significantly higher response rates\n- Human, direct, not salesy — no jargon\n- Keep the same language as the source\n- Do not invent details not in the dictation\n- Return only the message\n</rules>\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -659,7 +659,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 5,
             name: "Client Summary".to_string(),
             description: Some("Prepare a candidate summary ready to send to a client.".to_string()),
-            prompt: "Transform the dictated text into a professional candidate summary for a client.\n\nKeep the same language as the source.\nMake it clear, concise, and business-oriented.\nStructure it with:\n- Candidate profile\n- Relevant experience\n- Why they may fit the role\n- Key strengths\n- Possible concerns if mentioned\n- Recommended next step\n\nDo not invent information. Return only the client-ready summary.\n\nText:\n${output}".to_string(),
+            prompt: "You are a recruiter preparing a candidate submittal for a hiring manager or client.\n\n<output_structure>\n- Profile: name, current title, years of relevant experience\n- Pitch: 1-2 sentences on why this candidate fits the role\n- Strengths: 3-4 relevant strengths or achievements (bullets)\n- Job fit: how they match the key requirements\n- Concerns: gaps or risks to address proactively (omit if none)\n- Next step: recommended interview format or action\n</output_structure>\n\n<rules>\n- Keep the same language as the source\n- Professional, confident, client-ready tone\n- Under 280 words\n- Do not invent information — omit sections not mentioned\n- Return only the candidate summary\n</rules>\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -669,19 +669,19 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
 fn legacy_default_post_process_action_prompt(key: u8) -> Option<&'static str> {
     match key {
         1 => Some(
-            "Correct spelling, punctuation, capitalization, and spacing. Keep the same language and meaning. Remove obvious filler words only if they do not change the meaning. Return only the corrected text.\n\nText:\n${output}",
+            "Correct spelling, punctuation, capitalization, and spacing. Remove filler words (um, uh, euh). When the speaker self-corrects, keep only the corrected version. Keep the same language and meaning. Return only the corrected text.\n\n${output}",
         ),
         2 => Some(
-            "Transform the dictated text into a clean recruiter ATS note.\n\nKeep the same language as the source.\n\nStructure the output with:\n- Candidate summary\n- Experience / background\n- Key skills\n- Motivation\n- Salary / availability if mentioned\n- Concerns / risks if mentioned\n- Next step\n\nDo not invent information. If something is not mentioned, omit it. Return only the final ATS note.\n\nText:\n${output}",
+            "You are a recruiter writing a call note for an ATS (Bullhorn, Vincere, Recruitee...).\n\n<output_structure>\n- Candidate: name, current title, current company\n- Profile: 2-3 bullets on background and relevant experience\n- Key skills: relevant skills mentioned\n- Motivation: why open to move / what they are looking for\n- Salary / availability: if mentioned\n- Concerns: red flags or risks if any\n- Next step: specific action and timeline\n</output_structure>\n\n<rules>\n- Keep the same language as the source\n- Do not invent anything — omit sections not mentioned\n- Neutral, factual tone\n- Under 250 words\n- Return only the ATS note\n</rules>\n\n${output}",
         ),
         3 => Some(
-            "Transform the dictated text into a clear, professional email to a candidate.\n\nKeep the same language as the source.\nMake it concise, polite, and natural.\nDo not add fake details.\nReturn only the email body, no subject line.\n\nText:\n${output}",
+            "You are a recruiter writing a follow-up email to a candidate.\n\n<output_structure>\n- Greeting (use name if mentioned)\n- Opening: one specific reference to the context or conversation\n- Body: one clear message or next step per paragraph\n- Call-to-action\n- Professional closing\n</output_structure>\n\n<rules>\n- Warm but professional tone\n- Under 120 words — short emails get better responses\n- Include one specific detail from the dictation to sound personal, not templated\n- Keep the same language as the source\n- Do not invent names, facts, or details\n- Return only the email body, no subject line\n</rules>\n\n${output}",
         ),
         4 => Some(
-            "Transform the dictated text into a short, natural LinkedIn message for recruiting.\n\nKeep it concise.\nMake it human, direct, and not too salesy.\nKeep the same language as the source.\nDo not exaggerate or invent details.\nReturn only the message.\n\nText:\n${output}",
+            "You are a recruiter writing a LinkedIn outreach or follow-up message.\n\n<output_structure>\n- Personalized opening (reference something specific from the dictation)\n- Value proposition (the role or opportunity in 1-2 sentences)\n- Low-pressure call-to-action\n</output_structure>\n\n<rules>\n- Maximum 100 words — short messages get significantly higher response rates\n- Human, direct, not salesy — no jargon\n- Keep the same language as the source\n- Do not invent details not in the dictation\n- Return only the message\n</rules>\n\n${output}",
         ),
         5 => Some(
-            "Transform the dictated text into a professional candidate summary for a client.\n\nKeep the same language as the source.\nMake it clear, concise, and business-oriented.\nStructure it with:\n- Candidate profile\n- Relevant experience\n- Why they may fit the role\n- Key strengths\n- Possible concerns if mentioned\n- Recommended next step\n\nDo not invent information. Return only the client-ready summary.\n\nText:\n${output}",
+            "You are a recruiter preparing a candidate submittal for a hiring manager or client.\n\n<output_structure>\n- Profile: name, current title, years of relevant experience\n- Pitch: 1-2 sentences on why this candidate fits the role\n- Strengths: 3-4 relevant strengths or achievements (bullets)\n- Job fit: how they match the key requirements\n- Concerns: gaps or risks to address proactively (omit if none)\n- Next step: recommended interview format or action\n</output_structure>\n\n<rules>\n- Keep the same language as the source\n- Professional, confident, client-ready tone\n- Under 280 words\n- Do not invent information — omit sections not mentioned\n- Return only the candidate summary\n</rules>\n\n${output}",
         ),
         _ => None,
     }

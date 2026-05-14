@@ -246,7 +246,7 @@ pub async fn export_history_entries(
             for e in &entries {
                 let ts = chrono::DateTime::from_timestamp(e.timestamp, 0)
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
-                    .unwrap_or_default();
+                    .unwrap_or_else(|| e.timestamp.to_string());
                 let text = e.transcription_text.replace('"', "\"\"");
                 let post = e
                     .post_processed_text
@@ -266,7 +266,7 @@ pub async fn export_history_entries(
             for e in &entries {
                 let ts = chrono::DateTime::from_timestamp(e.timestamp, 0)
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
-                    .unwrap_or_default();
+                    .unwrap_or_else(|| e.timestamp.to_string());
                 out.push_str(&format!("## {}", ts));
                 if let Some(m) = &e.model_name {
                     out.push_str(&format!(" · *{}*", m));
@@ -288,7 +288,7 @@ pub async fn export_history_entries(
             for e in &entries {
                 let ts = chrono::DateTime::from_timestamp(e.timestamp, 0)
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
-                    .unwrap_or_default();
+                    .unwrap_or_else(|| e.timestamp.to_string());
                 let text = e
                     .post_processed_text
                     .as_deref()

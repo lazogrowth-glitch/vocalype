@@ -70,9 +70,18 @@ pub fn import_dictionary(
         dictionary.clear()?;
     }
 
+    let mut skipped = 0usize;
     for entry in entries {
-        // Skip if already present (when merging)
-        let _ = dictionary.add_manual(entry.from, entry.to);
+        if let Err(e) = dictionary.add_manual(entry.from.clone(), entry.to) {
+            log::debug!("[dictionary] import skipped '{}': {}", entry.from, e);
+            skipped += 1;
+        }
+    }
+    if skipped > 0 {
+        log::info!(
+            "[dictionary] import complete — {} entries skipped (duplicates or invalid)",
+            skipped
+        );
     }
 
     Ok(())

@@ -731,10 +731,13 @@ pub fn export_support_package(
         .map_err(|e| format!("Failed to write settings entry: {}", e))?;
 
     for log_path in collect_recent_log_files(&app, 5)? {
-        let file_name = log_path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .ok_or_else(|| format!("Invalid log file name '{}'", log_path.display()))?;
+        let Some(file_name) = log_path.file_name().and_then(|n| n.to_str()) else {
+            log::warn!(
+                "[export] Skipping log file with non-UTF-8 name: {}",
+                log_path.display()
+            );
+            continue;
+        };
         add_file_to_zip(&mut zip, &format!("logs/{}", file_name), &log_path)?;
     }
 

@@ -71,7 +71,11 @@ function getLayoutTier(width: number): LayoutTier {
 
 function writeStoredWindowSize(size: StoredWindowSize) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(WINDOW_SIZE_STORAGE_KEY, JSON.stringify(size));
+  try {
+    window.localStorage.setItem(WINDOW_SIZE_STORAGE_KEY, JSON.stringify(size));
+  } catch {
+    // Storage quota exceeded or private browsing — non-critical
+  }
 }
 
 async function resolveMonitorBounds(): Promise<WindowSize | null> {
@@ -114,15 +118,23 @@ function App() {
   const { i18n, t } = useTranslation();
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("dictee");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    () => localStorage.getItem("vt.sidebarCollapsed") === "1",
-  );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("vt.sidebarCollapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
   const lastDeepLinkTokenRef = useRef<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(getViewportWidth);
   const toggleSidebar = () => {
     setSidebarCollapsed((v) => {
       const next = !v;
-      localStorage.setItem("vt.sidebarCollapsed", next ? "1" : "0");
+      try {
+        localStorage.setItem("vt.sidebarCollapsed", next ? "1" : "0");
+      } catch {
+        // Non-critical
+      }
       return next;
     });
   };

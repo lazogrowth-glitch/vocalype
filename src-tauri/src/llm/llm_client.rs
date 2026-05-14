@@ -223,10 +223,9 @@ pub async fn send_chat_completion_with_schema(
         } else {
             None
         },
-        // 300 tokens = ~225 words — enough for any dictation cleanup.
-        // Cloud providers (OpenAI, Anthropic) accept and respect max_tokens.
-        // Local llama-server also respects it, cutting unnecessary generation.
-        max_tokens: Some(300),
+        // 500 tokens = ~375 words — covers structured email output (greeting +
+        // multi-paragraph body + closing) without unnecessary generation overhead.
+        max_tokens: Some(500),
         // Greedy decoding: fastest + deterministic for editing tasks.
         temperature: 0.0,
         reasoning_format: if model_supports_hidden_reasoning(model) {

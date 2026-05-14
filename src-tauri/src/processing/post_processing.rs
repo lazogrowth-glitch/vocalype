@@ -44,7 +44,7 @@ pub(crate) fn build_standard_post_process_system_prompt(prompt_template: &str) -
 const VOCALYPE_CLOUD_70B_MODEL_ID: &str = "llama-3.3-70b-versatile";
 const VOCALYPE_CLOUD_EMAIL_MODEL_ID: &str = "qwen/qwen3-32b";
 const EMAIL_AUTO_POST_PROCESS_PROMPT_ID: &str = "email_auto_fallback";
-const EMAIL_AUTO_POST_PROCESS_PROMPT: &str = "Fix punctuation, capitalization, and speech artifacts in this dictated email text. Output only the corrected text. Keep the same language as the source. Do not add, invent, or remove any content. Do not add greetings or closings unless they are explicitly in the source.\n\n${output}";
+const EMAIL_AUTO_POST_PROCESS_PROMPT: &str = "Format this dictated text into a complete, properly structured email body.\n\nStructure to produce:\n- A greeting line (keep the dictated one, or add a brief natural one)\n- Body paragraphs — one idea per paragraph, blank line between each\n- A closing line (keep the dictated one, or add a brief natural one)\n\nRules: keep every fact, name, date, and number exactly as spoken. Fix punctuation, capitalization, and speech artifacts. Keep the same language as the source. Return only the formatted email body.\n\n${output}";
 
 fn standard_post_process_guardrails() -> &'static str {
     "You are Vocalype's transcription post-processor.\n\

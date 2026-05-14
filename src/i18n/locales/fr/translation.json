@@ -1151,7 +1151,8 @@
     "upgrade": "Passer \u00e0 Premium",
     "historyLimited": "Historique limit\u00e9 \u00e0 {{limit}} entr\u00e9es en formule Basique",
     "shortcutsLocked": "Raccourcis personnalis\u00e9s r\u00e9serv\u00e9s \u00e0 Premium",
-    "premiumBadge": "Premium"
+    "premiumBadge": "Premium",
+    "premiumDesc": "Injection native, historique complet et dictée illimitée."
   },
   "plan": {
     "premium": "Premium",

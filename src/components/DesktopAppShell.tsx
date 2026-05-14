@@ -114,14 +114,16 @@ function mapWorkspaceVoiceSnippets(
 
 function serializeWordList(words: string[]) {
   return JSON.stringify(
-    [...words].map((word) => word.trim()).filter(Boolean).sort((left, right) =>
-      left.localeCompare(right),
-    ),
+    [...words]
+      .map((word) => word.trim())
+      .filter(Boolean)
+      .sort((left, right) => left.localeCompare(right)),
   );
 }
 
 function mapWorkspaceCustomWords(workspace: TeamWorkspace | null): string[] {
   if (!workspace) return [];
+  if (workspace.sharedLexiconEnabled === false) return [];
   return workspace.sharedDictionary.map((entry) => entry.term);
 }
 
@@ -159,7 +161,8 @@ export function DesktopAppShell({
   const currentPlan = deriveAppPlan(session);
   const capabilities = getPlanCapabilities(currentPlan);
   const sessionWorkspace = useMemo(
-    () => (session?.workspace ? mapTeamWorkspacePayload(session.workspace) : null),
+    () =>
+      session?.workspace ? mapTeamWorkspacePayload(session.workspace) : null,
     [session?.workspace],
   );
   const [teamWorkspace, setTeamWorkspace] = useState<TeamWorkspace | null>(
@@ -242,16 +245,14 @@ export function DesktopAppShell({
     let cancelled = false;
 
     void (async () => {
-      const result =
-        await commands.syncWorkspaceVoiceSnippets(desiredManagedSnippets);
+      const result = await commands.syncWorkspaceVoiceSnippets(
+        desiredManagedSnippets,
+      );
       if (cancelled) {
         return;
       }
       if (result.status !== "ok") {
-        console.error(
-          "Failed to sync workspace voice snippets:",
-          result.error,
-        );
+        console.error("Failed to sync workspace voice snippets:", result.error);
         workspaceSnippetSyncRef.current = null;
         return;
       }
@@ -265,7 +266,9 @@ export function DesktopAppShell({
 
   useEffect(() => {
     const desiredWorkspaceWords =
-      currentPlan === "small_agency" ? mapWorkspaceCustomWords(teamWorkspace) : [];
+      currentPlan === "small_agency"
+        ? mapWorkspaceCustomWords(teamWorkspace)
+        : [];
     const desiredShape = serializeWordList(desiredWorkspaceWords);
 
     if (workspaceCustomWordsSyncRef.current === desiredShape) {
@@ -276,7 +279,9 @@ export function DesktopAppShell({
     let cancelled = false;
 
     void (async () => {
-      const result = await commands.syncWorkspaceCustomWords(desiredWorkspaceWords);
+      const result = await commands.syncWorkspaceCustomWords(
+        desiredWorkspaceWords,
+      );
       if (cancelled) {
         return;
       }

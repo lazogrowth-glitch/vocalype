@@ -3143,7 +3143,9 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 let email_context_post_process = post_process_enabled
                     && active_app_context
                         .as_ref()
-                        .map(|ctx| ctx.category == crate::context_detector::AppContextCategory::Email)
+                        .map(|ctx| {
+                            ctx.category == crate::context_detector::AppContextCategory::Email
+                        })
                         .unwrap_or(false);
                 let auto_llm_triggered =
                     llm_auto_mode && auto_llm_should_trigger(&ah, &transcription);
@@ -3248,7 +3250,9 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 let email_context_post_process = post_process_enabled
                     && active_app_context
                         .as_ref()
-                        .map(|ctx| ctx.category == crate::context_detector::AppContextCategory::Email)
+                        .map(|ctx| {
+                            ctx.category == crate::context_detector::AppContextCategory::Email
+                        })
                         .unwrap_or(false);
                 let auto_llm_triggered =
                     llm_auto_mode && auto_llm_should_trigger(&ah, &transcription);

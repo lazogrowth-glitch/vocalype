@@ -119,10 +119,12 @@ fn validate_user_json_path(
         }
     };
 
-    let root_matches = allowed_roots.into_iter().any(|root| {
-        let resolved_root = root.canonicalize().unwrap_or(root);
-        path_is_within_root(&resolved_path, &resolved_root)
-    });
+    let root_matches = allowed_roots
+        .into_iter()
+        .any(|root| match root.canonicalize() {
+            Ok(resolved_root) => path_is_within_root(&resolved_path, &resolved_root),
+            Err(_) => false,
+        });
     if !root_matches {
         return Err(format!(
             "Path for {} must stay inside app data, config, Downloads, Documents, or Desktop",
@@ -199,10 +201,12 @@ fn validate_user_export_path(
             .ok_or_else(|| format!("Path for {} must include a file name", purpose))?,
     );
 
-    let root_matches = allowed_roots.into_iter().any(|root| {
-        let resolved_root = root.canonicalize().unwrap_or(root);
-        path_is_within_root(&resolved_path, &resolved_root)
-    });
+    let root_matches = allowed_roots
+        .into_iter()
+        .any(|root| match root.canonicalize() {
+            Ok(resolved_root) => path_is_within_root(&resolved_path, &resolved_root),
+            Err(_) => false,
+        });
     if !root_matches {
         return Err(format!(
             "Path for {} must stay inside app data, config, Downloads, Documents, or Desktop",
@@ -287,7 +291,9 @@ pub fn toggle_pause(app: AppHandle) -> bool {
     let paused = audio_manager.toggle_pause();
     if let Some(coordinator) = app.try_state::<crate::TranscriptionCoordinator>() {
         if let Some(operation_id) = coordinator.active_operation_id() {
-            let _ = coordinator.set_paused(&app, operation_id, paused);
+            if !coordinator.set_paused(&app, operation_id, paused) {
+                log::warn!("[toggle_pause] set_paused returned false — coordinator may be in an unexpected state");
+            }
         }
     }
     crate::overlay::emit_recording_paused(&app, paused);

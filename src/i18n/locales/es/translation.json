@@ -1150,7 +1150,8 @@
     "upgrade": "Pasar a Premium",
     "historyLimited": "Historial limitado a {{limit}} entradas en B\u00e1sico",
     "shortcutsLocked": "Los atajos personalizados son una funci\u00f3n Premium",
-    "premiumBadge": "Premium"
+    "premiumBadge": "Premium",
+    "premiumDesc": "Inyección nativa, historial completo y dictado ilimitado."
   },
   "plan": {
     "premium": "Premium",

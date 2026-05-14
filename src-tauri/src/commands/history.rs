@@ -339,9 +339,12 @@ pub async fn transcribe_audio_file(
         .unwrap_or("file")
         .to_string();
 
-    let _ = history_manager
+    if let Err(e) = history_manager
         .save_file_transcription(&file_name, &text, output.confidence_payload.as_ref())
-        .await;
+        .await
+    {
+        log::warn!("[history] Failed to save file transcription to history: {e}");
+    }
 
     Ok(text)
 }
@@ -395,9 +398,12 @@ pub async fn transcribe_audio_file_detailed(
         .unwrap_or("file")
         .to_string();
 
-    let _ = history_manager
+    if let Err(e) = history_manager
         .save_file_transcription(&file_name, &text, output.confidence_payload.as_ref())
-        .await;
+        .await
+    {
+        log::warn!("[history] Failed to save detailed file transcription to history: {e}");
+    }
 
     let mut segments = output
         .segments
@@ -534,9 +540,19 @@ fn load_external_audio_file(path: &Path) -> anyhow::Result<Vec<f32>> {
     let num_channels = spec.channels as usize;
     let in_rate = spec.sample_rate as usize;
 
+    if num_channels == 0 {
+        anyhow::bail!("Invalid WAV file: channel count is 0");
+    }
+    if in_rate == 0 {
+        anyhow::bail!("Invalid WAV file: sample rate is 0");
+    }
+
     let raw: Vec<f32> = match spec.sample_format {
         hound::SampleFormat::Int => {
             let bits = spec.bits_per_sample;
+            if bits == 0 {
+                anyhow::bail!("Invalid WAV file: bits per sample is 0");
+            }
             let max = (1i64 << (bits - 1)) as f32;
             match bits {
                 8 => reader

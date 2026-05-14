@@ -565,7 +565,7 @@ impl TranscriptionManager {
         self.last_activity.store(
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
-                .expect("System clock is before Unix epoch")
+                .unwrap_or_default()
                 .as_millis() as u64,
             Ordering::Relaxed,
         );

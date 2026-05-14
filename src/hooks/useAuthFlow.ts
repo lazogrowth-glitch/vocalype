@@ -286,7 +286,6 @@ export function useAuthFlow(
         await syncLicenseForSession(nextSession, { mode: "issue" });
         applySession(nextSession);
       } catch (error) {
-        console.error("Authentication failed:", error);
         setAuthError(getUserFacingErrorMessage(error, { t, context: "auth" }));
       } finally {
         setAuthSubmitting(false);
@@ -306,10 +305,6 @@ export function useAuthFlow(
         try {
           await syncLicenseForSession(nextSession, { mode: "issue" });
         } catch (licenseError) {
-          console.warn(
-            "License issue failed after deep-link auth:",
-            licenseError,
-          );
           if (!isExpectedMissingLicenseMessage(licenseError)) {
             setAuthError(
               getUserFacingErrorMessage(licenseError, { t, context: "auth" }),
@@ -325,7 +320,6 @@ export function useAuthFlow(
           }
         }
       } catch (error) {
-        console.error("Deep link auth failed:", error);
         setAuthError(getUserFacingErrorMessage(error, { t, context: "auth" }));
       } finally {
         setAuthLoading(false);

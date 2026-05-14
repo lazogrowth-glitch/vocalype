@@ -164,10 +164,7 @@ pub fn sync_workspace_voice_snippets(
 
         let normalized_trigger = trigger.to_lowercase();
         if !dedupe_triggers.insert(normalized_trigger) {
-            return Err(format!(
-                "Duplicate workspace snippet trigger '{}'",
-                trigger
-            ));
+            return Err(format!("Duplicate workspace snippet trigger '{}'", trigger));
         }
 
         managed_snippets.push(VoiceSnippet {

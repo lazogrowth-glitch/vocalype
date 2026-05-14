@@ -380,8 +380,8 @@ function App() {
       attempts += 1;
       try {
         await refreshSession();
-      } catch (error) {
-        console.warn("Pending activation refresh failed:", error);
+      } catch {
+        // Silent — activation polling failures are expected until the session activates
       }
 
       if (!cancelled && attempts < 12) {

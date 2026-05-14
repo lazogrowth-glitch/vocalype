@@ -70,7 +70,9 @@ function useSidebarCounts(settings: unknown) {
       .then((res) => {
         if (res.status === "ok") setHistoryRef.current(res.data.total_entries);
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        console.error("[Sidebar] getHistoryStats failed:", err);
+      });
   }, []);
 
   const refreshMeetings = useCallback(() => {
@@ -79,7 +81,9 @@ function useSidebarCounts(settings: unknown) {
       .then((res) => {
         if (res.status === "ok") setMeetingsRef.current(res.data.length);
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        console.error("[Sidebar] getMeetings failed:", err);
+      });
   }, []);
 
   useEffect(() => {
@@ -90,7 +94,12 @@ function useSidebarCounts(settings: unknown) {
     const unlisteners: Array<() => void> = [];
     listen("history-updated", refreshHistory)
       .then((fn) => unlisteners.push(fn))
-      .catch(() => {});
+      .catch((err: unknown) => {
+        console.error(
+          "[Sidebar] Failed to register history-updated listener:",
+          err,
+        );
+      });
 
     // Meetings — driven by window CustomEvent dispatched from MeetingsSettings
     // (synchronous, no async timing issue unlike Tauri listen)
@@ -352,7 +361,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   textTransform: "uppercase",
                 }}
               >
-                Premium
+                {t("trial.premiumBadge")}
               </div>
               <p
                 style={{
@@ -373,7 +382,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   color: "rgba(255,255,255,0.58)",
                 }}
               >
-                Injection native, historique complet et dictée illimitée.
+                {t("trial.premiumDesc")}
               </p>
               <button
                 type="button"

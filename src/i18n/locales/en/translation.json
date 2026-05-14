@@ -1150,7 +1150,8 @@
     "upgrade": "Upgrade to Premium",
     "historyLimited": "History limited to {{limit}} entries on Basic",
     "shortcutsLocked": "Custom shortcuts are a Premium feature",
-    "premiumBadge": "Premium"
+    "premiumBadge": "Premium",
+    "premiumDesc": "Native injection, full history, and unlimited dictation."
   },
   "plan": {
     "premium": "Premium",

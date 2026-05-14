@@ -44,7 +44,24 @@ pub(crate) fn build_standard_post_process_system_prompt(prompt_template: &str) -
 const VOCALYPE_CLOUD_70B_MODEL_ID: &str = "llama-3.3-70b-versatile";
 const VOCALYPE_CLOUD_EMAIL_MODEL_ID: &str = "qwen/qwen3-32b";
 const EMAIL_AUTO_POST_PROCESS_PROMPT_ID: &str = "email_auto_fallback";
-const EMAIL_AUTO_POST_PROCESS_PROMPT: &str = "Format this dictated text into a complete, properly structured email body.\n\nStructure to produce:\n- A greeting line (keep the dictated one, or add a brief natural one)\n- Body paragraphs — one idea per paragraph, blank line between each\n- A closing line (keep the dictated one, or add a brief natural one)\n\nRules: keep every fact, name, date, and number exactly as spoken. Fix punctuation, capitalization, and speech artifacts. Keep the same language as the source. Return only the formatted email body.\n\n${output}";
+const EMAIL_AUTO_POST_PROCESS_PROMPT: &str = "\
+Transform this voice dictation into a properly structured email body.\n\
+\n\
+<output_structure>\n\
+- Greeting line: use the dictated one, or add a brief natural greeting\n\
+- Body: one paragraph per idea, blank line between paragraphs\n\
+- Closing line: use the dictated one, or add a natural closing that matches the language (\"Cordialement,\" for French, \"Best regards,\" for English, etc.)\n\
+</output_structure>\n\
+\n\
+<editing_rules>\n\
+- Remove filler words and speech artifacts: um, uh, euh, false starts, word repetitions\n\
+- Fix punctuation, capitalization, and sentence boundaries\n\
+- Preserve every fact, name, date, number, and the speaker's intent exactly as stated\n\
+- Output in the same language the speaker used — never switch languages\n\
+- Return only the email body, nothing else\n\
+</editing_rules>\n\
+\n\
+${output}";
 
 fn standard_post_process_guardrails() -> &'static str {
     "You are Vocalype's transcription post-processor.\n\

@@ -1,7 +1,7 @@
 use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
-use crate::settings::{get_settings, write_settings};
+use crate::settings::{get_settings, write_settings, RecordingMode};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -123,6 +123,36 @@ pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), Str
 pub fn get_microphone_mode(app: AppHandle) -> Result<bool, String> {
     let settings = get_settings(&app);
     Ok(settings.always_on_microphone)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_recording_mode(app: AppHandle, mode: RecordingMode) -> Result<(), String> {
+    info!("[MODE] change_recording_mode called: {:?}", mode);
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+
+    let new_hw_mode = if mode == RecordingMode::AlwaysOn {
+        MicrophoneMode::AlwaysOn
+    } else {
+        MicrophoneMode::OnDemand
+    };
+
+    let session_active = transcription_session_active(&app);
+    if !session_active {
+        rm.update_mode(new_hw_mode)
+            .map_err(|e| format!("Failed to update microphone mode: {}", e))?;
+    }
+
+    let mut settings = get_settings(&app);
+    settings.recording_mode = mode;
+    // Keep legacy booleans in sync for any code still reading them directly.
+    settings.push_to_talk = mode == RecordingMode::PushToTalk;
+    settings.always_on_microphone = mode == RecordingMode::AlwaysOn;
+    write_settings(&app, settings);
+
+    crate::startup_warmup::ensure_startup_warmup(&app, "recording-mode-changed");
+    info!("[MODE] change_recording_mode done");
+    Ok(())
 }
 
 #[tauri::command]

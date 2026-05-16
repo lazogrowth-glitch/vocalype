@@ -93,7 +93,7 @@ const settingUpdaters: {
   [K in keyof Settings]?: (value: Settings[K]) => Promise<unknown>;
 } = {
   always_on_microphone: (value) =>
-    commands.updateMicrophoneMode(value as boolean),
+    commands.updateMicrophoneMode(value as boolean), // legacy — prefer recording_mode
   audio_feedback: (value) =>
     commands.changeAudioFeedbackSetting(value as boolean),
   audio_feedback_volume: (value) =>
@@ -104,7 +104,9 @@ const settingUpdaters: {
     commands.changeAutostartSetting(value as boolean),
   update_checks_enabled: (value) =>
     commands.changeUpdateChecksSetting(value as boolean),
-  push_to_talk: (value) => commands.changePttSetting(value as boolean),
+  push_to_talk: (value) => commands.changePttSetting(value as boolean), // legacy — prefer recording_mode
+  recording_mode: (value) =>
+    commands.changeRecordingMode(value as import("@/bindings").RecordingMode),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(
       (value as string) === "Default" || value === null

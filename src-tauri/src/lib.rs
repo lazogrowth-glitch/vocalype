@@ -1005,6 +1005,7 @@ pub fn run(cli_args: CliArgs) {
         commands::models::has_any_models_available,
         commands::models::has_any_models_or_downloads,
         commands::audio::update_microphone_mode,
+        commands::audio::change_recording_mode,
         commands::audio::get_microphone_mode,
         commands::audio::get_available_microphones,
         commands::audio::set_selected_microphone,

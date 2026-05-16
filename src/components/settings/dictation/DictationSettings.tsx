@@ -167,8 +167,18 @@ export const DictationSettings: React.FC = () => {
     useSettings();
   const osType = useOsType();
 
-  const pushToTalk = getSetting("push_to_talk") ?? false;
-  const alwaysOn = getSetting("always_on_microphone") ?? false;
+  const recordingMode =
+    (getSetting("recording_mode") as
+      | import("@/bindings").RecordingMode
+      | undefined) ??
+    // Fallback: derive from legacy booleans for users migrating from old settings
+    ((getSetting("push_to_talk") ?? true)
+      ? "push_to_talk"
+      : (getSetting("always_on_microphone") ?? false)
+        ? "always_on"
+        : "toggle");
+  const pushToTalk = recordingMode === "push_to_talk";
+  const alwaysOn = recordingMode === "always_on";
   const bindings = getSetting("bindings") ?? {};
   const transcribeBinding =
     (bindings as Record<string, { current_binding?: string }>)["transcribe"]
@@ -304,19 +314,9 @@ export const DictationSettings: React.FC = () => {
 
   const handleModeSelect = useCallback(
     async (id: "bascule" | "ptt" | "vad") => {
-      switch (id) {
-        case "ptt":
-          await updateSetting("push_to_talk", true);
-          await updateSetting("always_on_microphone", false);
-          break;
-        case "vad":
-          await updateSetting("push_to_talk", false);
-          await updateSetting("always_on_microphone", true);
-          break;
-        default:
-          await updateSetting("push_to_talk", false);
-          await updateSetting("always_on_microphone", false);
-      }
+      const mode: import("@/bindings").RecordingMode =
+        id === "ptt" ? "push_to_talk" : id === "vad" ? "always_on" : "toggle";
+      await updateSetting("recording_mode", mode);
     },
     [updateSetting],
   );

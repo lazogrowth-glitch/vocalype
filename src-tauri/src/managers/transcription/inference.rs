@@ -19,6 +19,10 @@ const PARAKEET_SHORT_PHRASE_PAD_SAMPLES: usize = parakeet_config::SHORT_PHRASE_P
 const PARAKEET_TAIL_PAD_SAMPLES: usize = parakeet_config::TAIL_PAD_SAMPLES;
 const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = parakeet_config::SENTENCE_RESCUE_MAX_WORDS;
 const PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES: usize = parakeet_config::ULTRA_SHORT_PHRASE_SAMPLES;
+const PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES: usize =
+    parakeet_config::STATEFUL_STREAMING_FRAME_SAMPLES;
+const PARAKEET_STATEFUL_STREAMING_MAX_BATCH_SAMPLES: usize =
+    parakeet_config::STATEFUL_STREAMING_MAX_BATCH_SAMPLES;
 const PARAKEET_LANGUAGE_DRIFT_LOG_FILE: &str = "parakeet-language-drift.jsonl";
 const PARAKEET_BRAIN_TRACE_LOG_FILE: &str = "parakeet-brain-trace.jsonl";
 
@@ -54,6 +58,60 @@ fn should_use_fast_short_parakeet_path(samples: usize, policy: ShortDictationPol
         ShortDictationPolicy::Balanced => samples <= PARAKEET_FAST_SHORT_PHRASE_SAMPLES,
         ShortDictationPolicy::Quality => false,
     }
+}
+
+fn should_attempt_parakeet_stateful_streaming(
+    experimental_enabled: bool,
+    stateful_enabled: bool,
+    samples: usize,
+) -> bool {
+    experimental_enabled
+        && stateful_enabled
+        && samples >= PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES
+        && samples <= PARAKEET_STATEFUL_STREAMING_MAX_BATCH_SAMPLES
+}
+
+fn clean_parakeet_stateful_text(text: &str) -> String {
+    text.replace("[EOU]", "")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .trim()
+        .to_string()
+}
+
+fn transcribe_parakeet_stateful_experimental(
+    runtime: &mut ParakeetV3Runtime,
+    audio: &[f32],
+    operation_id: Option<u64>,
+) -> Result<Option<EngineTranscriptionResult>> {
+    let Some(stateful) = runtime.stateful.as_mut() else {
+        return Ok(None);
+    };
+
+    stateful.prepare_session(operation_id);
+
+    let mut text = String::new();
+    for frame in audio.chunks(PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES) {
+        let piece = stateful
+            .engine
+            .transcribe(frame, true)
+            .map_err(|err| anyhow::anyhow!("Parakeet EOU streaming failed: {}", err))?;
+        let cleaned = clean_parakeet_stateful_text(&piece);
+        if !cleaned.is_empty() {
+            text.push_str(&cleaned);
+        }
+    }
+
+    let text = clean_parakeet_stateful_text(&text);
+    if text.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(EngineTranscriptionResult {
+        text,
+        segments: None,
+    }))
 }
 
 fn tokenize_words(text: &str) -> Vec<String> {
@@ -750,6 +808,9 @@ impl TranscriptionManager {
         let settings_started = std::time::Instant::now();
         let settings = get_settings(&self.app_handle);
         let short_dictation_policy = settings.short_dictation_policy;
+        let active_operation_id = self
+            .coordinator_session_snapshot()
+            .and_then(|snapshot| snapshot.operation_id);
         let active_model_id = self.get_current_model();
         let voice_profile = if settings.adaptive_voice_profile_enabled {
             active_model_id.as_deref().and_then(|model_id| {
@@ -876,7 +937,61 @@ impl TranscriptionManager {
             let transcribe_result = catch_unwind(AssertUnwindSafe(
                 || -> Result<EngineTranscriptionResult> {
                     match &mut engine {
-                        LoadedEngine::ParakeetV3(parakeet_engine) => {
+                        LoadedEngine::ParakeetV3(parakeet_runtime) => {
+                            if should_attempt_parakeet_stateful_streaming(
+                                settings.experimental_enabled,
+                                settings.parakeet_stateful_streaming_enabled,
+                                audio.len(),
+                            ) {
+                                match &parakeet_runtime.stateful_status {
+                                    ParakeetStatefulStatus::Ready { model_path } => {
+                                        debug!(
+                                            "[parakeet-stateful] attempting experimental EOU path path={} samples={} operation_id={:?}",
+                                            model_path.display(),
+                                            audio.len(),
+                                            active_operation_id
+                                        );
+                                        match transcribe_parakeet_stateful_experimental(
+                                            parakeet_runtime,
+                                            &audio,
+                                            active_operation_id,
+                                        ) {
+                                            Ok(Some(output)) => {
+                                                info!(
+                                                    "[parakeet-stateful] using experimental EOU transcript words={}",
+                                                    output.text.split_whitespace().count()
+                                                );
+                                                return Ok(output);
+                                            }
+                                            Ok(None) => {
+                                                debug!(
+                                                    "[parakeet-stateful] EOU path produced no committed text; falling back to TDT"
+                                                );
+                                            }
+                                            Err(err) => {
+                                                warn!(
+                                                    "[parakeet-stateful] EOU path failed; falling back to TDT: {}",
+                                                    err
+                                                );
+                                            }
+                                        }
+                                    }
+                                    ParakeetStatefulStatus::MissingModelFiles => {
+                                        debug!(
+                                            "[parakeet-stateful] enabled but EOU model files are missing; using TDT"
+                                        );
+                                    }
+                                    ParakeetStatefulStatus::LoadFailed(reason) => {
+                                        debug!(
+                                            "[parakeet-stateful] EOU runtime unavailable after load failure: {}; using TDT",
+                                            reason
+                                        );
+                                    }
+                                    ParakeetStatefulStatus::Disabled => {}
+                                }
+                            }
+
+                            let parakeet_engine = &mut parakeet_runtime.tdt;
                             let is_short_phrase = audio.len() < PARAKEET_SHORT_PHRASE_SAMPLES;
                             let is_fast_short_phrase = should_use_fast_short_parakeet_path(
                                 audio.len(),
@@ -1515,6 +1630,43 @@ mod tests {
             2 * 16_000,
             ShortDictationPolicy::Quality,
         ));
+    }
+
+    #[test]
+    fn stateful_streaming_gate_requires_experimental_flag_and_bounded_audio() {
+        assert!(!should_attempt_parakeet_stateful_streaming(
+            false,
+            true,
+            PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES,
+        ));
+        assert!(!should_attempt_parakeet_stateful_streaming(
+            true,
+            false,
+            PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES,
+        ));
+        assert!(!should_attempt_parakeet_stateful_streaming(
+            true,
+            true,
+            PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES - 1,
+        ));
+        assert!(should_attempt_parakeet_stateful_streaming(
+            true,
+            true,
+            PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES,
+        ));
+        assert!(!should_attempt_parakeet_stateful_streaming(
+            true,
+            true,
+            PARAKEET_STATEFUL_STREAMING_MAX_BATCH_SAMPLES + 1,
+        ));
+    }
+
+    #[test]
+    fn cleans_stateful_eou_marker_and_spacing() {
+        assert_eq!(
+            clean_parakeet_stateful_text("  Bonjour   Sarah [EOU]  "),
+            "Bonjour Sarah"
+        );
     }
 
     #[test]

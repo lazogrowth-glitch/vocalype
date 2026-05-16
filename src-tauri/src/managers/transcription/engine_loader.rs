@@ -1,5 +1,92 @@
 use super::*;
 use crate::managers::model::ModelInfo;
+use std::path::{Path, PathBuf};
+
+fn parakeet_stateful_required_files_present(path: &Path) -> bool {
+    path.join("encoder.onnx").exists()
+        && path.join("decoder_joint.onnx").exists()
+        && path.join("tokenizer.json").exists()
+}
+
+fn parakeet_stateful_candidate_paths(model_path: &Path) -> Vec<PathBuf> {
+    let mut candidates = vec![model_path.to_path_buf(), model_path.join("eou")];
+
+    if let Some(parent) = model_path.parent() {
+        candidates.push(parent.join("parakeet-eou"));
+        candidates.push(parent.join("parakeet-realtime-eou"));
+        candidates.push(parent.join("parakeet-rnnt-eou"));
+    }
+
+    candidates.dedup();
+    candidates
+}
+
+fn find_parakeet_stateful_model_path(model_path: &Path) -> Option<PathBuf> {
+    parakeet_stateful_candidate_paths(model_path)
+        .into_iter()
+        .find(|candidate| parakeet_stateful_required_files_present(candidate))
+}
+
+fn load_parakeet_stateful_runtime(
+    app_handle: &AppHandle,
+    model_path: &Path,
+    providers: &[ParakeetExecutionProvider],
+) -> (Option<ParakeetStatefulRuntime>, ParakeetStatefulStatus) {
+    let settings = get_settings(app_handle);
+    if !settings.experimental_enabled || !settings.parakeet_stateful_streaming_enabled {
+        return (None, ParakeetStatefulStatus::Disabled);
+    }
+
+    let Some(stateful_path) = find_parakeet_stateful_model_path(model_path) else {
+        info!(
+            "[parakeet-stateful] experimental path enabled but no EOU model files were found near {}",
+            model_path.display()
+        );
+        return (None, ParakeetStatefulStatus::MissingModelFiles);
+    };
+
+    let mut last_error = None;
+    for provider in providers {
+        let provider_label = parakeet_provider_label(*provider);
+        info!(
+            "[parakeet-stateful] attempting EOU runtime at {} with provider {}",
+            stateful_path.display(),
+            provider_label
+        );
+
+        match ParakeetEOU::from_pretrained(
+            &stateful_path,
+            Some(parakeet_v3_execution_config(*provider)),
+        ) {
+            Ok(engine) => {
+                info!(
+                    "[parakeet-stateful] loaded EOU runtime with provider {}",
+                    provider_label
+                );
+                return (
+                    Some(ParakeetStatefulRuntime::new(engine)),
+                    ParakeetStatefulStatus::Ready {
+                        model_path: stateful_path,
+                    },
+                );
+            }
+            Err(err) => {
+                warn!(
+                    "[parakeet-stateful] provider {} failed for EOU runtime: {}",
+                    provider_label, err
+                );
+                last_error = Some(format!("provider {} failed: {}", provider_label, err));
+            }
+        }
+    }
+
+    (
+        None,
+        ParakeetStatefulStatus::LoadFailed(
+            last_error.unwrap_or_else(|| "no provider succeeded".to_string()),
+        ),
+    )
+}
 
 impl TranscriptionManager {
     fn resolve_runtime_model_path(
@@ -80,7 +167,7 @@ impl TranscriptionManager {
                     .ok()
                     .map(|d| d.join("cache").join("parakeet").join(model_id));
 
-                for provider in provider_candidates {
+                for provider in provider_candidates.iter().copied() {
                     let provider_label = parakeet_provider_label(provider);
                     info!(
                         "Attempting to load Parakeet V3 '{}' with provider {}",
@@ -128,7 +215,13 @@ impl TranscriptionManager {
                     );
                     anyhow::anyhow!(error_msg)
                 })?;
-                LoadedEngine::ParakeetV3(engine)
+                let (stateful, stateful_status) = load_parakeet_stateful_runtime(
+                    &self.app_handle,
+                    &model_path,
+                    &provider_candidates,
+                );
+
+                LoadedEngine::ParakeetV3(ParakeetV3Runtime::new(engine, stateful, stateful_status))
             }
         };
 
@@ -161,5 +254,44 @@ impl TranscriptionManager {
             load_duration.as_millis()
         );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn detects_complete_stateful_model_files() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::write(temp.path().join("encoder.onnx"), b"encoder").unwrap();
+        fs::write(temp.path().join("decoder_joint.onnx"), b"decoder").unwrap();
+        fs::write(temp.path().join("tokenizer.json"), b"{}").unwrap();
+
+        assert!(parakeet_stateful_required_files_present(temp.path()));
+    }
+
+    #[test]
+    fn rejects_incomplete_stateful_model_files() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::write(temp.path().join("encoder.onnx"), b"encoder").unwrap();
+        fs::write(temp.path().join("decoder_joint.onnx"), b"decoder").unwrap();
+
+        assert!(!parakeet_stateful_required_files_present(temp.path()));
+    }
+
+    #[test]
+    fn searches_sibling_stateful_model_directories() {
+        let temp = tempfile::tempdir().unwrap();
+        let tdt_path = temp.path().join("parakeet-tdt-0.6b-v3-int8");
+        let eou_path = temp.path().join("parakeet-eou");
+        fs::create_dir_all(&tdt_path).unwrap();
+        fs::create_dir_all(&eou_path).unwrap();
+        fs::write(eou_path.join("encoder.onnx"), b"encoder").unwrap();
+        fs::write(eou_path.join("decoder_joint.onnx"), b"decoder").unwrap();
+        fs::write(eou_path.join("tokenizer.json"), b"{}").unwrap();
+
+        assert_eq!(find_parakeet_stateful_model_path(&tdt_path), Some(eou_path));
     }
 }

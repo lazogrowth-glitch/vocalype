@@ -169,7 +169,7 @@ impl ParakeetEOU {
 
                 if max_idx == self.eou_id {
                     if reset_on_eou {
-                        self.reset_states();
+                        self.reset_decoder_states();
                         return Ok(text_output + " [EOU]");
                     }
                     break;
@@ -192,7 +192,13 @@ impl ParakeetEOU {
         Ok(text_output)
     }
 
-    fn reset_states(&mut self) {
+    pub fn reset_streaming_state(&mut self) {
+        self.encoder_cache = EncoderCache::new();
+        self.reset_decoder_states();
+        self.audio_buffer.clear();
+    }
+
+    fn reset_decoder_states(&mut self) {
         // Soft reset: Only reset decoder states
         // at this state, we need to keep encoder cache and audio buffer flowing for continuous context
         // self.encoder_cache = EncoderCache::new();  // DON'T reset!!!

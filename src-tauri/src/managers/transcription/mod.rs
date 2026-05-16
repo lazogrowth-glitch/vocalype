@@ -16,7 +16,7 @@ use anyhow::Result;
 use log::{debug, error, info, warn};
 use parakeet_rs::{
     ExecutionConfig as ParakeetExecutionConfig, ExecutionProvider as ParakeetExecutionProvider,
-    ParakeetTDT, TimestampMode as ParakeetTimestampMode, Transcriber,
+    ParakeetEOU, ParakeetTDT, TimestampMode as ParakeetTimestampMode, Transcriber,
 };
 use parking_lot::{Condvar, Mutex, MutexGuard};
 use serde::Serialize;
@@ -126,14 +126,62 @@ pub struct TranscriptionOutput {
     pub segments: Option<Vec<transcribe_rs::TranscriptionSegment>>,
 }
 
-#[derive(Debug)]
 struct EngineTranscriptionResult {
     text: String,
     segments: Option<Vec<transcribe_rs::TranscriptionSegment>>,
 }
 
+#[derive(Debug)]
+enum ParakeetStatefulStatus {
+    Disabled,
+    MissingModelFiles,
+    LoadFailed(String),
+    Ready { model_path: std::path::PathBuf },
+}
+
+struct ParakeetStatefulRuntime {
+    engine: ParakeetEOU,
+    last_operation_id: Option<u64>,
+}
+
+impl ParakeetStatefulRuntime {
+    fn new(engine: ParakeetEOU) -> Self {
+        Self {
+            engine,
+            last_operation_id: None,
+        }
+    }
+
+    fn prepare_session(&mut self, operation_id: Option<u64>) {
+        if self.last_operation_id != operation_id {
+            self.engine.reset_streaming_state();
+            self.last_operation_id = operation_id;
+        }
+    }
+}
+
+struct ParakeetV3Runtime {
+    tdt: ParakeetTDT,
+    stateful: Option<ParakeetStatefulRuntime>,
+    stateful_status: ParakeetStatefulStatus,
+}
+
+impl ParakeetV3Runtime {
+    fn new(
+        tdt: ParakeetTDT,
+        stateful: Option<ParakeetStatefulRuntime>,
+        stateful_status: ParakeetStatefulStatus,
+    ) -> Self {
+        Self {
+            tdt,
+            stateful,
+            stateful_status,
+        }
+    }
+}
+
 enum LoadedEngine {
-    ParakeetV3(ParakeetTDT),
+    ParakeetV3(ParakeetV3Runtime),
 }
 
 #[derive(Clone)]

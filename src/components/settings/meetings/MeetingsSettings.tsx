@@ -888,25 +888,11 @@ export const MeetingsSettings: React.FC = () => {
     );
   };
 
-  const handleDuplicate = async (m: MeetingEntry, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const r = await commands.duplicateMeeting(m.id);
-    if (r.status !== "ok") {
-      toast.error(getUserFacingErrorMessage(r.error, { t }));
-      return;
-    }
-    setMeetings((prev) => [r.data, ...prev]);
-    setSelectedId(r.data.id);
-    setEditTitle(r.data.title);
-    setEditTranscript(r.data.transcript);
-    editTranscriptRef.current = r.data.transcript;
-  };
-
   const handleExport = async () => {
     if (!selectedMeeting) return;
     try {
       const safe =
-        (editTitle.trim() || meetingTitle(selectedMeeting))
+        (editTitle.trim() || meetingTitle(selectedMeeting, "reunion"))
           .replace(/[<>:"/\\|?*\x00-\x1F]/g, " ")
           .replace(/\s+/g, " ")
           .trim() || "reunion";
@@ -1008,50 +994,6 @@ export const MeetingsSettings: React.FC = () => {
           defaultValue: "Unable to import audio file",
         }),
         { id: "m-import" },
-      );
-    }
-  };
-
-  const handleImportAudioWithDiarization = async () => {
-    try {
-      const sel = await open({
-        multiple: false,
-        filters: [{ name: "Audio", extensions: ["wav", "flac"] }],
-      });
-      if (!sel || typeof sel !== "string") return;
-      toast.loading(
-        t("meetings.importingAudioDiarization", {
-          defaultValue:
-            "Transcribing with speaker detection… (first run downloads ~50 MB model)",
-        }),
-        { id: "m-diar" },
-      );
-      const r = await commands.transcribeAudioToMeeting(sel);
-      if (r.status !== "ok") {
-        toast.error(getUserFacingErrorMessage(r.error, { t }), {
-          id: "m-diar",
-        });
-        return;
-      }
-      const meeting = r.data;
-      setMeetings((prev) => [meeting, ...prev]);
-      setSelectedId(meeting.id);
-      setEditTitle(meeting.title);
-      setEditTranscript(meeting.transcript);
-      editTitleRef.current = meeting.title;
-      editTranscriptRef.current = meeting.transcript;
-      toast.success(
-        t("meetings.importDiarizationSuccess", {
-          defaultValue: "Meeting created with speaker labels.",
-        }),
-        { id: "m-diar" },
-      );
-    } catch {
-      toast.error(
-        t("meetings.importDiarizationError", {
-          defaultValue: "Unable to import audio file with speaker detection",
-        }),
-        { id: "m-diar" },
       );
     }
   };

@@ -59,7 +59,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   layoutTier = "spacious",
   session,
   onLogout,
-  onOpenBillingPortal,
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();

@@ -495,11 +495,7 @@ export function useBackendEvents({
   // language-toggled
   useTauriEvent<string>(
     "language-toggled",
-    (event) => {
-      const code = event.payload;
-      const langName =
-        LANGUAGES.find((l) => l.value === code)?.label ??
-        t("languageToggle.auto", { defaultValue: "Auto" });
+    () => {
       // Sync the settings store so LanguageSelector reflects the change immediately
       void useSettingsStore.getState().refreshSettings();
     },

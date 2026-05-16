@@ -644,6 +644,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {session.user.email}
               </p>
             </div>
+            <Settings2
+              size={14}
+              style={{
+                flexShrink: 0,
+                opacity: showUserMenu ? 0.7 : 0.28,
+                transition: "opacity 0.15s",
+                color: showUserMenu ? "#c9a84c" : "rgba(255,255,255,0.9)",
+              }}
+            />
           </button>
         </div>
       )}

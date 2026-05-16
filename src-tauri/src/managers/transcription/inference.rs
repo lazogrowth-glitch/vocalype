@@ -622,6 +622,15 @@ impl TranscriptionManager {
                 *is_inferring = true;
             }
 
+            // Reset the idle-unload timer so the watcher never considers this
+            // session "stale" (age > ACTIVE_SESSION_STALE_MS = 30 s) while a
+            // chunk is actively being transcribed.  Without this, a long
+            // recording whose model was loaded >30 s ago would cause the watcher
+            // to treat the coordinator session as a leaked ghost and unload the
+            // model mid-recording, turning every subsequent background chunk into
+            // a "Model is not loaded" failure.
+            self.touch_activity();
+
             push_timing(
                 &mut timings,
                 st,

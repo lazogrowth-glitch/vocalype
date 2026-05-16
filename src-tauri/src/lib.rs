@@ -1069,7 +1069,6 @@ pub fn run(cli_args: CliArgs) {
         commands::meetings::detect_active_meeting_app,
         commands::meetings::close_meeting,
         commands::meetings::set_active_meeting,
-        commands::meetings::transcribe_audio_to_meeting,
         commands::dictionary::get_dictionary,
         commands::dictionary::add_dictionary_entry,
         commands::dictionary::remove_dictionary_entry,

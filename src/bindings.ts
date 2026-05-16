@@ -1240,18 +1240,6 @@ async closeMeeting() : Promise<void> {
 async setActiveMeeting(id: number | null) : Promise<void> {
     await TAURI_INVOKE("set_active_meeting", { id });
 },
-/**
- * Import a WAV audio file and create a meeting with speaker diarization.
- * Downloads the Sortformer model on first use (~50 MB).
- */
-async transcribeAudioToMeeting(path: string) : Promise<Result<MeetingEntry, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("transcribe_audio_to_meeting", { path }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async getDictionary() : Promise<Result<DictionaryEntry[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_dictionary") };
@@ -1881,7 +1869,7 @@ export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 export type MachineScoreDetails = { ram_score?: number; cpu_threads_score?: number; cpu_family_score?: number; gpu_prebench_bonus?: number; npu_prebench_bonus?: number; low_power_penalty?: number; power_penalty?: number; thermal_penalty?: number; final_score?: number; tier_reason?: string }
 export type MachineTier = "low" | "medium" | "high"
 export type MeetingEntry = { id: number; title: string; app_name: string; transcript: string; category: string; is_pinned: boolean; is_archived: boolean; summary: string; action_items: string; segments: MeetingSegmentEntry[]; created_at: number; updated_at: number }
-export type MeetingSegmentEntry = { id: number; meeting_id: number; timestamp_ms: number; content: string; speaker: string }
+export type MeetingSegmentEntry = { id: number; meeting_id: number; timestamp_ms: number; content: string }
 export type MicrophonePermissionState = "unknown" | "granted" | "denied"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; expected_etag: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; is_custom: boolean; requires_license_key: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }

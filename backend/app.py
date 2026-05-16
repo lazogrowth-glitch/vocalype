@@ -1408,15 +1408,6 @@ def get_user_workspace_row(user):
     return workspace_row
 
 
-def refresh_user_workspace_cache(user, db: _PgConn | None = None):
-    if user is None:
-        return None
-    workspace_row = load_workspace_row_for_user(user["id"], db=db)
-    user["__workspace_row_loaded__"] = True
-    user["__workspace_row__"] = workspace_row
-    return workspace_row
-
-
 def user_has_small_agency_membership(user_id: int) -> bool:
     return load_workspace_row_for_user(user_id) is not None
 
@@ -2689,20 +2680,7 @@ def session(user):
     token = make_token(user)
     refresh_token = make_refresh_token(user)
     show_reminder = maybe_send_trial_reminder(user)
-    workspace_row = refresh_user_workspace_cache(user)
-    workspace_payload = (
-        serialize_workspace(workspace_row) if workspace_row is not None else None
-    )
-    return jsonify(
-        build_user_response(
-            user,
-            token,
-            refresh_token=refresh_token,
-            show_trial_reminder=show_reminder,
-            workspace_row=workspace_row,
-            workspace_payload=workspace_payload,
-        )
-    )
+    return jsonify(build_user_response(user, token, refresh_token=refresh_token, show_trial_reminder=show_reminder))
 
 
 @app.route("/auth/profile", methods=["PATCH"])
@@ -2738,21 +2716,9 @@ def update_profile(user):
         return jsonify({"error": "Utilisateur introuvable"}), 404
 
     attach_user_to_pending_workspace_invites(refreshed_user)
-    workspace_row = refresh_user_workspace_cache(refreshed_user)
     token = make_token(refreshed_user)
     refresh_token = make_refresh_token(refreshed_user)
-    workspace_payload = (
-        serialize_workspace(workspace_row) if workspace_row is not None else None
-    )
-    return jsonify(
-        build_user_response(
-            refreshed_user,
-            token,
-            refresh_token=refresh_token,
-            workspace_row=workspace_row,
-            workspace_payload=workspace_payload,
-        )
-    )
+    return jsonify(build_user_response(refreshed_user, token, refresh_token=refresh_token))
 
 
 @app.route("/auth/refresh", methods=["POST"])
@@ -2784,21 +2750,9 @@ def refresh_token_endpoint():
         return jsonify({"error": "Token révoqué"}), 401
 
     attach_user_to_pending_workspace_invites(user)
-    workspace_row = refresh_user_workspace_cache(user)
     new_access = make_token(user)
     new_refresh = make_refresh_token(user)
-    workspace_payload = (
-        serialize_workspace(workspace_row) if workspace_row is not None else None
-    )
-    return jsonify(
-        build_user_response(
-            user,
-            new_access,
-            refresh_token=new_refresh,
-            workspace_row=workspace_row,
-            workspace_payload=workspace_payload,
-        )
-    )
+    return jsonify(build_user_response(user, new_access, refresh_token=new_refresh))
 
 
 @app.route("/auth/logout", methods=["POST"])
@@ -3440,9 +3394,7 @@ def workspace_update_settings(user):
     finally:
         db.close()
 
-    refreshed_workspace = load_workspace_row_for_user(user["id"])
-    user["__workspace_row_loaded__"] = True
-    user["__workspace_row__"] = refreshed_workspace
+    refreshed_workspace = ensure_small_agency_workspace(user)
     return jsonify({"workspace": serialize_workspace(refreshed_workspace)})
 
 

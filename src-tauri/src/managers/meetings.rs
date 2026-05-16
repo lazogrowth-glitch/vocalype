@@ -33,7 +33,6 @@ static MIGRATIONS: &[M] = &[
     );",
     ),
     M::up("ALTER TABLE meetings ADD COLUMN kind TEXT NOT NULL DEFAULT 'meeting';"),
-    M::up("ALTER TABLE meeting_segments ADD COLUMN speaker TEXT NOT NULL DEFAULT '';"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -42,7 +41,6 @@ pub struct MeetingSegmentEntry {
     pub meeting_id: i64,
     pub timestamp_ms: i64,
     pub content: String,
-    pub speaker: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -108,9 +106,7 @@ impl MeetingManager {
             return Ok(0);
         }
 
-        let version = if Self::column_exists(conn, "meeting_segments", "speaker")? {
-            9
-        } else if Self::column_exists(conn, "meetings", "kind")? {
+        let version = if Self::column_exists(conn, "meetings", "kind")? {
             8
         } else if Self::table_exists(conn, "meeting_segments")? {
             7
@@ -156,7 +152,7 @@ impl MeetingManager {
 
     fn load_segments(conn: &Connection, meeting_id: i64) -> Result<Vec<MeetingSegmentEntry>> {
         let mut stmt = conn.prepare(
-            "SELECT id, meeting_id, timestamp_ms, content, COALESCE(speaker, '') as speaker
+            "SELECT id, meeting_id, timestamp_ms, content
              FROM meeting_segments
              WHERE meeting_id = ?1
              ORDER BY timestamp_ms ASC, id ASC",
@@ -168,7 +164,6 @@ impl MeetingManager {
                     meeting_id: row.get(1)?,
                     timestamp_ms: row.get(2)?,
                     content: row.get(3)?,
-                    speaker: row.get(4)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -231,33 +226,6 @@ impl MeetingManager {
             });
         }
         Ok(entries)
-    }
-
-    pub fn get_meeting_by_id(&self, id: i64) -> Result<MeetingEntry> {
-        let conn = self.open()?;
-        let entry = conn.query_row(
-            "SELECT id, title, app_name, transcript, category, is_pinned, is_archived, summary, action_items, created_at, updated_at
-             FROM meetings WHERE id = ?1 AND kind = 'meeting'",
-            params![id],
-            |row| {
-                Ok(MeetingEntry {
-                    id: row.get(0)?,
-                    title: row.get(1)?,
-                    app_name: row.get(2)?,
-                    transcript: row.get(3)?,
-                    category: row.get(4)?,
-                    is_pinned: row.get::<_, i64>(5)? != 0,
-                    is_archived: row.get::<_, i64>(6)? != 0,
-                    summary: row.get(7)?,
-                    action_items: row.get(8)?,
-                    segments: Vec::new(),
-                    created_at: row.get(9)?,
-                    updated_at: row.get(10)?,
-                })
-            },
-        )?;
-        let segments = Self::load_segments(&conn, id)?;
-        Ok(MeetingEntry { segments, ..entry })
     }
 
     pub fn create_meeting(&self, title: &str, app_name: &str) -> Result<MeetingEntry> {
@@ -353,16 +321,6 @@ impl MeetingManager {
         segment: &str,
         timestamp_ms: i64,
     ) -> Result<MeetingSegmentEntry> {
-        self.append_segment_with_speaker(id, segment, timestamp_ms, "")
-    }
-
-    pub fn append_segment_with_speaker(
-        &self,
-        id: i64,
-        segment: &str,
-        timestamp_ms: i64,
-        speaker: &str,
-    ) -> Result<MeetingSegmentEntry> {
         let conn = self.open()?;
         let now = chrono::Utc::now().timestamp_millis();
         conn.execute(
@@ -370,8 +328,8 @@ impl MeetingManager {
             params![segment, now, id],
         )?;
         conn.execute(
-            "INSERT INTO meeting_segments (meeting_id, timestamp_ms, content, speaker) VALUES (?1, ?2, ?3, ?4)",
-            params![id, timestamp_ms, segment, speaker],
+            "INSERT INTO meeting_segments (meeting_id, timestamp_ms, content) VALUES (?1, ?2, ?3)",
+            params![id, timestamp_ms, segment],
         )?;
         let segment_id = conn.last_insert_rowid();
         Ok(MeetingSegmentEntry {
@@ -379,7 +337,6 @@ impl MeetingManager {
             meeting_id: id,
             timestamp_ms,
             content: segment.to_string(),
-            speaker: speaker.to_string(),
         })
     }
 

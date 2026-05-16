@@ -547,7 +547,16 @@ export function DesktopAppShell({
           position="bottom-right"
           visibleToasts={3}
           gap={8}
+          offset={20}
           containerAriaLabel={t("a11y.notifications")}
+          containerStyle={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            top: "unset",
+            left: "unset",
+            zIndex: 9999,
+          }}
           toastOptions={{
             duration: 4000,
             unstyled: true,

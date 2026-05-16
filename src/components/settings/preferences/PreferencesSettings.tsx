@@ -518,6 +518,9 @@ export const PreferencesSettings: React.FC = () => {
   const adaptiveVocabOn = (getSetting("adaptive_vocabulary_enabled") ??
     false) as boolean;
   const debugModeOn = (getSetting("debug_mode") ?? false) as boolean;
+  const experimentalOn = (settings?.experimental_enabled ?? false) as boolean;
+  const parakeetStatefulOn = (settings?.parakeet_stateful_streaming_enabled ??
+    false) as boolean;
   const retentionPeriod = (getSetting("recording_retention_period") ??
     "weeks_2") as RecordingRetentionPeriod;
   const saveAudioOn = (getSetting("save_audio_recordings") ?? false) as boolean;
@@ -1100,17 +1103,36 @@ export const PreferencesSettings: React.FC = () => {
               </PRow>
 
               <PRow
-                last
                 icon={<Server size={16} />}
                 title="Mode expérimental"
                 desc="Active les fonctionnalités expérimentales en cours de développement."
               >
                 <PSwitch
-                  on={(settings?.experimental_enabled ?? false) as boolean}
+                  on={experimentalOn}
                   onChange={(v) =>
                     void updateSetting("experimental_enabled", v)
                   }
                   disabled={isUpdating("experimental_enabled")}
+                />
+              </PRow>
+
+              <PRow
+                last
+                gold={experimentalOn && parakeetStatefulOn}
+                disabled={!experimentalOn}
+                icon={<Zap size={16} />}
+                title="Streaming Parakeet expérimental"
+                desc="Teste le petit modèle temps réel EOU. Utile pour mesurer la latence, pas encore recommandé pour la dictée recruteur."
+              >
+                <PSwitch
+                  on={experimentalOn && parakeetStatefulOn}
+                  onChange={(v) =>
+                    void updateSetting("parakeet_stateful_streaming_enabled", v)
+                  }
+                  disabled={
+                    !experimentalOn ||
+                    isUpdating("parakeet_stateful_streaming_enabled")
+                  }
                 />
               </PRow>
             </PGroup>

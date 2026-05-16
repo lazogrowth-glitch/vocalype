@@ -96,7 +96,7 @@ tar = "0.4.44"
 flate2 = "1.0"
 sysinfo = "0.37"
 transcribe-rs = { version = "0.2.5", features = ["whisper", "parakeet", "moonshine", "sense_voice"] }
-parakeet-rs = "0.2.0"
+parakeet-rs = { version = "0.2.0", features = ["sortformer"] }
 vocalype-shortcut-backend = { path = "vendor/vocalype-shortcut-backend" }
 ferrous-opencc = "0.2.3"
 parking_lot = "0.12"
@@ -129,7 +129,7 @@ windows = { version = "0.61.3", features = [
   "Win32_UI_Accessibility",
 ] }
 wmi = "0.14"
-parakeet-rs = { version = "0.2.0", features = ["directml", "openvino", "qnn"] }
+parakeet-rs = { version = "0.2.0", features = ["directml", "openvino", "qnn", "sortformer"] }
 keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]

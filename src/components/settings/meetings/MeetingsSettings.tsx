@@ -1012,6 +1012,50 @@ export const MeetingsSettings: React.FC = () => {
     }
   };
 
+  const handleImportAudioWithDiarization = async () => {
+    try {
+      const sel = await open({
+        multiple: false,
+        filters: [{ name: "Audio", extensions: ["wav", "flac"] }],
+      });
+      if (!sel || typeof sel !== "string") return;
+      toast.loading(
+        t("meetings.importingAudioDiarization", {
+          defaultValue:
+            "Transcribing with speaker detection… (first run downloads ~50 MB model)",
+        }),
+        { id: "m-diar" },
+      );
+      const r = await commands.transcribeAudioToMeeting(sel);
+      if (r.status !== "ok") {
+        toast.error(getUserFacingErrorMessage(r.error, { t }), {
+          id: "m-diar",
+        });
+        return;
+      }
+      const meeting = r.data;
+      setMeetings((prev) => [meeting, ...prev]);
+      setSelectedId(meeting.id);
+      setEditTitle(meeting.title);
+      setEditTranscript(meeting.transcript);
+      editTitleRef.current = meeting.title;
+      editTranscriptRef.current = meeting.transcript;
+      toast.success(
+        t("meetings.importDiarizationSuccess", {
+          defaultValue: "Meeting created with speaker labels.",
+        }),
+        { id: "m-diar" },
+      );
+    } catch {
+      toast.error(
+        t("meetings.importDiarizationError", {
+          defaultValue: "Unable to import audio file with speaker detection",
+        }),
+        { id: "m-diar" },
+      );
+    }
+  };
+
   const handleCopyTranscript = async () => {
     const text = editTranscriptRef.current.trim();
     if (!text) {
@@ -1686,18 +1730,6 @@ export const MeetingsSettings: React.FC = () => {
         )}
 
         <div style={s.listHead}>
-          <div style={s.listTitleRow}>
-            <span style={s.listTitle}>
-              {t("sidebar.meetings", { defaultValue: "Calls & notes" })}
-            </span>
-            <span style={s.listCount}>{visibleMeetings.length}</span>
-          </div>
-          <p style={s.listSub}>
-            {t("shell.sectionDescriptions.meetings", {
-              defaultValue:
-                "Keep calls, meetings, and voice notes together in one writing workspace.",
-            })}
-          </p>
           <div style={s.searchRow}>
             <div style={{ ...s.search, position: "relative" }}>
               <span style={s.searchIcon}>
@@ -1943,20 +1975,22 @@ export const MeetingsSettings: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: T.txt2,
-                          lineHeight: 1.45,
-                          marginBottom: 6,
-                          overflow: "hidden",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 1,
-                          WebkitBoxOrient: "vertical" as const,
-                        }}
-                      >
-                        {meetingPreview(m, meetingPreviewFallback)}
-                      </div>
+                      {m.transcript.trim() ? (
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: T.txt2,
+                            lineHeight: 1.45,
+                            marginBottom: 6,
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: "vertical" as const,
+                          }}
+                        >
+                          {meetingPreview(m, meetingPreviewFallback)}
+                        </div>
+                      ) : null}
                       <div
                         style={{
                           display: "flex",
@@ -1967,19 +2001,6 @@ export const MeetingsSettings: React.FC = () => {
                         }}
                       >
                         <span>{fmt(m.updated_at)}</span>
-                        {dur && (
-                          <>
-                            <span
-                              style={{
-                                width: 2,
-                                height: 2,
-                                borderRadius: "50%",
-                                background: T.txt4,
-                              }}
-                            />
-                            <span>{dur}</span>
-                          </>
-                        )}
                         <span
                           style={{
                             width: 2,
@@ -2002,6 +2023,19 @@ export const MeetingsSettings: React.FC = () => {
                         >
                           {tag}
                         </span>
+                        {dur && (
+                          <>
+                            <span
+                              style={{
+                                width: 2,
+                                height: 2,
+                                borderRadius: "50%",
+                                background: T.txt4,
+                              }}
+                            />
+                            <span>{dur}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                     {/* row actions on hover */}
@@ -2076,19 +2110,6 @@ export const MeetingsSettings: React.FC = () => {
             >
               <IcoMic size={30} color={T.txt4} />
             </div>
-            <p
-              style={{
-                maxWidth: 440,
-                fontSize: 15,
-                lineHeight: 2,
-                color: T.txt3,
-              }}
-            >
-              {t("meetings.selectOrCreate", {
-                defaultValue:
-                  "Select a meeting or start recording to create one",
-              })}
-            </p>
             <button
               className="mts-btn-rec"
               onClick={() => void handleToggleCapture()}
@@ -2112,21 +2133,6 @@ export const MeetingsSettings: React.FC = () => {
             {/* Detail header */}
             <div style={s.detailHead}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontSize: 11,
-                    color: T.txt3,
-                    marginBottom: 6,
-                  }}
-                >
-                  <span style={s.dhFolder}>
-                    <IcoFolder size={11} color={T.txt2} />
-                    {editCategory.trim() || meetingCategoryFallback}
-                  </span>
-                </div>
                 <h2 style={s.dhTitle}>
                   {titleEditing ? (
                     <input
@@ -2189,14 +2195,41 @@ export const MeetingsSettings: React.FC = () => {
                     <IcoCal size={13} color={T.txt3} />
                     {fmt(selectedMeeting.updated_at)}
                   </span>
-                  <span
-                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  {durationLabel(selectedMeeting) && (
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <IcoClock size={13} color={T.txt3} />
+                      {durationLabel(selectedMeeting)}
+                      {selectedMeeting.segments.length > 0 &&
+                        ` | ${t("meetings.segmentCount", { count: selectedMeeting.segments.length, defaultValue: `${selectedMeeting.segments.length} segments` })}`}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void handleGenTitle()}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      height: 26,
+                      padding: "0 10px",
+                      background: "rgba(212,168,88,0.13)",
+                      border: "1px solid rgba(212,168,88,0.28)",
+                      borderRadius: 7,
+                      color: T.gold,
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      letterSpacing: "0.01em",
+                    }}
                   >
-                    <IcoClock size={13} color={T.txt3} />
-                    {durationLabel(selectedMeeting) || "-"}
-                    {selectedMeeting.segments.length > 0 &&
-                      ` | ${t("meetings.segmentCount", { count: selectedMeeting.segments.length, defaultValue: `${selectedMeeting.segments.length} segments` })}`}
-                  </span>
+                    <IcoSparkle size={11} color={T.gold} />
+                    {t("meetings.generateTitle", {
+                      defaultValue: "Générer le titre",
+                    })}
+                  </button>
                   {saving && (
                     <span style={{ color: T.gold, fontSize: 11 }}>
                       {t("meetings.saving", { defaultValue: "Saving..." })}
@@ -2320,15 +2353,6 @@ export const MeetingsSettings: React.FC = () => {
                     >
                       {[
                         {
-                          label: t("meetings.generateTitle", {
-                            defaultValue: "Generate title",
-                          }),
-                          fn: () => {
-                            setShowMoreMenu(false);
-                            void handleGenTitle();
-                          },
-                        },
-                        {
                           label: t("meetings.importAudio", {
                             defaultValue: "Import audio",
                           }),
@@ -2344,21 +2368,6 @@ export const MeetingsSettings: React.FC = () => {
                           fn: () => {
                             setShowMoreMenu(false);
                             void handleExport();
-                          },
-                        },
-                        {
-                          label: t("meetings.duplicate", {
-                            defaultValue: "Duplicate",
-                          }),
-                          fn: () => {
-                            setShowMoreMenu(false);
-                            if (selectedMeeting)
-                              void handleDuplicate(
-                                selectedMeeting,
-                                new MouseEvent(
-                                  "click",
-                                ) as unknown as React.MouseEvent,
-                              );
                           },
                         },
                         {
@@ -2545,20 +2554,7 @@ export const MeetingsSettings: React.FC = () => {
                     </div>
                     {selectedMeeting.summary.trim() ? (
                       <p style={s.summaryText}>{selectedMeeting.summary}</p>
-                    ) : (
-                      <p
-                        style={{
-                          ...s.summaryText,
-                          color: T.txt4,
-                          fontStyle: "italic",
-                        }}
-                      >
-                        {t("meetings.summaryEmptyState", {
-                          defaultValue:
-                            'Click "Generate" to create an AI summary for this meeting.',
-                        })}
-                      </p>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Key moments / chapters */}
@@ -2630,40 +2626,98 @@ export const MeetingsSettings: React.FC = () => {
                   )}
                 </>
               )}
-              {activeTab === "transcript" && (
-                <div style={s.transcript}>
-                  <textarea
-                    ref={transcriptRef}
-                    placeholder={t("meetings.transcriptPlaceholder", {
-                      defaultValue:
-                        "Transcript will appear here while you speak...",
-                    })}
-                    value={editTranscript}
-                    onChange={(e) => handleTranscriptChange(e.target.value)}
-                    onPaste={handleTranscriptPaste}
-                    onFocus={() => {
-                      transcriptWasFocusedRef.current = true;
-                    }}
-                    onBlur={() => {
-                      if (document.activeElement !== transcriptRef.current)
-                        transcriptWasFocusedRef.current = false;
-                    }}
-                    style={{
-                      width: "100%",
-                      minHeight: 400,
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      padding: "12px 14px",
-                      fontSize: 14,
-                      lineHeight: 1.65,
-                      color: T.txt1,
-                      fontFamily: "inherit",
-                      resize: "none",
-                    }}
-                  />
-                </div>
-              )}
+              {activeTab === "transcript" &&
+                (() => {
+                  const hasSpeakers =
+                    selectedMeeting?.segments?.some(
+                      (seg: MeetingSegmentEntry) =>
+                        seg.speaker && seg.speaker.trim() !== "",
+                    ) ?? false;
+
+                  if (hasSpeakers && selectedMeeting) {
+                    const speakerColors: Record<string, string> = {
+                      "Speaker 1": T.gold,
+                      "Speaker 2": "#6ec6ff",
+                      "Speaker 3": "#b39ddb",
+                      "Speaker 4": "#80cbc4",
+                    };
+                    return (
+                      <div style={{ padding: "12px 14px" }}>
+                        {selectedMeeting.segments.map(
+                          (seg: MeetingSegmentEntry) => (
+                            <div
+                              key={seg.id}
+                              style={{
+                                marginBottom: 16,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                              }}
+                            >
+                              {seg.speaker && (
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    letterSpacing: "0.08em",
+                                    textTransform: "uppercase",
+                                    color: speakerColors[seg.speaker] ?? T.txt3,
+                                  }}
+                                >
+                                  {seg.speaker}
+                                </span>
+                              )}
+                              <span
+                                style={{
+                                  fontSize: 14,
+                                  lineHeight: 1.65,
+                                  color: T.txt1,
+                                }}
+                              >
+                                {seg.content.trim()}
+                              </span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={s.transcript}>
+                      <textarea
+                        ref={transcriptRef}
+                        placeholder={t("meetings.transcriptPlaceholder", {
+                          defaultValue:
+                            "Transcript will appear here while you speak...",
+                        })}
+                        value={editTranscript}
+                        onChange={(e) => handleTranscriptChange(e.target.value)}
+                        onPaste={handleTranscriptPaste}
+                        onFocus={() => {
+                          transcriptWasFocusedRef.current = true;
+                        }}
+                        onBlur={() => {
+                          if (document.activeElement !== transcriptRef.current)
+                            transcriptWasFocusedRef.current = false;
+                        }}
+                        style={{
+                          width: "100%",
+                          minHeight: 400,
+                          background: "transparent",
+                          border: "none",
+                          outline: "none",
+                          padding: "12px 14px",
+                          fontSize: 14,
+                          lineHeight: 1.65,
+                          color: T.txt1,
+                          fontFamily: "inherit",
+                          resize: "none",
+                        }}
+                      />
+                    </div>
+                  );
+                })()}
 
               {/* Chapters tab */}
               {activeTab === "chapters" && (

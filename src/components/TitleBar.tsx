@@ -1,20 +1,6 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import {
-  CreditCard,
-  LogOut,
-  Minus,
-  PanelLeft,
-  Square,
-  User,
-  X,
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { AuthSession } from "@/lib/auth/types";
-import {
-  deriveAppPlan,
-  getPlanCapabilities,
-} from "@/lib/subscription/plans";
+import { Minus, PanelLeft, Square, X } from "lucide-react";
 
 interface TitleBarProps {
   sidebarCollapsed?: boolean;
@@ -31,46 +17,11 @@ export const TitleBar = ({
   sidebarCollapsed,
   layoutTier = "spacious",
   onToggleSidebar,
-  session,
-  isTrialing,
-  trialEndsAt,
-  onLogout,
-  onOpenBillingPortal,
 }: TitleBarProps = {}) => {
   const win = getCurrentWindow();
-  const { t } = useTranslation();
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const accountRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!showAccountMenu) return;
-    const handler = (e: MouseEvent) => {
-      if (
-        accountRef.current &&
-        !accountRef.current.contains(e.target as Node)
-      ) {
-        setShowAccountMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showAccountMenu]);
-
-  const trialDaysLeft =
-    isTrialing && trialEndsAt
-      ? Math.max(
-          0,
-          Math.ceil(
-            (new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000,
-          ),
-        )
-      : null;
   const isCompact = layoutTier === "compact";
   const isCozy = layoutTier === "cozy";
   const barHeight = isCompact ? 56 : isCozy ? 60 : 62;
-  const menuTop = isCompact ? 54 : 58;
-  const currentPlan = deriveAppPlan(session ?? null);
-  const planLabel = getPlanCapabilities(currentPlan).label;
 
   return (
     <div
@@ -110,115 +61,6 @@ export const TitleBar = ({
             <PanelLeft size={isCompact ? 15 : 16} strokeWidth={1.8} />
           </TitleBarBtn>
         )}
-
-        {session && (
-          <div ref={accountRef} style={{ position: "relative" }}>
-            <TitleBarBtn
-              onClick={() => setShowAccountMenu((v) => !v)}
-              aria-label="Account"
-              active={showAccountMenu}
-            >
-              <User size={isCompact ? 14 : 15} strokeWidth={1.8} />
-            </TitleBarBtn>
-
-            {showAccountMenu && (
-              <div
-                style={{
-                  position: "fixed",
-                  top: menuTop,
-                  left: 20,
-                  width: 264,
-                  background: "linear-gradient(180deg,#1b1b1e,#131316)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 10,
-                  boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
-                  padding: "8px",
-                  zIndex: 99999,
-                }}
-              >
-                <div
-                  style={{
-                    padding: "12px 12px 10px",
-                    borderRadius: 12,
-                    background: "rgba(255,255,255,0.025)",
-                    border: "1px solid rgba(255,255,255,0.04)",
-                  }}
-                >
-                  {session.user.name && (
-                    <p
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "#fff",
-                        marginBottom: 2,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {session.user.name}
-                    </p>
-                  )}
-                  <p
-                    style={{
-                      fontSize: 11,
-                      color: "rgba(255,255,255,0.48)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {session.user.email}
-                  </p>
-                  <div style={{ marginTop: 10 }}>
-                    {isTrialing && trialDaysLeft !== null ? (
-                      <span style={pillStyle(true)}>
-                        {t("trial.badge.neutral", {
-                          count: trialDaysLeft,
-                        })}
-                      </span>
-                    ) : (
-                      <span style={pillStyle(currentPlan !== "basic")}>
-                        {planLabel}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    height: 1,
-                    background: "rgba(255,255,255,0.08)",
-                    margin: "8px 4px",
-                  }}
-                />
-
-                {onOpenBillingPortal && (
-                  <MenuBtn
-                    icon={<CreditCard size={14} />}
-                    label={t("auth.manageSubscription")}
-                    onClick={() => {
-                      void onOpenBillingPortal();
-                      setShowAccountMenu(false);
-                    }}
-                  />
-                )}
-
-                {onLogout && (
-                  <MenuBtn
-                    icon={<LogOut size={14} />}
-                    label={t("auth.logout")}
-                    onClick={() => {
-                      onLogout();
-                      setShowAccountMenu(false);
-                    }}
-                    danger
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       <div
@@ -257,19 +99,6 @@ export const TitleBar = ({
     </div>
   );
 };
-
-const pillStyle = (premium: boolean): React.CSSProperties => ({
-  display: "inline-block",
-  fontSize: 11,
-  fontWeight: 600,
-  color: premium ? "#c9a84c" : "rgba(255,255,255,0.54)",
-  background: premium ? "rgba(201,168,76,0.14)" : "rgba(255,255,255,0.07)",
-  border: premium
-    ? "1px solid rgba(201,168,76,0.25)"
-    : "1px solid rgba(255,255,255,0.07)",
-  borderRadius: 999,
-  padding: "4px 9px",
-});
 
 const TitleBarBtn = ({
   children,
@@ -323,61 +152,6 @@ const TitleBarBtn = ({
     }}
   >
     {children}
-  </button>
-);
-
-const MenuBtn = ({
-  icon,
-  label,
-  onClick,
-  danger,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    style={
-      {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        width: "100%",
-        padding: "10px 12px",
-        fontSize: 13,
-        color: danger ? "rgba(255,80,80,0.88)" : "rgba(255,255,255,0.76)",
-        background: "transparent",
-        border: "1px solid transparent",
-        borderRadius: 7,
-        cursor: "pointer",
-        textAlign: "left",
-        transition: "background 0.1s, color 0.1s, border-color 0.1s",
-      } as React.CSSProperties
-    }
-    onMouseEnter={(e) => {
-      (e.currentTarget as HTMLButtonElement).style.background = danger
-        ? "rgba(255,80,80,0.1)"
-        : "#1c1c22";
-      (e.currentTarget as HTMLButtonElement).style.color = danger
-        ? "rgba(255,80,80,1)"
-        : "#c9a84c";
-      (e.currentTarget as HTMLButtonElement).style.borderColor = danger
-        ? "rgba(255,80,80,0.16)"
-        : "transparent";
-    }}
-    onMouseLeave={(e) => {
-      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-      (e.currentTarget as HTMLButtonElement).style.color = danger
-        ? "rgba(255,80,80,0.88)"
-        : "rgba(255,255,255,0.76)";
-      (e.currentTarget as HTMLButtonElement).style.borderColor = "transparent";
-    }}
-  >
-    {icon}
-    {label}
   </button>
 );
 

@@ -1,13 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import {
-  CreditCard,
-  Download,
-  ExternalLink,
-  Star,
-  Zap,
-} from "lucide-react";
+import { CreditCard, Download, ExternalLink, Zap } from "lucide-react";
 import { commands, type HistoryStats } from "@/bindings";
 import { authClient } from "@/lib/auth/client";
 import type { AuthSession } from "@/lib/auth/types";
@@ -386,7 +380,9 @@ export const BillingSettings: React.FC = () => {
     sub?.can_manage_billing === false;
   const tierLabel = isTrialing
     ? t("billing.tier.trial")
-    : t(`billing.tier.${capabilities.plan}`, { defaultValue: capabilities.label });
+    : t(`billing.tier.${capabilities.plan}`, {
+        defaultValue: capabilities.label,
+      });
   const showPersonalBilling = !isManagedByAgency;
 
   const statusMap: Record<string, string> = {
@@ -409,30 +405,6 @@ export const BillingSettings: React.FC = () => {
             padding: "26px 36px 36px",
           }}
         >
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 26,
-                fontWeight: 700,
-                letterSpacing: "-0.025em",
-                color: "rgba(255,255,255,0.94)",
-                lineHeight: 1.2,
-              }}
-            >
-              {t("billing.title")}
-            </h1>
-            <p
-              style={{
-                fontSize: 13,
-                color: "rgba(255,255,255,0.38)",
-                marginTop: 4,
-              }}
-            >
-              {t("billing.subtitle")}
-            </p>
-          </div>
-
           <div
             style={{
               display: "grid",
@@ -470,24 +442,6 @@ export const BillingSettings: React.FC = () => {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "4px 10px",
-                    borderRadius: 999,
-                    background: "rgba(201,168,76,0.12)",
-                    border: "1px solid rgba(201,168,76,0.32)",
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    color: "#c9a84c",
-                    letterSpacing: "0.02em",
-                  }}
-                >
-                  <Star size={11} fill="currentColor" />
-                  {tierLabel}
-                </span>
                 {(sub?.status === "active" || sub?.status === "trialing") && (
                   <span
                     style={{
@@ -509,7 +463,8 @@ export const BillingSettings: React.FC = () => {
                         display: "inline-block",
                       }}
                     />
-                    {statusMap[sub?.status ?? "active"] ?? t("billing.status.active")}
+                    {statusMap[sub?.status ?? "active"] ??
+                      t("billing.status.active")}
                   </span>
                 )}
               </div>
@@ -527,7 +482,9 @@ export const BillingSettings: React.FC = () => {
               </div>
 
               {planPrice && !isTrialing && (
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                <div
+                  style={{ display: "flex", alignItems: "baseline", gap: 4 }}
+                >
                   <span
                     style={{
                       fontSize: 22,
@@ -538,16 +495,18 @@ export const BillingSettings: React.FC = () => {
                   >
                     {planPrice}
                   </span>
-                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.38)" }}>
+                  <span
+                    style={{ fontSize: 13, color: "rgba(255,255,255,0.38)" }}
+                  >
                     {planPriceSuffix}
                   </span>
                 </div>
               )}
 
               <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.38)" }}>
-                {isManagedByAgency ? (
-                  t("billing.workspace.managedByWorkspaceDescription")
-                ) : null}
+                {isManagedByAgency
+                  ? t("billing.workspace.managedByWorkspaceDescription")
+                  : null}
                 {isTrialing && trialEndsAt && (
                   <>
                     {t("billing.plan.trialEnds", {
@@ -568,7 +527,10 @@ export const BillingSettings: React.FC = () => {
                     ) : null}
                   </>
                 )}
-                {isPremium && !isTrialing && sub?.current_period_ends_at && showPersonalBilling ? (
+                {isPremium &&
+                !isTrialing &&
+                sub?.current_period_ends_at &&
+                showPersonalBilling ? (
                   <>
                     {t("billing.plan.renewsPrefix")}{" "}
                     <span
@@ -618,7 +580,9 @@ export const BillingSettings: React.FC = () => {
                 minWidth: 220,
               }}
             >
-              {showPersonalBilling && (isPremium || isTrialing) && canOpenWorkspaceBillingPortal ? (
+              {showPersonalBilling &&
+              (isPremium || isTrialing) &&
+              canOpenWorkspaceBillingPortal ? (
                 <>
                   <button
                     onClick={() => void handleManage()}
@@ -756,9 +720,6 @@ export const BillingSettings: React.FC = () => {
                 >
                   {t("billing.usage.title")}
                 </span>
-                <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.22)" }}>
-                  {t("billing.usage.period")}
-                </span>
               </div>
               <div
                 style={{
@@ -791,7 +752,6 @@ export const BillingSettings: React.FC = () => {
                     used={stats.total_words}
                     limit={Math.max(stats.total_words, 10000)}
                     locale={locale}
-                    footer={t("billing.stats.allTime")}
                   />
                 ) : null}
                 {stats && capabilities.canViewAdvancedStats ? (
@@ -800,7 +760,6 @@ export const BillingSettings: React.FC = () => {
                     used={stats.total_entries}
                     limit={Math.max(stats.total_entries, 500)}
                     locale={locale}
-                    footer={t("billing.stats.allSessions")}
                   />
                 ) : null}
               </div>
@@ -816,8 +775,12 @@ export const BillingSettings: React.FC = () => {
                 alignItems: "flex-start",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 14 }}
+              >
+                <div
+                  style={{ display: "flex", alignItems: "baseline", gap: 12 }}
+                >
                   <span
                     style={{
                       fontSize: 11,
@@ -882,15 +845,6 @@ export const BillingSettings: React.FC = () => {
                       >
                         {t("billing.payment.managed")}
                       </div>
-                      <div
-                        style={{
-                          fontSize: 11.5,
-                          color: "rgba(255,255,255,0.38)",
-                          marginTop: 2,
-                        }}
-                      >
-                        {t("billing.payment.securePortal")}
-                      </div>
                     </div>
                     {canOpenWorkspaceBillingPortal ? (
                       <button
@@ -938,8 +892,12 @@ export const BillingSettings: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 14 }}
+              >
+                <div
+                  style={{ display: "flex", alignItems: "baseline", gap: 12 }}
+                >
                   <span
                     style={{
                       fontSize: 11,
@@ -978,30 +936,6 @@ export const BillingSettings: React.FC = () => {
                     overflow: "hidden",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "110px 1fr 90px 70px 32px",
-                      gap: 14,
-                      alignItems: "center",
-                      padding: "11px 18px",
-                      background: "rgba(0,0,0,0.18)",
-                      fontSize: 10.5,
-                      fontWeight: 700,
-                      letterSpacing: "0.10em",
-                      textTransform: "uppercase",
-                      color: "rgba(255,255,255,0.22)",
-                    }}
-                  >
-                    <span>{t("billing.invoices.colDate")}</span>
-                    <span>{t("billing.invoices.colDescription")}</span>
-                    <span>{t("billing.invoices.colStatus")}</span>
-                    <span style={{ textAlign: "right" }}>
-                      {t("billing.invoices.colAmount")}
-                    </span>
-                    <span />
-                  </div>
-
                   <div
                     style={{
                       display: "flex",

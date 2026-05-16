@@ -404,19 +404,10 @@ export function useBackendEvents({
     [t],
   );
 
-  // Warmup blocked info toast
+  // Warmup blocked — silent (visible in UI status bar)
   useTauriEvent<string | StartupWarmupStatusSnapshot>(
     "transcription-warmup-blocked",
-    (event) => {
-      const message =
-        typeof event.payload === "string"
-          ? event.payload
-          : event.payload?.message || t("transcription.warmup_preparing");
-      toast(message, {
-        duration: 3000,
-        description: t("transcription.warmup_ready"),
-      });
-    },
+    () => {},
     [t],
   );
 
@@ -499,23 +490,7 @@ export function useBackendEvents({
   );
 
   // whisper-mode-changed
-  useTauriEvent<boolean>(
-    "whisper-mode-changed",
-    (event) => {
-      const enabled = event.payload;
-      if (enabled) {
-        toast.success(
-          t("whisperMode.enabled", { defaultValue: "Whisper Mode on" }),
-          { duration: 2500 },
-        );
-      } else {
-        toast(t("whisperMode.disabled", { defaultValue: "Whisper Mode off" }), {
-          duration: 2500,
-        });
-      }
-    },
-    [t],
-  );
+  useTauriEvent<boolean>("whisper-mode-changed", () => {}, [t]);
 
   // language-toggled
   useTauriEvent<string>(
@@ -525,15 +500,6 @@ export function useBackendEvents({
       const langName =
         LANGUAGES.find((l) => l.value === code)?.label ??
         t("languageToggle.auto", { defaultValue: "Auto" });
-      toast(
-        t("languageToggle.switched", {
-          lang: langName,
-          defaultValue: `Language: ${langName}`,
-        }),
-        {
-          duration: 2000,
-        },
-      );
       // Sync the settings store so LanguageSelector reflects the change immediately
       void useSettingsStore.getState().refreshSettings();
     },

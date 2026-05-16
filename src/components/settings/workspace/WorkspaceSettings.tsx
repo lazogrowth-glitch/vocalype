@@ -7,11 +7,9 @@ import {
   Crown,
   ExternalLink,
   FileText,
-  Layers,
   Loader2,
   MoreHorizontal,
   Pencil,
-  ShieldCheck,
   Sparkles,
   Trash2,
   UserPlus,
@@ -130,16 +128,6 @@ function personLabel(name?: string, email?: string) {
   return name?.trim() || email?.split("@")[0] || "Équipe";
 }
 
-function formatShortDate(value?: string) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("fr-CA", {
-    day: "numeric",
-    month: "short",
-  }).format(date);
-}
-
 function formatRelativeTime(value?: string) {
   if (!value) return null;
   const date = new Date(value);
@@ -243,91 +231,6 @@ function SectionTitle({
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  meta,
-  trend,
-  gold,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  meta?: string;
-  trend?: string;
-  gold?: boolean;
-}) {
-  return (
-    <div style={{ ...shellPanel, padding: "16px 18px", position: "relative" }}>
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 9,
-          display: "grid",
-          placeItems: "center",
-          border: gold
-            ? "1px solid rgba(212,168,88,0.32)"
-            : "1px solid rgba(255,255,255,0.06)",
-          background: gold ? "rgba(212,168,88,0.14)" : "rgba(255,255,255,0.03)",
-          color: gold ? "#d4a858" : "rgba(255,255,255,0.72)",
-        }}
-      >
-        {icon}
-      </div>
-      {trend ? (
-        <div
-          style={{
-            position: "absolute",
-            top: 16,
-            right: 18,
-            fontSize: 11,
-            color: gold ? "#d4a858" : "#8fd8ad",
-            fontWeight: 600,
-          }}
-        >
-          {trend}
-        </div>
-      ) : null}
-      <div
-        style={{
-          marginTop: 14,
-          fontSize: 11.5,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "rgba(255,255,255,0.34)",
-          fontWeight: 700,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          marginTop: 4,
-          fontSize: value.length > 18 ? 18 : 30,
-          fontWeight: 700,
-          letterSpacing: "-0.025em",
-          color: "rgba(255,255,255,0.95)",
-        }}
-      >
-        {value}
-      </div>
-      {meta ? (
-        <div
-          style={{
-            marginTop: 6,
-            fontSize: 12.5,
-            color: "rgba(255,255,255,0.38)",
-          }}
-        >
-          {meta}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 function MemberRow({
   member,
   currentUserEmail,
@@ -353,13 +256,7 @@ function MemberRow({
     member.email.toLowerCase() === currentUserEmail.toLowerCase();
 
   const secondary =
-    member.status === "invited"
-      ? "Invité récemment"
-      : member.role === "owner"
-        ? "Responsable du workspace"
-        : member.role === "admin"
-          ? "Admin opérationnel"
-          : "Membre actif";
+    member.status === "invited" ? "Invité récemment" : "Membre actif";
 
   return (
     <div
@@ -562,7 +459,6 @@ function AssetCard({
   description,
   usage,
   triggerLabel,
-  workspaceName,
   mono,
   createdByName,
   createdByEmail,
@@ -579,7 +475,6 @@ function AssetCard({
   description?: string;
   usage: number;
   triggerLabel: string;
-  workspaceName: string;
   mono?: boolean;
   createdByName?: string;
   createdByEmail?: string;
@@ -754,15 +649,6 @@ function AssetCard({
           }}
         />
         <span>{updatedAt ? `Modifié ${stamp}` : `Créé ${stamp}`}</span>
-        <span
-          style={{
-            width: 2,
-            height: 2,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.18)",
-          }}
-        />
-        <span>{workspaceName}</span>
         {updatedAt ? (
           <>
             <span
@@ -776,19 +662,6 @@ function AssetCard({
             <span>par {updatePerson}</span>
           </>
         ) : null}
-        {formatShortDate(updatedAt || createdAt) ? (
-          <>
-            <span
-              style={{
-                width: 2,
-                height: 2,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.18)",
-              }}
-            />
-            <span>{formatShortDate(updatedAt || createdAt)}</span>
-          </>
-        ) : null}
       </div>
     </div>
   );
@@ -798,13 +671,11 @@ function LibraryColumn({
   icon,
   title,
   badge,
-  description,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   badge: string;
-  description: string;
   children: React.ReactNode;
 }) {
   return (
@@ -864,16 +735,6 @@ function LibraryColumn({
             {badge}
           </span>
         </div>
-        <p
-          style={{
-            margin: "10px 0 0",
-            color: "rgba(255,255,255,0.34)",
-            fontSize: 12.5,
-            lineHeight: 1.5,
-          }}
-        >
-          {description}
-        </p>
       </div>
       <div
         style={{
@@ -933,6 +794,11 @@ export const WorkspaceSettings: React.FC = () => {
   const [editingName, setEditingName] = useState(false);
   const [pendingName, setPendingName] = useState("");
   const [pendingWorkspaceName, setPendingWorkspaceName] = useState("");
+  const [pendingProcessingRegion, setPendingProcessingRegion] = useState<
+    "ca" | "us"
+  >("ca");
+  const [pendingSharedLexiconEnabled, setPendingSharedLexiconEnabled] =
+    useState(true);
   const [tplName, setTplName] = useState("");
   const [tplDesc, setTplDesc] = useState("");
   const [tplPrompt, setTplPrompt] = useState("");
@@ -959,6 +825,16 @@ export const WorkspaceSettings: React.FC = () => {
     setPendingWorkspaceName(teamWorkspace?.name ?? "");
   }, [teamWorkspace?.name]);
 
+  useEffect(() => {
+    setPendingProcessingRegion(teamWorkspace?.processingRegion ?? "ca");
+  }, [teamWorkspace?.processingRegion]);
+
+  useEffect(() => {
+    setPendingSharedLexiconEnabled(
+      teamWorkspace?.sharedLexiconEnabled !== false,
+    );
+  }, [teamWorkspace?.sharedLexiconEnabled]);
+
   const canManageWorkspace =
     teamWorkspace?.currentUserRole === "owner" ||
     teamWorkspace?.currentUserRole === "admin";
@@ -980,8 +856,8 @@ export const WorkspaceSettings: React.FC = () => {
   const workspaceName = teamWorkspace?.name ?? "Workspace";
   const actorName = personLabel(session?.user?.name, session?.user?.email);
   const actorEmail = session?.user?.email;
-  const processingRegion = teamWorkspace?.processingRegion ?? "ca";
-  const sharedLexiconEnabled = teamWorkspace?.sharedLexiconEnabled !== false;
+  const processingRegion = pendingProcessingRegion;
+  const sharedLexiconEnabled = pendingSharedLexiconEnabled;
 
   const tabs = useMemo(
     () => [
@@ -995,7 +871,7 @@ export const WorkspaceSettings: React.FC = () => {
           (teamWorkspace?.sharedDictionary.length ?? 0),
       },
       { key: "activity" as const, label: "Activité", count: 4 },
-      { key: "settings" as const, label: "Réglages", count: 2 },
+      { key: "settings" as const, label: "Réglages" },
     ],
     [members.length, teamWorkspace],
   );
@@ -1074,15 +950,77 @@ export const WorkspaceSettings: React.FC = () => {
     }) => {
       const token = authClient.getStoredToken();
       if (!token || !teamWorkspace || !canManageWorkspace) return;
+      const previousWorkspace = teamWorkspace;
+      console.warn("[workspace-settings] save requested", {
+        payload,
+        previousWorkspace: {
+          name: previousWorkspace.name,
+          processingRegion: previousWorkspace.processingRegion,
+          sharedLexiconEnabled: previousWorkspace.sharedLexiconEnabled,
+        },
+      });
       setWorkspaceLoading(true);
+      updateTeamWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              ...(payload.name ? { name: payload.name } : {}),
+              ...(payload.processing_region
+                ? {
+                    processingRegion:
+                      payload.processing_region === "us" ? "us" : "ca",
+                  }
+                : {}),
+              ...(typeof payload.shared_lexicon_enabled === "boolean"
+                ? { sharedLexiconEnabled: payload.shared_lexicon_enabled }
+                : {}),
+            }
+          : current,
+      );
       try {
         const response = await authClient.updateWorkspaceSettings(
           token,
           payload,
         );
-        updateTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
+        const mappedWorkspace = mapTeamWorkspacePayload(response.workspace);
+        const resolvedWorkspace = {
+          ...mappedWorkspace,
+          ...(payload.name ? { name: payload.name } : {}),
+          ...(payload.processing_region
+            ? {
+                processingRegion:
+                  payload.processing_region === "us" ? "us" : "ca",
+              }
+            : {}),
+          ...(typeof payload.shared_lexicon_enabled === "boolean"
+            ? { sharedLexiconEnabled: payload.shared_lexicon_enabled }
+            : {}),
+        };
+        console.warn("[workspace-settings] save response", {
+          payload,
+          responseWorkspace: {
+            name: mappedWorkspace.name,
+            processingRegion: mappedWorkspace.processingRegion,
+            sharedLexiconEnabled: mappedWorkspace.sharedLexiconEnabled,
+          },
+          resolvedWorkspace: {
+            name: resolvedWorkspace.name,
+            processingRegion: resolvedWorkspace.processingRegion,
+            sharedLexiconEnabled: resolvedWorkspace.sharedLexiconEnabled,
+          },
+        });
+        updateTeamWorkspace(resolvedWorkspace);
       } catch (error) {
         console.error("Failed to update workspace settings:", error);
+        console.warn("[workspace-settings] rollback after error", {
+          payload,
+          rollbackTo: {
+            name: previousWorkspace.name,
+            processingRegion: previousWorkspace.processingRegion,
+            sharedLexiconEnabled: previousWorkspace.sharedLexiconEnabled,
+          },
+        });
+        updateTeamWorkspace(previousWorkspace);
       } finally {
         setWorkspaceLoading(false);
       }
@@ -1829,23 +1767,21 @@ export const WorkspaceSettings: React.FC = () => {
                   {processingRegion === "us" ? "États-Unis" : "Canada"}
                 </b>
               </span>
-              <span
-                style={{
-                  width: 3,
-                  height: 3,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,0.18)",
-                }}
-              />
               <span>
                 <b style={{ color: "rgba(255,255,255,0.76)" }}>
                   {activeMembers.length}
                 </b>{" "}
-                membres actifs ·{" "}
-                <b style={{ color: "rgba(255,255,255,0.76)" }}>
-                  {pendingMembers.length}
-                </b>{" "}
-                invitation{pendingMembers.length > 1 ? "s" : ""} en attente
+                membres actifs
+                {pendingMembers.length > 0 && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <b style={{ color: "rgba(255,255,255,0.76)" }}>
+                      {pendingMembers.length}
+                    </b>{" "}
+                    invitation{pendingMembers.length > 1 ? "s" : ""} en attente
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -1903,13 +1839,6 @@ export const WorkspaceSettings: React.FC = () => {
                   }}
                 >
                   Sièges
-                </div>
-                <div style={{ marginTop: 2, fontSize: 14, fontWeight: 600 }}>
-                  {seatsUsed} utilisés · {seatsIncluded} inclus
-                </div>
-                <div style={{ marginTop: 2, fontSize: 12, color: "#6cce8c" }}>
-                  {seatsRemaining} siège{seatsRemaining > 1 ? "s" : ""}{" "}
-                  disponible{seatsRemaining > 1 ? "s" : ""}
                 </div>
               </div>
             </div>
@@ -1969,21 +1898,6 @@ export const WorkspaceSettings: React.FC = () => {
                 }}
               >
                 {tab.label}
-                <span
-                  style={{
-                    fontSize: 10.5,
-                    letterSpacing: "0.04em",
-                    fontWeight: 700,
-                    padding: "2px 7px",
-                    borderRadius: 5,
-                    background: active
-                      ? "rgba(212,168,88,0.14)"
-                      : "rgba(255,255,255,0.03)",
-                    color: active ? "#d4a858" : "rgba(255,255,255,0.4)",
-                  }}
-                >
-                  {tab.count}
-                </span>
                 {active ? (
                   <span
                     style={{
@@ -2015,78 +1929,68 @@ export const WorkspaceSettings: React.FC = () => {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>
-                    Inviter un membre
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 4,
-                      fontSize: 12.5,
-                      color: "rgba(255,255,255,0.34)",
-                    }}
-                  >
-                    Ajoute une personne au workspace avec le bon rôle dès le
-                    départ.
-                  </div>
-                </div>
-                {canManageSeats ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "minmax(240px, 1fr) auto auto",
-                      gap: 8,
-                      alignItems: "center",
-                    }}
-                  >
-                    <input
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(event) => setInviteEmail(event.target.value)}
-                      placeholder="email@agence.com"
-                      disabled={
-                        workspaceLoading || inviteLoading || seatsRemaining <= 0
-                      }
-                      style={{ ...inputStyle, minWidth: 240 }}
-                    />
-                    <Dropdown
-                      className="min-w-[120px]"
-                      selectedValue={inviteRole}
-                      onSelect={(value) => setInviteRole(value as TeamRole)}
-                      disabled={
-                        workspaceLoading || inviteLoading || seatsRemaining <= 0
-                      }
-                      options={[
-                        { value: "member", label: "Membre" },
-                        { value: "admin", label: "Admin" },
-                      ]}
-                    />
-                    <Button
-                      type="button"
-                      variant="primary-soft"
-                      onClick={() => void handleInviteMember()}
-                      disabled={
-                        workspaceLoading ||
-                        inviteLoading ||
-                        !inviteEmail.trim() ||
-                        seatsRemaining <= 0
-                      }
+                  {canManageSeats ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(240px, 1fr) auto auto",
+                        gap: 8,
+                        alignItems: "center",
+                      }}
                     >
-                      {inviteLoading ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <UserPlus size={14} />
-                      )}
-                      {inviteLoading ? "Envoi..." : "Inviter"}
-                    </Button>
-                  </div>
-                ) : null}
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(event) => setInviteEmail(event.target.value)}
+                        placeholder="email@agence.com"
+                        disabled={
+                          workspaceLoading ||
+                          inviteLoading ||
+                          seatsRemaining <= 0
+                        }
+                        style={{ ...inputStyle, minWidth: 240 }}
+                      />
+                      <Dropdown
+                        className="min-w-[120px]"
+                        selectedValue={inviteRole}
+                        onSelect={(value) => setInviteRole(value as TeamRole)}
+                        disabled={
+                          workspaceLoading ||
+                          inviteLoading ||
+                          seatsRemaining <= 0
+                        }
+                        options={[
+                          { value: "member", label: "Membre" },
+                          { value: "admin", label: "Admin" },
+                        ]}
+                      />
+                      <Button
+                        type="button"
+                        variant="primary-soft"
+                        onClick={() => void handleInviteMember()}
+                        disabled={
+                          workspaceLoading ||
+                          inviteLoading ||
+                          !inviteEmail.trim() ||
+                          seatsRemaining <= 0
+                        }
+                      >
+                        {inviteLoading ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <UserPlus size={14} />
+                        )}
+                        {inviteLoading ? "Envoi..." : "Inviter"}
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               <div style={{ marginTop: 32 }}>
                 <SectionTitle
                   title="Membres actifs"
                   count={String(activeMembers.length)}
-                  description="Présents dans le workspace"
                 />
                 <div style={{ ...shellPanel, overflow: "hidden" }}>
                   {activeMembers.map((member) => {
@@ -2204,44 +2108,6 @@ export const WorkspaceSettings: React.FC = () => {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                  gap: 14,
-                  marginBottom: 24,
-                }}
-              >
-                <StatCard
-                  icon={<Layers size={16} />}
-                  label="Templates"
-                  value={String(teamWorkspace.sharedTemplates.length)}
-                  meta="partagés"
-                  trend={`+${Math.min(2, teamWorkspace.sharedTemplates.length)} ce mois`}
-                  gold
-                />
-                <StatCard
-                  icon={<Code2 size={16} />}
-                  label="Snippets"
-                  value={String(teamWorkspace.sharedSnippets.length)}
-                  meta="raccourcis"
-                  trend={`+${Math.min(1, teamWorkspace.sharedSnippets.length)} cette semaine`}
-                />
-                <StatCard
-                  icon={<BookText size={16} />}
-                  label="Termes métier"
-                  value={String(teamWorkspace.sharedDictionary.length)}
-                  meta="dans le lexique"
-                />
-                <StatCard
-                  icon={<ShieldCheck size={16} />}
-                  label="Support"
-                  value="Réponse < 4 h"
-                  meta="Canal agence"
-                  trend="Prioritaire"
-                />
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
                   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                   gap: 14,
                   alignItems: "start",
@@ -2251,7 +2117,6 @@ export const WorkspaceSettings: React.FC = () => {
                   icon={<FileText size={16} />}
                   title="Templates partagés"
                   badge={String(teamWorkspace.sharedTemplates.length)}
-                  description="Prompts communs pour homogénéiser les sorties IA dans toute l'équipe."
                 >
                   {teamWorkspace.sharedTemplates.map((template) => (
                     <AssetCard
@@ -2261,7 +2126,6 @@ export const WorkspaceSettings: React.FC = () => {
                       description={template.description || template.prompt}
                       usage={useFakeUsage(template.id, "template")}
                       triggerLabel="utilisations"
-                      workspaceName={workspaceName}
                       createdByName={template.createdByName}
                       createdByEmail={template.createdByEmail}
                       createdAt={template.createdAt}
@@ -2365,7 +2229,6 @@ export const WorkspaceSettings: React.FC = () => {
                   icon={<Code2 size={16} />}
                   title="Snippets vocaux"
                   badge={String(teamWorkspace.sharedSnippets.length)}
-                  description="Raccourcis : tu dis un mot-clé, Vocalype insère la phrase complète."
                 >
                   {teamWorkspace.sharedSnippets.map((snippet) => (
                     <AssetCard
@@ -2375,7 +2238,6 @@ export const WorkspaceSettings: React.FC = () => {
                       description={snippet.expansion}
                       usage={useFakeUsage(snippet.id, "snippet")}
                       triggerLabel="déclenchements"
-                      workspaceName={workspaceName}
                       mono
                       createdByName={snippet.createdByName}
                       createdByEmail={snippet.createdByEmail}
@@ -2476,7 +2338,6 @@ export const WorkspaceSettings: React.FC = () => {
                   icon={<BookText size={16} />}
                   title="Termes métier"
                   badge={String(teamWorkspace.sharedDictionary.length)}
-                  description="Vocabulaire reconnu en priorité : ATS, noms de produit, jargon recrutement."
                 >
                   {teamWorkspace.sharedDictionary.map((term) => (
                     <AssetCard
@@ -2486,7 +2347,6 @@ export const WorkspaceSettings: React.FC = () => {
                       description={term.note}
                       usage={0}
                       triggerLabel="usage"
-                      workspaceName={workspaceName}
                       createdByName={term.createdByName}
                       createdByEmail={term.createdByEmail}
                       createdAt={term.createdAt}
@@ -2646,10 +2506,7 @@ export const WorkspaceSettings: React.FC = () => {
           ) : null}
           {activeTab === "settings" ? (
             <>
-              <SectionTitle
-                title="Réglages du workspace"
-                description="Les modifications s'appliquent à tous les membres."
-              />
+              <SectionTitle title="Réglages du workspace" />
               <div style={{ ...shellPanel, padding: "6px 0" }}>
                 <div
                   style={{
@@ -2670,15 +2527,6 @@ export const WorkspaceSettings: React.FC = () => {
                       }}
                     >
                       Nom du workspace
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 2,
-                        fontSize: 12.5,
-                        color: "rgba(255,255,255,0.34)",
-                      }}
-                    >
-                      Affiché en haut de l'app pour tous les membres.
                     </div>
                   </div>
                   <div
@@ -2752,11 +2600,13 @@ export const WorkspaceSettings: React.FC = () => {
                   <Dropdown
                     className="min-w-[180px]"
                     selectedValue={processingRegion}
-                    onSelect={(value) =>
+                    onSelect={(value) => {
+                      const nextRegion = value === "us" ? "us" : "ca";
+                      setPendingProcessingRegion(nextRegion);
                       void handleSaveWorkspaceSettings({
-                        processing_region: value === "us" ? "us" : "ca",
-                      })
-                    }
+                        processing_region: nextRegion,
+                      });
+                    }}
                     disabled={!canManageWorkspace || workspaceLoading}
                     options={[
                       { value: "ca", label: "Canada" },
@@ -2801,11 +2651,13 @@ export const WorkspaceSettings: React.FC = () => {
                     selectedValue={
                       sharedLexiconEnabled ? "enabled" : "disabled"
                     }
-                    onSelect={(value) =>
+                    onSelect={(value) => {
+                      const nextEnabled = value === "enabled";
+                      setPendingSharedLexiconEnabled(nextEnabled);
                       void handleSaveWorkspaceSettings({
-                        shared_lexicon_enabled: value === "enabled",
-                      })
-                    }
+                        shared_lexicon_enabled: nextEnabled,
+                      });
+                    }}
                     disabled={!canManageWorkspace || workspaceLoading}
                     options={[
                       { value: "enabled", label: "Activé" },
@@ -2866,16 +2718,7 @@ export const WorkspaceSettings: React.FC = () => {
                     >
                       Supprimer…
                     </button>
-                  ) : (
-                    <div
-                      style={{
-                        fontSize: 12.5,
-                        color: "rgba(255,255,255,0.28)",
-                      }}
-                    >
-                      Réservé au propriétaire
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </>

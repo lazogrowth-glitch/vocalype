@@ -397,7 +397,9 @@ export const DictationSettings: React.FC = () => {
       );
       const content =
         ext === "txt"
-          ? sortedEntries.map((entry) => `${entry.from} -> ${entry.to}`).join("\n")
+          ? sortedEntries
+              .map((entry) => `${entry.from} -> ${entry.to}`)
+              .join("\n")
           : JSON.stringify(sortedEntries, null, 2);
 
       await writeTextFile(filePath, content);
@@ -659,21 +661,11 @@ export const DictationSettings: React.FC = () => {
   return (
     <>
       {/* ── All CSS from the mockup ── */}
-      
 
       <div className="dv">
         <section className="main">
           {/* sticky header */}
           <div className="main-head">
-            <div>
-              <div className="mid-title-row">
-                <h1 className="mid-title">Dictée</h1>
-              </div>
-              <p className="mid-sub" style={{ marginTop: 2 }}>
-                Parle dans n'importe quelle app — Vocalype transforme ta voix en
-                texte propre, à ta façon.
-              </p>
-            </div>
             <div className="head-actions">
               <button
                 className="btn btn-rec"
@@ -710,10 +702,6 @@ export const DictationSettings: React.FC = () => {
                 <h2 className="hero-h">
                   Profil <span className="accent">Travail</span>
                 </h2>
-                <p className="hero-sub">
-                  Appuie sur le raccourci dans n'importe quelle app — Vocalype
-                  écoute, transcrit, nettoie et insère le texte au curseur.
-                </p>
                 {/* Real shortcut display */}
                 <div className="kbd-row">
                   <span className="kbd-label">Raccourci</span>
@@ -786,42 +774,6 @@ export const DictationSettings: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* STATS — real data from historyStats */}
-          <div className="stat-row">
-            <div className="stat">
-              <div className="lab">Mots dictés</div>
-              <div className="val">
-                {statsWordsTotal > 0 ? fmtNum(statsWordsTotal) : "—"}
-              </div>
-              <div className="delta muted">
-                {statsToday > 0 ? `+${statsToday} aujourd'hui` : "total"}
-              </div>
-            </div>
-            <div className="stat">
-              <div className="lab">Temps économisé</div>
-              <div className="val">{statsWordsTotal > 0 ? savedStr : "—"}</div>
-              <div className="delta">
-                {statsWordsTotal > 0 ? "≈ 3.75× plus rapide" : ""}
-              </div>
-            </div>
-            <div className="stat">
-              <div className="lab">Sessions</div>
-              <div className="val">
-                {statsEntries > 0 ? fmtNum(statsEntries) : "—"}
-              </div>
-              <div className="delta muted">
-                {historyStats?.entries_this_week
-                  ? `${historyStats.entries_this_week} cette semaine`
-                  : "total"}
-              </div>
-            </div>
-            <div className="stat">
-              <div className="lab">Termes appris</div>
-              <div className="val">{dictEntries.length}</div>
-              <div className="delta muted">dans le dictionnaire</div>
             </div>
           </div>
 
@@ -1086,34 +1038,6 @@ export const DictationSettings: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="card">
-                <div className="cico">
-                  <svg className="ic" viewBox="0 0 24 24">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                    <path d="M15 9a4 4 0 0 1 0 6" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="ctitle">Suppression du bruit</div>
-                  <div className="csub">
-                    Pas encore disponible dans cette version. Le contrôle sera
-                    réactivé quand le vrai réglage audio existera.
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="select-btn"
-                  disabled
-                  style={{
-                    opacity: 0.55,
-                    cursor: "not-allowed",
-                    minWidth: 118,
-                  }}
-                  title="Bientôt disponible"
-                >
-                  Bientôt
-                </button>
               </div>
 
               {/* Mode d'enregistrement — real settings */}
@@ -1419,7 +1343,9 @@ export const DictationSettings: React.FC = () => {
                   <div
                     style={{
                       color:
-                        dictStatus.tone === "success" ? "var(--good)" : "#ef5a5a",
+                        dictStatus.tone === "success"
+                          ? "var(--good)"
+                          : "#ef5a5a",
                       fontSize: 12,
                       marginTop: 6,
                       paddingLeft: 2,
@@ -1469,16 +1395,12 @@ export const DictationSettings: React.FC = () => {
                   {recentEntries.slice(0, 3).map((entry) => {
                     const text =
                       entry.post_processed_text ?? entry.transcription_text;
-                    const words = wordCount(text);
                     const firstLetter = text.trim().charAt(0).toUpperCase();
                     return (
                       <div key={entry.id} className="rec-item">
                         <div className="rec-ico">{firstLetter}</div>
                         <div>
                           <div className="rec-text">{text}</div>
-                          <div className="rec-words">
-                            {words} mot{words > 1 ? "s" : ""}
-                          </div>
                         </div>
                         <div className="rec-time">
                           {fmtRelTime(entry.timestamp)}
@@ -1507,9 +1429,14 @@ export const DictationSettings: React.FC = () => {
                     · {dictEntries.length}
                   </span>
                 </div>
-                <button className="section-action" onClick={handleExportTerms}>
-                  Tout exporter →
-                </button>
+                {dictEntries.length > 0 && (
+                  <button
+                    className="section-action"
+                    onClick={handleExportTerms}
+                  >
+                    Tout exporter →
+                  </button>
+                )}
               </div>
               <div
                 className="card"
@@ -1571,7 +1498,9 @@ export const DictationSettings: React.FC = () => {
                   <div
                     style={{
                       color:
-                        dictStatus.tone === "success" ? "var(--good)" : "#ef5a5a",
+                        dictStatus.tone === "success"
+                          ? "var(--good)"
+                          : "#ef5a5a",
                       fontSize: 12,
                       marginTop: 6,
                       paddingLeft: 2,

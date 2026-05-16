@@ -158,6 +158,7 @@ export function DesktopAppShell({
   const refreshSettings = useSettingsStore((state) => state.refreshSettings);
   const workspaceSnippetSyncRef = useRef<string | null>(null);
   const workspaceCustomWordsSyncRef = useRef<string | null>(null);
+  const workspaceSeededUserRef = useRef<string | null>(null);
   const currentPlan = deriveAppPlan(session);
   const capabilities = getPlanCapabilities(currentPlan);
   const sessionWorkspace = useMemo(
@@ -180,12 +181,74 @@ export function DesktopAppShell({
   useEffect(() => {
     const userId = session?.user?.id;
     if (!userId || currentPlan !== "small_agency") {
+      console.warn("[workspace] reset workspace state", {
+        reason: !userId ? "no-user" : "non-small-agency-plan",
+        userId,
+        currentPlan,
+      });
+      workspaceSeededUserRef.current = null;
       setTeamWorkspace(null);
       return;
     }
 
     const persistedWorkspace = loadPersistedTeamWorkspace(userId);
-    setTeamWorkspace(sessionWorkspace ?? persistedWorkspace ?? null);
+    setTeamWorkspace((current) => {
+      const isNewUser = workspaceSeededUserRef.current !== userId;
+      const nextSeed = sessionWorkspace ?? persistedWorkspace ?? null;
+
+      if (isNewUser) {
+        workspaceSeededUserRef.current = userId;
+        console.warn("[workspace] seed workspace for user", {
+          userId,
+          source: sessionWorkspace
+            ? "session"
+            : persistedWorkspace
+              ? "persisted"
+              : "empty",
+          processingRegion: nextSeed?.processingRegion ?? null,
+          sharedLexiconEnabled: nextSeed?.sharedLexiconEnabled ?? null,
+        });
+        return nextSeed;
+      }
+
+      if (!current && nextSeed) {
+        console.warn(
+          "[workspace] hydrate empty workspace from background source",
+          {
+            userId,
+            source: sessionWorkspace ? "session" : "persisted",
+            processingRegion: nextSeed.processingRegion,
+            sharedLexiconEnabled: nextSeed.sharedLexiconEnabled,
+          },
+        );
+        return nextSeed;
+      }
+
+      if (
+        current &&
+        sessionWorkspace &&
+        (current.processingRegion !== sessionWorkspace.processingRegion ||
+          current.sharedLexiconEnabled !==
+            sessionWorkspace.sharedLexiconEnabled ||
+          current.name !== sessionWorkspace.name)
+      ) {
+        console.warn("[workspace] ignored stale session workspace overwrite", {
+          userId,
+          current: {
+            name: current.name,
+            processingRegion: current.processingRegion,
+            sharedLexiconEnabled: current.sharedLexiconEnabled,
+          },
+          sessionWorkspace: {
+            name: sessionWorkspace.name,
+            processingRegion: sessionWorkspace.processingRegion,
+            sharedLexiconEnabled: sessionWorkspace.sharedLexiconEnabled,
+          },
+        });
+      }
+
+      return current;
+    });
 
     const token = session?.token ?? authClient.getStoredToken();
     if (!token || sessionWorkspace) {
@@ -197,7 +260,14 @@ export function DesktopAppShell({
       .fetchWorkspaceTeam(token)
       .then((response) => {
         if (cancelled) return;
-        setTeamWorkspace(mapTeamWorkspacePayload(response.workspace));
+        const mappedWorkspace = mapTeamWorkspacePayload(response.workspace);
+        console.warn("[workspace] fetchWorkspaceTeam resolved", {
+          userId,
+          processingRegion: mappedWorkspace.processingRegion,
+          sharedLexiconEnabled: mappedWorkspace.sharedLexiconEnabled,
+          name: mappedWorkspace.name,
+        });
+        setTeamWorkspace(mappedWorkspace);
       })
       .catch(() => {
         // Keep the persisted workspace if the backend workspace is not reachable yet.
@@ -474,15 +544,24 @@ export function DesktopAppShell({
           id="toast-announcer"
         />
         <Toaster
-          theme="system"
+          position="bottom-right"
+          visibleToasts={3}
+          gap={8}
           containerAriaLabel={t("a11y.notifications")}
           toastOptions={{
+            duration: 4000,
             unstyled: true,
+            style: {
+              fontFamily: "inherit",
+            },
             classNames: {
-              toast:
-                "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-              title: "font-medium",
-              description: "text-mid-gray",
+              toast: "voca-toast",
+              title: "voca-toast-title",
+              description: "voca-toast-desc",
+              error: "voca-toast--error",
+              success: "voca-toast--success",
+              warning: "voca-toast--warning",
+              info: "voca-toast--info",
             },
           }}
         />
@@ -492,6 +571,9 @@ export function DesktopAppShell({
             onSectionChange={setCurrentSection}
             collapsed={effectiveSidebarCollapsed}
             layoutTier={layoutTier}
+            session={session}
+            onLogout={handleLogout}
+            onOpenBillingPortal={handleOpenBillingPortal}
           />
 
           <main
@@ -523,15 +605,17 @@ export function DesktopAppShell({
               </div>
             ) : (
               <div className="app-main-inner">
-                <div className="app-header-block">
-                  <h1
-                    className="app-page-title"
-                    style={{ fontSize: mainHeadingSize }}
-                  >
-                    {pageTitle}
-                  </h1>
-                  <p className="app-page-subtitle">{pageDescription}</p>
-                </div>
+                {currentSection !== "postprocessing" ? (
+                  <div className="app-header-block">
+                    <h1
+                      className="app-page-title"
+                      style={{ fontSize: mainHeadingSize }}
+                    >
+                      {pageTitle}
+                    </h1>
+                    <p className="app-page-subtitle">{pageDescription}</p>
+                  </div>
+                ) : null}
 
                 {showFirstLaunchHint ? (
                   <div className="app-first-launch-hint">

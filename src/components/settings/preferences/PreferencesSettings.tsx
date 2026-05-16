@@ -70,6 +70,12 @@ const C = {
 
 type CatId = "general" | "output" | "transcription" | "data" | "advanced";
 
+function navigateToSettingsSection(section: "debug") {
+  window.dispatchEvent(
+    new CustomEvent("vocalype:navigate-settings", { detail: section }),
+  );
+}
+
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 /** Animated toggle switch */
@@ -222,7 +228,7 @@ const PSectionHead: React.FC<{
     className?: string;
   }>;
   title: string;
-  sub: string;
+  sub?: string;
   aside?: React.ReactNode;
   danger?: boolean;
 }> = ({ Icon, title, sub, aside, danger }) => (
@@ -263,16 +269,18 @@ const PSectionHead: React.FC<{
         >
           {title}
         </div>
-        <div
-          style={{
-            fontSize: 12.5,
-            color: C.text3,
-            marginTop: 2,
-            maxWidth: 540,
-          }}
-        >
-          {sub}
-        </div>
+        {sub && (
+          <div
+            style={{
+              fontSize: 12.5,
+              color: C.text3,
+              marginTop: 2,
+              maxWidth: 540,
+            }}
+          >
+            {sub}
+          </div>
+        )}
       </div>
     </div>
     {aside}
@@ -403,6 +411,38 @@ const PDangerBtn: React.FC<{
   </button>
 );
 
+const PSubtleBtn: React.FC<{
+  label: string;
+  onClick: () => void;
+}> = ({ label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    style={{
+      height: 32,
+      padding: "0 14px",
+      borderRadius: 8,
+      background: C.bg3,
+      border: `1px solid ${C.line}`,
+      color: C.text,
+      fontSize: 13,
+      fontWeight: 500,
+      cursor: "pointer",
+      transition: "background .15s, border-color .15s",
+    }}
+    onMouseEnter={(e) => {
+      (e.currentTarget as HTMLButtonElement).style.background = C.bg4;
+      (e.currentTarget as HTMLButtonElement).style.borderColor = C.line2;
+    }}
+    onMouseLeave={(e) => {
+      (e.currentTarget as HTMLButtonElement).style.background = C.bg3;
+      (e.currentTarget as HTMLButtonElement).style.borderColor = C.line;
+    }}
+  >
+    {label}
+  </button>
+);
+
 /** Section anchor wrapper */
 const PSection: React.FC<{
   id: CatId;
@@ -514,7 +554,6 @@ export const PreferencesSettings: React.FC = () => {
       style={{
         height: "100%",
         overflow: "hidden",
-        background: `radial-gradient(1200px 600px at 20% -10%, rgba(201,168,76,0.04), transparent 60%), ${C.bg0}`,
       }}
     >
       {/* ── Main content ───────────────────────────────────────────────── */}
@@ -561,53 +600,16 @@ export const PreferencesSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* Page header */}
-        <div style={{ padding: "26px 28px 6px" }}>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 28,
-              fontWeight: 700,
-              letterSpacing: "-0.018em",
-              color: C.text,
-            }}
-          >
-            Paramètres
-          </h1>
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: C.text3,
-              fontSize: 13.5,
-              lineHeight: 1.55,
-              maxWidth: 540,
-            }}
-          >
-            Comportement système, options avancées et préférences moins
-            courantes — tout ce qui n&apos;a pas sa place dans tes profils de
-            dictée.
-          </p>
-        </div>
-
         {/* All sections */}
         <div style={{ padding: "22px 28px 32px" }}>
           {/* ── GÉNÉRAL ─────────────────────────────────────────────────── */}
           <PSection id="general">
-            <PSectionHead
-              Icon={Settings2}
-              title="Général"
-              sub="Langue, démarrage, tray et overlay."
-            />
+            <PSectionHead Icon={Settings2} title="Général" />
             <PGroup allowOverflow>
               <PRow
                 gold
                 icon={<Globe2 size={16} />}
-                title={
-                  <>
-                    Langue de l&apos;application{" "}
-                    <PPill label="UI" variant="gold" />
-                  </>
-                }
+                title="Langue de l'application"
                 desc="Change la langue de l'interface Vocalype. Un redémarrage est nécessaire pour appliquer."
               >
                 <Dropdown
@@ -702,11 +704,7 @@ export const PreferencesSettings: React.FC = () => {
 
           {/* ── DICTÉE ───────────────────────────────────────────────────── */}
           <PSection id="transcription">
-            <PSectionHead
-              Icon={Globe}
-              title="Dictée"
-              sub="Langue, mots personnalisés et post-traitement IA."
-            />
+            <PSectionHead Icon={Globe} title="Dictée" />
             <PGroup>
               {/* Language selector */}
               <div
@@ -748,7 +746,7 @@ export const PreferencesSettings: React.FC = () => {
                         gap: 8,
                       }}
                     >
-                      Langue parlée <PPill label="Détection" />
+                      Langue parlée
                     </div>
                     <div
                       style={{ fontSize: 12.5, color: C.text3, marginTop: 3 }}
@@ -803,7 +801,7 @@ export const PreferencesSettings: React.FC = () => {
                         gap: 8,
                       }}
                     >
-                      Bascule de langue <PPill label="Raccourci" />
+                      Bascule de langue
                     </div>
                     <div
                       style={{ fontSize: 12.5, color: C.text3, marginTop: 3 }}
@@ -940,16 +938,11 @@ export const PreferencesSettings: React.FC = () => {
                 />
               </PRow>
             </PGroup>
-
           </PSection>
 
           {/* ── SORTIE TEXTE ─────────────────────────────────────────────── */}
           <PSection id="output">
-            <PSectionHead
-              Icon={ClipboardPaste}
-              title="Sortie texte"
-              sub="Comment Vocalype insère le texte dans tes apps."
-            />
+            <PSectionHead Icon={ClipboardPaste} title="Sortie texte" />
             <PGroup allowOverflow>
               <PRow
                 icon={<ClipboardPaste size={16} />}
@@ -1006,11 +999,7 @@ export const PreferencesSettings: React.FC = () => {
 
           {/* ── DONNÉES & CONFIDENTIALITÉ ────────────────────────────────── */}
           <PSection id="data">
-            <PSectionHead
-              Icon={Database}
-              title="Données & confidentialité"
-              sub="Ce qui est stocké, combien de temps, et ce qui sort de ta machine."
-            />
+            <PSectionHead Icon={Database} title="Données & confidentialité" />
             <PGroup>
               <PRow
                 icon={<Clock size={16} />}
@@ -1042,14 +1031,6 @@ export const PreferencesSettings: React.FC = () => {
                     )
                   }
                 />
-              </PRow>
-
-              <PRow
-                icon={<Eye size={16} />}
-                title="Télémétrie anonyme"
-                desc="Crashs et performances uniquement. Aucun audio, aucun texte transcrit. Ce réglage n'est pas encore personnalisable."
-              >
-                <PPill label="Toujours actif" />
               </PRow>
 
               <PRow
@@ -1090,13 +1071,20 @@ export const PreferencesSettings: React.FC = () => {
 
           {/* ── AVANCÉ ──────────────────────────────────────────────────── */}
           <PSection id="advanced">
-            <PSectionHead
-              Icon={Code2}
-              title="Avancé"
-              sub="Moteur IA, diagnostic et options expérimentales."
-            />
+            <PSectionHead Icon={Code2} title="Avancé" />
             <PGroup>
               <TranscriptionEngineCard />
+
+              <PRow
+                icon={<Activity size={16} />}
+                title="Diagnostics"
+                desc="Ouvre les outils de support et de depannage dans une page separee."
+              >
+                <PSubtleBtn
+                  label="Ouvrir"
+                  onClick={() => navigateToSettingsSection("debug")}
+                />
+              </PRow>
 
               <PRow
                 icon={<Activity size={16} />}
@@ -1130,7 +1118,6 @@ export const PreferencesSettings: React.FC = () => {
               <PSectionHead
                 Icon={TriangleAlert}
                 title="Zone dangereuse"
-                sub="Actions destructives — pas de retour arrière."
                 danger
               />
               <PGroup danger>

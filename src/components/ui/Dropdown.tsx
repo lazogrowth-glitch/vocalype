@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 export interface DropdownOption {
@@ -31,7 +32,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
 
   const getInitialHighlightIndex = useCallback(() => {
     const selectedIndex = options.findIndex(
@@ -47,6 +50,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const openDropdown = useCallback(() => {
     if (disabled) return;
     if (onRefresh) onRefresh();
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuStyle({
+        position: "fixed",
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+        minWidth: rect.width,
+      });
+    }
     setIsOpen(true);
     setHighlightedIndex(getInitialHighlightIndex());
   }, [disabled, getInitialHighlightIndex, onRefresh]);
@@ -60,7 +72,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(event.target as Node) &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
       ) {
         closeDropdown();
       }
@@ -205,66 +219,71 @@ export const Dropdown: React.FC<DropdownProps> = ({
           />
         </svg>
       </button>
-      {isOpen && !disabled && (
-        <div
-          id={listboxId}
-          role="listbox"
-          className="absolute right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-[10px] border border-white/10 shadow-lg"
-          style={{
-            minWidth: "100%",
-            width: "max-content",
-            maxWidth: 320,
-            background: "linear-gradient(180deg,#1b1b1e,#131316)",
-            boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
-            padding: 4,
-          }}
-        >
-          {options.length === 0 ? (
-            <div
-              style={{ padding: "11px 16px" }}
-              className="text-[13px] text-mid-gray"
-            >
-              {t("common.noOptionsFound")}
-            </div>
-          ) : (
-            options.map((option, index) => (
-              <button
-                key={option.value}
-                type="button"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 7,
-                  border: "none",
-                  background:
-                    selectedValue === option.value
-                      ? "rgba(212,168,88,0.14)"
-                      : highlightedIndex === index
-                        ? "#1c1c22"
-                        : "transparent",
-                  color:
-                    selectedValue === option.value || highlightedIndex === index
-                      ? "#d4a858"
-                      : "rgba(255,255,255,0.94)",
-                  fontSize: 12.5,
-                  textAlign: "left",
-                  transition: "background .14s,color .14s",
-                }}
-                className={`${option.disabled ? "cursor-not-allowed opacity-50" : ""}`}
-                onClick={() => handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                disabled={option.disabled}
-                role="option"
-                aria-selected={selectedValue === option.value}
+      {isOpen &&
+        !disabled &&
+        createPortal(
+          <div
+            ref={menuRef}
+            id={listboxId}
+            role="listbox"
+            className="z-[9999] max-h-60 overflow-y-auto rounded-[10px] border border-white/10 shadow-lg"
+            style={{
+              ...menuStyle,
+              width: "max-content",
+              maxWidth: 320,
+              background: "linear-gradient(180deg,#1b1b1e,#131316)",
+              boxShadow: "0 12px 28px rgba(0,0,0,0.38)",
+              padding: 4,
+            }}
+          >
+            {options.length === 0 ? (
+              <div
+                style={{ padding: "11px 16px" }}
+                className="text-[13px] text-mid-gray"
               >
-                <span className="truncate">{option.label}</span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
+                {t("common.noOptionsFound")}
+              </div>
+            ) : (
+              options.map((option, index) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    padding: "8px 10px",
+                    borderRadius: 7,
+                    border: "none",
+                    background:
+                      selectedValue === option.value
+                        ? "rgba(212,168,88,0.14)"
+                        : highlightedIndex === index
+                          ? "#1c1c22"
+                          : "transparent",
+                    color:
+                      selectedValue === option.value ||
+                      highlightedIndex === index
+                        ? "#d4a858"
+                        : "rgba(255,255,255,0.94)",
+                    fontSize: 12.5,
+                    textAlign: "left",
+                    transition: "background .14s,color .14s",
+                  }}
+                  className={`${option.disabled ? "cursor-not-allowed opacity-50" : ""}`}
+                  onClick={() => handleSelect(option.value)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  disabled={option.disabled}
+                  role="option"
+                  aria-selected={selectedValue === option.value}
+                >
+                  <span className="truncate">{option.label}</span>
+                </button>
+              ))
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

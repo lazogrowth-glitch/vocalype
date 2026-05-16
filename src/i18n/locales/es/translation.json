@@ -15,13 +15,7 @@
     "dictee": "Perfiles de dictado",
     "history": "Historial",
     "debug": "Depuraci\u00f3n",
-    "billing": "Facturaci\u00f3n",
-    "group": {
-      "config": "Configuraci\u00f3n",
-      "usage": "Uso",
-      "team": "Equipo",
-      "settings": "Avanzado"
-    }
+    "billing": "Facturaci\u00f3n"
   },
   "shell": {
     "workspaceSubtitle": "Espacio de dictado con IA",
@@ -460,6 +454,7 @@
         "prompt": "Instrucci\u00f3n",
         "promptPlaceholder": "p. ej. Da formato a esto como un correo profesional con saludo y despedida. A\u00f1ade saltos de l\u00ednea entre p\u00e1rrafos.",
         "promptTip": "Consejo: usa <code>${output}</code> para insertar el texto transcrito en tu prompt.",
+        "rawTextLabel": "Texto dictado",
         "model": "Modelo (opcional)",
         "modelPlaceholder": "Selecciona un modelo",
         "modelTip": "Selecciona un modelo concreto para esta acci\u00f3n o usa el predeterminado de la secci\u00f3n API.",

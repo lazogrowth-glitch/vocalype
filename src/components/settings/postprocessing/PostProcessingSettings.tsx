@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+/* eslint-disable i18next/no-literal-string */
+import React, { useEffect, useMemo, useState } from "react";
 import type { PostProcessAction } from "@/bindings";
 import { commands } from "@/bindings";
 import { Textarea } from "@/components/ui";
@@ -43,19 +44,6 @@ type ActionPreset = {
   sampleOutputBody: string[];
 };
 
-const getPromptPreview = (prompt: string, outputPlaceholder: string) =>
-  prompt
-    .replace(/\$\{output\}/g, outputPlaceholder)
-    .replace(/\s+/g, " ")
-    .trim();
-
-const getPromptExcerpt = (prompt: string) =>
-  prompt
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 5);
-
 const getActionPresetId = (
   action: Pick<PostProcessAction, "name" | "prompt">,
 ): string => {
@@ -92,12 +80,10 @@ export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting, refreshSettings, settings } = useSettings();
   const { capabilities, openUpgradePlans, teamWorkspace } = usePlan();
-  const [editingAction, setEditingAction] = useState<EditingAction | null>(null);
+  const [editingAction, setEditingAction] = useState<EditingAction | null>(
+    null,
+  );
   const [selectedKey, setSelectedKey] = useState<number | null>(null);
-
-  const outputPlaceholder = t("settings.postProcessing.actions.outputPlaceholder", {
-    defaultValue: "dictated text",
-  });
 
   const presets: ActionPreset[] = [
     {
@@ -203,7 +189,7 @@ export const PostProcessingSettings: React.FC = () => {
       }),
       sampleInput:
         "bonjour Sarah merci pour ton temps ajd on reviens vers toi demain avec la suite",
-      sampleOutputTitle: "Texte corrige",
+      sampleOutputTitle: "Texte final",
       sampleOutputBody: [
         "Bonjour Sarah,",
         "Merci pour ton temps aujourd'hui.",
@@ -212,7 +198,32 @@ export const PostProcessingSettings: React.FC = () => {
     },
   ];
 
-  const actions = (getSetting("post_process_actions") || []) as PostProcessAction[];
+  const HINT_KEY = "voca_actions_hint_first_seen";
+  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+  const [showHint, setShowHint] = useState(() => {
+    const seen = localStorage.getItem(HINT_KEY);
+    if (!seen) {
+      localStorage.setItem(HINT_KEY, String(Date.now()));
+      return true;
+    }
+    return Date.now() - parseInt(seen, 10) < TWO_DAYS_MS;
+  });
+
+  useEffect(() => {
+    if (!showHint) return;
+    const seen = localStorage.getItem(HINT_KEY);
+    if (!seen) return;
+    const remaining = TWO_DAYS_MS - (Date.now() - parseInt(seen, 10));
+    if (remaining <= 0) {
+      setShowHint(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowHint(false), remaining);
+    return () => clearTimeout(timer);
+  }, [showHint]);
+
+  const actions = (getSetting("post_process_actions") ||
+    []) as PostProcessAction[];
   const maxActionSlots = capabilities.maxActionSlots;
   const visibleSlotCount = Math.max(maxActionSlots, 1);
   const sortedActions = useMemo(
@@ -230,7 +241,7 @@ export const PostProcessingSettings: React.FC = () => {
   const resolvedSelectedKey =
     selectedKey && usedKeys.has(selectedKey)
       ? selectedKey
-      : sortedActions[0]?.key ?? nextAvailableKey ?? 1;
+      : (sortedActions[0]?.key ?? nextAvailableKey ?? 1);
   const selectedAction =
     sortedActions.find((action) => action.key === resolvedSelectedKey) ?? null;
   const selectedPreset =
@@ -240,15 +251,6 @@ export const PostProcessingSettings: React.FC = () => {
         (selectedAction ? getActionPresetId(selectedAction) : "candidate_note"),
     ) ?? presets[0];
 
-  const providerId =
-    selectedAction?.provider_id ||
-    settings?.post_process_provider_id ||
-    "vocalype-cloud";
-  const providerLabel =
-    settings?.post_process_providers?.find(
-      (provider) => provider.id === providerId,
-    )?.label ||
-    (providerId === "vocalype-cloud" ? "Vocalype Cloud" : providerId);
   const isCloudActive =
     settings?.post_process_enabled === true &&
     settings?.post_process_provider_id === "vocalype-cloud";
@@ -270,7 +272,9 @@ export const PostProcessingSettings: React.FC = () => {
       return;
     }
     const targetKey =
-      preferredKey && !usedKeys.has(preferredKey) ? preferredKey : nextAvailableKey;
+      preferredKey && !usedKeys.has(preferredKey)
+        ? preferredKey
+        : nextAvailableKey;
     if (!targetKey) return;
     setEditingAction({
       key: targetKey,
@@ -290,7 +294,9 @@ export const PostProcessingSettings: React.FC = () => {
       return;
     }
     const targetKey =
-      preferredKey && !usedKeys.has(preferredKey) ? preferredKey : nextAvailableKey;
+      preferredKey && !usedKeys.has(preferredKey)
+        ? preferredKey
+        : nextAvailableKey;
     if (!targetKey) return;
     setEditingAction({
       key: targetKey,
@@ -379,7 +385,9 @@ export const PostProcessingSettings: React.FC = () => {
         setEditingAction(null);
       }
       if (selectedKey === key) {
-        setSelectedKey(sortedActions.find((action) => action.key !== key)?.key ?? null);
+        setSelectedKey(
+          sortedActions.find((action) => action.key !== key)?.key ?? null,
+        );
       }
     } catch (error) {
       console.error("Failed to delete action:", error);
@@ -388,23 +396,21 @@ export const PostProcessingSettings: React.FC = () => {
 
   const teamTemplateItems =
     capabilities.hasSharedTemplates && teamWorkspace
-      ? teamWorkspace.sharedTemplates
-          .map((template) => ({
-            ...template,
-            onClick: () => handleStartFromTemplate({ label: template.name, prompt: template.prompt }),
-          }))
+      ? teamWorkspace.sharedTemplates.map((template) => ({
+          ...template,
+          onClick: () =>
+            handleStartFromTemplate({
+              label: template.name,
+              prompt: template.prompt,
+            }),
+        }))
       : [];
 
   return (
     <div className="voca-actions-page">
       <section className="voca-actions-rail-wrap">
-        <div className="voca-actions-rail-head">
-          <div className="voca-actions-rail-meta">
-            <span className="voca-label-caps">
-              {t("settings.postProcessing.actions.configuredLabel", {
-                defaultValue: "Configured actions",
-              })}
-            </span>
+        {showHint ? (
+          <div className="voca-actions-rail-head">
             <span className="voca-actions-rail-hint">
               {t("settings.postProcessing.actions.description", {
                 defaultValue:
@@ -412,10 +418,7 @@ export const PostProcessingSettings: React.FC = () => {
               })}
             </span>
           </div>
-          <div className="voca-actions-rail-count">
-            <b>{sortedActions.length}</b> / {maxActionSlots}
-          </div>
-        </div>
+        ) : null}
 
         {maxActionSlots < 9 ? (
           <div
@@ -442,7 +445,12 @@ export const PostProcessingSettings: React.FC = () => {
                 ? "Independent inclut 2 actions IA et 3 templates recruteur."
                 : "Cette formule ne debloque pas encore les actions IA."}
             </span>
-            <Button type="button" variant="secondary" size="sm" onClick={openUpgradePlans}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={openUpgradePlans}
+            >
               Upgrade
             </Button>
           </div>
@@ -454,13 +462,18 @@ export const PostProcessingSettings: React.FC = () => {
             <div className="voca-actions-keycap is-ctrl">Ctrl</div>
           </div>
 
-          {Array.from({ length: visibleSlotCount }, (_, index) => index + 1).map((slotKey) => {
-            const action = sortedActions.find((item) => item.key === slotKey) ?? null;
+          {Array.from(
+            { length: visibleSlotCount },
+            (_, index) => index + 1,
+          ).map((slotKey) => {
+            const action =
+              sortedActions.find((item) => item.key === slotKey) ?? null;
             const preset = action
               ? presets.find((item) => item.id === getActionPresetId(action)) ||
                 presets[0]
               : null;
-            const isSelected = resolvedSelectedKey === slotKey && action !== null;
+            const isSelected =
+              resolvedSelectedKey === slotKey && action !== null;
 
             return (
               <button
@@ -475,11 +488,15 @@ export const PostProcessingSettings: React.FC = () => {
                   handleStartCreate(slotKey);
                 }}
               >
-                <div className={`voca-actions-slot-chip${preset ? ` ${preset.toneClass}` : ""}`}>
+                <div
+                  className={`voca-actions-slot-chip${preset ? ` ${preset.toneClass}` : ""}`}
+                >
                   {action ? (
                     <>
                       <div className="voca-actions-slot-topline">
-                        <span className={`voca-actions-slot-icon ${preset?.toneClass ?? ""}`}>
+                        <span
+                          className={`voca-actions-slot-icon ${preset?.toneClass ?? ""}`}
+                        >
                           {preset?.icon}
                         </span>
                         {preset?.badge ? (
@@ -488,7 +505,9 @@ export const PostProcessingSettings: React.FC = () => {
                           </span>
                         ) : null}
                       </div>
-                      <span className="voca-actions-slot-name">{action.name}</span>
+                      <span className="voca-actions-slot-name">
+                        {action.name}
+                      </span>
                     </>
                   ) : (
                     <span className="voca-actions-slot-empty">
@@ -496,7 +515,9 @@ export const PostProcessingSettings: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <div className={`voca-actions-keycap${isSelected ? " is-selected" : ""}`}>
+                <div
+                  className={`voca-actions-keycap${isSelected ? " is-selected" : ""}`}
+                >
                   {slotKey}
                 </div>
               </button>
@@ -512,11 +533,12 @@ export const PostProcessingSettings: React.FC = () => {
               <span className="voca-actions-pill voca-actions-pill-gold">
                 {selectedAction ? `Ctrl + ${selectedAction.key}` : "New action"}
               </span>
-              <span className="voca-actions-pill">{providerLabel}</span>
             </div>
 
             <div className="voca-actions-inspector-main">
-              <div className={`voca-actions-inspector-icon ${selectedPreset.toneClass}`}>
+              <div
+                className={`voca-actions-inspector-icon ${selectedPreset.toneClass}`}
+              >
                 {selectedPreset.icon}
               </div>
 
@@ -575,18 +597,12 @@ export const PostProcessingSettings: React.FC = () => {
           <div className="voca-actions-inspector-body">
             <div className="voca-actions-demo">
               <div className="voca-actions-demo-column">
-                <div className="voca-actions-demo-head">
-                  <span className="voca-actions-demo-dot" />
-                  Dictée brute
-                </div>
-                <p className="voca-actions-demo-raw">{selectedPreset.sampleInput}</p>
+                <p className="voca-actions-demo-raw">
+                  {selectedPreset.sampleInput}
+                </p>
               </div>
 
               <div className="voca-actions-demo-column is-output">
-                <div className="voca-actions-demo-head">
-                  <span className="voca-actions-demo-dot is-output" />
-                  {selectedPreset.sampleOutputTitle}
-                </div>
                 <div className="voca-actions-demo-output">
                   <ul>
                     {selectedPreset.sampleOutputBody.map((line) => (
@@ -595,47 +611,6 @@ export const PostProcessingSettings: React.FC = () => {
                   </ul>
                 </div>
               </div>
-            </div>
-
-            <div className="voca-actions-grid-two">
-              <div className="voca-actions-info-card">
-                <h4>
-                  {t("settings.postProcessing.actions.prompt", {
-                    defaultValue: "Prompt",
-                  })}
-                </h4>
-                <p>
-                  {getPromptPreview(
-                    selectedAction?.prompt || selectedPreset.prompt,
-                    outputPlaceholder,
-                  )}
-                </p>
-              </div>
-              <div className="voca-actions-info-card">
-                <h4>${"{output}"}</h4>
-                <p>
-                  <Trans
-                    i18nKey="settings.postProcessing.actions.promptTip"
-                    components={{ code: <code /> }}
-                  />
-                </p>
-              </div>
-            </div>
-
-            <div className="voca-actions-code-card">
-              <div className="voca-actions-code-head">
-                <span className="voca-label-caps">
-                  {t("settings.postProcessing.actions.prompt", {
-                    defaultValue: "Prompt",
-                  })}
-                </span>
-                <span className="voca-actions-code-meta">{providerLabel}</span>
-              </div>
-              <pre>
-                {getPromptExcerpt(selectedAction?.prompt || selectedPreset.prompt).join(
-                  "\n",
-                )}
-              </pre>
             </div>
           </div>
         </section>
@@ -690,9 +665,12 @@ export const PostProcessingSettings: React.FC = () => {
                           name: event.target.value,
                         })
                       }
-                      placeholder={t("settings.postProcessing.actions.namePlaceholder", {
-                        defaultValue: "e.g. Email mode",
-                      })}
+                      placeholder={t(
+                        "settings.postProcessing.actions.namePlaceholder",
+                        {
+                          defaultValue: "e.g. Email mode",
+                        },
+                      )}
                       variant="compact"
                     />
                   </div>
@@ -792,8 +770,12 @@ export const PostProcessingSettings: React.FC = () => {
           {teamTemplateItems.length > 0 ? (
             <section className="voca-actions-library">
               <div className="voca-actions-side-head">
-                <span className="voca-actions-side-title">Templates d'équipe</span>
-                <span className="voca-actions-side-count">{teamTemplateItems.length}</span>
+                <span className="voca-actions-side-title">
+                  Templates d'équipe
+                </span>
+                <span className="voca-actions-side-count">
+                  {teamTemplateItems.length}
+                </span>
               </div>
               <div className="voca-actions-library-list">
                 {teamTemplateItems.map((item) => (
@@ -807,8 +789,12 @@ export const PostProcessingSettings: React.FC = () => {
                       <ClipboardList size={17} aria-hidden="true" />
                     </span>
                     <span className="voca-actions-library-copy">
-                      <span className="voca-actions-library-name">{item.name}</span>
-                      <span className="voca-actions-library-desc">{item.description}</span>
+                      <span className="voca-actions-library-name">
+                        {item.name}
+                      </span>
+                      <span className="voca-actions-library-desc">
+                        {item.description}
+                      </span>
                     </span>
                   </button>
                 ))}

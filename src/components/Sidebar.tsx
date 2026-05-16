@@ -1,21 +1,14 @@
-import React, {
-  useMemo,
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useMemo, useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, X } from "lucide-react";
+import { CreditCard, LogOut, X } from "lucide-react";
+import type { AuthSession } from "@/lib/auth/types";
 import VocalypeLogo from "./icons/VocalypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
 import { useSettings } from "../hooks/useSettings";
 import { usePlan } from "@/lib/subscription/context";
 import { SECTIONS_CONFIG } from "./sections-config";
-import { commands } from "@/bindings";
-import { listen } from "@tauri-apps/api/event";
 
-const BOTTOM_SECTION_IDS = new Set(["billing", "debug"]);
+const HIDDEN_SECTION_IDS = new Set(["debug", "billing"]);
 const TRIAL_CARD_DISMISSED_KEY = "vt.trialCardDismissed";
 
 interface SidebarProps {
@@ -25,6 +18,9 @@ interface SidebarProps {
   ) => void;
   collapsed?: boolean;
   layoutTier?: "compact" | "cozy" | "spacious";
+  session?: AuthSession | null;
+  onLogout?: () => void;
+  onOpenBillingPortal?: () => void;
 }
 
 function useTrialBadge(trialEndsAt: string | null) {
@@ -38,94 +34,32 @@ function useTrialBadge(trialEndsAt: string | null) {
   return { days, urgency: "urgent" as const };
 }
 
-function useSidebarCounts(settings: unknown) {
-  const [historyCount, setHistoryCount] = useState<number | null>(null);
-  const [meetingsCount, setMeetingsCount] = useState<number | null>(null);
-
-  // Post-processing actions count — from settings (synchronous)
-  const actionsCount = useMemo(() => {
-    if (
-      typeof settings === "object" &&
-      settings !== null &&
-      "post_process_actions" in settings &&
-      Array.isArray((settings as Record<string, unknown>).post_process_actions)
-    ) {
-      return (
-        (settings as Record<string, unknown>).post_process_actions as unknown[]
-      ).length;
-    }
-    return null;
-  }, [settings]);
-
-  // Use refs so the event callbacks always call the latest setter
-  // without needing to re-register listeners on every render
-  const setHistoryRef = useRef(setHistoryCount);
-  const setMeetingsRef = useRef(setMeetingsCount);
-  setHistoryRef.current = setHistoryCount;
-  setMeetingsRef.current = setMeetingsCount;
-
-  const refreshHistory = useCallback(() => {
-    commands
-      .getHistoryStats()
-      .then((res) => {
-        if (res.status === "ok") setHistoryRef.current(res.data.total_entries);
-      })
-      .catch((err: unknown) => {
-        console.error("[Sidebar] getHistoryStats failed:", err);
-      });
-  }, []);
-
-  const refreshMeetings = useCallback(() => {
-    commands
-      .getMeetings()
-      .then((res) => {
-        if (res.status === "ok") setMeetingsRef.current(res.data.length);
-      })
-      .catch((err: unknown) => {
-        console.error("[Sidebar] getMeetings failed:", err);
-      });
-  }, []);
-
-  useEffect(() => {
-    refreshHistory();
-    refreshMeetings();
-
-    // History — driven by Tauri backend event (already reliable)
-    const unlisteners: Array<() => void> = [];
-    listen("history-updated", refreshHistory)
-      .then((fn) => unlisteners.push(fn))
-      .catch((err: unknown) => {
-        console.error(
-          "[Sidebar] Failed to register history-updated listener:",
-          err,
-        );
-      });
-
-    // Meetings — driven by window CustomEvent dispatched from MeetingsSettings
-    // (synchronous, no async timing issue unlike Tauri listen)
-    const handleMeetingsCount = (e: Event) => {
-      const count = (e as CustomEvent<number>).detail;
-      setMeetingsRef.current(count);
-    };
-    window.addEventListener("vocalype:meetings-count", handleMeetingsCount);
-
-    return () => {
-      unlisteners.forEach((fn) => fn());
-      window.removeEventListener(
-        "vocalype:meetings-count",
-        handleMeetingsCount,
-      );
-    };
-  }, [refreshHistory, refreshMeetings]);
-
-  return { historyCount, meetingsCount, actionsCount };
-}
+const userMenuBtnStyle = (danger: boolean): React.CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: 9,
+  width: "100%",
+  padding: "9px 12px",
+  fontSize: 13,
+  fontWeight: 500,
+  color: danger ? "rgba(255,80,80,0.88)" : "rgba(255,255,255,0.72)",
+  background: "transparent",
+  border: "1px solid transparent",
+  borderRadius: 8,
+  cursor: "pointer",
+  textAlign: "left",
+  transition: "background 0.12s, color 0.12s, border-color 0.12s",
+  fontFamily: "inherit",
+});
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
   collapsed = false,
   layoutTier = "spacious",
+  session,
+  onLogout,
+  onOpenBillingPortal,
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
@@ -134,9 +68,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isTrialCardDismissed, setIsTrialCardDismissed] = useState(
     () => localStorage.getItem(TRIAL_CARD_DISMISSED_KEY) === "1",
   );
-  const { historyCount, meetingsCount, actionsCount } =
-    useSidebarCounts(settings);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showUserMenu]);
   useEffect(() => {
     if (!isTrialing) {
       localStorage.removeItem(TRIAL_CARD_DISMISSED_KEY);
@@ -144,28 +91,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [isTrialing]);
 
-  const sectionCounts: Partial<
-    Record<import("./sections-config").SidebarSection, number>
-  > = useMemo(
-    () => ({
-      ...(historyCount != null && historyCount > 0
-        ? { history: historyCount }
-        : {}),
-      ...(meetingsCount != null && meetingsCount > 0
-        ? { meetings: meetingsCount }
-        : {}),
-      ...(actionsCount != null && actionsCount > 0
-        ? { postprocessing: actionsCount }
-        : {}),
-    }),
-    [historyCount, meetingsCount, actionsCount],
-  );
-
   const allSections = useMemo(
     () =>
       Object.entries(SECTIONS_CONFIG)
         .filter(([id, config]) => {
           if (id === "workspace" && capabilities.plan !== "small_agency") {
+            return false;
+          }
+          if (HIDDEN_SECTION_IDS.has(id)) {
             return false;
           }
           return config.enabled(settings);
@@ -177,14 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     [capabilities.plan, settings],
   );
 
-  const mainSections = useMemo(
-    () => allSections.filter((s) => !BOTTOM_SECTION_IDS.has(s.id)),
-    [allSections],
-  );
-  const bottomSections = useMemo(
-    () => allSections.filter((s) => BOTTOM_SECTION_IDS.has(s.id)),
-    [allSections],
-  );
+  const mainSections = useMemo(() => allSections, [allSections]);
   const isCompact = layoutTier === "compact";
   const isCozy = layoutTier === "cozy";
   const expandedWidth = isCompact ? 222 : isCozy ? 236 : 250;
@@ -192,7 +118,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navPaddingX = isCompact ? 14 : 16;
   const itemGap = isCompact ? 10 : 11;
   const itemFontSize = isCompact ? 13 : 14;
-  const bottomFontSize = isCompact ? 12 : 14;
   const premiumCopy =
     trialBadge?.urgency === "neutral"
       ? t("trial.badge.neutral", { count: trialBadge.days })
@@ -252,50 +177,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       {!collapsed && (
         <div
-          style={{ padding: isCompact ? "18px 14px 10px" : "20px 16px 12px" }}
+          style={{ padding: isCompact ? "18px 14px 14px" : "20px 16px 16px" }}
         >
-          <div
-            style={{
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 18,
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02))",
-              padding: isCompact ? "12px" : "14px",
-              boxShadow:
-                "inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 26px rgba(0,0,0,0.16)",
-            }}
-          >
-            <div className="flex items-center gap-[12px] min-w-0">
-              <div
-                style={{
-                  width: isCompact ? 36 : 40,
-                  height: isCompact ? 36 : 40,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <img
-                  src="/icon128.png"
-                  alt="Vocalype"
-                  width={isCompact ? 36 : 40}
-                  height={isCompact ? 36 : 40}
-                  className="shrink-0"
-                />
-              </div>
-              <div className="min-w-0">
-                <VocalypeLogo width={isCompact ? 104 : 112} />
-                <p
-                  style={{
-                    marginTop: 5,
-                    fontSize: 11,
-                    lineHeight: "16px",
-                    color: "rgba(255,255,255,0.48)",
-                  }}
-                >
-                  {t("shell.workspaceSubtitle")}
-                </p>
-              </div>
+          <div className="flex items-center gap-[12px] min-w-0">
+            <div
+              style={{
+                width: isCompact ? 44 : 48,
+                height: isCompact ? 44 : 48,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <img
+                src="/icon128.png"
+                alt="Vocalype"
+                width={isCompact ? 44 : 48}
+                height={isCompact ? 44 : 48}
+                className="shrink-0"
+              />
+            </div>
+            <div className="min-w-0">
+              <VocalypeLogo width={isCompact ? 118 : 128} />
             </div>
           </div>
         </div>
@@ -361,7 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   textTransform: "uppercase",
                 }}
               >
-                {t("trial.premiumBadge")}
+                {t("basic.premiumBadge")}
               </div>
               <p
                 style={{
@@ -382,7 +285,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   color: "rgba(255,255,255,0.58)",
                 }}
               >
-                {t("trial.premiumDesc")}
+                {t("basic.premiumDesc")}
               </p>
               <button
                 type="button"
@@ -412,7 +315,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div
         className="flex flex-1 flex-col overflow-y-auto min-h-0"
         style={{
-          paddingTop: isCompact ? 8 : 10,
+          paddingTop: isCompact ? 20 : 24,
           paddingBottom: isCompact ? 8 : 10,
           paddingLeft: 8,
           paddingRight: 8,
@@ -421,42 +324,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {mainSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
-          const showConfigLabel = !collapsed && section.id === "dictee";
-          const showUsageLabel = !collapsed && section.id === "history";
-          const showTeamLabel = !collapsed && section.id === "workspace";
-          const showSettingsLabel = !collapsed && section.id === "settings";
-          const count = sectionCounts[section.id];
+          const showDivider =
+            !collapsed &&
+            (section.id === "history" ||
+              section.id === "workspace" ||
+              section.id === "settings");
 
           return (
             <React.Fragment key={section.id}>
-              {showConfigLabel && (
-                <div className="sidebar-section-label">
-                  {t("sidebar.group.config")}
-                </div>
-              )}
-              {showUsageLabel && (
+              {showDivider && (
                 <div
-                  className="sidebar-section-label"
-                  style={{ paddingTop: 24 }}
-                >
-                  {t("sidebar.group.usage")}
-                </div>
-              )}
-              {showTeamLabel && (
-                <div
-                  className="sidebar-section-label"
-                  style={{ paddingTop: 24 }}
-                >
-                  {t("sidebar.group.team")}
-                </div>
-              )}
-              {showSettingsLabel && (
-                <div
-                  className="sidebar-section-label"
-                  style={{ paddingTop: 24 }}
-                >
-                  {t("sidebar.group.settings")}
-                </div>
+                  style={{
+                    height: 1,
+                    background: "rgba(255,255,255,0.05)",
+                    margin: "8px 4px",
+                  }}
+                />
               )}
               <button
                 type="button"
@@ -469,9 +352,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   gap: collapsed ? 0 : itemGap,
                   padding: collapsed
                     ? isCompact
-                      ? "12px 0"
-                      : "13px 0"
-                    : `${isCompact ? 10 : 11}px ${navPaddingX}px`,
+                      ? "15px 0"
+                      : "16px 0"
+                    : `${isCompact ? 13 : 15}px ${navPaddingX}px`,
                   fontSize: itemFontSize,
                   width: "100%",
                   cursor: "pointer",
@@ -546,22 +429,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     >
                       {t(section.labelKey)}
                     </span>
-                    {count != null && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 500,
-                          color: isActive
-                            ? "rgba(201,168,76,0.65)"
-                            : "rgba(255,255,255,0.22)",
-                          fontVariantNumeric: "tabular-nums",
-                          flexShrink: 0,
-                          lineHeight: "20px",
-                        }}
-                      >
-                        {count > 9999 ? "9999+" : count}
-                      </span>
-                    )}
                   </>
                 )}
               </button>
@@ -570,97 +437,193 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      <div
-        className="flex flex-col shrink-0"
-        style={{
-          borderTop: "1px solid rgba(255,255,255,0.07)",
-          margin: "8px 8px 0",
-          paddingTop: 12,
-          paddingBottom: 10,
-        }}
-      >
-        {bottomSections.map((section) => {
-          const Icon = section.icon;
-          const isActive = activeSection === section.id;
-          return (
-            <button
-              key={section.id}
-              type="button"
-              className="sidebar-nav-btn"
-              data-active={isActive ? "true" : undefined}
+      {import.meta.env.DEV && !collapsed && (
+        <div style={{ padding: "0 16px 10px" }}>
+          <MachineStatusBar variant="sidebar" />
+        </div>
+      )}
+
+      {session && !collapsed && (
+        <div
+          ref={userMenuRef}
+          style={{
+            position: "relative",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            padding: "8px 8px 10px",
+          }}
+        >
+          {showUserMenu && (
+            <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: collapsed ? "center" : "flex-start",
-                gap: collapsed ? 0 : itemGap,
-                padding: collapsed
-                  ? isCompact
-                    ? "11px 0"
-                    : "12px 0"
-                  : `${isCompact ? 9 : 10}px ${navPaddingX}px`,
-                fontSize: bottomFontSize,
-                width: "100%",
-                cursor: "pointer",
-                background: isActive
-                  ? "linear-gradient(90deg, rgba(201,168,76,0.16), rgba(201,168,76,0.07))"
-                  : "transparent",
-                color: isActive
-                  ? "rgba(255,255,255,0.90)"
-                  : "rgba(255,255,255,0.34)",
-                borderRadius: collapsed ? 8 : "8px",
-                border: isActive
-                  ? "1px solid rgba(201,168,76,0.20)"
-                  : "1px solid transparent",
-                textAlign: "left",
-                position: "relative",
+                position: "absolute",
+                bottom: "calc(100% + 6px)",
+                left: 8,
+                right: 8,
+                background: "linear-gradient(180deg,#1b1b1e,#131316)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                borderRadius: 10,
+                boxShadow: "0 -8px 24px rgba(0,0,0,0.38)",
+                padding: 6,
+                zIndex: 9999,
               }}
-              onClick={() => onSectionChange(section.id)}
-              aria-current={isActive ? "page" : undefined}
-              aria-label={t(section.labelKey)}
-              title={t(section.labelKey)}
             >
-              <span
-                style={{
-                  display: "flex",
-                  width: isCompact ? 14 : 15,
-                  height: isCompact ? 14 : 15,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  opacity: isActive ? 0.85 : 0.4,
-                  transition: "opacity 0.15s",
+              <button
+                type="button"
+                onClick={() => {
+                  onSectionChange("billing");
+                  setShowUserMenu(false);
+                }}
+                style={userMenuBtnStyle(false)}
+                onMouseEnter={(e) => {
+                  const b = e.currentTarget as HTMLButtonElement;
+                  b.style.background =
+                    "linear-gradient(90deg, rgba(201,168,76,0.18), rgba(201,168,76,0.08))";
+                  b.style.color = "rgba(255,255,255,0.97)";
+                  b.style.borderColor = "rgba(201,168,76,0.22)";
+                }}
+                onMouseLeave={(e) => {
+                  const b = e.currentTarget as HTMLButtonElement;
+                  b.style.background = "transparent";
+                  b.style.color = "rgba(255,255,255,0.72)";
+                  b.style.borderColor = "transparent";
                 }}
               >
-                <Icon
-                  width={isCompact ? 14 : 15}
-                  height={isCompact ? 14 : 15}
-                  aria-hidden="true"
-                />
-              </span>
-              {!collapsed && (
-                <span
+                <CreditCard size={13} style={{ opacity: 0.55 }} />
+                {t("sidebar.billing")}
+              </button>
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onLogout();
+                    setShowUserMenu(false);
+                  }}
+                  style={userMenuBtnStyle(true)}
+                  onMouseEnter={(e) => {
+                    const b = e.currentTarget as HTMLButtonElement;
+                    b.style.background = "rgba(255,80,80,0.10)";
+                    b.style.color = "rgba(255,80,80,1)";
+                    b.style.borderColor = "rgba(255,80,80,0.16)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const b = e.currentTarget as HTMLButtonElement;
+                    b.style.background = "transparent";
+                    b.style.color = "rgba(255,80,80,0.88)";
+                    b.style.borderColor = "transparent";
+                  }}
+                >
+                  <LogOut size={13} style={{ opacity: 0.7 }} />
+                  {t("auth.logout")}
+                </button>
+              )}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowUserMenu((v) => !v)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              width: "100%",
+              padding: "8px 10px",
+              borderRadius: 9,
+              border: showUserMenu
+                ? "1px solid rgba(201,168,76,0.30)"
+                : "1px solid transparent",
+              background: showUserMenu
+                ? "linear-gradient(90deg, rgba(201,168,76,0.22), rgba(201,168,76,0.10))"
+                : "transparent",
+              boxShadow: showUserMenu
+                ? "inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.16)"
+                : "none",
+              cursor: "pointer",
+              textAlign: "left",
+              position: "relative",
+              transition:
+                "background 0.12s, border-color 0.12s, box-shadow 0.12s",
+            }}
+            onMouseEnter={(e) => {
+              if (showUserMenu) return;
+              const b = e.currentTarget as HTMLButtonElement;
+              b.style.background = "rgba(255,255,255,0.04)";
+            }}
+            onMouseLeave={(e) => {
+              if (showUserMenu) return;
+              const b = e.currentTarget as HTMLButtonElement;
+              b.style.background = "transparent";
+            }}
+          >
+            {showUserMenu && (
+              <span
+                style={{
+                  position: "absolute",
+                  left: 2,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  height: 18,
+                  width: 3,
+                  borderRadius: 999,
+                  background: "#c9a84c",
+                  boxShadow: "0 0 14px rgba(201,168,76,0.45)",
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #c9a84c, #a07830)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#fff",
+                flexShrink: 0,
+              }}
+            >
+              {(session.user.name ??
+                session.user.email ??
+                "?")[0].toUpperCase()}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              {session.user.name && (
+                <p
                   style={{
-                    fontSize: isCompact ? 12 : 12.5,
-                    fontWeight: isActive ? 500 : 400,
-                    lineHeight: "20px",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "rgba(255,255,255,0.88)",
+                    margin: 0,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
+                    lineHeight: "16px",
                   }}
                 >
-                  {t(section.labelKey)}
-                </span>
+                  {session.user.name}
+                </p>
               )}
-            </button>
-          );
-        })}
-
-        {import.meta.env.DEV && !collapsed && (
-          <div style={{ padding: "10px 8px 2px" }}>
-            <MachineStatusBar variant="sidebar" />
-          </div>
-        )}
-      </div>
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "rgba(255,255,255,0.38)",
+                  margin: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  lineHeight: "15px",
+                }}
+              >
+                {session.user.email}
+              </p>
+            </div>
+          </button>
+        </div>
+      )}
     </nav>
   );
 };

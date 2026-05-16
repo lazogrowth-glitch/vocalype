@@ -15,13 +15,7 @@
     "dictee": "Dictation Profiles",
     "history": "History",
     "billing": "Billing",
-    "debug": "Diagnostics",
-    "group": {
-      "config": "Configuration",
-      "usage": "Usage",
-      "team": "Team",
-      "settings": "More"
-    }
+    "debug": "Diagnostics"
   },
   "shell": {
     "workspaceSubtitle": "AI dictation workspace",
@@ -460,6 +454,7 @@
         "prompt": "Prompt",
         "promptPlaceholder": "e.g. Format this as a professional email with greeting and sign-off. Add line breaks between paragraphs.",
         "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
+        "rawTextLabel": "Dictated text",
         "model": "Model (optional)",
         "modelPlaceholder": "Select a model",
         "modelTip": "Select a specific model for this action, or use the default from the API section.",

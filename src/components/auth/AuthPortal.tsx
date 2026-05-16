@@ -670,7 +670,7 @@ const AuthPanel: React.FC<AuthPortalProps> = ({
           t,
           context: "auth",
           fallback:
-            "Impossible d'ouvrir la facturation. Réessayez dans un instant.",
+            "Impossible d'ouvrir le navigateur. Réessayez dans un instant.",
         }),
       });
     } finally {

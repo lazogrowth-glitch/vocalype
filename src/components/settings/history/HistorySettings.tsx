@@ -958,29 +958,10 @@ export const HistorySettings: React.FC = () => {
         button { transition: background .14s, filter .14s, border-color .14s, color .14s, box-shadow .14s; }
       `}</style>
 
-      {/* ── Page head ── */}
-      <div style={{ padding: "26px 32px 18px", flexShrink: 0 }}>
-        <h1
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: "-0.025em",
-            color: T.txt1,
-          }}
-        >
-          {t("sidebar.history", { defaultValue: "Historique" })}
-        </h1>
-        <p style={{ fontSize: 13, color: T.txt3, marginTop: 4 }}>
-          {t("settings.history.subtitle", {
-            defaultValue: "Retrouve, copie et réutilise tes dernières dictées.",
-          })}
-        </p>
-      </div>
-
       {/* ── Toolbar ── */}
       <div
         style={{
-          padding: "0 32px 16px",
+          padding: "20px 32px 16px",
           display: "flex",
           alignItems: "center",
           gap: 10,
@@ -1136,46 +1117,46 @@ export const HistorySettings: React.FC = () => {
                 (isBasicTier
                   ? BASIC_HISTORY_LIMIT
                   : (capabilities.historyLimit ?? entries.length)) && (
-              <div
-                style={{
-                  margin: "8px 2px 4px",
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(245,158,11,0.3)",
-                  background: "rgba(245,158,11,0.08)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
-                  fontSize: 12,
-                }}
-              >
-                <span style={{ color: "rgba(252,211,77,0.8)" }}>
-                  {t("basic.historyLimited", {
-                    defaultValue: `Limite a ${isBasicTier ? BASIC_HISTORY_LIMIT : capabilities.historyLimit} entrees`,
-                    limit: isBasicTier
-                      ? BASIC_HISTORY_LIMIT
-                      : capabilities.historyLimit,
-                  })}
-                </span>
-                <button
-                  type="button"
-                  onClick={openUpgradePlans}
+                <div
                   style={{
-                    padding: "4px 10px",
-                    borderRadius: 6,
-                    background: "rgba(245,158,11,0.2)",
-                    color: "rgba(252,211,77,0.9)",
-                    fontSize: 11,
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    border: "none",
+                    margin: "8px 2px 4px",
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(245,158,11,0.3)",
+                    background: "rgba(245,158,11,0.08)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    fontSize: 12,
                   }}
                 >
-                  {t("basic.upgrade", { defaultValue: "Upgrade" })}
-                </button>
-              </div>
-            )}
+                  <span style={{ color: "rgba(252,211,77,0.8)" }}>
+                    {t("basic.historyLimited", {
+                      defaultValue: `Limite a ${isBasicTier ? BASIC_HISTORY_LIMIT : capabilities.historyLimit} entrees`,
+                      limit: isBasicTier
+                        ? BASIC_HISTORY_LIMIT
+                        : capabilities.historyLimit,
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={openUpgradePlans}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: 6,
+                      background: "rgba(245,158,11,0.2)",
+                      color: "rgba(252,211,77,0.9)",
+                      fontSize: 11,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      border: "none",
+                    }}
+                  >
+                    {t("basic.upgrade", { defaultValue: "Upgrade" })}
+                  </button>
+                </div>
+              )}
 
             {/* Loading */}
             {loading && (
@@ -1387,18 +1368,6 @@ export const HistorySettings: React.FC = () => {
                     }}
                   >
                     {fmtDetailDate(selectedEntry.timestamp, locale)}
-                    {" · "}
-                    {wordCount(
-                      selectedEntry.post_processed_text ??
-                        selectedEntry.transcription_text,
-                    )}{" "}
-                    {t("settings.history.wordsCount", {
-                      defaultValue: "words",
-                      count: wordCount(
-                        selectedEntry.post_processed_text ??
-                          selectedEntry.transcription_text,
-                      ),
-                    })}
                   </div>
                   <h2
                     style={{
@@ -1812,37 +1781,6 @@ export const HistorySettings: React.FC = () => {
                       </span>
                       <button
                         type="button"
-                        onClick={() =>
-                          void handleCopyExplicit(
-                            selectedEntry.post_processed_text ?? "",
-                          )
-                        }
-                        className="hist-text-action-gold"
-                        style={{
-                          ...textActionBase,
-                          color: T.gold,
-                          marginLeft: "auto",
-                        }}
-                      >
-                        <svg
-                          width="11"
-                          height="11"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" />
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                        </svg>
-                        {t("settings.history.copyAiResult", {
-                          defaultValue: "Copy result",
-                        })}
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => void handleClearPostProcess()}
                         disabled={clearingPostProcess}
                         style={{ ...textActionBase, color: T.txt3 }}
@@ -1884,18 +1822,6 @@ export const HistorySettings: React.FC = () => {
                   <div
                     style={{ display: "flex", alignItems: "center", gap: 8 }}
                   >
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: T.txt3,
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      {t("settings.history.original", {
-                        defaultValue: "Original",
-                      })}
-                    </span>
                     {!editMode && (
                       <>
                         <button

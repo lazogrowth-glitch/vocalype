@@ -607,7 +607,11 @@
       rgba(201, 168, 76, 0.08),
       transparent 72%
     ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.024), rgba(255, 255, 255, 0.01));
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.024),
+      rgba(255, 255, 255, 0.01)
+    );
 }
 
 .voca-actions-ctrl,
@@ -973,7 +977,11 @@
 }
 
 .voca-actions-demo-column.is-output {
-  background: linear-gradient(180deg, rgba(201, 168, 76, 0.04), transparent 40%);
+  background: linear-gradient(
+    180deg,
+    rgba(201, 168, 76, 0.04),
+    transparent 40%
+  );
   border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1693,6 +1701,67 @@ body {
   flex: 0 0 auto;
 }
 
+/* ── Toasts ── */
+.voca-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 320px;
+  padding: 13px 15px;
+  background: #1c1c22;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  font-family: inherit;
+  pointer-events: all;
+  animation: voca-toast-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes voca-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.voca-toast-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ededee;
+  line-height: 1.4;
+}
+.voca-toast-desc {
+  font-size: 12px;
+  color: #82828b;
+  line-height: 1.45;
+  margin-top: 2px;
+}
+.voca-toast--success {
+  border-color: rgba(108, 206, 140, 0.22);
+}
+.voca-toast--success .voca-toast-title {
+  color: #6cce8c;
+}
+.voca-toast--error {
+  border-color: rgba(239, 90, 90, 0.22);
+}
+.voca-toast--error .voca-toast-title {
+  color: #ef5a5a;
+}
+.voca-toast--warning {
+  border-color: rgba(212, 168, 88, 0.28);
+}
+.voca-toast--warning .voca-toast-title {
+  color: #d4a858;
+}
+.voca-toast--info {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
 .app-main {
   position: relative;
   flex: 1;
@@ -1829,8 +1898,7 @@ body {
   isolation: isolate;
   overflow: hidden;
   border-radius: inherit;
-  animation: settings-scroll-highlight-pulse 2.4s
-    cubic-bezier(0.22, 1, 0.36, 1);
+  animation: settings-scroll-highlight-pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .settings-scroll-highlight::before,
@@ -1843,19 +1911,17 @@ body {
 .settings-scroll-highlight::before {
   inset: 0;
   border-radius: inherit;
-  background:
-    linear-gradient(
-      135deg,
-      rgba(201, 168, 76, 0.18),
-      rgba(201, 168, 76, 0.06) 42%,
-      rgba(201, 168, 76, 0.02) 100%
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(201, 168, 76, 0.18),
+    rgba(201, 168, 76, 0.06) 42%,
+    rgba(201, 168, 76, 0.02) 100%
+  );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     inset 0 0 0 1px rgba(201, 168, 76, 0.18);
   opacity: 0;
-  animation: settings-scroll-highlight-fill 2.4s
-    cubic-bezier(0.22, 1, 0.36, 1)
+  animation: settings-scroll-highlight-fill 2.4s cubic-bezier(0.22, 1, 0.36, 1)
     forwards;
   z-index: -1;
 }

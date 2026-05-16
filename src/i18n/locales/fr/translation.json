@@ -15,13 +15,7 @@
     "dictee": "Dict\u00e9e",
     "history": "Historique",
     "billing": "Facturation",
-    "debug": "Diagnostics",
-    "group": {
-      "config": "Configuration",
-      "usage": "Utilisation",
-      "team": "\u00c9quipe",
-      "settings": "Plus"
-    }
+    "debug": "Diagnostics"
   },
   "shell": {
     "workspaceSubtitle": "Espace de dict\u00e9e IA",
@@ -461,6 +455,7 @@
         "prompt": "Prompt",
         "promptPlaceholder": "Ex. Formate ce texte comme un email professionnel avec salutation et signature. Ajoute des sauts de ligne entre les paragraphes.",
         "promptTip": "Astuce : Utilisez <code>${output}</code> pour ins\u00e9rer le texte transcrit dans votre prompt.",
+        "rawTextLabel": "Texte dict\u00e9",
         "model": "Mod\u00e8le (optionnel)",
         "modelPlaceholder": "S\u00e9lectionner un mod\u00e8le",
         "modelTip": "S\u00e9lectionnez un mod\u00e8le sp\u00e9cifique pour cette action, ou utilisez celui de la section API.",

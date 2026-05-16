@@ -748,6 +748,7 @@ impl TranscriptionManager {
                 text: String::new(),
                 confidence_payload: None,
                 timings,
+                runtime_path: None,
                 segments: None,
             });
         }
@@ -939,6 +940,7 @@ impl TranscriptionManager {
                 || -> Result<EngineTranscriptionResult> {
                     match &mut engine {
                         LoadedEngine::ParakeetV3(parakeet_runtime) => {
+                            let mut stateful_fallback_path: Option<&'static str> = None;
                             if should_attempt_parakeet_stateful_streaming(
                                 settings.experimental_enabled,
                                 settings.parakeet_stateful_streaming_enabled,
@@ -968,12 +970,16 @@ impl TranscriptionManager {
                                                 debug!(
                                                     "[parakeet-stateful] EOU path produced no committed text; falling back to TDT"
                                                 );
+                                                stateful_fallback_path =
+                                                    Some("parakeet-eou-empty-fallback");
                                             }
                                             Err(err) => {
                                                 warn!(
                                                     "[parakeet-stateful] EOU path failed; falling back to TDT: {}",
                                                     err
                                                 );
+                                                stateful_fallback_path =
+                                                    Some("parakeet-eou-error-fallback");
                                             }
                                         }
                                     }
@@ -981,12 +987,16 @@ impl TranscriptionManager {
                                         debug!(
                                             "[parakeet-stateful] enabled but EOU model files are missing; using TDT"
                                         );
+                                        stateful_fallback_path =
+                                            Some("parakeet-eou-missing-fallback");
                                     }
                                     ParakeetStatefulStatus::LoadFailed(reason) => {
                                         debug!(
                                             "[parakeet-stateful] EOU runtime unavailable after load failure: {}; using TDT",
                                             reason
                                         );
+                                        stateful_fallback_path =
+                                            Some("parakeet-eou-load-failed-fallback");
                                     }
                                     ParakeetStatefulStatus::Disabled => {}
                                 }
@@ -1163,7 +1173,11 @@ impl TranscriptionManager {
                                         } else {
                                             Some(segments)
                                         },
-                                        runtime_path: Some("parakeet-v3-tdt".to_string()),
+                                        runtime_path: Some(
+                                            stateful_fallback_path
+                                                .unwrap_or("parakeet-v3-tdt")
+                                                .to_string(),
+                                        ),
                                     })
                                 }
                                 Err(word_err) => {
@@ -1200,7 +1214,11 @@ impl TranscriptionManager {
                                                 text: result.text,
                                                 segments: None,
                                                 runtime_path: Some(
-                                                    "parakeet-v3-tdt-sentence-fallback".to_string(),
+                                                    stateful_fallback_path
+                                                        .unwrap_or(
+                                                            "parakeet-v3-tdt-sentence-fallback",
+                                                        )
+                                                        .to_string(),
                                                 ),
                                             }
                                         })
@@ -1500,6 +1518,7 @@ impl TranscriptionManager {
             text: final_result,
             confidence_payload,
             timings,
+            runtime_path: result.runtime_path,
             segments: timed_segments,
         })
     }

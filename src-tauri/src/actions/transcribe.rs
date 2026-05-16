@@ -5,9 +5,9 @@ use super::profiler::PipelineProfiler;
 use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::chunking::{
     chunking_profile_for_model, deduplicate_boundary, deduplicate_boundary_n, ActiveChunkingHandle,
-    ChunkingHandle, ChunkingSharedState, CHUNK_SAMPLER_POLL_MS, MAX_PENDING_BACKGROUND_CHUNKS,
-    MIN_FINAL_CHUNK_SAMPLES, PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD, VAD_FLUSH_ENERGY_THRESHOLD,
-    VAD_FLUSH_MIN_CONTENT_SAMPLES, VAD_FLUSH_SILENCE_SAMPLES,
+    ChunkTranscriptionResult, ChunkingHandle, ChunkingSharedState, CHUNK_SAMPLER_POLL_MS,
+    MAX_PENDING_BACKGROUND_CHUNKS, MIN_FINAL_CHUNK_SAMPLES, PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD,
+    VAD_FLUSH_ENERGY_THRESHOLD, VAD_FLUSH_MIN_CONTENT_SAMPLES, VAD_FLUSH_SILENCE_SAMPLES,
 };
 use crate::context_detector::{detect_current_app_context, ActiveAppContextState};
 use crate::managers::audio::AudioRecordingManager;
@@ -89,10 +89,10 @@ fn preview_text(text: &str, max_chars: usize) -> String {
     text.chars().take(max_chars).collect()
 }
 
-fn build_live_preview(results: &[(usize, String)], max_chars: usize) -> String {
+fn build_live_preview(results: &[ChunkTranscriptionResult], max_chars: usize) -> String {
     let mut ordered: Vec<_> = results
         .iter()
-        .filter_map(|(idx, text)| {
+        .filter_map(|(idx, text, _)| {
             let trimmed = text.trim();
             if trimmed.is_empty() {
                 None
@@ -110,6 +110,40 @@ fn build_live_preview(results: &[(usize, String)], max_chars: usize) -> String {
             .join(" "),
         max_chars,
     )
+}
+
+fn summarize_chunk_runtime_path(results: &[ChunkTranscriptionResult]) -> Option<String> {
+    let mut saw_tdt = false;
+    let mut saw_eou_empty_fallback = false;
+    let mut saw_eou_error_fallback = false;
+    let mut saw_eou_missing_fallback = false;
+    let mut saw_eou_load_failed_fallback = false;
+
+    for (_, _, runtime_path) in results {
+        match runtime_path.as_deref() {
+            Some("parakeet-eou") => return Some("parakeet-eou".to_string()),
+            Some("parakeet-eou-empty-fallback") => saw_eou_empty_fallback = true,
+            Some("parakeet-eou-error-fallback") => saw_eou_error_fallback = true,
+            Some("parakeet-eou-missing-fallback") => saw_eou_missing_fallback = true,
+            Some("parakeet-eou-load-failed-fallback") => saw_eou_load_failed_fallback = true,
+            Some(path) if path.starts_with("parakeet-v3-tdt") => saw_tdt = true,
+            _ => {}
+        }
+    }
+
+    if saw_eou_empty_fallback {
+        Some("parakeet-eou-empty-fallback".to_string())
+    } else if saw_eou_error_fallback {
+        Some("parakeet-eou-error-fallback".to_string())
+    } else if saw_eou_load_failed_fallback {
+        Some("parakeet-eou-load-failed-fallback".to_string())
+    } else if saw_eou_missing_fallback {
+        Some("parakeet-eou-missing-fallback".to_string())
+    } else if saw_tdt {
+        Some("parakeet-v3-tdt-chunked".to_string())
+    } else {
+        None
+    }
 }
 
 fn emit_transcription_preview(
@@ -1330,7 +1364,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
             last_committed_idx: 0,
             next_chunk_idx: 0,
         }));
-        let results: Arc<Mutex<Vec<(usize, String)>>> = Arc::new(Mutex::new(Vec::new()));
+        let results: Arc<Mutex<Vec<ChunkTranscriptionResult>>> = Arc::new(Mutex::new(Vec::new()));
         let failed_chunks = Arc::new(AtomicUsize::new(0));
         let pending_chunks = Arc::new(AtomicUsize::new(0));
         let cancel_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -1576,26 +1610,28 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 left_context_tail: Vec<f32>,
             }
 
-            let push_chunk_result = |results_w: &Arc<Mutex<Vec<(usize, String)>>>,
-                                     ah_w: &AppHandle,
-                                     operation_id_w: u64,
-                                     idx: usize,
-                                     text: String| {
-                let live_preview = {
-                    let mut guard = results_w.lock().unwrap_or_else(|e| e.into_inner());
-                    guard.push((idx, text));
-                    build_live_preview(&guard, 240)
+            let push_chunk_result =
+                |results_w: &Arc<Mutex<Vec<ChunkTranscriptionResult>>>,
+                 ah_w: &AppHandle,
+                 operation_id_w: u64,
+                 idx: usize,
+                 text: String,
+                 runtime_path: Option<String>| {
+                    let live_preview = {
+                        let mut guard = results_w.lock().unwrap_or_else(|e| e.into_inner());
+                        guard.push((idx, text, runtime_path));
+                        build_live_preview(&guard, 240)
+                    };
+                    if !live_preview.is_empty() {
+                        emit_transcription_preview(
+                            ah_w,
+                            operation_id_w,
+                            "recording",
+                            &live_preview,
+                            true,
+                        );
+                    }
                 };
-                if !live_preview.is_empty() {
-                    emit_transcription_preview(
-                        ah_w,
-                        operation_id_w,
-                        "recording",
-                        &live_preview,
-                        true,
-                    );
-                }
-            };
             let chunk_app_context = if get_settings(&ah_w).app_context_enabled {
                 ah_w.try_state::<ActiveAppContextState>().and_then(|state| {
                     state
@@ -1623,6 +1659,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             operation_id_w,
                             pending.idx,
                             pending.text,
+                            None,
                         );
                     }
                     info!("[worker] cancel_flag set — exiting");
@@ -1636,6 +1673,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             operation_id_w,
                             pending.idx,
                             pending.text,
+                            None,
                         );
                     }
                     info!("[worker] received None sentinel — exiting");
@@ -1717,7 +1755,14 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         }
                         Err(_) => pending.text,
                     };
-                    push_chunk_result(&results_w, &ah_w, operation_id_w, pending.idx, pending_text);
+                    push_chunk_result(
+                        &results_w,
+                        &ah_w,
+                        operation_id_w,
+                        pending.idx,
+                        pending_text,
+                        None,
+                    );
                 }
                 info!(
                     "[worker] processing chunk idx={} samples={}",
@@ -1739,6 +1784,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                 }) {
                     Ok(output) => {
                         let latency_ms = chunk_start_time.elapsed().as_millis() as u64;
+                        let output_runtime_path = output.runtime_path.clone();
                         tel_worker.log_chunk_text_stage(
                             session_id,
                             idx,
@@ -2297,7 +2343,14 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             }
                         }
 
-                        push_chunk_result(&results_w, &ah_w, operation_id_w, idx, text);
+                        push_chunk_result(
+                            &results_w,
+                            &ah_w,
+                            operation_id_w,
+                            idx,
+                            text,
+                            output_runtime_path,
+                        );
                     }
                     Err(err) => {
                         failed_chunks_w.fetch_add(1, Ordering::Relaxed);
@@ -2506,224 +2559,232 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
             let tel_assembly = Arc::clone(&ch.tel);
             let tel_quality = Arc::clone(&ch.tel);
             let session_id = ch.session_id;
-            let (mut assembled, chunk_count, failed_chunk_count, all_samples, mut parakeet_summary) =
-                tokio::task::spawn_blocking(move || {
-                    let _ = ch.sampler_handle.join();
+            let (
+                mut assembled,
+                chunk_count,
+                failed_chunk_count,
+                all_samples,
+                mut parakeet_summary,
+                chunk_runtime_path,
+            ) = tokio::task::spawn_blocking(move || {
+                let _ = ch.sampler_handle.join();
 
-                    let (last_committed, next_idx) = {
-                        let s = ch.shared_state.lock().unwrap_or_else(|e| e.into_inner());
-                        (s.last_committed_idx, s.next_chunk_idx)
-                    };
+                let (last_committed, next_idx) = {
+                    let s = ch.shared_state.lock().unwrap_or_else(|e| e.into_inner());
+                    (s.last_committed_idx, s.next_chunk_idx)
+                };
 
-                    // For Parakeet V3: send only the truly new audio (from last_committed
-                    // onward, no overlap prefix). The overlap zone is already covered by
-                    // the last background chunk via timestamp-based trimming, so including
-                    // it again would force another timestamp filter — or, if Words mode fell
-                    // back to Sentences, risk a non-deterministic duplicate.
-                    // For every other engine: keep the overlap so deduplicate_boundary has
-                    // enough context to find the boundary.
-                    let (remaining, final_cutoff_secs) = if ch.is_parakeet_v3 {
-                        (all_samples[last_committed..].to_vec(), 0.0_f32)
-                    } else {
-                        let actual_overlap = last_committed.min(ch.chunk_overlap_samples);
-                        let overlap_start = last_committed - actual_overlap;
-                        (
-                            all_samples[overlap_start..].to_vec(),
-                            actual_overlap as f32 / 16_000.0,
-                        )
-                    };
-                    // Skip the final chunk if it's mostly silence tail (< 0.5 s).
-                    // After the user stops speaking the remaining audio is near-silent;
-                    // sending it causes Parakeet to hallucinate English filler words.
-                    let sent_final = remaining.len() >= MIN_FINAL_CHUNK_SAMPLES;
-                    if sent_final {
-                        let final_signal = summarize_audio_signal(&remaining);
-                        tel_assembly.log_chunk_sent(
-                            session_id,
-                            next_idx,
-                            "final",
-                            remaining.len(),
-                            all_samples.len(),
-                            -1.0,
-                            final_signal.rms,
-                            final_signal.peak,
-                            (final_cutoff_secs * 16_000.0) as usize,
-                            final_cutoff_secs,
-                        );
-                        ch.pending_chunks.fetch_add(1, Ordering::Relaxed);
-                        if ch
-                            .chunk_tx
-                            .send(Some((remaining, next_idx, final_cutoff_secs, true)))
-                            .is_err()
-                        {
-                            ch.pending_chunks.fetch_sub(1, Ordering::Relaxed);
-                        }
+                // For Parakeet V3: send only the truly new audio (from last_committed
+                // onward, no overlap prefix). The overlap zone is already covered by
+                // the last background chunk via timestamp-based trimming, so including
+                // it again would force another timestamp filter — or, if Words mode fell
+                // back to Sentences, risk a non-deterministic duplicate.
+                // For every other engine: keep the overlap so deduplicate_boundary has
+                // enough context to find the boundary.
+                let (remaining, final_cutoff_secs) = if ch.is_parakeet_v3 {
+                    (all_samples[last_committed..].to_vec(), 0.0_f32)
+                } else {
+                    let actual_overlap = last_committed.min(ch.chunk_overlap_samples);
+                    let overlap_start = last_committed - actual_overlap;
+                    (
+                        all_samples[overlap_start..].to_vec(),
+                        actual_overlap as f32 / 16_000.0,
+                    )
+                };
+                // Skip the final chunk if it's mostly silence tail (< 0.5 s).
+                // After the user stops speaking the remaining audio is near-silent;
+                // sending it causes Parakeet to hallucinate English filler words.
+                let sent_final = remaining.len() >= MIN_FINAL_CHUNK_SAMPLES;
+                if sent_final {
+                    let final_signal = summarize_audio_signal(&remaining);
+                    tel_assembly.log_chunk_sent(
+                        session_id,
+                        next_idx,
+                        "final",
+                        remaining.len(),
+                        all_samples.len(),
+                        -1.0,
+                        final_signal.rms,
+                        final_signal.peak,
+                        (final_cutoff_secs * 16_000.0) as usize,
+                        final_cutoff_secs,
+                    );
+                    ch.pending_chunks.fetch_add(1, Ordering::Relaxed);
+                    if ch
+                        .chunk_tx
+                        .send(Some((remaining, next_idx, final_cutoff_secs, true)))
+                        .is_err()
+                    {
+                        ch.pending_chunks.fetch_sub(1, Ordering::Relaxed);
                     }
-                    let _ = ch.chunk_tx.send(None);
+                }
+                let _ = ch.chunk_tx.send(None);
 
-                    let _ = ch.worker_handle.join();
+                let _ = ch.worker_handle.join();
 
-                    let mut results = ch.results.lock().unwrap_or_else(|e| e.into_inner());
-                    results.sort_by_key(|r| r.0);
+                let mut results = ch.results.lock().unwrap_or_else(|e| e.into_inner());
+                results.sort_by_key(|r| r.0);
 
-                    let chunk_count = results.len();
-                    let failed_chunk_count = ch.failed_chunks.load(Ordering::Relaxed);
-                    let mut assembled = if results.is_empty() {
-                        String::new()
-                    } else if results.len() == 1 {
-                        results[0].1.clone()
-                    } else if ch.is_parakeet_v3 {
-                        // Parakeet V3: chunks are already perfectly stitched.
-                        // Background chunks are trimmed by word-level timestamp filter;
-                        // the final chunk starts exactly at last_committed with no overlap.
-                        // deduplicate_boundary must NOT run here — it creates false positives
-                        // when a word that legitimately starts the final chunk also happened
-                        // to appear at the end of the previous chunk (e.g. "avait … avait
-                        // 47 personnes"), silently dropping real words.
-                        //
-                        // Capitalisation fix: Parakeet capitalises the first word of every
-                        // chunk because it treats "start of audio = start of sentence".
-                        // When joining, lowercase that first letter unless the previous
-                        // chunk actually ended a sentence (.  !  ?  …).
-                        let non_empty: Vec<&str> = results
-                            .iter()
-                            .map(|(_, t)| t.as_str())
-                            .filter(|t| !t.is_empty())
-                            .collect();
-                        let mut out = String::new();
-                        for (i, chunk) in non_empty.iter().enumerate() {
-                            if i == 0 {
-                                // Capitalize the first word of the assembled text — Parakeet
-                                // sometimes returns a lowercase start when it treats the audio
-                                // as a continuation. The assembled result is always sentence-start.
-                                let mut chars = chunk.chars();
-                                if let Some(first) = chars.next() {
+                let chunk_count = results.len();
+                let failed_chunk_count = ch.failed_chunks.load(Ordering::Relaxed);
+                let chunk_runtime_path = summarize_chunk_runtime_path(&results);
+
+                let mut assembled = if results.is_empty() {
+                    String::new()
+                } else if results.len() == 1 {
+                    results[0].1.clone()
+                } else if ch.is_parakeet_v3 {
+                    // Parakeet V3: chunks are already perfectly stitched.
+                    // Background chunks are trimmed by word-level timestamp filter;
+                    // the final chunk starts exactly at last_committed with no overlap.
+                    // deduplicate_boundary must NOT run here — it creates false positives
+                    // when a word that legitimately starts the final chunk also happened
+                    // to appear at the end of the previous chunk (e.g. "avait … avait
+                    // 47 personnes"), silently dropping real words.
+                    //
+                    // Capitalisation fix: Parakeet capitalises the first word of every
+                    // chunk because it treats "start of audio = start of sentence".
+                    // When joining, lowercase that first letter unless the previous
+                    // chunk actually ended a sentence (.  !  ?  …).
+                    let non_empty: Vec<&str> = results
+                        .iter()
+                        .map(|(_, t, _)| t.as_str())
+                        .filter(|t| !t.is_empty())
+                        .collect();
+                    let mut out = String::new();
+                    for (i, chunk) in non_empty.iter().enumerate() {
+                        if i == 0 {
+                            // Capitalize the first word of the assembled text — Parakeet
+                            // sometimes returns a lowercase start when it treats the audio
+                            // as a continuation. The assembled result is always sentence-start.
+                            let mut chars = chunk.chars();
+                            if let Some(first) = chars.next() {
+                                for uc in first.to_uppercase() {
+                                    out.push(uc);
+                                }
+                                out.push_str(chars.as_str());
+                            }
+                        } else {
+                            // Apply a light dedup pass (max 3 words) to catch residual
+                            // duplicates from fallback-full chunks that lacked per-word
+                            // timestamps. Word-level trimmed chunks rarely need this, but
+                            // the small window avoids false positives.
+                            let deduped = deduplicate_boundary_n(&out, chunk, 3);
+                            let original_words = chunk.split_whitespace().count();
+                            let deduped_words = deduped.split_whitespace().count();
+                            if original_words > deduped_words {
+                                tel_assembly.log_assembly_event(
+                                    session_id,
+                                    "deduplicate_boundary",
+                                    i - 1,
+                                    i,
+                                    original_words - deduped_words,
+                                    "boundary_overlap_detected",
+                                );
+                            }
+                            let chunk_to_join = if deduped.is_empty() {
+                                // whole chunk was duplicate — skip
+                                continue;
+                            } else {
+                                deduped
+                            };
+                            // Check BEFORE pushing the space — otherwise last() returns ' '.
+                            // Only treat '!' / '?' / '…' as reliable sentence endings.
+                            // Parakeet appends '.' to every chunk (even mid-sentence VAD
+                            // splits), so using '.' here causes false capitalisation like
+                            // "Tu es. Le meilleur." when the user said one sentence.
+                            let prev_ends_sentence =
+                                crate::parakeet_text::parakeet_chunk_ends_sentence(
+                                    &out,
+                                    &chunk_to_join,
+                                );
+                            out.push(' ');
+                            let mut chars = chunk_to_join.chars();
+                            if let Some(first) = chars.next() {
+                                if prev_ends_sentence {
                                     for uc in first.to_uppercase() {
                                         out.push(uc);
                                     }
-                                    out.push_str(chars.as_str());
-                                }
-                            } else {
-                                // Apply a light dedup pass (max 3 words) to catch residual
-                                // duplicates from fallback-full chunks that lacked per-word
-                                // timestamps. Word-level trimmed chunks rarely need this, but
-                                // the small window avoids false positives.
-                                let deduped = deduplicate_boundary_n(&out, chunk, 3);
-                                let original_words = chunk.split_whitespace().count();
-                                let deduped_words = deduped.split_whitespace().count();
-                                if original_words > deduped_words {
-                                    tel_assembly.log_assembly_event(
-                                        session_id,
-                                        "deduplicate_boundary",
-                                        i - 1,
-                                        i,
-                                        original_words - deduped_words,
-                                        "boundary_overlap_detected",
-                                    );
-                                }
-                                let chunk_to_join = if deduped.is_empty() {
-                                    // whole chunk was duplicate — skip
-                                    continue;
                                 } else {
-                                    deduped
-                                };
-                                // Check BEFORE pushing the space — otherwise last() returns ' '.
-                                // Only treat '!' / '?' / '…' as reliable sentence endings.
-                                // Parakeet appends '.' to every chunk (even mid-sentence VAD
-                                // splits), so using '.' here causes false capitalisation like
-                                // "Tu es. Le meilleur." when the user said one sentence.
-                                let prev_ends_sentence =
-                                    crate::parakeet_text::parakeet_chunk_ends_sentence(
-                                        &out,
-                                        &chunk_to_join,
-                                    );
-                                out.push(' ');
-                                let mut chars = chunk_to_join.chars();
-                                if let Some(first) = chars.next() {
-                                    if prev_ends_sentence {
-                                        for uc in first.to_uppercase() {
-                                            out.push(uc);
-                                        }
-                                    } else {
-                                        for lc in first.to_lowercase() {
-                                            out.push(lc);
-                                        }
+                                    for lc in first.to_lowercase() {
+                                        out.push(lc);
                                     }
-                                    out.push_str(chars.as_str());
                                 }
-                            }
-                        }
-                        out
-                    } else {
-                        let mut parts = vec![results[0].1.clone()];
-                        for i in 1..results.len() {
-                            let d = deduplicate_boundary(&results[i - 1].1, &results[i].1);
-                            if !d.is_empty() {
-                                parts.push(d);
-                            }
-                        }
-                        parts.join(" ")
-                    };
-
-                    if ch.is_parakeet_v3 {
-                        let recovery_candidate = ch
-                            .final_recovery_candidate
-                            .lock()
-                            .unwrap_or_else(|e| e.into_inner())
-                            .clone();
-                        if let Some((recovery_idx, recovery_text)) = recovery_candidate {
-                            let recovered =
-                                append_recovered_final_chunk(&assembled, &recovery_text);
-                            if recovered != assembled {
-                                tel_assembly.log_finalization_recovery(
-                                    session_id,
-                                    recovery_idx,
-                                    "promote_final_chunk_candidate",
-                                    recovery_text.split_whitespace().count(),
-                                    &preview_text(&recovery_text, 120),
-                                );
-                                if let Ok(mut counters) = ch.parakeet_counters.lock() {
-                                    counters.finalization_recoveries += 1;
-                                    counters.output_words = recovered.split_whitespace().count();
-                                }
-                                assembled = recovered;
+                                out.push_str(chars.as_str());
                             }
                         }
                     }
+                    out
+                } else {
+                    let mut parts = vec![results[0].1.clone()];
+                    for i in 1..results.len() {
+                        let d = deduplicate_boundary(&results[i - 1].1, &results[i].1);
+                        if !d.is_empty() {
+                            parts.push(d);
+                        }
+                    }
+                    parts.join(" ")
+                };
 
-                    tel_assembly.log_session_text_stage(session_id, "assembled_chunks", &assembled);
+                if ch.is_parakeet_v3 {
+                    let recovery_candidate = ch
+                        .final_recovery_candidate
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .clone();
+                    if let Some((recovery_idx, recovery_text)) = recovery_candidate {
+                        let recovered = append_recovered_final_chunk(&assembled, &recovery_text);
+                        if recovered != assembled {
+                            tel_assembly.log_finalization_recovery(
+                                session_id,
+                                recovery_idx,
+                                "promote_final_chunk_candidate",
+                                recovery_text.split_whitespace().count(),
+                                &preview_text(&recovery_text, 120),
+                            );
+                            if let Ok(mut counters) = ch.parakeet_counters.lock() {
+                                counters.finalization_recoveries += 1;
+                                counters.output_words = recovered.split_whitespace().count();
+                            }
+                            assembled = recovered;
+                        }
+                    }
+                }
 
-                    tel_assembly.log_session_end(
-                        session_id,
-                        chunk_count,
-                        failed_chunk_count,
-                        all_samples.len(),
-                        assembled.split_whitespace().count(),
-                        &assembled.chars().take(200).collect::<String>(),
-                    );
+                tel_assembly.log_session_text_stage(session_id, "assembled_chunks", &assembled);
 
-                    let parakeet_summary = if ch.is_parakeet_v3 {
-                        let mut summary = ch
-                            .parakeet_counters
-                            .lock()
-                            .unwrap_or_else(|e| e.into_inner())
-                            .clone();
-                        summary.output_words = assembled.split_whitespace().count();
-                        Some(summary)
-                    } else {
-                        None
-                    };
+                tel_assembly.log_session_end(
+                    session_id,
+                    chunk_count,
+                    failed_chunk_count,
+                    all_samples.len(),
+                    assembled.split_whitespace().count(),
+                    &assembled.chars().take(200).collect::<String>(),
+                );
 
-                    (
-                        assembled,
-                        chunk_count,
-                        failed_chunk_count,
-                        all_samples,
-                        parakeet_summary,
-                    )
-                })
-                .await
-                .unwrap_or_else(|_| (String::new(), 0, 0, Vec::new(), None));
+                let parakeet_summary = if ch.is_parakeet_v3 {
+                    let mut summary = ch
+                        .parakeet_counters
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .clone();
+                    summary.output_words = assembled.split_whitespace().count();
+                    Some(summary)
+                } else {
+                    None
+                };
+
+                (
+                    assembled,
+                    chunk_count,
+                    failed_chunk_count,
+                    all_samples,
+                    parakeet_summary,
+                    chunk_runtime_path,
+                )
+            })
+            .await
+            .unwrap_or_else(|_| (String::new(), 0, 0, Vec::new(), None, None));
             if is_operation_active(&ah, operation_id) {
                 if let Some(summary) = parakeet_summary.as_mut() {
                     if should_attempt_full_audio_recovery(summary, all_samples.len(), &assembled)
@@ -2877,7 +2938,9 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                         &assembled,
                                         &settings.selected_language,
                                     ),
-                                    runtime_path: Some("parakeet-v3-tdt-chunked"),
+                                    runtime_path: chunk_runtime_path
+                                        .as_deref()
+                                        .or(Some("parakeet-v3-tdt-chunked")),
                                 },
                             );
                     }

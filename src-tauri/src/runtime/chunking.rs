@@ -82,12 +82,14 @@ pub(crate) struct ChunkingSharedState {
     pub(crate) next_chunk_idx: usize,
 }
 
+pub(crate) type ChunkTranscriptionResult = (usize, String, Option<String>);
+
 pub struct ChunkingHandle {
     pub(crate) sampler_handle: std::thread::JoinHandle<()>,
     pub(crate) worker_handle: std::thread::JoinHandle<()>,
     pub(crate) chunk_tx: std::sync::mpsc::Sender<Option<(Vec<f32>, usize, f32, bool)>>,
     pub(crate) shared_state: Arc<Mutex<ChunkingSharedState>>,
-    pub(crate) results: Arc<Mutex<Vec<(usize, String)>>>,
+    pub(crate) results: Arc<Mutex<Vec<ChunkTranscriptionResult>>>,
     pub(crate) pending_chunks: Arc<AtomicUsize>,
     pub(crate) failed_chunks: Arc<AtomicUsize>,
     pub(crate) parakeet_counters: Arc<Mutex<ParakeetSessionCompletion>>,

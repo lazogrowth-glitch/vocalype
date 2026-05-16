@@ -119,6 +119,7 @@ pub struct TranscriptionOutput {
     pub text: String,
     pub confidence_payload: Option<TranscriptionConfidencePayload>,
     pub timings: Vec<PipelineStepTiming>,
+    pub runtime_path: Option<String>,
     /// Word-level timed segments from the model (Parakeet V3 only).
     /// Each segment carries a `start` / `end` in seconds relative to the
     /// audio buffer that was passed to the engine.  Used by the chunking

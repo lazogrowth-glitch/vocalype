@@ -39,6 +39,18 @@ function runtimeLabel(runtimePath?: string | null): string | null {
   if (runtimePath === "parakeet-eou") {
     return "Chemin testé: Parakeet EOU";
   }
+  if (runtimePath === "parakeet-eou-empty-fallback") {
+    return "EOU teste: texte vide, fallback V3";
+  }
+  if (runtimePath === "parakeet-eou-error-fallback") {
+    return "EOU teste: erreur, fallback V3";
+  }
+  if (runtimePath === "parakeet-eou-load-failed-fallback") {
+    return "EOU indisponible: fallback V3";
+  }
+  if (runtimePath === "parakeet-eou-missing-fallback") {
+    return "EOU manquant: fallback V3";
+  }
   if (runtimePath === "parakeet-v3-tdt-sentence-fallback") {
     return "Chemin utilisé: Parakeet V3 fallback";
   }

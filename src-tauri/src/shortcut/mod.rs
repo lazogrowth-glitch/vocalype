@@ -17,6 +17,7 @@ use log::{error, info, warn};
 use serde::Serialize;
 use specta::Type;
 use std::collections::HashSet;
+use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 
@@ -29,6 +30,7 @@ use crate::settings::{
 };
 use crate::tray;
 use crate::vocabulary_store::VocabularyStoreState;
+use crate::TranscriptionManager;
 
 // Note: Commands are accessed via shortcut::native_keyboard:: in lib.rs
 
@@ -993,6 +995,25 @@ pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Res
     let mut settings = settings::get_settings(&app);
     settings.experimental_enabled = enabled;
     settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_parakeet_stateful_streaming_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.parakeet_stateful_streaming_enabled = enabled;
+    settings::write_settings(&app, settings);
+
+    if let Some(manager) = app.try_state::<Arc<TranscriptionManager>>() {
+        manager
+            .unload_model()
+            .map_err(|err| format!("Failed to reload Parakeet runtime: {err}"))?;
+    }
+
     Ok(())
 }
 

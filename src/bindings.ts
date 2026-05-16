@@ -192,6 +192,14 @@ async changeExperimentalEnabledSetting(enabled: boolean) : Promise<Result<null, 
     else return { status: "error", error: e  as any };
 }
 },
+async changeParakeetStatefulStreamingEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_parakeet_stateful_streaming_enabled_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changePostProcessBaseUrlSetting(providerId: string, baseUrl: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_post_process_base_url_setting", { providerId, baseUrl }) };
@@ -1957,7 +1965,7 @@ export type StartupWarmupStatus = { phase: StartupWarmupPhase; reason: StartupWa
  * A single entry in the top-corrections list.
  */
 export type TopCorrection = { from: string; to: string; count: number }
-export type TranscriptionConfidencePayload = { engine: string; overall_confidence: number; mapping_stable: boolean; words: ConfidenceWord[] }
+export type TranscriptionConfidencePayload = { engine: string; runtime_path?: string | null; overall_confidence: number; mapping_stable: boolean; words: ConfidenceWord[] }
 export type TranscriptionLifecycleState = "idle" | "preparing_microphone" | "recording" | "paused" | "stopping" | "transcribing" | "processing" | "pasting" | "completed" | "cancelled" | "error"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 /**

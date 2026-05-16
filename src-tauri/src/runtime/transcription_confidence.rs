@@ -11,6 +11,8 @@ pub struct ConfidenceWord {
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct TranscriptionConfidencePayload {
     pub engine: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub runtime_path: Option<String>,
     pub overall_confidence: f32,
     pub mapping_stable: bool,
     pub words: Vec<ConfidenceWord>,
@@ -29,6 +31,7 @@ pub struct ParakeetConfidenceInputs<'a> {
     pub trimmed_words_total: usize,
     pub finalization_recoveries: usize,
     pub has_language_drift: bool,
+    pub runtime_path: Option<&'a str>,
 }
 
 fn normalize_for_mapping(text: &str) -> String {
@@ -185,6 +188,7 @@ pub fn build_parakeet_confidence_payload(
 
     Some(TranscriptionConfidencePayload {
         engine: "parakeet-v3".to_string(),
+        runtime_path: inputs.runtime_path.map(str::to_string),
         overall_confidence: overall_confidence.clamp(0.0, 1.0),
         mapping_stable: inputs.mapping_stable,
         words: Vec::new(),
@@ -227,6 +231,7 @@ pub fn build_whisper_confidence_payload(
 
     Some(TranscriptionConfidencePayload {
         engine: "whisper".to_string(),
+        runtime_path: None,
         overall_confidence,
         mapping_stable,
         words,
@@ -306,10 +311,12 @@ mod tests {
             trimmed_words_total: 0,
             finalization_recoveries: 0,
             has_language_drift: false,
+            runtime_path: Some("parakeet-v3-tdt"),
         })
         .expect("payload");
 
         assert_eq!(payload.engine, "parakeet-v3");
+        assert_eq!(payload.runtime_path.as_deref(), Some("parakeet-v3-tdt"));
         assert!(payload.overall_confidence >= 0.90);
         assert!(payload.words.is_empty());
     }
@@ -328,6 +335,7 @@ mod tests {
             trimmed_words_total: 6,
             finalization_recoveries: 1,
             has_language_drift: true,
+            runtime_path: None,
         })
         .expect("payload");
 
@@ -348,6 +356,7 @@ mod tests {
             trimmed_words_total: 0,
             finalization_recoveries: 0,
             has_language_drift: false,
+            runtime_path: None,
         })
         .expect("clean");
         let noisy = build_parakeet_confidence_payload(ParakeetConfidenceInputs {
@@ -362,6 +371,7 @@ mod tests {
             trimmed_words_total: 14,
             finalization_recoveries: 0,
             has_language_drift: false,
+            runtime_path: None,
         })
         .expect("noisy");
 

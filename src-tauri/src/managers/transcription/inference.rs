@@ -111,6 +111,7 @@ fn transcribe_parakeet_stateful_experimental(
     Ok(Some(EngineTranscriptionResult {
         text,
         segments: None,
+        runtime_path: Some("parakeet-eou".to_string()),
     }))
 }
 
@@ -1162,6 +1163,7 @@ impl TranscriptionManager {
                                         } else {
                                             Some(segments)
                                         },
+                                        runtime_path: Some("parakeet-v3-tdt".to_string()),
                                     })
                                 }
                                 Err(word_err) => {
@@ -1197,6 +1199,9 @@ impl TranscriptionManager {
                                             EngineTranscriptionResult {
                                                 text: result.text,
                                                 segments: None,
+                                                runtime_path: Some(
+                                                    "parakeet-v3-tdt-sentence-fallback".to_string(),
+                                                ),
                                             }
                                         })
                                         .map_err(|e| {
@@ -1469,6 +1474,7 @@ impl TranscriptionManager {
                 trimmed_words_total: 0,
                 finalization_recoveries: 0,
                 has_language_drift: has_language_drift(&final_result, &settings.selected_language),
+                runtime_path: result.runtime_path.as_deref(),
             })
         } else {
             result

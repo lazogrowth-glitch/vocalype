@@ -35,6 +35,22 @@ function confidenceLabel(engine: string): string {
   return engine;
 }
 
+function runtimeLabel(runtimePath?: string | null): string | null {
+  if (runtimePath === "parakeet-eou") {
+    return "Chemin testé: Parakeet EOU";
+  }
+  if (runtimePath === "parakeet-v3-tdt-sentence-fallback") {
+    return "Chemin utilisé: Parakeet V3 fallback";
+  }
+  if (runtimePath === "parakeet-v3-tdt-chunked") {
+    return "Chemin utilisé: Parakeet V3 chunké";
+  }
+  if (runtimePath === "parakeet-v3-tdt") {
+    return "Chemin utilisé: Parakeet V3";
+  }
+  return null;
+}
+
 export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
   text,
   confidencePayload,
@@ -48,6 +64,7 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
 
   const overall = percent(confidencePayload.overall_confidence);
   const engine = confidenceLabel(confidencePayload.engine);
+  const runtime = runtimeLabel(confidencePayload.runtime_path);
 
   if (
     !confidencePayload.mapping_stable ||
@@ -62,6 +79,9 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
             engine,
             overall,
           })}
+          {runtime ? (
+            <span className="ml-2 text-text/35">{runtime}</span>
+          ) : null}
         </div>
       </div>
     );
@@ -91,6 +111,7 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
           engine,
           overall,
         })}
+        {runtime ? <span className="ml-2 text-text/35">{runtime}</span> : null}
       </div>
     </div>
   );

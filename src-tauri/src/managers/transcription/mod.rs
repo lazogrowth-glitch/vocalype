@@ -129,6 +129,7 @@ pub struct TranscriptionOutput {
 struct EngineTranscriptionResult {
     text: String,
     segments: Option<Vec<transcribe_rs::TranscriptionSegment>>,
+    runtime_path: Option<String>,
 }
 
 #[derive(Debug)]

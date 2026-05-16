@@ -2877,6 +2877,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                         &assembled,
                                         &settings.selected_language,
                                     ),
+                                    runtime_path: Some("parakeet-v3-tdt-chunked"),
                                 },
                             );
                     }

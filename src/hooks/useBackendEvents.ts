@@ -394,11 +394,18 @@ export function useBackendEvents({
   );
 
   // Transcription lifecycle — show "Text pasted ✓" on completion
+  // Suppressed if a runtime error fired within the last 2s (e.g. "no speech detected")
+  // to avoid showing contradictory success + error toasts simultaneously.
   useTauriEvent<{ state?: string }>(
     "transcription-lifecycle",
     (event) => {
       if (event.payload?.state === "completed") {
-        toast.success(t("overlay.pasteSuccess"), { duration: 2000 });
+        const recentError = lastRuntimeErrorRef.current;
+        const suppressedByError =
+          recentError && Date.now() - recentError.at < 2000;
+        if (!suppressedByError) {
+          toast.success(t("overlay.pasteSuccess"), { duration: 2000 });
+        }
       }
     },
     [t],

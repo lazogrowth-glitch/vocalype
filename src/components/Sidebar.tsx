@@ -20,7 +20,6 @@ interface SidebarProps {
   layoutTier?: "compact" | "cozy" | "spacious";
   session?: AuthSession | null;
   onLogout?: () => void;
-  onOpenBillingPortal?: () => void;
 }
 
 function useTrialBadge(trialEndsAt: string | null) {

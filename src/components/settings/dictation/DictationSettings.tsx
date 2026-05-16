@@ -1254,7 +1254,7 @@ export const DictationSettings: React.FC = () => {
                             fontSize: 12.5,
                           }}
                         >
-                          Aucun ton configure.
+                          Aucun ton configuré.
                         </div>
                       )}
                     </div>
@@ -1291,69 +1291,6 @@ export const DictationSettings: React.FC = () => {
                   padding: "14px 16px",
                 }}
               >
-                <div className="terms-row">
-                  <input
-                    className="input"
-                    placeholder="Vocalype entend…"
-                    value={newFrom}
-                    onChange={(e) => {
-                      setNewFrom(e.target.value);
-                      setDictError(null);
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddTerm()}
-                    style={
-                      dictError
-                        ? { borderColor: "rgba(239,90,90,0.5)" }
-                        : undefined
-                    }
-                  />
-                  <span className="arr">→</span>
-                  <input
-                    className="input"
-                    placeholder="Remplacer par…"
-                    value={newTo}
-                    onChange={(e) => {
-                      setNewTo(e.target.value);
-                      setDictError(null);
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddTerm()}
-                    style={
-                      dictError
-                        ? { borderColor: "rgba(239,90,90,0.5)" }
-                        : undefined
-                    }
-                  />
-                  <button className="btn-add" onClick={handleAddTerm}>
-                    Ajouter
-                  </button>
-                </div>
-                {dictError && (
-                  <div
-                    style={{
-                      color: "#ef5a5a",
-                      fontSize: 12,
-                      marginTop: 6,
-                      paddingLeft: 2,
-                    }}
-                  >
-                    {dictError}
-                  </div>
-                )}
-                {dictStatus && (
-                  <div
-                    style={{
-                      color:
-                        dictStatus.tone === "success"
-                          ? "var(--good)"
-                          : "#ef5a5a",
-                      fontSize: 12,
-                      marginTop: 6,
-                      paddingLeft: 2,
-                    }}
-                  >
-                    {dictStatus.message}
-                  </div>
-                )}
                 {dictEntries.length === 0 ? (
                   <div className="terms-empty">
                     Aucun terme appris — ajoute des noms propres, acronymes ou

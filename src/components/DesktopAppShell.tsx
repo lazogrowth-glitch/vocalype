@@ -573,7 +573,6 @@ export function DesktopAppShell({
             layoutTier={layoutTier}
             session={session}
             onLogout={handleLogout}
-            onOpenBillingPortal={handleOpenBillingPortal}
           />
 
           <main

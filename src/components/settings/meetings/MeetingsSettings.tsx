@@ -585,6 +585,7 @@ export const MeetingsSettings: React.FC = () => {
                             meeting_id: id,
                             timestamp_ms,
                             content: text,
+                            speaker: "",
                           },
                         ]
                       : m.segments,

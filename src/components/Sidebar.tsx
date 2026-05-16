@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { CreditCard, LogOut, X } from "lucide-react";
+import { CreditCard, LogOut, Settings2, X } from "lucide-react";
 import type { AuthSession } from "@/lib/auth/types";
 import VocalypeLogo from "./icons/VocalypeLogo";
 import { MachineStatusBar } from "./MachineStatusBar";
@@ -8,7 +8,7 @@ import { useSettings } from "../hooks/useSettings";
 import { usePlan } from "@/lib/subscription/context";
 import { SECTIONS_CONFIG } from "./sections-config";
 
-const HIDDEN_SECTION_IDS = new Set(["debug", "billing"]);
+const HIDDEN_SECTION_IDS = new Set(["debug", "billing", "settings"]);
 const TRIAL_CARD_DISMISSED_KEY = "vt.trialCardDismissed";
 
 interface SidebarProps {
@@ -466,6 +466,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 zIndex: 9999,
               }}
             >
+              <button
+                type="button"
+                onClick={() => {
+                  onSectionChange("settings");
+                  setShowUserMenu(false);
+                }}
+                style={userMenuBtnStyle(false)}
+                onMouseEnter={(e) => {
+                  const b = e.currentTarget as HTMLButtonElement;
+                  b.style.background =
+                    "linear-gradient(90deg, rgba(201,168,76,0.18), rgba(201,168,76,0.08))";
+                  b.style.color = "rgba(255,255,255,0.97)";
+                  b.style.borderColor = "rgba(201,168,76,0.22)";
+                }}
+                onMouseLeave={(e) => {
+                  const b = e.currentTarget as HTMLButtonElement;
+                  b.style.background = "transparent";
+                  b.style.color = "rgba(255,255,255,0.72)";
+                  b.style.borderColor = "transparent";
+                }}
+              >
+                <Settings2 size={13} style={{ opacity: 0.55 }} />
+                {t("sidebar.settings")}
+              </button>
               <button
                 type="button"
                 onClick={() => {

@@ -2,6 +2,8 @@ use super::*;
 use crate::managers::model::ModelInfo;
 use std::path::{Path, PathBuf};
 
+const PARAKEET_STATEFUL_EXPERIMENT_ENABLED: bool = false;
+
 fn parakeet_stateful_required_files_present(path: &Path) -> bool {
     path.join("encoder.onnx").exists()
         && path.join("decoder_joint.onnx").exists()
@@ -32,6 +34,10 @@ fn load_parakeet_stateful_runtime(
     model_path: &Path,
     providers: &[ParakeetExecutionProvider],
 ) -> (Option<ParakeetStatefulRuntime>, ParakeetStatefulStatus) {
+    if !PARAKEET_STATEFUL_EXPERIMENT_ENABLED {
+        return (None, ParakeetStatefulStatus::Disabled);
+    }
+
     let settings = get_settings(app_handle);
     if !settings.experimental_enabled || !settings.parakeet_stateful_streaming_enabled {
         return (None, ParakeetStatefulStatus::Disabled);

@@ -19,6 +19,7 @@ const PARAKEET_SHORT_PHRASE_PAD_SAMPLES: usize = parakeet_config::SHORT_PHRASE_P
 const PARAKEET_TAIL_PAD_SAMPLES: usize = parakeet_config::TAIL_PAD_SAMPLES;
 const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = parakeet_config::SENTENCE_RESCUE_MAX_WORDS;
 const PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES: usize = parakeet_config::ULTRA_SHORT_PHRASE_SAMPLES;
+const PARAKEET_STATEFUL_EXPERIMENT_ENABLED: bool = false;
 const PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES: usize =
     parakeet_config::STATEFUL_STREAMING_FRAME_SAMPLES;
 const PARAKEET_STATEFUL_STREAMING_MAX_BATCH_SAMPLES: usize =
@@ -65,7 +66,8 @@ fn should_attempt_parakeet_stateful_streaming(
     stateful_enabled: bool,
     samples: usize,
 ) -> bool {
-    experimental_enabled
+    PARAKEET_STATEFUL_EXPERIMENT_ENABLED
+        && experimental_enabled
         && stateful_enabled
         && samples >= PARAKEET_STATEFUL_STREAMING_FRAME_SAMPLES
         && samples <= PARAKEET_STATEFUL_STREAMING_MAX_BATCH_SAMPLES
@@ -73,6 +75,8 @@ fn should_attempt_parakeet_stateful_streaming(
 
 fn clean_parakeet_stateful_text(text: &str) -> String {
     text.replace("[EOU]", "")
+        .replace('_', " ")
+        .replace('▁', " ")
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ")
@@ -960,11 +964,12 @@ impl TranscriptionManager {
                                             active_operation_id,
                                         ) {
                                             Ok(Some(output)) => {
-                                                info!(
-                                                    "[parakeet-stateful] using experimental EOU transcript words={}",
+                                                warn!(
+                                                    "[parakeet-stateful] EOU produced preview text but direct commit is disabled; falling back to TDT. preview_words={}",
                                                     output.text.split_whitespace().count()
                                                 );
-                                                return Ok(output);
+                                                stateful_fallback_path =
+                                                    Some("parakeet-eou-preview-fallback");
                                             }
                                             Ok(None) => {
                                                 debug!(
@@ -1691,6 +1696,10 @@ mod tests {
         assert_eq!(
             clean_parakeet_stateful_text("  Bonjour   Sarah [EOU]  "),
             "Bonjour Sarah"
+        );
+        assert_eq!(
+            clean_parakeet_stateful_text(" _hi_how_are_you. [EOU] "),
+            "hi how are you."
         );
     }
 

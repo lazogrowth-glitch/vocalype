@@ -38,6 +38,7 @@ static MIGRATIONS: &[M] = &[
     );",
     ),
     M::up("ALTER TABLE meetings ADD COLUMN kind TEXT NOT NULL DEFAULT 'meeting';"),
+    M::up("ALTER TABLE meeting_segments ADD COLUMN speaker TEXT NOT NULL DEFAULT '';"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]

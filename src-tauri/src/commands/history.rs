@@ -534,7 +534,7 @@ pub async fn update_history_entry_text(
 
 /// Load an external audio file (WAV) as 16 kHz mono f32 samples.
 /// Handles arbitrary sample rates and channel counts via resampling.
-fn load_external_audio_file(path: &Path) -> anyhow::Result<Vec<f32>> {
+pub(crate) fn load_external_audio_file(path: &Path) -> anyhow::Result<Vec<f32>> {
     let reader = WavReader::open(path)?;
     let spec = reader.spec();
     let num_channels = spec.channels as usize;
@@ -603,7 +603,7 @@ fn load_external_audio_file(path: &Path) -> anyhow::Result<Vec<f32>> {
     Ok(out)
 }
 
-fn validate_importable_audio_path(path: &str) -> Result<PathBuf, String> {
+pub(crate) fn validate_importable_audio_path(path: &str) -> Result<PathBuf, String> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
         return Err("Audio file path is empty".to_string());

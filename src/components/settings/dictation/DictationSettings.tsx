@@ -184,6 +184,12 @@ export const DictationSettings: React.FC = () => {
     (bindings as Record<string, { current_binding?: string }>)["transcribe"]
       ?.current_binding ?? "";
   const selectedMicIndex = getSetting("selected_microphone_index") ?? "default";
+  const shortDictationPolicy =
+    (getSetting("short_dictation_policy") as
+      | "instant"
+      | "balanced"
+      | "quality"
+      | undefined) ?? "balanced";
 
   const micName = useMemo(() => {
     if (!selectedMicIndex || selectedMicIndex === "default") {
@@ -1086,6 +1092,68 @@ export const DictationSettings: React.FC = () => {
                     key={id}
                     className={`radio${currentMode === id ? " active" : ""}`}
                     onClick={() => handleModeSelect(id)}
+                  >
+                    <span className="check" />
+                    <div className="ric">{icon}</div>
+                    <div className="rn">{label}</div>
+                    <div className="rs">{desc}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="section-h">
+                <div className="section-title">
+                  Réactivité des dictées courtes
+                </div>
+              </div>
+              <div
+                className="radio-grid"
+                role="radiogroup"
+                aria-label="Réactivité des dictées courtes"
+              >
+                {(
+                  [
+                    {
+                      id: "instant" as const,
+                      label: "Instant",
+                      desc: "Le texte apparaît plus vite. Idéal pour les messages courts et les réponses rapides.",
+                      icon: (
+                        <svg className="ic ic-sm" viewBox="0 0 24 24">
+                          <path d="M13 3 4 14h6l-1 7 9-11h-6l1-7Z" />
+                        </svg>
+                      ),
+                    },
+                    {
+                      id: "balanced" as const,
+                      label: "Équilibré",
+                      desc: "Le meilleur choix au quotidien. Rapide, avec une bonne fiabilité sur la plupart des dictées.",
+                      icon: (
+                        <svg className="ic ic-sm" viewBox="0 0 24 24">
+                          <path d="M12 3v18" />
+                          <path d="M7 8h10" />
+                          <path d="M7 16h10" />
+                        </svg>
+                      ),
+                    },
+                    {
+                      id: "quality" as const,
+                      label: "Qualité",
+                      desc: "Prend un peu plus de temps, mais sécurise mieux les phrases délicates et les noms importants.",
+                      icon: (
+                        <svg className="ic ic-sm" viewBox="0 0 24 24">
+                          <path d="m9 12 2 2 4-4" />
+                          <path d="M12 3 5 6v6c0 4.2 2.6 8.1 7 9 4.4-.9 7-4.8 7-9V6l-7-3Z" />
+                        </svg>
+                      ),
+                    },
+                  ] as const
+                ).map(({ id, label, desc, icon }) => (
+                  <div
+                    key={id}
+                    className={`radio${shortDictationPolicy === id ? " active" : ""}`}
+                    onClick={() =>
+                      void updateSetting("short_dictation_policy", id)
+                    }
                   >
                     <span className="check" />
                     <div className="ric">{icon}</div>

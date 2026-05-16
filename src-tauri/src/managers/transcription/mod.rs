@@ -8,7 +8,8 @@ use crate::managers::model::{EngineType, ModelManager};
 use crate::runtime_observability::PipelineStepTiming;
 use crate::settings::{get_settings, set_active_runtime_model, NpuKind};
 use crate::transcription_confidence::{
-    build_whisper_confidence_payload, TranscriptionConfidencePayload,
+    build_parakeet_confidence_payload, build_whisper_confidence_payload, ParakeetConfidenceInputs,
+    TranscriptionConfidencePayload,
 };
 use crate::vocabulary_store::VocabularyStoreState;
 use anyhow::Result;

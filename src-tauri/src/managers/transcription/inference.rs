@@ -1,25 +1,24 @@
 use super::*;
+use crate::model_ids::is_parakeet_v3_model_id;
+use crate::parakeet_config;
 use crate::parakeet_text::{
     finalize_parakeet_text_with_profile, maybe_prefer_sentence_punctuation,
     parakeet_builtin_correction_terms, parakeet_builtin_correction_terms_with_profile,
     should_attempt_sentence_punctuation, ParakeetDomainProfile,
 };
 use crate::session_keyterms::build_session_keyterms;
+use crate::settings::ShortDictationPolicy;
 use whichlang::Lang;
-
-const PARAKEET_LOW_ENERGY_RMS_THRESHOLD: f32 = 0.05;
-const PARAKEET_LOW_ENERGY_TARGET_RMS: f32 = 0.1;
-const PARAKEET_LOW_ENERGY_MAX_GAIN: f32 = 4.5;
 
 // Short-phrase threshold: recordings under 5 s get silence padding on both
 // sides and Sentences mode (Words timestamps are unstable on short clips and
 // the first few seconds often have cold-start encoder errors).
-const PARAKEET_SHORT_PHRASE_SAMPLES: usize = 5 * 16_000; // 5 s at 16 kHz
-const PARAKEET_SHORT_PHRASE_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
-                                                             // Tail pad applied to ALL recordings so the last word is never cut off.
-const PARAKEET_TAIL_PAD_SAMPLES: usize = 16_000 / 2; // 0.5 s silence
-const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = 24;
-const PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES: usize = 3 * 16_000; // 3 s at 16 kHz
+const PARAKEET_SHORT_PHRASE_SAMPLES: usize = parakeet_config::SHORT_PHRASE_SAMPLES;
+const PARAKEET_FAST_SHORT_PHRASE_SAMPLES: usize = parakeet_config::FAST_SHORT_PHRASE_SAMPLES;
+const PARAKEET_SHORT_PHRASE_PAD_SAMPLES: usize = parakeet_config::SHORT_PHRASE_PAD_SAMPLES;
+const PARAKEET_TAIL_PAD_SAMPLES: usize = parakeet_config::TAIL_PAD_SAMPLES;
+const PARAKEET_SENTENCE_RESCUE_MAX_WORDS: usize = parakeet_config::SENTENCE_RESCUE_MAX_WORDS;
+const PARAKEET_ULTRA_SHORT_PHRASE_SAMPLES: usize = parakeet_config::ULTRA_SHORT_PHRASE_SAMPLES;
 const PARAKEET_LANGUAGE_DRIFT_LOG_FILE: &str = "parakeet-language-drift.jsonl";
 const PARAKEET_BRAIN_TRACE_LOG_FILE: &str = "parakeet-brain-trace.jsonl";
 
@@ -47,6 +46,14 @@ fn should_attempt_parakeet_sentence_rescue(text: &str, is_short_phrase: bool) ->
 
     let word_count = text.split_whitespace().count();
     word_count <= PARAKEET_SENTENCE_RESCUE_MAX_WORDS
+}
+
+fn should_use_fast_short_parakeet_path(samples: usize, policy: ShortDictationPolicy) -> bool {
+    match policy {
+        ShortDictationPolicy::Instant => samples <= PARAKEET_SHORT_PHRASE_SAMPLES,
+        ShortDictationPolicy::Balanced => samples <= PARAKEET_FAST_SHORT_PHRASE_SAMPLES,
+        ShortDictationPolicy::Quality => false,
+    }
 }
 
 fn tokenize_words(text: &str) -> Vec<String> {
@@ -247,15 +254,15 @@ fn pad_audio_tail(samples: &[f32]) -> Vec<f32> {
 
 fn maybe_boost_low_energy_parakeet_audio(samples: &[f32]) -> Option<(Vec<f32>, f32)> {
     let (rms, peak) = audio_rms_and_peak(samples);
-    if rms <= 0.0 || rms >= PARAKEET_LOW_ENERGY_RMS_THRESHOLD || peak >= 0.92 {
+    if rms <= 0.0 || rms >= parakeet_config::LOW_ENERGY_RMS_THRESHOLD || peak >= 0.92 {
         return None;
     }
 
-    let gain_from_rms = PARAKEET_LOW_ENERGY_TARGET_RMS / rms;
+    let gain_from_rms = parakeet_config::LOW_ENERGY_TARGET_RMS / rms;
     let gain_from_peak = if peak > 0.0 { 0.98 / peak } else { 1.0 };
     let gain = gain_from_rms
         .min(gain_from_peak)
-        .min(PARAKEET_LOW_ENERGY_MAX_GAIN);
+        .min(parakeet_config::LOW_ENERGY_MAX_GAIN);
 
     if gain <= 1.15 {
         return None;
@@ -270,53 +277,121 @@ fn maybe_boost_low_energy_parakeet_audio(samples: &[f32]) -> Option<(Vec<f32>, f
     ))
 }
 
-fn build_correction_terms(
+#[derive(Debug, Clone, Default)]
+struct CorrectionBoostBundle {
+    high_priority_terms: Vec<String>,
+    medium_priority_terms: Vec<String>,
+    split_terms: Vec<String>,
+}
+
+fn push_unique_terms(target: &mut Vec<String>, terms: impl IntoIterator<Item = String>) {
+    for term in terms {
+        let trimmed = term.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if target
+            .iter()
+            .any(|existing: &String| existing.eq_ignore_ascii_case(trimmed))
+        {
+            continue;
+        }
+        target.push(trimmed.to_string());
+    }
+}
+
+fn snippet_boost_terms(snippets: &[crate::settings::VoiceSnippet]) -> Vec<String> {
+    snippets
+        .iter()
+        .filter_map(|snippet| {
+            let trigger = snippet.trigger.trim();
+            let word_count = trigger.split_whitespace().count();
+            ((1..=4).contains(&word_count) && !trigger.is_empty()).then(|| trigger.to_string())
+        })
+        .collect()
+}
+
+fn term_supports_split_boost(term: &str) -> bool {
+    let trimmed = term.trim();
+    if trimmed.len() < 4 {
+        return false;
+    }
+    trimmed.chars().any(|c| c.is_uppercase())
+        || trimmed.contains('_')
+        || trimmed.contains('-')
+        || trimmed.contains('.')
+}
+
+fn build_correction_boost_bundle(
     settings: &crate::settings::AppSettings,
+    voice_terms: &[String],
+    vocabulary_terms: &[String],
     session_keyterms: &[String],
     session_glossary_terms: &[String],
     _active_model_id: Option<&str>,
     profile: ParakeetDomainProfile,
-) -> Vec<String> {
-    let mut terms = settings.effective_custom_words();
+) -> CorrectionBoostBundle {
+    let mut high_priority_terms = Vec::new();
+    let mut medium_priority_terms = Vec::new();
+    let mut split_terms = Vec::new();
+
+    push_unique_terms(
+        &mut high_priority_terms,
+        settings.workspace_custom_words.clone(),
+    );
+    push_unique_terms(&mut high_priority_terms, settings.custom_words.clone());
+    push_unique_terms(&mut high_priority_terms, voice_terms.to_vec());
+    push_unique_terms(&mut high_priority_terms, vocabulary_terms.to_vec());
+    push_unique_terms(
+        &mut high_priority_terms,
+        snippet_boost_terms(&settings.voice_snippets),
+    );
+
     let parakeet_builtins = parakeet_builtin_correction_terms(&settings.selected_language);
     if let Some(vocalype_term) = parakeet_builtins
         .into_iter()
         .find(|term| term == "Vocalype")
     {
-        terms.push(vocalype_term);
+        high_priority_terms.push(vocalype_term);
     }
 
     // Passive Session Glossary terms: project-specific identifiers extracted
     // from clipboard while the developer codes. Keep them scoped to the
     // general/code profile so recruiting dictation never inherits dev jargon.
     if profile == ParakeetDomainProfile::General {
-        terms.extend(session_glossary_terms.iter().cloned());
+        push_unique_terms(&mut medium_priority_terms, session_glossary_terms.to_vec());
     }
 
     if profile == ParakeetDomainProfile::General {
-        terms.extend(parakeet_builtin_correction_terms_with_profile(
-            &settings.selected_language,
-            profile,
-        ));
-        terms.extend(session_keyterms.iter().cloned());
+        push_unique_terms(
+            &mut medium_priority_terms,
+            parakeet_builtin_correction_terms_with_profile(&settings.selected_language, profile),
+        );
+        push_unique_terms(&mut medium_priority_terms, session_keyterms.to_vec());
     }
 
-    let mut deduped = Vec::new();
-    for term in terms {
-        let trimmed = term.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        if deduped
+    push_unique_terms(
+        &mut split_terms,
+        high_priority_terms
             .iter()
-            .any(|existing: &String| existing.eq_ignore_ascii_case(trimmed))
-        {
-            continue;
-        }
-        deduped.push(trimmed.to_string());
-    }
+            .filter(|term| term_supports_split_boost(term))
+            .cloned()
+            .collect::<Vec<_>>(),
+    );
+    push_unique_terms(
+        &mut split_terms,
+        medium_priority_terms
+            .iter()
+            .filter(|term| term_supports_split_boost(term))
+            .cloned()
+            .collect::<Vec<_>>(),
+    );
 
-    deduped
+    CorrectionBoostBundle {
+        high_priority_terms,
+        medium_priority_terms,
+        split_terms,
+    }
 }
 
 fn term_is_risky_proper_noun(term: &str) -> bool {
@@ -358,6 +433,37 @@ fn correction_terms_for_text(
         })
         .cloned()
         .collect()
+}
+
+fn apply_context_boosted_corrections(
+    text: &str,
+    bundle: &CorrectionBoostBundle,
+    profile: ParakeetDomainProfile,
+    correction_threshold: f64,
+) -> String {
+    let split_boosted = if bundle.split_terms.is_empty() {
+        text.to_string()
+    } else {
+        crate::vocabulary_store::apply_custom_word_splits(text, &bundle.split_terms)
+    };
+
+    let active_high =
+        correction_terms_for_text(&split_boosted, &bundle.high_priority_terms, profile);
+    let active_medium =
+        correction_terms_for_text(&split_boosted, &bundle.medium_priority_terms, profile);
+    let high_priority_threshold = (correction_threshold - 0.06).max(0.18);
+
+    let after_high = if !active_high.is_empty() {
+        apply_custom_words(&split_boosted, &active_high, high_priority_threshold)
+    } else {
+        split_boosted
+    };
+
+    if !active_medium.is_empty() {
+        apply_custom_words(&after_high, &active_medium, correction_threshold)
+    } else {
+        after_high
+    }
 }
 /// Maps a whichlang ISO 639-3 `Lang` variant to a BCP-47 two-letter code.
 /// Only covers the languages that Parakeet V3 Multilingual supports.
@@ -643,6 +749,7 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings_started = std::time::Instant::now();
         let settings = get_settings(&self.app_handle);
+        let short_dictation_policy = settings.short_dictation_policy;
         let active_model_id = self.get_current_model();
         let voice_profile = if settings.adaptive_voice_profile_enabled {
             active_model_id.as_deref().and_then(|model_id| {
@@ -697,8 +804,10 @@ impl TranscriptionManager {
             .and_then(|state| state.0.lock().ok().map(|g| g.as_vec()))
             .unwrap_or_default();
         let correction_profile = ParakeetDomainProfile::Recruiting;
-        let correction_terms = build_correction_terms(
+        let correction_bundle = build_correction_boost_bundle(
             &settings,
+            &voice_terms,
+            &vocabulary_terms,
             &session_keyterms,
             &session_glossary_terms,
             active_model_id.as_deref(),
@@ -711,12 +820,14 @@ impl TranscriptionManager {
             settings_started,
             "stt.prepare_context",
             Some(format!(
-                "samples={} app_context={} custom_words={} keyterms={} glossary_terms={}",
+                "samples={} app_context={} custom_words={} keyterms={} glossary_terms={} high_priority_terms={} medium_priority_terms={}",
                 audio.len(),
                 app_context.is_some(),
                 effective_custom_words.len(),
                 session_keyterms.len(),
-                session_glossary_terms.len()
+                session_glossary_terms.len(),
+                correction_bundle.high_priority_terms.len(),
+                correction_bundle.medium_priority_terms.len()
             )),
         );
 
@@ -767,6 +878,10 @@ impl TranscriptionManager {
                     match &mut engine {
                         LoadedEngine::ParakeetV3(parakeet_engine) => {
                             let is_short_phrase = audio.len() < PARAKEET_SHORT_PHRASE_SAMPLES;
+                            let is_fast_short_phrase = should_use_fast_short_parakeet_path(
+                                audio.len(),
+                                short_dictation_policy,
+                            );
 
                             let boosted_audio = maybe_boost_low_energy_parakeet_audio(&audio);
                             if let Some((_, gain)) = boosted_audio.as_ref() {
@@ -830,7 +945,7 @@ impl TranscriptionManager {
                                         active_model_id.as_deref(),
                                     );
                                     let mut display_text = selected_result.text.clone();
-                                    if is_short_phrase {
+                                    if is_short_phrase && !is_fast_short_phrase {
                                         let mut short_phrase_candidates =
                                             vec![display_text.clone()];
                                         if let Ok(word_result) = parakeet_engine.transcribe_samples(
@@ -882,10 +997,12 @@ impl TranscriptionManager {
                                             display_text = best_short_candidate;
                                         }
                                     }
-                                    if should_attempt_parakeet_sentence_rescue(
-                                        &display_text,
-                                        is_short_phrase,
-                                    ) {
+                                    if !is_fast_short_phrase
+                                        && should_attempt_parakeet_sentence_rescue(
+                                            &display_text,
+                                            is_short_phrase,
+                                        )
+                                    {
                                         if let Ok(sentence_result) = parakeet_engine
                                             .transcribe_samples(
                                                 decode_audio.clone(),
@@ -1105,18 +1222,13 @@ impl TranscriptionManager {
         );
         let correction_started = std::time::Instant::now();
         let profile = ParakeetDomainProfile::Recruiting;
-        let active_correction_terms =
-            correction_terms_for_text(&learned_result, &correction_terms, profile);
         let learned_result_before_correction = learned_result.clone();
-        let corrected_result = if !active_correction_terms.is_empty() {
-            apply_custom_words(
-                &learned_result,
-                &active_correction_terms,
-                correction_threshold,
-            )
-        } else {
-            learned_result
-        };
+        let corrected_result = apply_context_boosted_corrections(
+            &learned_result,
+            &correction_bundle,
+            profile,
+            correction_threshold,
+        );
         record_parakeet_brain_stage(
             &self.app_handle,
             "after_correction_terms",
@@ -1130,8 +1242,10 @@ impl TranscriptionManager {
             correction_started,
             "stt.apply_correction_terms",
             Some(format!(
-                "terms={} changed={}",
-                active_correction_terms.len(),
+                "high={} medium={} split={} changed={}",
+                correction_bundle.high_priority_terms.len(),
+                correction_bundle.medium_priority_terms.len(),
+                correction_bundle.split_terms.len(),
                 corrected_result != learned_result_before_correction
             )),
         );
@@ -1207,10 +1321,46 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         let confidence_started = std::time::Instant::now();
-        let confidence_payload = result
-            .segments
-            .as_ref()
-            .and_then(|segments| build_whisper_confidence_payload(segments, &final_result));
+        let confidence_payload = if active_model_id
+            .as_deref()
+            .map(is_parakeet_v3_model_id)
+            .unwrap_or(false)
+        {
+            let words_without_timestamps = result
+                .segments
+                .as_ref()
+                .map(|segments| {
+                    segments
+                        .iter()
+                        .filter(|segment| {
+                            segment
+                                .words
+                                .as_ref()
+                                .map(|words| words.is_empty())
+                                .unwrap_or(true)
+                        })
+                        .count()
+                })
+                .unwrap_or(0);
+            build_parakeet_confidence_payload(ParakeetConfidenceInputs {
+                final_text: &final_result,
+                selected_language: &settings.selected_language,
+                samples: &audio,
+                mapping_stable: true,
+                retry_chunks: 0,
+                filtered_chunks: 0,
+                empty_chunks: usize::from(final_result.trim().is_empty()),
+                words_without_timestamps,
+                trimmed_words_total: 0,
+                finalization_recoveries: 0,
+                has_language_drift: has_language_drift(&final_result, &settings.selected_language),
+            })
+        } else {
+            result
+                .segments
+                .as_ref()
+                .and_then(|segments| build_whisper_confidence_payload(segments, &final_result))
+        };
         push_timing(
             &mut timings,
             st,
@@ -1311,15 +1461,20 @@ mod tests {
         let mut settings = crate::settings::get_default_settings();
         settings.selected_language = "en".to_string();
 
-        let corrections = build_correction_terms(
+        let bundle = build_correction_boost_bundle(
             &settings,
+            &["Parakeet V3".to_string(), "Yassine".to_string()],
+            &[],
             &["Parakeet V3".to_string(), "Yassine".to_string()],
             &[],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
             ParakeetDomainProfile::General,
         );
 
-        assert!(corrections.iter().any(|term| term == "Vocalype"));
+        assert!(bundle
+            .high_priority_terms
+            .iter()
+            .any(|term| term == "Vocalype"));
     }
 
     #[test]
@@ -1339,21 +1494,56 @@ mod tests {
     }
 
     #[test]
+    fn fast_short_parakeet_path_only_covers_ultra_short_audio() {
+        assert!(should_use_fast_short_parakeet_path(
+            2 * 16_000,
+            ShortDictationPolicy::Balanced,
+        ));
+        assert!(should_use_fast_short_parakeet_path(
+            parakeet_config::FAST_SHORT_PHRASE_SAMPLES,
+            ShortDictationPolicy::Balanced,
+        ));
+        assert!(!should_use_fast_short_parakeet_path(
+            3 * 16_000,
+            ShortDictationPolicy::Balanced,
+        ));
+        assert!(should_use_fast_short_parakeet_path(
+            4 * 16_000,
+            ShortDictationPolicy::Instant,
+        ));
+        assert!(!should_use_fast_short_parakeet_path(
+            2 * 16_000,
+            ShortDictationPolicy::Quality,
+        ));
+    }
+
+    #[test]
     fn correction_terms_excludes_session_glossary_terms() {
         let mut settings = crate::settings::get_default_settings();
         settings.selected_language = "en".to_string();
 
-        let corrections = build_correction_terms(
+        let bundle = build_correction_boost_bundle(
             &settings,
+            &[],
+            &[],
             &[],
             &["useState".to_string(), "handleClick".to_string()],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
             ParakeetDomainProfile::Recruiting,
         );
 
-        assert!(!corrections.iter().any(|term| term == "useState"));
-        assert!(!corrections.iter().any(|term| term == "handleClick"));
-        assert!(corrections.iter().any(|term| term == "Vocalype"));
+        assert!(!bundle
+            .medium_priority_terms
+            .iter()
+            .any(|term| term == "useState"));
+        assert!(!bundle
+            .medium_priority_terms
+            .iter()
+            .any(|term| term == "handleClick"));
+        assert!(bundle
+            .high_priority_terms
+            .iter()
+            .any(|term| term == "Vocalype"));
     }
 
     #[test]
@@ -1386,16 +1576,78 @@ mod tests {
         let mut settings = crate::settings::get_default_settings();
         settings.selected_language = "en".to_string();
 
-        let corrections = build_correction_terms(
+        let bundle = build_correction_boost_bundle(
             &settings,
+            &[],
+            &[],
             &["OpenAI".to_string(), "CandidateScore".to_string()],
             &[],
             Some("parakeet-tdt-0.6b-v3-multilingual"),
             ParakeetDomainProfile::Recruiting,
         );
 
-        assert!(!corrections.iter().any(|term| term == "OpenAI"));
-        assert!(!corrections.iter().any(|term| term == "CandidateScore"));
+        assert!(!bundle
+            .medium_priority_terms
+            .iter()
+            .any(|term| term == "OpenAI"));
+        assert!(!bundle
+            .medium_priority_terms
+            .iter()
+            .any(|term| term == "CandidateScore"));
+    }
+
+    #[test]
+    fn correction_bundle_prioritizes_workspace_and_snippet_terms() {
+        let mut settings = crate::settings::get_default_settings();
+        settings.selected_language = "en".to_string();
+        settings.workspace_custom_words = vec!["AcmeCRM".to_string()];
+        settings.voice_snippets = vec![crate::settings::VoiceSnippet {
+            id: "1".to_string(),
+            trigger: "send follow up".to_string(),
+            expansion: "Please send the follow-up message.".to_string(),
+        }];
+
+        let bundle = build_correction_boost_bundle(
+            &settings,
+            &[],
+            &[],
+            &["HiringPipeline".to_string()],
+            &["useState".to_string()],
+            Some("parakeet-tdt-0.6b-v3-multilingual"),
+            ParakeetDomainProfile::General,
+        );
+
+        assert!(bundle
+            .high_priority_terms
+            .iter()
+            .any(|term| term == "AcmeCRM"));
+        assert!(bundle
+            .high_priority_terms
+            .iter()
+            .any(|term| term == "send follow up"));
+        assert!(bundle
+            .medium_priority_terms
+            .iter()
+            .any(|term| term == "HiringPipeline"));
+        assert!(bundle.split_terms.iter().any(|term| term == "AcmeCRM"));
+    }
+
+    #[test]
+    fn context_boosted_corrections_restore_split_identifiers() {
+        let bundle = CorrectionBoostBundle {
+            high_priority_terms: vec!["useState".to_string()],
+            medium_priority_terms: Vec::new(),
+            split_terms: vec!["useState".to_string()],
+        };
+
+        let corrected = apply_context_boosted_corrections(
+            "please use state for this hook",
+            &bundle,
+            ParakeetDomainProfile::General,
+            0.32,
+        );
+
+        assert!(corrected.contains("useState"));
     }
 
     #[test]

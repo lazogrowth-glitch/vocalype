@@ -39,6 +39,7 @@ import {
   ClearAllHistoryButton,
   OpenRecordingsButton,
 } from "../history/HistorySettings";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { commands } from "@/bindings";
 import type { OverlayPosition, RecordingRetentionPeriod } from "@/bindings";
 import { usePlan } from "@/lib/subscription/context";
@@ -1139,13 +1140,15 @@ export const PreferencesSettings: React.FC = () => {
                   <PDangerBtn
                     label="Réinitialiser"
                     onClick={() => {
-                      if (
-                        window.confirm(
-                          "Remettre tous les paramètres aux valeurs par défaut ?",
-                        )
-                      ) {
-                        void commands.resetAllSettings();
-                      }
+                      void ask(
+                        "Remettre tous les paramètres aux valeurs par défaut ?",
+                        {
+                          title: "Réinitialiser les paramètres",
+                          kind: "warning",
+                        },
+                      ).then((confirmed) => {
+                        if (confirmed) void commands.resetAllSettings();
+                      });
                     }}
                   />
                 </PRow>

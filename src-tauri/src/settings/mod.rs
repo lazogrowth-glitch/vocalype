@@ -86,6 +86,14 @@ pub enum ModelUnloadTimeout {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
+pub enum ShortDictationPolicy {
+    Instant,
+    Balanced,
+    Quality,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum MachineTier {
     Low,
     Medium,
@@ -221,6 +229,12 @@ impl Default for ModelUnloadTimeout {
     }
 }
 
+impl Default for ShortDictationPolicy {
+    fn default() -> Self {
+        ShortDictationPolicy::Balanced
+    }
+}
+
 impl Default for PasteMethod {
     fn default() -> Self {
         // Default to CtrlV for macOS and Windows, Direct for Linux
@@ -345,6 +359,8 @@ pub struct AppSettings {
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
+    #[serde(default)]
+    pub short_dictation_policy: ShortDictationPolicy,
     #[serde(default = "default_recording_retention_period")]
     pub recording_retention_period: RecordingRetentionPeriod,
     /// When false, audio is never written to disk — only the transcription text is saved.
@@ -635,7 +651,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 2,
             name: "Candidate Note".to_string(),
             description: Some("Create a clean ATS recruiter note after a call.".to_string()),
-            prompt: "You are a recruiter writing a call note for an ATS (Bullhorn, Vincere, Recruitee...).\n\n<output_structure>\n- Candidate: name, current title, current company\n- Profile: 2-3 bullets on background and relevant experience\n- Key skills: relevant skills mentioned\n- Motivation: why open to move / what they are looking for\n- Salary / availability: if mentioned\n- Concerns: red flags or risks if any\n- Next step: specific action and timeline\n</output_structure>\n\n<rules>\n- Keep the same language as the source\n- Do not invent anything — omit sections not mentioned\n- Neutral, factual tone\n- Under 250 words\n- Return only the ATS note\n</rules>\n\n${output}".to_string(),
+            prompt: "You are a senior recruiter writing a structured call note for an ATS (Bullhorn, Vincere, Recruitee, Greenhouse...).\n\n<output_structure>\n## Candidate\nName — Current title — Current company\n\n## Profile\n2-3 bullets on background and relevant experience. Past tense.\n\n## Key skills\nBullet list of skills explicitly mentioned.\n\n## Motivation\nWhy open to move / what they are looking for.\n\n## Salary & availability\nOnly if mentioned. Omit section otherwise.\n\n## Concerns\nRed flags or risks if any. Omit section if none.\n\n## Next step\n**[Owner]**: specific action — timeline\n</output_structure>\n\n<formatting>\n- Use ## for section headers, no deeper nesting\n- One concrete fact per bullet — no filler\n- Past tense for profile and background, future tense for next step\n- Bold the owner name in the Next step line\n- No intro sentence, no closing sentence\n- Under 280 words total\n</formatting>\n\n<rules>\n- Keep the same language as the source\n- Do not invent anything — omit sections with no source data\n- Neutral, factual tone — no evaluative language unless the source uses it\n- Return only the ATS note\n</rules>\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -643,7 +659,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 3,
             name: "Candidate Email".to_string(),
             description: Some("Write a professional follow-up email to a candidate.".to_string()),
-            prompt: "You are a recruiter writing a follow-up email to a candidate.\n\n<output_structure>\n- Greeting (use name if mentioned)\n- Opening: one specific reference to the context or conversation\n- Body: one clear message or next step per paragraph\n- Call-to-action\n- Professional closing\n</output_structure>\n\n<rules>\n- Warm but professional tone\n- Under 120 words — short emails get better responses\n- Include one specific detail from the dictation to sound personal, not templated\n- Keep the same language as the source\n- Do not invent names, facts, or details\n- Return only the email body, no subject line\n</rules>\n\n${output}".to_string(),
+            prompt: "You are a recruiter writing a follow-up email to a candidate after a call.\n\n<output_structure>\nGreeting using the candidate's name if mentioned.\nOne sentence referencing a specific detail from the call.\nOne or two short paragraphs covering the key message or next step.\nClear call-to-action in the last paragraph.\nProfessional, warm closing.\n</output_structure>\n\n<formatting>\n- No subject line\n- No opening filler like \"I hope this email finds you well\" or \"As we discussed\"\n- No closing filler like \"Don't hesitate to reach out\"\n- One topic per paragraph — keep paragraphs to 2-3 sentences\n- Future tense for next steps\n- Under 130 words total\n</formatting>\n\n<rules>\n- Warm but professional tone\n- Reference one specific detail from the dictation to sound personal, not templated\n- Keep the same language as the source\n- Do not invent names, facts, dates, or commitments\n- Return only the email body\n</rules>\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -651,7 +667,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 4,
             name: "LinkedIn Message".to_string(),
             description: Some("Write a short sourcing or follow-up LinkedIn message.".to_string()),
-            prompt: "You are a recruiter writing a LinkedIn outreach or follow-up message.\n\n<output_structure>\n- Personalized opening (reference something specific from the dictation)\n- Value proposition (the role or opportunity in 1-2 sentences)\n- Low-pressure call-to-action\n</output_structure>\n\n<rules>\n- Maximum 100 words — short messages get significantly higher response rates\n- Human, direct, not salesy — no jargon\n- Keep the same language as the source\n- Do not invent details not in the dictation\n- Return only the message\n</rules>\n\n${output}".to_string(),
+            prompt: "You are a recruiter writing a LinkedIn outreach or follow-up message.\n\n<output_structure>\nOne personalized opening line referencing something specific from the dictation.\n1-2 sentences on the role or opportunity.\nOne low-friction closing question.\n</output_structure>\n\n<formatting>\n- Maximum 100 words — short InMails get 3× more replies\n- No opening like \"I came across your profile\" or \"I wanted to reach out\"\n- No closing like \"Don't hesitate to contact me\" or \"Looking forward to hearing from you\"\n- Human and direct — zero jargon, zero corporate speak\n- No bullet points — this is a conversational message\n</formatting>\n\n<rules>\n- Keep the same language as the source\n- Do not invent details not in the dictation\n- Return only the message, nothing else\n</rules>\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -659,7 +675,7 @@ fn default_post_process_actions() -> Vec<PostProcessAction> {
             key: 5,
             name: "Client Summary".to_string(),
             description: Some("Prepare a candidate summary ready to send to a client.".to_string()),
-            prompt: "You are a recruiter preparing a candidate submittal for a hiring manager or client.\n\n<output_structure>\n- Profile: name, current title, years of relevant experience\n- Pitch: 1-2 sentences on why this candidate fits the role\n- Strengths: 3-4 relevant strengths or achievements (bullets)\n- Job fit: how they match the key requirements\n- Concerns: gaps or risks to address proactively (omit if none)\n- Next step: recommended interview format or action\n</output_structure>\n\n<rules>\n- Keep the same language as the source\n- Professional, confident, client-ready tone\n- Under 280 words\n- Do not invent information — omit sections not mentioned\n- Return only the candidate summary\n</rules>\n\n${output}".to_string(),
+            prompt: "You are a senior recruiter preparing a candidate brief for a hiring manager or client.\n\n<output_structure>\n## [Candidate name] — [Current title] at [Current company]\n\n**Why we recommend this candidate:**\n2-3 sentences. Lead with the strongest fit signal. Persuasive but grounded in facts.\n\n## Relevant experience\nBullet list. Specific and concrete — years, technologies, industries, scale.\n\n## Key strengths for this role\nBullet list tied directly to the role requirements mentioned in the source.\n\n## Compensation & availability\nOnly if mentioned. Omit section otherwise.\n\n## Concerns to address\nHonest gaps or risks if any. Omit section if none.\n\n## Recommended next step\n**[Owner]**: suggested interview format or action — timeline\n</output_structure>\n\n<formatting>\n- ## for section headers, no deeper nesting\n- Bold the **Why we recommend** label\n- Bold the owner name in the next step line\n- Bullets for lists, prose for the opening pitch\n- Past tense for experience, future tense for next step\n- Under 320 words total\n- No intro sentence, no closing sentence\n</formatting>\n\n<rules>\n- Keep the same language as the source\n- Professional and confident tone — this goes directly to the client\n- Do not invent information — omit sections not supported by the source\n- Return only the candidate summary\n</rules>\n\n${output}".to_string(),
             model: None,
             provider_id: None,
         },
@@ -1228,6 +1244,7 @@ pub fn get_default_settings() -> AppSettings {
         adaptive_voice_profile_enabled: true,
         model_unload_timeout: ModelUnloadTimeout::Min5,
         word_correction_threshold: default_word_correction_threshold(),
+        short_dictation_policy: ShortDictationPolicy::default(),
         recording_retention_period: default_recording_retention_period(),
         save_audio_recordings: false,
         paste_method: PasteMethod::default(),

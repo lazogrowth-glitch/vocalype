@@ -1,5 +1,6 @@
 use crate::managers::model::ModelInfo;
 use crate::model_ids::{PARAKEET_V3_LEGACY_ID, PARAKEET_V3_MULTILINGUAL_ID};
+use crate::parakeet_config;
 use crate::parakeet_quality::ParakeetSessionCompletion;
 use crate::settings::AppSettings;
 use crate::telemetry::TranscriptionTelemetry;
@@ -11,52 +12,62 @@ use tauri::AppHandle;
 // ── Streaming chunk constants ────────────────────────────────────────────────
 
 /// Accumulate this many speech samples before sending a chunk for background transcription.
-pub(crate) const DEFAULT_CHUNK_INTERVAL_SAMPLES: usize = 15 * 16_000; // 15 s at 16 kHz
+pub(crate) const DEFAULT_CHUNK_INTERVAL_SAMPLES: usize =
+    parakeet_config::DEFAULT_CHUNK_INTERVAL_SAMPLES;
 /// Overlap kept at the START of each new chunk to avoid cutting words at boundaries.
-pub(crate) const DEFAULT_CHUNK_OVERLAP_SAMPLES: usize = 24_000; // 1.5 s
+pub(crate) const DEFAULT_CHUNK_OVERLAP_SAMPLES: usize =
+    parakeet_config::DEFAULT_CHUNK_OVERLAP_SAMPLES;
 /// Shorter polling reduces how long a ready chunk waits before getting sent.
-pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = 200;
+pub(crate) const CHUNK_SAMPLER_POLL_MS: u64 = parakeet_config::CHUNK_SAMPLER_POLL_MS;
 /// Limit in-flight background chunks to prevent the model from falling behind real time.
-pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize = 1;
+pub(crate) const MAX_PENDING_BACKGROUND_CHUNKS: usize =
+    parakeet_config::MAX_PENDING_BACKGROUND_CHUNKS;
 /// Minimum new samples required before a VAD-triggered flush can fire (1 s at 16 kHz).
 /// Prevents spurious flushes at the very start of an utterance.
-pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize = 24_000; // 1.5 s
+pub(crate) const VAD_FLUSH_MIN_CONTENT_SAMPLES: usize =
+    parakeet_config::VAD_FLUSH_MIN_CONTENT_SAMPLES;
 /// Width of the silence window scanned for VAD-triggered flush (500 ms at 16 kHz).
 /// 500 ms filters out inter-word hesitation pauses (typically 100-400 ms) while
 /// still catching genuine sentence-ending pauses (≥ 500 ms).
-pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = 9_600; // 600 ms
+pub(crate) const VAD_FLUSH_SILENCE_SAMPLES: usize = parakeet_config::VAD_FLUSH_SILENCE_SAMPLES;
 /// Mean-squared energy threshold — windows below this are considered silent.
 /// 1e-5 ≈ RMS 0.003, well below conversational speech (~0.02–0.1 RMS).
-pub(crate) const VAD_FLUSH_ENERGY_THRESHOLD: f32 = 1e-5;
+pub(crate) const VAD_FLUSH_ENERGY_THRESHOLD: f32 = parakeet_config::VAD_FLUSH_ENERGY_THRESHOLD;
 /// Mean-squared energy below which a VAD-triggered chunk's new content is
 /// considered dead silence and skipped entirely (no model call).
 /// 1e-9 is ~10 000× below VAD_FLUSH_ENERGY_THRESHOLD — microphone noise floor.
 /// Avoids repeated model inference when the user holds push-to-talk after speaking.
-pub(crate) const VAD_SILENT_CHUNK_ENERGY_THRESHOLD: f32 = 1e-9;
+pub(crate) const VAD_SILENT_CHUNK_ENERGY_THRESHOLD: f32 =
+    parakeet_config::VAD_SILENT_CHUNK_ENERGY_THRESHOLD;
 /// Minimum samples for a Parakeet chunk result to be kept when it produces
 /// only 1 word. Below this, the result is almost certainly a hallucination
 /// (Parakeet inventing English filler words in near-silence audio).
-pub(crate) const PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize = 24_000; // 1.5 s
+pub(crate) const PARAKEET_MIN_SAMPLES_FOR_SINGLE_WORD: usize =
+    parakeet_config::MIN_SAMPLES_FOR_SINGLE_WORD;
 /// Minimum remaining samples to bother sending the final chunk.
 /// Chunks shorter than this are silence tail after the user stopped speaking.
-pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = 8_000; // 0.5 s
+pub(crate) const MIN_FINAL_CHUNK_SAMPLES: usize = parakeet_config::MIN_FINAL_CHUNK_SAMPLES;
 /// Unified Parakeet V3 profile for user-selected language dictation.
 /// Keep this conservative: most Vocalype users dictate in English, with
 /// Spanish/Hindi/Portuguese also sharing the multilingual path.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize = 8 * 16_000; // 8 s at 16 kHz
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES: usize =
+    parakeet_config::V3_MULTI_CHUNK_INTERVAL_SAMPLES;
 /// Keep overlap because fixed-interval chunks can still cut through a word.
 /// Word timestamps in the worker trim this overlap back out during assembly.
-pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize = 12_000; // 0.75 s; // 2.5 s; // 2.0 s
+pub(crate) const PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES: usize =
+    parakeet_config::V3_MULTI_CHUNK_OVERLAP_SAMPLES;
 /// Explicit French dictation drifts more easily on long local chunks, so keep
 /// the base chunk shorter and the overlap wider than the generic multilingual
 /// route. This favors language stability over raw throughput.
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize = 5 * 16_000; // 5 s
-pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize = 16_000; // 1.0 s
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_INTERVAL_SAMPLES: usize =
+    parakeet_config::V3_FRENCH_CHUNK_INTERVAL_SAMPLES;
+pub(crate) const PARAKEET_V3_FRENCH_CHUNK_OVERLAP_SAMPLES: usize =
+    parakeet_config::V3_FRENCH_CHUNK_OVERLAP_SAMPLES;
 /// Auto mode must be English-safe because it is the majority traffic path.
 pub(crate) const PARAKEET_V3_AUTO_CHUNK_INTERVAL_SAMPLES: usize =
-    PARAKEET_V3_MULTI_CHUNK_INTERVAL_SAMPLES;
+    parakeet_config::V3_AUTO_CHUNK_INTERVAL_SAMPLES;
 pub(crate) const PARAKEET_V3_AUTO_CHUNK_OVERLAP_SAMPLES: usize =
-    PARAKEET_V3_MULTI_CHUNK_OVERLAP_SAMPLES;
+    parakeet_config::V3_AUTO_CHUNK_OVERLAP_SAMPLES;
 
 // ── Chunking types ───────────────────────────────────────────────────────────
 

@@ -15,6 +15,7 @@ use crate::managers::history::HistoryManager;
 use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{TranscriptionManager, TranscriptionRequest};
 use crate::model_ids::is_parakeet_v3_model_id;
+use crate::parakeet_config;
 use crate::parakeet_quality::{
     ParakeetDiagnosticsState, ParakeetSessionCompletion, ParakeetSessionStart,
 };
@@ -22,8 +23,10 @@ use crate::runtime_observability::{
     emit_runtime_error_with_context, RuntimeErrorStage, TranscriptionLifecycleState,
 };
 use crate::settings::get_settings;
+use crate::settings::ShortDictationPolicy;
 use crate::shortcut;
 use crate::telemetry::TranscriptionTelemetry;
+use crate::transcription_confidence::ParakeetConfidenceInputs;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_preparing_overlay, show_recording_overlay, show_transcribing_overlay,
@@ -167,7 +170,10 @@ fn should_attempt_full_audio_recovery(
     assembled: &str,
 ) -> bool {
     let duration_secs = sample_count as f32 / 16_000.0;
-    if !(6.0..=35.0).contains(&duration_secs) {
+    if !(parakeet_config::FULL_AUDIO_RECOVERY_MIN_DURATION_SECS
+        ..=parakeet_config::FULL_AUDIO_RECOVERY_MAX_DURATION_SECS)
+        .contains(&duration_secs)
+    {
         return false;
     }
 
@@ -202,10 +208,107 @@ fn should_promote_full_audio_recovery(
     let duration_secs = sample_count as f32 / 16_000.0;
     let recovered_words_per_sec = recovered_words as f32 / duration_secs.max(0.1);
 
-    recovered_words >= assembled_words + 4
-        && (recovered_words as f32) >= (assembled_words as f32 * 1.20)
-        && (0.3..=5.5).contains(&recovered_words_per_sec)
+    recovered_words >= assembled_words + parakeet_config::FULL_AUDIO_RECOVERY_MIN_EXTRA_WORDS
+        && (recovered_words as f32)
+            >= (assembled_words as f32 * parakeet_config::FULL_AUDIO_RECOVERY_MIN_RELATIVE_GAIN)
+        && (parakeet_config::FULL_AUDIO_RECOVERY_MIN_WORDS_PER_SEC
+            ..=parakeet_config::FULL_AUDIO_RECOVERY_MAX_WORDS_PER_SEC)
+            .contains(&recovered_words_per_sec)
         && is_viable_preview_rescue_candidate(recovered)
+}
+
+fn alignment_words(text: &str) -> Vec<(String, String)> {
+    text.split_whitespace()
+        .filter_map(|raw| {
+            let normalized = raw
+                .trim_matches(|c: char| !c.is_alphanumeric() && c != '\'' && c != '’')
+                .to_lowercase();
+            (!normalized.is_empty()).then(|| (raw.to_string(), normalized))
+        })
+        .collect()
+}
+
+fn attempt_targeted_final_alignment(assembled: &str, recovered: &str) -> Option<String> {
+    let assembled_words = alignment_words(assembled);
+    let recovered_words = alignment_words(recovered);
+    if assembled_words.len() < parakeet_config::TARGETED_ALIGNMENT_MIN_OVERLAP_WORDS
+        || recovered_words.len() < parakeet_config::TARGETED_ALIGNMENT_MIN_OVERLAP_WORDS + 1
+    {
+        return None;
+    }
+
+    let max_overlap = assembled_words
+        .len()
+        .min(recovered_words.len())
+        .min(parakeet_config::TARGETED_ALIGNMENT_MAX_OVERLAP_WORDS);
+
+    for overlap in (parakeet_config::TARGETED_ALIGNMENT_MIN_OVERLAP_WORDS..=max_overlap).rev() {
+        let assembled_suffix = &assembled_words[assembled_words.len() - overlap..];
+        for start in 0..=recovered_words.len().saturating_sub(overlap) {
+            let recovered_slice = &recovered_words[start..start + overlap];
+            let matches = assembled_suffix
+                .iter()
+                .zip(recovered_slice.iter())
+                .all(|((_, left), (_, right))| left == right);
+            if !matches || start + overlap >= recovered_words.len() {
+                continue;
+            }
+
+            let recovered_suffix = recovered_words[start + overlap..]
+                .iter()
+                .map(|(raw, _)| raw.as_str())
+                .collect::<Vec<_>>()
+                .join(" ");
+            let merged = append_recovered_final_chunk(assembled, &recovered_suffix);
+            if merged != assembled {
+                return Some(merged);
+            }
+        }
+    }
+
+    None
+}
+
+fn should_attempt_targeted_final_alignment(
+    summary: &ParakeetSessionCompletion,
+    sample_count: usize,
+    assembled: &str,
+) -> bool {
+    let duration_secs = sample_count as f32 / 16_000.0;
+    if !(parakeet_config::TARGETED_ALIGNMENT_MIN_DURATION_SECS
+        ..=parakeet_config::TARGETED_ALIGNMENT_MAX_DURATION_SECS)
+        .contains(&duration_secs)
+    {
+        return false;
+    }
+
+    let assembled_words = assembled.split_whitespace().count();
+    if assembled_words < 6 {
+        return false;
+    }
+
+    summary.empty_nonfinal_chunks > 0
+        || summary.final_chunk_words <= 1
+        || summary.retry_chunks > 0
+        || summary.chunks_without_word_timestamps > 0
+}
+
+fn should_promote_targeted_final_alignment(
+    assembled: &str,
+    aligned: &str,
+    sample_count: usize,
+) -> bool {
+    let assembled_words = assembled.split_whitespace().count();
+    let aligned_words = aligned.split_whitespace().count();
+    let duration_secs = sample_count as f32 / 16_000.0;
+    let aligned_words_per_sec = aligned_words as f32 / duration_secs.max(0.1);
+
+    aligned != assembled
+        && aligned_words >= assembled_words + parakeet_config::TARGETED_ALIGNMENT_MIN_EXTRA_WORDS
+        && (parakeet_config::FULL_AUDIO_RECOVERY_MIN_WORDS_PER_SEC
+            ..=parakeet_config::FULL_AUDIO_RECOVERY_MAX_WORDS_PER_SEC)
+            .contains(&aligned_words_per_sec)
+        && is_viable_final_recovery_candidate(aligned)
 }
 
 fn is_operation_active(app: &AppHandle, operation_id: u64) -> bool {
@@ -216,6 +319,16 @@ fn is_operation_active(app: &AppHandle, operation_id: u64) -> bool {
 
 fn should_auto_paste(status: TranscriptionStatus) -> bool {
     matches!(status, TranscriptionStatus::Success)
+}
+
+fn should_use_fast_short_chunk_path(chunk_samples: usize, policy: ShortDictationPolicy) -> bool {
+    match policy {
+        ShortDictationPolicy::Instant => chunk_samples <= parakeet_config::SHORT_PHRASE_SAMPLES,
+        ShortDictationPolicy::Balanced => {
+            chunk_samples <= parakeet_config::FAST_SHORT_PHRASE_SAMPLES
+        }
+        ShortDictationPolicy::Quality => false,
+    }
 }
 
 fn should_fallback_from_timestamp_trim(raw_text: &str, words_in: usize, words_out: usize) -> bool {
@@ -249,7 +362,9 @@ fn is_timestamp_cluster_compressed(
     words_in: usize,
     chunk_samples: usize,
 ) -> bool {
-    if words_in < 5 || chunk_samples <= 3 * 16_000 {
+    if words_in < parakeet_config::TIMESTAMP_CLUSTER_MIN_WORDS
+        || chunk_samples <= parakeet_config::TIMESTAMP_CLUSTER_MIN_CHUNK_SAMPLES
+    {
         return false;
     }
     let min_ts = segs.iter().map(|s| s.start).fold(f32::INFINITY, f32::min);
@@ -261,7 +376,7 @@ fn is_timestamp_cluster_compressed(
     // Threshold: half the minimum spread assuming each word occupies one encoder
     // frame (0.08 s).  Below this the timestamps are physically impossible to be
     // correct.
-    ts_span < words_in as f32 * 0.04
+    ts_span < words_in as f32 * parakeet_config::TIMESTAMP_CLUSTER_MAX_SPAN_PER_WORD_SECS
 }
 
 /// Returns `true` when a word (already lowercased, punctuation-stripped) is a common
@@ -709,11 +824,13 @@ fn should_skip_low_signal_vad_chunk(new_slice: &[f32]) -> bool {
     let mean_energy = new_slice.iter().map(|s| s * s).sum::<f32>() / (new_slice.len() as f32);
     let signal = summarize_audio_signal(new_slice);
     let duration_samples = new_slice.len();
-    let is_short_low_signal_chunk =
-        signal.duration_seconds <= 2.2 && signal.rms < 0.0015 && signal.peak < 0.01;
+    let is_short_low_signal_chunk = signal.duration_seconds
+        <= parakeet_config::VAD_SKIP_SHORT_MAX_DURATION_SECS
+        && signal.rms < parakeet_config::VAD_SKIP_SHORT_MAX_RMS
+        && signal.peak < parakeet_config::VAD_SKIP_SHORT_MAX_PEAK;
 
     mean_energy < crate::chunking::VAD_SILENT_CHUNK_ENERGY_THRESHOLD
-        || (duration_samples <= 4 * 16_000 && mean_energy < 1e-8)
+        || (duration_samples <= 4 * parakeet_config::SAMPLES_PER_SECOND && mean_energy < 1e-8)
         || is_short_low_signal_chunk
 }
 
@@ -723,7 +840,9 @@ fn should_defer_short_vad_chunk(new_slice: &[f32]) -> bool {
     }
 
     let signal = summarize_audio_signal(new_slice);
-    signal.duration_seconds <= 2.8 && signal.rms < 0.0035 && signal.peak < 0.04
+    signal.duration_seconds <= parakeet_config::VAD_DEFER_SHORT_MAX_DURATION_SECS
+        && signal.rms < parakeet_config::VAD_DEFER_SHORT_MAX_RMS
+        && signal.peak < parakeet_config::VAD_DEFER_SHORT_MAX_PEAK
 }
 
 fn is_suspicious_short_language_fragment(
@@ -1448,6 +1567,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
         let ah_w = app.clone();
         let operation_id_w = operation_id;
         let selected_language_w = settings.selected_language.clone();
+        let short_dictation_policy_w = settings.short_dictation_policy;
         let worker_handle = std::thread::spawn(move || {
             struct PendingHybridRetry {
                 idx: usize,
@@ -1537,65 +1657,66 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                     let left_context_secs = left_context_samples as f32 / 16_000.0;
                     let middle_end_secs =
                         left_context_secs + pending.orig_audio.len() as f32 / 16_000.0;
-                    let pending_text =
-                        match tm_s.transcribe_detailed_request(TranscriptionRequest {
+                    let pending_text = match tm_s.transcribe_detailed_request(
+                        TranscriptionRequest {
                             audio: extended.clone(),
                             app_context: chunk_app_context.clone(),
-                        }) {
-                            Ok(retry_out) => {
-                                let retry_text = extract_middle_text_from_retry_segments(
-                                    retry_out.segments.as_ref(),
-                                    &retry_out.text,
-                                    left_context_secs,
-                                    middle_end_secs,
-                                );
-                                let still_suspicious = is_suspicious_hybrid_language_chunk(
-                                    &retry_text,
-                                    &selected_language_w,
-                                    pending.orig_audio.len(),
-                                ) || should_force_short_chunk_context_retry(
-                                    &retry_text,
-                                    &selected_language_w,
-                                    pending.orig_audio.len(),
-                                    false,
-                                ) || should_force_mixed_chunk_context_retry(
-                                    &retry_text,
-                                    &selected_language_w,
-                                    pending.orig_audio.len(),
-                                    false,
-                                );
-                                let improved = !retry_text.is_empty()
-                                    && retry_text != pending.text
-                                    && !still_suspicious;
-                                tel_worker.log_chunk_retry(
+                        },
+                    ) {
+                        Ok(retry_out) => {
+                            let retry_text = extract_middle_text_from_retry_segments(
+                                retry_out.segments.as_ref(),
+                                &retry_out.text,
+                                left_context_secs,
+                                middle_end_secs,
+                            );
+                            let still_suspicious = is_suspicious_hybrid_language_chunk(
+                                &retry_text,
+                                &selected_language_w,
+                                pending.orig_audio.len(),
+                            ) || should_force_short_chunk_context_retry(
+                                &retry_text,
+                                &selected_language_w,
+                                pending.orig_audio.len(),
+                                false,
+                            ) || should_force_mixed_chunk_context_retry(
+                                &retry_text,
+                                &selected_language_w,
+                                pending.orig_audio.len(),
+                                false,
+                            );
+                            let improved = !retry_text.is_empty()
+                                && retry_text != pending.text
+                                && !still_suspicious;
+                            tel_worker.log_chunk_retry(
                                     session_id,
                                     pending.idx,
-                                    "language_context_bilateral",
+                                    parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_BILATERAL,
                                     if improved {
-                                        "bilateral_context_improved"
+                                        parakeet_config::RETRY_OUTCOME_BILATERAL_CONTEXT_IMPROVED
                                     } else if still_suspicious {
-                                        "bilateral_context_still_suspicious"
+                                        parakeet_config::RETRY_OUTCOME_BILATERAL_CONTEXT_STILL_SUSPICIOUS
                                     } else {
-                                        "bilateral_context_no_change"
+                                        parakeet_config::RETRY_OUTCOME_BILATERAL_CONTEXT_NO_CHANGE
                                     },
                                     pending.orig_audio.len(),
                                     extended.len(),
                                     improved,
                                 );
-                                if improved {
-                                    tel_worker.log_chunk_text_stage(
-                                        session_id,
-                                        pending.idx,
-                                        "after_bilateral_context_retry",
-                                        &retry_text,
-                                    );
-                                    retry_text
-                                } else {
-                                    pending.text
-                                }
+                            if improved {
+                                tel_worker.log_chunk_text_stage(
+                                    session_id,
+                                    pending.idx,
+                                    "after_bilateral_context_retry",
+                                    &retry_text,
+                                );
+                                retry_text
+                            } else {
+                                pending.text
                             }
-                            Err(_) => pending.text,
-                        };
+                        }
+                        Err(_) => pending.text,
+                    };
                     push_chunk_result(&results_w, &ah_w, operation_id_w, pending.idx, pending_text);
                 }
                 info!(
@@ -1680,18 +1801,18 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                         words_in,
                                         trimmed_words_out,
                                     ) {
-                                        Some("coarse_or_empty_word_timestamps")
+                                        Some(parakeet_config::RETRY_REASON_COARSE_OR_EMPTY_WORD_TIMESTAMPS)
                                     } else if out.is_empty()
                                         && !output.text.trim().is_empty()
                                         && output.text.split_whitespace().count() >= 3
                                     {
-                                        Some("punct_guard_wiped_all_survivors")
+                                        Some(parakeet_config::RETRY_REASON_PUNCT_GUARD_WIPED_ALL_SURVIVORS)
                                     } else if is_timestamp_cluster_compressed(
                                         segs,
                                         words_in,
                                         chunk_samples,
                                     ) {
-                                        Some("compressed_timestamps_cluster")
+                                        Some(parakeet_config::RETRY_REASON_COMPRESSED_TIMESTAMPS_CLUSTER)
                                     } else {
                                         None
                                     };
@@ -1699,7 +1820,7 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                     tel_worker.log_chunk_retry(
                                         session_id,
                                         idx,
-                                        "timestamp_trim_fallback_full",
+                                        parakeet_config::RETRY_KIND_TIMESTAMP_TRIM_FALLBACK_FULL,
                                         reason,
                                         output.text.len(),
                                         output.text.len(),
@@ -1742,7 +1863,11 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                 // Parakeet sometimes fails to transcribe chunks whose audio
                                 // starts mid-sentence (the overlap zone). Stripping the overlap
                                 // gives it clean audio from the actual new content onward.
-                                let retry_text = if output.text.is_empty() {
+                                let retry_text = if output.text.is_empty()
+                                    && !should_use_fast_short_chunk_path(
+                                        chunk_samples,
+                                        short_dictation_policy_w,
+                                    ) {
                                     if let Some(ref orig) = audio_for_retry {
                                         let skip = (overlap_cutoff_secs * 16_000.0) as usize;
                                         let non_overlap = orig[skip.min(orig.len())..].to_vec();
@@ -1750,8 +1875,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                             tel_worker.log_chunk_retry(
                                                 session_id,
                                                 idx,
-                                                "without_overlap",
-                                                "empty_output_after_overlap_path",
+                                                parakeet_config::RETRY_KIND_WITHOUT_OVERLAP,
+                                                parakeet_config::RETRY_OUTCOME_EMPTY_OUTPUT_AFTER_OVERLAP_PATH,
                                                 orig.len(),
                                                 non_overlap.len(),
                                                 true,
@@ -1829,45 +1954,50 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         //    titles) pushed the model into English mode mid-session.
                         // In both cases: prepend 2 s of the previous chunk's French/Spanish/…
                         // audio so the model has enough context to stay in the right language.
-                        let lang_ctx_retry_reason: Option<&'static str> =
-                            if is_parakeet_v3_w && !is_final_chunk && !prev_chunk_tail.is_empty() {
-                                if is_likely_language_switched_short_chunk(
+                        let lang_ctx_retry_reason: Option<&'static str> = if is_parakeet_v3_w
+                            && !is_final_chunk
+                            && !prev_chunk_tail.is_empty()
+                            && !should_use_fast_short_chunk_path(
+                                chunk_samples,
+                                short_dictation_policy_w,
+                            ) {
+                            if is_likely_language_switched_short_chunk(
                                 &text,
                                 &selected_language_w,
                                 chunk_samples,
                             ) {
-                                Some("language_context")
+                                Some(parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT)
                             } else if crate::managers::transcription::inference::has_language_drift(
                                 &text,
                                 &selected_language_w,
                             ) {
-                                Some("language_context_drift")
+                                Some(parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_DRIFT)
                             } else if is_suspicious_hybrid_language_chunk(
                                 &text,
                                 &selected_language_w,
                                 chunk_samples,
                             ) {
-                                Some("language_context_hybrid")
+                                Some(parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_HYBRID)
                             } else if should_force_short_chunk_context_retry(
                                 &text,
                                 &selected_language_w,
                                 chunk_samples,
                                 is_final_chunk,
                             ) {
-                                Some("language_context_short_uncertain")
+                                Some(parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_SHORT_UNCERTAIN)
                             } else if should_force_mixed_chunk_context_retry(
                                 &text,
                                 &selected_language_w,
                                 chunk_samples,
                                 is_final_chunk,
                             ) {
-                                Some("language_context_mixed_phrase")
+                                Some(parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_MIXED_PHRASE)
                             } else {
                                 None
                             }
-                            } else {
-                                None
-                            };
+                        } else {
+                            None
+                        };
                         let text = if let Some(retry_reason) = lang_ctx_retry_reason {
                             if let Some(ref orig_audio) = audio_for_retry {
                                 let context_samples = prev_chunk_tail.len().min(2 * 16_000);
@@ -1909,15 +2039,17 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                         // result if the new output doesn't still drift.
                                         // For short-chunk retries: accept any non-empty change.
                                         let still_drifts = retry_reason
-                                            == "language_context_drift"
+                                            == parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_DRIFT
                                             && crate::managers::transcription::inference::has_language_drift(
                                                 &retry_text,
                                                 &selected_language_w,
                                             );
                                         let still_hybrid_suspicious = (retry_reason
-                                            == "language_context_hybrid"
-                                            || retry_reason == "language_context_short_uncertain"
-                                            || retry_reason == "language_context_mixed_phrase")
+                                            == parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_HYBRID
+                                            || retry_reason
+                                                == parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_SHORT_UNCERTAIN
+                                            || retry_reason
+                                                == parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_MIXED_PHRASE)
                                             && (is_suspicious_hybrid_language_chunk(
                                                 &retry_text,
                                                 &selected_language_w,
@@ -1942,13 +2074,13 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                                             idx,
                                             retry_reason,
                                             if improved {
-                                                "language_context_improved"
+                                                parakeet_config::RETRY_OUTCOME_LANGUAGE_CONTEXT_IMPROVED
                                             } else if still_drifts {
-                                                "language_context_still_drifts"
+                                                parakeet_config::RETRY_OUTCOME_LANGUAGE_CONTEXT_STILL_DRIFTS
                                             } else if still_hybrid_suspicious {
-                                                "language_context_still_hybrid_suspicious"
+                                                parakeet_config::RETRY_OUTCOME_LANGUAGE_CONTEXT_STILL_HYBRID_SUSPICIOUS
                                             } else {
-                                                "language_context_no_change"
+                                                parakeet_config::RETRY_OUTCOME_LANGUAGE_CONTEXT_NO_CHANGE
                                             },
                                             orig_audio.len(),
                                             extended_len,
@@ -2083,6 +2215,10 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                         let should_defer_for_bilateral_retry = is_parakeet_v3_w
                             && !is_final_chunk
                             && audio_for_retry.is_some()
+                            && !should_use_fast_short_chunk_path(
+                                chunk_samples,
+                                short_dictation_policy_w,
+                            )
                             && (is_suspicious_hybrid_language_chunk(
                                 &text,
                                 &selected_language_w,
@@ -2103,8 +2239,8 @@ pub(crate) fn start_transcription_action(app: &AppHandle, binding_id: &str) {
                             tel_worker.log_chunk_retry(
                                 session_id,
                                 idx,
-                                "language_context_bilateral",
-                                "deferred_waiting_for_right_context",
+                                parakeet_config::RETRY_KIND_LANGUAGE_CONTEXT_BILATERAL,
+                                parakeet_config::RETRY_OUTCOME_DEFERRED_WAITING_FOR_RIGHT_CONTEXT,
                                 chunk_samples,
                                 chunk_samples,
                                 true,
@@ -2590,11 +2726,20 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 .unwrap_or_else(|_| (String::new(), 0, 0, Vec::new(), None));
             if is_operation_active(&ah, operation_id) {
                 if let Some(summary) = parakeet_summary.as_mut() {
-                    if should_attempt_full_audio_recovery(summary, all_samples.len(), &assembled) {
+                    if should_attempt_full_audio_recovery(summary, all_samples.len(), &assembled)
+                        || should_attempt_targeted_final_alignment(
+                            summary,
+                            all_samples.len(),
+                            &assembled,
+                        )
+                    {
                         let recovery_started = Instant::now();
                         // Add 0.25s of silence so the model can cleanly decode the last word
                         let mut recovery_audio = all_samples.clone();
-                        recovery_audio.extend(std::iter::repeat(0.0f32).take(4_000));
+                        recovery_audio.extend(
+                            std::iter::repeat(0.0f32)
+                                .take(parakeet_config::FULL_AUDIO_RECOVERY_TAIL_PAD_SAMPLES),
+                        );
                         match tm.transcribe_detailed_request(TranscriptionRequest {
                             audio: recovery_audio,
                             app_context: active_app_context.clone(),
@@ -2635,8 +2780,46 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                                     );
                                 }
                             }
-                            Ok(_) => {
-                                if let Ok(mut p) = profiler.lock() {
+                            Ok(recovery_output) => {
+                                if let Some(aligned) = attempt_targeted_final_alignment(
+                                    &assembled,
+                                    &recovery_output.text,
+                                )
+                                .filter(|aligned| {
+                                    should_promote_targeted_final_alignment(
+                                        &assembled,
+                                        aligned,
+                                        all_samples.len(),
+                                    )
+                                }) {
+                                    let before_alignment = assembled.clone();
+                                    info!(
+                                        "Promoting Parakeet targeted final alignment: {} -> {} words",
+                                        assembled.split_whitespace().count(),
+                                        aligned.split_whitespace().count()
+                                    );
+                                    summary.finalization_recoveries += 1;
+                                    summary.output_words = aligned.split_whitespace().count();
+                                    assembled = aligned;
+                                    tel_quality.log_text_transform(
+                                        session_id,
+                                        "targeted_final_alignment",
+                                        &before_alignment,
+                                        &assembled,
+                                    );
+                                    tel_quality.log_session_text_stage(
+                                        session_id,
+                                        "after_targeted_final_alignment",
+                                        &assembled,
+                                    );
+                                    if let Ok(mut p) = profiler.lock() {
+                                        p.push_step_since(
+                                            "parakeet_full_audio_recovery",
+                                            recovery_started,
+                                            Some("aligned_suffix_promoted".to_string()),
+                                        );
+                                    }
+                                } else if let Ok(mut p) = profiler.lock() {
                                     p.push_step_since(
                                         "parakeet_full_audio_recovery",
                                         recovery_started,
@@ -2669,12 +2852,33 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 );
             }
             let _is_parakeet_chunked = parakeet_summary.is_some();
+            let mut parakeet_confidence_payload = None;
             if let Some(summary) = parakeet_summary {
                 if let Some(state) = ah.try_state::<ParakeetDiagnosticsState>() {
                     if let Some(snapshot) =
                         state.finish_session(session_id, summary, all_samples.len(), &assembled)
                     {
                         tel_quality.log_session_quality_summary(&snapshot);
+                        parakeet_confidence_payload =
+                            crate::transcription_confidence::build_parakeet_confidence_payload(
+                                ParakeetConfidenceInputs {
+                                    final_text: &assembled,
+                                    selected_language: &settings.selected_language,
+                                    samples: &all_samples,
+                                    mapping_stable: true,
+                                    retry_chunks: snapshot.retry_chunks,
+                                    filtered_chunks: snapshot.filtered_chunks,
+                                    empty_chunks: snapshot.empty_chunks,
+                                    words_without_timestamps: snapshot
+                                        .chunks_without_word_timestamps,
+                                    trimmed_words_total: snapshot.trimmed_words_total,
+                                    finalization_recoveries: snapshot.finalization_recoveries,
+                                    has_language_drift: crate::managers::transcription::inference::has_language_drift(
+                                        &assembled,
+                                        &settings.selected_language,
+                                    ),
+                                },
+                            );
                     }
                 }
             }
@@ -2696,7 +2900,7 @@ pub(crate) fn stop_transcription_action(app: &AppHandle, binding_id: &str, post_
                 session_id,
                 samples: all_samples,
                 transcription,
-                confidence_payload: None,
+                confidence_payload: parakeet_confidence_payload,
                 chunk_count,
                 status: if failed_chunk_count > 0 {
                     TranscriptionStatus::Partial
@@ -3426,6 +3630,17 @@ mod tests {
     }
 
     #[test]
+    fn low_signal_vad_gate_defers_only_short_quiet_chunks() {
+        let quiet_short = vec![0.003_f32; (2.5 * 16_000.0) as usize];
+        let voiced_short = vec![0.01_f32; (2.5 * 16_000.0) as usize];
+        let quiet_long = vec![0.003_f32; 4 * 16_000];
+
+        assert!(should_defer_short_vad_chunk(&quiet_short));
+        assert!(!should_defer_short_vad_chunk(&voiced_short));
+        assert!(!should_defer_short_vad_chunk(&quiet_long));
+    }
+
+    #[test]
     fn language_switch_detector_triggers_on_accent_free_short_chunks() {
         let short = 2 * 16_000; // 2s
 
@@ -3667,6 +3882,122 @@ mod tests {
             recovered,
             "I want to explain the issue with the microphone keeps dropping the ending"
         );
+    }
+
+    #[test]
+    fn targeted_final_alignment_merges_recovered_suffix() {
+        let assembled = "we reviewed the candidate profile and confirmed the recruiter";
+        let recovered =
+            "we reviewed the candidate profile and confirmed the recruiter follow up plan for tomorrow";
+
+        let aligned = attempt_targeted_final_alignment(assembled, recovered)
+            .expect("should align recovered suffix");
+
+        assert_eq!(
+            aligned,
+            "we reviewed the candidate profile and confirmed the recruiter follow up plan for tomorrow"
+        );
+    }
+
+    #[test]
+    fn targeted_final_alignment_rejects_unrelated_recovery() {
+        let assembled = "we reviewed the candidate profile and confirmed the recruiter";
+        let recovered = "tomorrow we start a totally different onboarding workflow";
+
+        assert!(attempt_targeted_final_alignment(assembled, recovered).is_none());
+    }
+
+    #[test]
+    fn targeted_final_alignment_promotion_accepts_small_plausible_suffix_gain() {
+        assert!(should_promote_targeted_final_alignment(
+            "we reviewed the candidate profile and confirmed the recruiter",
+            "we reviewed the candidate profile and confirmed the recruiter follow up plan",
+            12 * 16_000,
+        ));
+        assert!(!should_promote_targeted_final_alignment(
+            "we reviewed the candidate profile and confirmed the recruiter",
+            "we reviewed the candidate profile and confirmed the recruiter",
+            12 * 16_000,
+        ));
+    }
+
+    #[test]
+    fn full_audio_recovery_only_triggers_for_sparse_endings_in_supported_window() {
+        let summary = ParakeetSessionCompletion {
+            empty_nonfinal_chunks: 1,
+            final_chunk_words: 0,
+            final_chunk_samples: 3 * 16_000,
+            ..Default::default()
+        };
+        assert!(should_attempt_full_audio_recovery(
+            &summary,
+            12 * 16_000,
+            "this assembled transcript is unexpectedly sparse"
+        ));
+        assert!(!should_attempt_full_audio_recovery(
+            &summary,
+            4 * 16_000,
+            "too short for full recovery"
+        ));
+    }
+
+    #[test]
+    fn targeted_final_alignment_triggers_on_timestamp_and_retry_risk() {
+        let summary = ParakeetSessionCompletion {
+            retry_chunks: 1,
+            chunks_without_word_timestamps: 1,
+            final_chunk_words: 2,
+            ..Default::default()
+        };
+
+        assert!(should_attempt_targeted_final_alignment(
+            &summary,
+            14 * 16_000,
+            "we reviewed the candidate profile and confirmed the recruiter plan today",
+        ));
+        assert!(!should_attempt_targeted_final_alignment(
+            &summary,
+            4 * 16_000,
+            "too short for this alignment path",
+        ));
+    }
+
+    #[test]
+    fn full_audio_recovery_promotion_requires_meaningful_gain() {
+        assert!(should_promote_full_audio_recovery(
+            "we discussed the hiring plan yesterday",
+            "we discussed the hiring plan yesterday and clarified the next recruiter steps in detail",
+            12 * 16_000,
+        ));
+        assert!(!should_promote_full_audio_recovery(
+            "we discussed the hiring plan yesterday",
+            "we discussed the hiring plan",
+            12 * 16_000,
+        ));
+    }
+
+    #[test]
+    fn fast_short_chunk_path_only_covers_ultra_short_chunks() {
+        assert!(should_use_fast_short_chunk_path(
+            2 * 16_000,
+            ShortDictationPolicy::Balanced,
+        ));
+        assert!(should_use_fast_short_chunk_path(
+            parakeet_config::FAST_SHORT_PHRASE_SAMPLES,
+            ShortDictationPolicy::Balanced,
+        ));
+        assert!(!should_use_fast_short_chunk_path(
+            5 * 16_000,
+            ShortDictationPolicy::Balanced,
+        ));
+        assert!(should_use_fast_short_chunk_path(
+            4 * 16_000,
+            ShortDictationPolicy::Instant,
+        ));
+        assert!(!should_use_fast_short_chunk_path(
+            2 * 16_000,
+            ShortDictationPolicy::Quality,
+        ));
     }
 
     #[test]

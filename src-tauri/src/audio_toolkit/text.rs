@@ -18,6 +18,17 @@ fn build_ngram(words: &[&str]) -> String {
         .concat()
 }
 
+fn alphabetic_len(text: &str) -> usize {
+    text.chars().filter(|ch| ch.is_alphabetic()).count()
+}
+
+fn should_apply_phonetic_boost(candidate: &str, custom_word_nospace: &str) -> bool {
+    // Soundex is useful for longer proper nouns and product names, but it is
+    // too aggressive for short function words like "que" / "quoi". Keep the
+    // phonetic shortcut only when both sides are meaningfully long.
+    alphabetic_len(candidate) >= 5 && alphabetic_len(custom_word_nospace) >= 5
+}
+
 /// Finds the best matching custom word for a candidate string
 ///
 /// Uses Levenshtein distance and Soundex phonetic matching to find
@@ -64,8 +75,11 @@ fn find_best_match<'a>(
             1.0
         };
 
-        // Calculate phonetic similarity using Soundex
-        let phonetic_match = soundex(candidate, custom_word_nospace);
+        // Calculate phonetic similarity using Soundex.
+        // Disable it for short tokens: that is where we saw false positives
+        // like "que" drifting into "quoi" under aggressive boosting.
+        let phonetic_match = should_apply_phonetic_boost(candidate, custom_word_nospace)
+            && soundex(candidate, custom_word_nospace);
 
         // Combine scores: favor phonetic matches, but also consider string similarity
         let combined_score = if phonetic_match {
@@ -457,5 +471,21 @@ mod tests {
             "got double-counted result: {}",
             result
         );
+    }
+
+    #[test]
+    fn test_short_function_word_does_not_phonetically_drift() {
+        let text = "que";
+        let custom_words = vec!["quoi".to_string()];
+        let result = apply_custom_words(text, &custom_words, 0.24);
+        assert_eq!(result, "que");
+    }
+
+    #[test]
+    fn test_longer_words_still_get_fuzzy_phonetic_help() {
+        let text = "opanai";
+        let custom_words = vec!["OpenAI".to_string()];
+        let result = apply_custom_words(text, &custom_words, 0.5);
+        assert_eq!(result, "OpenAI");
     }
 }

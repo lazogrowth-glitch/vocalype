@@ -37,10 +37,10 @@ pub use llm::{gemini_client, llama_server, llm_client, prompt_builder};
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub use runtime::apple_intelligence;
 pub use runtime::{
-    chunking, command_mode, context_detector, model_ids, parakeet_quality, parakeet_text,
-    runtime_observability, session_glossary, session_keyterms, startup_warmup, telemetry,
-    transcription_confidence, transcription_coordinator, vocabulary_store, voice_feedback,
-    voice_profile, wake_word,
+    chunking, command_mode, context_detector, model_ids, parakeet_config, parakeet_quality,
+    parakeet_text, runtime_observability, session_glossary, session_keyterms, startup_warmup,
+    telemetry, transcription_confidence, transcription_coordinator, vocabulary_store,
+    voice_feedback, voice_profile, wake_word,
 };
 // platform
 pub use platform::signal_handle;

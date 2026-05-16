@@ -25,6 +25,16 @@ function percent(confidence: number): string {
   return `${Math.round(confidence * 100)}%`;
 }
 
+function confidenceLabel(engine: string): string {
+  if (engine === "parakeet-v3") {
+    return "Parakeet V3";
+  }
+  if (engine === "whisper") {
+    return "Whisper";
+  }
+  return engine;
+}
+
 export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
   text,
   confidencePayload,
@@ -37,6 +47,7 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
   }
 
   const overall = percent(confidencePayload.overall_confidence);
+  const engine = confidenceLabel(confidencePayload.engine);
 
   if (
     !confidencePayload.mapping_stable ||
@@ -46,8 +57,9 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
       <div className="space-y-1">
         <p className={className}>{text}</p>
         <div className="text-[11px] text-text/45">
-          {t("settings.history.whisperConfidence", {
-            defaultValue: "Whisper confidence: {{overall}}",
+          {t("settings.history.transcriptionConfidence", {
+            defaultValue: "{{engine}} confidence: {{overall}}",
+            engine,
             overall,
           })}
         </div>
@@ -74,8 +86,9 @@ export const ConfidenceText: React.FC<ConfidenceTextProps> = ({
         ))}
       </p>
       <div className="text-[11px] text-text/45">
-        {t("settings.history.whisperConfidence", {
-          defaultValue: "Whisper confidence: {{overall}}",
+        {t("settings.history.transcriptionConfidence", {
+          defaultValue: "{{engine}} confidence: {{overall}}",
+          engine,
           overall,
         })}
       </div>

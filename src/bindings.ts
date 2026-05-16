@@ -1748,7 +1748,7 @@ speaking_rate_pauses?: number[];
  * on first load via settings migration (T11). New code should read this
  * field; old code continues to use the booleans until migration is done.
  */
-recording_mode?: RecordingMode; selected_microphone?: string | null; selected_microphone_index?: string | null; clamshell_microphone?: string | null; clamshell_microphone_index?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; workspace_custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; recording_retention_period?: RecordingRetentionPeriod; 
+recording_mode?: RecordingMode; selected_microphone?: string | null; selected_microphone_index?: string | null; clamshell_microphone?: string | null; clamshell_microphone_index?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; workspace_custom_words?: string[]; adaptive_vocabulary_enabled?: boolean; adaptive_voice_profile_enabled?: boolean; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; short_dictation_policy?: ShortDictationPolicy; recording_retention_period?: RecordingRetentionPeriod; 
 /**
  * When false, audio is never written to disk — only the transcription text is saved.
  * Saves significant disk space (WAV at 16 kHz 16-bit ≈ 32 KB/s).
@@ -1947,6 +1947,7 @@ export type RuntimeDiagnostics = { captured_at_ms: number; app_version: string; 
 export type RuntimeErrorEvent = { code: string; stage: RuntimeErrorStage; message: string; recoverable: boolean; operation_id: number | null; device_name: string | null; model_id: string | null; timestamp_ms: number }
 export type RuntimeErrorStage = "capture" | "vad" | "transcription" | "post_process" | "paste" | "shortcut" | "model" | "system" | "unknown"
 export type SavedProcessingModel = { id: string; provider_id: string; model_id: string; label: string }
+export type ShortDictationPolicy = "instant" | "balanced" | "quality"
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
 export type StartupWarmupPhase = "idle" | "preparing" | "ready" | "failed"
